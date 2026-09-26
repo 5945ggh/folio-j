@@ -1,0 +1,5051 @@
+{
+  "version": "reading-demo-v1",
+  "cases": [
+    {
+      "case_id": "sample01-o11",
+      "sample_id": "sample01",
+      "kind": "lexis",
+      "title": "見かける",
+      "gloss": "在漫画中看到这样的学生；讲解将其与「見る」比较。",
+      "target_text": "漫画とかでは、学校の屋上でサボっている生徒を見かけるけど、",
+      "context": {
+        "before": "",
+        "after": "屋上で昼寝なんかしたら、肌が日差しに焼けて大変だ。\n教室では、そろそろ３時間目の授業が始まる頃か。\n授業をサボりがちな私とほとんど学校に行きていなかった安達は、\n偶然ここで会って、何となく行動を共にすることが多くなった。\n次、私のサーブでいい？\nいいけど。えっ？\n昨日ネットで調べてきたサーブ。\nラケットなんか無いから、しゃもじで練習したんだけどね。\n汚い、素人相手に変化球使うなんて！\n向上心のないしまむらが、悪い、よっ。\nこうしてサボっている時も、何となく相手がここに来ている感覚があって、\n来てみると本当にいたりする。"
+      },
+      "surface_refs": [
+        {
+          "text": "見かける",
+          "match_index": 1
+        }
+      ],
+      "surface_spans": [
+        {
+          "start": 22,
+          "end": 26,
+          "text": "見かける"
+        }
+      ],
+      "sections": [
+        {
+          "section_ref": "sample01-s05",
+          "title": "「生徒を見かける」：不是主动“去找”，而是“会看到”",
+          "start_line": 296,
+          "end_line": 345,
+          "raw_markdown": "## 「生徒を見かける」：不是主动“去找”，而是“会看到”\n\n这一层的骨架是：\n\n> 生徒 **を** 見かける\n\n「を」标记「見かける」的对象：\n\n> [生徒]を [見かける]\n> 看到[学生]\n\n「見かける」原形就是：\n\n> **見かける（見掛ける）**\n\n它是一个一段动词。\n\n这个词和单纯的「見る」有一点值得注意的区别。\n\n> 見る\n> 看；看见\n\n而：\n\n> 見かける\n> **看到、碰巧看见、见到**\n\n常常有“在某处注意到这种人/东西”“偶然看见”的感觉。\n\n例如：\n\n> 駅で田中さんを見かけた。\n> 我在车站看到田中了。\n\n这通常不是说“我特意观察了田中”，而是“我在车站碰巧看见他了”。\n\n在目标句中：\n\n> 漫画とかでは、～生徒を見かける\n\n当然不是真的说叙述者走进一本漫画，然后“偶遇”了学生。这里的「見かける」已经自然延伸成：\n\n> **在漫画里会看到这种人物/场景**\n\n中文因此翻成“经常会看到”“常能见到”比较顺。\n\n值得注意的是，原句**没有「よく」**。所以“经常”并不是一个必须逐字对应出来的成分。「見かける」加上这里泛泛谈论漫画常见场景的语境，会让中文的“会看到”“常会看到”都成立。若追求更贴字面，可以译：\n\n> 漫画之类的作品里，会看到在学校楼顶逃课的学生……\n\n",
+          "tree": [
+            {
+              "type": "heading",
+              "raw": "## 「生徒を見かける」：不是主动“去找”，而是“会看到”\n\n",
+              "source": {
+                "start_line": 296,
+                "end_line": 297
+              },
+              "depth": 2,
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "「生徒を見かける」：不是主动“去找”，而是“会看到”",
+                  "source": {
+                    "start_line": 296,
+                    "end_line": 296
+                  },
+                  "text": "「生徒を見かける」：不是主动“去找”，而是“会看到”"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "raw": "这一层的骨架是：",
+              "source": {
+                "start_line": 298,
+                "end_line": 298
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这一层的骨架是：",
+                  "source": {
+                    "start_line": 298,
+                    "end_line": 298
+                  },
+                  "text": "这一层的骨架是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 298,
+                "end_line": 299
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 生徒 **を** 見かける",
+              "source": {
+                "start_line": 300,
+                "end_line": 300
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "生徒 **を** 見かける",
+                  "source": {
+                    "start_line": 300,
+                    "end_line": 300
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "生徒 ",
+                      "source": {
+                        "start_line": 300,
+                        "end_line": 300
+                      },
+                      "text": "生徒 "
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**を**",
+                      "source": {
+                        "start_line": 300,
+                        "end_line": 300
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "を",
+                          "source": {
+                            "start_line": 300,
+                            "end_line": 300
+                          },
+                          "text": "を"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "raw": " 見かける",
+                      "source": {
+                        "start_line": 300,
+                        "end_line": 300
+                      },
+                      "text": " 見かける"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 300,
+                "end_line": 301
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "「を」标记「見かける」的对象：",
+              "source": {
+                "start_line": 302,
+                "end_line": 302
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "「を」标记「見かける」的对象：",
+                  "source": {
+                    "start_line": 302,
+                    "end_line": 302
+                  },
+                  "text": "「を」标记「見かける」的对象："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 302,
+                "end_line": 303
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> [生徒]を [見かける]\n> 看到[学生]",
+              "source": {
+                "start_line": 304,
+                "end_line": 305
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "[生徒]を [見かける]\n看到[学生]",
+                  "source": {
+                    "start_line": 304,
+                    "end_line": 305
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "[生徒]を [見かける]\n看到[学生]",
+                      "source": {
+                        "start_line": 304,
+                        "end_line": 305
+                      },
+                      "text": "[生徒]を [見かける]\n看到[学生]"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 305,
+                "end_line": 306
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "「見かける」原形就是：",
+              "source": {
+                "start_line": 307,
+                "end_line": 307
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "「見かける」原形就是：",
+                  "source": {
+                    "start_line": 307,
+                    "end_line": 307
+                  },
+                  "text": "「見かける」原形就是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 307,
+                "end_line": 308
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> **見かける（見掛ける）**",
+              "source": {
+                "start_line": 309,
+                "end_line": 309
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "**見かける（見掛ける）**",
+                  "source": {
+                    "start_line": 309,
+                    "end_line": 309
+                  },
+                  "inline": [
+                    {
+                      "type": "strong",
+                      "raw": "**見かける（見掛ける）**",
+                      "source": {
+                        "start_line": 309,
+                        "end_line": 309
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "見かける（見掛ける）",
+                          "source": {
+                            "start_line": 309,
+                            "end_line": 309
+                          },
+                          "text": "見かける（見掛ける）"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 309,
+                "end_line": 310
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "它是一个一段动词。",
+              "source": {
+                "start_line": 311,
+                "end_line": 311
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "它是一个一段动词。",
+                  "source": {
+                    "start_line": 311,
+                    "end_line": 311
+                  },
+                  "text": "它是一个一段动词。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 311,
+                "end_line": 312
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这个词和单纯的「見る」有一点值得注意的区别。",
+              "source": {
+                "start_line": 313,
+                "end_line": 313
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这个词和单纯的「見る」有一点值得注意的区别。",
+                  "source": {
+                    "start_line": 313,
+                    "end_line": 313
+                  },
+                  "text": "这个词和单纯的「見る」有一点值得注意的区别。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 313,
+                "end_line": 314
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 見る\n> 看；看见",
+              "source": {
+                "start_line": 315,
+                "end_line": 316
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "見る\n看；看见",
+                  "source": {
+                    "start_line": 315,
+                    "end_line": 316
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "見る\n看；看见",
+                      "source": {
+                        "start_line": 315,
+                        "end_line": 316
+                      },
+                      "text": "見る\n看；看见"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 316,
+                "end_line": 317
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "而：",
+              "source": {
+                "start_line": 318,
+                "end_line": 318
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "而：",
+                  "source": {
+                    "start_line": 318,
+                    "end_line": 318
+                  },
+                  "text": "而："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 318,
+                "end_line": 319
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 見かける\n> **看到、碰巧看见、见到**",
+              "source": {
+                "start_line": 320,
+                "end_line": 321
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "見かける\n**看到、碰巧看见、见到**",
+                  "source": {
+                    "start_line": 320,
+                    "end_line": 321
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "見かける\n",
+                      "source": {
+                        "start_line": 320,
+                        "end_line": 320
+                      },
+                      "text": "見かける\n"
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**看到、碰巧看见、见到**",
+                      "source": {
+                        "start_line": 320,
+                        "end_line": 321
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "看到、碰巧看见、见到",
+                          "source": {
+                            "start_line": 321,
+                            "end_line": 321
+                          },
+                          "text": "看到、碰巧看见、见到"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 321,
+                "end_line": 322
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "常常有“在某处注意到这种人/东西”“偶然看见”的感觉。",
+              "source": {
+                "start_line": 323,
+                "end_line": 323
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "常常有“在某处注意到这种人/东西”“偶然看见”的感觉。",
+                  "source": {
+                    "start_line": 323,
+                    "end_line": 323
+                  },
+                  "text": "常常有“在某处注意到这种人/东西”“偶然看见”的感觉。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 323,
+                "end_line": 324
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "例如：",
+              "source": {
+                "start_line": 325,
+                "end_line": 325
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "例如：",
+                  "source": {
+                    "start_line": 325,
+                    "end_line": 325
+                  },
+                  "text": "例如："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 325,
+                "end_line": 326
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 駅で田中さんを見かけた。\n> 我在车站看到田中了。",
+              "source": {
+                "start_line": 327,
+                "end_line": 328
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "駅で田中さんを見かけた。\n我在车站看到田中了。",
+                  "source": {
+                    "start_line": 327,
+                    "end_line": 328
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "駅で田中さんを見かけた。\n我在车站看到田中了。",
+                      "source": {
+                        "start_line": 327,
+                        "end_line": 328
+                      },
+                      "text": "駅で田中さんを見かけた。\n我在车站看到田中了。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 328,
+                "end_line": 329
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这通常不是说“我特意观察了田中”，而是“我在车站碰巧看见他了”。",
+              "source": {
+                "start_line": 330,
+                "end_line": 330
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这通常不是说“我特意观察了田中”，而是“我在车站碰巧看见他了”。",
+                  "source": {
+                    "start_line": 330,
+                    "end_line": 330
+                  },
+                  "text": "这通常不是说“我特意观察了田中”，而是“我在车站碰巧看见他了”。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 330,
+                "end_line": 331
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "在目标句中：",
+              "source": {
+                "start_line": 332,
+                "end_line": 332
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "在目标句中：",
+                  "source": {
+                    "start_line": 332,
+                    "end_line": 332
+                  },
+                  "text": "在目标句中："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 332,
+                "end_line": 333
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 漫画とかでは、～生徒を見かける",
+              "source": {
+                "start_line": 334,
+                "end_line": 334
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "漫画とかでは、～生徒を見かける",
+                  "source": {
+                    "start_line": 334,
+                    "end_line": 334
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "漫画とかでは、～生徒を見かける",
+                      "source": {
+                        "start_line": 334,
+                        "end_line": 334
+                      },
+                      "text": "漫画とかでは、～生徒を見かける"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 334,
+                "end_line": 335
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "当然不是真的说叙述者走进一本漫画，然后“偶遇”了学生。这里的「見かける」已经自然延伸成：",
+              "source": {
+                "start_line": 336,
+                "end_line": 336
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "当然不是真的说叙述者走进一本漫画，然后“偶遇”了学生。这里的「見かける」已经自然延伸成：",
+                  "source": {
+                    "start_line": 336,
+                    "end_line": 336
+                  },
+                  "text": "当然不是真的说叙述者走进一本漫画，然后“偶遇”了学生。这里的「見かける」已经自然延伸成："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 336,
+                "end_line": 337
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> **在漫画里会看到这种人物/场景**",
+              "source": {
+                "start_line": 338,
+                "end_line": 338
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "**在漫画里会看到这种人物/场景**",
+                  "source": {
+                    "start_line": 338,
+                    "end_line": 338
+                  },
+                  "inline": [
+                    {
+                      "type": "strong",
+                      "raw": "**在漫画里会看到这种人物/场景**",
+                      "source": {
+                        "start_line": 338,
+                        "end_line": 338
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "在漫画里会看到这种人物/场景",
+                          "source": {
+                            "start_line": 338,
+                            "end_line": 338
+                          },
+                          "text": "在漫画里会看到这种人物/场景"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 338,
+                "end_line": 339
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "中文因此翻成“经常会看到”“常能见到”比较顺。",
+              "source": {
+                "start_line": 340,
+                "end_line": 340
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "中文因此翻成“经常会看到”“常能见到”比较顺。",
+                  "source": {
+                    "start_line": 340,
+                    "end_line": 340
+                  },
+                  "text": "中文因此翻成“经常会看到”“常能见到”比较顺。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 340,
+                "end_line": 341
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "值得注意的是，原句**没有「よく」**。所以“经常”并不是一个必须逐字对应出来的成分。「見かける」加上这里泛泛谈论漫画常见场景的语境，会让中文的“会看到”“常会看到”都成立。若追求更贴字面，可以译：",
+              "source": {
+                "start_line": 342,
+                "end_line": 342
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "值得注意的是，原句",
+                  "source": {
+                    "start_line": 342,
+                    "end_line": 342
+                  },
+                  "text": "值得注意的是，原句"
+                },
+                {
+                  "type": "strong",
+                  "raw": "**没有「よく」**",
+                  "source": {
+                    "start_line": 342,
+                    "end_line": 342
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "没有「よく」",
+                      "source": {
+                        "start_line": 342,
+                        "end_line": 342
+                      },
+                      "text": "没有「よく」"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "。所以“经常”并不是一个必须逐字对应出来的成分。「見かける」加上这里泛泛谈论漫画常见场景的语境，会让中文的“会看到”“常会看到”都成立。若追求更贴字面，可以译：",
+                  "source": {
+                    "start_line": 342,
+                    "end_line": 342
+                  },
+                  "text": "。所以“经常”并不是一个必须逐字对应出来的成分。「見かける」加上这里泛泛谈论漫画常见场景的语境，会让中文的“会看到”“常会看到”都成立。若追求更贴字面，可以译："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 342,
+                "end_line": 343
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 漫画之类的作品里，会看到在学校楼顶逃课的学生……",
+              "source": {
+                "start_line": 344,
+                "end_line": 344
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "漫画之类的作品里，会看到在学校楼顶逃课的学生……",
+                  "source": {
+                    "start_line": 344,
+                    "end_line": 344
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "漫画之类的作品里，会看到在学校楼顶逃课的学生……",
+                      "source": {
+                        "start_line": 344,
+                        "end_line": 344
+                      },
+                      "text": "漫画之类的作品里，会看到在学校楼顶逃课的学生……"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 344,
+                "end_line": 345
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "sample04-o03",
+      "sample_id": "sample04",
+      "kind": "grammar",
+      "title": "てくる的既往准备视角",
+      "gloss": "此前上网查过，带着查询成果来到当前要发球的时刻。",
+      "target_text": "昨日ネットで調べてきたサーブ。",
+      "context": {
+        "before": "漫画とかでは、学校の屋上でサボっている生徒を見かけるけど、\n屋上で昼寝なんかしたら、肌が日差しに焼けて大変だ。\n教室では、そろそろ３時間目の授業が始まる頃か。\n授業をサボりがちな私とほとんど学校に行きていなかった安達は、\n偶然ここで会って、何となく行動を共にすることが多くなった。\n次、私のサーブでいい？\nいいけど。えっ？",
+        "after": "ラケットなんか無いから、しゃもじで練習したんだけどね。\n汚い、素人相手に変化球使うなんて！\n向上心のないしまむらが、悪い、よっ。\nこうしてサボっている時も、何となく相手がここに来ている感覚があって、\n来てみると本当にいたりする。"
+      },
+      "surface_refs": [
+        {
+          "text": "調べてきた",
+          "match_index": 1
+        }
+      ],
+      "surface_spans": [
+        {
+          "start": 6,
+          "end": 11,
+          "text": "調べてきた"
+        }
+      ],
+      "sections": [
+        {
+          "section_ref": "sample04-s04",
+          "title": "「調べてきた」是这句最值得掌握的部分",
+          "start_line": 110,
+          "end_line": 172,
+          "raw_markdown": "## 「調べてきた」是这句最值得掌握的部分\n\n先从原形开始：\n\n**調べる（しらべる）**\n→ 调查、查询、查找\n\n它是一段动词。\n\n先变成て形：\n\n> 調べる\n> → 調べ**て**\n\n然后接：\n\n> ～てくる\n\n于是：\n\n> 調べてくる\n\n最后 **くる（来る）** 变成过去式：\n\n> くる → きた\n\n所以完整过程是：\n\n> **調べる → 調べて → 調べてくる → 調べてきた**\n\n这里如果只看到字面上的 **来る**，很容易理解成「查了之后走过来」。但 **～てくる** 的实际用途远比物理上的「来」广。\n\n在这一句里，可以把它理解为：\n\n> **之前做了「調べる」这件事，然后带着它的结果来到当前这个时间点。**\n\n时间线大致是：\n\n> 昨天：ネットで調べる\n> ↓\n> 之后还进行了练习\n> ↓\n> 现在：要实际发球\n> **「昨日ネットで調べてきたサーブ」**\n\n所以 **調べてきた** 比单纯的 **調べた** 多了一点「**此前做了这件事，一路到现在，其成果现在正派上用场**」的感觉。\n\n比较一下：\n\n> **昨日ネットで調べたサーブ**\n> 昨天在网上查到的发球\n\n这只是比较平直地陈述「昨天查过」。\n\n而：\n\n> **昨日ネットで調べてきたサーブ**\n> 昨天事先在网上查来、现在准备使出来的发球\n\n更容易让人感觉到「**为了现在这一刻，我之前特意去查了**」。\n\n中文很难用一个固定结构把 **～てくる** 的这种视角完整复制出来，所以根据上下文译成「事先查来的」「查了之后学来的」「之前查好、现在要用的」都可能比机械的「查着来了」准确。\n\n",
+          "tree": [
+            {
+              "type": "heading",
+              "raw": "## 「調べてきた」是这句最值得掌握的部分\n\n",
+              "source": {
+                "start_line": 110,
+                "end_line": 111
+              },
+              "depth": 2,
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "「調べてきた」是这句最值得掌握的部分",
+                  "source": {
+                    "start_line": 110,
+                    "end_line": 110
+                  },
+                  "text": "「調べてきた」是这句最值得掌握的部分"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "raw": "先从原形开始：",
+              "source": {
+                "start_line": 112,
+                "end_line": 112
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "先从原形开始：",
+                  "source": {
+                    "start_line": 112,
+                    "end_line": 112
+                  },
+                  "text": "先从原形开始："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 112,
+                "end_line": 113
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "**調べる（しらべる）**\n→ 调查、查询、查找",
+              "source": {
+                "start_line": 114,
+                "end_line": 115
+              },
+              "inline": [
+                {
+                  "type": "strong",
+                  "raw": "**調べる（しらべる）**",
+                  "source": {
+                    "start_line": 114,
+                    "end_line": 114
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "調べる（しらべる）",
+                      "source": {
+                        "start_line": 114,
+                        "end_line": 114
+                      },
+                      "text": "調べる（しらべる）"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "\n→ 调查、查询、查找",
+                  "source": {
+                    "start_line": 114,
+                    "end_line": 115
+                  },
+                  "text": "\n→ 调查、查询、查找"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 115,
+                "end_line": 116
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "它是一段动词。",
+              "source": {
+                "start_line": 117,
+                "end_line": 117
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "它是一段动词。",
+                  "source": {
+                    "start_line": 117,
+                    "end_line": 117
+                  },
+                  "text": "它是一段动词。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 117,
+                "end_line": 118
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "先变成て形：",
+              "source": {
+                "start_line": 119,
+                "end_line": 119
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "先变成て形：",
+                  "source": {
+                    "start_line": 119,
+                    "end_line": 119
+                  },
+                  "text": "先变成て形："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 119,
+                "end_line": 120
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 調べる\n> → 調べ**て**",
+              "source": {
+                "start_line": 121,
+                "end_line": 122
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "調べる\n→ 調べ**て**",
+                  "source": {
+                    "start_line": 121,
+                    "end_line": 122
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "調べる\n→ 調べ",
+                      "source": {
+                        "start_line": 121,
+                        "end_line": 122
+                      },
+                      "text": "調べる\n→ 調べ"
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**て**",
+                      "source": {
+                        "start_line": 122,
+                        "end_line": 122
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "て",
+                          "source": {
+                            "start_line": 122,
+                            "end_line": 122
+                          },
+                          "text": "て"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 122,
+                "end_line": 123
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "然后接：",
+              "source": {
+                "start_line": 124,
+                "end_line": 124
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "然后接：",
+                  "source": {
+                    "start_line": 124,
+                    "end_line": 124
+                  },
+                  "text": "然后接："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 124,
+                "end_line": 125
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> ～てくる",
+              "source": {
+                "start_line": 126,
+                "end_line": 126
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "～てくる",
+                  "source": {
+                    "start_line": 126,
+                    "end_line": 126
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "～てくる",
+                      "source": {
+                        "start_line": 126,
+                        "end_line": 126
+                      },
+                      "text": "～てくる"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 126,
+                "end_line": 127
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "于是：",
+              "source": {
+                "start_line": 128,
+                "end_line": 128
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "于是：",
+                  "source": {
+                    "start_line": 128,
+                    "end_line": 128
+                  },
+                  "text": "于是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 128,
+                "end_line": 129
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 調べてくる",
+              "source": {
+                "start_line": 130,
+                "end_line": 130
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "調べてくる",
+                  "source": {
+                    "start_line": 130,
+                    "end_line": 130
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "調べてくる",
+                      "source": {
+                        "start_line": 130,
+                        "end_line": 130
+                      },
+                      "text": "調べてくる"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 130,
+                "end_line": 131
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "最后 **くる（来る）** 变成过去式：",
+              "source": {
+                "start_line": 132,
+                "end_line": 132
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "最后 ",
+                  "source": {
+                    "start_line": 132,
+                    "end_line": 132
+                  },
+                  "text": "最后 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**くる（来る）**",
+                  "source": {
+                    "start_line": 132,
+                    "end_line": 132
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "くる（来る）",
+                      "source": {
+                        "start_line": 132,
+                        "end_line": 132
+                      },
+                      "text": "くる（来る）"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": " 变成过去式：",
+                  "source": {
+                    "start_line": 132,
+                    "end_line": 132
+                  },
+                  "text": " 变成过去式："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 132,
+                "end_line": 133
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> くる → きた",
+              "source": {
+                "start_line": 134,
+                "end_line": 134
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "くる → きた",
+                  "source": {
+                    "start_line": 134,
+                    "end_line": 134
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "くる → きた",
+                      "source": {
+                        "start_line": 134,
+                        "end_line": 134
+                      },
+                      "text": "くる → きた"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 134,
+                "end_line": 135
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "所以完整过程是：",
+              "source": {
+                "start_line": 136,
+                "end_line": 136
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "所以完整过程是：",
+                  "source": {
+                    "start_line": 136,
+                    "end_line": 136
+                  },
+                  "text": "所以完整过程是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 136,
+                "end_line": 137
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> **調べる → 調べて → 調べてくる → 調べてきた**",
+              "source": {
+                "start_line": 138,
+                "end_line": 138
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "**調べる → 調べて → 調べてくる → 調べてきた**",
+                  "source": {
+                    "start_line": 138,
+                    "end_line": 138
+                  },
+                  "inline": [
+                    {
+                      "type": "strong",
+                      "raw": "**調べる → 調べて → 調べてくる → 調べてきた**",
+                      "source": {
+                        "start_line": 138,
+                        "end_line": 138
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "調べる → 調べて → 調べてくる → 調べてきた",
+                          "source": {
+                            "start_line": 138,
+                            "end_line": 138
+                          },
+                          "text": "調べる → 調べて → 調べてくる → 調べてきた"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 138,
+                "end_line": 139
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这里如果只看到字面上的 **来る**，很容易理解成「查了之后走过来」。但 **～てくる** 的实际用途远比物理上的「来」广。",
+              "source": {
+                "start_line": 140,
+                "end_line": 140
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这里如果只看到字面上的 ",
+                  "source": {
+                    "start_line": 140,
+                    "end_line": 140
+                  },
+                  "text": "这里如果只看到字面上的 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**来る**",
+                  "source": {
+                    "start_line": 140,
+                    "end_line": 140
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "来る",
+                      "source": {
+                        "start_line": 140,
+                        "end_line": 140
+                      },
+                      "text": "来る"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "，很容易理解成「查了之后走过来」。但 ",
+                  "source": {
+                    "start_line": 140,
+                    "end_line": 140
+                  },
+                  "text": "，很容易理解成「查了之后走过来」。但 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**～てくる**",
+                  "source": {
+                    "start_line": 140,
+                    "end_line": 140
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "～てくる",
+                      "source": {
+                        "start_line": 140,
+                        "end_line": 140
+                      },
+                      "text": "～てくる"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": " 的实际用途远比物理上的「来」广。",
+                  "source": {
+                    "start_line": 140,
+                    "end_line": 140
+                  },
+                  "text": " 的实际用途远比物理上的「来」广。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 140,
+                "end_line": 141
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "在这一句里，可以把它理解为：",
+              "source": {
+                "start_line": 142,
+                "end_line": 142
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "在这一句里，可以把它理解为：",
+                  "source": {
+                    "start_line": 142,
+                    "end_line": 142
+                  },
+                  "text": "在这一句里，可以把它理解为："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 142,
+                "end_line": 143
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> **之前做了「調べる」这件事，然后带着它的结果来到当前这个时间点。**",
+              "source": {
+                "start_line": 144,
+                "end_line": 144
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "**之前做了「調べる」这件事，然后带着它的结果来到当前这个时间点。**",
+                  "source": {
+                    "start_line": 144,
+                    "end_line": 144
+                  },
+                  "inline": [
+                    {
+                      "type": "strong",
+                      "raw": "**之前做了「調べる」这件事，然后带着它的结果来到当前这个时间点。**",
+                      "source": {
+                        "start_line": 144,
+                        "end_line": 144
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "之前做了「調べる」这件事，然后带着它的结果来到当前这个时间点。",
+                          "source": {
+                            "start_line": 144,
+                            "end_line": 144
+                          },
+                          "text": "之前做了「調べる」这件事，然后带着它的结果来到当前这个时间点。"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 144,
+                "end_line": 145
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "时间线大致是：",
+              "source": {
+                "start_line": 146,
+                "end_line": 146
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "时间线大致是：",
+                  "source": {
+                    "start_line": 146,
+                    "end_line": 146
+                  },
+                  "text": "时间线大致是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 146,
+                "end_line": 147
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 昨天：ネットで調べる\n> ↓\n> 之后还进行了练习\n> ↓\n> 现在：要实际发球\n> **「昨日ネットで調べてきたサーブ」**",
+              "source": {
+                "start_line": 148,
+                "end_line": 153
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "昨天：ネットで調べる\n↓\n之后还进行了练习\n↓\n现在：要实际发球\n**「昨日ネットで調べてきたサーブ」**",
+                  "source": {
+                    "start_line": 148,
+                    "end_line": 153
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "昨天：ネットで調べる\n↓\n之后还进行了练习\n↓\n现在：要实际发球\n",
+                      "source": {
+                        "start_line": 148,
+                        "end_line": 152
+                      },
+                      "text": "昨天：ネットで調べる\n↓\n之后还进行了练习\n↓\n现在：要实际发球\n"
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**「昨日ネットで調べてきたサーブ」**",
+                      "source": {
+                        "start_line": 152,
+                        "end_line": 153
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "「昨日ネットで調べてきたサーブ」",
+                          "source": {
+                            "start_line": 152,
+                            "end_line": 153
+                          },
+                          "text": "「昨日ネットで調べてきたサーブ」"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 153,
+                "end_line": 154
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "所以 **調べてきた** 比单纯的 **調べた** 多了一点「**此前做了这件事，一路到现在，其成果现在正派上用场**」的感觉。",
+              "source": {
+                "start_line": 155,
+                "end_line": 155
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "所以 ",
+                  "source": {
+                    "start_line": 155,
+                    "end_line": 155
+                  },
+                  "text": "所以 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**調べてきた**",
+                  "source": {
+                    "start_line": 155,
+                    "end_line": 155
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "調べてきた",
+                      "source": {
+                        "start_line": 155,
+                        "end_line": 155
+                      },
+                      "text": "調べてきた"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": " 比单纯的 ",
+                  "source": {
+                    "start_line": 155,
+                    "end_line": 155
+                  },
+                  "text": " 比单纯的 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**調べた**",
+                  "source": {
+                    "start_line": 155,
+                    "end_line": 155
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "調べた",
+                      "source": {
+                        "start_line": 155,
+                        "end_line": 155
+                      },
+                      "text": "調べた"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": " 多了一点「",
+                  "source": {
+                    "start_line": 155,
+                    "end_line": 155
+                  },
+                  "text": " 多了一点「"
+                },
+                {
+                  "type": "strong",
+                  "raw": "**此前做了这件事，一路到现在，其成果现在正派上用场**",
+                  "source": {
+                    "start_line": 155,
+                    "end_line": 155
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "此前做了这件事，一路到现在，其成果现在正派上用场",
+                      "source": {
+                        "start_line": 155,
+                        "end_line": 155
+                      },
+                      "text": "此前做了这件事，一路到现在，其成果现在正派上用场"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "」的感觉。",
+                  "source": {
+                    "start_line": 155,
+                    "end_line": 155
+                  },
+                  "text": "」的感觉。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 155,
+                "end_line": 156
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "比较一下：",
+              "source": {
+                "start_line": 157,
+                "end_line": 157
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "比较一下：",
+                  "source": {
+                    "start_line": 157,
+                    "end_line": 157
+                  },
+                  "text": "比较一下："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 157,
+                "end_line": 158
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> **昨日ネットで調べたサーブ**\n> 昨天在网上查到的发球",
+              "source": {
+                "start_line": 159,
+                "end_line": 160
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "**昨日ネットで調べたサーブ**\n昨天在网上查到的发球",
+                  "source": {
+                    "start_line": 159,
+                    "end_line": 160
+                  },
+                  "inline": [
+                    {
+                      "type": "strong",
+                      "raw": "**昨日ネットで調べたサーブ**",
+                      "source": {
+                        "start_line": 159,
+                        "end_line": 159
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "昨日ネットで調べたサーブ",
+                          "source": {
+                            "start_line": 159,
+                            "end_line": 159
+                          },
+                          "text": "昨日ネットで調べたサーブ"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "raw": "\n昨天在网上查到的发球",
+                      "source": {
+                        "start_line": 159,
+                        "end_line": 160
+                      },
+                      "text": "\n昨天在网上查到的发球"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 160,
+                "end_line": 161
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这只是比较平直地陈述「昨天查过」。",
+              "source": {
+                "start_line": 162,
+                "end_line": 162
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这只是比较平直地陈述「昨天查过」。",
+                  "source": {
+                    "start_line": 162,
+                    "end_line": 162
+                  },
+                  "text": "这只是比较平直地陈述「昨天查过」。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 162,
+                "end_line": 163
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "而：",
+              "source": {
+                "start_line": 164,
+                "end_line": 164
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "而：",
+                  "source": {
+                    "start_line": 164,
+                    "end_line": 164
+                  },
+                  "text": "而："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 164,
+                "end_line": 165
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> **昨日ネットで調べてきたサーブ**\n> 昨天事先在网上查来、现在准备使出来的发球",
+              "source": {
+                "start_line": 166,
+                "end_line": 167
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "**昨日ネットで調べてきたサーブ**\n昨天事先在网上查来、现在准备使出来的发球",
+                  "source": {
+                    "start_line": 166,
+                    "end_line": 167
+                  },
+                  "inline": [
+                    {
+                      "type": "strong",
+                      "raw": "**昨日ネットで調べてきたサーブ**",
+                      "source": {
+                        "start_line": 166,
+                        "end_line": 166
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "昨日ネットで調べてきたサーブ",
+                          "source": {
+                            "start_line": 166,
+                            "end_line": 166
+                          },
+                          "text": "昨日ネットで調べてきたサーブ"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "raw": "\n昨天事先在网上查来、现在准备使出来的发球",
+                      "source": {
+                        "start_line": 166,
+                        "end_line": 167
+                      },
+                      "text": "\n昨天事先在网上查来、现在准备使出来的发球"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 167,
+                "end_line": 168
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "更容易让人感觉到「**为了现在这一刻，我之前特意去查了**」。",
+              "source": {
+                "start_line": 169,
+                "end_line": 169
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "更容易让人感觉到「",
+                  "source": {
+                    "start_line": 169,
+                    "end_line": 169
+                  },
+                  "text": "更容易让人感觉到「"
+                },
+                {
+                  "type": "strong",
+                  "raw": "**为了现在这一刻，我之前特意去查了**",
+                  "source": {
+                    "start_line": 169,
+                    "end_line": 169
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "为了现在这一刻，我之前特意去查了",
+                      "source": {
+                        "start_line": 169,
+                        "end_line": 169
+                      },
+                      "text": "为了现在这一刻，我之前特意去查了"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "」。",
+                  "source": {
+                    "start_line": 169,
+                    "end_line": 169
+                  },
+                  "text": "」。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 169,
+                "end_line": 170
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "中文很难用一个固定结构把 **～てくる** 的这种视角完整复制出来，所以根据上下文译成「事先查来的」「查了之后学来的」「之前查好、现在要用的」都可能比机械的「查着来了」准确。",
+              "source": {
+                "start_line": 171,
+                "end_line": 171
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "中文很难用一个固定结构把 ",
+                  "source": {
+                    "start_line": 171,
+                    "end_line": 171
+                  },
+                  "text": "中文很难用一个固定结构把 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**～てくる**",
+                  "source": {
+                    "start_line": 171,
+                    "end_line": 171
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "～てくる",
+                      "source": {
+                        "start_line": 171,
+                        "end_line": 171
+                      },
+                      "text": "～てくる"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": " 的这种视角完整复制出来，所以根据上下文译成「事先查来的」「查了之后学来的」「之前查好、现在要用的」都可能比机械的「查着来了」准确。",
+                  "source": {
+                    "start_line": 171,
+                    "end_line": 171
+                  },
+                  "text": " 的这种视角完整复制出来，所以根据上下文译成「事先查来的」「查了之后学来的」「之前查好、现在要用的」都可能比机械的「查着来了」准确。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 171,
+                "end_line": 172
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "sample05-o05",
+      "sample_id": "sample05",
+      "kind": "expression",
+      "title": "句尾んだけどね",
+      "gloss": "把练习一事作为较随意的解释或补充说给对方，不必译作明确转折。",
+      "target_text": "ラケットなんか無いから、しゃもじで練習したんだけどね。",
+      "context": {
+        "before": "漫画とかでは、学校の屋上でサボっている生徒を見かけるけど、\n屋上で昼寝なんかしたら、肌が日差しに焼けて大変だ。\n教室では、そろそろ３時間目の授業が始まる頃か。\n授業をサボりがちな私とほとんど学校に行きていなかった安達は、\n偶然ここで会って、何となく行動を共にすることが多くなった。\n次、私のサーブでいい？\nいいけど。えっ？\n昨日ネットで調べてきたサーブ。",
+        "after": "汚い、素人相手に変化球使うなんて！\n向上心のないしまむらが、悪い、よっ。\nこうしてサボっている時も、何となく相手がここに来ている感覚があって、\n来てみると本当にいたりする。"
+      },
+      "surface_refs": [
+        {
+          "text": "んだけどね",
+          "match_index": 1
+        }
+      ],
+      "surface_spans": [
+        {
+          "start": 21,
+          "end": 26,
+          "text": "んだけどね"
+        }
+      ],
+      "sections": [
+        {
+          "section_ref": "sample05-s06",
+          "title": "「んだけどね」：重点不在“但是”",
+          "start_line": 250,
+          "end_line": 349,
+          "raw_markdown": "## 「んだけどね」：重点不在“但是”\n\n最后是：\n\n> 練習した**んだけどね**。\n\n这里如果把「けど」机械翻成“但是”，整句就会很奇怪：\n\n> × 因为没有球拍，所以用饭勺练习了，但是呢……\n\n后面明明没有真正出现一个转折内容。\n\n这是因为口语里的「けど」并不总是在表达明确的“但是 A，却 B”。\n\n先拆开看：\n\n> 練習した **んだ** **けど** **ね**\n\n### 「んだ」是什么\n\n「んだ」来自：\n\n> **のだ → んだ**\n\n「の」在口语中经常变成「ん」。\n\n所以：\n\n> 練習したのだ\n> → 練習したんだ\n\n「のだ／んだ」很难用一个中文词固定对应。它经常用于**说明情况、交代背景、给前面的事情一个解释性的包装**。\n\n比较一下：\n\n> しゃもじで練習した。\n> 我用饭勺练习了。\n\n只是直接陈述事实。\n\n> しゃもじで練習したんだ。\n> 我是用饭勺练的。 / 我其实还拿饭勺练了。\n\n后一句更像是在向听者**说明事情是怎么回事**。\n\n而且这里「ん」前面接的是动词过去普通形：\n\n> 練習する\n> → 練習した\n> → 練習した + んだ\n> → **練習したんだ**\n\n### 再加「けど」\n\n变成：\n\n> 練習したんだけど\n\n这里的「けど」保留了一点“话还没有完全封死”的感觉，但不要求后面一定出现明确的逆接句。\n\n日语口语中很常见：\n\n> ちょっと聞きたいんだけど。\n> 我有点事情想问一下……\n\n形式上有「けど」，但中文通常根本不会翻成“但是”。\n\n这里的：\n\n> しゃもじで練習したんだけど\n\n也可以理解成说话人把自己的说明比较松地抛给对方：\n\n> “我是拿饭勺练过啦……”\n\n至于潜在的言外内容，可以有“所以我还是练过的”“虽然练习条件很简陋”等感觉，但**原句没有明确说出具体是哪一个**，因此不宜硬补成唯一答案。\n\n### 最后的「ね」\n\n句末助词「ね」在这里进一步软化语气，也带有把这件事说给对方听、让对方接住这个信息的感觉。\n\n于是：\n\n> 練習した。\n> 我练了。\n\n很直接。\n\n> 練習したんだ。\n> 我是练过的 / 我有练过哦。\n\n有解释意味。\n\n> 練習したんだけどね。\n> 我是练过啦。 / 我还练过来着。\n\n就更口语、更松弛，也更符合人物之间随意聊天的感觉。\n\n因此这里最重要的一点是：**不要为了「けど」强行在中文译文里塞进“但是”。**\n\n",
+          "tree": [
+            {
+              "type": "heading",
+              "raw": "## 「んだけどね」：重点不在“但是”\n\n",
+              "source": {
+                "start_line": 250,
+                "end_line": 251
+              },
+              "depth": 2,
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "「んだけどね」：重点不在“但是”",
+                  "source": {
+                    "start_line": 250,
+                    "end_line": 250
+                  },
+                  "text": "「んだけどね」：重点不在“但是”"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "raw": "最后是：",
+              "source": {
+                "start_line": 252,
+                "end_line": 252
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "最后是：",
+                  "source": {
+                    "start_line": 252,
+                    "end_line": 252
+                  },
+                  "text": "最后是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 252,
+                "end_line": 253
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 練習した**んだけどね**。",
+              "source": {
+                "start_line": 254,
+                "end_line": 254
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "練習した**んだけどね**。",
+                  "source": {
+                    "start_line": 254,
+                    "end_line": 254
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "練習した",
+                      "source": {
+                        "start_line": 254,
+                        "end_line": 254
+                      },
+                      "text": "練習した"
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**んだけどね**",
+                      "source": {
+                        "start_line": 254,
+                        "end_line": 254
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "んだけどね",
+                          "source": {
+                            "start_line": 254,
+                            "end_line": 254
+                          },
+                          "text": "んだけどね"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "raw": "。",
+                      "source": {
+                        "start_line": 254,
+                        "end_line": 254
+                      },
+                      "text": "。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 254,
+                "end_line": 255
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这里如果把「けど」机械翻成“但是”，整句就会很奇怪：",
+              "source": {
+                "start_line": 256,
+                "end_line": 256
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这里如果把「けど」机械翻成“但是”，整句就会很奇怪：",
+                  "source": {
+                    "start_line": 256,
+                    "end_line": 256
+                  },
+                  "text": "这里如果把「けど」机械翻成“但是”，整句就会很奇怪："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 256,
+                "end_line": 257
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> × 因为没有球拍，所以用饭勺练习了，但是呢……",
+              "source": {
+                "start_line": 258,
+                "end_line": 258
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "× 因为没有球拍，所以用饭勺练习了，但是呢……",
+                  "source": {
+                    "start_line": 258,
+                    "end_line": 258
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "× 因为没有球拍，所以用饭勺练习了，但是呢……",
+                      "source": {
+                        "start_line": 258,
+                        "end_line": 258
+                      },
+                      "text": "× 因为没有球拍，所以用饭勺练习了，但是呢……"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 258,
+                "end_line": 259
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "后面明明没有真正出现一个转折内容。",
+              "source": {
+                "start_line": 260,
+                "end_line": 260
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "后面明明没有真正出现一个转折内容。",
+                  "source": {
+                    "start_line": 260,
+                    "end_line": 260
+                  },
+                  "text": "后面明明没有真正出现一个转折内容。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 260,
+                "end_line": 261
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这是因为口语里的「けど」并不总是在表达明确的“但是 A，却 B”。",
+              "source": {
+                "start_line": 262,
+                "end_line": 262
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这是因为口语里的「けど」并不总是在表达明确的“但是 A，却 B”。",
+                  "source": {
+                    "start_line": 262,
+                    "end_line": 262
+                  },
+                  "text": "这是因为口语里的「けど」并不总是在表达明确的“但是 A，却 B”。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 262,
+                "end_line": 263
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "先拆开看：",
+              "source": {
+                "start_line": 264,
+                "end_line": 264
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "先拆开看：",
+                  "source": {
+                    "start_line": 264,
+                    "end_line": 264
+                  },
+                  "text": "先拆开看："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 264,
+                "end_line": 265
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 練習した **んだ** **けど** **ね**",
+              "source": {
+                "start_line": 266,
+                "end_line": 266
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "練習した **んだ** **けど** **ね**",
+                  "source": {
+                    "start_line": 266,
+                    "end_line": 266
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "練習した ",
+                      "source": {
+                        "start_line": 266,
+                        "end_line": 266
+                      },
+                      "text": "練習した "
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**んだ**",
+                      "source": {
+                        "start_line": 266,
+                        "end_line": 266
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "んだ",
+                          "source": {
+                            "start_line": 266,
+                            "end_line": 266
+                          },
+                          "text": "んだ"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "raw": " ",
+                      "source": {
+                        "start_line": 266,
+                        "end_line": 266
+                      },
+                      "text": " "
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**けど**",
+                      "source": {
+                        "start_line": 266,
+                        "end_line": 266
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "けど",
+                          "source": {
+                            "start_line": 266,
+                            "end_line": 266
+                          },
+                          "text": "けど"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "raw": " ",
+                      "source": {
+                        "start_line": 266,
+                        "end_line": 266
+                      },
+                      "text": " "
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**ね**",
+                      "source": {
+                        "start_line": 266,
+                        "end_line": 266
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "ね",
+                          "source": {
+                            "start_line": 266,
+                            "end_line": 266
+                          },
+                          "text": "ね"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 266,
+                "end_line": 267
+              }
+            },
+            {
+              "type": "heading",
+              "raw": "### 「んだ」是什么\n\n",
+              "source": {
+                "start_line": 268,
+                "end_line": 269
+              },
+              "depth": 3,
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "「んだ」是什么",
+                  "source": {
+                    "start_line": 268,
+                    "end_line": 268
+                  },
+                  "text": "「んだ」是什么"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "raw": "「んだ」来自：",
+              "source": {
+                "start_line": 270,
+                "end_line": 270
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "「んだ」来自：",
+                  "source": {
+                    "start_line": 270,
+                    "end_line": 270
+                  },
+                  "text": "「んだ」来自："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 270,
+                "end_line": 271
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> **のだ → んだ**",
+              "source": {
+                "start_line": 272,
+                "end_line": 272
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "**のだ → んだ**",
+                  "source": {
+                    "start_line": 272,
+                    "end_line": 272
+                  },
+                  "inline": [
+                    {
+                      "type": "strong",
+                      "raw": "**のだ → んだ**",
+                      "source": {
+                        "start_line": 272,
+                        "end_line": 272
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "のだ → んだ",
+                          "source": {
+                            "start_line": 272,
+                            "end_line": 272
+                          },
+                          "text": "のだ → んだ"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 272,
+                "end_line": 273
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "「の」在口语中经常变成「ん」。",
+              "source": {
+                "start_line": 274,
+                "end_line": 274
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "「の」在口语中经常变成「ん」。",
+                  "source": {
+                    "start_line": 274,
+                    "end_line": 274
+                  },
+                  "text": "「の」在口语中经常变成「ん」。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 274,
+                "end_line": 275
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "所以：",
+              "source": {
+                "start_line": 276,
+                "end_line": 276
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "所以：",
+                  "source": {
+                    "start_line": 276,
+                    "end_line": 276
+                  },
+                  "text": "所以："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 276,
+                "end_line": 277
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 練習したのだ\n> → 練習したんだ",
+              "source": {
+                "start_line": 278,
+                "end_line": 279
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "練習したのだ\n→ 練習したんだ",
+                  "source": {
+                    "start_line": 278,
+                    "end_line": 279
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "練習したのだ\n→ 練習したんだ",
+                      "source": {
+                        "start_line": 278,
+                        "end_line": 279
+                      },
+                      "text": "練習したのだ\n→ 練習したんだ"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 279,
+                "end_line": 280
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "「のだ／んだ」很难用一个中文词固定对应。它经常用于**说明情况、交代背景、给前面的事情一个解释性的包装**。",
+              "source": {
+                "start_line": 281,
+                "end_line": 281
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "「のだ／んだ」很难用一个中文词固定对应。它经常用于",
+                  "source": {
+                    "start_line": 281,
+                    "end_line": 281
+                  },
+                  "text": "「のだ／んだ」很难用一个中文词固定对应。它经常用于"
+                },
+                {
+                  "type": "strong",
+                  "raw": "**说明情况、交代背景、给前面的事情一个解释性的包装**",
+                  "source": {
+                    "start_line": 281,
+                    "end_line": 281
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "说明情况、交代背景、给前面的事情一个解释性的包装",
+                      "source": {
+                        "start_line": 281,
+                        "end_line": 281
+                      },
+                      "text": "说明情况、交代背景、给前面的事情一个解释性的包装"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "。",
+                  "source": {
+                    "start_line": 281,
+                    "end_line": 281
+                  },
+                  "text": "。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 281,
+                "end_line": 282
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "比较一下：",
+              "source": {
+                "start_line": 283,
+                "end_line": 283
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "比较一下：",
+                  "source": {
+                    "start_line": 283,
+                    "end_line": 283
+                  },
+                  "text": "比较一下："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 283,
+                "end_line": 284
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> しゃもじで練習した。\n> 我用饭勺练习了。",
+              "source": {
+                "start_line": 285,
+                "end_line": 286
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "しゃもじで練習した。\n我用饭勺练习了。",
+                  "source": {
+                    "start_line": 285,
+                    "end_line": 286
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "しゃもじで練習した。\n我用饭勺练习了。",
+                      "source": {
+                        "start_line": 285,
+                        "end_line": 286
+                      },
+                      "text": "しゃもじで練習した。\n我用饭勺练习了。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 286,
+                "end_line": 287
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "只是直接陈述事实。",
+              "source": {
+                "start_line": 288,
+                "end_line": 288
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "只是直接陈述事实。",
+                  "source": {
+                    "start_line": 288,
+                    "end_line": 288
+                  },
+                  "text": "只是直接陈述事实。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 288,
+                "end_line": 289
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> しゃもじで練習したんだ。\n> 我是用饭勺练的。 / 我其实还拿饭勺练了。",
+              "source": {
+                "start_line": 290,
+                "end_line": 291
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "しゃもじで練習したんだ。\n我是用饭勺练的。 / 我其实还拿饭勺练了。",
+                  "source": {
+                    "start_line": 290,
+                    "end_line": 291
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "しゃもじで練習したんだ。\n我是用饭勺练的。 / 我其实还拿饭勺练了。",
+                      "source": {
+                        "start_line": 290,
+                        "end_line": 291
+                      },
+                      "text": "しゃもじで練習したんだ。\n我是用饭勺练的。 / 我其实还拿饭勺练了。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 291,
+                "end_line": 292
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "后一句更像是在向听者**说明事情是怎么回事**。",
+              "source": {
+                "start_line": 293,
+                "end_line": 293
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "后一句更像是在向听者",
+                  "source": {
+                    "start_line": 293,
+                    "end_line": 293
+                  },
+                  "text": "后一句更像是在向听者"
+                },
+                {
+                  "type": "strong",
+                  "raw": "**说明事情是怎么回事**",
+                  "source": {
+                    "start_line": 293,
+                    "end_line": 293
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "说明事情是怎么回事",
+                      "source": {
+                        "start_line": 293,
+                        "end_line": 293
+                      },
+                      "text": "说明事情是怎么回事"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "。",
+                  "source": {
+                    "start_line": 293,
+                    "end_line": 293
+                  },
+                  "text": "。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 293,
+                "end_line": 294
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "而且这里「ん」前面接的是动词过去普通形：",
+              "source": {
+                "start_line": 295,
+                "end_line": 295
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "而且这里「ん」前面接的是动词过去普通形：",
+                  "source": {
+                    "start_line": 295,
+                    "end_line": 295
+                  },
+                  "text": "而且这里「ん」前面接的是动词过去普通形："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 295,
+                "end_line": 296
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 練習する\n> → 練習した\n> → 練習した + んだ\n> → **練習したんだ**",
+              "source": {
+                "start_line": 297,
+                "end_line": 300
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "練習する\n→ 練習した\n→ 練習した + んだ\n→ **練習したんだ**",
+                  "source": {
+                    "start_line": 297,
+                    "end_line": 300
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "練習する\n→ 練習した\n→ 練習した + んだ\n→ ",
+                      "source": {
+                        "start_line": 297,
+                        "end_line": 299
+                      },
+                      "text": "練習する\n→ 練習した\n→ 練習した + んだ\n→ "
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**練習したんだ**",
+                      "source": {
+                        "start_line": 299,
+                        "end_line": 300
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "練習したんだ",
+                          "source": {
+                            "start_line": 299,
+                            "end_line": 300
+                          },
+                          "text": "練習したんだ"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 300,
+                "end_line": 301
+              }
+            },
+            {
+              "type": "heading",
+              "raw": "### 再加「けど」\n\n",
+              "source": {
+                "start_line": 302,
+                "end_line": 303
+              },
+              "depth": 3,
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "再加「けど」",
+                  "source": {
+                    "start_line": 302,
+                    "end_line": 302
+                  },
+                  "text": "再加「けど」"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "raw": "变成：",
+              "source": {
+                "start_line": 304,
+                "end_line": 304
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "变成：",
+                  "source": {
+                    "start_line": 304,
+                    "end_line": 304
+                  },
+                  "text": "变成："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 304,
+                "end_line": 305
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 練習したんだけど",
+              "source": {
+                "start_line": 306,
+                "end_line": 306
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "練習したんだけど",
+                  "source": {
+                    "start_line": 306,
+                    "end_line": 306
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "練習したんだけど",
+                      "source": {
+                        "start_line": 306,
+                        "end_line": 306
+                      },
+                      "text": "練習したんだけど"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 306,
+                "end_line": 307
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这里的「けど」保留了一点“话还没有完全封死”的感觉，但不要求后面一定出现明确的逆接句。",
+              "source": {
+                "start_line": 308,
+                "end_line": 308
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这里的「けど」保留了一点“话还没有完全封死”的感觉，但不要求后面一定出现明确的逆接句。",
+                  "source": {
+                    "start_line": 308,
+                    "end_line": 308
+                  },
+                  "text": "这里的「けど」保留了一点“话还没有完全封死”的感觉，但不要求后面一定出现明确的逆接句。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 308,
+                "end_line": 309
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "日语口语中很常见：",
+              "source": {
+                "start_line": 310,
+                "end_line": 310
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "日语口语中很常见：",
+                  "source": {
+                    "start_line": 310,
+                    "end_line": 310
+                  },
+                  "text": "日语口语中很常见："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 310,
+                "end_line": 311
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> ちょっと聞きたいんだけど。\n> 我有点事情想问一下……",
+              "source": {
+                "start_line": 312,
+                "end_line": 313
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "ちょっと聞きたいんだけど。\n我有点事情想问一下……",
+                  "source": {
+                    "start_line": 312,
+                    "end_line": 313
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "ちょっと聞きたいんだけど。\n我有点事情想问一下……",
+                      "source": {
+                        "start_line": 312,
+                        "end_line": 313
+                      },
+                      "text": "ちょっと聞きたいんだけど。\n我有点事情想问一下……"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 313,
+                "end_line": 314
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "形式上有「けど」，但中文通常根本不会翻成“但是”。",
+              "source": {
+                "start_line": 315,
+                "end_line": 315
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "形式上有「けど」，但中文通常根本不会翻成“但是”。",
+                  "source": {
+                    "start_line": 315,
+                    "end_line": 315
+                  },
+                  "text": "形式上有「けど」，但中文通常根本不会翻成“但是”。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 315,
+                "end_line": 316
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这里的：",
+              "source": {
+                "start_line": 317,
+                "end_line": 317
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这里的：",
+                  "source": {
+                    "start_line": 317,
+                    "end_line": 317
+                  },
+                  "text": "这里的："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 317,
+                "end_line": 318
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> しゃもじで練習したんだけど",
+              "source": {
+                "start_line": 319,
+                "end_line": 319
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "しゃもじで練習したんだけど",
+                  "source": {
+                    "start_line": 319,
+                    "end_line": 319
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "しゃもじで練習したんだけど",
+                      "source": {
+                        "start_line": 319,
+                        "end_line": 319
+                      },
+                      "text": "しゃもじで練習したんだけど"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 319,
+                "end_line": 320
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "也可以理解成说话人把自己的说明比较松地抛给对方：",
+              "source": {
+                "start_line": 321,
+                "end_line": 321
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "也可以理解成说话人把自己的说明比较松地抛给对方：",
+                  "source": {
+                    "start_line": 321,
+                    "end_line": 321
+                  },
+                  "text": "也可以理解成说话人把自己的说明比较松地抛给对方："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 321,
+                "end_line": 322
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> “我是拿饭勺练过啦……”",
+              "source": {
+                "start_line": 323,
+                "end_line": 323
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "“我是拿饭勺练过啦……”",
+                  "source": {
+                    "start_line": 323,
+                    "end_line": 323
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "“我是拿饭勺练过啦……”",
+                      "source": {
+                        "start_line": 323,
+                        "end_line": 323
+                      },
+                      "text": "“我是拿饭勺练过啦……”"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 323,
+                "end_line": 324
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "至于潜在的言外内容，可以有“所以我还是练过的”“虽然练习条件很简陋”等感觉，但**原句没有明确说出具体是哪一个**，因此不宜硬补成唯一答案。",
+              "source": {
+                "start_line": 325,
+                "end_line": 325
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "至于潜在的言外内容，可以有“所以我还是练过的”“虽然练习条件很简陋”等感觉，但",
+                  "source": {
+                    "start_line": 325,
+                    "end_line": 325
+                  },
+                  "text": "至于潜在的言外内容，可以有“所以我还是练过的”“虽然练习条件很简陋”等感觉，但"
+                },
+                {
+                  "type": "strong",
+                  "raw": "**原句没有明确说出具体是哪一个**",
+                  "source": {
+                    "start_line": 325,
+                    "end_line": 325
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "原句没有明确说出具体是哪一个",
+                      "source": {
+                        "start_line": 325,
+                        "end_line": 325
+                      },
+                      "text": "原句没有明确说出具体是哪一个"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "，因此不宜硬补成唯一答案。",
+                  "source": {
+                    "start_line": 325,
+                    "end_line": 325
+                  },
+                  "text": "，因此不宜硬补成唯一答案。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 325,
+                "end_line": 326
+              }
+            },
+            {
+              "type": "heading",
+              "raw": "### 最后的「ね」\n\n",
+              "source": {
+                "start_line": 327,
+                "end_line": 328
+              },
+              "depth": 3,
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "最后的「ね」",
+                  "source": {
+                    "start_line": 327,
+                    "end_line": 327
+                  },
+                  "text": "最后的「ね」"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "raw": "句末助词「ね」在这里进一步软化语气，也带有把这件事说给对方听、让对方接住这个信息的感觉。",
+              "source": {
+                "start_line": 329,
+                "end_line": 329
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "句末助词「ね」在这里进一步软化语气，也带有把这件事说给对方听、让对方接住这个信息的感觉。",
+                  "source": {
+                    "start_line": 329,
+                    "end_line": 329
+                  },
+                  "text": "句末助词「ね」在这里进一步软化语气，也带有把这件事说给对方听、让对方接住这个信息的感觉。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 329,
+                "end_line": 330
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "于是：",
+              "source": {
+                "start_line": 331,
+                "end_line": 331
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "于是：",
+                  "source": {
+                    "start_line": 331,
+                    "end_line": 331
+                  },
+                  "text": "于是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 331,
+                "end_line": 332
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 練習した。\n> 我练了。",
+              "source": {
+                "start_line": 333,
+                "end_line": 334
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "練習した。\n我练了。",
+                  "source": {
+                    "start_line": 333,
+                    "end_line": 334
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "練習した。\n我练了。",
+                      "source": {
+                        "start_line": 333,
+                        "end_line": 334
+                      },
+                      "text": "練習した。\n我练了。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 334,
+                "end_line": 335
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "很直接。",
+              "source": {
+                "start_line": 336,
+                "end_line": 336
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "很直接。",
+                  "source": {
+                    "start_line": 336,
+                    "end_line": 336
+                  },
+                  "text": "很直接。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 336,
+                "end_line": 337
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 練習したんだ。\n> 我是练过的 / 我有练过哦。",
+              "source": {
+                "start_line": 338,
+                "end_line": 339
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "練習したんだ。\n我是练过的 / 我有练过哦。",
+                  "source": {
+                    "start_line": 338,
+                    "end_line": 339
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "練習したんだ。\n我是练过的 / 我有练过哦。",
+                      "source": {
+                        "start_line": 338,
+                        "end_line": 339
+                      },
+                      "text": "練習したんだ。\n我是练过的 / 我有练过哦。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 339,
+                "end_line": 340
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "有解释意味。",
+              "source": {
+                "start_line": 341,
+                "end_line": 341
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "有解释意味。",
+                  "source": {
+                    "start_line": 341,
+                    "end_line": 341
+                  },
+                  "text": "有解释意味。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 341,
+                "end_line": 342
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 練習したんだけどね。\n> 我是练过啦。 / 我还练过来着。",
+              "source": {
+                "start_line": 343,
+                "end_line": 344
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "練習したんだけどね。\n我是练过啦。 / 我还练过来着。",
+                  "source": {
+                    "start_line": 343,
+                    "end_line": 344
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "練習したんだけどね。\n我是练过啦。 / 我还练过来着。",
+                      "source": {
+                        "start_line": 343,
+                        "end_line": 344
+                      },
+                      "text": "練習したんだけどね。\n我是练过啦。 / 我还练过来着。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 344,
+                "end_line": 345
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "就更口语、更松弛，也更符合人物之间随意聊天的感觉。",
+              "source": {
+                "start_line": 346,
+                "end_line": 346
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "就更口语、更松弛，也更符合人物之间随意聊天的感觉。",
+                  "source": {
+                    "start_line": 346,
+                    "end_line": 346
+                  },
+                  "text": "就更口语、更松弛，也更符合人物之间随意聊天的感觉。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 346,
+                "end_line": 347
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "因此这里最重要的一点是：**不要为了「けど」强行在中文译文里塞进“但是”。**",
+              "source": {
+                "start_line": 348,
+                "end_line": 348
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "因此这里最重要的一点是：",
+                  "source": {
+                    "start_line": 348,
+                    "end_line": 348
+                  },
+                  "text": "因此这里最重要的一点是："
+                },
+                {
+                  "type": "strong",
+                  "raw": "**不要为了「けど」强行在中文译文里塞进“但是”。**",
+                  "source": {
+                    "start_line": 348,
+                    "end_line": 348
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "不要为了「けど」强行在中文译文里塞进“但是”。",
+                      "source": {
+                        "start_line": 348,
+                        "end_line": 348
+                      },
+                      "text": "不要为了「けど」强行在中文译文里塞进“但是”。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 348,
+                "end_line": 349
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "sample04-o04",
+      "sample_id": "sample04",
+      "kind": "grammar",
+      "title": "过去形小句修饰名词",
+      "gloss": "「調べてきた」在「サーブ」前修饰它，而非独立的动宾句。",
+      "target_text": "昨日ネットで調べてきたサーブ。",
+      "context": {
+        "before": "漫画とかでは、学校の屋上でサボっている生徒を見かけるけど、\n屋上で昼寝なんかしたら、肌が日差しに焼けて大変だ。\n教室では、そろそろ３時間目の授業が始まる頃か。\n授業をサボりがちな私とほとんど学校に行きていなかった安達は、\n偶然ここで会って、何となく行動を共にすることが多くなった。\n次、私のサーブでいい？\nいいけど。えっ？",
+        "after": "ラケットなんか無いから、しゃもじで練習したんだけどね。\n汚い、素人相手に変化球使うなんて！\n向上心のないしまむらが、悪い、よっ。\nこうしてサボっている時も、何となく相手がここに来ている感覚があって、\n来てみると本当にいたりする。"
+      },
+      "surface_refs": [
+        {
+          "text": "調べてきたサーブ",
+          "match_index": 1
+        }
+      ],
+      "surface_spans": [
+        {
+          "start": 6,
+          "end": 14,
+          "text": "調べてきたサーブ"
+        }
+      ],
+      "sections": [
+        {
+          "section_ref": "sample04-s05",
+          "title": "「調べる」为什么能修饰「サーブ」",
+          "start_line": 173,
+          "end_line": 211,
+          "raw_markdown": "## 「調べる」为什么能修饰「サーブ」\n\n这里还有一个初学阶段非常重要的结构：\n\n> **动词普通形 + 名词**\n\n日语可以直接把一个小句放到名词前面修饰它。\n\n例如：\n\n> 昨日買った本\n> 昨天买的书\n\n结构就是：\n\n> ［昨日買った］→ 本\n\n本句完全一样：\n\n> ［昨日ネットで調べてきた］→ サーブ\n\n也就是：\n\n> ［昨天在网上查来的］→ 发球\n\n这里没有中文的「的」，也不需要另外加关系词。\n\n因此千万不要因为看到 **調べてきたサーブ**，就把它理解成「调查了发球」这一普通的动宾关系。若要说「调查/查询发球」，通常会出现：\n\n> サーブ**を**調べる\n\n这里却是：\n\n> **調べてきた** サーブ\n\n**サーブ在动词后面**，所以结构变成了「小句修饰名词」。\n\n不过，从语义上说，省略在修饰小句内部的关系确实可以理解成「查了这种发球/查了这个发球的方法」。日语的名词修饰结构不会把那个关系额外标出来。\n\n",
+          "tree": [
+            {
+              "type": "heading",
+              "raw": "## 「調べる」为什么能修饰「サーブ」\n\n",
+              "source": {
+                "start_line": 173,
+                "end_line": 174
+              },
+              "depth": 2,
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "「調べる」为什么能修饰「サーブ」",
+                  "source": {
+                    "start_line": 173,
+                    "end_line": 173
+                  },
+                  "text": "「調べる」为什么能修饰「サーブ」"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "raw": "这里还有一个初学阶段非常重要的结构：",
+              "source": {
+                "start_line": 175,
+                "end_line": 175
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这里还有一个初学阶段非常重要的结构：",
+                  "source": {
+                    "start_line": 175,
+                    "end_line": 175
+                  },
+                  "text": "这里还有一个初学阶段非常重要的结构："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 175,
+                "end_line": 176
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> **动词普通形 + 名词**",
+              "source": {
+                "start_line": 177,
+                "end_line": 177
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "**动词普通形 + 名词**",
+                  "source": {
+                    "start_line": 177,
+                    "end_line": 177
+                  },
+                  "inline": [
+                    {
+                      "type": "strong",
+                      "raw": "**动词普通形 + 名词**",
+                      "source": {
+                        "start_line": 177,
+                        "end_line": 177
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "动词普通形 + 名词",
+                          "source": {
+                            "start_line": 177,
+                            "end_line": 177
+                          },
+                          "text": "动词普通形 + 名词"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 177,
+                "end_line": 178
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "日语可以直接把一个小句放到名词前面修饰它。",
+              "source": {
+                "start_line": 179,
+                "end_line": 179
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "日语可以直接把一个小句放到名词前面修饰它。",
+                  "source": {
+                    "start_line": 179,
+                    "end_line": 179
+                  },
+                  "text": "日语可以直接把一个小句放到名词前面修饰它。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 179,
+                "end_line": 180
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "例如：",
+              "source": {
+                "start_line": 181,
+                "end_line": 181
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "例如：",
+                  "source": {
+                    "start_line": 181,
+                    "end_line": 181
+                  },
+                  "text": "例如："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 181,
+                "end_line": 182
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 昨日買った本\n> 昨天买的书",
+              "source": {
+                "start_line": 183,
+                "end_line": 184
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "昨日買った本\n昨天买的书",
+                  "source": {
+                    "start_line": 183,
+                    "end_line": 184
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "昨日買った本\n昨天买的书",
+                      "source": {
+                        "start_line": 183,
+                        "end_line": 184
+                      },
+                      "text": "昨日買った本\n昨天买的书"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 184,
+                "end_line": 185
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "结构就是：",
+              "source": {
+                "start_line": 186,
+                "end_line": 186
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "结构就是：",
+                  "source": {
+                    "start_line": 186,
+                    "end_line": 186
+                  },
+                  "text": "结构就是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 186,
+                "end_line": 187
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> ［昨日買った］→ 本",
+              "source": {
+                "start_line": 188,
+                "end_line": 188
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "［昨日買った］→ 本",
+                  "source": {
+                    "start_line": 188,
+                    "end_line": 188
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "［昨日買った］→ 本",
+                      "source": {
+                        "start_line": 188,
+                        "end_line": 188
+                      },
+                      "text": "［昨日買った］→ 本"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 188,
+                "end_line": 189
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "本句完全一样：",
+              "source": {
+                "start_line": 190,
+                "end_line": 190
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "本句完全一样：",
+                  "source": {
+                    "start_line": 190,
+                    "end_line": 190
+                  },
+                  "text": "本句完全一样："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 190,
+                "end_line": 191
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> ［昨日ネットで調べてきた］→ サーブ",
+              "source": {
+                "start_line": 192,
+                "end_line": 192
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "［昨日ネットで調べてきた］→ サーブ",
+                  "source": {
+                    "start_line": 192,
+                    "end_line": 192
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "［昨日ネットで調べてきた］→ サーブ",
+                      "source": {
+                        "start_line": 192,
+                        "end_line": 192
+                      },
+                      "text": "［昨日ネットで調べてきた］→ サーブ"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 192,
+                "end_line": 193
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "也就是：",
+              "source": {
+                "start_line": 194,
+                "end_line": 194
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "也就是：",
+                  "source": {
+                    "start_line": 194,
+                    "end_line": 194
+                  },
+                  "text": "也就是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 194,
+                "end_line": 195
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> ［昨天在网上查来的］→ 发球",
+              "source": {
+                "start_line": 196,
+                "end_line": 196
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "［昨天在网上查来的］→ 发球",
+                  "source": {
+                    "start_line": 196,
+                    "end_line": 196
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "［昨天在网上查来的］→ 发球",
+                      "source": {
+                        "start_line": 196,
+                        "end_line": 196
+                      },
+                      "text": "［昨天在网上查来的］→ 发球"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 196,
+                "end_line": 197
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这里没有中文的「的」，也不需要另外加关系词。",
+              "source": {
+                "start_line": 198,
+                "end_line": 198
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这里没有中文的「的」，也不需要另外加关系词。",
+                  "source": {
+                    "start_line": 198,
+                    "end_line": 198
+                  },
+                  "text": "这里没有中文的「的」，也不需要另外加关系词。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 198,
+                "end_line": 199
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "因此千万不要因为看到 **調べてきたサーブ**，就把它理解成「调查了发球」这一普通的动宾关系。若要说「调查/查询发球」，通常会出现：",
+              "source": {
+                "start_line": 200,
+                "end_line": 200
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "因此千万不要因为看到 ",
+                  "source": {
+                    "start_line": 200,
+                    "end_line": 200
+                  },
+                  "text": "因此千万不要因为看到 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**調べてきたサーブ**",
+                  "source": {
+                    "start_line": 200,
+                    "end_line": 200
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "調べてきたサーブ",
+                      "source": {
+                        "start_line": 200,
+                        "end_line": 200
+                      },
+                      "text": "調べてきたサーブ"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "，就把它理解成「调查了发球」这一普通的动宾关系。若要说「调查/查询发球」，通常会出现：",
+                  "source": {
+                    "start_line": 200,
+                    "end_line": 200
+                  },
+                  "text": "，就把它理解成「调查了发球」这一普通的动宾关系。若要说「调查/查询发球」，通常会出现："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 200,
+                "end_line": 201
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> サーブ**を**調べる",
+              "source": {
+                "start_line": 202,
+                "end_line": 202
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "サーブ**を**調べる",
+                  "source": {
+                    "start_line": 202,
+                    "end_line": 202
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "サーブ",
+                      "source": {
+                        "start_line": 202,
+                        "end_line": 202
+                      },
+                      "text": "サーブ"
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**を**",
+                      "source": {
+                        "start_line": 202,
+                        "end_line": 202
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "を",
+                          "source": {
+                            "start_line": 202,
+                            "end_line": 202
+                          },
+                          "text": "を"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "raw": "調べる",
+                      "source": {
+                        "start_line": 202,
+                        "end_line": 202
+                      },
+                      "text": "調べる"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 202,
+                "end_line": 203
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这里却是：",
+              "source": {
+                "start_line": 204,
+                "end_line": 204
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这里却是：",
+                  "source": {
+                    "start_line": 204,
+                    "end_line": 204
+                  },
+                  "text": "这里却是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 204,
+                "end_line": 205
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> **調べてきた** サーブ",
+              "source": {
+                "start_line": 206,
+                "end_line": 206
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "**調べてきた** サーブ",
+                  "source": {
+                    "start_line": 206,
+                    "end_line": 206
+                  },
+                  "inline": [
+                    {
+                      "type": "strong",
+                      "raw": "**調べてきた**",
+                      "source": {
+                        "start_line": 206,
+                        "end_line": 206
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "調べてきた",
+                          "source": {
+                            "start_line": 206,
+                            "end_line": 206
+                          },
+                          "text": "調べてきた"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "raw": " サーブ",
+                      "source": {
+                        "start_line": 206,
+                        "end_line": 206
+                      },
+                      "text": " サーブ"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 206,
+                "end_line": 207
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "**サーブ在动词后面**，所以结构变成了「小句修饰名词」。",
+              "source": {
+                "start_line": 208,
+                "end_line": 208
+              },
+              "inline": [
+                {
+                  "type": "strong",
+                  "raw": "**サーブ在动词后面**",
+                  "source": {
+                    "start_line": 208,
+                    "end_line": 208
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "サーブ在动词后面",
+                      "source": {
+                        "start_line": 208,
+                        "end_line": 208
+                      },
+                      "text": "サーブ在动词后面"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "，所以结构变成了「小句修饰名词」。",
+                  "source": {
+                    "start_line": 208,
+                    "end_line": 208
+                  },
+                  "text": "，所以结构变成了「小句修饰名词」。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 208,
+                "end_line": 209
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "不过，从语义上说，省略在修饰小句内部的关系确实可以理解成「查了这种发球/查了这个发球的方法」。日语的名词修饰结构不会把那个关系额外标出来。",
+              "source": {
+                "start_line": 210,
+                "end_line": 210
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "不过，从语义上说，省略在修饰小句内部的关系确实可以理解成「查了这种发球/查了这个发球的方法」。日语的名词修饰结构不会把那个关系额外标出来。",
+                  "source": {
+                    "start_line": 210,
+                    "end_line": 210
+                  },
+                  "text": "不过，从语义上说，省略在修饰小句内部的关系确实可以理解成「查了这种发球/查了这个发球的方法」。日语的名词修饰结构不会把那个关系额外标出来。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 210,
+                "end_line": 211
+              }
+            }
+          ]
+        },
+        {
+          "section_ref": "sample04-s06",
+          "title": "为什么「サーブ」前面没有「を」",
+          "start_line": 212,
+          "end_line": 245,
+          "raw_markdown": "## 为什么「サーブ」前面没有「を」\n\n这一点值得再区分清楚。\n\n如果独立说：\n\n> サーブを調べる\n\n就是：\n\n> 查一下发球（的方法、相关资料）\n\n这里 **サーブ** 是 **調べる** 的对象，所以有 **を**。\n\n但原句不是：\n\n> 昨日ネットでサーブを調べてきた。\n\n而是：\n\n> 昨日ネットで調べてきた **サーブ**\n\n说话者要把 **サーブ** 当作最后的中心名词，所以把它放在整个修饰成分之后：\n\n> ［昨日ネットで調べてきた］**サーブ**\n\n中文其实也有类似变化：\n\n> 我昨天在网上查了**这种发球**。\n> ↓\n> **我昨天在网上查来的**这种发球。\n\n第二句里「这种发球」已经成了被前面内容修饰的名词短语。\n\n",
+          "tree": [
+            {
+              "type": "heading",
+              "raw": "## 为什么「サーブ」前面没有「を」\n\n",
+              "source": {
+                "start_line": 212,
+                "end_line": 213
+              },
+              "depth": 2,
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "为什么「サーブ」前面没有「を」",
+                  "source": {
+                    "start_line": 212,
+                    "end_line": 212
+                  },
+                  "text": "为什么「サーブ」前面没有「を」"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "raw": "这一点值得再区分清楚。",
+              "source": {
+                "start_line": 214,
+                "end_line": 214
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这一点值得再区分清楚。",
+                  "source": {
+                    "start_line": 214,
+                    "end_line": 214
+                  },
+                  "text": "这一点值得再区分清楚。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 214,
+                "end_line": 215
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "如果独立说：",
+              "source": {
+                "start_line": 216,
+                "end_line": 216
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "如果独立说：",
+                  "source": {
+                    "start_line": 216,
+                    "end_line": 216
+                  },
+                  "text": "如果独立说："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 216,
+                "end_line": 217
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> サーブを調べる",
+              "source": {
+                "start_line": 218,
+                "end_line": 218
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "サーブを調べる",
+                  "source": {
+                    "start_line": 218,
+                    "end_line": 218
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "サーブを調べる",
+                      "source": {
+                        "start_line": 218,
+                        "end_line": 218
+                      },
+                      "text": "サーブを調べる"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 218,
+                "end_line": 219
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "就是：",
+              "source": {
+                "start_line": 220,
+                "end_line": 220
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "就是：",
+                  "source": {
+                    "start_line": 220,
+                    "end_line": 220
+                  },
+                  "text": "就是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 220,
+                "end_line": 221
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 查一下发球（的方法、相关资料）",
+              "source": {
+                "start_line": 222,
+                "end_line": 222
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "查一下发球（的方法、相关资料）",
+                  "source": {
+                    "start_line": 222,
+                    "end_line": 222
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "查一下发球（的方法、相关资料）",
+                      "source": {
+                        "start_line": 222,
+                        "end_line": 222
+                      },
+                      "text": "查一下发球（的方法、相关资料）"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 222,
+                "end_line": 223
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "这里 **サーブ** 是 **調べる** 的对象，所以有 **を**。",
+              "source": {
+                "start_line": 224,
+                "end_line": 224
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "这里 ",
+                  "source": {
+                    "start_line": 224,
+                    "end_line": 224
+                  },
+                  "text": "这里 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**サーブ**",
+                  "source": {
+                    "start_line": 224,
+                    "end_line": 224
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "サーブ",
+                      "source": {
+                        "start_line": 224,
+                        "end_line": 224
+                      },
+                      "text": "サーブ"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": " 是 ",
+                  "source": {
+                    "start_line": 224,
+                    "end_line": 224
+                  },
+                  "text": " 是 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**調べる**",
+                  "source": {
+                    "start_line": 224,
+                    "end_line": 224
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "調べる",
+                      "source": {
+                        "start_line": 224,
+                        "end_line": 224
+                      },
+                      "text": "調べる"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": " 的对象，所以有 ",
+                  "source": {
+                    "start_line": 224,
+                    "end_line": 224
+                  },
+                  "text": " 的对象，所以有 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**を**",
+                  "source": {
+                    "start_line": 224,
+                    "end_line": 224
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "を",
+                      "source": {
+                        "start_line": 224,
+                        "end_line": 224
+                      },
+                      "text": "を"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": "。",
+                  "source": {
+                    "start_line": 224,
+                    "end_line": 224
+                  },
+                  "text": "。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 224,
+                "end_line": 225
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "但原句不是：",
+              "source": {
+                "start_line": 226,
+                "end_line": 226
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "但原句不是：",
+                  "source": {
+                    "start_line": 226,
+                    "end_line": 226
+                  },
+                  "text": "但原句不是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 226,
+                "end_line": 227
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 昨日ネットでサーブを調べてきた。",
+              "source": {
+                "start_line": 228,
+                "end_line": 228
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "昨日ネットでサーブを調べてきた。",
+                  "source": {
+                    "start_line": 228,
+                    "end_line": 228
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "昨日ネットでサーブを調べてきた。",
+                      "source": {
+                        "start_line": 228,
+                        "end_line": 228
+                      },
+                      "text": "昨日ネットでサーブを調べてきた。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 228,
+                "end_line": 229
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "而是：",
+              "source": {
+                "start_line": 230,
+                "end_line": 230
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "而是：",
+                  "source": {
+                    "start_line": 230,
+                    "end_line": 230
+                  },
+                  "text": "而是："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 230,
+                "end_line": 231
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 昨日ネットで調べてきた **サーブ**",
+              "source": {
+                "start_line": 232,
+                "end_line": 232
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "昨日ネットで調べてきた **サーブ**",
+                  "source": {
+                    "start_line": 232,
+                    "end_line": 232
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "昨日ネットで調べてきた ",
+                      "source": {
+                        "start_line": 232,
+                        "end_line": 232
+                      },
+                      "text": "昨日ネットで調べてきた "
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**サーブ**",
+                      "source": {
+                        "start_line": 232,
+                        "end_line": 232
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "サーブ",
+                          "source": {
+                            "start_line": 232,
+                            "end_line": 232
+                          },
+                          "text": "サーブ"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 232,
+                "end_line": 233
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "说话者要把 **サーブ** 当作最后的中心名词，所以把它放在整个修饰成分之后：",
+              "source": {
+                "start_line": 234,
+                "end_line": 234
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "说话者要把 ",
+                  "source": {
+                    "start_line": 234,
+                    "end_line": 234
+                  },
+                  "text": "说话者要把 "
+                },
+                {
+                  "type": "strong",
+                  "raw": "**サーブ**",
+                  "source": {
+                    "start_line": 234,
+                    "end_line": 234
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "raw": "サーブ",
+                      "source": {
+                        "start_line": 234,
+                        "end_line": 234
+                      },
+                      "text": "サーブ"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "raw": " 当作最后的中心名词，所以把它放在整个修饰成分之后：",
+                  "source": {
+                    "start_line": 234,
+                    "end_line": 234
+                  },
+                  "text": " 当作最后的中心名词，所以把它放在整个修饰成分之后："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 234,
+                "end_line": 235
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> ［昨日ネットで調べてきた］**サーブ**",
+              "source": {
+                "start_line": 236,
+                "end_line": 236
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "［昨日ネットで調べてきた］**サーブ**",
+                  "source": {
+                    "start_line": 236,
+                    "end_line": 236
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "［昨日ネットで調べてきた］",
+                      "source": {
+                        "start_line": 236,
+                        "end_line": 236
+                      },
+                      "text": "［昨日ネットで調べてきた］"
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**サーブ**",
+                      "source": {
+                        "start_line": 236,
+                        "end_line": 236
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "サーブ",
+                          "source": {
+                            "start_line": 236,
+                            "end_line": 236
+                          },
+                          "text": "サーブ"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 236,
+                "end_line": 237
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "中文其实也有类似变化：",
+              "source": {
+                "start_line": 238,
+                "end_line": 238
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "中文其实也有类似变化：",
+                  "source": {
+                    "start_line": 238,
+                    "end_line": 238
+                  },
+                  "text": "中文其实也有类似变化："
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 238,
+                "end_line": 239
+              }
+            },
+            {
+              "type": "blockquote",
+              "raw": "> 我昨天在网上查了**这种发球**。\n> ↓\n> **我昨天在网上查来的**这种发球。",
+              "source": {
+                "start_line": 240,
+                "end_line": 242
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "raw": "我昨天在网上查了**这种发球**。\n↓\n**我昨天在网上查来的**这种发球。",
+                  "source": {
+                    "start_line": 240,
+                    "end_line": 242
+                  },
+                  "inline": [
+                    {
+                      "type": "text",
+                      "raw": "我昨天在网上查了",
+                      "source": {
+                        "start_line": 240,
+                        "end_line": 240
+                      },
+                      "text": "我昨天在网上查了"
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**这种发球**",
+                      "source": {
+                        "start_line": 240,
+                        "end_line": 240
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "这种发球",
+                          "source": {
+                            "start_line": 240,
+                            "end_line": 240
+                          },
+                          "text": "这种发球"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "raw": "。\n↓\n",
+                      "source": {
+                        "start_line": 240,
+                        "end_line": 240
+                      },
+                      "text": "。\n↓\n"
+                    },
+                    {
+                      "type": "strong",
+                      "raw": "**我昨天在网上查来的**",
+                      "source": {
+                        "start_line": 241,
+                        "end_line": 242
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "raw": "我昨天在网上查来的",
+                          "source": {
+                            "start_line": 241,
+                            "end_line": 242
+                          },
+                          "text": "我昨天在网上查来的"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "raw": "这种发球。",
+                      "source": {
+                        "start_line": 242,
+                        "end_line": 242
+                      },
+                      "text": "这种发球。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 242,
+                "end_line": 243
+              }
+            },
+            {
+              "type": "paragraph",
+              "raw": "第二句里「这种发球」已经成了被前面内容修饰的名词短语。",
+              "source": {
+                "start_line": 244,
+                "end_line": 244
+              },
+              "inline": [
+                {
+                  "type": "text",
+                  "raw": "第二句里「这种发球」已经成了被前面内容修饰的名词短语。",
+                  "source": {
+                    "start_line": 244,
+                    "end_line": 244
+                  },
+                  "text": "第二句里「这种发球」已经成了被前面内容修饰的名词短语。"
+                }
+              ]
+            },
+            {
+              "type": "space",
+              "raw": "\n\n",
+              "source": {
+                "start_line": 244,
+                "end_line": 245
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

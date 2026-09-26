@@ -1,0 +1,971 @@
+{
+  "validator": "validate.py",
+  "manifest_failures": [],
+  "summary": {
+    "samples": 6,
+    "records": 35,
+    "passed_records": 35,
+    "failed_records": 0,
+    "mechanically_valid": true
+  },
+  "cases": [
+    {
+      "case_id": "sample01-o01",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "漫画とか",
+          "match_index": 1,
+          "start": 0,
+          "end": 4
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 1
+    },
+    {
+      "case_id": "sample01-o02",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "漫画とかで",
+          "match_index": 1,
+          "start": 0,
+          "end": 5
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 2
+    },
+    {
+      "case_id": "sample01-o03",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "漫画とかでは",
+          "match_index": 1,
+          "start": 0,
+          "end": 6
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 3
+    },
+    {
+      "case_id": "sample01-o04",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "学校の屋上でサボっている生徒",
+          "match_index": 1,
+          "start": 7,
+          "end": 21
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 4
+    },
+    {
+      "case_id": "sample01-o05",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "学校の屋上",
+          "match_index": 1,
+          "start": 7,
+          "end": 12
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 5
+    },
+    {
+      "case_id": "sample01-o06",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "屋上",
+          "match_index": 1,
+          "start": 10,
+          "end": 12
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 6
+    },
+    {
+      "case_id": "sample01-o07",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "屋上でサボっている",
+          "match_index": 1,
+          "start": 10,
+          "end": 19
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 7
+    },
+    {
+      "case_id": "sample01-o08",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "サボっている",
+          "match_index": 1,
+          "start": 13,
+          "end": 19
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 8
+    },
+    {
+      "case_id": "sample01-o09",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "サボっている",
+          "match_index": 1,
+          "start": 13,
+          "end": 19
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 9
+    },
+    {
+      "case_id": "sample01-o10",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "生徒を見かける",
+          "match_index": 1,
+          "start": 19,
+          "end": 26
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 10
+    },
+    {
+      "case_id": "sample01-o11",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "見かける",
+          "match_index": 1,
+          "start": 22,
+          "end": 26
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 11
+    },
+    {
+      "case_id": "sample01-o12",
+      "sample_id": "sample01",
+      "positions": [
+        {
+          "text": "見かけるけど",
+          "match_index": 1,
+          "start": 22,
+          "end": 28
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 12
+    },
+    {
+      "case_id": "sample02-o01",
+      "sample_id": "sample02",
+      "positions": [
+        {
+          "text": "授業をサボり",
+          "match_index": 1,
+          "start": 0,
+          "end": 6
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 13
+    },
+    {
+      "case_id": "sample02-o02",
+      "sample_id": "sample02",
+      "positions": [
+        {
+          "text": "サボりがちな",
+          "match_index": 1,
+          "start": 3,
+          "end": 9
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 14
+    },
+    {
+      "case_id": "sample02-o03",
+      "sample_id": "sample02",
+      "positions": [
+        {
+          "text": "私と",
+          "match_index": 1,
+          "start": 9,
+          "end": 11
+        },
+        {
+          "text": "安達は",
+          "match_index": 1,
+          "start": 26,
+          "end": 29
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 15
+    },
+    {
+      "case_id": "sample03-o01",
+      "sample_id": "sample03",
+      "positions": [
+        {
+          "text": "偶然",
+          "match_index": 1,
+          "start": 0,
+          "end": 2
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 16
+    },
+    {
+      "case_id": "sample03-o02",
+      "sample_id": "sample03",
+      "positions": [
+        {
+          "text": "ここで",
+          "match_index": 1,
+          "start": 2,
+          "end": 5
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 17
+    },
+    {
+      "case_id": "sample03-o03",
+      "sample_id": "sample03",
+      "positions": [
+        {
+          "text": "会って",
+          "match_index": 1,
+          "start": 5,
+          "end": 8
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 18
+    },
+    {
+      "case_id": "sample03-o04",
+      "sample_id": "sample03",
+      "positions": [
+        {
+          "text": "何となく",
+          "match_index": 1,
+          "start": 9,
+          "end": 13
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 19
+    },
+    {
+      "case_id": "sample03-o05",
+      "sample_id": "sample03",
+      "positions": [
+        {
+          "text": "行動を共にする",
+          "match_index": 1,
+          "start": 13,
+          "end": 20
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 20
+    },
+    {
+      "case_id": "sample03-o06",
+      "sample_id": "sample03",
+      "positions": [
+        {
+          "text": "行動を共にすること",
+          "match_index": 1,
+          "start": 13,
+          "end": 22
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 21
+    },
+    {
+      "case_id": "sample03-o07",
+      "sample_id": "sample03",
+      "positions": [
+        {
+          "text": "ことが多くなった",
+          "match_index": 1,
+          "start": 20,
+          "end": 28
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 22
+    },
+    {
+      "case_id": "sample04-o01",
+      "sample_id": "sample04",
+      "positions": [
+        {
+          "text": "サーブ",
+          "match_index": 1,
+          "start": 11,
+          "end": 14
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 23
+    },
+    {
+      "case_id": "sample04-o02",
+      "sample_id": "sample04",
+      "positions": [
+        {
+          "text": "ネットで",
+          "match_index": 1,
+          "start": 2,
+          "end": 6
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 24
+    },
+    {
+      "case_id": "sample04-o03",
+      "sample_id": "sample04",
+      "positions": [
+        {
+          "text": "調べてきた",
+          "match_index": 1,
+          "start": 6,
+          "end": 11
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 25
+    },
+    {
+      "case_id": "sample04-o04",
+      "sample_id": "sample04",
+      "positions": [
+        {
+          "text": "調べてきたサーブ",
+          "match_index": 1,
+          "start": 6,
+          "end": 14
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 26
+    },
+    {
+      "case_id": "sample05-o01",
+      "sample_id": "sample05",
+      "positions": [
+        {
+          "text": "ラケットなんか",
+          "match_index": 1,
+          "start": 0,
+          "end": 7
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 27
+    },
+    {
+      "case_id": "sample05-o02",
+      "sample_id": "sample05",
+      "positions": [
+        {
+          "text": "無いから",
+          "match_index": 1,
+          "start": 7,
+          "end": 11
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 28
+    },
+    {
+      "case_id": "sample05-o03",
+      "sample_id": "sample05",
+      "positions": [
+        {
+          "text": "しゃもじで",
+          "match_index": 1,
+          "start": 12,
+          "end": 17
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 29
+    },
+    {
+      "case_id": "sample05-o04",
+      "sample_id": "sample05",
+      "positions": [
+        {
+          "text": "練習した",
+          "match_index": 1,
+          "start": 17,
+          "end": 21
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 30
+    },
+    {
+      "case_id": "sample05-o05",
+      "sample_id": "sample05",
+      "positions": [
+        {
+          "text": "んだけどね",
+          "match_index": 1,
+          "start": 21,
+          "end": 26
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 31
+    },
+    {
+      "case_id": "sample06-o01",
+      "sample_id": "sample06",
+      "positions": [
+        {
+          "text": "向上心",
+          "match_index": 1,
+          "start": 0,
+          "end": 3
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 32
+    },
+    {
+      "case_id": "sample06-o02",
+      "sample_id": "sample06",
+      "positions": [
+        {
+          "text": "向上心のないしまむら",
+          "match_index": 1,
+          "start": 0,
+          "end": 10
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 33
+    },
+    {
+      "case_id": "sample06-o03",
+      "sample_id": "sample06",
+      "positions": [
+        {
+          "text": "しまむらが",
+          "match_index": 1,
+          "start": 6,
+          "end": 11
+        },
+        {
+          "text": "悪い",
+          "match_index": 1,
+          "start": 12,
+          "end": 14
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 34
+    },
+    {
+      "case_id": "sample06-o04",
+      "sample_id": "sample06",
+      "positions": [
+        {
+          "text": "よっ",
+          "match_index": 1,
+          "start": 15,
+          "end": 17
+        }
+      ],
+      "passed": [
+        "tag enum and uniqueness",
+        "anchor count, format and normalized uniqueness",
+        "section_refs resolve within sample",
+        "surface exact matches, indices, order and nonoverlap",
+        "required fields, types and length bounds"
+      ],
+      "failed": [],
+      "unchecked": [
+        "解析是否真正支持学习点、gloss、类型、标签及 anchor 还原",
+        "Surface 是否足够短且完整，Occurrence 粒度是否适于独立收录",
+        "日语固定成分、槽位接续、语义等价及相同 anchor 的知识点同一性",
+        "目标与解析间的转写差异、第一阶段讲解正误及提示词实际版本"
+      ],
+      "line": 35
+    }
+  ],
+  "scope_note": "机械校验只验证结构、引用、定位和可判定的 anchor 书写；未检查项不视为通过。"
+}

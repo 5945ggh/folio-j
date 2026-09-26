@@ -1,0 +1,484 @@
+{
+  "brief_version": "pilot-brief-v0.1",
+  "anchor_baseline": "A0",
+  "input_directory": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases",
+  "selection_order": [
+    "sample01",
+    "sample02",
+    "sample03",
+    "sample04",
+    "sample05",
+    "sample06"
+  ],
+  "selection_phases": {
+    "first_three": [
+      "sample01",
+      "sample02",
+      "sample03"
+    ],
+    "coverage_supplement": [
+      "sample04",
+      "sample05",
+      "sample06"
+    ]
+  },
+  "prompt_version_status": "未确认：用户指定的 cases 内没有实际发送的 prompt 或版本记录；仅凭目录归属不冒充已确认 v0.1。",
+  "samples": [
+    {
+      "sample_id": "sample01",
+      "selection_phase": "first_three",
+      "selection_reason": "首批：とか、场所で、主题は、词汇活用、未完けど；检查同一讲解块内多学习点。",
+      "original_files": {
+        "source": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/01/source.md",
+        "analysis": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/01/analysis.md"
+      },
+      "snapshot_files": {
+        "source": "snapshots/sample01/source.md",
+        "analysis": "snapshots/sample01/analysis.md"
+      },
+      "sha256": {
+        "source": "2dc16197089e5bcfff9ab90d548335248482b2a22e194cdc30e1293aae0412a4",
+        "analysis": "5bb76f4a3ce14e8b8b22eab197e622c51cb4eb23de5943cf0d5c1028f4d2967e"
+      },
+      "prompt_version": null,
+      "prompt_version_evidence": "cases 中无实际 prompt 或版本字段",
+      "work_title": "安達としまむら",
+      "target_text": "漫画とかでは、学校の屋上でサボっている生徒を見かけるけど、",
+      "context": {
+        "before": "",
+        "after": "屋上で昼寝なんかしたら、肌が日差しに焼けて大変だ。\n教室では、そろそろ３時間目の授業が始まる頃か。\n授業をサボりがちな私とほとんど学校に行きていなかった安達は、\n偶然ここで会って、何となく行動を共にすることが多くなった。\n次、私のサーブでいい？\nいいけど。えっ？\n昨日ネットで調べてきたサーブ。\nラケットなんか無いから、しゃもじで練習したんだけどね。\n汚い、素人相手に変化球使うなんて！\n向上心のないしまむらが、悪い、よっ。\nこうしてサボっている時も、何となく相手がここに来ている感覚があって、\n来てみると本当にいたりする。"
+      },
+      "section_refs": [
+        {
+          "section_ref": "sample01-s00",
+          "title": "[preamble]",
+          "start_line": 1,
+          "end_line": 6
+        },
+        {
+          "section_ref": "sample01-s01",
+          "title": "整句大意与结构骨架",
+          "start_line": 7,
+          "end_line": 57
+        },
+        {
+          "section_ref": "sample01-s02",
+          "title": "「漫画とかでは」：在漫画之类的作品里",
+          "start_line": 58,
+          "end_line": 143
+        },
+        {
+          "section_ref": "sample01-s03",
+          "title": "「学校の屋上でサボっている」怎样修饰「生徒」",
+          "start_line": 144,
+          "end_line": 232
+        },
+        {
+          "section_ref": "sample01-s04",
+          "title": "「サボっている」：这里为什么可以译成“逃课”",
+          "start_line": 233,
+          "end_line": 295
+        },
+        {
+          "section_ref": "sample01-s05",
+          "title": "「生徒を見かける」：不是主动“去找”，而是“会看到”",
+          "start_line": 296,
+          "end_line": 345
+        },
+        {
+          "section_ref": "sample01-s06",
+          "title": "句尾「けど」为什么没有把话说完",
+          "start_line": 346,
+          "end_line": 384
+        },
+        {
+          "section_ref": "sample01-s07",
+          "title": "把各部分重新拼回来",
+          "start_line": 385,
+          "end_line": 434
+        },
+        {
+          "section_ref": "sample01-s08",
+          "title": "这句话在作品里的语气",
+          "start_line": 435,
+          "end_line": 449
+        }
+      ]
+    },
+    {
+      "sample_id": "sample02",
+      "selection_phase": "first_three",
+      "selection_reason": "首批：がち、否定与活用、并列と和主题は；检查原文与解析转写不一致。",
+      "original_files": {
+        "source": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/02/source.md",
+        "analysis": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/02/analysis.md"
+      },
+      "snapshot_files": {
+        "source": "snapshots/sample02/source.md",
+        "analysis": "snapshots/sample02/analysis.md"
+      },
+      "sha256": {
+        "source": "3ec98532fa8bf15508715a437aebd59fb9c3f6c06ec5aea646bd214afa6e3368",
+        "analysis": "eb8529cc8064f89356bc133f209b55664d86a522f6fce7588e986cc8df4a71cb"
+      },
+      "prompt_version": null,
+      "prompt_version_evidence": "cases 中无实际 prompt 或版本字段",
+      "work_title": "安達としまむら",
+      "target_text": "授業をサボりがちな私とほとんど学校に行きていなかった安達は、",
+      "context": {
+        "before": "漫画とかでは、学校の屋上でサボっている生徒を見かけるけど、\n屋上で昼寝なんかしたら、肌が日差しに焼けて大変だ。\n教室では、そろそろ３時間目の授業が始まる頃か。",
+        "after": "偶然ここで会って、何となく行動を共にすることが多くなった。\n次、私のサーブでいい？\nいいけど。えっ？\n昨日ネットで調べてきたサーブ。\nラケットなんか無いから、しゃもじで練習したんだけどね。\n汚い、素人相手に変化球使うなんて！\n向上心のないしまむらが、悪い、よっ。\nこうしてサボっている時も、何となく相手がここに来ている感覚があって、\n来てみると本当にいたりする。"
+      },
+      "section_refs": [
+        {
+          "section_ref": "sample02-s00",
+          "title": "[preamble]",
+          "start_line": 1,
+          "end_line": 10
+        },
+        {
+          "section_ref": "sample02-s01",
+          "title": "先看整句骨架",
+          "start_line": 11,
+          "end_line": 50
+        },
+        {
+          "section_ref": "sample02-s02",
+          "title": "「授業をサボりがちな私」：经常翘课的“我”",
+          "start_line": 51,
+          "end_line": 140
+        },
+        {
+          "section_ref": "sample02-s03",
+          "title": "「ほとんど学校に行っていなかった安達」：几乎没怎么去学校的安达",
+          "start_line": 141,
+          "end_line": 238
+        },
+        {
+          "section_ref": "sample02-s04",
+          "title": "「ほとんど」为什么和否定一起理解",
+          "start_line": 239,
+          "end_line": 270
+        },
+        {
+          "section_ref": "sample02-s05",
+          "title": "「私と安達は」中的 と 和 は",
+          "start_line": 271,
+          "end_line": 324
+        },
+        {
+          "section_ref": "sample02-s06",
+          "title": "两个人的描述其实有一个有意思的对照",
+          "start_line": 325,
+          "end_line": 343
+        },
+        {
+          "section_ref": "sample02-s07",
+          "title": "最后重新把整块读一遍",
+          "start_line": 344,
+          "end_line": 373
+        }
+      ]
+    },
+    {
+      "sample_id": "sample03",
+      "selection_phase": "first_three",
+      "selection_reason": "首批：词汇、整体表达、こと名词化、变化句型；检查嵌套学习点的粒度。",
+      "original_files": {
+        "source": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/03/source.md",
+        "analysis": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/03/analysis.md"
+      },
+      "snapshot_files": {
+        "source": "snapshots/sample03/source.md",
+        "analysis": "snapshots/sample03/analysis.md"
+      },
+      "sha256": {
+        "source": "d2a8c14f0d862319fa1adbdc05e1af3cdf1ad6b1720ad82c2dacfd1fcd62f76b",
+        "analysis": "df21e3a3d59011d647a73a2058f7e3c8d342e60c2c3cd707f1a203830ed2f1f3"
+      },
+      "prompt_version": null,
+      "prompt_version_evidence": "cases 中无实际 prompt 或版本字段",
+      "work_title": "安達としまむら",
+      "target_text": "偶然ここで会って、何となく行動を共にすることが多くなった。",
+      "context": {
+        "before": "漫画とかでは、学校の屋上でサボっている生徒を見かけるけど、\n屋上で昼寝なんかしたら、肌が日差しに焼けて大変だ。\n教室では、そろそろ３時間目の授業が始まる頃か。\n授業をサボりがちな私とほとんど学校に行きていなかった安達は、",
+        "after": "次、私のサーブでいい？\nいいけど。えっ？\n昨日ネットで調べてきたサーブ。\nラケットなんか無いから、しゃもじで練習したんだけどね。\n汚い、素人相手に変化球使うなんて！\n向上心のないしまむらが、悪い、よっ。\nこうしてサボっている時も、何となく相手がここに来ている感覚があって、\n来てみると本当にいたりする。"
+      },
+      "section_refs": [
+        {
+          "section_ref": "sample03-s00",
+          "title": "[preamble]",
+          "start_line": 1,
+          "end_line": 2
+        },
+        {
+          "section_ref": "sample03-s01",
+          "title": "整句大意与结构骨架",
+          "start_line": 3,
+          "end_line": 40
+        },
+        {
+          "section_ref": "sample03-s02",
+          "title": "偶然ここで会って：偶然在这里碰见",
+          "start_line": 41,
+          "end_line": 135
+        },
+        {
+          "section_ref": "sample03-s03",
+          "title": "何となく：说不清为什么，就这么自然而然地",
+          "start_line": 136,
+          "end_line": 173
+        },
+        {
+          "section_ref": "sample03-s04",
+          "title": "行動を共にする：一起行动、共同行动",
+          "start_line": 174,
+          "end_line": 223
+        },
+        {
+          "section_ref": "sample03-s05",
+          "title": "行動を共にすること：把整个动作变成“这种情况”",
+          "start_line": 224,
+          "end_line": 279
+        },
+        {
+          "section_ref": "sample03-s06",
+          "title": "ことが多くなった：这种情况越来越多了",
+          "start_line": 280,
+          "end_line": 354
+        },
+        {
+          "section_ref": "sample03-s07",
+          "title": "从各部分重新推回整句话",
+          "start_line": 355,
+          "end_line": 406
+        }
+      ]
+    },
+    {
+      "sample_id": "sample04",
+      "selection_phase": "coverage_supplement",
+      "selection_reason": "补充：てくる、名词修饰、省略与助词缺位；覆盖首批未见的会话省略。",
+      "original_files": {
+        "source": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/04/source.md",
+        "analysis": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/04/analysis.md"
+      },
+      "snapshot_files": {
+        "source": "snapshots/sample04/source.md",
+        "analysis": "snapshots/sample04/analysis.md"
+      },
+      "sha256": {
+        "source": "c9f955c26d106f01d167b59cd31e43a3b580c1c6f28fe5ce425a20e59faea040",
+        "analysis": "7df2a407e87296e0837282405c99bd0016cfdb7f086672d3a02e6b28749a6fbf"
+      },
+      "prompt_version": null,
+      "prompt_version_evidence": "cases 中无实际 prompt 或版本字段",
+      "work_title": "安達としまむら",
+      "target_text": "昨日ネットで調べてきたサーブ。",
+      "context": {
+        "before": "漫画とかでは、学校の屋上でサボっている生徒を見かけるけど、\n屋上で昼寝なんかしたら、肌が日差しに焼けて大変だ。\n教室では、そろそろ３時間目の授業が始まる頃か。\n授業をサボりがちな私とほとんど学校に行きていなかった安達は、\n偶然ここで会って、何となく行動を共にすることが多くなった。\n次、私のサーブでいい？\nいいけど。えっ？",
+        "after": "ラケットなんか無いから、しゃもじで練習したんだけどね。\n汚い、素人相手に変化球使うなんて！\n向上心のないしまむらが、悪い、よっ。\nこうしてサボっている時も、何となく相手がここに来ている感覚があって、\n来てみると本当にいたりする。"
+      },
+      "section_refs": [
+        {
+          "section_ref": "sample04-s00",
+          "title": "[preamble]",
+          "start_line": 1,
+          "end_line": 11
+        },
+        {
+          "section_ref": "sample04-s01",
+          "title": "先看整句骨架",
+          "start_line": 12,
+          "end_line": 50
+        },
+        {
+          "section_ref": "sample04-s02",
+          "title": "「昨日」：昨天查的，不是昨天发的",
+          "start_line": 51,
+          "end_line": 74
+        },
+        {
+          "section_ref": "sample04-s03",
+          "title": "「ネットで」里的「で」为什么是「で」",
+          "start_line": 75,
+          "end_line": 109
+        },
+        {
+          "section_ref": "sample04-s04",
+          "title": "「調べてきた」是这句最值得掌握的部分",
+          "start_line": 110,
+          "end_line": 172
+        },
+        {
+          "section_ref": "sample04-s05",
+          "title": "「調べる」为什么能修饰「サーブ」",
+          "start_line": 173,
+          "end_line": 211
+        },
+        {
+          "section_ref": "sample04-s06",
+          "title": "为什么「サーブ」前面没有「を」",
+          "start_line": 212,
+          "end_line": 245
+        },
+        {
+          "section_ref": "sample04-s07",
+          "title": "这为什么看起来不像一个完整句子",
+          "start_line": 246,
+          "end_line": 270
+        },
+        {
+          "section_ref": "sample04-s08",
+          "title": "接回当前场景理解",
+          "start_line": 271,
+          "end_line": 311
+        }
+      ]
+    },
+    {
+      "sample_id": "sample05",
+      "selection_phase": "coverage_supplement",
+      "selection_reason": "补充：なんか、工具で、んだけどね、语气；补足口语整体表达与接续边界。",
+      "original_files": {
+        "source": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/05/source.md",
+        "analysis": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/05/analysis.md"
+      },
+      "snapshot_files": {
+        "source": "snapshots/sample05/source.md",
+        "analysis": "snapshots/sample05/analysis.md"
+      },
+      "sha256": {
+        "source": "33567c2f5163c7166da3c16d17929b5db504f877afc9cfffe1188299250e3dab",
+        "analysis": "8ba6e99830d7e2aa4b2ee86c5d722616dcac3d024ee68145bf5c3f1f1856fb00"
+      },
+      "prompt_version": null,
+      "prompt_version_evidence": "cases 中无实际 prompt 或版本字段",
+      "work_title": "安達としまむら",
+      "target_text": "ラケットなんか無いから、しゃもじで練習したんだけどね。",
+      "context": {
+        "before": "漫画とかでは、学校の屋上でサボっている生徒を見かけるけど、\n屋上で昼寝なんかしたら、肌が日差しに焼けて大変だ。\n教室では、そろそろ３時間目の授業が始まる頃か。\n授業をサボりがちな私とほとんど学校に行きていなかった安達は、\n偶然ここで会って、何となく行動を共にすることが多くなった。\n次、私のサーブでいい？\nいいけど。えっ？\n昨日ネットで調べてきたサーブ。",
+        "after": "汚い、素人相手に変化球使うなんて！\n向上心のないしまむらが、悪い、よっ。\nこうしてサボっている時も、何となく相手がここに来ている感覚があって、\n来てみると本当にいたりする。"
+      },
+      "section_refs": [
+        {
+          "section_ref": "sample05-s00",
+          "title": "[preamble]",
+          "start_line": 1,
+          "end_line": 10
+        },
+        {
+          "section_ref": "sample05-s01",
+          "title": "先看整句骨架",
+          "start_line": 11,
+          "end_line": 40
+        },
+        {
+          "section_ref": "sample05-s02",
+          "title": "「ラケットなんか無い」：不是单纯的「ラケットが無い」",
+          "start_line": 41,
+          "end_line": 111
+        },
+        {
+          "section_ref": "sample05-s03",
+          "title": "「無いから」：为什么「から」直接接在「無い」后面",
+          "start_line": 112,
+          "end_line": 146
+        },
+        {
+          "section_ref": "sample05-s04",
+          "title": "「しゃもじで練習した」：「で」表示拿什么作为工具",
+          "start_line": 147,
+          "end_line": 211
+        },
+        {
+          "section_ref": "sample05-s05",
+          "title": "「練習した」：从「練習する」到过去式",
+          "start_line": 212,
+          "end_line": 249
+        },
+        {
+          "section_ref": "sample05-s06",
+          "title": "「んだけどね」：重点不在“但是”",
+          "start_line": 250,
+          "end_line": 349
+        },
+        {
+          "section_ref": "sample05-s07",
+          "title": "把各部分重新接起来",
+          "start_line": 350,
+          "end_line": 403
+        }
+      ]
+    },
+    {
+      "sample_id": "sample06",
+      "selection_phase": "coverage_supplement",
+      "selection_reason": "补充：のない、が、停顿与よっ；检查重复文字及语音/书写形式。",
+      "original_files": {
+        "source": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/06/source.md",
+        "analysis": "/Users/ningcc/Products/LearningJ/backend/research/AI解析逻辑的实验/3-section-document/cases/06/analysis.md"
+      },
+      "snapshot_files": {
+        "source": "snapshots/sample06/source.md",
+        "analysis": "snapshots/sample06/analysis.md"
+      },
+      "sha256": {
+        "source": "bd1f6069e3d4e22311c614c62ca95c1ee887d7267d26d476d47487ed75f78ee3",
+        "analysis": "1ac49e7dadbce7a309717326a3a0c9696f134b58978ac9ed86be314dd8652858"
+      },
+      "prompt_version": null,
+      "prompt_version_evidence": "cases 中无实际 prompt 或版本字段",
+      "work_title": "安達としまむら",
+      "target_text": "向上心のないしまむらが、悪い、よっ。",
+      "context": {
+        "before": "漫画とかでは、学校の屋上でサボっている生徒を見かけるけど、\n屋上で昼寝なんかしたら、肌が日差しに焼けて大変だ。\n教室では、そろそろ３時間目の授業が始まる頃か。\n授業をサボりがちな私とほとんど学校に行きていなかった安達は、\n偶然ここで会って、何となく行動を共にすることが多くなった。\n次、私のサーブでいい？\nいいけど。えっ？\n昨日ネットで調べてきたサーブ。\nラケットなんか無いから、しゃもじで練習したんだけどね。\n汚い、素人相手に変化球使うなんて！",
+        "after": "こうしてサボっている時も、何となく相手がここに来ている感覚があって、\n来てみると本当にいたりする。"
+      },
+      "section_refs": [
+        {
+          "section_ref": "sample06-s00",
+          "title": "[preamble]",
+          "start_line": 1,
+          "end_line": 2
+        },
+        {
+          "section_ref": "sample06-s01",
+          "title": "整句大意与结构骨架",
+          "start_line": 3,
+          "end_line": 43
+        },
+        {
+          "section_ref": "sample06-s02",
+          "title": "「向上心のない」为什么是“没有上进心的”",
+          "start_line": 44,
+          "end_line": 115
+        },
+        {
+          "section_ref": "sample06-s03",
+          "title": "「しまむらが悪い」不是单纯说“岛村是坏人”",
+          "start_line": 116,
+          "end_line": 184
+        },
+        {
+          "section_ref": "sample06-s04",
+          "title": "「悪い、よっ」里的停顿和「よっ」",
+          "start_line": 185,
+          "end_line": 229
+        },
+        {
+          "section_ref": "sample06-s05",
+          "title": "为什么这里说「向上心がない」",
+          "start_line": 230,
+          "end_line": 252
+        },
+        {
+          "section_ref": "sample06-s06",
+          "title": "从头到尾重新拼一次",
+          "start_line": 253,
+          "end_line": 294
+        }
+      ]
+    }
+  ]
+}

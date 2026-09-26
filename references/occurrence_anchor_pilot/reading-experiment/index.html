@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Occurrence 阅读对照</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">文</span><span>Occurrence · 阅读实验</span></div>
+      <p class="mast-note">同一学习点，三种呈现</p>
+    </header>
+    <main>
+      <div class="intro">
+        <div><p class="eyebrow">ANCHOR PILOT / BATCH 01</p><h1>从定位到讲解</h1><p class="intro-copy">选择一个学习点，再切换视图。三个视图共用目标原文与定位；后两种视图展示所引用 Section 的完整讲解。</p></div>
+        <div class="intro-count" aria-hidden="true"><span>04</span><small>精选案例</small></div>
+      </div>
+      <section class="picker" aria-labelledby="picker-title">
+        <div class="section-top"><h2 id="picker-title">选择案例</h2><span>01 — 04</span></div>
+        <div id="case-list" class="case-list" role="group" aria-label="选择学习点"></div>
+      </section>
+      <section class="workspace" aria-labelledby="view-title">
+        <div class="workspace-head"><div><p class="eyebrow">READING WORKSPACE</p><h2 id="view-title">阅读对照</h2></div><p id="case-meta" class="case-meta"></p></div>
+        <div class="tabs" role="tablist" aria-label="阅读视图">
+          <button type="button" role="tab" id="tab-baseline" aria-controls="view-panel" data-view="baseline">当前基线<span>定位与简释</span></button>
+          <button type="button" role="tab" id="tab-original" aria-controls="view-panel" data-view="original">原 Section<span>原始 Markdown</span></button>
+          <button type="button" role="tab" id="tab-tree" aria-controls="view-panel" data-view="tree">JSON 树<span>结构化组件</span></button>
+        </div>
+        <div id="view-panel" role="tabpanel" aria-labelledby="tab-baseline" tabindex="0"></div>
+      </section>
+      <p class="footnote">本页读取本地 <code>data.json</code>；请通过本机 HTTP 服务打开。数据仅供呈现对照，不修改原始解析。</p>
+    </main>
+  </div>
+</body>
+</html>
