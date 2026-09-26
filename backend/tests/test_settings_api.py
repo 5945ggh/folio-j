@@ -211,6 +211,126 @@ async def test_models_protocol_defaults_and_provider_disable(tmp_path: Path) -> 
 
 
 @pytest.mark.asyncio
+async def test_provider_patch_only_invalidates_when_connection_changes(tmp_path: Path) -> None:
+    async with settings_client(tmp_path / "folio.db") as client:
+        provider = await create_provider(client, api_key="first_key")
+        provider_id = provider["id"]
+        model = (
+            await client.post(f"/api/providers/{provider_id}/models", json={"model_id": "demo"})
+        ).json()
+        accepted = (
+            await client.post(
+                f"/api/provider-models/{model['id']}/verifications", json={"stream": False}
+            )
+        ).json()
+        unchanged = await client.patch(
+            f"/api/providers/{provider_id}",
+            json={
+                "name": provider["name"],
+                "base_url": provider["base_url"],
+                "protocol": provider["protocol"],
+                "enabled": provider["enabled"],
+            },
+        )
+        assert unchanged.json()["revision"] == provider["revision"]
+        assert unchanged.json()["models"][0]["text_verification"]["id"] == accepted["id"]
+        renamed = await client.patch(
+            f"/api/providers/{provider_id}", json={"name": "new", "enabled": False}
+        )
+        assert renamed.json()["revision"] == provider["revision"]
+        assert renamed.json()["models"][0]["text_verification"]["id"] == accepted["id"]
+        changed = await client.patch(
+            f"/api/providers/{provider_id}", json={"protocol": "responses"}
+        )
+        assert changed.json()["revision"] == provider["revision"] + 1
+        assert changed.json()["models"][0]["text_verification"] is None
+        same_address = await client.patch(
+            f"/api/providers/{provider_id}", json={"base_url": provider["base_url"]}
+        )
+        assert same_address.json()["revision"] == changed.json()["revision"]
+        new_address = await client.patch(
+            f"/api/providers/{provider_id}", json={"base_url": "http://localhost:9000/v1"}
+        )
+        assert new_address.json()["revision"] == changed.json()["revision"] + 1
+        replaced = await client.patch(f"/api/providers/{provider_id}", json={"api_key": "new_key"})
+        assert replaced.json()["revision"] == new_address.json()["revision"] + 1
+        cleared = await client.patch(f"/api/providers/{provider_id}", json={"api_key": ""})
+        assert cleared.json()["revision"] == replaced.json()["revision"] + 1
+        clear_again = await client.patch(f"/api/providers/{provider_id}", json={"api_key": ""})
+        assert clear_again.json()["revision"] == cleared.json()["revision"]
+
+
+@pytest.mark.asyncio
+async def test_persisted_provider_and_run_timestamps_keep_utc_offset(tmp_path: Path) -> None:
+    async with settings_app_client(tmp_path / "folio.db") as (client, application):
+        provider = await create_provider(client)
+        provider_id = provider["id"]
+        model = (
+            await client.post(f"/api/providers/{provider_id}/models", json={"model_id": "demo"})
+        ).json()
+        accepted = (
+            await client.post(
+                f"/api/provider-models/{model['id']}/verifications", json={"stream": False}
+            )
+        ).json()
+        async with application.state.session_factory() as session:
+            run = await session.get(Run, accepted["id"])
+            assert run is not None
+            run.status = "succeeded"
+            run.started_at = settings_service.now()
+            run.finished_at = settings_service.now()
+            await session.commit()
+
+        persisted_provider = (await client.get(f"/api/providers/{provider_id}")).json()
+        for field in ("created_at", "updated_at", "last_discovered_at"):
+            assert persisted_provider[field].endswith("Z"), field
+        persisted_run = (await client.get(f"/api/runs/{accepted['id']}")).json()
+        for field in ("created_at", "started_at", "finished_at"):
+            assert persisted_run[field].endswith("Z"), field
+        summary = persisted_provider["models"][0]["text_verification"]
+        assert summary["created_at"] == persisted_run["created_at"]
+        assert summary["finished_at"] == persisted_run["finished_at"]
+
+
+@pytest.mark.asyncio
+async def test_model_patch_only_invalidates_when_parameters_change(tmp_path: Path) -> None:
+    async with settings_client(tmp_path / "folio.db") as client:
+        provider = await create_provider(client)
+        model = (
+            await client.post(f"/api/providers/{provider['id']}/models", json={"model_id": "demo"})
+        ).json()
+        accepted = (
+            await client.post(
+                f"/api/provider-models/{model['id']}/verifications", json={"stream": True}
+            )
+        ).json()
+        url = f"/api/provider-models/{model['id']}"
+        unchanged = await client.patch(
+            url,
+            json={
+                "protocol_override": None,
+                "enabled": True,
+                "temperature": None,
+                "max_output_tokens": None,
+                "reasoning_effort": None,
+            },
+        )
+        assert unchanged.json()["revision"] == model["revision"]
+        assert unchanged.json()["stream_verification"]["id"] == accepted["id"]
+        disabled = await client.patch(url, json={"enabled": False})
+        assert disabled.json()["revision"] == model["revision"]
+        assert disabled.json()["stream_verification"]["id"] == accepted["id"]
+        changed = await client.patch(url, json={"max_output_tokens": 64})
+        assert changed.json()["revision"] == model["revision"] + 1
+        assert changed.json()["stream_verification"] is None
+        assert changed.json()["stream_status"] == "unknown"
+        same = await client.patch(url, json={"max_output_tokens": 64})
+        assert same.json()["revision"] == changed.json()["revision"]
+        protocol_changed = await client.patch(url, json={"protocol_override": "responses"})
+        assert protocol_changed.json()["revision"] == changed.json()["revision"] + 1
+
+
+@pytest.mark.asyncio
 async def test_first_settings_reads_initialize_once_under_concurrency(tmp_path: Path) -> None:
     async with settings_client(tmp_path / "folio.db") as client:
         responses = await asyncio.gather(*(client.get("/api/settings") for _ in range(12)))
@@ -243,6 +363,8 @@ async def test_model_discovery_failure_keeps_cached_ids_and_manual_models(
             raise RuntimeError("fictional key must not escape")
 
         monkeypatch.setattr("app.llm.adapters.discover_models", failed)
+        disabled = await client.patch(f"/api/providers/{provider['id']}", json={"enabled": False})
+        assert disabled.json()["enabled"] is False
         refresh = await client.post(f"/api/providers/{provider['id']}/refresh-models")
         assert refresh.status_code == 200, refresh.text
         current = refresh.json()
@@ -256,6 +378,7 @@ def test_openapi_provider_input_and_output_keep_credentials_separate() -> None:
     schemas = create_app().openapi()["components"]["schemas"]
     assert "api_key" in schemas["ProviderInput"]["properties"]
     assert "api_key" in schemas["ProviderPatch"]["properties"]
+    assert "enabled" not in schemas["ProviderPatch"].get("required", [])
     assert "api_key" not in schemas["ProviderResponse"]["properties"]
     assert "api_key" not in schemas["RunResponse"]["properties"]
 
@@ -426,6 +549,155 @@ async def test_verification_failure_redacts_sdk_error_and_marks_current_capabili
         current = (await client.get(f"/api/providers/{provider['id']}")).json()
         assert current["models"][0]["text_status"] == "failed"
         assert current["models"][0]["stream_status"] == "unknown"
+        assert current["models"][0]["text_verification"] == {
+            "id": accepted.json()["id"],
+            "status": "failed",
+            "created_at": accepted.json()["created_at"],
+            "finished_at": finished.json()["finished_at"],
+            "error": "模型验证失败，请检查地址、凭据和模型参数",
+        }
+        assert secret not in json.dumps(current)
+
+
+@pytest.mark.asyncio
+async def test_model_verification_summary_tracks_current_revision_and_lifecycle(
+    tmp_path: Path,
+) -> None:
+    async with settings_app_client(tmp_path / "folio.db") as (client, application):
+        provider = await create_provider(client)
+        provider_id = provider["id"]
+        model = (
+            await client.post(f"/api/providers/{provider_id}/models", json={"model_id": "demo"})
+        ).json()
+        model_id = model["id"]
+        assert model["text_verification"] is None
+        assert model["stream_verification"] is None
+
+        accepted = (
+            await client.post(
+                f"/api/provider-models/{model_id}/verifications", json={"stream": False}
+            )
+        ).json()
+        current = (await client.get(f"/api/providers/{provider_id}")).json()["models"][0]
+        assert current["text_verification"]["id"] == accepted["id"]
+        assert current["text_verification"]["status"] == "queued"
+        assert current["text_verification"]["finished_at"] is None
+        assert current["stream_verification"] is None
+
+        async with application.state.session_factory() as session:
+            run = await session.get(Run, accepted["id"])
+            assert run is not None
+            run.status = "running"
+            await session.commit()
+        current = (await client.get("/api/providers")).json()[0]["models"][0]
+        assert current["text_verification"]["status"] == "running"
+
+        async with application.state.session_factory() as session:
+            run = await session.get(Run, accepted["id"])
+            assert run is not None
+            run.status = "succeeded"
+            run.finished_at = settings_service.now()
+            await session.commit()
+        current = (await client.get(f"/api/providers/{provider_id}")).json()["models"][0]
+        assert current["text_verification"]["status"] == "succeeded"
+        assert current["text_verification"]["finished_at"] is not None
+
+        patched = await client.patch(f"/api/provider-models/{model_id}", json={"temperature": 0.5})
+        assert patched.json()["text_verification"] is None
+        assert (await client.get(f"/api/providers/{provider_id}")).json()["models"][0][
+            "text_verification"
+        ] is None
+        stream = (
+            await client.post(
+                f"/api/provider-models/{model_id}/verifications", json={"stream": True}
+            )
+        ).json()
+        current = (await client.get(f"/api/providers/{provider_id}")).json()["models"][0]
+        assert current["stream_verification"]["id"] == stream["id"]
+        assert current["text_verification"] is None
+
+        patched_provider = await client.patch(
+            f"/api/providers/{provider_id}", json={"base_url": "http://localhost:9999/v1"}
+        )
+        assert patched_provider.json()["models"][0]["stream_verification"] is None
+
+
+@pytest.mark.asyncio
+async def test_verification_summary_separates_same_named_models_and_ignores_run_list_limit(
+    tmp_path: Path,
+) -> None:
+    async with settings_client(tmp_path / "folio.db") as client:
+        first = await create_provider(client, name="first")
+        second = await create_provider(client, name="second")
+        first_model = (
+            await client.post(f"/api/providers/{first['id']}/models", json={"model_id": "shared"})
+        ).json()
+        second_model = (
+            await client.post(f"/api/providers/{second['id']}/models", json={"model_id": "shared"})
+        ).json()
+        target = (
+            await client.post(
+                f"/api/provider-models/{first_model['id']}/verifications", json={"stream": False}
+            )
+        ).json()
+        for _ in range(51):
+            response = await client.post(
+                f"/api/provider-models/{second_model['id']}/verifications",
+                json={"stream": False},
+            )
+            assert response.status_code == 202, response.text
+        assert target["id"] not in {run["id"] for run in (await client.get("/api/runs")).json()}
+        first_page = (await client.get("/api/runs", params={"limit": 10, "offset": 0})).json()
+        second_page = (await client.get("/api/runs", params={"limit": 10, "offset": 10})).json()
+        last_page = (await client.get("/api/runs", params={"limit": 10, "offset": 50})).json()
+        assert len(first_page) == len(second_page) == 10
+        assert len(last_page) == 2
+        assert len({run["id"] for run in first_page + second_page + last_page}) == 22
+        assert target["id"] in {run["id"] for run in last_page}
+        assert (await client.get("/api/runs", params={"limit": 51})).status_code == 422
+        assert (await client.get("/api/runs", params={"offset": -1})).status_code == 422
+        providers = (await client.get("/api/providers")).json()
+        by_id = {provider["id"]: provider["models"][0] for provider in providers}
+        assert by_id[first["id"]]["text_verification"]["id"] == target["id"]
+        assert by_id[second["id"]]["text_verification"]["id"] != target["id"]
+
+
+@pytest.mark.asyncio
+async def test_older_completion_cannot_overwrite_newer_capability_result(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = 0
+
+    async def generate(
+        _snapshot: adapters.CallSnapshot,
+        _key: str | None,
+        _progress: Callable[[str], Awaitable[None]],
+    ) -> adapters.GenerateResult:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise RuntimeError("older failed")
+        return adapters.GenerateResult(text="ok", completed=True, usage=None, raw_response=None)
+
+    monkeypatch.setattr(adapters, "generate_text", generate)
+    async with settings_app_client(tmp_path / "folio.db") as (client, application):
+        provider = await create_provider(client)
+        model = (
+            await client.post(f"/api/providers/{provider['id']}/models", json={"model_id": "demo"})
+        ).json()
+        url = f"/api/provider-models/{model['id']}/verifications"
+        older = (await client.post(url, json={"stream": False})).json()
+        newer = (await client.post(url, json={"stream": False})).json()
+        stream = (await client.post(url, json={"stream": True})).json()
+        await settings_service.execute_verification(application, newer["id"])
+        await settings_service.execute_verification(application, older["id"])
+        await settings_service.execute_verification(application, stream["id"])
+        current = (await client.get(f"/api/providers/{provider['id']}")).json()["models"][0]
+        assert (await client.get(f"/api/runs/{older['id']}")).json()["status"] == "failed"
+        assert current["text_status"] == "succeeded"
+        assert current["text_verification"]["id"] == newer["id"]
+        assert current["stream_status"] == "succeeded"
+        assert current["stream_verification"]["id"] == stream["id"]
 
 
 @pytest.mark.asyncio
@@ -470,6 +742,11 @@ async def test_restart_interrupts_queued_and_running_runs_without_replay(
             interrupted = (await client.get(f"/api/runs/{run_id}")).json()
             assert interrupted["status"] == "interrupted"
             assert interrupted["finished_at"] is not None
+        current = (await client.get(f"/api/providers/{provider['id']}")).json()["models"][0]
+        assert current["text_verification"]["id"] == queued_id
+        assert current["text_verification"]["status"] == "interrupted"
+        assert current["stream_verification"]["id"] == running_id
+        assert current["stream_verification"]["status"] == "interrupted"
         assert not called
 
 

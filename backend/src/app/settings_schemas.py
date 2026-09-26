@@ -110,7 +110,7 @@ class ProviderPatch(Input):
     base_url: str = Field(default_factory=str, max_length=2048)
     protocol: Protocol = Field(default_factory=lambda: "chat_completions")
     api_key: str = Field(default_factory=str, max_length=20000, exclude=True)
-    enabled: bool = True
+    enabled: bool = Field(default_factory=lambda: True)
 
     @field_validator("name")
     @classmethod
@@ -153,6 +153,14 @@ class ModelPatch(Input):
     reasoning_effort: Reasoning | None = None
 
 
+class VerificationSummary(BaseModel):
+    id: str
+    status: Literal["queued", "running", "succeeded", "failed", "interrupted"]
+    created_at: datetime
+    finished_at: datetime | None
+    error: str | None
+
+
 class ModelResponse(ModelInput):
     id: str
     provider_id: str
@@ -160,6 +168,8 @@ class ModelResponse(ModelInput):
     revision: int
     text_status: Capability
     stream_status: Capability
+    text_verification: VerificationSummary | None
+    stream_verification: VerificationSummary | None
 
 
 class ProviderResponse(BaseModel):

@@ -4,7 +4,7 @@ import asyncio
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
@@ -160,8 +160,12 @@ async def verify_model(
 
 
 @router.get("/runs", response_model=list[RunResponse], operation_id="listRuns")
-async def list_runs(session: Session) -> list[RunResponse]:
-    return await service.list_runs(session)
+async def list_runs(
+    session: Session,
+    limit: Annotated[int, Query(ge=1, le=50)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[RunResponse]:
+    return await service.list_runs(session, limit=limit, offset=offset)
 
 
 @router.get("/runs/{run_id}", response_model=RunResponse, operation_id="getRun")

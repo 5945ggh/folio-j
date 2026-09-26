@@ -11,7 +11,7 @@ from urllib.parse import quote
 from fastapi import HTTPException
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from openai import APIConnectionError, APIStatusError, APITimeoutError
-from sqlalchemy import insert, select, update
+from sqlalchemy import func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ids import new_ulid
@@ -33,6 +33,7 @@ from app.settings_schemas import (
     StyleResponse,
     UsageResponse,
     VerificationInput,
+    VerificationSummary,
 )
 
 if TYPE_CHECKING:
@@ -46,6 +47,11 @@ DEFAULT_STYLE_ID = "00000000000000000000000001"
 
 def now() -> datetime:
     return datetime.now(UTC)
+
+
+def utc_datetime(value: datetime) -> datetime:
+    """SQLite returns naive datetimes even for UTC timestamps stored with timezone=True."""
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
 def fail(status: int, detail: str) -> None:
@@ -250,7 +256,53 @@ def safe_verification_error(error: Exception) -> str:
     return "模型验证失败，请检查地址、凭据和模型参数"
 
 
-def model_response(model: ProviderModel, provider: Provider) -> ModelResponse:
+def verification_summary(run: Run | None) -> VerificationSummary | None:
+    if run is None:
+        return None
+    return VerificationSummary(
+        id=run.id,
+        status=cast(Any, run.status),
+        created_at=utc_datetime(run.created_at),
+        finished_at=utc_datetime(run.finished_at) if run.finished_at is not None else None,
+        error=run.error,
+    )
+
+
+async def latest_verifications(
+    session: AsyncSession, provider: Provider, models: list[ProviderModel]
+) -> dict[tuple[str, bool], Run]:
+    if not models:
+        return {}
+    ranked = (
+        select(
+            Run.id.label("run_id"),
+            func.row_number()
+            .over(
+                partition_by=(Run.provider_model_id, Run.stream),
+                order_by=(Run.created_at.desc(), Run.id.desc()),
+            )
+            .label("position"),
+        )
+        .join(ProviderModel, ProviderModel.id == Run.provider_model_id)
+        .where(
+            Run.provider_id == provider.id,
+            Run.provider_revision == provider.revision,
+            Run.model_revision == ProviderModel.revision,
+            ProviderModel.id.in_([model.id for model in models]),
+        )
+        .subquery()
+    )
+    rows = (
+        await session.scalars(
+            select(Run).join(ranked, Run.id == ranked.c.run_id).where(ranked.c.position == 1)
+        )
+    ).all()
+    return {(row.provider_model_id, row.stream): row for row in rows}
+
+
+def model_response(
+    model: ProviderModel, provider: Provider, summaries: dict[tuple[str, bool], Run]
+) -> ModelResponse:
     return ModelResponse(
         id=model.id,
         provider_id=model.provider_id,
@@ -264,6 +316,8 @@ def model_response(model: ProviderModel, provider: Provider) -> ModelResponse:
         revision=model.revision,
         text_status=cast(Any, model.text_status),
         stream_status=cast(Any, model.stream_status),
+        text_verification=verification_summary(summaries.get((model.id, False))),
+        stream_verification=verification_summary(summaries.get((model.id, True))),
     )
 
 
@@ -275,6 +329,7 @@ async def provider_response(session: AsyncSession, provider: Provider) -> Provid
             )
         ).all()
     )
+    summaries = await latest_verifications(session, provider, models)
     return ProviderResponse(
         id=provider.id,
         name=provider.name,
@@ -282,14 +337,18 @@ async def provider_response(session: AsyncSession, provider: Provider) -> Provid
         protocol=cast(Any, provider.protocol),
         enabled=provider.enabled,
         has_api_key=provider.credential_ref is not None,
-        models=[model_response(x, provider) for x in models],
+        models=[model_response(x, provider, summaries) for x in models],
         discovered_models=provider.discovered_models,
         discovery_status=cast(Any, provider.discovery_status),
         discovery_error=provider.discovery_error,
-        last_discovered_at=provider.last_discovered_at,
+        last_discovered_at=(
+            utc_datetime(provider.last_discovered_at)
+            if provider.last_discovered_at is not None
+            else None
+        ),
         revision=provider.revision,
-        created_at=provider.created_at,
-        updated_at=provider.updated_at,
+        created_at=utc_datetime(provider.created_at),
+        updated_at=utc_datetime(provider.updated_at),
     )
 
 
@@ -342,14 +401,21 @@ async def patch_provider(
 ) -> ProviderResponse:
     row = await get_provider(session, provider_id)
     changed = data.model_fields_set
+    connection_changed = any(
+        key in changed and getattr(row, key) != getattr(data, key)
+        for key in ("base_url", "protocol")
+    )
     for key in ("name", "base_url", "protocol", "enabled"):
         if key in changed:
             setattr(row, key, getattr(data, key))
     if "api_key" in changed:
-        row.credential_ref = (
-            save_credential(database_path, data.api_key) if data.api_key.strip() else None
-        )
-    if changed & {"base_url", "protocol", "api_key"}:
+        if data.api_key.strip():
+            row.credential_ref = save_credential(database_path, data.api_key)
+            connection_changed = True
+        elif row.credential_ref is not None:
+            row.credential_ref = None
+            connection_changed = True
+    if connection_changed:
         row.revision += 1
         for model in (
             await session.scalars(select(ProviderModel).where(ProviderModel.provider_id == row.id))
@@ -393,7 +459,7 @@ async def create_model(session: AsyncSession, provider_id: str, data: ModelInput
     )
     session.add(row)
     await session.commit()
-    return model_response(row, provider)
+    return model_response(row, provider, {})
 
 
 async def patch_model(session: AsyncSession, model_id: str, data: ModelPatch) -> ModelResponse:
@@ -403,13 +469,18 @@ async def patch_model(session: AsyncSession, model_id: str, data: ModelPatch) ->
     assert row is not None
     provider = await get_provider(session, row.provider_id)
     changed = data.model_fields_set
+    parameters_changed = any(
+        key in changed and getattr(row, key) != getattr(data, key)
+        for key in ("protocol_override", "temperature", "max_output_tokens", "reasoning_effort")
+    )
     for key in changed:
         setattr(row, key, getattr(data, key))
-    if changed & {"protocol_override", "temperature", "max_output_tokens", "reasoning_effort"}:
+    if parameters_changed:
         row.revision += 1
         row.text_status = row.stream_status = "unknown"
     await session.commit()
-    return model_response(row, provider)
+    summaries = await latest_verifications(session, provider, [row])
+    return model_response(row, provider, summaries)
 
 
 async def refresh_models(
@@ -446,14 +517,20 @@ def run_response(row: Run) -> RunResponse:
         error=row.error,
         usage=UsageResponse.model_validate(row.usage) if row.usage is not None else None,
         prompt_version=row.prompt_version,
-        created_at=row.created_at,
-        started_at=row.started_at,
-        finished_at=row.finished_at,
+        created_at=utc_datetime(row.created_at),
+        started_at=utc_datetime(row.started_at) if row.started_at is not None else None,
+        finished_at=utc_datetime(row.finished_at) if row.finished_at is not None else None,
     )
 
 
-async def list_runs(session: AsyncSession) -> list[RunResponse]:
-    rows = (await session.scalars(select(Run).order_by(Run.created_at.desc()).limit(50))).all()
+async def list_runs(
+    session: AsyncSession, *, limit: int = 50, offset: int = 0
+) -> list[RunResponse]:
+    rows = (
+        await session.scalars(
+            select(Run).order_by(Run.created_at.desc(), Run.id.desc()).offset(offset).limit(limit)
+        )
+    ).all()
     return [run_response(x) for x in rows]
 
 
@@ -521,6 +598,22 @@ async def interrupt_unfinished(session: AsyncSession) -> None:
     await session.commit()
 
 
+async def is_latest_verification(session: AsyncSession, row: Run) -> bool:
+    latest_id = await session.scalar(
+        select(Run.id)
+        .where(
+            Run.provider_id == row.provider_id,
+            Run.provider_revision == row.provider_revision,
+            Run.provider_model_id == row.provider_model_id,
+            Run.model_revision == row.model_revision,
+            Run.stream == row.stream,
+        )
+        .order_by(Run.created_at.desc(), Run.id.desc())
+        .limit(1)
+    )
+    return latest_id == row.id
+
+
 async def execute_verification(application: "FastAPI", run_id: str) -> None:
     from app.llm import adapters
 
@@ -584,6 +677,7 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
                     and provider is not None
                     and provider.revision == row.provider_revision
                     and model.revision == row.model_revision
+                    and await is_latest_verification(session, row)
                 ):
                     if row.stream:
                         model.stream_status = "succeeded"
@@ -609,6 +703,7 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
                     and provider is not None
                     and provider.revision == row.provider_revision
                     and model.revision == row.model_revision
+                    and await is_latest_verification(session, row)
                 ):
                     if row.stream:
                         model.stream_status = "failed"

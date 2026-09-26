@@ -397,6 +397,16 @@
             "title": "Stream Status",
             "type": "string"
           },
+          "stream_verification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerificationSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "temperature": {
             "anyOf": [
               {
@@ -418,6 +428,16 @@
             ],
             "title": "Text Status",
             "type": "string"
+          },
+          "text_verification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerificationSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -427,7 +447,9 @@
           "effective_protocol",
           "revision",
           "text_status",
-          "stream_status"
+          "stream_status",
+          "text_verification",
+          "stream_verification"
         ],
         "title": "ModelResponse",
         "type": "object"
@@ -548,7 +570,6 @@
             "type": "string"
           },
           "enabled": {
-            "default": true,
             "title": "Enabled",
             "type": "boolean"
           },
@@ -1246,6 +1267,62 @@
         ],
         "title": "VerificationInput",
         "type": "object"
+      },
+      "VerificationSummary": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "interrupted"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "created_at",
+          "finished_at",
+          "error"
+        ],
+        "title": "VerificationSummary",
+        "type": "object"
       }
     }
   },
@@ -1636,6 +1713,31 @@
     "/api/runs": {
       "get": {
         "operationId": "listRuns",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -1650,6 +1752,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "List Runs"

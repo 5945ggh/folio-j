@@ -451,6 +451,7 @@ export interface components {
              * @enum {string}
              */
             stream_status: "unknown" | "succeeded" | "failed";
+            stream_verification: components["schemas"]["VerificationSummary"] | null;
             /** Temperature */
             temperature?: number | null;
             /**
@@ -458,6 +459,7 @@ export interface components {
              * @enum {string}
              */
             text_status: "unknown" | "succeeded" | "failed";
+            text_verification: components["schemas"]["VerificationSummary"] | null;
         };
         /** ProfileInput */
         ProfileInput: {
@@ -502,11 +504,8 @@ export interface components {
             api_key?: string;
             /** Base Url */
             base_url?: string;
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled: boolean;
+            /** Enabled */
+            enabled?: boolean;
             /** Name */
             name?: string;
             /**
@@ -797,6 +796,25 @@ export interface components {
         VerificationInput: {
             /** Stream */
             stream: boolean;
+        };
+        /** VerificationSummary */
+        VerificationSummary: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error */
+            error: string | null;
+            /** Finished At */
+            finished_at: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "succeeded" | "failed" | "interrupted";
         };
     };
     responses: never;
@@ -1113,7 +1131,10 @@ export interface operations {
     };
     listRuns: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1127,6 +1148,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
