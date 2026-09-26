@@ -10,6 +10,9 @@ Protocol = Literal["chat_completions", "responses"]
 Capability = Literal["unknown", "succeeded", "failed"]
 Reasoning = Literal["none", "low", "medium", "high"]
 
+# Storage guard only; the selected provider defines the model's real output limit.
+MAX_OUTPUT_TOKENS = 2_147_483_647
+
 
 class Input(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -133,7 +136,7 @@ class ModelInput(Input):
     protocol_override: Protocol | None = None
     enabled: bool = True
     temperature: float | None = Field(default=None, ge=0, le=2)
-    max_output_tokens: int | None = Field(default=None, ge=1, le=100000)
+    max_output_tokens: int | None = Field(default=None, ge=1, le=MAX_OUTPUT_TOKENS)
     reasoning_effort: Reasoning | None = None
 
     @field_validator("model_id")
@@ -149,7 +152,7 @@ class ModelPatch(Input):
     protocol_override: Protocol | None = None
     enabled: bool = True
     temperature: float | None = Field(default=None, ge=0, le=2)
-    max_output_tokens: int | None = Field(default=None, ge=1, le=100000)
+    max_output_tokens: int | None = Field(default=None, ge=1, le=MAX_OUTPUT_TOKENS)
     reasoning_effort: Reasoning | None = None
 
 

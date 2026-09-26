@@ -792,6 +792,7 @@ function ModelEditor({
 						min="1"
 						step="1"
 						value={fields.max_output_tokens ?? ""}
+						placeholder="使用服务默认值"
 						onChange={(event) =>
 							setFields({
 								...fields,
@@ -800,6 +801,10 @@ function ModelEditor({
 							})
 						}
 					/>
+					<small>
+						填写整数 token 数量，例如
+						131072；留空不发送此参数，实际可用上限由模型服务决定。
+					</small>
 				</label>
 				<label className="field">
 					<span>推理强度（可选）</span>

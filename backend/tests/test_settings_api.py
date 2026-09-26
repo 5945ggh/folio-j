@@ -331,6 +331,112 @@ async def test_model_patch_only_invalidates_when_parameters_change(tmp_path: Pat
 
 
 @pytest.mark.asyncio
+async def test_large_output_limit_roundtrips_and_accepted_runs_keep_their_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    observed: list[int | None] = []
+
+    async def generate(
+        snapshot: adapters.CallSnapshot,
+        _api_key: str | None,
+        _progress: Callable[[str], Awaitable[None]],
+    ) -> adapters.GenerateResult:
+        observed.append(snapshot.max_output_tokens)
+        return adapters.GenerateResult(text="ok", completed=True, usage=None, raw_response=None)
+
+    monkeypatch.setattr(adapters, "generate_text", generate)
+    database = tmp_path / "folio.db"
+    async with settings_app_client(database) as (client, application):
+        provider = await create_provider(client, protocol="responses")
+        created = await client.post(
+            f"/api/providers/{provider['id']}/models",
+            json={"model_id": "large-context", "max_output_tokens": 128000},
+        )
+        assert created.status_code == 201, created.text
+        model = created.json()
+        assert model["max_output_tokens"] == 128000
+        assert (await client.get(f"/api/providers/{provider['id']}")).json()["models"][0][
+            "max_output_tokens"
+        ] == 128000
+        verify_url = f"/api/provider-models/{model['id']}/verifications"
+        old = await client.post(verify_url, json={"stream": False})
+        assert old.status_code == 202, old.text
+        assert old.json()["protocol"] == "responses"
+
+        edited = await client.patch(
+            f"/api/provider-models/{model['id']}", json={"max_output_tokens": 131072}
+        )
+        assert edited.status_code == 200, edited.text
+        assert edited.json()["max_output_tokens"] == 131072
+        assert edited.json()["revision"] == model["revision"] + 1
+        assert (await client.get(f"/api/providers/{provider['id']}")).json()["models"][0][
+            "max_output_tokens"
+        ] == 131072
+        fresh = await client.post(verify_url, json={"stream": True})
+        assert fresh.status_code == 202, fresh.text
+
+        async with application.state.session_factory() as session:
+            old_run = await session.get(Run, old.json()["id"])
+            fresh_run = await session.get(Run, fresh.json()["id"])
+            assert old_run is not None and fresh_run is not None
+            assert old_run.max_output_tokens == 128000
+            assert fresh_run.max_output_tokens == 131072
+        await settings_service.execute_verification(application, old.json()["id"])
+        await settings_service.execute_verification(application, fresh.json()["id"])
+        assert observed == [128000, 131072]
+
+        cleared = await client.patch(
+            f"/api/provider-models/{model['id']}", json={"max_output_tokens": None}
+        )
+        assert cleared.status_code == 200, cleared.text
+        assert cleared.json()["max_output_tokens"] is None
+        unspecified = await client.post(verify_url, json={"stream": False})
+        assert unspecified.status_code == 202, unspecified.text
+        async with application.state.session_factory() as session:
+            run = await session.get(Run, unspecified.json()["id"])
+            assert run is not None and run.max_output_tokens is None
+        await settings_service.execute_verification(application, unspecified.json()["id"])
+        assert observed == [128000, 131072, None]
+
+    async with settings_client(database) as client:
+        reloaded = (await client.get(f"/api/providers/{provider['id']}")).json()
+        assert reloaded["models"][0]["max_output_tokens"] is None
+        assert (await client.get(f"/api/runs/{old.json()['id']}")).json()["status"] == "succeeded"
+
+
+@pytest.mark.asyncio
+async def test_output_limit_rejects_nonpositive_fractional_and_storage_overflow_values(
+    tmp_path: Path,
+) -> None:
+    async with settings_client(tmp_path / "folio.db") as client:
+        provider = await create_provider(client)
+        create_url = f"/api/providers/{provider['id']}/models"
+        created = await client.post(create_url, json={"model_id": "limit-boundary"})
+        assert created.status_code == 201, created.text
+        patch_url = f"/api/provider-models/{created.json()['id']}"
+        for value in (0, -1, 1.5, 2**31):
+            create = await client.post(
+                create_url, json={"model_id": f"invalid-{value}", "max_output_tokens": value}
+            )
+            patch = await client.patch(patch_url, json={"max_output_tokens": value})
+            assert create.status_code == 422, (value, create.text)
+            assert patch.status_code == 422, (value, patch.text)
+        maximum = await client.patch(patch_url, json={"max_output_tokens": 2**31 - 1})
+        assert maximum.status_code == 200, maximum.text
+        assert maximum.json()["max_output_tokens"] == 2**31 - 1
+
+
+def test_model_output_limit_openapi_allows_128k_and_caps_at_storage_boundary() -> None:
+    schemas = create_app().openapi()["components"]["schemas"]
+    for schema_name in ("ModelInput", "ModelPatch"):
+        field = schemas[schema_name]["properties"]["max_output_tokens"]
+        integer = next(option for option in field["anyOf"] if option["type"] == "integer")
+        assert integer["minimum"] == 1
+        assert integer["maximum"] == 2**31 - 1
+        assert {option["type"] for option in field["anyOf"]} == {"integer", "null"}
+
+
+@pytest.mark.asyncio
 async def test_first_settings_reads_initialize_once_under_concurrency(tmp_path: Path) -> None:
     async with settings_client(tmp_path / "folio.db") as client:
         responses = await asyncio.gather(*(client.get("/api/settings") for _ in range(12)))

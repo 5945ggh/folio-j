@@ -482,7 +482,7 @@
           "max_output_tokens": {
             "anyOf": [
               {
-                "maximum": 100000.0,
+                "maximum": 2147483647.0,
                 "minimum": 1.0,
                 "type": "integer"
               },
@@ -561,7 +561,7 @@
           "max_output_tokens": {
             "anyOf": [
               {
-                "maximum": 100000.0,
+                "maximum": 2147483647.0,
                 "minimum": 1.0,
                 "type": "integer"
               },
@@ -643,7 +643,7 @@
           "max_output_tokens": {
             "anyOf": [
               {
-                "maximum": 100000.0,
+                "maximum": 2147483647.0,
                 "minimum": 1.0,
                 "type": "integer"
               },
