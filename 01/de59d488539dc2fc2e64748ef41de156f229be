@@ -1,0 +1,31 @@
+docs/handovers/STAGE_2A_MODEL_SETTINGS.md
+  s_cc60031c257e6f::t_d2cece7706188b 1-2,4-54,56-71
+  s_cc60031c257e6f::t_a6d576ad19f53e 3,86-90
+  s_cc60031c257e6f::t_095d649fc310be 55,72-85
+docs/TECH_STACK.md
+  s_cc60031c257e6f::t_095d649fc310be 12,59
+docs/handovers/README.md
+  s_cc60031c257e6f::t_904af0bd56abd6 7
+docs/ARCHITECTURE.md
+  s_cc60031c257e6f::t_095d649fc310be 110-111,145
+README.md
+  s_cc60031c257e6f::t_a6d576ad19f53e 34
+  s_cc60031c257e6f::t_095d649fc310be 5,35-40
+  s_cc60031c257e6f::t_76a21be606bca9 41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "01de59d488539dc2fc2e64748ef41de156f229be",
+  "prompts": {},
+  "sessions": {
+    "s_cc60031c257e6f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0dcc2-3c7a-77c1-991c-40302bdac2c1",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
