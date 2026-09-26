@@ -6,7 +6,7 @@ Lingua Portfolio - Japanese
 
 ## 本地开发
 
-准备 Python 3.14、Node.js 24、uv、pnpm 10 和 just。运行时版本见 `.python-version`、`.nvmrc`；Python 包最低支持 3.11，依赖分别锁定在 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。
+准备 Python 3.11、Node.js 24、uv、pnpm 10 和 just。Python 默认版本同时固定在根目录和 `backend/.python-version`，确保 `uv --project backend` 及后端目录内的命令使用同一版本；Node 版本见 `.nvmrc`。Python 包最低支持 3.11，依赖分别锁定在 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。
 
 ```sh
 just setup       # 安装锁定依赖

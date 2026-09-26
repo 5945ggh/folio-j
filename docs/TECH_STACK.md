@@ -9,7 +9,7 @@
 >
 > 版本策略：项目初始化时取各依赖的最新稳定版，由 lockfile（`uv.lock`、`pnpm-lock.yaml`）锁定；升级需显式进行。
 
-当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.14、Node.js 24（Python 包最低支持 3.11）；实际依赖以锁文件为准。选型不等于已经安装：当前只引入工程启动、类型生成、SQLite 迁移及检查所需依赖，LLM、规范化、分词与复杂 UI 组件依赖随对应切片添加。
+当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.11、Node.js 24，Python 包最低支持 3.11；实际依赖以锁文件为准。选型不等于已经安装：当前只引入工程启动、类型生成、SQLite 迁移及检查所需依赖，LLM、规范化、分词与复杂 UI 组件依赖随对应切片添加。
 
 基础运行补充依赖：Uvicorn 承载 ASGI 服务，httpx 通过本地 ASGI transport 测试 API，Hatchling 构建 Python 的 src 布局包。前端 TypeScript 暂锁 5.9.3，以满足所选 openapi-typescript 7.x 的 peer 范围；Node 类型锁在 24 系列，与运行时一致。Tailwind 使用官方 Vite 插件，不提前引入未使用的 shadcn 组件或 Zustand。
 
