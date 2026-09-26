@@ -1,9 +1,9 @@
-"""OpenAI-compatible provider adapters for model verification."""
+"""OpenAI-compatible provider adapters for verification and chat."""
 
 import json
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 from openai import AsyncOpenAI, omit
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
@@ -20,6 +20,7 @@ class CallSnapshot:
     temperature: float | None
     max_output_tokens: int | None
     reasoning_effort: Literal["none", "low", "medium", "high"] | None
+    messages: list[dict[str, str]] | None = None
 
 
 @dataclass(frozen=True)
@@ -99,6 +100,19 @@ def _response_usage(response: Response) -> dict[str, int | None] | None:
     }
 
 
+def _role_messages(snapshot: CallSnapshot) -> list[dict[str, str]]:
+    """Keep the 2A fixed prompt path and preserve each 2B role boundary."""
+    if snapshot.messages is None:
+        return [{"role": "user", "content": snapshot.prompt}]
+    if not snapshot.messages or any(
+        item.get("role") not in {"system", "user", "assistant"}
+        or not isinstance(item.get("content"), str)
+        for item in snapshot.messages
+    ):
+        raise ValueError("无效的角色消息")
+    return [{"role": item["role"], "content": item["content"]} for item in snapshot.messages]
+
+
 async def _chat(
     client: AsyncOpenAI,
     snapshot: CallSnapshot,
@@ -108,7 +122,7 @@ async def _chat(
     if not snapshot.stream:
         response = await client.chat.completions.create(
             model=snapshot.model_id,
-            messages=[{"role": "user", "content": snapshot.prompt}],
+            messages=cast(Any, _role_messages(snapshot)),
             temperature=snapshot.temperature if snapshot.temperature is not None else omit,
             max_tokens=snapshot.max_output_tokens
             if snapshot.max_output_tokens is not None
@@ -131,7 +145,7 @@ async def _chat(
 
     stream = await client.chat.completions.create(
         model=snapshot.model_id,
-        messages=[{"role": "user", "content": snapshot.prompt}],
+        messages=cast(Any, _role_messages(snapshot)),
         stream=True,
         stream_options={"include_usage": True},
         temperature=snapshot.temperature if snapshot.temperature is not None else omit,
@@ -191,7 +205,9 @@ async def _responses(
     if not snapshot.stream:
         response = await client.responses.create(
             model=snapshot.model_id,
-            input=snapshot.prompt,
+            input=cast(Any, _role_messages(snapshot))
+            if snapshot.messages is not None
+            else snapshot.prompt,
             temperature=snapshot.temperature if snapshot.temperature is not None else omit,
             max_output_tokens=snapshot.max_output_tokens
             if snapshot.max_output_tokens is not None
@@ -213,7 +229,9 @@ async def _responses(
 
     stream = await client.responses.create(
         model=snapshot.model_id,
-        input=snapshot.prompt,
+        input=cast(Any, _role_messages(snapshot))
+        if snapshot.messages is not None
+        else snapshot.prompt,
         stream=True,
         temperature=snapshot.temperature if snapshot.temperature is not None else omit,
         max_output_tokens=snapshot.max_output_tokens

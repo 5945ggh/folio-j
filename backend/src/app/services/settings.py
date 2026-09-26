@@ -15,7 +15,9 @@ from sqlalchemy import func, insert, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.chat_models import ChatThread, Job
 from app.ids import new_ulid
+from app.models import Segment, Source
 from app.settings_models import Defaults, Profile, Provider, ProviderModel, Run, Style
 from app.settings_schemas import (
     DefaultsInput,
@@ -289,6 +291,8 @@ async def latest_verifications(
             Run.provider_id == provider.id,
             Run.provider_revision == provider.revision,
             Run.model_revision == ProviderModel.revision,
+            Run.purpose == "verification",
+            Run.deleted_at.is_(None),
             ProviderModel.id.in_([model.id for model in models]),
         )
         .subquery()
@@ -437,11 +441,26 @@ async def delete_provider(session: AsyncSession, provider_id: str) -> None:
     row = await get_provider(session, provider_id)
     active = await session.scalar(
         select(Run.id)
-        .where(Run.provider_id == row.id, Run.status.in_(["queued", "running"]))
+        .where(
+            Run.provider_id == row.id,
+            Run.purpose == "verification",
+            Run.status.in_(["queued", "running"]),
+        )
         .limit(1)
     )
     if active:
         fail(409, "存在未完成的模型验证")
+    chat_active = await session.scalar(
+        select(Job.id)
+        .where(
+            Job.status.in_(["queued", "running", "stopping"]),
+            Job.deleted_at.is_(None),
+            Job.model_snapshot["provider_id"].as_string() == row.id,
+        )
+        .limit(1)
+    )
+    if chat_active:
+        fail(409, "存在未完成的片段问答")
     row.deleted_at = now()
     row.enabled = False
     await session.commit()
@@ -505,11 +524,26 @@ async def delete_model(session: AsyncSession, model_id: str) -> None:
     await get_provider(session, row.provider_id)
     active = await session.scalar(
         select(Run.id)
-        .where(Run.provider_model_id == row.id, Run.status.in_(["queued", "running"]))
+        .where(
+            Run.provider_model_id == row.id,
+            Run.purpose == "verification",
+            Run.status.in_(["queued", "running"]),
+        )
         .limit(1)
     )
     if active:
         fail(409, "存在未完成的模型验证")
+    chat_active = await session.scalar(
+        select(Job.id)
+        .where(
+            Job.status.in_(["queued", "running", "stopping"]),
+            Job.deleted_at.is_(None),
+            Job.model_snapshot["provider_model_id"].as_string() == row.id,
+        )
+        .limit(1)
+    )
+    if chat_active:
+        fail(409, "存在未完成的片段问答")
     # Runs retain their original identity and snapshots; defaults stay visibly invalid.
     await session.delete(row)
     await session.commit()
@@ -549,6 +583,8 @@ async def refresh_models(
 def run_response(row: Run) -> RunResponse:
     return RunResponse(
         id=row.id,
+        purpose=cast(Any, row.purpose),
+        job_id=row.job_id,
         provider_id=row.provider_id,
         provider_name=row.provider_name,
         model_id=row.model_id,
@@ -570,7 +606,11 @@ async def list_runs(
 ) -> list[RunResponse]:
     rows = (
         await session.scalars(
-            select(Run).order_by(Run.created_at.desc(), Run.id.desc()).offset(offset).limit(limit)
+            select(Run)
+            .where(Run.purpose == "verification", Run.deleted_at.is_(None))
+            .order_by(Run.created_at.desc(), Run.id.desc())
+            .offset(offset)
+            .limit(limit)
         )
     ).all()
     return [run_response(x) for x in rows]
@@ -578,9 +618,25 @@ async def list_runs(
 
 async def get_run(session: AsyncSession, run_id: str) -> RunResponse:
     row = await session.get(Run, run_id)
-    if row is None:
+    if row is None or row.deleted_at is not None:
         fail(404, "Run 不存在")
     assert row is not None
+    if row.purpose == "chat":
+        job = await session.get(Job, row.job_id) if row.job_id is not None else None
+        thread = await session.get(ChatThread, job.thread_id) if job is not None else None
+        segment = await session.get(Segment, thread.segment_id) if thread is not None else None
+        source = await session.get(Source, segment.source_id) if segment is not None else None
+        if (
+            job is None
+            or job.deleted_at is not None
+            or thread is None
+            or thread.deleted_at is not None
+            or segment is None
+            or segment.deleted_at is not None
+            or source is None
+            or source.deleted_at is not None
+        ):
+            fail(404, "Run 不存在")
     return run_response(row)
 
 
@@ -603,6 +659,10 @@ async def accept_verification(
     )
     row = Run(
         id=new_ulid(),
+        purpose="verification",
+        job_id=None,
+        messages=None,
+        deleted_at=None,
         provider_id=provider.id,
         provider_name=provider.name,
         provider_revision=provider.revision,
@@ -635,7 +695,7 @@ async def accept_verification(
 async def interrupt_unfinished(session: AsyncSession) -> None:
     await session.execute(
         update(Run)
-        .where(Run.status.in_(["queued", "running"]))
+        .where(Run.purpose == "verification", Run.status.in_(["queued", "running"]))
         .values(status="interrupted", error="应用重启，验证已中断", finished_at=now())
     )
     await session.commit()
@@ -650,6 +710,7 @@ async def is_latest_verification(session: AsyncSession, row: Run) -> bool:
             Run.provider_model_id == row.provider_model_id,
             Run.model_revision == row.model_revision,
             Run.stream == row.stream,
+            Run.purpose == "verification",
         )
         .order_by(Run.created_at.desc(), Run.id.desc())
         .limit(1)
@@ -665,7 +726,7 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
         async with factory() as session:
             await session.execute(text("BEGIN IMMEDIATE"))
             row = await session.get(Run, run_id)
-            if row is None or row.status != "queued":
+            if row is None or row.purpose != "verification" or row.status != "queued":
                 return
             row.status = "running"
             row.started_at = now()

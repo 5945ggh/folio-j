@@ -1,0 +1,17 @@
+{# version: v1 #}
+来源：{{ source.title }}
+{% if source.description %}来源说明：{{ source.description }}
+{% endif %}
+目标原文：{{ segment.text }}
+{% if segment.context_before %}前文（仅作语境）：{{ segment.context_before }}
+{% endif %}
+{% if segment.context_after %}后文（仅作语境）：{{ segment.context_after }}
+{% endif %}
+{% if segment.translation %}用户提供的译文（可能不准确）：{{ segment.translation }}
+{% endif %}
+{% if segment.transcription %}用户提供的听写（可能不准确）：{{ segment.transcription }}
+{% endif %}
+{% if segment.source_ref %}来源位置：{{ segment.source_ref }}
+{% endif %}
+本轮问题：{{ question }}
+{% if additional_instructions %}本轮补充要求：{{ additional_instructions }}{% endif %}

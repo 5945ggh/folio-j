@@ -21,6 +21,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Job */
+        get: operations["getChatJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/jobs/{job_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop Job */
+        post: operations["stopChatJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/provider-models/{model_id}": {
         parameters: {
             query?: never;
@@ -178,6 +212,41 @@ export interface paths {
         head?: never;
         /** Update Segment */
         patch: operations["updateSegment"];
+        trace?: never;
+    };
+    "/api/segments/{segment_id}/delete-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Segment Delete Impact */
+        get: operations["getSegmentDeleteImpact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/segments/{segment_id}/threads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Threads */
+        get: operations["listThreads"];
+        put?: never;
+        /** Create Thread */
+        post: operations["createThread"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/settings": {
@@ -338,6 +407,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/threads/{thread_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Thread */
+        get: operations["getThread"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Thread */
+        patch: operations["patchThread"];
+        trace?: never;
+    };
+    "/api/threads/{thread_id}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Job */
+        post: operations["acceptChatJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/threads/{thread_id}/jobs/by-request/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Job By Request */
+        get: operations["getChatJobByRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/threads/{thread_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Messages */
+        get: operations["listMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -386,6 +524,117 @@ export interface components {
              * @constant
              */
             status: "ok";
+        };
+        /** JobCreate */
+        JobCreate: {
+            /**
+             * Additional Instructions
+             * @default
+             */
+            additional_instructions: string;
+            /** Expected Segment Revision */
+            expected_segment_revision: number;
+            /** Expected Thread Revision */
+            expected_thread_revision: number;
+            /** Model Id */
+            model_id?: string | null;
+            /** Question */
+            question: string;
+            /** Request Id */
+            request_id: string;
+            /**
+             * Stream
+             * @default true
+             */
+            stream: boolean;
+            /** Style Id */
+            style_id?: string | null;
+        };
+        /** JobResponse */
+        JobResponse: {
+            /** Additional Instructions */
+            additional_instructions: string;
+            assistant_message: components["schemas"]["MessageResponse"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error */
+            error: string | null;
+            /** Error Code */
+            error_code: string | null;
+            /** Finished At */
+            finished_at: string | null;
+            /** Id */
+            id: string;
+            model: components["schemas"]["ModelSnapshotResponse"];
+            /**
+             * Permission Mode
+             * @enum {string}
+             */
+            permission_mode: "review" | "full_access";
+            /** Question */
+            question: string;
+            /** Request Id */
+            request_id: string;
+            /** Run Id */
+            run_id: string | null;
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "stopping" | "succeeded" | "failed" | "interrupted";
+            /** Stop Requested At */
+            stop_requested_at: string | null;
+            /** Thread Id */
+            thread_id: string;
+            /** User Message Id */
+            user_message_id: string;
+            /** Version */
+            version: number;
+        };
+        /** MessagePage */
+        MessagePage: {
+            /** Items */
+            items: components["schemas"]["MessageResponse"][];
+            /** Next Cursor */
+            next_cursor: number | null;
+        };
+        /** MessageResponse */
+        MessageResponse: {
+            /** Content */
+            content: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Job Id */
+            job_id: string;
+            /** Ordinal */
+            ordinal: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "complete" | "pending" | "streaming" | "failed" | "interrupted";
+            /** Thread Id */
+            thread_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** ModelInput */
         ModelInput: {
@@ -461,6 +710,34 @@ export interface components {
              */
             text_status: "unknown" | "succeeded" | "failed";
             text_verification: components["schemas"]["VerificationSummary"] | null;
+        };
+        /** ModelSnapshotResponse */
+        ModelSnapshotResponse: {
+            /** Max Output Tokens */
+            max_output_tokens: number | null;
+            /** Model Id */
+            model_id: string;
+            /** Model Revision */
+            model_revision: number;
+            /**
+             * Protocol
+             * @enum {string}
+             */
+            protocol: "chat_completions" | "responses";
+            /** Provider Id */
+            provider_id: string;
+            /** Provider Model Id */
+            provider_model_id: string;
+            /** Provider Name */
+            provider_name: string;
+            /** Provider Revision */
+            provider_revision: number;
+            /** Reasoning Effort */
+            reasoning_effort: string | null;
+            /** Stream */
+            stream: boolean;
+            /** Temperature */
+            temperature: number | null;
         };
         /** ProfileInput */
         ProfileInput: {
@@ -571,6 +848,8 @@ export interface components {
             finished_at: string | null;
             /** Id */
             id: string;
+            /** Job Id */
+            job_id?: string | null;
             /** Model Id */
             model_id: string;
             /** Output Text */
@@ -586,6 +865,12 @@ export interface components {
             provider_id: string;
             /** Provider Name */
             provider_name: string;
+            /**
+             * Purpose
+             * @default verification
+             * @enum {string}
+             */
+            purpose: "verification" | "chat";
             /** Started At */
             started_at: string | null;
             /**
@@ -632,6 +917,17 @@ export interface components {
              */
             translation: string;
         };
+        /** SegmentDeleteImpact */
+        SegmentDeleteImpact: {
+            /** Active Job Count */
+            active_job_count: number;
+            /** Message Count */
+            message_count: number;
+            /** Segment Id */
+            segment_id: string;
+            /** Thread Count */
+            thread_count: number;
+        };
         /** SegmentResponse */
         SegmentResponse: {
             /** Context After */
@@ -647,6 +943,8 @@ export interface components {
             id: string;
             /** Note */
             note: string;
+            /** Revision */
+            revision: number;
             /** Source Id */
             source_id: string;
             /** Source Ref */
@@ -706,10 +1004,16 @@ export interface components {
         };
         /** SourceDeleteImpact */
         SourceDeleteImpact: {
+            /** Active Job Count */
+            active_job_count: number;
+            /** Message Count */
+            message_count: number;
             /** Segment Count */
             segment_count: number;
             /** Source Id */
             source_id: string;
+            /** Thread Count */
+            thread_count: number;
             /** Title */
             title: string;
         };
@@ -765,6 +1069,62 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ThreadCreate */
+        ThreadCreate: {
+            /** Model Id */
+            model_id?: string | null;
+            /** Request Id */
+            request_id: string;
+        };
+        /** ThreadPage */
+        ThreadPage: {
+            /** Items */
+            items: components["schemas"]["ThreadResponse"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** ThreadPatch */
+        ThreadPatch: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Model Id */
+            model_id?: string | null;
+            /**
+             * Permission Mode
+             * @enum {string}
+             */
+            permission_mode?: "review" | "full_access";
+        };
+        /** ThreadResponse */
+        ThreadResponse: {
+            /** Active Job Id */
+            active_job_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Display Title */
+            display_title: string;
+            /** Id */
+            id: string;
+            /**
+             * Permission Mode
+             * @enum {string}
+             */
+            permission_mode: "review" | "full_access";
+            /** Revision */
+            revision: number;
+            /** Segment Id */
+            segment_id: string;
+            /** Selected Model Id */
+            selected_model_id: string | null;
             /**
              * Updated At
              * Format: date-time
@@ -842,6 +1202,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    getChatJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stopChatJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1317,6 +1739,106 @@ export interface operations {
             };
         };
     };
+    getSegmentDeleteImpact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentDeleteImpact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listThreads: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThreadPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    createThread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThreadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThreadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     getSettings: {
         parameters: {
             query?: never;
@@ -1732,6 +2254,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SegmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getThread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThreadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patchThread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThreadPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThreadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acceptChatJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getChatJobByRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thread_id: string;
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listMessages: {
+        parameters: {
+            query?: {
+                after_ordinal?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagePage"];
                 };
             };
             /** @description Validation Error */

@@ -72,6 +72,10 @@ class ProviderModel(Base):
 class Run(Base):
     __tablename__ = "runs"
     id: Mapped[str] = mapped_column(String(26), primary_key=True)
+    purpose: Mapped[str] = mapped_column(String(20), nullable=False, default="verification")
+    job_id: Mapped[str | None] = mapped_column(String(26), unique=True)
+    messages: Mapped[list[dict[str, str]] | None] = mapped_column(JSON)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     provider_id: Mapped[str] = mapped_column(String(26), index=True)
     provider_name: Mapped[str] = mapped_column(String(100))
     provider_revision: Mapped[int] = mapped_column(Integer)

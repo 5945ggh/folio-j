@@ -2,12 +2,13 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.schemas import (
     SegmentCreate,
+    SegmentDeleteImpact,
     SegmentResponse,
     SegmentUpdate,
     SourceCreate,
@@ -60,8 +61,14 @@ async def source_delete_impact(source_id: str, session: Session) -> SourceDelete
     status_code=status.HTTP_204_NO_CONTENT,
     operation_id="deleteSource",
 )
-async def delete_source(source_id: str, session: Session) -> None:
-    await service.delete_source(session, source_id)
+async def delete_source(source_id: str, session: Session, request: Request) -> None:
+    cancelled = await service.delete_source(
+        session, source_id, request.app.state.chat_dispatch_lock
+    )
+    from app.jobs.runtime import request_chat_cancel
+
+    for job_id in cancelled:
+        request_chat_cancel(request.app, job_id)
 
 
 @router.get(
@@ -95,10 +102,25 @@ async def update_segment(segment_id: str, data: SegmentUpdate, session: Session)
     return await service.update_segment(session, segment_id, data)
 
 
+@router.get(
+    "/segments/{segment_id}/delete-impact",
+    response_model=SegmentDeleteImpact,
+    operation_id="getSegmentDeleteImpact",
+)
+async def segment_delete_impact(segment_id: str, session: Session) -> SegmentDeleteImpact:
+    return await service.segment_delete_impact(session, segment_id)
+
+
 @router.delete(
     "/segments/{segment_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     operation_id="deleteSegment",
 )
-async def delete_segment(segment_id: str, session: Session) -> None:
-    await service.delete_segment(session, segment_id)
+async def delete_segment(segment_id: str, session: Session, request: Request) -> None:
+    cancelled = await service.delete_segment(
+        session, segment_id, request.app.state.chat_dispatch_lock
+    )
+    from app.jobs.runtime import request_chat_cancel
+
+    for job_id in cancelled:
+        request_chat_cancel(request.app, job_id)

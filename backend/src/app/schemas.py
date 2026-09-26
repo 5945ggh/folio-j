@@ -78,6 +78,16 @@ class SourceDeleteImpact(BaseModel):
     source_id: str
     title: str
     segment_count: int
+    thread_count: int
+    message_count: int
+    active_job_count: int
+
+
+class SegmentDeleteImpact(BaseModel):
+    segment_id: str
+    thread_count: int
+    message_count: int
+    active_job_count: int
 
 
 class SegmentCreate(StrictInput):
@@ -138,3 +148,4 @@ class SegmentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     text_locked_at: datetime | None
+    revision: int

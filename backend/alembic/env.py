@@ -5,9 +5,13 @@ import asyncio
 from sqlalchemy import Connection
 
 from alembic import context
+from app import chat_models as _chat_models
 from app import models as _models
+from app import settings_models as _settings_models
 from app.config import load_settings
 from app.db import create_engine
+
+_ = (_chat_models, _settings_models)
 
 target_metadata = _models.Base.metadata
 

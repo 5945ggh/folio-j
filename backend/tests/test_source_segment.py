@@ -243,7 +243,14 @@ async def test_delete_impact_soft_deletion_and_isolation(tmp_path: Path) -> None
         b1 = await add_segment(source_b["id"], "B1")
         impact = await client.get(f"/api/sources/{source_a['id']}/delete-impact")
         assert impact.status_code == 200
-        assert impact.json() == {"source_id": source_a["id"], "title": "A", "segment_count": 2}
+        assert impact.json() == {
+            "source_id": source_a["id"],
+            "title": "A",
+            "segment_count": 2,
+            "thread_count": 0,
+            "message_count": 0,
+            "active_job_count": 0,
+        }
 
         assert (await client.delete(f"/api/segments/{a1['id']}")).status_code == 204
         assert (await client.get(f"/api/segments/{a1['id']}")).status_code == 404

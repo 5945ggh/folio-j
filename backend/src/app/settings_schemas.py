@@ -201,6 +201,8 @@ class UsageResponse(BaseModel):
 
 class RunResponse(BaseModel):
     id: str
+    purpose: Literal["verification", "chat"] = "verification"
+    job_id: str | None = None
     provider_id: str
     provider_name: str
     model_id: str
