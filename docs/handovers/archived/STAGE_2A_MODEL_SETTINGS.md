@@ -1,6 +1,6 @@
 # 第二阶段 2A：设置与模型接入
 
-状态：实现与设置界面打磨已完成，保留在功能分支待集成。承接 PRD F1；2B/2C 的学习片段讨论、原文锁定与线程历史不在本次交付范围。
+状态：2A 验收通过，已归档；随本次收口以快进方式集成到 main。承接 PRD F1；学习片段问答、原文锁定与线程历史由 2B 承接，不在本次实现范围。
 
 ## 交付与边界
 
@@ -38,6 +38,7 @@
 | `POST /api/providers/{provider_id}/refresh-models` | 尝试刷新发现列表，响应 ProviderResponse；错误状态持久保存，仍返回缓存 |
 | `POST /api/providers/{provider_id}/models` | 手动登记模型 → 201 ModelResponse |
 | `PATCH /api/provider-models/{model_id}` | 修改协议覆盖、参数或启用状态 |
+| `DELETE /api/provider-models/{model_id}` | 删除模型登记；活动验证返回409，保留历史Run和失效默认ID，不自动替换模型 |
 | `POST /api/provider-models/{model_id}/verifications` | `{stream:boolean}` → 202 RunResponse；每个请求一次调用，界面的双项验证显式提交两个请求，不自动遍历模型 |
 | `GET /api/runs` | 最近验证记录；默认50条，支持 `limit`（1–50）与 `offset` 分页，无敏感字段 |
 | `GET /api/runs/{run_id}` | 持久状态、非敏感快照、文本及错误，前端在 queued/running 时轮询 |
@@ -47,6 +48,8 @@ ProviderInput：`name`、`base_url`、`protocol`、可选 `api_key`、`enabled`�
 ModelInput：`model_id`（上游 ID）、`protocol_override`（null 表示继承）、`enabled`、`temperature`（可空）、`max_output_tokens`（可空）、`reasoning_effort`（可空，或none/low/medium/high）。ModelResponse 另含内部 `id,provider_id,effective_protocol,revision,text_status,stream_status`；能力状态为 `unknown/succeeded/failed`，基于当前配置版本，修改 Provider 接入配置／凭据或模型参数后旧验证不冒充当前结果。删除/停用配置使原默认模型失效，显示明确状态，不自动切换。
 
 ModelResponse 还返回 `text_verification`／`stream_verification`，为空或 `{id,status,created_at,finished_at,error}`。摘要按 Provider 与模型内部身份及当前修订筛选，再按创建时间和 ID 取最近接受的 Run；不依赖全局最近50条记录。前端在有 queued/running 摘要时轮询 Provider；终态可直接从模型行查看。较早接受的同能力 Run 即使较晚结束，也不覆盖较新验证的能力状态。仅改名、启停或原样保存不使能力失效；实际接入配置／参数变化或显式凭据替换才更新修订。Provider、Run 及摘要的时间统一返回带时区的 UTC。
+
+模型登记以 `(provider_id, model_id)` 数据库唯一索引保护，跨标签同时登记只保存一条，另一请求返回409。删除模型仅移除登记，重新登记同一上游 ID 产生新内部身份，不继承旧验证或默认选择。增量迁移 `0003_model_identity` 遇存量重复明确拒绝，不自行合并或删除。接入配置变化清除旧发现状态；发现结果写回前检查原修订，旧地址／凭据的迟到响应不覆盖新配置。配置编辑、模型登记／删除、任务接受和验证终态使用短写事务，网络等待期间不持有写锁。
 
 RunResponse 至少含 `id,provider_id,provider_name,model_id,protocol,stream,status,output_text,error,usage,prompt_version,created_at,started_at,finished_at`。`model_id` 为上游模型 ID；status 为 `queued/running/succeeded/failed/interrupted`。使用量统一输入／输出／总token，可为空；不得用未知用量冒充0。
 
@@ -72,7 +75,7 @@ RunResponse 至少含 `id,provider_id,provider_name,model_id,protocol,stream,sta
 
 - [OpenAI 流式事件](https://developers.openai.com/api/docs/guides/streaming-responses)：两协议事件形状分别处理。
 - [DeepSeek Chat](https://api-docs.deepseek.com/api/create-chat-completion/)、[Responses 指南](https://api-docs.deepseek.com/guides/responses_api/)：DeepSeek思考默认开启；真实文本对照配置显式选择 `reasoning_effort=none`，模型固定 deepseek-flash，协议身份单独记录。
-- 触及 TBD-16 的单次执行预算与保存核实基础，尚不完成工具写入/恢复契约；TBD-17 组合审核仍待写入阶段。2B接入片段上下文、Job和原文锁定，2C持续讨论；不将2A验证界面作为学习对话入口。
+- 触及 TBD-16 的单次执行预算与保存核实基础，尚不完成工具写入/恢复契约；TBD-17 组合审核仍待写入阶段。2B围绕片段实现后台问答、输入快照、原子原文锁定、持久历史和停止／迟到保护；不将2A验证界面作为学习对话入口。
 
 ## 验证记录
 
@@ -93,4 +96,28 @@ RunResponse 至少含 `id,provider_id,provider_name,model_id,protocol,stream,sta
 - 前一轮浏览器已验证学习背景和预设创建、默认预设切换、刷新持久化，并看到真实 Provider 的成功状态及 Run 历史；当时删除确认和窄屏验证受浏览器连接问题阻碍。
 - 本轮界面验收使用独立临时数据库与明确标注的离线假适配器，阻断出站连接；已补验删除确认居中／取消、发现模型登记、行内验证开始与成功／失败、对应失败原因、运行中刷新及窄屏。未重新调用真实模型或修改用户 Provider 数据。
 - 当前检查通过：48 项后端测试、2 项前端纯逻辑测试、Ruff／pyright／Biome／TypeScript、生产构建和文档链接检查。摘要已随 OpenAPI 重生成前端类型；没有新增依赖或数据库迁移。
-- 当前保留在 `codex/model-settings`，尚未并入 main，暂不归档。凭据仍为本机文件，旧凭据暂不自动清理；全局多步骤任务、工具审核、结构化验证与模型删除接口仍未实现。跨标签页同时登记同一模型的数据库唯一约束仍待补充，本轮未改变数据库 schema。
+- 上轮交接时保留在 `codex/model-settings`，尚未并入 main。模型删除与并发登记唯一约束当时未完成，已在本次收口作为阻塞修复；不能将旧记录中的限制视为永久豁免。凭据仍为本机文件，旧凭据暂不自动清理；全局多步骤任务、工具审核与结构化验证仍未实现。
+
+## 收口验收记录（2026-09-26）
+
+本轮由主代理集成，原生子代理分别独立审查后端、执行浏览器验收、编写回归与复核；开发修复和复核分工。
+
+| 缺陷与触发条件 | 影响及修复 | 证据 |
+|---|---|---|
+| 两个标签同时登记相同 Provider／模型 ID，均通过存在性查询 | 原实现可产生两个内部身份，属于阻塞；`settings_models.py`／`0003_model_identity.py` 加复合唯一索引，`services/settings.py` 返回409 | 原实现强制交错复现两条；修复后实际 ASGI 双请求分别201/409，数据库仅一条；直接重复写入被约束拒绝 |
+| 模型登记没有单独删除接口和界面 | 无法清理错误登记，属于本轮明确范围内阻塞；`api/settings.py`／`services/settings.py`／`ProviderSettings.tsx` 补删除与页内确认 | queued验证阻止删除；重启中断后可删；旧Run与默认ID保留；重登记身份不同 |
+| 旧地址模型发现等待期间修改 Provider 接入 | 旧列表可错误标为新配置发现成功，属于阻塞；网络返回后核对修订，丢弃旧结果 | 假适配器暂停旧发现、改地址后释放，最终新配置列表为空且never |
+| 配置修改、删除和接受验证存在先读后写窗口 | 修订可能丢增量、检查与写入可交错；短事务串行核对和写入，网络等待不持写锁 | 并发Provider／模型PATCH均保留各项修改并递增两次；后端独立复核接受、删除与终态边界 |
+| 设置接口409统一显示成“原文已锁定” | 误导登记冲突与活动验证删除失败；`content.ts` 优先显示服务端具体错误 | 类型／静态检查及浏览器具体失败反馈；未为此引入测试框架 |
+
+新鲜自动化验证：Python 3.11.14；`just gen-api` 已重生成，`just check` 全部通过（55项后端、2项前端、Ruff／pyright／Biome／TypeScript、生产构建、文档链接）。独立增量后端测试28项通过，`git diff --check` 无问题。没有新增依赖。
+
+本机数据库只读预检未发现重复模型；随后 `just migrate` 升级至 `0003_model_identity`，升级前后8张业务表的内容摘要一致，唯一索引存在，`PRAGMA integrity_check` 为ok。迁移对已有重复数据的拒绝与原数据保留已用临时库验证；不会自动合并默认值或历史身份。
+
+凭据核查：Git候选文件和SQLite普通记录不含本机实际凭据及所检查的编码形式，目录／文件权限为0700／0600；设置代码没有浏览器持久存储或控制台记录密钥。测试继续覆盖省略保留、空串清除引用、错误不回显及跨块脱敏。本轮未发起真实模型调用；此前DeepSeek的4次调用、181 token仅保留为两种文本协议的真实接入证据。
+
+剩余限制：凭据仍为本机明文私有文件，旧凭据不自动清理；结构化输出、工具能力、学习片段问答和多步骤执行尚未交付。`TBD-16`仅完成2A所需的单次验证基础，`TBD-17`保持未决。2B须按新的开工契约落实输入快照、原子锁定、历史及停止／迟到保护。
+
+本轮实际浏览器复核使用独立临时SQLite与离线假适配器：学习背景、预设、三用途默认模型和新线程权限保存后重开仍在；发现登记、手动登记、失败刷新保留模型、行内普通／流式状态与失败原因、运行中刷新及历史查询均通过。模型删除弹窗居中、取消保留、确认移除登记，历史Run仍在，三用途默认值明确显示失效且不自动替换；Provider停用显示正确，删除确认取消／确认均通过；验收临时服务与浏览器已关闭。390×844窄屏下内容宽度与scrollWidth均为375，无横向溢出，模型行按卡片排列且操作可见。未复用旧浏览器连接阻塞作为缺口，未操作用户Provider或重新调用真实模型。
+
+验收结论：本轮识别的阻塞问题均已修复并取得独立复核与新鲜验证证据，2A通过；本记录归档，后续执行入口为 [2B开发准备](../STAGE_2B_ASYNC_QA.md)。原有提交历史保留，修复与阶段文档分批提交并以 `--ff-only` 集成到main；不自动推送远端。

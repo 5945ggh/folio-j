@@ -4,10 +4,12 @@
 
 ## Active
 
-- [第二阶段 2A：设置与模型接入](STAGE_2A_MODEL_SETTINGS.md)：配置、凭据、两种文本协议与按需验证的实现契约。
+- [第二阶段 2B：片段后台异步问答](STAGE_2B_ASYNC_QA.md)：开发准备；输入快照、原子锁定、持久历史、停止与迟到保护的开工契约。
 - [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：已确认的首轮能力与切片约束；具体交付顺序仍待编排。
 
 ## Archived
+
+- [第二阶段 2A：设置与模型接入](archived/STAGE_2A_MODEL_SETTINGS.md)：已完成验收；保留接口、凭据、并发修复、迁移与浏览器证据。
 
 - [第一阶段：素材与片段管理](archived/STAGE_1_SOURCE_SEGMENT.md)：已完成的首个领域切片，保留 API 契约、数据库策略与验收结果。
 - [开发准备记录](archived/DEV_PREPARATION.md)：已完成的工程初始化、工具链与离线验证依据。
