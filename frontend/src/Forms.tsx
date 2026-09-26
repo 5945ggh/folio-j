@@ -31,7 +31,7 @@ export function SourceForm({
 			<div className="form-grid">
 				<label className="field full">
 					<span>
-						来源标题 <strong aria-hidden="true">*</strong>
+						来源名称 <strong aria-hidden="true">*</strong>
 					</span>
 					<input
 						required

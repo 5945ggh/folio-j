@@ -116,7 +116,7 @@ export function SegmentDetail() {
 	return (
 		<Shell>
 			<nav className="breadcrumb" aria-label="位置">
-				<Link to="/">素材目录</Link>
+				<Link to="/">来源目录</Link>
 				<span aria-hidden="true">/</span>
 				<Link to={`/sources/${current.source_id}`}>
 					{source.data?.title ?? "来源"}

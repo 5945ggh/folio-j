@@ -17,7 +17,7 @@ export function Shell({ children }: { children: ReactNode }) {
 	return (
 		<div className="app-shell">
 			<header className="topbar">
-				<Link className="brand" to="/" aria-label="Folio-J 素材目录">
+				<Link className="brand" to="/" aria-label="Folio-J 来源目录">
 					<span className="brand-mark" aria-hidden="true">
 						文
 					</span>
@@ -44,7 +44,7 @@ export function PageError({
 				<p>{displayError(error)}</p>
 				<div className="actions">
 					<Link className="button secondary" to="/">
-						返回素材目录
+						返回来源目录
 					</Link>
 					{retry && !missing && (
 						<button className="button primary" type="button" onClick={retry}>

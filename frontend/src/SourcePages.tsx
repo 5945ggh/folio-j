@@ -57,9 +57,9 @@ export function SourceIndex() {
 		<Shell>
 			<div className="page-heading">
 				<div>
-					<p className="eyebrow">LIBRARY / SOURCES</p>
-					<h1>素材目录</h1>
-					<p>按来源整理片段，随时回到原文继续阅读。</p>
+					<p className="eyebrow">SOURCES</p>
+					<h1>来源目录</h1>
+					<p>按作品或出处整理学习片段，随时返回原文阅读。</p>
 				</div>
 				<button
 					className="button primary"
@@ -91,7 +91,9 @@ export function SourceIndex() {
 				</div>
 				{sources.data.length === 0 ? (
 					<div className="empty-state">
-						<p>还没有来源。添加一份素材，开始保存想学习的片段。</p>
+						<p>
+							还没有来源。先为作品或出处创建一条来源记录，再添加想学习的片段。
+						</p>
 					</div>
 				) : (
 					<div className="source-list">
@@ -267,7 +269,7 @@ export function SourceDetail() {
 	return (
 		<Shell>
 			<nav className="breadcrumb" aria-label="位置">
-				<Link to="/">素材目录</Link>
+				<Link to="/">来源目录</Link>
 				<span aria-hidden="true">/</span>
 				<span aria-current="page">{source.data.title}</span>
 			</nav>
@@ -334,7 +336,7 @@ export function SourceDetail() {
 			)}
 			<section className="list-section" aria-label="片段列表">
 				<div className="section-heading">
-					<h2>片段</h2>
+					<h2>学习片段</h2>
 					<span>{source.data.segment_count} 个片段</span>
 				</div>
 				{segments.isPending ? (

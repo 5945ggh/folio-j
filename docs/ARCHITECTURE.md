@@ -66,8 +66,8 @@ Analysis 有创建和删除业务接口，整份删除仅向用户管理界面�
 |---|---|---|
 | `UserProfile` | `native_language`、`explain_language`、`level_note`、`profile_md` | 单用户学习背景 |
 | `AnalysisStyle` | `name`、`body_md`、`is_default` | 讲解偏好预设 |
-| `Source` | `title`、`note`、来源描述 | 用户声明的来源范围，可容纳不同形式的输入；不等于文件或未来的 Collection |
-| `Segment` | `source_id`、`text`、可选译文／备注／听写／`source_ref`／`tokens` | 学习目标原文；入库做 NFC。片段顺序不能推断原作相邻或自动语境 |
+| `Source` | `title`、`note`、来源描述 | 用户声明的来源范围；未来可容纳不同形式的输入，不等于文件或 Collection |
+| `Segment` | `source_id`、`text`、可选译文／备注／听写／`source_ref`／`tokens` | 学习目标原文；`source_ref` 当前为自由文本出处，不是素材外键。入库做 NFC；片段顺序不能推断原作相邻或自动语境 |
 | `Run` | `kind`、关联的操作、实际 Provider／模型／协议／参数、完整消息、输出、用量、状态、时间 | 每次模型调用均记录，不包含密钥；具体操作关联待设计 |
 | `Analysis` | `segment_id`、文档身份与展示元信息 | 一个 Segment 可有多份独立的完整或专题讲解；默认展示选择待设计 |
 | `AnalysisRevision` | `analysis_id`、`parent_revision_id?`、`origin`、`run_id?`、`source_md`、`normalizer_version`、`warnings` | 一经生成不可变；`source_md` 为文本真相，来源可追溯 |
@@ -79,7 +79,7 @@ Analysis 有创建和删除业务接口，整份删除仅向用户管理界面�
 
 `Occurrence` 的产品整理状态为 `pending`、`learning`、`reference`，用户可在三者间调整；`reference` 可主动查找和阅读，默认不参与后续学习活动，`learning` 不自动启动排期。删除是独立产品操作，在存储层仍以状态变更软删除，内部删除状态编码待定；不使用 `dismissed` 混合表达忽略与删除，也不提供独立忽略、归档或恢复入口。修订保留历史。再次整理遵循 PRD F5，不自动作废或替换候选，不迁移整理状态或历史引用，也不根据删除建立永久拒绝规则。具体手动／AI 创建来源、引用约束和删除保留策略须在实现前设计。
 
-预留、MVP 不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`、`MediaAsset`。
+预留、MVP 不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`。未来素材的实体命名与数据关系待需求明确后设计，`MediaAsset` 不是已确定名称。
 
 工具审核需持久记录所属线程、目标及基础版本、具体拟执行操作、用户决定／附加指令与执行结果。这是执行契约的需求，不在此预定新表、实体名称或状态枚举。待审核方案与正式 AnalysisRevision／Occurrence 分开，批准后仍可能执行失败，二者不能混为一条成功记录。
 
@@ -331,6 +331,6 @@ frontend/src/
 | 知识点软聚类与 IR | 保留 anchor 检索信息；将来依据实例归属需求设计聚类和用户判断，不在写入时预设同一性 |
 | lexeme 挂载 | 将来按词典与分词需求设计 Lexeme 及关联；不要求首轮预存 tokens |
 | 主动学习与 SRS | 从具体练习方式确定内容与调度契约；Occurrence 可提供原文和讲解依据，不直接等于卡片，`learning` 不自动启动排期 |
-| 多模态 | `Segment.source_ref` 升级为 `MediaAsset` 加时间区间；mpv 通过 IPC 或 Lua 脚本直接创建片段 |
+| 素材与多模态 | 将来按实际输入和选取需求设计可选的素材定位；手动录入与素材选取均进入 Segment 学习流程。`source_ref` 当前保留自由文本出处，不预定素材实体、时间区间或播放器集成 |
 | 听写诊断 | 保留用户提供的听写，后续按需求讨论与原文对齐及学习反馈，不自动更新用户画像 |
 | 后端重写 | 业务规则集中在服务层和纯函数中，API 契约由 OpenAPI 固定 |

@@ -16,7 +16,7 @@ export function App() {
 						<div className="state-card">
 							<h1>页面不存在</h1>
 							<Link className="button secondary" to="/">
-								返回素材目录
+								返回来源目录
 							</Link>
 						</div>
 					</Shell>
