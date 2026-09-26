@@ -1,0 +1,48 @@
+backend/alembic/versions/0003_model_identity.py
+  s_d6d450d8140122::t_9fe9116b0f04bf 20-26,28-29
+  s_d6d450d8140122::t_aa98b61d153e83 1-19,27,30-38
+backend/tests/test_settings_api.py
+  s_d6d450d8140122::t_f00a2a84493a15 377-443
+  s_d6d450d8140122::t_6c63ffe14eaa56 465-479
+  s_d6d450d8140122::t_4cb6ef910d48d6 453,488-501,532
+  s_d6d450d8140122::t_e4de1ac524017f 502-504,534-536,543-545
+  s_d6d450d8140122::t_ebd5209d76bb4c 454-464,480-487,505-531,533,537-542,546-547
+backend/src/app/api/settings.py
+  s_d6d450d8140122::t_aa98b61d153e83 145-153
+frontend/src/content.ts
+  s_d6d450d8140122::t_2b42d27e842042 19-23
+frontend/src/settings/ProviderSettings.tsx
+  s_d6d450d8140122::t_d0e9a64c2809e2 865-870,1061-1063,1080-1085,1087-1092,1095-1100,1102-1109
+  s_d6d450d8140122::t_863e26fa7a7fba 862-864,872-878,1056-1060,1064-1069,1074,1079,1086,1093-1094,1101,1110-1113
+  s_d6d450d8140122::t_2b42d27e842042 871
+backend/tests/test_settings_migration.py
+  s_d6d450d8140122::t_7a755b10d242db 159
+  s_d6d450d8140122::t_2e468ecda2bc1f 12-18,20-64,114-158,160-166
+  s_d6d450d8140122::t_e4de1ac524017f 19
+backend/src/app/services/settings.py
+  s_d6d450d8140122::t_9fe9116b0f04bf 528
+  s_d6d450d8140122::t_aa98b61d153e83 14-15,403,422-425,436,451,469-473,478,499-517,524-526,529-537,541,590,666,707,734
+backend/openapi.json
+  s_d6d450d8140122::t_f511e03bedb8d8 1354-1383
+backend/src/app/settings_models.py
+  s_d6d450d8140122::t_aa98b61d153e83 5,58
+frontend/src/api/schema.d.ts
+  s_d6d450d8140122::t_f511e03bedb8d8 34-35,849-876
+  s_d6d450d8140122::t_cd2fbc7038c922 877
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ba3f64d047bb36840834c5df32247d8b70e75a80",
+  "prompts": {},
+  "sessions": {
+    "s_d6d450d8140122": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddff-efa4-7df1-8ed0-77138aa048e2",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
