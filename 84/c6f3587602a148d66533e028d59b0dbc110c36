@@ -1,0 +1,146 @@
+references/first_step_analysis_examples/v0.1/prompt-template.md
+  h_c735ec7f46d14b 1-5
+  h_c735ec7f46d14b 6-29
+references/occurrence_anchor_pilot/batch-01/snapshots/sample02/source.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-23
+references/occurrence_anchor_pilot/reading-experiment/report.md
+  s_b05c605d32f21d::t_30c5daa0fc71c3 33
+  s_c34d91f419c049::t_ffd753f89bd7d8 39-45
+  s_0e74a7d046d395::t_2bc6a06ba11f66 1-32,35-38
+  s_0e74a7d046d395::t_fae3cfbc27f4ab 34
+references/occurrence_anchor_pilot/reading-experiment/app.js
+  s_0e74a7d046d395::t_23f04f6839e3cf 90,96-100,104,110,203-223
+  s_0e74a7d046d395::t_40a42530e1a2c9 1-30,37-89,91-95,101-103,105-109,111-202,224-288
+  s_0e74a7d046d395::t_fb54383dc9eff8 31-36
+references/occurrence_anchor_pilot/batch-01/validate.py
+  s_0e74a7d046d395::t_5090e913297d6c 1-19,21-118,120-235,237-262
+  s_0e74a7d046d395::t_6813a8bbab720a 20,119,236
+references/occurrence_anchor_pilot/batch-01/snapshots/sample06/source.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-23
+references/occurrence_anchor_pilot/reading-experiment/styles.css
+  s_0e74a7d046d395::t_12fd601c399389 26
+  s_0e74a7d046d395::t_3670996b347065 1-25,27-29
+references/first_step_analysis_examples/v0.1/01/source.md
+  h_c735ec7f46d14b 1-19
+references/occurrence_anchor_pilot/reading-experiment/parser-test.mjs
+  s_0e74a7d046d395::t_7cafac7be5676a 70,74
+  s_0e74a7d046d395::t_0f7556d29e3c30 52
+  s_0e74a7d046d395::t_160f4ff1b807ed 1-5,7-51,53-69,80
+  s_0e74a7d046d395::t_73f5f8846032aa 6,71-73,75-79
+references/occurrence_anchor_pilot/reading-experiment/index.html
+  s_0e74a7d046d395::t_8d63bbe92543d3 1-39
+references/occurrence_anchor_pilot/batch-01/validation.json
+  s_0e74a7d046d395::t_ab513dd5ebe49e 1-5,8-610,968-971
+  s_0e74a7d046d395::t_acbbc952581fce 6-7,611-967
+references/sentence_examples/as_ep01_clip.md
+  h_c735ec7f46d14b 1-13
+references/occurrence_anchor_pilot/batch-01/snapshots/sample05/source.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-23
+references/occurrence_anchor_pilot/batch-01/snapshots/sample05/analysis.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-403
+references/occurrence_anchor_pilot/batch-01/snapshots/sample03/source.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-23
+references/sentence_examples/README.md
+  h_c735ec7f46d14b 7
+  s_8d10275b0555fd::t_ea1b5f87000d1a 1-6,8-15
+references/occurrence_anchor_pilot/batch-01/snapshots/sample02/analysis.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-373
+references/occurrence_anchor_pilot/batch-01/review.md
+  s_0e74a7d046d395::t_65a6537574597d 12
+  s_0e74a7d046d395::t_9255375c9d5748 53-54
+  s_0e74a7d046d395::t_696b298cda8fd5 1-11,13-52,55-57
+references/occurrence_anchor_pilot/batch-01/manifest.json
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-484
+references/occurrence_anchor_pilot/batch-01/snapshots/sample04/source.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-23
+references/occurrence_anchor_pilot/reading-experiment/README.md
+  s_0e74a7d046d395::t_dc991ad0fe9bca 1-30
+references/occurrence_anchor_pilot/batch-01/snapshots/sample03/analysis.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-406
+references/occurrence_anchor_pilot/reading-experiment/data.json
+  s_0e74a7d046d395::t_5f964ca5229ac0 1-5051
+references/occurrence_anchor_pilot/batch-01/report.md
+  s_0e74a7d046d395::t_2930a088feda70 7-8
+  s_0e74a7d046d395::t_65a6537574597d 21,36,54
+  s_b05c605d32f21d::t_30c5daa0fc71c3 11
+  s_0e74a7d046d395::t_28097ee92021a8 12
+  s_0e74a7d046d395::t_ae324dc21d86e4 1-6,9-10,13-20,22-35,37-53,55-62
+references/first_step_analysis_examples/v0.1/01/analysis.md
+  h_c735ec7f46d14b 1-449
+references/first_step_analysis_examples/json-test-v0.1/01/source.md
+  h_c735ec7f46d14b 1-19
+references/README.md
+  s_b05c605d32f21d::t_ce8441f75da762 1-14
+references/occurrence_anchor_pilot/batch-01/snapshots/sample01/analysis.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-449
+references/occurrence_anchor_pilot/reading-experiment/build.mjs
+  s_0e74a7d046d395::t_fad06cbd199d7d 1-109,116-150,152-164
+  s_0e74a7d046d395::t_448d47a149acdb 110-115,151,165-167
+references/occurrence_anchor_pilot/batch-01/snapshots/sample06/analysis.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-294
+references/first_step_analysis_examples/json-test-v0.1/prompt-template.md
+  h_c735ec7f46d14b 1-46
+references/first_step_analysis_examples/README.md
+  s_8d10275b0555fd::t_b24e0ab162612b 7-10,17-20,29,35
+  s_8d10275b0555fd::t_78529a9da2464e 3,16,21-26,33
+  s_8d10275b0555fd::t_ea1b5f87000d1a 1-2,4-6,11-15,27-28,30-32,34,36
+references/occurrence_anchor_pilot/batch-01/occurrences.jsonl
+  s_0e74a7d046d395::t_a38ff5edf4ecfa 4
+  s_0e74a7d046d395::t_3b6e998fed0bb0 23-35
+  s_0e74a7d046d395::t_990dc2eb77e974 1-3,5-22
+references/occurrence_anchor_pilot/batch-01/snapshots/sample01/source.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-21
+references/occurrence_anchor_pilot/batch-01/snapshots/sample04/analysis.md
+  s_0e74a7d046d395::t_fa8ab5aeb97a2a 1-311
+references/occurrence_anchor_pilot/reading-experiment/vendor/LICENSE.md
+  s_0e74a7d046d395::t_f13c42d142564b 1-44
+references/occurrence_anchor_pilot/reading-experiment/vendor/marked.esm.js
+  s_0e74a7d046d395::t_dfc23dcfeef0cf 1-72
+references/first_step_analysis_examples/json-test-v0.1/01/analysis.json
+  h_c735ec7f46d14b 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "84c6f3587602a148d66533e028d59b0dbc110c36",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_0e74a7d046d395": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0d6ad-cb51-7673-a737-ec934abfca13",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_8d10275b0555fd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0d40c-a928-7090-bb42-db818c0f7c8c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_b05c605d32f21d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0dba0-528f-7482-992b-e4e6bcb077dc",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_c34d91f419c049": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0d440-0c7a-7af0-a4db-0733a8818c32",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
