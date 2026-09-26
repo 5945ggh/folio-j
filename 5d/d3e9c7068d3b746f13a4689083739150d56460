@@ -1,0 +1,42 @@
+frontend/src/SegmentPage.tsx
+  s_33ae189be877ef::t_dd82b696a976ba 119
+README.md
+  s_33ae189be877ef::t_30fd05b82a79cb 5,16
+docs/GLOSSARY.md
+  s_33ae189be877ef::t_916b75c55d78bb 6,8,10,14-15,17,22-24,27,31,35,37
+  s_33ae189be877ef::t_30fd05b82a79cb 33
+docs/PRD.md
+  s_33ae189be877ef::t_4ba30d5a0d5680 54,58,76,165,312-313
+  s_33ae189be877ef::t_13b37c7982bc8a 311
+frontend/src/App.tsx
+  s_33ae189be877ef::t_dd82b696a976ba 19
+frontend/src/Forms.tsx
+  s_33ae189be877ef::t_808aaec98a0ee6 34
+frontend/src/Shared.tsx
+  s_33ae189be877ef::t_808aaec98a0ee6 20,47
+prototypes/reading-native/README.md
+  s_33ae189be877ef::t_30fd05b82a79cb 38
+frontend/src/SourcePages.tsx
+  s_33ae189be877ef::t_dd82b696a976ba 60-62,94-96,272,339
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_33ae189be877ef::t_30fd05b82a79cb 3,9,19,44
+docs/ARCHITECTURE.md
+  s_33ae189be877ef::t_daab922a2ee4fe 70,82,334
+  s_33ae189be877ef::t_13b37c7982bc8a 69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5dd3e9c7068d3b746f13a4689083739150d56460",
+  "prompts": {},
+  "sessions": {
+    "s_33ae189be877ef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0dd17-de16-71f2-a81d-972d73d735fd",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
