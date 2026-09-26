@@ -4,10 +4,11 @@
 
 ## Active
 
-- [第二阶段 2B：片段后台异步问答](STAGE_2B_ASYNC_QA.md)：契约已细化并经独立复核；实体与API、原子接受、输入快照、持久历史、停止／重启状态机及验收矩阵，功能尚未实现。
 - [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：已确认的首轮能力与切片约束；具体交付顺序仍待编排。
 
 ## Archived
+
+- [第二阶段 2B：片段后台异步问答](archived/STAGE_2B_ASYNC_QA.md)：已完成实现与离线验收；保留输入快照、原子锁定、持久历史、停止／重启、迁移及浏览器证据。
 
 - [第二阶段 2A：设置与模型接入](archived/STAGE_2A_MODEL_SETTINGS.md)：已完成验收；保留接口、凭据、并发修复、迁移与浏览器证据。
 

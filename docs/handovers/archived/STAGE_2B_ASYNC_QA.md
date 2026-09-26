@@ -1,6 +1,6 @@
 # 第二阶段 2B：片段后台异步问答
 
-状态：契约已细化并经独立复核，供本阶段实现与验收；尚未实现 API、迁移或界面。长期行为以 [PRD](../PRD.md) F1、F2、F7–F9 为准，领域身份见 [GLOSSARY](../GLOSSARY.md)，实现原则见 [ARCHITECTURE](../ARCHITECTURE.md)。本文件固定2B的局部技术选择，不宣称整个MVP或TBD-16已经完成。
+状态：2B实现与离线验收通过，已归档；随本轮以快进方式集成到main。长期行为以 [PRD](../../PRD.md) F1、F2、F7–F9 为准，领域身份见 [GLOSSARY](../../GLOSSARY.md)，实现原则见 [ARCHITECTURE](../../ARCHITECTURE.md)。本文件固定2B的局部技术选择，不宣称整个MVP或TBD-16已经完成。
 
 ## 1. 交付范围与局部选择
 
@@ -14,7 +14,7 @@
 
 ## 2. 身份、数据与约束
 
-新增实体放 `chat_models.py`／`chat_schemas.py`，业务放 `services/chat.py` 与 `services/context.py`，任务领取和监督放 `jobs/`。所有新身份为ULID；时间为带时区UTC。以下是待实现契约，不能手改生成类型使尚未存在的接口看似可用。
+新增实体放 `chat_models.py`／`chat_schemas.py`，业务放 `services/chat.py` 与 `services/context.py`，任务领取和监督放 `jobs/`。所有新身份为ULID；时间为带时区UTC。以下契约已落实到实现，前端类型由OpenAPI生成。Job实体的物理表名为chat_jobs。
 
 | 实体 | 2B字段及关系 | 约束 |
 |---|---|---|
@@ -61,9 +61,9 @@ Source.note和Segment.note是管理备注，2B不自动发送；用户需要补�
 
 不静默裁剪历史、不自动摘要或额外调用模型。渲染后messages所有content合计最多200000个Python码点，超限在接受前返回422，提示缩短本轮输入或新建线程；这只是本地资源上限，不声称等于上游token窗口。上游上下文超限仍按调用失败记录。所有可调上限集中在执行策略常量中。
 
-当前 `llm/adapters.py::CallSnapshot`只有prompt字符串；2B须增加角色消息输入，并分别转换为Chat Completions和Responses的对应消息结构，保持system／user／assistant边界。2A验证继续使用固定短prompt路径，不被问答消息重构改变；两协议均用离线请求断言检验完整角色／顺序，不使用远端会话ID代替本地历史。
+`llm/adapters.py::CallSnapshot`现支持角色消息输入，分别转换为Chat Completions和Responses的对应消息结构，保持system／user／assistant边界。2A验证继续使用固定短prompt路径，不被问答消息重构改变；两协议均用离线请求断言检验完整角色／顺序，不使用远端会话ID代替本地历史。
 
-模板放 `backend/prompts/chat/`，文件头声明版本；背景与预设只作适用的问答要求，不每次套完整解析格式。渲染时只使用已读取的快照值，禁止模板内重新查询最新数据。密钥不进入模板、messages、普通API或浏览器持久存储。
+模板放 `backend/prompts/chat/`，文件头声明版本；背景与预设只作适用的问答要求，不每次套完整解析格式。渲染时只使用已读取的快照值，禁止模板内重新查询最新数据。密钥不进入模板、messages、普通API或浏览器持久存储。接受时若本轮请求／快照包含当前凭据的字面或常见编码形式，返回422 credential_in_input，不回显输入并回滚，不替用户改写原文；凭据文件缺失仍按queued执行失败路径处理。
 
 ## 4. 接受、幂等与编辑竞争
 
@@ -106,6 +106,8 @@ Job状态：`queued / running / stopping / succeeded / failed / interrupted`。�
 
 ## 6. 停止、重启与运行所有权
 
+实现中的chat_dispatch_lock在SDK入口和停止／来源／片段删除事务提交之间确定先后；入口持锁核对token和状态，确认进入适配器后放锁，不持锁等待网络。停止先提交则不再进入SDK；已进入SDK的调用再由取消和迟到保护处理。
+
 停止按job_id定位，不能用“停止当前线程”误停已经开始的新轮。停止和成功都以数据库事务提交为判定点：成功先提交就保持成功；停止先提交则撤销token，之后的完成／异常／进度全部无权写入。queued停止直接终态；running先stopping，取消由生命周期管理器处理，浏览器关闭不影响处理。
 
 取消处理最多等待2秒，然后以已持久撤销的token为边界完成本地停止并释放线程；已经发出的请求不能保证上游立即停止或不计费。尚未退出的适配器仍被跟踪并占用原生成名额直至退出，不能提前释放名额造成实际并发越限。停止后可提交新轮，但若名额仍被占用则排队；旧回调仍不能改新轮或恢复写入。停止不撤销停止前已提交数据；2B只有讨论残文，没有工具成果回滚。
@@ -122,7 +124,7 @@ Source／Segment删除沿用逻辑删除且不提供恢复入口。2B增加来�
 
 逻辑删除可在SQLite中保留历史输入供内部诊断，不承诺物理擦除；不能通过通用Run API继续把已删除学习文本作为正常内容展示。物理清理与恢复工具不在2B。与删除同时发生的迟到结果不得重新创建消息、任务或可见内容。删除模型／Provider只影响新选择，其历史快照保留；存在queued/running/stopping chat Job时返回409。
 
-## 8. API契约（实现时由Pydantic生成OpenAPI）
+## 8. API契约（已由Pydantic生成OpenAPI）
 
 所有新输入extra=forbid；ID为26位ULID，revision为正整数，request_id为客户端UUID。question必须非空白，NFC后至多10000码点；additional_instructions默认为空，至多10000码点；保留正文内部空白。所有读取先校验当前归属与未删除状态。
 
@@ -143,7 +145,7 @@ Source／Segment删除沿用逻辑删除且不提供恢复入口。2B增加来�
 
 分页统一多取1项确定是否还有后页，next_cursor只有确有后页时非null；线程cursor解码失败或归属不一致返回422。游标携带segment_id及排序元组，仅用于该Segment；不能依靠ULID与created_at恰好同序。消息按`ordinal > after_ordinal`续取，after_ordinal须非负，越过尾部返回空页；既有消息正文的进行中更新通过Job轮询取得，不靠追加游标发现。
 
-ThreadResponse：`{id,segment_id,display_title,selected_model_id,permission_mode,revision,active_job_id,created_at,updated_at}`。MessageResponse：`{id,thread_id,job_id,ordinal,role,status,content,created_at,updated_at}`。JobResponse：`{id,thread_id,request_id,status,version,user_message_id,assistant_message:MessageResponse,run_id,model:ModelSnapshotResponse,permission_mode,error_code,error,created_at,started_at,finished_at,stop_requested_at}`。
+ThreadResponse：`{id,segment_id,display_title,selected_model_id,permission_mode,revision,active_job_id,created_at,updated_at}`。MessageResponse：`{id,thread_id,job_id,ordinal,role,status,content,created_at,updated_at}`。JobResponse：`{id,thread_id,request_id,status,version,user_message_id,assistant_message:MessageResponse,run_id,model:ModelSnapshotResponse,permission_mode,question,additional_instructions,error_code,error,created_at,started_at,finished_at,stop_requested_at}`。
 
 ModelSnapshotResponse：`{provider_id,provider_name,provider_revision,provider_model_id,model_id,model_revision,protocol,temperature,max_output_tokens,reasoning_effort,stream}`；均为本次快照，数字参数可null。公开响应不含credential_ref、密钥文件路径；JobResponse不反复传完整input_snapshot／messages。
 
@@ -164,7 +166,7 @@ ModelSnapshotResponse：`{provider_id,provider_name,provider_revision,provider_m
 3. 前端：只使用生成类型，工作台、删除影响、轮询与草稿；后端schema确认后先`just gen-api`再接入。
 4. 独立测试／复核：不复用实现者自述作为验收结论；强制交错验证并发，实际浏览器验证保存与停止。
 
-本轮只细化文档，不创建占位路由／空迁移、不改生成类型。实现阶段从当前0003基线新增迁移（不能重写已使用的0001–0003），升级需保留现有来源、片段、配置及验证历史，旧Run新增purpose默认为verification，chat新增表为空。
+实现从0003基线新增0004_chat_jobs迁移（不重写已使用的0001–0003），升级需保留现有来源、片段、配置及验证历史，旧Run新增purpose默认为verification，chat新增表为空。
 
 ## 10. 验收矩阵与停止条件
 
@@ -182,8 +184,41 @@ ModelSnapshotResponse：`{provider_id,provider_name,provider_revision,provider_m
 
 实现完成须取得 `just gen-api`、`just check`、空库与增量迁移及浏览器证据；测试禁止真实网络或模型。正文数量和调用成功不证明教学质量。TBD-16在本阶段只落实问答接受／保存核实／单次预算，成果工具、修复循环与TBD-17混合审核仍待其切片；线程命名／单独删除和资料工具不由本契约提前扩展。
 
-## 11. 本轮契约复核
+## 11. 实现前的契约复核记录
 
 主代理编写，后端审查与测试设计子代理独立复核；已补齐创建线程的持久幂等字段、稳定分页、角色消息适配，以及凭据读取／领取／Run创建顺序。当前未发现阻塞2B开工的契约矛盾，功能仍待实现。
 
 本轮仅修改文档，没有后端schema或产品界面改动，因此未生成占位API类型、未迁移数据库、未作2B浏览器或真实模型验收。`just check-docs`最初因uv尝试重建本地包时无法访问PyPI失败；随后使用已有环境执行`UV_NO_SYNC=1 just check`，55项后端、2项前端、lint／类型检查、生产构建及20份文档／66个本地链接全部通过，`git diff --check`通过。现有测试通过仅证明基线未受文档修改影响，不代表2B并发与停止行为已经实现或测试通过。
+
+
+## 12. 实现与收口验证
+
+实现由后端持久化、后台执行、前端工作台三个原生子代理按文件所有权分工；主代理集成并编写接口／运行器／协议／迁移测试，独立审查与测试代理复核竞争窗口和恢复，浏览器由未参与前端开发的代理验收。
+
+- 已实现线程创建与选择、后台问答／追问、实际输入和模型快照、同事务原文锁定、持久消息、停止／迟到保护、重启中断与单实例执行锁。
+- 新增0004_chat_jobs增量迁移；Run以purpose隔离chat与verification，聊天不会改变2A能力状态。来源／片段删除影响包含线程、消息和活动任务，删除后相应历史与Run不从公开API重新出现。
+- 前端通过TanStack Query轮询持久任务；线程先结束而Job尚未读到终态时也刷新历史。接受请求未确认或服务端5xx时保留同一request_id核实；收到接受确认只清除仍等于提交内容的草稿，不擦除用户新输入。
+
+验收中关闭的缺陷：
+
+| 触发与影响 | 修复与证据 |
+|---|---|
+| Job与消息同时flush导致外键顺序错误 | 先持久Job再写两条消息，统一事务；API接受与回滚测试通过 |
+| SQLite读回naive时间后分页游标被自身校验拒绝 | 编码前恢复UTC，分页与跨页新建测试通过 |
+| 停止在最后状态检查后先提交，旧执行仍能进入SDK | 调用握手与停止／删除提交共用chat_dispatch_lock；强制交错证明停止不能插入检查与SDK入口之间，停止／删除先赢时SDK调用数为0 |
+| 忽略取消的旧适配器可能提前释放调用名额，或超长残文落库 | 跟踪真实任务、取消只发一次、旧任务退出才释放名额；超限残文截断，超限result/raw不落库；共享并发及输出上限测试通过 |
+| 当前凭据误粘贴进问题／原文后可复制入Job和Run | 接受前拒绝含本次凭据的冻结输入，不改原文，422不回显且不留任务／消息／锁；参数化回归通过 |
+| 前端先观察到线程空闲，历史却停留在生成中；确认接受时擦掉新草稿 | 独立监听线程revision／active_job_id，保留与已提交内容不同的草稿；3项新增前端纯逻辑测试覆盖，包括5xx核实策略 |
+
+新鲜自动化证据：Python3.11.14；`UV_NO_SYNC=1 just gen-api`与`UV_NO_SYNC=1 just check`通过，包含86项后端、5项前端、Ruff／pyright／Biome／TypeScript、生产构建及文档链接。测试含两协议×普通／流式共4项实际SDK内存HTTP请求形状验证；独立8项强制交错／恢复测试与独立3项阻塞修复复核通过。所有测试离线，没有新的真实模型调用或伪造录制文件。使用已有环境是因为前轮已确认uv依赖同步受PyPI访问限制，本轮未添加或升级依赖。
+
+本机迁移在确认无未完成Run并取得执行锁后运行，升级前保留了SQLite备份；0003→0004后原有8张业务表原字段内容摘要一致，完整性和外键检查通过。临时库还验证了空库重建与旧验证Run迁移为verification。Git候选文件与SQLite普通记录不含本机实际凭据及所检查的常见编码，凭据目录／文件权限仍为0700／0600。
+
+剩余边界：2B只实现文本问答，未交付成果保存工具、Section编辑、Occurrence、混合审核或自动修复；TBD-16只收口单次问答部分，TBD-17保持未决。历史过长不自动裁剪／摘要，达到本地上限明确拒绝；未提交草稿不承诺跨整页刷新保存。当前进程锁使用macOS／Linux的fcntl，其他平台尚未适配验证。停止不能保证上游已接收请求立即停费，仍遵守旧任务不再落地和共享名额不提前释放的本地保证。
+
+
+实际浏览器：原控制入口不可用且原生连接挂起后，改用Codex已捆绑的Playwright启动系统Chrome无头浏览器，不安装仓库依赖；使用独立临时SQLite与明确的离线适配器。首问成功、原文锁定／编辑409、刷新找回历史且验证Run列表不混入chat、成功追问、失败原因及问题／补充要求双字段回填、运行中可编辑草稿但不能发送、刷新后停止及停止后再次发送、同片段独立线程、片段删除影响预览与取消均通过。390×844视口的clientWidth与scrollWidth均为390，无横向溢出；页面console与pageerror均为空。截图已检查，临时Chrome与服务已关闭，未修改用户Provider或调用真实模型。
+
+覆盖界限：本轮没有在浏览器模拟响应丢失、后台重启、多标签同时操作和来源删除确认；这些边界由对应API／竞态／前端纯逻辑测试支持，不描述为浏览器已全部实测。真实模型的教学质量与多轮使用效果仍需实际使用评估；此前DeepSeek四次文本验证不是2B真实多轮验收。
+
+结论：本阶段识别的阻塞问题已修复并独立复核，2B离线验收通过。保留所有既有提交，以后端、前端和验收记录分批提交并快进集成；不自动推送远端。下一切片需先细化成果保存、讲解修订与工具审核契约，不能因2B文本问答可用而认定工具能力已验证。

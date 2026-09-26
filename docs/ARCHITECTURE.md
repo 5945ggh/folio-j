@@ -54,7 +54,7 @@ Analysis 有创建和删除业务接口，整份删除仅向用户管理界面�
 
 ## 3. 领域模型
 
-当前已落地 Source／Segment 管理及 2A 设置／模型验证。来源与片段具体 API 与字段见[第一阶段契约](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)，实现位于 `models.py`、`schemas.py`、`services/sources.py` 与 `api/sources.py`；设置与验证见第 4 节，其余实体和模块仍为后续设计。Source、Segment 使用 `deleted_at` 逻辑删除，删除来源在同一事务内标记所属片段，查询排除已删除对象。当前没有引用片段的 AI 接受任务入口；`text_locked_at` 的修改保护已建立，锁定与任务接受的原子边界随 2B 实现。
+当前已落地 Source／Segment 管理、2A设置／模型验证，以及2B片段后台问答与历史。来源与片段具体 API 与字段见[第一阶段契约](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)，实现位于 `models.py`、`schemas.py`、`services/sources.py` 与 `api/sources.py`；设置与验证见第 4 节，其余实体和模块仍为后续设计。Source、Segment 使用 `deleted_at` 逻辑删除，删除来源在同一事务内标记所属片段，查询排除已删除对象。2B接受问答时在同一短写事务保存输入快照、消息与Job，并首次设置`text_locked_at`；原文编辑、来源／片段删除在同一事务边界核对当前状态。
 
 数据库生命周期由应用 lifespan 管理，迁移从空库建立 schema，`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。
 
@@ -105,9 +105,9 @@ erDiagram
 - `normalizer_version`：规范化器的规则一旦变化就递增。**格式契约 prompt 与规范化器是一对**，修改其中一方时必须检查另一方。
 - `extraction_schema_version`：提取 schema 或 anchor 规则 `[TBD-03]` 变化时递增。
 
-### 3.4 2B 问答契约（待实现）
+### 3.4 2B 问答实现
 
-[2B实施契约](handovers/STAGE_2B_ASYNC_QA.md)固定本阶段的实体字段、API、状态机和验收矩阵；目前尚未生成相应OpenAPI或执行迁移。以上实体表仍是完整MVP草图，2B按该契约落实下列边界：
+[2B实施契约](handovers/archived/STAGE_2B_ASYNC_QA.md)固定本阶段的实体字段、API、状态机和验收矩阵；实现位于`chat_models.py`、`chat_schemas.py`、`services/chat.py`、`services/context.py`及`jobs/runtime.py`；API类型已从OpenAPI生成，增量迁移为`0004_chat_jobs`。以上实体表仍是完整MVP草图，2B已落实下列边界：
 
 - ChatThread归属Segment，ChatMessage归属线程和Job；同线程只有一个活动Job，数据库唯一约束与active_job_id共同维护。创建线程不锁原文，接受问答在同一短写事务内保存不可变输入／模型快照、用户消息、助手占位及Job，并首次设置text_locked_at。
 - 接受请求以线程内request_id幂等，原样重放返回原身份，异payload或并发新轮冲突；Segment用户编辑revision和Thread.revision用于拒绝陈旧提交。片段编辑、来源／片段删除必须同步参与事务保护，不能只修改新入口。
@@ -117,7 +117,7 @@ erDiagram
 
 ## 4. 模块设计
 
-2A 已落地设置与模型验证：`settings_models.py`／`settings_schemas.py`、`services/settings.py` 与 `llm/adapters.py`；配置保存在SQLite，凭据使用数据库旁 `<数据库文件名>.secrets/` 的独立文件（0700目录／0600文件）。验证 Run 固定非敏感配置和凭据引用，后台最多并发2次，每次只调用一次，60秒超时；页面只观察持久记录，重启不自动重放。非流式响应脱敏留存，流式保存脱敏聚合正文与终止元数据，不记录可能重组出密钥的逐包碎片。详见[2A契约](handovers/archived/STAGE_2A_MODEL_SETTINGS.md)。多步骤Job、片段上下文和线程执行仍由后续切片实现。
+2A 已落地设置与模型验证：`settings_models.py`／`settings_schemas.py`、`services/settings.py` 与 `llm/adapters.py`；配置保存在SQLite，凭据使用数据库旁 `<数据库文件名>.secrets/` 的独立文件（0700目录／0600文件）。验证 Run 固定非敏感配置和凭据引用，后台最多并发2次，每次只调用一次，60秒超时；页面只观察持久记录，重启不自动重放。非流式响应脱敏留存，流式保存脱敏聚合正文与终止元数据，不记录可能重组出密钥的逐包碎片。详见[2A契约](handovers/archived/STAGE_2A_MODEL_SETTINGS.md)。2B已实现片段上下文、单轮问答Job及线程执行；成果工具与多步骤修复仍由后续切片实现。
 
 ### 4.1 上下文管理器（`services/context.py`）
 
@@ -150,7 +150,7 @@ erDiagram
 - **Run 记录**：每次模型调用前创建 Run，结束时写入输出、用量和状态；用户触发的模型调用验证同样记录。配置失效明确报告，不悄悄采用其他默认值。
 - **有限执行预算**：底层临时故障重试、结构化输出修复和 Agent 继续尝试需受协调后的有限预算约束，不能各自重新获得一套预算而无界叠加。具体次数、时间／调用上限和计数责任在执行契约中确定；所有实际模型调用继续记录 Run。
 - **开发缓存**（`app.toml` 中 `dev_cache = true` 时启用）：缓存身份包含 Provider 配置身份与端点、协议、模型、实际参数、消息和输出契约等非敏感请求内容，避免不同接入方式共享错误结果；缓存到 `data/llm_cache/`。测试时的录制与回放复用同一套机制（见第 8 节），不将凭据内容写入缓存。
-- **流式观察**：2A轮询持久Run；2B轮询Job的持久聚合正文，不新增SSE。后续SSE须为每个订阅者独立分发并支持从持久记录补读，不能用单个消费队列让不同页面分走事件。离开与重连不重复发起生成，具体协议见 [2B实施契约](handovers/STAGE_2B_ASYNC_QA.md)。
+- **流式观察**：2A轮询持久Run；2B轮询Job的持久聚合正文，不新增SSE。后续SSE须为每个订阅者独立分发并支持从持久记录补读，不能用单个消费队列让不同页面分走事件。离开与重连不重复发起生成，具体协议见 [2B实施契约](handovers/archived/STAGE_2B_ASYNC_QA.md)。
 
 2A 已确定配置持久化与凭据更新规则：每次接入配置或模型参数变更提升版本，旧能力验证失效；运行结果仅在版本仍一致时更新能力状态。停用Provider阻止新验证，不改已接受快照；存在未完成验证时拒绝删除，否则逻辑删除并保留Run。凭据不回显，旧引用暂保留；物理清理策略及未来多步骤Job的凭据生命周期随后续执行契约细化。
 
@@ -242,8 +242,8 @@ delete_section(analysis_id, base_revision_id, sid)
 
 ### 4.6 Job 与 Worker（`jobs/`）
 
-- 2B使用queued／running／stopping／succeeded／failed／interrupted状态；lifespan先取得同一数据库的单进程排他锁，再恢复中断状态并启动调度。调度按持久queued任务领取，问答与2A验证共用并发上限2，每Job一次生成、60秒调用预算；不新建第二套并发名额或重试循环。细节、取消处理上限及数据字段以[2B实施契约](handovers/STAGE_2B_ASYNC_QA.md)为准。
-- 2B每次进度／终态写入检查execution_token、活动Job身份与对象未删除；停止先持久撤销token，再取消执行，收尾后释放线程。Run、助手消息、Job终态与线程释放同事务提交。以下工具审核与多步骤成果规则属于后续切片，不表示2B提前交付。
+- 2B使用queued／running／stopping／succeeded／failed／interrupted状态；lifespan先取得同一数据库的单进程排他锁，再恢复中断状态并启动调度。调度按持久queued任务领取，问答与2A验证共用并发上限2，每Job一次生成、60秒调用预算；不新建第二套并发名额或重试循环。细节、取消处理上限及数据字段以[2B实施契约](handovers/archived/STAGE_2B_ASYNC_QA.md)为准。
+- 2B调用入口和停止／来源／片段删除的提交共用短进程互斥，并在进入适配器前核对持久状态；互斥不覆盖网络等待。每次进度／终态写入检查execution_token、活动Job身份与对象未删除；停止先持久撤销token，再取消执行，收尾后释放线程。Run、助手消息、Job终态与线程释放同事务提交。以下工具审核与多步骤成果规则属于后续切片，不表示2B提前交付。
 - Job 覆盖解析、AI 讨论回复及可选提取等已接受的后台任务；具体任务名和保存工具执行边界随入口协议确定。离开页面不取消任务。
 - 同一线程运行或待审核时不接受新一轮，不建立消息排队；输入草稿可保留在界面。同意／拒绝附加指令属于审核反馈而非新轮。不能只靠前端禁用按钮，接受任务时需检查线程是否空闲。一个线程待审不阻止其他独立线程提交任务，worker 可按资源调度。
 - 支持主动停止本轮：持久记录停止意图，停止后不启动该轮后续模型请求、修复或工具操作，取消未执行的待审核方案。已保存成果保留；正在提交的操作按实际持久化结果反馈，不声称停止能回滚已提交写入。停止处理完成才释放线程继续发送和切换模式；迟到结果不能重新启动被停止的操作。中断消息与成功讲解区分显示，停止、写入和审核决策之间的并发契约在实现前固定。
