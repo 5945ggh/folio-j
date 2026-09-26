@@ -9,7 +9,7 @@
 >
 > 版本策略：项目初始化时取各依赖的最新稳定版，由 lockfile（`uv.lock`、`pnpm-lock.yaml`）锁定；升级需显式进行。
 
-当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.11、Node.js 24，Python 包最低支持 3.11；实际依赖以锁文件为准。选型不等于已经安装：当前只引入工程启动、类型生成、SQLite 迁移及检查所需依赖，LLM、规范化、分词与复杂 UI 组件依赖随对应切片添加。
+当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.11、Node.js 24，Python 包最低支持 3.11；实际依赖以锁文件为准。2A 已按既有选型引入 `openai` 官方 SDK 和 Jinja2，分别用于两种文本协议适配与版本化验证／默认风格模板；规范化、分词与复杂 UI 组件依赖仍随对应切片添加。
 
 基础运行补充依赖：Uvicorn 承载 ASGI 服务，httpx 通过本地 ASGI transport 测试 API，Hatchling 构建 Python 的 src 布局包。前端 TypeScript 暂锁 5.9.3，以满足所选 openapi-typescript 7.x 的 peer 范围；Node 类型锁在 24 系列，与运行时一致。Tailwind 使用官方 Vite 插件，不提前引入未使用的 shadcn 组件或 Zustand。
 
@@ -56,7 +56,7 @@
 
 产品行为见 [PRD 的 F1 设置](PRD.md)。技术接入区分 Provider、模型、调用协议及用途默认值，不将用途和协议混为一谈。
 
-- 设置界面能够维护 Provider 名称、base_url、鉴权、默认协议、模型及三种用途默认值。界面与任何文件入口必须使用同一后端配置来源；具体持久化与凭据存储方式尚待架构确定。
+- 设置界面维护 Provider 名称、base_url、鉴权、默认协议、模型及三种用途默认值。2A 的统一配置来源为 SQLite；凭据保存为数据库旁私有目录中的独立文件，数据库只保存内部引用。密钥更新产生新引用，不改变已接受验证的配置快照；具体见架构与阶段契约。
 - 首轮适配 OpenAI 兼容的 `chat_completions` 与 `responses` 两种文本协议。分别转换请求、解析响应与流式事件，不仅替换路径。不在本轮接入全部第三方原生协议或多模态功能；当前片段内读取与基本讲解／候选操作范围已确认，具体工具协议在架构中设计。
 - Provider 指定默认协议，模型可覆盖。模型的可调用身份至少包含 Provider 配置身份与模型 ID；请求时进一步确定协议与参数。
 - 模型发现通过 Provider 的列表接口尝试获取，同时允许手动添加模型 ID。保留缓存、刷新状态和最后更新时间。列表发现不作为流式、原生结构化输出或其他能力已经验证的依据。

@@ -4,6 +4,7 @@
 
 ## Active
 
+- [第二阶段 2A：设置与模型接入](STAGE_2A_MODEL_SETTINGS.md)：配置、凭据、两种文本协议与按需验证的实现契约。
 - [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：已确认的首轮能力与切片约束；具体交付顺序仍待编排。
 
 ## Archived
