@@ -1,0 +1,50 @@
+# macOS
+.DS_Store
+._*
+.Spotlight-V100/
+.Trashes/
+.fseventsd/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+.pyright/
+.cache/
+
+# Node.js / frontend build output
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Local secrets and configuration (keep *.example.toml tracked)
+/config/*.toml
+!/config/*.example.toml
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Local application data
+/data/*.db
+/data/*.db-*
+/data/*.sqlite
+/data/*.sqlite-*
+/data/*.sqlite3
+/data/*.sqlite3-*
+/data/llm_cache/
+*.log
+
+# Editor / IDE state
+.idea/
+
+# Local agent/runtime state
+.omx/
+.codex/
+.agents/
