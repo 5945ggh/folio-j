@@ -17,7 +17,7 @@
 
 ## 常用命令
 
-以下是目标命令入口；工程初始化前尚未建立 `justfile`，不能将命令缺失当作测试通过。
+工程已建立 `justfile`，以下命令是实际开发入口；检查失败不能描述为验证通过。
 
 ```bash
 just dev        # 同时启动后端（热重载）和前端开发服务器
@@ -34,7 +34,7 @@ just migrate    # alembic upgrade head
 2. **所有模型调用必须经过 `backend/src/app/llm/`**，每次调用都要产生一条 `Run` 记录。
 3. **所有 prompt 以模板文件形式放在 `backend/prompts/`**，并在文件头部声明版本号。不要在 Python 代码中硬编码 prompt 文本；修改 prompt 时递增其版本号。
 4. **规范化器是纯函数**，必须满足 R1 可复原、R2 幂等、R3 不改写（见 ARCHITECTURE 4.3），修改后必须通过性质测试。修改格式契约 prompt 时，同时检查规范化器；反之亦然。
-5. **每次 ORM 模型变更都要附带 Alembic 迁移。**
+5. **数据库 schema 必须可从空库重建。** 第一版发布前且数据可丢弃时，保留 Alembic 基础，允许重整初始迁移，不要求为每次开发中间状态维护升级路径。开始保存需保留的日常数据或发布第一版后，每次 ORM 变更必须附带增量迁移。启动应用不得自动删库。
 6. **每次后端 schema 变更后都要运行 `just gen-api`**，并把生成的客户端一并提交。前端禁止手写接口类型。
 7. **测试禁止访问真实网络或模型。** 需要新的 LLM 响应时，说明需要用 `RECORD=1` 录制，由人类执行。
 8. **不要引入 TECH_STACK 中"明确不选"的依赖**；新增其他依赖时，在任务总结中说明理由。
@@ -45,6 +45,8 @@ just migrate    # alembic upgrade head
 
 - **子代理模型**：调用 Codex 原生子代理时，显式指定 `gpt-6-sol` 或 `gpt-6-luna`。
 - **PRD 版本**：审订期间不随每次编辑递增文档版本号，待最终收口时统一调整。
+- **视觉参考**：`prototypes/reading-native` 提供风格与布局思路；具体交互按真实功能设计，不照搬模拟行为，产品边界以 PRD 为准。
+- **分支与协作**：默认使用稳定 `main` 加短期 `codex/*` 功能分支，不额外维护长期 `develop`。主代理负责范围、契约、派遣和集成验收，开发与测试子代理分工；并行任务明确文件所有权，完成检查后再集成。
 - **Python**：完整的类型注解，pyright 以 strict 模式通过；Pydantic v2；SQLAlchemy 2.0 的 `Mapped` 风格；全链路 async（数据库操作使用 aiosqlite）。
 - **TypeScript**：strict 模式；服务端数据一律通过 TanStack Query 获取；UI 组件优先使用 shadcn/ui。
 - **命名**：领域术语以 GLOSSARY 的已确认定义为准（Source、Segment、Run、Analysis、AnalysisRevision、Section、Occurrence……），架构草图须与之同步，不要自创同义词或将 Collection 当作 Source。

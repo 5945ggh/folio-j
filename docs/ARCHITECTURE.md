@@ -54,6 +54,10 @@ Analysis 有创建和删除业务接口，整份删除仅向用户管理界面�
 
 ## 3. 领域模型
 
+当前落地范围为 Source／Segment 管理，具体 API 与字段见[第一阶段契约](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)。实现位于 `models.py`、`schemas.py`、`services/sources.py` 与 `api/sources.py`；其余实体和模块仍为后续设计。Source、Segment 使用 `deleted_at` 逻辑删除，删除来源在同一事务内标记所属片段，查询排除已删除对象。当前没有 AI 接受任务入口；`text_locked_at` 的修改保护已建立，锁定与任务接受的原子边界随 AI 切片实现。
+
+数据库生命周期由应用 lifespan 管理，迁移从空库建立 schema，`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。
+
 ### 3.1 实体
 
 所有主键均为 ULID 字符串。所有表都带 `created_at`，可变实体另带 `updated_at`。以下是领域关系草图，不预先固定未讨论的表字段或关联实现。
