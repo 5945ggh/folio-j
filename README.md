@@ -17,7 +17,7 @@ just dev         # 初始化／升级数据库，FastAPI + Vite 热重载，Ctrl
 
 ```sh
 just lint        # Ruff、pyright strict、Biome、TypeScript
-just test        # 离线后端测试，禁止真实网络和模型调用
+just test        # 后端与前端纯逻辑测试，禁止真实网络和模型调用
 just gen-api     # 本地导出 OpenAPI 并生成前端类型，不需启动服务
 just migrate     # 从空库建立当前 schema，或执行已有迁移
 just start       # 初始化／升级数据库并构建前端，由 FastAPI 在 8000 端口托管

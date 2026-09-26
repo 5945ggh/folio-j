@@ -22,7 +22,7 @@
 ```bash
 just dev        # 同时启动后端（热重载）和前端开发服务器
 just start      # 构建前端，由 FastAPI 托管，本地运行
-just test       # 后端 pytest（禁用真实网络；未来 LLM 测试只回放录制）
+just test       # 后端 pytest + 前端纯逻辑测试（禁用真实网络；未来 LLM 测试只回放录制）
 just lint       # ruff + pyright + biome + tsc
 just gen-api    # 从后端 OpenAPI 重新生成前端客户端
 just migrate    # alembic upgrade head

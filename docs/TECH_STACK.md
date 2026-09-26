@@ -48,7 +48,7 @@
 | API 客户端 | openapi-typescript + openapi-fetch | 由后端 OpenAPI 生成，**禁止手写接口类型** |
 | Markdown 渲染 | react-markdown + remark-gfm | |
 | Lint 与格式化 | Biome `[TBD-13]` | 单一工具，配置简单 |
-| 单元测试 | Vitest（按需） | 前端逻辑较薄，测试以后端为主 |
+| 单元测试 | Node.js 内置测试；Vitest 按需 | 当前用 Node.js 24 直接运行 TypeScript 纯逻辑测试，不引入前端测试依赖；组件测试框架按需添加 |
 | E2E | 暂不引入 | 由 coding agent 自带的浏览器能力做界面验证；以后需要再加 Playwright |
 | 包管理 | pnpm | Node 使用当前 LTS 版本 |
 

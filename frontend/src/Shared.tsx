@@ -89,6 +89,7 @@ export function ConfirmDialog({
 	useEffect(() => {
 		const element = dialog.current;
 		element?.showModal();
+		element?.querySelector<HTMLButtonElement>("[data-dialog-cancel]")?.focus();
 		return () => element?.close();
 	}, []);
 	return (

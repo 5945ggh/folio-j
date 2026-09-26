@@ -10,12 +10,14 @@ const labels: Record<string, string> = {
 	failed: "失败",
 	interrupted: "已中断",
 };
+const PAGE_SIZE = 10;
 
 export function RunHistory() {
 	const [selected, setSelected] = useState<string | null>(null);
+	const [page, setPage] = useState(0);
 	const runs = useQuery({
-		queryKey: settingsKeys.runs,
-		queryFn: getRuns,
+		queryKey: settingsKeys.runsPage(page),
+		queryFn: () => getRuns(PAGE_SIZE + 1, page * PAGE_SIZE),
 		refetchInterval: (query) =>
 			query.state.data?.some(
 				(run) => run.status === "queued" || run.status === "running",
@@ -23,6 +25,12 @@ export function RunHistory() {
 				? 1500
 				: false,
 	});
+	const visibleRuns = runs.data?.slice(0, PAGE_SIZE) ?? [];
+	const hasNextPage = (runs.data?.length ?? 0) > PAGE_SIZE;
+	const changePage = (nextPage: number) => {
+		setSelected(null);
+		setPage(nextPage);
+	};
 	return (
 		<section className="settings-section" aria-labelledby="runs-heading">
 			<div className="section-heading">
@@ -50,14 +58,23 @@ export function RunHistory() {
 					>
 						重试
 					</button>
+					{page > 0 && (
+						<button
+							className="button secondary"
+							type="button"
+							onClick={() => changePage(page - 1)}
+						>
+							返回上一页
+						</button>
+					)}
 				</>
-			) : runs.data.length === 0 ? (
+			) : visibleRuns.length === 0 ? (
 				<div className="empty-state">
 					<p>还没有验证记录。</p>
 				</div>
 			) : (
 				<div className="settings-list">
-					{runs.data.map((run) => (
+					{visibleRuns.map((run) => (
 						<div className="run-entry" key={run.id}>
 							<button
 								className="run-summary"
@@ -83,11 +100,32 @@ export function RunHistory() {
 					))}
 				</div>
 			)}
+			{runs.isSuccess && (page > 0 || hasNextPage) && (
+				<nav className="run-pagination" aria-label="验证记录分页">
+					<button
+						className="button secondary"
+						type="button"
+						disabled={page === 0}
+						onClick={() => changePage(page - 1)}
+					>
+						上一页
+					</button>
+					<span aria-live="polite">第 {page + 1} 页</span>
+					<button
+						className="button secondary"
+						type="button"
+						disabled={!hasNextPage}
+						onClick={() => changePage(page + 1)}
+					>
+						下一页
+					</button>
+				</nav>
+			)}
 		</section>
 	);
 }
 
-function RunDetail({ id }: { id: string }) {
+export function RunDetail({ id }: { id: string }) {
 	const run = useQuery({
 		queryKey: settingsKeys.run(id),
 		queryFn: () => getRun(id),
@@ -115,7 +153,8 @@ function RunDetail({ id }: { id: string }) {
 	return (
 		<div className="run-detail">
 			<p>
-				协议：{item.protocol} · Prompt 版本：{item.prompt_version} · 状态：
+				{item.stream ? "流式文本" : "普通文本"} · 协议：{item.protocol} · Prompt
+				版本：{item.prompt_version} · 状态：
 				{labels[item.status] ?? item.status}
 			</p>
 			{item.output_text && (

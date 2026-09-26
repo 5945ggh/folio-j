@@ -34,9 +34,10 @@ format:
     uv run --project backend ruff format backend scripts
     pnpm --dir frontend format
 
-# 只运行本地后端测试，不访问真实网络或模型。
+# 运行本地后端与前端纯逻辑测试，不访问真实网络或模型。
 test:
     uv run --project backend pytest backend/tests
+    pnpm --dir frontend test
 
 # 从本地 FastAPI 导出契约，再生成前端类型；不需启动服务。
 gen-api:

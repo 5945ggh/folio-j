@@ -17,6 +17,7 @@ export const settingsKeys = {
 	settings: ["settings"] as const,
 	providers: ["providers"] as const,
 	runs: ["runs"] as const,
+	runsPage: (page: number) => ["runs", "page", page] as const,
 	run: (id: string) => ["runs", id] as const,
 };
 
@@ -30,8 +31,10 @@ export async function getProviders() {
 	return requireData(data, error, response.status);
 }
 
-export async function getRuns() {
-	const { data, error, response } = await api.GET("/api/runs");
+export async function getRuns(limit: number, offset: number) {
+	const { data, error, response } = await api.GET("/api/runs", {
+		params: { query: { limit, offset } },
+	});
 	return requireData(data, error, response.status);
 }
 
