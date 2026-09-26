@@ -1,0 +1,30 @@
+docs/handovers/archived/STAGE_2B_ASYNC_QA.md
+  s_d6d450d8140122::t_79ce6fa9bb80af 3,17,64,66,109-110,127,148,169,187,192-224
+docs/ARCHITECTURE.md
+  s_d6d450d8140122::t_e867be1f006f66 57,108,120,246
+  s_d6d450d8140122::t_79ce6fa9bb80af 110,153,245
+docs/handovers/README.md
+  s_d6d450d8140122::t_79ce6fa9bb80af 11
+  s_d6d450d8140122::t_4f60b931e24011 12
+README.md
+  s_d6d450d8140122::t_e867be1f006f66 5,41-48
+  s_d6d450d8140122::t_79ce6fa9bb80af 40
+docs/handovers/archived/STAGE_2A_MODEL_SETTINGS.md
+  s_d6d450d8140122::t_5be5ed4381644e 123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "25f4d7adfb859525cee14d8518da61a55b9d7cb8",
+  "prompts": {},
+  "sessions": {
+    "s_d6d450d8140122": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddff-efa4-7df1-8ed0-77138aa048e2",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
