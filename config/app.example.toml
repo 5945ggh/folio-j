@@ -1,0 +1,8 @@
+# 应用运行配置。复制为 app.toml 后按需修改；真实配置不进入 Git。
+# Provider 与密钥的配置方式尚待独立实现，请勿在此提交凭据。
+[server]
+host = "127.0.0.1"
+port = 8000
+
+[database]
+path = "data/app.db"

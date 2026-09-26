@@ -5,10 +5,10 @@
 ## Active
 
 - [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：已确认的首轮能力与切片约束；具体交付顺序仍待编排。
-- [开发准备](DEV_PREPARATION.md)：本轮文档整理范围与工程初始化的建议首切片，不敲定 PRD 未决行为。
 
 ## Archived
 
+- [开发准备记录](archived/DEV_PREPARATION.md)：已完成的工程初始化、工具链与离线验证依据。
 - [Occurrence 与 anchor 小样本试提取任务书](archived/ANCHOR_PILOT_AGENT_BRIEF.md)：实验任务记录；其 A0 规则和旧启动消息不是生产契约。
 
-本轮整理只移动实施基线、修复相对链接、建立导航和开发准备交接；保留长期规范及历史实验正文。后续按选定切片更新相关规范，已完成的阶段文档可归档。
+后续按选定切片更新相关规范，完成的阶段文档移入归档并保留结果与限制；不将执行记录复制到每份长期规范中。

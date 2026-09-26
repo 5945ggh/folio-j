@@ -1,5 +1,5 @@
 @charset "UTF-8";
-  
+
 :root {
   color-scheme:light;
   --bg:#f7f5f0;
@@ -1404,4 +1404,3 @@ dialog form {
   width:13px;
   height:13px
 }
-

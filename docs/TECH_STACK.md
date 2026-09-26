@@ -9,6 +9,10 @@
 >
 > 版本策略：项目初始化时取各依赖的最新稳定版，由 lockfile（`uv.lock`、`pnpm-lock.yaml`）锁定；升级需显式进行。
 
+当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.14、Node.js 24（Python 包最低支持 3.11）；实际依赖以锁文件为准。选型不等于已经安装：当前只引入工程启动、类型生成、SQLite 迁移及检查所需依赖，LLM、规范化、分词与复杂 UI 组件依赖随对应切片添加。
+
+基础运行补充依赖：Uvicorn 承载 ASGI 服务，httpx 通过本地 ASGI transport 测试 API，Hatchling 构建 Python 的 src 布局包。前端 TypeScript 暂锁 5.9.3，以满足所选 openapi-typescript 7.x 的 peer 范围；Node 类型锁在 24 系列，与运行时一致。Tailwind 使用官方 Vite 插件，不提前引入未使用的 shadcn 组件或 Zustand。
+
 ## 1. 后端（Python）
 
 | 用途 | 选择 | 说明 |
@@ -18,7 +22,7 @@
 | Web 框架 | FastAPI | 自动生成 OpenAPI，作为前端类型的唯一来源 |
 | 数据校验 | Pydantic v2 | 同时用于 API schema、LLM 结构化输出 schema 和配置模型 |
 | ORM | SQLAlchemy 2.0（`Mapped` 类型化风格） | 不使用 SQLModel；ORM 模型与 API schema 分开定义 |
-| 迁移 | Alembic | 早期开发阶段不需要（可以删库重建），首次 main 分支提交后每次模型变更都必须附带迁移，这里也应同步更改（删除前半句） |
+| 迁移 | Alembic | 每次 ORM 模型变更都附带迁移；工程初始化只建立迁移环境，不预建领域表 |
 | 数据库 | SQLite（WAL 模式） | 单文件，备份即复制。检索：MVP 用 `LIKE`，P1 上 FTS5，远期用 sqlite-vec |
 | SSE | sse-starlette | 用于 LLM 流式输出推送 |
 | LLM 客户端 | `openai` 官方 Python SDK，通过 `base_url` 对接 | BYOK、多 Provider；适配 OpenAI 兼容的 Chat Completions 与 Responses 文本调用 |

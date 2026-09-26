@@ -1,0 +1,260 @@
+@import "tailwindcss";
+
+:root {
+	font-family:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC",
+		sans-serif;
+	color: #252526;
+	background: #f8f9fb;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+}
+
+* {
+	box-sizing: border-box;
+}
+body {
+	min-width: 320px;
+	margin: 0;
+}
+button {
+	font: inherit;
+}
+
+.app-shell {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+.topbar {
+	height: 56px;
+	flex: none;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 clamp(24px, 6vw, 92px);
+	border-bottom: 1px solid #e8e8e9;
+	background: #fff;
+}
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 15px;
+	font-weight: 650;
+	letter-spacing: -0.025em;
+}
+.brand-mark {
+	display: grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 7px;
+	background: #405e7a;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 500;
+}
+.topbar-label {
+	color: #838387;
+	font-size: 11px;
+	letter-spacing: 0.08em;
+}
+.page-content {
+	width: min(100% - 48px, 760px);
+	margin: clamp(66px, 12vh, 130px) auto 72px;
+	flex: 1;
+}
+.page-heading {
+	margin-bottom: 44px;
+}
+.eyebrow,
+.section-label {
+	color: #67819b;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.16em;
+}
+.page-heading h1 {
+	margin: 16px 0 12px;
+	font-size: clamp(28px, 4vw, 38px);
+	font-weight: 590;
+	line-height: 1.28;
+	letter-spacing: -0.045em;
+}
+.page-heading p {
+	margin: 0;
+	color: #777a80;
+	font-size: 14px;
+	line-height: 1.8;
+}
+.status-card {
+	overflow: hidden;
+	border: 1px solid #e6e8eb;
+	border-radius: 12px;
+	background: #fff;
+	box-shadow: 0 10px 35px rgb(32 45 61 / 3%);
+}
+.card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 24px 28px 22px;
+	border-bottom: 1px solid #edf0f2;
+}
+.card-header h2 {
+	margin: 9px 0 0;
+	font-size: 17px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+}
+.status-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	flex: none;
+	padding: 6px 10px;
+	border: 1px solid #e3e9ee;
+	border-radius: 99px;
+	color: #66798b;
+	background: #f7f9fb;
+	font-size: 11px;
+	font-weight: 600;
+}
+.status-pill.connected {
+	border-color: #d6e7e3;
+	color: #3c756b;
+	background: #f2f9f7;
+}
+.status-pill.disconnected {
+	border-color: #eddeda;
+	color: #966558;
+	background: #fdf7f5;
+}
+.status-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: currentColor;
+}
+.card-body {
+	padding: 24px 28px 27px;
+}
+.endpoint-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	color: #71757a;
+	font-size: 12px;
+}
+.endpoint-row code {
+	padding: 5px 8px;
+	border: 1px solid #eef0f2;
+	border-radius: 5px;
+	color: #536579;
+	background: #f8fafb;
+	font-size: 11px;
+}
+.status-message {
+	margin: 22px 0 17px;
+	color: #4b5056;
+	font-size: 13px;
+	line-height: 1.7;
+}
+.error-detail {
+	margin: -8px 0 18px;
+	color: #9a695e;
+	font-size: 11px;
+}
+.refresh-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	min-height: 34px;
+	padding: 0 12px;
+	border: 1px solid #d4dfe8;
+	border-radius: 6px;
+	color: #3d607c;
+	background: #f8fbfd;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease;
+}
+.refresh-button:hover:not(:disabled) {
+	border-color: #b7cada;
+	background: #eef5f9;
+}
+.refresh-button:focus-visible {
+	outline: 2px solid #7296b5;
+	outline-offset: 2px;
+}
+.refresh-button:disabled {
+	opacity: 0.65;
+	cursor: wait;
+}
+.refresh-button span {
+	font-size: 18px;
+	font-weight: 400;
+	line-height: 1;
+}
+.next-note {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	margin-top: 32px;
+}
+.note-rule {
+	width: 2px;
+	height: 28px;
+	background: #b5c5d3;
+}
+.next-note p {
+	margin: 0;
+	color: #898d93;
+	font-size: 12px;
+	line-height: 1.6;
+}
+.next-note span {
+	margin-right: 10px;
+	color: #526e86;
+	font-weight: 650;
+}
+.footer {
+	padding: 20px 24px;
+	color: #a4a8ac;
+	font-size: 9px;
+	letter-spacing: 0.13em;
+	text-align: center;
+}
+.footer span {
+	margin: 0 5px;
+}
+
+@media (max-width: 560px) {
+	.topbar {
+		padding: 0 22px;
+	}
+	.page-content {
+		width: min(100% - 36px, 760px);
+		margin-top: 70px;
+	}
+	.page-heading {
+		margin-bottom: 34px;
+	}
+	.card-header,
+	.card-body {
+		padding-left: 20px;
+		padding-right: 20px;
+	}
+	.endpoint-row {
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 8px;
+	}
+}

@@ -48,3 +48,6 @@ coverage/
 .omx/
 .codex/
 .agents/
+
+# Local scratch files and repository snapshots
+/temp/
