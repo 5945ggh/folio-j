@@ -347,81 +347,97 @@ function ThreadPanel({
 
 	return (
 		<div className="chat-panel">
-			<div className="chat-controls">
-				<label>
-					模型
-					<select
-						value={thread.data.selected_model_id ?? ""}
-						disabled={busy || patch.isPending}
-						onChange={(event) =>
-							patch.mutate({
-								expected_revision: thread.data.revision,
-								model_id: event.target.value || null,
-							})
-						}
-					>
-						<option value="">请选择模型</option>
-						{thread.data.selected_model_id && !chosen && (
-							<option value={thread.data.selected_model_id}>
-								原模型已不可用
+			<details className="chat-config">
+				<summary>
+					<span>
+						模型：
+						{chosen
+							? `${chosen.provider.name} / ${chosen.model.model_id}`
+							: thread.data.selected_model_id
+								? "原模型已不可用"
+								: "未选择"}
+					</span>
+					<span>设置</span>
+				</summary>
+				<div className="chat-controls">
+					<label>
+						模型
+						<select
+							value={thread.data.selected_model_id ?? ""}
+							disabled={busy || patch.isPending}
+							onChange={(event) =>
+								patch.mutate({
+									expected_revision: thread.data.revision,
+									model_id: event.target.value || null,
+								})
+							}
+						>
+							<option value="">请选择模型</option>
+							{thread.data.selected_model_id && !chosen && (
+								<option value={thread.data.selected_model_id}>
+									原模型已不可用
+								</option>
+							)}
+							{models
+								.filter(
+									({ provider, model }) => provider.enabled && model.enabled,
+								)
+								.map(({ provider, model }) => (
+									<option key={model.id} value={model.id}>
+										{provider.name} / {model.model_id}
+									</option>
+								))}
+						</select>
+					</label>
+					<label>
+						讲解预设
+						<select
+							value={style}
+							disabled={busy}
+							onChange={(event) => setStyle(event.target.value)}
+						>
+							<option value="">
+								使用当前默认{settings.data?.defaults.style_id ? "" : "（无）"}
 							</option>
-						)}
-						{models
-							.filter(
-								({ provider, model }) => provider.enabled && model.enabled,
-							)
-							.map(({ provider, model }) => (
-								<option key={model.id} value={model.id}>
-									{provider.name} / {model.model_id}
+							<option value="none">本轮不使用</option>
+							{settings.data?.styles.map((item) => (
+								<option key={item.id} value={item.id}>
+									{item.name}
 								</option>
 							))}
-					</select>
-				</label>
-				<label>
-					讲解预设
-					<select
-						value={style}
-						disabled={busy}
-						onChange={(event) => setStyle(event.target.value)}
-					>
-						<option value="">
-							使用当前默认{settings.data?.defaults.style_id ? "" : "（无）"}
-						</option>
-						<option value="none">本轮不使用</option>
-						{settings.data?.styles.map((item) => (
-							<option key={item.id} value={item.id}>
-								{item.name}
-							</option>
-						))}
-					</select>
-				</label>
-				<label>
-					权限
-					<select
-						value={thread.data.permission_mode}
-						disabled={busy || patch.isPending}
-						onChange={(event) =>
-							patch.mutate({
-								expected_revision: thread.data.revision,
-								permission_mode: event.target
-									.value as Thread["permission_mode"],
-							})
-						}
-					>
-						<option value="review">审核模式</option>
-						<option value="full_access">Full access</option>
-					</select>
-				</label>
-				<label className="chat-stream-choice">
-					<input
-						type="checkbox"
-						checked={stream}
-						disabled={busy}
-						onChange={(event) => setStream(event.target.checked)}
-					/>{" "}
-					后台流式生成
-				</label>
-			</div>
+						</select>
+					</label>
+					<label>
+						权限
+						<select
+							value={thread.data.permission_mode}
+							disabled={busy || patch.isPending}
+							onChange={(event) =>
+								patch.mutate({
+									expected_revision: thread.data.revision,
+									permission_mode: event.target
+										.value as Thread["permission_mode"],
+								})
+							}
+						>
+							<option value="review">审核模式</option>
+							<option value="full_access">Full access</option>
+						</select>
+					</label>
+					<label className="chat-stream-choice">
+						<input
+							type="checkbox"
+							checked={stream}
+							disabled={busy}
+							onChange={(event) => setStream(event.target.checked)}
+						/>{" "}
+						后台流式生成
+					</label>
+				</div>
+				<p className="chat-permission-note">
+					此阶段仅进行文本问答，不调用写入工具；权限选择保存在本线程。
+				</p>
+			</details>
 			{!usable && providers.isSuccess && (
 				<p className="chat-notice" role="alert">
 					当前线程的模型未选或已停用。请选择可用模型后发送；系统不会自动替换原选择。
@@ -441,9 +457,6 @@ function ThreadPanel({
 						，仍可尝试本次问答。
 					</p>
 				)}
-			<p className="chat-permission-note">
-				此阶段仅进行文本问答，不调用写入工具；权限选择保存在本线程。
-			</p>
 			<InlineError error={patch.error} />
 			<section className="chat-history" aria-label="讨论历史">
 				{history.isPending && <p className="loading">正在加载历史…</p>}
@@ -493,23 +506,28 @@ function ThreadPanel({
 					id="chat-question"
 					value={draft.question}
 					maxLength={10000}
-					rows={4}
+					rows={3}
 					placeholder="想了解这段话的什么？"
 					onChange={(event) =>
 						setDraft({ ...draft, question: event.target.value })
 					}
 				/>
-				<label htmlFor="chat-additional">本轮补充要求（可选）</label>
-				<textarea
-					id="chat-additional"
-					value={draft.additional}
-					maxLength={10000}
-					rows={2}
-					placeholder="例如：重点说明语气与使用场景"
-					onChange={(event) =>
-						setDraft({ ...draft, additional: event.target.value })
-					}
-				/>
+				<details className="chat-additional">
+					<summary>
+						本轮补充要求（可选）{draft.additional && <span>已填写</span>}
+					</summary>
+					<label htmlFor="chat-additional">本轮补充要求（可选）</label>
+					<textarea
+						id="chat-additional"
+						value={draft.additional}
+						maxLength={10000}
+						rows={2}
+						placeholder="例如：重点说明语气与使用场景"
+						onChange={(event) =>
+							setDraft({ ...draft, additional: event.target.value })
+						}
+					/>
+				</details>
 				{pending?.uncertain && (
 					<div className="chat-uncertain" role="status">
 						<strong>正在核实提交</strong>
@@ -542,34 +560,41 @@ function ThreadPanel({
 				)}
 				<InlineError error={sendError} />
 				<InlineError error={stop.error} />
-				<div className="actions">
-					<button
-						className="button primary"
-						type="button"
-						disabled={
-							busy ||
-							!draft.question.trim() ||
-							!usable ||
-							!history.isSuccess ||
-							!settings.isSuccess ||
-							!providers.isSuccess
-						}
-						onClick={() => void send(makeInput(thread.data))}
-					>
-						{sending ? "提交中…" : "发送问题"}
-					</button>
-					{jobId && (
+				<div className="chat-composer-footer">
+					<span>
+						{thread.data.permission_mode === "review"
+							? "审核模式"
+							: "Full access"}
+					</span>
+					<div className="actions">
+						{jobId && (
+							<button
+								className="button secondary"
+								type="button"
+								disabled={stop.isPending || active.data?.status === "stopping"}
+								onClick={() => stop.mutate(jobId)}
+							>
+								{stop.isPending || active.data?.status === "stopping"
+									? "停止中…"
+									: "停止本轮"}
+							</button>
+						)}
 						<button
-							className="button secondary"
+							className="button primary"
 							type="button"
-							disabled={stop.isPending || active.data?.status === "stopping"}
-							onClick={() => stop.mutate(jobId)}
+							disabled={
+								busy ||
+								!draft.question.trim() ||
+								!usable ||
+								!history.isSuccess ||
+								!settings.isSuccess ||
+								!providers.isSuccess
+							}
+							onClick={() => void send(makeInput(thread.data))}
 						>
-							{stop.isPending || active.data?.status === "stopping"
-								? "停止中…"
-								: "停止本轮"}
+							{sending ? "提交中…" : "发送问题"}
 						</button>
-					)}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -585,10 +610,12 @@ export function Workbench({ segment }: { segment: Segment }) {
 		getNextPageParam: (page) => page.next_cursor ?? undefined,
 	});
 	const [selected, setSelected] = useState<string | null>(null);
+	const [view, setView] = useState<"list" | "detail">("list");
 	const [drafts, setDrafts] = useState<Record<string, Draft>>({});
 	const [pending, setPending] = useState<Record<string, Pending | null>>({});
 	const [createKey, setCreateKey] = useState<string | null>(null);
 	const allThreads = threads.data?.pages.flatMap((page) => page.items) ?? [];
+	const selectedThread = allThreads.find((item) => item.id === selected);
 	useEffect(() => {
 		if (!selected && allThreads[0]) setSelected(allThreads[0].id);
 	}, [selected, allThreads]);
@@ -597,48 +624,86 @@ export function Workbench({ segment }: { segment: Segment }) {
 		onSuccess: (item) => {
 			setCreateKey(null);
 			setSelected(item.id);
+			setView("detail");
 			void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
 		},
 	});
 	return (
 		<section className="workbench" aria-label="片段讨论工作台">
-			<div className="section-heading">
-				<div>
-					<p className="eyebrow">WORKBENCH</p>
-					<h2>讨论工作台</h2>
+			<div className="chat-list-view" hidden={view !== "list"}>
+				<div className="chat-pane-header">
+					<div>
+						<h2>对话</h2>
+						<small>当前片段</small>
+					</div>
+					<button
+						className="chat-new-button"
+						type="button"
+						disabled={create.isPending}
+						onClick={() => {
+							const key = createKey ?? crypto.randomUUID();
+							setCreateKey(key);
+							create.mutate(key);
+						}}
+					>
+						新建对话
+					</button>
 				</div>
-				<button
-					className="button secondary"
-					type="button"
-					disabled={create.isPending}
-					onClick={() => {
-						const key = createKey ?? crypto.randomUUID();
-						setCreateKey(key);
-						create.mutate(key);
-					}}
-				>
-					新建对话
-				</button>
-			</div>
-			<InlineError error={create.error} />
-			<div className="workbench-grid">
-				<aside className="chat-threads" aria-label="对话列表">
+				<InlineError error={create.error} />
+				<section className="chat-thread-list" aria-label="对话列表">
 					{threads.isPending && <p className="loading">正在加载对话…</p>}
 					{threads.isError && <InlineError error={threads.error} />}
 					{allThreads.map((item) => (
 						<button
 							key={item.id}
 							type="button"
-							className={`chat-thread ${selected === item.id ? "selected" : ""}`}
-							onClick={() => setSelected(item.id)}
+							className="chat-thread"
+							onClick={() => {
+								setSelected(item.id);
+								setView("detail");
+							}}
 						>
-							<span>{item.display_title}</span>
-							<small>
-								{new Date(item.updated_at).toLocaleDateString("zh-CN")}
-								{item.active_job_id ? " · 进行中" : ""}
-							</small>
+							<span className="chat-thread-title">{item.display_title}</span>
+							<span className="chat-thread-meta">
+								<span>
+									{item.active_job_id
+										? "进行中"
+										: pending[item.id]?.uncertain
+											? "提交待核实"
+											: drafts[item.id]?.question || drafts[item.id]?.additional
+												? "有草稿"
+												: "已保存"}
+								</span>
+								<time dateTime={item.updated_at}>
+									{new Date(item.updated_at).toLocaleString("zh-CN", {
+										month: "numeric",
+										day: "numeric",
+										hour: "2-digit",
+										minute: "2-digit",
+									})}
+								</time>
+							</span>
+							<svg
+								className="chat-thread-chevron"
+								aria-hidden="true"
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.7"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							>
+								<path d="m9 5 7 7-7 7" />
+							</svg>
 						</button>
 					))}
+					{allThreads.length === 0 && threads.isSuccess && (
+						<p className="chat-list-empty">
+							还没有对话。新建后可直接围绕原文提问。
+						</p>
+					)}
 					{threads.hasNextPage && (
 						<button
 							className="button secondary"
@@ -649,7 +714,23 @@ export function Workbench({ segment }: { segment: Segment }) {
 							{threads.isFetchingNextPage ? "加载中…" : "加载更多对话"}
 						</button>
 					)}
-				</aside>
+				</section>
+			</div>
+			<div className="chat-detail-view" hidden={view !== "detail"}>
+				<div className="chat-pane-header chat-detail-header">
+					<button
+						type="button"
+						className="chat-back-button"
+						aria-label="返回对话列表"
+						onClick={() => setView("list")}
+					>
+						←
+					</button>
+					<div>
+						<h2>{selectedThread?.display_title ?? "新对话"}</h2>
+						<small>参考当前片段原文</small>
+					</div>
+				</div>
 				<div className="chat-main">
 					{selected ? (
 						<ThreadPanel
