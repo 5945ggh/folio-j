@@ -2,6 +2,7 @@ import { Link, Route, Routes } from "react-router";
 import { SegmentDetail } from "./SegmentPage";
 import { Shell } from "./Shared";
 import { SourceDetail, SourceIndex } from "./SourcePages";
+import { SettingsPage } from "./settings/SettingsPage";
 
 export function App() {
 	return (
@@ -9,6 +10,7 @@ export function App() {
 			<Route path="/" element={<SourceIndex />} />
 			<Route path="/sources/:id" element={<SourceDetail />} />
 			<Route path="/segments/:id" element={<SegmentDetail />} />
+			<Route path="/settings" element={<SettingsPage />} />
 			<Route
 				path="*"
 				element={

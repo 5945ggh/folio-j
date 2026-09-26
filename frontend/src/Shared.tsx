@@ -23,7 +23,10 @@ export function Shell({ children }: { children: ReactNode }) {
 					</span>
 					<span>Folio-J</span>
 				</Link>
-				<span className="topbar-label">日语学习资料</span>
+				<nav className="topbar-nav" aria-label="主导航">
+					<Link to="/">来源目录</Link>
+					<Link to="/settings">设置</Link>
+				</nav>
 			</header>
 			<main className="page-content">{children}</main>
 		</div>
