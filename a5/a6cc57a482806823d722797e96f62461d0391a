@@ -1,0 +1,155 @@
+.gitignore
+  s_b05c605d32f21d::t_a38c398ddf1b94 51-53
+frontend/src/App.tsx
+  s_b05c605d32f21d::t_d8061e2b45e37a 1-4,10-12,15,27,34,78,91
+  s_b05c605d32f21d::t_b572a11bcd9c0a 5-9,13-14,16-26,28-33,35-54,56-77,79-90
+  s_b05c605d32f21d::t_d968cba306ce34 55
+justfile
+  s_b05c605d32f21d::t_988b0fcb8e2cd2 48
+  s_b05c605d32f21d::t_849340d74903d8 1-27,29-47,49-61
+  s_b05c605d32f21d::t_87b177efd320a5 28
+config/app.example.toml
+  s_b05c605d32f21d::t_849340d74903d8 1-8
+README.md
+  s_b05c605d32f21d::t_3c0f1aa1586a1f 5-30
+frontend/index.html
+  s_b05c605d32f21d::t_0b1307e6813041 4
+  s_b05c605d32f21d::t_d8061e2b45e37a 1-3,5-14
+.python-version
+  s_b05c605d32f21d::t_849340d74903d8 1
+backend/src/app/api/health.py
+  s_b05c605d32f21d::t_188c03dd224193 1-12
+backend/src/app/config.py
+  s_b05c605d32f21d::t_09d0a34ab0adbb 4
+  s_b05c605d32f21d::t_a0fd8e2b63eefe 5,13
+  s_b05c605d32f21d::t_188c03dd224193 1-3,6-12,14-36
+backend/alembic.ini
+  s_b05c605d32f21d::t_188c03dd224193 1-36
+backend/src/app/db.py
+  s_b05c605d32f21d::t_188c03dd224193 1-3,5-6,8-11,22-28,31-32,34-36,38-41
+  s_b05c605d32f21d::t_648d3705adeb7d 4,12-21,33
+  s_b05c605d32f21d::t_bf53e66b0f8be5 7,29-30,37
+prototypes/reading-native/base.css
+  s_b05c605d32f21d::t_11f1179785ef13 2
+AGENTS.md
+  s_b05c605d32f21d::t_849340d74903d8 53-58
+  s_b05c605d32f21d::t_d968cba306ce34 7,25
+  s_b05c605d32f21d::t_cde3ed05be28b4 16
+frontend/vite.config.ts
+  s_b05c605d32f21d::t_d8061e2b45e37a 1-7,21
+  s_b05c605d32f21d::t_b572a11bcd9c0a 8-20
+scripts/run.py
+  s_b05c605d32f21d::t_87b177efd320a5 11-12,19-22,54
+  s_b05c605d32f21d::t_1c106e1ba6dc33 75
+  s_b05c605d32f21d::t_849340d74903d8 1-10,13-18,23-53,55-74,76-102
+backend/src/app/export_openapi.py
+  s_b05c605d32f21d::t_412cfba94d103e 1-15
+.nvmrc
+  s_b05c605d32f21d::t_849340d74903d8 1
+backend/tests/test_network_guard.py
+  s_b05c605d32f21d::t_bf53e66b0f8be5 1-11
+backend/src/app/main.py
+  s_b05c605d32f21d::t_01a1a2794b1af8 21-26
+  s_b05c605d32f21d::t_188c03dd224193 1-20,27-37,39-48
+  s_b05c605d32f21d::t_a0fd8e2b63eefe 38
+frontend/tsconfig.json
+  s_b05c605d32f21d::t_d8061e2b45e37a 1,23
+  s_b05c605d32f21d::t_b572a11bcd9c0a 2-22
+scripts/check_docs.py
+  s_b05c605d32f21d::t_849340d74903d8 1-37
+frontend/package.json
+  s_b05c605d32f21d::t_d8061e2b45e37a 1,34
+  s_b05c605d32f21d::t_b572a11bcd9c0a 2-24,26-33
+  s_b05c605d32f21d::t_f1a1b5020254ac 25
+frontend/biome.json
+  s_b05c605d32f21d::t_aedbbb46232b66 1-8,11-35
+  s_b05c605d32f21d::t_6358cce1b6815a 9-10
+backend/openapi.json
+  s_b05c605d32f21d::t_f36a5c5b325df1 1-45
+frontend/src/main.tsx
+  s_b05c605d32f21d::t_d8061e2b45e37a 1-2,4-7,9-10,22
+  s_b05c605d32f21d::t_888944f5866bfe 11-14
+  s_b05c605d32f21d::t_b572a11bcd9c0a 3,8,15-21
+backend/tests/test_health.py
+  s_b05c605d32f21d::t_648d3705adeb7d 1-2,7-8,12,15,24-25,29
+  s_b05c605d32f21d::t_492163f9b91dd5 3-6,13-14,16-17,22-23
+  s_b05c605d32f21d::t_fb6aea349f257e 9-11,18-21,26-28
+backend/alembic/env.py
+  s_b05c605d32f21d::t_09d0a34ab0adbb 7
+  s_b05c605d32f21d::t_188c03dd224193 1-6,8-37
+backend/tests/test_db.py
+  s_b05c605d32f21d::t_bf53e66b0f8be5 13-14,18,20-21
+  s_b05c605d32f21d::t_492163f9b91dd5 1-9,15-17,19,22-23
+  s_b05c605d32f21d::t_e1c480e880808f 10-12
+backend/pyproject.toml
+  s_b05c605d32f21d::t_a0fd8e2b63eefe 36
+  s_b05c605d32f21d::t_112ff94edd9d57 15
+  s_b05c605d32f21d::t_188c03dd224193 1-8,10-14,16-28,30-35,37,39
+  s_b05c605d32f21d::t_492163f9b91dd5 9,29,38
+backend/src/app/services/health.py
+  s_b05c605d32f21d::t_188c03dd224193 1-13
+backend/tests/test_static.py
+  s_b05c605d32f21d::t_01a1a2794b1af8 25
+  s_b05c605d32f21d::t_a0fd8e2b63eefe 23
+  s_b05c605d32f21d::t_492163f9b91dd5 1-2,5-8,11-15
+  s_b05c605d32f21d::t_648d3705adeb7d 3-4,9-10,16-22,24,26-34
+docs/handovers/archived/DEV_PREPARATION.md
+  s_b05c605d32f21d::t_a38c398ddf1b94 1-40
+backend/alembic/script.py.mako
+  s_b05c605d32f21d::t_bf53e66b0f8be5 1-28
+backend/src/app/api/__init__.py
+  s_b05c605d32f21d::t_188c03dd224193 1
+frontend/src/api/client.ts
+  s_b05c605d32f21d::t_d8061e2b45e37a 1-4
+frontend/src/styles.css
+  s_b05c605d32f21d::t_d8061e2b45e37a 1-3,12-13,24,238-239,260
+  s_b05c605d32f21d::t_b572a11bcd9c0a 4-11,14-23,25-237,240-259
+docs/handovers/README.md
+  s_b05c605d32f21d::t_a38c398ddf1b94 11,14
+backend/tests/test_migrations.py
+  s_b05c605d32f21d::t_e570fa31a0b0c0 1-8,11-25,28-33
+  s_b05c605d32f21d::t_2dba118e56f0ca 9-10
+  s_b05c605d32f21d::t_00931cd2076c6c 26-27
+backend/src/app/services/__init__.py
+  s_b05c605d32f21d::t_188c03dd224193 1
+frontend/src/api/schema.d.ts
+  s_b05c605d32f21d::t_2a8e6adfd115be 1-65
+frontend/.npmrc
+  s_b05c605d32f21d::t_71598803a909fc 1
+backend/tests/test_config.py
+  s_b05c605d32f21d::t_fb6aea349f257e 19
+  s_b05c605d32f21d::t_a0fd8e2b63eefe 3-5,25-31
+  s_b05c605d32f21d::t_492163f9b91dd5 1-2,6-18,20-24
+backend/src/app/__init__.py
+  s_b05c605d32f21d::t_188c03dd224193 1
+docs/TECH_STACK.md
+  s_b05c605d32f21d::t_87b177efd320a5 25
+  s_b05c605d32f21d::t_3c0f1aa1586a1f 12-15
+backend/tests/conftest.py
+  s_b05c605d32f21d::t_bf53e66b0f8be5 1-20
+backend/uv.lock
+  s_b05c605d32f21d::t_54a97d4e38779b 1-713
+frontend/pnpm-lock.yaml
+  s_b05c605d32f21d::t_822a36c6c9704c 1-1300
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a5a6cc57a482806823d722797e96f62461d0391a",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_b05c605d32f21d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0dba0-528f-7482-992b-e4e6bcb077dc",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
