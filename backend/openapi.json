@@ -1,6 +1,138 @@
 {
   "components": {
     "schemas": {
+      "DefaultsInput": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Model Id"
+          },
+          "chat_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Model Id"
+          },
+          "extraction_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extraction Model Id"
+          },
+          "permission_mode": {
+            "enum": [
+              "review",
+              "full_access"
+            ],
+            "title": "Permission Mode",
+            "type": "string"
+          },
+          "style_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style Id"
+          }
+        },
+        "required": [
+          "analysis_model_id",
+          "chat_model_id",
+          "extraction_model_id",
+          "style_id",
+          "permission_mode"
+        ],
+        "title": "DefaultsInput",
+        "type": "object"
+      },
+      "DefaultsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Model Id"
+          },
+          "chat_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Model Id"
+          },
+          "extraction_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extraction Model Id"
+          },
+          "permission_mode": {
+            "enum": [
+              "review",
+              "full_access"
+            ],
+            "title": "Permission Mode",
+            "type": "string"
+          },
+          "style_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style Id"
+          }
+        },
+        "required": [
+          "analysis_model_id",
+          "chat_model_id",
+          "extraction_model_id",
+          "style_id",
+          "permission_mode"
+        ],
+        "title": "DefaultsResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -26,6 +158,645 @@
           "status"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "ModelInput": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "model_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model Id",
+            "type": "string"
+          },
+          "protocol_override": {
+            "anyOf": [
+              {
+                "enum": [
+                  "chat_completions",
+                  "responses"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Override"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          }
+        },
+        "required": [
+          "model_id"
+        ],
+        "title": "ModelInput",
+        "type": "object"
+      },
+      "ModelPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "protocol_override": {
+            "anyOf": [
+              {
+                "enum": [
+                  "chat_completions",
+                  "responses"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Override"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          }
+        },
+        "title": "ModelPatch",
+        "type": "object"
+      },
+      "ModelResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "effective_protocol": {
+            "enum": [
+              "chat_completions",
+              "responses"
+            ],
+            "title": "Effective Protocol",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "model_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model Id",
+            "type": "string"
+          },
+          "protocol_override": {
+            "anyOf": [
+              {
+                "enum": [
+                  "chat_completions",
+                  "responses"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Override"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "stream_status": {
+            "enum": [
+              "unknown",
+              "succeeded",
+              "failed"
+            ],
+            "title": "Stream Status",
+            "type": "string"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "text_status": {
+            "enum": [
+              "unknown",
+              "succeeded",
+              "failed"
+            ],
+            "title": "Text Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id",
+          "id",
+          "provider_id",
+          "effective_protocol",
+          "revision",
+          "text_status",
+          "stream_status"
+        ],
+        "title": "ModelResponse",
+        "type": "object"
+      },
+      "ProfileInput": {
+        "additionalProperties": false,
+        "properties": {
+          "explain_language": {
+            "maxLength": 100,
+            "title": "Explain Language",
+            "type": "string"
+          },
+          "level_note": {
+            "maxLength": 10000,
+            "title": "Level Note",
+            "type": "string"
+          },
+          "native_language": {
+            "maxLength": 100,
+            "title": "Native Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "native_language",
+          "explain_language",
+          "level_note"
+        ],
+        "title": "ProfileInput",
+        "type": "object"
+      },
+      "ProfileResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "explain_language": {
+            "maxLength": 100,
+            "title": "Explain Language",
+            "type": "string"
+          },
+          "level_note": {
+            "maxLength": 10000,
+            "title": "Level Note",
+            "type": "string"
+          },
+          "native_language": {
+            "maxLength": 100,
+            "title": "Native Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "native_language",
+          "explain_language",
+          "level_note"
+        ],
+        "title": "ProfileResponse",
+        "type": "object"
+      },
+      "ProviderInput": {
+        "additionalProperties": false,
+        "properties": {
+          "api_key": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          },
+          "base_url": {
+            "maxLength": 2048,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "protocol": {
+            "enum": [
+              "chat_completions",
+              "responses"
+            ],
+            "title": "Protocol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "base_url",
+          "protocol"
+        ],
+        "title": "ProviderInput",
+        "type": "object"
+      },
+      "ProviderPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "api_key": {
+            "maxLength": 20000,
+            "title": "Api Key",
+            "type": "string"
+          },
+          "base_url": {
+            "maxLength": 2048,
+            "title": "Base Url",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "protocol": {
+            "enum": [
+              "chat_completions",
+              "responses"
+            ],
+            "title": "Protocol",
+            "type": "string"
+          }
+        },
+        "title": "ProviderPatch",
+        "type": "object"
+      },
+      "ProviderResponse": {
+        "properties": {
+          "base_url": {
+            "title": "Base Url",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "discovered_models": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Discovered Models",
+            "type": "array"
+          },
+          "discovery_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discovery Error"
+          },
+          "discovery_status": {
+            "enum": [
+              "never",
+              "succeeded",
+              "failed"
+            ],
+            "title": "Discovery Status",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "has_api_key": {
+            "title": "Has Api Key",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "last_discovered_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Discovered At"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelResponse"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "protocol": {
+            "enum": [
+              "chat_completions",
+              "responses"
+            ],
+            "title": "Protocol",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "base_url",
+          "protocol",
+          "enabled",
+          "has_api_key",
+          "models",
+          "discovered_models",
+          "discovery_status",
+          "discovery_error",
+          "last_discovered_at",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProviderResponse",
+        "type": "object"
+      },
+      "RunResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "output_text": {
+            "title": "Output Text",
+            "type": "string"
+          },
+          "prompt_version": {
+            "title": "Prompt Version",
+            "type": "string"
+          },
+          "protocol": {
+            "enum": [
+              "chat_completions",
+              "responses"
+            ],
+            "title": "Protocol",
+            "type": "string"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "provider_name": {
+            "title": "Provider Name",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "interrupted"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stream": {
+            "title": "Stream",
+            "type": "boolean"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "provider_id",
+          "provider_name",
+          "model_id",
+          "protocol",
+          "stream",
+          "status",
+          "output_text",
+          "error",
+          "usage",
+          "prompt_version",
+          "created_at",
+          "started_at",
+          "finished_at"
+        ],
+        "title": "RunResponse",
         "type": "object"
       },
       "SegmentCreate": {
@@ -185,6 +956,30 @@
         "title": "SegmentUpdate",
         "type": "object"
       },
+      "SettingsResponse": {
+        "properties": {
+          "defaults": {
+            "$ref": "#/components/schemas/DefaultsResponse"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ProfileResponse"
+          },
+          "styles": {
+            "items": {
+              "$ref": "#/components/schemas/StyleResponse"
+            },
+            "title": "Styles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "profile",
+          "styles",
+          "defaults"
+        ],
+        "title": "SettingsResponse",
+        "type": "object"
+      },
       "SourceCreate": {
         "additionalProperties": false,
         "properties": {
@@ -296,6 +1091,108 @@
         "title": "SourceUpdate",
         "type": "object"
       },
+      "StyleInput": {
+        "additionalProperties": false,
+        "properties": {
+          "body_md": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Body Md",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "body_md"
+        ],
+        "title": "StyleInput",
+        "type": "object"
+      },
+      "StyleResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "body_md": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Body Md",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "body_md",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "StyleResponse",
+        "type": "object"
+      },
+      "UsageResponse": {
+        "properties": {
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "total_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tokens"
+          }
+        },
+        "title": "UsageResponse",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -335,6 +1232,20 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VerificationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "stream": {
+            "title": "Stream",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "stream"
+        ],
+        "title": "VerificationInput",
+        "type": "object"
       }
     }
   },
@@ -360,6 +1271,427 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/api/provider-models/{model_id}": {
+      "patch": {
+        "operationId": "patchModel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "title": "Model Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Model"
+      }
+    },
+    "/api/provider-models/{model_id}/verifications": {
+      "post": {
+        "operationId": "verifyModel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "title": "Model Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Model"
+      }
+    },
+    "/api/providers": {
+      "get": {
+        "operationId": "listProviders",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderResponse"
+                  },
+                  "title": "Response Listproviders",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Providers"
+      },
+      "post": {
+        "operationId": "createProvider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Provider"
+      }
+    },
+    "/api/providers/{provider_id}": {
+      "delete": {
+        "operationId": "deleteProvider",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Provider"
+      },
+      "get": {
+        "operationId": "getProvider",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Provider"
+      },
+      "patch": {
+        "operationId": "patchProvider",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Provider"
+      }
+    },
+    "/api/providers/{provider_id}/models": {
+      "post": {
+        "operationId": "createModel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Model"
+      }
+    },
+    "/api/providers/{provider_id}/refresh-models": {
+      "post": {
+        "operationId": "refreshModels",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh Models"
+      }
+    },
+    "/api/runs": {
+      "get": {
+        "operationId": "listRuns",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RunResponse"
+                  },
+                  "title": "Response Listruns",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Runs"
+      }
+    },
+    "/api/runs/{run_id}": {
+      "get": {
+        "operationId": "getRun",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Run"
       }
     },
     "/api/segments/{segment_id}": {
@@ -476,6 +1808,217 @@
           }
         },
         "summary": "Update Segment"
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "operationId": "getSettings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Settings"
+      }
+    },
+    "/api/settings/defaults": {
+      "put": {
+        "operationId": "putDefaults",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefaultsInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Defaults"
+      }
+    },
+    "/api/settings/profile": {
+      "put": {
+        "operationId": "putProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Profile"
+      }
+    },
+    "/api/settings/styles": {
+      "post": {
+        "operationId": "createStyle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StyleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StyleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Style"
+      }
+    },
+    "/api/settings/styles/{style_id}": {
+      "delete": {
+        "operationId": "deleteStyle",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "style_id",
+            "required": true,
+            "schema": {
+              "title": "Style Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Style"
+      },
+      "put": {
+        "operationId": "putStyle",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "style_id",
+            "required": true,
+            "schema": {
+              "title": "Style Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StyleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StyleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Style"
       }
     },
     "/api/sources": {

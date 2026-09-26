@@ -39,6 +39,7 @@ coverage/
 /data/*.sqlite3
 /data/*.sqlite3-*
 /data/llm_cache/
+/data/*.secrets/
 *.log
 
 # Editor / IDE state

@@ -1,17 +1,21 @@
 """ASGI entry point and optional built frontend hosting."""
 
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.api.health import router as health_router
+from app.api.settings import router as settings_router
 from app.api.sources import router as sources_router
 from app.config import REPO_ROOT, load_settings
 from app.db import create_engine
+from app.services.settings import interrupt_unfinished
 
 
 def create_app(frontend_dir: Path | None = None, database_path: Path | None = None) -> FastAPI:
@@ -20,9 +24,18 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         path = database_path if database_path is not None else load_settings().database.path
         engine = create_engine(path)
         application.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
+        application.state.database_path = path
+        application.state.verification_semaphore = asyncio.Semaphore(2)
+        application.state.verification_tasks = set[asyncio.Task[None]]()
+        async with application.state.session_factory() as session:
+            await interrupt_unfinished(session)
         try:
             yield
         finally:
+            for task in application.state.verification_tasks:
+                task.cancel()
+            if application.state.verification_tasks:
+                await asyncio.gather(*application.state.verification_tasks, return_exceptions=True)
             await engine.dispose()
 
     application = FastAPI(
@@ -32,8 +45,30 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         redoc_url=None,
         lifespan=lifespan,
     )
+
+    application.state.verification_worker_enabled = True
+
+    @application.exception_handler(RequestValidationError)
+    async def safe_validation_error(
+        _request: Request, _exc: RequestValidationError
+    ) -> JSONResponse:
+        # Pydantic's default error payload includes raw input, including rejected credentials.
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": [
+                    {
+                        "loc": ["body"],
+                        "msg": "请求字段无效，请检查格式与长度",
+                        "type": "value_error",
+                    }
+                ]
+            },
+        )
+
     application.include_router(health_router)
     application.include_router(sources_router)
+    application.include_router(settings_router)
     built_frontend = frontend_dir if frontend_dir is not None else REPO_ROOT / "frontend" / "dist"
     api_methods = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
