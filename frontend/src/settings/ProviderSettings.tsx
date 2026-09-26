@@ -859,6 +859,23 @@ function ModelRow({
 	const [editing, setEditing] = useState(false);
 	const [showRecord, setShowRecord] = useState<Capability | null>(null);
 	const [optimistic, setOptimistic] = useState<Capability[]>([]);
+	const [deleting, setDeleting] = useState(false);
+	const remove = useMutation({
+		mutationFn: async () => {
+			const { error, response } = await api.DELETE(
+				"/api/provider-models/{model_id}",
+				{
+					params: { path: { model_id: model.id } },
+				},
+			);
+			if (!response.ok) throw errorMessage(error, response.status);
+		},
+		onSuccess: () => {
+			setDeleting(false);
+			void client.invalidateQueries({ queryKey: settingsKeys.providers });
+			void client.invalidateQueries({ queryKey: settingsKeys.settings });
+		},
+	});
 	const textSummary = model.text_verification;
 	const streamSummary = model.stream_verification;
 	const textState: VerificationState = optimistic.includes("text")
@@ -1036,15 +1053,64 @@ function ModelRow({
 							>
 								模型设置
 							</button>
+							<button
+								type="button"
+								className="text-danger"
+								disabled={busy || verify.isPending}
+								onClick={(event) => {
+									event.currentTarget
+										.closest("details")
+										?.removeAttribute("open");
+									remove.reset();
+									setDeleting(true);
+								}}
+							>
+								删除模型
+							</button>
 						</ActionMenu>
 					</div>
 				</td>
 			</tr>
-			{(editing || showRecord || verify.error) && (
+			{(editing || showRecord || verify.error || deleting) && (
 				<tr className="model-detail-row">
 					<td colSpan={7}>
 						<div className="verification-detail">
 							<InlineError error={verify.error} />
+							{deleting && (
+								<ConfirmDialog
+									titleId={`delete-model-${model.id}`}
+									onClose={() => {
+										if (!remove.isPending) setDeleting(false);
+									}}
+								>
+									<p className="eyebrow">删除确认</p>
+									<h2 id={`delete-model-${model.id}`}>
+										删除「{model.model_id}」？
+									</h2>
+									<p>
+										删除此模型登记，保留历史验证记录。使用它的默认值将失效，需要重新选择；不会自动改用其他模型。
+									</p>
+									<InlineError error={remove.error} />
+									<div className="actions">
+										<button
+											className="button danger"
+											type="button"
+											disabled={remove.isPending}
+											onClick={() => remove.mutate()}
+										>
+											{remove.isPending ? "删除中…" : "确认删除"}
+										</button>
+										<button
+											className="button secondary"
+											type="button"
+											disabled={remove.isPending}
+											onClick={() => setDeleting(false)}
+										>
+											取消
+										</button>
+									</div>
+								</ConfirmDialog>
+							)}
 							{showRecord &&
 								(showRecord === "text" ? textSummary : streamSummary) && (
 									<RunDetail

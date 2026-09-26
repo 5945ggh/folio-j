@@ -142,6 +142,15 @@ async def patch_model(model_id: str, data: ModelPatch, session: Session) -> Mode
     return await service.patch_model(session, model_id, data)
 
 
+@router.delete(
+    "/provider-models/{model_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    operation_id="deleteModel",
+)
+async def delete_model(model_id: str, session: Session) -> None:
+    await service.delete_model(session, model_id)
+
+
 @router.post(
     "/provider-models/{model_id}/verifications",
     response_model=RunResponse,

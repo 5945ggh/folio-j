@@ -16,6 +16,11 @@ export class RequestError extends Error {
 }
 
 export function errorMessage(error: unknown, status: number): RequestError {
+	const detail =
+		error && typeof error === "object" && "detail" in error
+			? error.detail
+			: undefined;
+	if (typeof detail === "string") return new RequestError(detail, status);
 	if (status === 404) return new RequestError("记录不存在或已删除。", status);
 	if (status === 409)
 		return new RequestError(
@@ -26,10 +31,6 @@ export function errorMessage(error: unknown, status: number): RequestError {
 		return new RequestError("输入未通过验证，请检查必填项和长度。", status);
 	if (status === 0)
 		return new RequestError("无法连接服务，请检查本地服务后重试。", status);
-	const detail =
-		error && typeof error === "object" && "detail" in error
-			? error.detail
-			: undefined;
 	return new RequestError(
 		typeof detail === "string" ? detail : "操作失败，请稍后重试。",
 		status,

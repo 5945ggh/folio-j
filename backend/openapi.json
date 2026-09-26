@@ -1351,6 +1351,36 @@
       }
     },
     "/api/provider-models/{model_id}": {
+      "delete": {
+        "operationId": "deleteModel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "title": "Model Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Model"
+      },
       "patch": {
         "operationId": "patchModel",
         "parameters": [

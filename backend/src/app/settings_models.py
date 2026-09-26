@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -55,6 +55,7 @@ class Provider(Base):
 
 class ProviderModel(Base):
     __tablename__ = "provider_models"
+    __table_args__ = (Index("uq_provider_models_identity", "provider_id", "model_id", unique=True),)
     id: Mapped[str] = mapped_column(String(26), primary_key=True)
     provider_id: Mapped[str] = mapped_column(ForeignKey("providers.id"), index=True)
     model_id: Mapped[str] = mapped_column(String(200))

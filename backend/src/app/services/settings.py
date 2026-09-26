@@ -11,7 +11,8 @@ from urllib.parse import quote
 from fastapi import HTTPException
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from openai import APIConnectionError, APIStatusError, APITimeoutError
-from sqlalchemy import func, insert, select, update
+from sqlalchemy import func, insert, select, text, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ids import new_ulid
@@ -399,6 +400,7 @@ async def create_provider(
 async def patch_provider(
     session: AsyncSession, database_path: Path, provider_id: str, data: ProviderPatch
 ) -> ProviderResponse:
+    await session.execute(text("BEGIN IMMEDIATE"))
     row = await get_provider(session, provider_id)
     changed = data.model_fields_set
     connection_changed = any(
@@ -417,6 +419,10 @@ async def patch_provider(
             connection_changed = True
     if connection_changed:
         row.revision += 1
+        row.discovered_models = []
+        row.discovery_status = "never"
+        row.discovery_error = None
+        row.last_discovered_at = None
         for model in (
             await session.scalars(select(ProviderModel).where(ProviderModel.provider_id == row.id))
         ).all():
@@ -427,6 +433,7 @@ async def patch_provider(
 
 
 async def delete_provider(session: AsyncSession, provider_id: str) -> None:
+    await session.execute(text("BEGIN IMMEDIATE"))
     row = await get_provider(session, provider_id)
     active = await session.scalar(
         select(Run.id)
@@ -441,6 +448,7 @@ async def delete_provider(session: AsyncSession, provider_id: str) -> None:
 
 
 async def create_model(session: AsyncSession, provider_id: str, data: ModelInput) -> ModelResponse:
+    await session.execute(text("BEGIN IMMEDIATE"))
     provider = await get_provider(session, provider_id)
     existing = await session.scalar(
         select(ProviderModel).where(
@@ -458,11 +466,16 @@ async def create_model(session: AsyncSession, provider_id: str, data: ModelInput
         stream_status="unknown",
     )
     session.add(row)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        fail(409, "模型 ID 已登记")
     return model_response(row, provider, {})
 
 
 async def patch_model(session: AsyncSession, model_id: str, data: ModelPatch) -> ModelResponse:
+    await session.execute(text("BEGIN IMMEDIATE"))
     row = await session.get(ProviderModel, model_id)
     if row is None:
         fail(404, "模型不存在")
@@ -483,20 +496,49 @@ async def patch_model(session: AsyncSession, model_id: str, data: ModelPatch) ->
     return model_response(row, provider, summaries)
 
 
+async def delete_model(session: AsyncSession, model_id: str) -> None:
+    await session.execute(text("BEGIN IMMEDIATE"))
+    row = await session.get(ProviderModel, model_id)
+    if row is None:
+        fail(404, "模型不存在")
+    assert row is not None
+    await get_provider(session, row.provider_id)
+    active = await session.scalar(
+        select(Run.id)
+        .where(Run.provider_model_id == row.id, Run.status.in_(["queued", "running"]))
+        .limit(1)
+    )
+    if active:
+        fail(409, "存在未完成的模型验证")
+    # Runs retain their original identity and snapshots; defaults stay visibly invalid.
+    await session.delete(row)
+    await session.commit()
+
+
 async def refresh_models(
     session: AsyncSession, database_path: Path, provider_id: str
 ) -> ProviderResponse:
     from app.llm import adapters
 
     row = await get_provider(session, provider_id)
+    revision, base_url, reference = row.revision, row.base_url, row.credential_ref
+    await session.rollback()
+    names: list[str] | None = None
     try:
-        names = await adapters.discover_models(
-            row.base_url, read_credential(database_path, row.credential_ref)
-        )
+        names = await adapters.discover_models(base_url, read_credential(database_path, reference))
+    except Exception:
+        pass
+    # Do not hold a database write lock while waiting on the provider.
+    await session.execute(text("BEGIN IMMEDIATE"))
+    row = await get_provider(session, provider_id)
+    if row.revision != revision:
+        await session.commit()
+        return await provider_response(session, row)
+    if names is not None:
         row.discovered_models = names
         row.discovery_status = "succeeded"
         row.discovery_error = None
-    except Exception:
+    else:
         row.discovery_status = "failed"
         row.discovery_error = "模型列表获取失败，请检查地址、网络或凭据"
     row.last_discovered_at = now()
@@ -545,6 +587,7 @@ async def get_run(session: AsyncSession, run_id: str) -> RunResponse:
 async def accept_verification(
     session: AsyncSession, model_id: str, data: VerificationInput
 ) -> RunResponse:
+    await session.execute(text("BEGIN IMMEDIATE"))
     model = await session.get(ProviderModel, model_id)
     if model is None:
         fail(404, "模型不存在")
@@ -620,6 +663,7 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
     async with application.state.verification_semaphore:
         factory = application.state.session_factory
         async with factory() as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
             row = await session.get(Run, run_id)
             if row is None or row.status != "queued":
                 return
@@ -660,6 +704,7 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
             if not safe_text.strip() or not result.completed:
                 raise ValueError("模型未返回完整的可见文本")
             async with factory() as session:
+                await session.execute(text("BEGIN IMMEDIATE"))
                 row = await session.get(Run, run_id)
                 if row is None or row.status != "running":
                     return
@@ -686,6 +731,7 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
                 await session.commit()
         except Exception as error:
             async with factory() as session:
+                await session.execute(text("BEGIN IMMEDIATE"))
                 row = await session.get(Run, run_id)
                 if row is None or row.status != "running":
                     return

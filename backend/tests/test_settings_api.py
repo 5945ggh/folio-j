@@ -374,6 +374,73 @@ async def test_model_discovery_failure_keeps_cached_ids_and_manual_models(
         assert "fictional key" not in json.dumps(current)
 
 
+@pytest.mark.asyncio
+async def test_stale_discovery_cannot_restore_models_from_previous_connection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def delayed_discovery(_url: str, _key: str | None) -> list[str]:
+        started.set()
+        await release.wait()
+        return ["old-endpoint-model"]
+
+    async with settings_client(tmp_path / "folio.db") as client:
+        provider = await create_provider(client)
+        monkeypatch.setattr(adapters, "discover_models", delayed_discovery)
+        refresh_task = asyncio.create_task(
+            client.post(f"/api/providers/{provider['id']}/refresh-models")
+        )
+        await asyncio.wait_for(started.wait(), timeout=2)
+        changed = await client.patch(
+            f"/api/providers/{provider['id']}",
+            json={"base_url": "http://localhost:9000/v1"},
+        )
+        assert changed.status_code == 200, changed.text
+        release.set()
+        refresh = await refresh_task
+        assert refresh.status_code == 200, refresh.text
+        current = (await client.get(f"/api/providers/{provider['id']}")).json()
+        assert current["revision"] == provider["revision"] + 1
+        assert current["discovered_models"] == []
+        assert current["discovery_status"] == "never"
+
+
+@pytest.mark.asyncio
+async def test_simultaneous_provider_and_model_edits_each_advance_revision(tmp_path: Path) -> None:
+    async with settings_client(tmp_path / "folio.db") as client:
+        provider = await create_provider(client)
+        model = (
+            await client.post(f"/api/providers/{provider['id']}/models", json={"model_id": "demo"})
+        ).json()
+        provider_url = f"/api/providers/{provider['id']}"
+        responses = await asyncio.gather(
+            client.patch(provider_url, json={"base_url": "http://localhost:9001/v1"}),
+            client.patch(provider_url, json={"protocol": "responses"}),
+        )
+        assert all(response.status_code == 200 for response in responses), [
+            (response.status_code, response.text) for response in responses
+        ]
+        current = (await client.get(provider_url)).json()
+        assert current["revision"] == provider["revision"] + 2
+        assert current["base_url"] == "http://localhost:9001/v1"
+        assert current["protocol"] == "responses"
+
+        model_url = f"/api/provider-models/{model['id']}"
+        model_responses = await asyncio.gather(
+            client.patch(model_url, json={"temperature": 0.4}),
+            client.patch(model_url, json={"max_output_tokens": 64}),
+        )
+        assert all(response.status_code == 200 for response in model_responses), [
+            (response.status_code, response.text) for response in model_responses
+        ]
+        current_model = (await client.get(provider_url)).json()["models"][0]
+        assert current_model["revision"] == model["revision"] + 2
+        assert current_model["temperature"] == 0.4
+        assert current_model["max_output_tokens"] == 64
+
+
 def test_openapi_provider_input_and_output_keep_credentials_separate() -> None:
     schemas = create_app().openapi()["components"]["schemas"]
     assert "api_key" in schemas["ProviderInput"]["properties"]
@@ -381,6 +448,101 @@ def test_openapi_provider_input_and_output_keep_credentials_separate() -> None:
     assert "enabled" not in schemas["ProviderPatch"].get("required", [])
     assert "api_key" not in schemas["ProviderResponse"]["properties"]
     assert "api_key" not in schemas["RunResponse"]["properties"]
+
+
+@pytest.mark.asyncio
+async def test_provider_model_identity_is_unique_in_database(tmp_path: Path) -> None:
+    """Two tabs can both pass the API's pre-insert lookup; SQLite must arbitrate."""
+    database = tmp_path / "folio.db"
+    async with settings_client(database) as client:
+        provider = await create_provider(client)
+        first = await client.post(
+            f"/api/providers/{provider['id']}/models", json={"model_id": "same-model"}
+        )
+        assert first.status_code == 201, first.text
+
+    with sqlite3.connect(database) as connection:
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                "INSERT INTO provider_models "
+                "(id, provider_id, model_id, enabled, revision, text_status, stream_status) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    "01ARZ3NDEKTSV4RRFFQ69G5FAX",
+                    provider["id"],
+                    "same-model",
+                    1,
+                    1,
+                    "unknown",
+                    "unknown",
+                ),
+            )
+        duplicate_count = connection.execute(
+            "SELECT count(*) FROM provider_models WHERE provider_id = ? AND model_id = ?",
+            (provider["id"], "same-model"),
+        ).fetchone()
+    assert duplicate_count == (1,)
+
+
+@pytest.mark.asyncio
+async def test_simultaneous_registration_of_same_model_returns_one_conflict(tmp_path: Path) -> None:
+    async with settings_client(tmp_path / "folio.db") as client:
+        provider = await create_provider(client)
+        url = f"/api/providers/{provider['id']}/models"
+        first, second = await asyncio.gather(
+            client.post(url, json={"model_id": "shared"}),
+            client.post(url, json={"model_id": "shared"}),
+        )
+        assert sorted((first.status_code, second.status_code)) == [201, 409]
+        models = (await client.get(f"/api/providers/{provider['id']}")).json()["models"]
+        assert [model["model_id"] for model in models] == ["shared"]
+
+
+@pytest.mark.asyncio
+async def test_delete_model_preserves_run_and_default_then_allows_new_identity(
+    tmp_path: Path,
+) -> None:
+    async with settings_client(tmp_path / "folio.db") as client:
+        provider = await create_provider(client)
+        url = f"/api/providers/{provider['id']}/models"
+        model_response = await client.post(url, json={"model_id": "demo"})
+        assert model_response.status_code == 201, model_response.text
+        model = model_response.json()
+        settings = (await client.get("/api/settings")).json()
+        defaults = {
+            "analysis_model_id": model["id"],
+            "chat_model_id": None,
+            "extraction_model_id": None,
+            "style_id": settings["defaults"]["style_id"],
+            "permission_mode": "review",
+        }
+        assert (await client.put("/api/settings/defaults", json=defaults)).status_code == 200
+        run_response = await client.post(
+            f"/api/provider-models/{model['id']}/verifications", json={"stream": False}
+        )
+        assert run_response.status_code == 202, run_response.text
+        run_id = run_response.json()["id"]
+        delete_url = f"/api/provider-models/{model['id']}"
+        assert (await client.delete(delete_url)).status_code == 409
+
+    # Reopening marks the accepted but unexecuted verification as interrupted.
+    async with settings_client(tmp_path / "folio.db") as client:
+        assert (await client.get(f"/api/runs/{run_id}")).json()["status"] == "interrupted"
+        assert (await client.delete(delete_url)).status_code == 204
+        assert (await client.delete(delete_url)).status_code == 404
+        assert (await client.patch(delete_url, json={"enabled": True})).status_code == 404
+        assert (await client.get("/api/settings")).json()["defaults"]["analysis_model_id"] == model[
+            "id"
+        ]
+        assert (await client.get(f"/api/runs/{run_id}")).json()["model_id"] == "demo"
+        replacement_response = await client.post(url, json={"model_id": "demo"})
+        assert replacement_response.status_code == 201, replacement_response.text
+        replacement = replacement_response.json()
+        assert replacement["id"] != model["id"]
+        assert replacement["text_status"] == "unknown"
+        assert (await client.get("/api/settings")).json()["defaults"]["analysis_model_id"] == model[
+            "id"
+        ]
 
 
 @pytest.mark.asyncio
