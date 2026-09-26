@@ -1,11 +1,13 @@
 """Database base and explicit async engine construction."""
 
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Protocol
 
+from fastapi import Request
 from sqlalchemy import event
 from sqlalchemy.engine import URL
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 
@@ -21,6 +23,12 @@ class SQLiteConnection(Protocol):
 
 class Base(DeclarativeBase):
     pass
+
+
+async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
+    """Supply one async session per request from the application's lifespan."""
+    async with request.app.state.session_factory() as session:
+        yield session
 
 
 def create_engine(database_path: Path) -> AsyncEngine:

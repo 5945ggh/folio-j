@@ -11,11 +11,11 @@ setup:
     pnpm --dir frontend install --frozen-lockfile
 
 # 同时启动 FastAPI 热重载与 Vite；Ctrl-C 一并停止子进程。
-dev:
+dev: migrate
     uv run --project backend python scripts/run.py dev
 
 # 构建前端并由 FastAPI 托管。
-start: build
+start: migrate build
     uv run --project backend python scripts/run.py start
 
 build:
@@ -43,7 +43,7 @@ gen-api:
     uv run --project backend python -m app.export_openapi
     pnpm --dir frontend gen-api
 
-# 当前仅初始化迁移环境；领域模型在后续切片中添加。
+# 从空库建立当前 schema，或执行已记录迁移；不自动清空数据库。
 migrate:
     uv run --directory backend alembic upgrade head
 

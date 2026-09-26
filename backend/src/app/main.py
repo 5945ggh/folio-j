@@ -1,22 +1,39 @@
 """ASGI entry point and optional built frontend hosting."""
 
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.api.health import router as health_router
-from app.config import REPO_ROOT
+from app.api.sources import router as sources_router
+from app.config import REPO_ROOT, load_settings
+from app.db import create_engine
 
 
-def create_app(frontend_dir: Path | None = None) -> FastAPI:
+def create_app(frontend_dir: Path | None = None, database_path: Path | None = None) -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> AsyncGenerator[None]:
+        path = database_path if database_path is not None else load_settings().database.path
+        engine = create_engine(path)
+        application.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            yield
+        finally:
+            await engine.dispose()
+
     application = FastAPI(
         title="Folio-J API",
         openapi_url="/api/openapi.json",
         docs_url="/api/docs",
         redoc_url=None,
+        lifespan=lifespan,
     )
     application.include_router(health_router)
+    application.include_router(sources_router)
     built_frontend = frontend_dir if frontend_dir is not None else REPO_ROOT / "frontend" / "dist"
     api_methods = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 

@@ -5,10 +5,11 @@ import asyncio
 from sqlalchemy import Connection
 
 from alembic import context
+from app import models as _models
 from app.config import load_settings
-from app.db import Base, create_engine
+from app.db import create_engine
 
-target_metadata = Base.metadata
+target_metadata = _models.Base.metadata
 
 
 def do_run_migrations(connection: Connection) -> None:

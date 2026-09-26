@@ -6,11 +6,21 @@ from pydantic import ValidationError
 from app.config import REPO_ROOT, load_settings
 
 
-def test_default_config_without_file(tmp_path: Path) -> None:
+def test_default_config_without_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("FOLIO_J_DATABASE_PATH", raising=False)
     settings = load_settings(tmp_path / "missing.toml")
     assert settings.server.host == "127.0.0.1"
     assert settings.server.port == 8000
     assert settings.database.path == REPO_ROOT / "data" / "app.db"
+
+
+def test_database_path_environment_override(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "isolated.db"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
+    settings = load_settings(tmp_path / "missing.toml")
+    assert settings.database.path == database
 
 
 def test_repo_relative_database_path(tmp_path: Path) -> None:

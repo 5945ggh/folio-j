@@ -1,5 +1,6 @@
 """Local application settings."""
 
+import os
 import tomllib
 from pathlib import Path
 from typing import Literal
@@ -29,6 +30,9 @@ def load_settings(config_path: Path | None = None) -> Settings:
     data = tomllib.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     settings = Settings.model_validate(data)
     database_path = settings.database.path
+    override = os.environ.get("FOLIO_J_DATABASE_PATH")
+    if override is not None:
+        database_path = Path(override)
     if not database_path.is_absolute():
         database_path = REPO_ROOT / database_path
     return settings.model_copy(
