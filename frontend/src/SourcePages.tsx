@@ -143,8 +143,13 @@ function SourceDelete({
 				setPreviewFailure(true);
 				throw latest.error ?? new Error("无法核对删除范围，请重试。");
 			}
-			if (latest.data.segment_count !== impact.data?.segment_count)
-				throw new Error("片段数量刚刚变化，请核对最新影响范围后再次确认。");
+			if (
+				latest.data.segment_count !== impact.data?.segment_count ||
+				latest.data.thread_count !== impact.data?.thread_count ||
+				latest.data.message_count !== impact.data?.message_count ||
+				latest.data.active_job_count !== impact.data?.active_job_count
+			)
+				throw new Error("删除范围刚刚变化，请核对最新影响后再次确认。");
 			const { error, response } = await api.DELETE("/api/sources/{source_id}", {
 				params: { path: { source_id: source.id } },
 			});
@@ -168,9 +173,13 @@ function SourceDelete({
 				<InlineError error={impact.error} />
 			) : (
 				<p>
-					这会一并隐藏该来源下的{" "}
-					<strong>{impact.data.segment_count} 个片段</strong>
-					。删除后无法从页面恢复；其他来源不受影响。
+					这会一并删除该来源下的{" "}
+					<strong>{impact.data.segment_count} 个片段</strong>、
+					<strong>{impact.data.thread_count} 条讨论</strong>和{" "}
+					<strong>{impact.data.message_count} 条消息</strong>。
+					{impact.data.active_job_count > 0 &&
+						`其中 ${impact.data.active_job_count} 个进行中的任务会被中断。`}
+					删除后无法从页面恢复；其他来源不受影响。
 				</p>
 			)}
 			<InlineError

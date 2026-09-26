@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { api } from "./api/client";
+import { Workbench } from "./chat/Workbench";
 import {
 	errorMessage,
 	getSegment,
+	getSegmentDeleteImpact,
 	getSource,
 	queries,
 	requireData,
@@ -58,6 +60,12 @@ export function SegmentDetail() {
 		queryFn: () => getSource(segment.data?.source_id ?? ""),
 		enabled: segment.isSuccess,
 	});
+	const impact = useQuery({
+		queryKey: queries.segmentImpact(id),
+		queryFn: () => getSegmentDeleteImpact(id),
+		enabled: deleting,
+		staleTime: 0,
+	});
 	const update = useMutation({
 		mutationFn: async (fields: SegmentFields) => {
 			const body = segment.data?.text_locked_at
@@ -87,6 +95,15 @@ export function SegmentDetail() {
 	});
 	const remove = useMutation({
 		mutationFn: async () => {
+			const latest = await impact.refetch();
+			if (latest.isError || !latest.data)
+				throw latest.error ?? new Error("无法核对删除范围，请重试。");
+			if (
+				latest.data.thread_count !== impact.data?.thread_count ||
+				latest.data.message_count !== impact.data?.message_count ||
+				latest.data.active_job_count !== impact.data?.active_job_count
+			)
+				throw new Error("删除范围刚刚变化，请核对最新影响后再次确认。");
 			const { error, response } = await api.DELETE(
 				"/api/segments/{segment_id}",
 				{ params: { path: { segment_id: id } } },
@@ -195,6 +212,7 @@ export function SegmentDetail() {
 					)}
 				</article>
 			)}
+			<Workbench segment={current} />
 			<div className="danger-zone">
 				<button
 					className="text-danger"
@@ -215,16 +233,25 @@ export function SegmentDetail() {
 						{current.text.slice(0, 140)}
 						{current.text.length > 140 ? "…" : ""}
 					</blockquote>
-					<p>
-						删除后将从「{source.data?.title ?? "所属来源"}
-						」中隐藏，来源本身及其他片段保留。无法从页面恢复。
-					</p>
+					{impact.isPending ? (
+						<p>正在读取当前影响范围…</p>
+					) : impact.isError ? (
+						<InlineError error={impact.error} />
+					) : (
+						<p>
+							这会一并删除 {impact.data.thread_count} 条讨论和{" "}
+							{impact.data.message_count} 条消息。
+							{impact.data.active_job_count > 0 &&
+								`其中 ${impact.data.active_job_count} 个进行中的任务会被中断。`}
+							来源本身及其他片段保留。删除后无法从页面恢复。
+						</p>
+					)}
 					<InlineError error={remove.error} />
 					<div className="actions">
 						<button
 							className="button danger"
 							type="button"
-							disabled={remove.isPending}
+							disabled={!impact.isSuccess || remove.isPending}
 							onClick={() => remove.mutate()}
 						>
 							{remove.isPending ? "删除中…" : "确认删除"}

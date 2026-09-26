@@ -52,6 +52,7 @@ export const queries = {
 	segments: (id: string) => ["source-segments", id] as const,
 	segment: (id: string) => ["segment", id] as const,
 	impact: (id: string) => ["source-delete-impact", id] as const,
+	segmentImpact: (id: string) => ["segment-delete-impact", id] as const,
 };
 
 export async function listSources() {
@@ -82,6 +83,14 @@ export async function getDeleteImpact(id: string) {
 	const { data, error, response } = await api.GET(
 		"/api/sources/{source_id}/delete-impact",
 		{ params: { path: { source_id: id } } },
+	);
+	return requireData(data, error, response.status);
+}
+
+export async function getSegmentDeleteImpact(id: string) {
+	const { data, error, response } = await api.GET(
+		"/api/segments/{segment_id}/delete-impact",
+		{ params: { path: { segment_id: id } } },
 	);
 	return requireData(data, error, response.status);
 }
