@@ -1,0 +1,40 @@
+docs/PRD.md
+  s_d6d450d8140122::t_106679f3bdc785 500
+  s_d6d450d8140122::t_400460caaa9d44 287
+docs/handovers/README.md
+  s_d6d450d8140122::t_6a3696f5fd354d 7-8,12
+  s_d6d450d8140122::t_75143b1403e7b8 13
+docs/ARCHITECTURE.md
+  s_d6d450d8140122::t_690be24d04285b 176,179,199
+  s_d6d450d8140122::t_6a3696f5fd354d 126,206
+  s_d6d450d8140122::t_facf1fd110f70b 118-125,127,130,136,138,140,153,204,282
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_d6d450d8140122::t_6a3696f5fd354d 3
+  s_d6d450d8140122::t_106679f3bdc785 60
+docs/handovers/PROMPT_CHAIN_REVIEW.md
+  s_d6d450d8140122::t_165c5d1d63a011 165-187
+  s_d6d450d8140122::t_6a3696f5fd354d 3
+  s_d6d450d8140122::t_327ded991ebdf2 1,5,7-15,17,19,21,24,26,28-30,32,34-37,39-42,45-73,75,77,79-91,95-107,111,113,115-118,121,123-127,131,133,135-143,145-147,149-161,189,191-196
+  s_d6d450d8140122::t_475003be39d3f5 188
+docs/handovers/archived/STAGE_2C_ANALYSIS_TOOLS.md
+  s_d6d450d8140122::t_317a3d1b16af1b 112
+  s_d6d450d8140122::t_6a3696f5fd354d 1,3,5,10,12-13,43,45,55,66,70,83-111,113-123
+docs/TECH_STACK.md
+  s_d6d450d8140122::t_facf1fd110f70b 97-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "77f58f3282e125ea139639fbe490a2b9e5f775e5",
+  "prompts": {},
+  "sessions": {
+    "s_d6d450d8140122": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddff-efa4-7df1-8ed0-77138aa048e2",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
