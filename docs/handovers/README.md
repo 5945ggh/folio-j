@@ -4,11 +4,12 @@
 
 ## Active
 
-- [第二阶段2C：Analysis与成果工具开工准备](STAGE_2C_ANALYSIS_TOOLS.md)：记录上下文分叉生成并自动保存、当前片段读取、Section编辑的已确认边界、开发顺序及仍须落实的工程契约；尚未实现。
-- [全链路提示词聚合草案](PROMPT_CHAIN_REVIEW.md)：由子代理起草，区分当前实际模板与后续工具／生成分支候选；完成开发后以实际模板重新生成最终审阅视图。
-- [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：已确认的首轮能力与切片约束；当前后续顺序见2C开发准备。
+- [全链路提示词聚合视图](PROMPT_CHAIN_REVIEW.md)：当前实际system、工具、生成分支及历史恢复模板，包含加载条件与虚构输入渲染示例。
+- [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：已确认的首轮能力与切片约束；Analysis切片已完成，后续Occurrence须先落实字段与anchor契约。
 
 ## Archived
+
+- [第二阶段2C：Analysis与成果工具](archived/STAGE_2C_ANALYSIS_TOOLS.md)：生成并保存、确切修订读取、Section编辑／审核已完成离线验收；保留迁移、协议、浏览器及限制证据。
 
 - [第二阶段 2B：片段后台异步问答](archived/STAGE_2B_ASYNC_QA.md)：已完成实现与离线验收；保留输入快照、原子锁定、持久历史、停止／重启、迁移及浏览器证据。
 

@@ -94,3 +94,7 @@
 | Celery / Redis | 单用户本地应用不需要 |
 | UniDic / MeCab 系 | 体积大，更偏 NLP；已统一使用 Sudachi |
 | Electron | 体积大；Tauri 优先 |
+
+## 6. 2C 已安装依赖
+
+2026-09-27经用户授权安装并锁定既定选型：后端`markdown-it-py 4.2.0`负责CommonMark标题行映射，开发依赖`hypothesis 6.168.2`验证规范化性质；前端`react-markdown 10.1.0`与`remark-gfm 4.0.1`渲染持久讲解。沿用uv／pnpm锁文件，不新增Agent框架或浏览器测试依赖。
