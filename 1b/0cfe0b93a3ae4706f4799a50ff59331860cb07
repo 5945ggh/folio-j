@@ -1,0 +1,37 @@
+frontend/src/chat/layout.test.ts
+  s_967bed991b13e9::t_592bec872c9c66 1-11
+frontend/src/chat/Workbench.tsx
+  s_967bed991b13e9::t_0ad34f4bec817b 9,136-142
+frontend/src/chat/layout.ts
+  s_967bed991b13e9::t_592bec872c9c66 1-18
+frontend/src/styles.css
+  s_967bed991b13e9::t_323bd435363900 1715,1868,1870-1874,1887-1890,1895,1901-1902
+  s_967bed991b13e9::t_85e1545a3a4d1d 1672-1677
+  s_967bed991b13e9::t_23a1df88b1f8ef 1397-1398,1858,1864-1867,1869,1875-1886,1891-1894,1896-1900,1903-1908,2181-2203,2286-2288
+  s_967bed991b13e9::t_1feadac8d34925 1399-1405
+frontend/src/SegmentPage.tsx
+  s_967bed991b13e9::t_1feadac8d34925 138-140,380-382,484-485,539
+  s_967bed991b13e9::t_c6fa8666eeb675 377-379,383,464-469,471-476,479-483,486-496,502-515,520-521,523,525-538
+  s_967bed991b13e9::t_49d83467601111 477-478,497-501,516-519,522,524
+  s_967bed991b13e9::t_d368b32e9a3fbc 2,8-13,33-53
+  s_967bed991b13e9::t_f325a513386f85 206-213
+  s_967bed991b13e9::t_a04288d8603a41 141-150
+  s_967bed991b13e9::t_323bd435363900 470
+  s_967bed991b13e9::t_8f16d7711b3cb1 54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1b0cfe0b93a3ae4706f4799a50ff59331860cb07",
+  "prompts": {},
+  "sessions": {
+    "s_967bed991b13e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e2b5-cab4-7ce2-8bcb-e969520be243",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
