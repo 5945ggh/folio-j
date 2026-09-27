@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { analysisKeys, getAnalysis } from "../analysis/api";
+import { Markdown } from "../analysis/Markdown";
 import { queries, RequestError, type Segment } from "../content";
 import { InlineError } from "../Shared";
 import { getProviders, getSettings, settingsKeys } from "../settings/api";
@@ -132,7 +133,13 @@ function MessageItem({
 				)}
 			</div>
 			{current.content ? (
-				<p className="chat-message-content">{current.content}</p>
+				current.role === "assistant" ? (
+					<div className="chat-message-content chat-markdown">
+						<Markdown text={current.content} />
+					</div>
+				) : (
+					<p className="chat-message-content">{current.content}</p>
+				)
 			) : current.role === "assistant" ? (
 				<p className="chat-placeholder">
 					{activeJob?.kind === "generate_analysis"

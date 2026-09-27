@@ -1,10 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { AnalysisPanel } from "./analysis/AnalysisPanel";
 import { analysisKeys } from "./analysis/api";
 import { api } from "./api/client";
 import { chatKeys, getJob, type Job } from "./chat/api";
+import {
+	clampConversationWidth,
+	conversationWidthRange,
+	MAX_CONVERSATION_WIDTH,
+	MIN_CONVERSATION_WIDTH,
+} from "./chat/layout";
 import { Workbench } from "./chat/Workbench";
 import {
 	errorMessage,
@@ -23,6 +29,28 @@ import {
 	Loading,
 	PageError,
 } from "./Shared";
+
+const CONVERSATION_WIDTH_KEY = "folio-j:conversation-width";
+
+function initialConversationWidth() {
+	const defaultWidth = Math.max(360, Math.min(420, window.innerWidth * 0.29));
+	try {
+		const stored = Number(window.localStorage.getItem(CONVERSATION_WIDTH_KEY));
+		return stored >= MIN_CONVERSATION_WIDTH && stored <= MAX_CONVERSATION_WIDTH
+			? stored
+			: defaultWidth;
+	} catch {
+		return defaultWidth;
+	}
+}
+
+function saveConversationWidth(width: number) {
+	try {
+		window.localStorage.setItem(CONVERSATION_WIDTH_KEY, String(width));
+	} catch {
+		// Resizing still works if browser storage is unavailable.
+	}
+}
 
 function WorkspaceIcon({
 	name,
@@ -107,6 +135,19 @@ export function SegmentDetail() {
 	const [editing, setEditing] = useState(false);
 	const [deleting, setDeleting] = useState(false);
 	const [chatOpen, setChatOpen] = useState(true);
+	const [conversationWidth, setConversationWidth] = useState(
+		initialConversationWidth,
+	);
+	const [workspaceWidth, setWorkspaceWidth] = useState(0);
+	const workspaceRef = useRef<HTMLDivElement>(null);
+	const conversationRef = useRef<HTMLElement>(null);
+	const resizeStart = useRef<{
+		pointerId: number;
+		x: number;
+		width: number;
+		lastWidth: number;
+	} | null>(null);
+	const widthRange = conversationWidthRange(workspaceWidth);
 	const [readerTab, setReaderTab] = useState<"source" | "analysis">("source");
 	const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
 	const [selectedRevision, setSelectedRevision] = useState<string | null>(null);
@@ -162,6 +203,14 @@ export function SegmentDetail() {
 		queryKey: queries.segment(id),
 		queryFn: () => getSegment(id),
 	});
+	useEffect(() => {
+		if (!segment.isSuccess || !workspaceRef.current) return;
+		const observer = new ResizeObserver(() => {
+			setWorkspaceWidth(workspaceRef.current?.clientWidth ?? 0);
+		});
+		observer.observe(workspaceRef.current);
+		return () => observer.disconnect();
+	}, [segment.isSuccess]);
 	const source = useQuery({
 		queryKey: queries.source(segment.data?.source_id ?? ""),
 		queryFn: () => getSource(segment.data?.source_id ?? ""),
@@ -325,7 +374,13 @@ export function SegmentDetail() {
 					</div>
 				</div>
 			</header>
-			<div className="segment-workspace">
+			<div
+				className="segment-workspace"
+				ref={workspaceRef}
+				style={
+					{ "--conversation-width": `${conversationWidth}px` } as CSSProperties
+				}
+			>
 				<main className="segment-reader">
 					<div className="segment-reader-inner">
 						<div className="reader-tabs" role="tablist" aria-label="阅读内容">
@@ -406,7 +461,82 @@ export function SegmentDetail() {
 						</div>
 					</div>
 				</main>
-				<aside className="segment-conversation" hidden={!chatOpen}>
+				<aside
+					id="segment-conversation"
+					className="segment-conversation"
+					ref={conversationRef}
+					hidden={!chatOpen}
+				>
+					<hr
+						className="conversation-resizer"
+						aria-label="调整对话栏宽度"
+						aria-controls="segment-conversation"
+						aria-orientation="vertical"
+						aria-valuemin={widthRange.min}
+						aria-valuemax={widthRange.max}
+						aria-valuenow={Math.round(
+							clampConversationWidth(conversationWidth, workspaceWidth),
+						)}
+						tabIndex={0}
+						onPointerDown={(event) => {
+							if (event.button !== 0 || !conversationRef.current) return;
+							event.preventDefault();
+							const width =
+								conversationRef.current.getBoundingClientRect().width;
+							resizeStart.current = {
+								pointerId: event.pointerId,
+								x: event.clientX,
+								width,
+								lastWidth: width,
+							};
+							event.currentTarget.setPointerCapture(event.pointerId);
+						}}
+						onPointerMove={(event) => {
+							const start = resizeStart.current;
+							if (!start || start.pointerId !== event.pointerId) return;
+							const width = Math.round(
+								clampConversationWidth(
+									start.width + start.x - event.clientX,
+									workspaceRef.current?.clientWidth ?? 0,
+								),
+							);
+							start.lastWidth = width;
+							setConversationWidth(width);
+						}}
+						onPointerUp={(event) => {
+							if (resizeStart.current?.pointerId !== event.pointerId) return;
+							saveConversationWidth(resizeStart.current.lastWidth);
+							resizeStart.current = null;
+						}}
+						onPointerCancel={() => {
+							resizeStart.current = null;
+						}}
+						onKeyDown={(event) => {
+							const step = event.shiftKey ? 48 : 16;
+							const currentWidth = clampConversationWidth(
+								conversationWidth,
+								workspaceRef.current?.clientWidth ?? 0,
+							);
+							const next =
+								event.key === "ArrowLeft"
+									? currentWidth + step
+									: event.key === "ArrowRight"
+										? currentWidth - step
+										: event.key === "Home"
+											? widthRange.min
+											: event.key === "End"
+												? widthRange.max
+												: null;
+							if (next === null) return;
+							event.preventDefault();
+							const width = clampConversationWidth(
+								next,
+								workspaceRef.current?.clientWidth ?? 0,
+							);
+							setConversationWidth(width);
+							saveConversationWidth(width);
+						}}
+					/>
 					<Workbench
 						key={current.id}
 						segment={current}
