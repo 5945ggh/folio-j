@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import { AnalysisPanel } from "./analysis/AnalysisPanel";
+import { analysisKeys } from "./analysis/api";
 import { api } from "./api/client";
+import { chatKeys, getJob, type Job } from "./chat/api";
 import { Workbench } from "./chat/Workbench";
 import {
 	errorMessage,
@@ -104,6 +107,33 @@ export function SegmentDetail() {
 	const [editing, setEditing] = useState(false);
 	const [deleting, setDeleting] = useState(false);
 	const [chatOpen, setChatOpen] = useState(true);
+	const [readerTab, setReaderTab] = useState<"source" | "analysis">("source");
+	const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
+	const [selectedRevision, setSelectedRevision] = useState<string | null>(null);
+	const [generateToken, setGenerateToken] = useState<string | null>(null);
+	const [generationJobId, setGenerationJobId] = useState<string | null>(null);
+	const openedGenerationArtifact = useRef<string | null>(null);
+	const generation = useQuery({
+		queryKey: chatKeys.job(generationJobId ?? ""),
+		queryFn: () => getJob(generationJobId ?? ""),
+		enabled: Boolean(generationJobId),
+		refetchInterval: (query) =>
+			query.state.data &&
+			["succeeded", "failed", "interrupted"].includes(query.state.data.status)
+				? false
+				: 1000,
+	});
+	useEffect(() => {
+		const artifact = generation.data?.artifacts?.[0];
+		if (!artifact?.analysis_id || !artifact.revision_id) return;
+		const key = `${generation.data?.id}:${artifact.analysis_id}:${artifact.revision_id}`;
+		if (openedGenerationArtifact.current === key) return;
+		openedGenerationArtifact.current = key;
+		setSelectedAnalysis(artifact.analysis_id);
+		setSelectedRevision(artifact.revision_id);
+		setReaderTab("analysis");
+		void client.invalidateQueries({ queryKey: analysisKeys.list(id) });
+	}, [generation.data, client, id]);
 	const [menuOpen, setMenuOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 	const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -298,48 +328,99 @@ export function SegmentDetail() {
 			<div className="segment-workspace">
 				<main className="segment-reader">
 					<div className="segment-reader-inner">
-						<div className="segment-reader-label">
-							<span>原文</span>
-							<span>{dateLabel(current.created_at)} 保存</span>
+						<div className="reader-tabs" role="tablist" aria-label="阅读内容">
+							<button
+								type="button"
+								role="tab"
+								aria-selected={readerTab === "source"}
+								onClick={() => setReaderTab("source")}
+							>
+								原文
+							</button>
+							<button
+								type="button"
+								role="tab"
+								aria-selected={readerTab === "analysis"}
+								onClick={() => setReaderTab("analysis")}
+							>
+								讲解
+							</button>
 						</div>
-						<p className="segment-original" lang="ja">
-							{current.text}
-						</p>
-						{current.translation && (
-							<DetailField label="译文" value={current.translation} />
-						)}
-						{(current.context_before ||
-							current.context_after ||
-							current.transcription ||
-							current.note ||
-							current.source_ref) && (
-							<details className="segment-reader-more">
-								<summary>补充资料</summary>
-								<div className="segment-reader-fields">
-									<DetailField
-										label="前文"
-										value={current.context_before}
-										lang="ja"
-									/>
-									<DetailField
-										label="后文"
-										value={current.context_after}
-										lang="ja"
-									/>
-									<DetailField
-										label="听写"
-										value={current.transcription}
-										lang="ja"
-									/>
-									<DetailField label="具体出处" value={current.source_ref} />
-									<DetailField label="个人管理备注" value={current.note} />
-								</div>
-							</details>
-						)}
+						<div hidden={readerTab !== "source"}>
+							<div className="segment-reader-label">
+								<span>原文</span>
+								<span>{dateLabel(current.created_at)} 保存</span>
+							</div>
+							<p className="segment-original" lang="ja">
+								{current.text}
+							</p>
+							{current.translation && (
+								<DetailField label="译文" value={current.translation} />
+							)}
+							{(current.context_before ||
+								current.context_after ||
+								current.transcription ||
+								current.note ||
+								current.source_ref) && (
+								<details className="segment-reader-more">
+									<summary>补充资料</summary>
+									<div className="segment-reader-fields">
+										<DetailField
+											label="前文"
+											value={current.context_before}
+											lang="ja"
+										/>
+										<DetailField
+											label="后文"
+											value={current.context_after}
+											lang="ja"
+										/>
+										<DetailField
+											label="听写"
+											value={current.transcription}
+											lang="ja"
+										/>
+										<DetailField label="具体出处" value={current.source_ref} />
+										<DetailField label="个人管理备注" value={current.note} />
+									</div>
+								</details>
+							)}
+						</div>
+						<div hidden={readerTab !== "analysis"}>
+							<AnalysisPanel
+								segmentId={current.id}
+								selectedId={selectedAnalysis}
+								revisionId={selectedRevision}
+								onSelect={(analysisId, revisionId) => {
+									setSelectedAnalysis(analysisId || null);
+									setSelectedRevision(revisionId);
+									setReaderTab("analysis");
+								}}
+								onGenerate={() => {
+									setChatOpen(true);
+									setReaderTab("analysis");
+									setGenerateToken(crypto.randomUUID());
+								}}
+								job={generation.data}
+							/>
+						</div>
 					</div>
 				</main>
 				<aside className="segment-conversation" hidden={!chatOpen}>
-					<Workbench key={current.id} segment={current} />
+					<Workbench
+						key={current.id}
+						segment={current}
+						generateToken={generateToken}
+						onGenerationAccepted={(job: Job) => {
+							setGenerationJobId(job.id);
+							setGenerateToken(null);
+						}}
+						onOpenArtifact={(analysisId, revisionId) => {
+							setSelectedAnalysis(analysisId);
+							setSelectedRevision(revisionId);
+							setReaderTab("analysis");
+						}}
+					/>
 				</aside>
 			</div>
 			{editing && (

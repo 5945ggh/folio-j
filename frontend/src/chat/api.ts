@@ -6,6 +6,7 @@ export type Thread = components["schemas"]["ThreadResponse"];
 export type Message = components["schemas"]["MessageResponse"];
 export type Job = components["schemas"]["JobResponse"];
 export type JobInput = components["schemas"]["JobCreate"];
+export type JobDecision = components["schemas"]["JobDecision"];
 
 export const chatKeys = {
 	threads: (segmentId: string) => ["chat-threads", segmentId] as const,
@@ -26,12 +27,19 @@ export async function listThreads(segmentId: string, cursor?: string) {
 	return requireData(data, error, response.status);
 }
 
-export async function createThread(segmentId: string, requestId: string) {
+export async function createThread(
+	segmentId: string,
+	requestId: string,
+	modelId?: string,
+) {
 	const { data, error, response } = await api.POST(
 		"/api/segments/{segment_id}/threads",
 		{
 			params: { path: { segment_id: segmentId } },
-			body: { request_id: requestId },
+			body: {
+				request_id: requestId,
+				...(modelId ? { model_id: modelId } : {}),
+			},
 		},
 	);
 	return requireData(data, error, response.status);
@@ -102,5 +110,13 @@ export async function stopJob(jobId: string) {
 	const { data, error, response } = await api.POST("/api/jobs/{job_id}/stop", {
 		params: { path: { job_id: jobId } },
 	});
+	return requireData(data, error, response.status);
+}
+
+export async function decideJob(jobId: string, input: JobDecision) {
+	const { data, error, response } = await api.POST(
+		"/api/jobs/{job_id}/decision",
+		{ params: { path: { job_id: jobId } }, body: input },
+	);
 	return requireData(data, error, response.status);
 }

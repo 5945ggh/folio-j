@@ -4,13 +4,15 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { analysisKeys, getAnalysis } from "../analysis/api";
 import { queries, RequestError, type Segment } from "../content";
 import { InlineError } from "../Shared";
 import { getProviders, getSettings, settingsKeys } from "../settings/api";
 import {
 	chatKeys,
 	createThread,
+	decideJob,
 	getJob,
 	getJobByRequest,
 	getThread,
@@ -24,7 +26,7 @@ import {
 	submitJob,
 	type Thread,
 } from "./api";
-
+import { describeReview } from "./review";
 import {
 	type Draft,
 	draftAfterAcceptance,
@@ -35,13 +37,16 @@ import {
 type Pending = { input: JobInput; uncertain: boolean };
 const emptyDraft: Draft = { question: "", additional: "" };
 const terminal = new Set<Job["status"]>(["succeeded", "failed", "interrupted"]);
+const generationQuestion = "请为当前片段生成总体讲解。";
 
 function jobLabel(job: Job): string {
 	switch (job.status) {
 		case "queued":
 			return "排队中";
 		case "running":
-			return "回答中";
+			return job.kind === "generate_analysis" ? "生成讲解中" : "回答中";
+		case "waiting_review":
+			return "等待审核";
 		case "stopping":
 			return "正在停止";
 		case "succeeded":
@@ -90,11 +95,22 @@ function MessageItem({
 	message,
 	activeJob,
 	onRetry,
+	onOpenArtifact,
 }: {
 	message: Message;
 	activeJob?: Job;
 	onRetry: (draft: Draft) => void;
+	onOpenArtifact: (analysisId: string, revisionId: string) => void;
 }) {
+	const savedJob = useQuery({
+		queryKey: chatKeys.job(message.job_id),
+		queryFn: () => getJob(message.job_id),
+		enabled:
+			message.role === "assistant" &&
+			!["pending", "streaming"].includes(message.status) &&
+			activeJob?.assistant_message.id !== message.id,
+		staleTime: 30_000,
+	});
 	const current =
 		activeJob?.assistant_message.id === message.id
 			? activeJob.assistant_message
@@ -118,8 +134,31 @@ function MessageItem({
 			{current.content ? (
 				<p className="chat-message-content">{current.content}</p>
 			) : current.role === "assistant" ? (
-				<p className="chat-placeholder">等待回答…</p>
+				<p className="chat-placeholder">
+					{activeJob?.kind === "generate_analysis"
+						? "正在生成讲解…"
+						: "等待回答…"}
+				</p>
 			) : null}
+			{current.role === "assistant" &&
+				(activeJob?.assistant_message.id === current.id
+					? activeJob
+					: savedJob.data
+				)?.artifacts?.map((artifact) =>
+					artifact.analysis_id && artifact.revision_id ? (
+						<button
+							key={`${artifact.analysis_id}-${artifact.revision_id}`}
+							type="button"
+							className="chat-artifact-button"
+							title={`讲解 ${artifact.analysis_id} · 修订 ${artifact.revision_id}`}
+							onClick={() =>
+								onOpenArtifact(artifact.analysis_id, artifact.revision_id)
+							}
+						>
+							查看已保存讲解 · 修订 {artifact.revision_id.slice(-6)} →
+						</button>
+					) : null,
+				)}
 			{current.role === "assistant" &&
 				(current.status === "failed" || current.status === "interrupted") && (
 					<FailedJob jobId={current.job_id} onRetry={onRetry} />
@@ -135,6 +174,9 @@ function ThreadPanel({
 	setDraft,
 	pending,
 	setPending,
+	quickGenerateToken,
+	onGenerationAccepted,
+	onOpenArtifact,
 }: {
 	segment: Segment;
 	threadId: string;
@@ -142,6 +184,9 @@ function ThreadPanel({
 	setDraft: (draft: Draft | ((current: Draft) => Draft)) => void;
 	pending: Pending | null;
 	setPending: (pending: Pending | null) => void;
+	quickGenerateToken: string | null;
+	onGenerationAccepted: (job: Job) => void;
+	onOpenArtifact: (analysisId: string, revisionId: string) => void;
 }) {
 	const client = useQueryClient();
 	const thread = useQuery({
@@ -163,7 +208,8 @@ function ThreadPanel({
 		if (history.hasNextPage && !history.isFetchingNextPage)
 			void history.fetchNextPage();
 	}, [history.hasNextPage, history.isFetchingNextPage, history.fetchNextPage]);
-	const jobId = thread.data?.active_job_id;
+	const [recentJobId, setRecentJobId] = useState<string | null>(null);
+	const jobId = thread.data?.active_job_id ?? recentJobId;
 	const active = useQuery({
 		queryKey: chatKeys.job(jobId ?? ""),
 		queryFn: async () => {
@@ -174,6 +220,20 @@ function ThreadPanel({
 		enabled: Boolean(jobId),
 		refetchInterval: (query) =>
 			query.state.data && terminal.has(query.state.data.status) ? false : 1000,
+	});
+	const proposal = active.data?.review_proposal;
+	const reviewAnalysisId =
+		typeof proposal?.analysis_id === "string" ? proposal.analysis_id : "";
+	const reviewRevisionId =
+		typeof proposal?.base_revision_id === "string"
+			? proposal.base_revision_id
+			: "";
+	const reviewBase = useQuery({
+		queryKey: analysisKeys.detail(reviewAnalysisId, reviewRevisionId),
+		queryFn: () => getAnalysis(reviewAnalysisId, reviewRevisionId),
+		enabled:
+			active.data?.status === "waiting_review" &&
+			Boolean(reviewAnalysisId && reviewRevisionId),
 	});
 	const pendingCheck = useQuery({
 		queryKey: chatKeys.request(threadId, pending?.input.request_id ?? ""),
@@ -195,6 +255,7 @@ function ThreadPanel({
 	const [sendError, setSendError] = useState<Error | null>(null);
 	const [sending, setSending] = useState(false);
 	const seenTerminal = useRef<string | null>(null);
+	const quickHandled = useRef<string | null>(null);
 	const seenThread = useRef<Pick<Thread, "revision" | "active_job_id"> | null>(
 		null,
 	);
@@ -207,7 +268,10 @@ function ThreadPanel({
 	);
 	const usable = chosen?.provider.enabled && chosen.model.enabled;
 	const busy =
-		Boolean(thread.data?.active_job_id) || Boolean(pending) || sending;
+		Boolean(thread.data?.active_job_id) ||
+		Boolean(active.data && !terminal.has(active.data.status)) ||
+		Boolean(pending) ||
+		sending;
 	const messages = history.data?.pages.flatMap((page) => page.items) ?? [];
 	const visibleMessages =
 		active.data &&
@@ -216,6 +280,7 @@ function ThreadPanel({
 					(a, b) => a.ordinal - b.ordinal,
 				)
 			: messages;
+	const review = describeReview(proposal, reviewBase.data);
 
 	useEffect(() => {
 		if (!pendingCheck.data || !pending?.uncertain) return;
@@ -226,8 +291,11 @@ function ThreadPanel({
 					? old
 					: pendingCheck.data,
 		);
+		setRecentJobId(pendingCheck.data.id);
 		setPending(null);
-		setDraft((current) => draftAfterAcceptance(current, pending.input));
+		if (pending.input.action === "generate_analysis")
+			onGenerationAccepted(pendingCheck.data);
+		else setDraft((current) => draftAfterAcceptance(current, pending.input));
 		setSendError(null);
 		void client.invalidateQueries({ queryKey: chatKeys.thread(threadId) });
 		void client.invalidateQueries({ queryKey: chatKeys.messages(threadId) });
@@ -241,6 +309,7 @@ function ThreadPanel({
 		segment.id,
 		setPending,
 		setDraft,
+		onGenerationAccepted,
 	]);
 	useEffect(() => {
 		if (!thread.data) return;
@@ -263,7 +332,13 @@ function ThreadPanel({
 		void client.invalidateQueries({ queryKey: chatKeys.messages(threadId) });
 		void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
 		void client.invalidateQueries({ queryKey: queries.segment(segment.id) });
-	}, [active.data, client, threadId, segment.id]);
+		void client.invalidateQueries({ queryKey: analysisKeys.list(segment.id) });
+		void client.invalidateQueries({ queryKey: ["analysis"] });
+		const artifact = job.artifacts?.[0];
+		if (artifact?.analysis_id && artifact.revision_id) {
+			onOpenArtifact(artifact.analysis_id, artifact.revision_id);
+		}
+	}, [active.data, client, threadId, segment.id, onOpenArtifact]);
 
 	const patch = useMutation({
 		mutationFn: (input: Parameters<typeof patchThread>[1]) =>
@@ -282,53 +357,134 @@ function ThreadPanel({
 			void client.invalidateQueries({ queryKey: chatKeys.thread(threadId) });
 		},
 	});
-
-	async function send(input: JobInput) {
-		if (sending) return;
-		setSending(true);
-		setSendError(null);
-		try {
-			const accepted = await submitJob(threadId, input);
-			client.setQueryData(chatKeys.job(accepted.id), (old: Job | undefined) =>
-				old && old.version > accepted.version ? old : accepted,
-			);
-			setPending(null);
-			setDraft((current) => draftAfterAcceptance(current, input));
+	const [reviewInstructions, setReviewInstructions] = useState("");
+	const decision = useMutation({
+		mutationFn: (choice: "approve" | "reject") =>
+			decideJob(active.data?.id ?? "", {
+				expected_version: active.data?.version ?? 0,
+				decision: choice,
+				additional_instructions: reviewInstructions,
+			}),
+		onSuccess: (updated) => {
+			client.setQueryData(chatKeys.job(updated.id), updated);
+			setReviewInstructions("");
 			void client.invalidateQueries({ queryKey: chatKeys.thread(threadId) });
-			void client.invalidateQueries({ queryKey: chatKeys.messages(threadId) });
-			void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
-			void client.invalidateQueries({ queryKey: queries.segment(segment.id) });
-		} catch (error) {
-			const uncertain = submissionMayHaveSucceeded(error);
-			if (uncertain) setPending({ input, uncertain: true });
-			else {
+		},
+		onError: () =>
+			void client.invalidateQueries({
+				queryKey: chatKeys.job(active.data?.id ?? ""),
+			}),
+	});
+
+	const send = useCallback(
+		async (input: JobInput) => {
+			if (sending) return;
+			setSending(true);
+			setSendError(null);
+			try {
+				const accepted = await submitJob(threadId, input);
+				client.setQueryData(
+					chatKeys.job(accepted.id),
+					(old: Job | undefined) =>
+						old && old.version > accepted.version ? old : accepted,
+				);
+				setRecentJobId(accepted.id);
 				setPending(null);
+				if (input.action === "generate_analysis")
+					onGenerationAccepted(accepted);
+				else setDraft((current) => draftAfterAcceptance(current, input));
 				void client.invalidateQueries({ queryKey: chatKeys.thread(threadId) });
+				void client.invalidateQueries({
+					queryKey: chatKeys.messages(threadId),
+				});
+				void client.invalidateQueries({
+					queryKey: chatKeys.threads(segment.id),
+				});
 				void client.invalidateQueries({
 					queryKey: queries.segment(segment.id),
 				});
+			} catch (error) {
+				const uncertain = submissionMayHaveSucceeded(error);
+				if (uncertain) setPending({ input, uncertain: true });
+				else {
+					setPending(null);
+					void client.invalidateQueries({
+						queryKey: chatKeys.thread(threadId),
+					});
+					void client.invalidateQueries({
+						queryKey: queries.segment(segment.id),
+					});
+				}
+				setSendError(error instanceof Error ? error : new Error("提交失败"));
+			} finally {
+				setSending(false);
 			}
-			setSendError(error instanceof Error ? error : new Error("提交失败"));
-		} finally {
-			setSending(false);
-		}
-	}
+		},
+		[
+			sending,
+			threadId,
+			client,
+			setPending,
+			setDraft,
+			segment.id,
+			onGenerationAccepted,
+		],
+	);
 
-	function makeInput(current: Thread): JobInput {
-		return {
-			request_id: crypto.randomUUID(),
-			expected_thread_revision: current.revision,
-			expected_segment_revision: segment.revision,
-			question: draft.question,
-			additional_instructions: draft.additional,
-			stream,
-			...(style === "none"
-				? { style_id: null }
-				: style
-					? { style_id: style }
-					: {}),
-		};
-	}
+	const makeInput = useCallback(
+		(current: Thread, action: JobInput["action"] = "chat"): JobInput => {
+			return {
+				action,
+				request_id: crypto.randomUUID(),
+				expected_thread_revision: current.revision,
+				expected_segment_revision: segment.revision,
+				question:
+					action === "generate_analysis" ? generationQuestion : draft.question,
+				additional_instructions:
+					action === "generate_analysis" ? "" : draft.additional,
+				stream,
+				...(style === "none"
+					? { style_id: null }
+					: style
+						? { style_id: style }
+						: {}),
+			};
+		},
+		[segment.revision, draft.question, draft.additional, stream, style],
+	);
+	useEffect(() => {
+		if (
+			!quickGenerateToken ||
+			quickHandled.current === quickGenerateToken ||
+			!thread.data ||
+			!providers.isSuccess ||
+			!settings.isSuccess ||
+			!history.isSuccess
+		)
+			return;
+		quickHandled.current = quickGenerateToken;
+		if (busy) {
+			setSendError(new Error("当前对话正在进行中，请等待或停止本轮后重试。"));
+			return;
+		}
+		if (!usable) {
+			setSendError(
+				new Error("请先为当前对话选择可用模型，再点击生成总体讲解。"),
+			);
+			return;
+		}
+		void send(makeInput(thread.data, "generate_analysis"));
+	}, [
+		quickGenerateToken,
+		thread.data,
+		providers.isSuccess,
+		settings.isSuccess,
+		history.isSuccess,
+		busy,
+		usable,
+		send,
+		makeInput,
+	]);
 
 	if (thread.isPending) return <p className="loading">正在加载讨论…</p>;
 	if (thread.isError)
@@ -435,7 +591,7 @@ function ThreadPanel({
 					</label>
 				</div>
 				<p className="chat-permission-note">
-					此阶段仅进行文本问答，不调用写入工具；权限选择保存在本线程。
+					讲解修改在审核模式下先展示具体方案；生成新讲解会按请求自动保存。
 				</p>
 			</details>
 			{!usable && providers.isSuccess && (
@@ -486,11 +642,60 @@ function ThreadPanel({
 						message={message}
 						activeJob={active.data}
 						onRetry={setDraft}
+						onOpenArtifact={onOpenArtifact}
 					/>
 				))}
+				{active.data?.status === "waiting_review" && (
+					<section className="chat-review-card" aria-label="待审核讲解修改">
+						<h3>{review?.title ?? "审核讲解修改"}</h3>
+						<p>
+							{proposal?.title ?? "当前讲解"} · 目标：
+							{review?.target ?? "待核对"} · 基础修订{" "}
+							<span title={reviewRevisionId}>{reviewRevisionId.slice(-6)}</span>
+						</p>
+						{reviewBase.isError && <InlineError error={reviewBase.error} />}
+						{review && (
+							<>
+								<strong>修改前</strong>
+								<pre>{review.before}</pre>
+								<strong>拟修改为</strong>
+								<pre>{review.after}</pre>
+							</>
+						)}
+						<label htmlFor="review-instructions">附加要求（可选）</label>
+						<textarea
+							id="review-instructions"
+							value={reviewInstructions}
+							maxLength={10000}
+							onChange={(event) => setReviewInstructions(event.target.value)}
+							placeholder="例如：请保留原来的例句"
+						/>
+						<InlineError error={decision.error} />
+						<div className="actions">
+							<button
+								type="button"
+								className="button primary"
+								disabled={
+									decision.isPending || !review || !reviewBase.isSuccess
+								}
+								onClick={() => decision.mutate("approve")}
+							>
+								同意修改
+							</button>
+							<button
+								type="button"
+								className="button secondary"
+								disabled={decision.isPending}
+								onClick={() => decision.mutate("reject")}
+							>
+								拒绝
+							</button>
+						</div>
+					</section>
+				)}
 				{active.data?.status === "queued" && (
 					<p className="chat-job-state" role="status">
-						已保存问题，等待模型调用名额。
+						已收到请求，正在等待开始。
 					</p>
 				)}
 				{active.data?.status === "stopping" && (
@@ -567,12 +772,12 @@ function ThreadPanel({
 							: "Full access"}
 					</span>
 					<div className="actions">
-						{jobId && (
+						{thread.data.active_job_id && (
 							<button
 								className="button secondary"
 								type="button"
 								disabled={stop.isPending || active.data?.status === "stopping"}
-								onClick={() => stop.mutate(jobId)}
+								onClick={() => stop.mutate(thread.data.active_job_id ?? "")}
 							>
 								{stop.isPending || active.data?.status === "stopping"
 									? "停止中…"
@@ -601,7 +806,17 @@ function ThreadPanel({
 	);
 }
 
-export function Workbench({ segment }: { segment: Segment }) {
+export function Workbench({
+	segment,
+	generateToken,
+	onGenerationAccepted,
+	onOpenArtifact,
+}: {
+	segment: Segment;
+	generateToken: string | null;
+	onGenerationAccepted: (job: Job) => void;
+	onOpenArtifact: (analysisId: string, revisionId: string) => void;
+}) {
 	const client = useQueryClient();
 	const threads = useInfiniteQuery({
 		queryKey: chatKeys.threads(segment.id),
@@ -614,20 +829,53 @@ export function Workbench({ segment }: { segment: Segment }) {
 	const [drafts, setDrafts] = useState<Record<string, Draft>>({});
 	const [pending, setPending] = useState<Record<string, Pending | null>>({});
 	const [createKey, setCreateKey] = useState<string | null>(null);
+	const [firstModelId, setFirstModelId] = useState<string | null>(null);
+	const defaults = useQuery({
+		queryKey: settingsKeys.settings,
+		queryFn: getSettings,
+	});
+	const providers = useQuery({
+		queryKey: settingsKeys.providers,
+		queryFn: getProviders,
+	});
 	const allThreads = threads.data?.pages.flatMap((page) => page.items) ?? [];
 	const selectedThread = allThreads.find((item) => item.id === selected);
 	useEffect(() => {
 		if (!selected && allThreads[0]) setSelected(allThreads[0].id);
 	}, [selected, allThreads]);
+	useEffect(() => {
+		if (generateToken) setView("detail");
+	}, [generateToken]);
+	useEffect(() => {
+		if (defaults.data && firstModelId === null)
+			setFirstModelId(defaults.data.defaults.analysis_model_id ?? "");
+	}, [defaults.data, firstModelId]);
 	const create = useMutation({
-		mutationFn: (requestId: string) => createThread(segment.id, requestId),
+		mutationFn: ({
+			requestId,
+			modelId,
+		}: {
+			requestId: string;
+			modelId?: string;
+		}) => createThread(segment.id, requestId, modelId),
 		onSuccess: (item) => {
 			setCreateKey(null);
 			setSelected(item.id);
 			setView("detail");
 			void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
 		},
+		onError: (error) => {
+			if (!submissionMayHaveSucceeded(error)) setCreateKey(null);
+		},
 	});
+	const availableModels =
+		providers.data?.flatMap((provider) =>
+			provider.enabled
+				? provider.models
+						.filter((model) => model.enabled)
+						.map((model) => ({ provider, model }))
+				: [],
+		) ?? [];
 	return (
 		<section className="workbench" aria-label="片段讨论工作台">
 			<div className="chat-list-view" hidden={view !== "list"}>
@@ -643,7 +891,7 @@ export function Workbench({ segment }: { segment: Segment }) {
 						onClick={() => {
 							const key = createKey ?? crypto.randomUUID();
 							setCreateKey(key);
-							create.mutate(key);
+							create.mutate({ requestId: key });
 						}}
 					>
 						新建对话
@@ -751,7 +999,54 @@ export function Workbench({ segment }: { segment: Segment }) {
 							setPending={(item) =>
 								setPending((old) => ({ ...old, [selected]: item }))
 							}
+							quickGenerateToken={generateToken}
+							onGenerationAccepted={onGenerationAccepted}
+							onOpenArtifact={onOpenArtifact}
 						/>
+					) : generateToken ? (
+						<div className="chat-first-generation">
+							<h3>生成总体讲解</h3>
+							<p>先选择本次对话使用的模型。讲解生成会沿用同一模型。</p>
+							<label htmlFor="generation-model">模型</label>
+							<select
+								id="generation-model"
+								value={firstModelId ?? ""}
+								onChange={(event) => setFirstModelId(event.target.value)}
+							>
+								<option value="">请选择模型</option>
+								{availableModels.map(({ provider, model }) => (
+									<option key={model.id} value={model.id}>
+										{provider.name} / {model.model_id}
+									</option>
+								))}
+							</select>
+							{defaults.isError && <InlineError error={defaults.error} />}
+							{providers.isError && <InlineError error={providers.error} />}
+							{threads.isError && <InlineError error={threads.error} />}
+							<InlineError error={create.error} />
+							<button
+								type="button"
+								className="button primary"
+								disabled={
+									!threads.isSuccess ||
+									!firstModelId ||
+									!availableModels.some(
+										({ model }) => model.id === firstModelId,
+									) ||
+									create.isPending
+								}
+								onClick={() => {
+									const key = createKey ?? crypto.randomUUID();
+									setCreateKey(key);
+									create.mutate({
+										requestId: key,
+										modelId: firstModelId || undefined,
+									});
+								}}
+							>
+								开始生成
+							</button>
+						</div>
 					) : (
 						<div className="chat-empty">尚无对话。新建对话后可直接提问。</div>
 					)}

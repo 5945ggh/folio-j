@@ -7,6 +7,7 @@ import {
 } from "./state.ts";
 
 const submitted = {
+	action: "chat" as const,
 	request_id: "4f045624-ff68-443d-86a5-4c33db54d411",
 	expected_thread_revision: 1,
 	expected_segment_revision: 1,
