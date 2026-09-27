@@ -4,7 +4,9 @@
 
 ## Active
 
-- [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：已确认的首轮能力与切片约束；具体交付顺序仍待编排。
+- [第二阶段2C：Analysis与成果工具开工准备](STAGE_2C_ANALYSIS_TOOLS.md)：记录上下文分叉生成并自动保存、当前片段读取、Section编辑的已确认边界、开发顺序及仍须落实的工程契约；尚未实现。
+- [全链路提示词聚合草案](PROMPT_CHAIN_REVIEW.md)：由子代理起草，区分当前实际模板与后续工具／生成分支候选；完成开发后以实际模板重新生成最终审阅视图。
+- [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：已确认的首轮能力与切片约束；当前后续顺序见2C开发准备。
 
 ## Archived
 
