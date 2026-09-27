@@ -104,6 +104,116 @@ async def accept(client: AsyncClient, seed: dict[str, Any], **changes: Any) -> d
 
 
 @pytest.mark.asyncio
+async def test_waiting_review_keeps_provider_and_model_busy(tmp_path: Path) -> None:
+    database = tmp_path / "review.db"
+    async with chat_client(database) as (client, app):
+        seed = await seed_chat(client)
+        job = await accept(client, seed)
+        from sqlalchemy import text
+
+        async with app.state.session_factory() as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
+            await session.execute(
+                text("UPDATE chat_jobs SET status='waiting_review' WHERE id=:job_id"),
+                {"job_id": job["id"]},
+            )
+            await session.commit()
+        model_delete = await client.delete(f"/api/provider-models/{seed['model']['id']}")
+        provider_delete = await client.delete(f"/api/providers/{seed['provider']['id']}")
+        assert model_delete.status_code == provider_delete.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_review_decision_is_idempotent_and_version_bound(tmp_path: Path) -> None:
+    database = tmp_path / "decision.db"
+    async with chat_client(database) as (client, app):
+        seed = await seed_chat(client)
+        job = await accept(client, seed)
+        from sqlalchemy import text
+
+        proposal = {
+            "tool_call_id": "call_1",
+            "source_run_id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "tool_name": "update_analysis_section",
+            "analysis_id": "01ARZ3NDEKTSV4RRFFQ69G5FAX",
+            "base_revision_id": "01ARZ3NDEKTSV4RRFFQ69G5FAY",
+            "title": "示例",
+            "before": "## 原文\n",
+            "after": "## 修改\n",
+            "operation": {
+                "kind": "update_section",
+                "sid": "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
+                "title": "修改",
+            },
+        }
+        async with app.state.session_factory() as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
+            await session.execute(
+                text(
+                    "UPDATE chat_jobs SET status='waiting_review', "
+                    "execution_state=:state WHERE id=:job_id"
+                ),
+                {
+                    "job_id": job["id"],
+                    "state": json.dumps({"artifacts": [], "review_proposal": proposal}),
+                },
+            )
+            await session.commit()
+        url = f"/api/jobs/{job['id']}/decision"
+        body = {"expected_version": job["version"], "decision": "approve"}
+        first = await client.post(url, json=body)
+        assert first.status_code == 200, first.text
+        assert first.json()["status"] == "queued"
+        repeat = await client.post(url, json=body)
+        assert repeat.status_code == 200
+        assert repeat.json()["version"] == first.json()["version"]
+        conflict = await client.post(url, json={**body, "decision": "reject"})
+        assert conflict.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_quick_analysis_accept_freezes_writer_tools_and_current_model(tmp_path: Path) -> None:
+    database = tmp_path / "quick.db"
+    async with chat_client(database) as (client, _app):
+        seed = await seed_chat(client)
+        job = await accept(
+            client,
+            seed,
+            action="generate_analysis",
+            question="请为当前片段生成总体讲解。",
+        )
+        assert job["kind"] == "generate_analysis"
+        assert job["model"]["provider_model_id"] == seed["model"]["id"]
+        with sqlite3.connect(database) as connection:
+            row = connection.execute(
+                "SELECT input_snapshot FROM chat_jobs WHERE id=?", (job["id"],)
+            ).fetchone()
+        assert row is not None
+        snapshot = json.loads(row[0])
+        assert snapshot["writer_version"] == "v2"
+        assert "直接写出一份可独立阅读" in snapshot["writer_text"]
+        assert [tool["function"]["name"] for tool in snapshot["tools"]] == [
+            "list_analyses",
+            "read_analysis",
+            "generate_analysis",
+            "update_analysis_section",
+            "insert_analysis_sections",
+            "delete_analysis_section",
+            "update_analysis_preamble",
+        ]
+        update_tool = next(
+            tool
+            for tool in snapshot["tools"]
+            if tool["function"]["name"] == "update_analysis_section"
+        )
+        assert update_tool["function"]["parameters"]["required"] == [
+            "analysis_id",
+            "base_revision_id",
+            "sid",
+        ]
+
+
+@pytest.mark.asyncio
 async def test_accept_atomically_locks_text_and_records_snapshot_without_run(
     tmp_path: Path,
 ) -> None:

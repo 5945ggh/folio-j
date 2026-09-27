@@ -250,6 +250,7 @@ async def test_delete_impact_soft_deletion_and_isolation(tmp_path: Path) -> None
             "thread_count": 0,
             "message_count": 0,
             "active_job_count": 0,
+            "analysis_count": 0,
         }
 
         assert (await client.delete(f"/api/segments/{a1['id']}")).status_code == 204

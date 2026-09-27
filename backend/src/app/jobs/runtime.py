@@ -1,7 +1,9 @@
 """One-process supervisor for durable chat jobs."""
 
 import asyncio
+import json
 from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select, text
@@ -18,11 +20,18 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
 
 CALL_SECONDS = 60
+ANALYSIS_CALL_SECONDS = 180
 OUTPUT_CHAR_LIMIT = 200_000
 PROGRESS_SECONDS = 0.25
 STOP_GRACE_SECONDS = 2.0
 SCAN_SECONDS = 0.25
 ACTIVE = ("queued", "running", "stopping")
+
+
+def tool_definitions() -> list[dict[str, Any]]:
+    path = Path(__file__).resolve().parents[3] / "prompts" / "chat" / "tools_v3.json"
+    data: dict[str, Any] = json.loads(path.read_text())
+    return data["tools"]
 
 
 def _release(thread: ChatThread, job: Job) -> None:
@@ -83,11 +92,15 @@ async def _claim(
         inputs: dict[str, Any] = job.input_snapshot
         token = new_ulid()
         started = now()
+        state = dict(job.execution_state or {})
+        messages = list(state.get("protocol_messages") or inputs["messages"])
+        if job.kind == "generate_analysis":
+            messages.append({"role": "user", "content": inputs["writer_text"]})
         run = Run(
             id=new_ulid(),
-            purpose="chat",
+            purpose="analysis" if job.kind == "generate_analysis" else "chat",
             job_id=job.id,
-            messages=inputs["messages"],
+            messages=messages,
             deleted_at=None,
             provider_id=model["provider_id"],
             provider_name=model["provider_name"],
@@ -101,7 +114,8 @@ async def _claim(
             output_text="",
             error=None,
             usage=None,
-            prompt_version=inputs["prompt_version"],
+            prompt_version=inputs["prompt_version"]
+            + (f"+writer_{inputs['writer_version']}" if job.kind == "generate_analysis" else ""),
             prompt_text="",
             base_url=model["base_url"],
             credential_ref=job.credential_ref,
@@ -130,7 +144,10 @@ async def _claim(
             temperature=model["temperature"],
             max_output_tokens=model["max_output_tokens"],
             reasoning_effort=model["reasoning_effort"],
-            messages=inputs["messages"],
+            messages=messages,
+            tools=inputs["tools"] if job.kind == "generate_analysis" else None,
+            tool_choice="none" if job.kind == "generate_analysis" else None,
+            timeout_seconds=ANALYSIS_CALL_SECONDS,
         )
         return token, key, snapshot
 
@@ -187,10 +204,27 @@ async def _finish(
         status = "succeeded" if complete else "failed"
         if not complete and error_code is None:
             error_code, error = "incomplete_output", "模型未返回完整的可见文本"
+        if complete and job.kind == "generate_analysis":
+            from app.services.analyses import create_analysis
+
+            detail = await create_analysis(
+                session,
+                segment_id=thread.segment_id,
+                source_md=final_text,
+                operation_key=f"job:{job.id}:create",
+                origin="agent",
+                run_id=run.id,
+            )
+            state = dict(job.execution_state or {})
+            state["artifacts"] = [{"analysis_id": detail.id, "revision_id": detail.revision_id}]
+            state["active_step"] = "saved"
+            job.execution_state = state
+            final_text = "讲解已保存，可在左侧阅读。"
         job.status = run.status = status
         job.error_code, job.error = error_code, error
         run.error = error
-        run.output_text = assistant.content = final_text
+        run.output_text = result.text if result is not None else partial
+        assistant.content = final_text
         run.usage = result.usage if result is not None else None
         run.raw_response = (
             redact_credential(result.raw_response, key) if result is not None else None
@@ -219,8 +253,11 @@ async def _call_authorized(application: "FastAPI", job_id: str, token: str) -> b
         thread = await session.get(ChatThread, job.thread_id)
         if thread is None or not await _parents_valid(session, job, thread):
             return False
-        run = await session.scalar(select(Run).where(Run.job_id == job_id))
-        return run is not None and run.status == "running"
+        return True
+
+
+async def call_authorized(application: "FastAPI", job_id: str, token: str) -> bool:
+    return await _call_authorized(application, job_id, token)
 
 
 async def _finalize_stop(application: "FastAPI", job_id: str) -> None:
@@ -232,7 +269,7 @@ async def _finalize_stop(application: "FastAPI", job_id: str) -> None:
         thread = await session.get(ChatThread, job.thread_id)
         if thread is None or thread.active_job_id != job_id:
             return
-        run = await session.scalar(select(Run).where(Run.job_id == job_id))
+        runs = (await session.scalars(select(Run).where(Run.job_id == job_id))).all()
         assistant = await _assistant(session, job_id)
         finished = now()
         job.status = "interrupted"
@@ -240,12 +277,17 @@ async def _finalize_stop(application: "FastAPI", job_id: str) -> None:
         job.error = "已停止本轮回答"
         job.finished_at = finished
         job.version += 1
-        if run is not None and run.status == "running":
-            run.status, run.error, run.finished_at = "interrupted", job.error, finished
+        for run in runs:
+            if run.status == "running":
+                run.status, run.error, run.finished_at = "interrupted", job.error, finished
         if assistant is not None:
             assistant.status, assistant.updated_at = "interrupted", finished
         _release(thread, job)
         await session.commit()
+
+
+async def finalize_stop(application: "FastAPI", job_id: str) -> None:
+    await _finalize_stop(application, job_id)
 
 
 async def execute_job(application: "FastAPI", job_id: str) -> None:
@@ -255,6 +297,18 @@ async def execute_job(application: "FastAPI", job_id: str) -> None:
         if claim is None:
             return
         token, key, snapshot = claim
+        async with application.state.session_factory() as session:
+            current = await session.get(Job, job_id)
+            is_chat = current is not None and current.kind == "chat_reply"
+        if is_chat:
+            from app.jobs.agent import execute_agent_job
+
+            await execute_agent_job(application, job_id, token, key, snapshot)
+            return
+        from app.jobs.agent import execute_quick_job
+
+        await execute_quick_job(application, job_id, token, key, snapshot)
+        return
         partial = ""
         last_write = 0.0
         loop = asyncio.get_running_loop()
@@ -293,7 +347,14 @@ async def execute_job(application: "FastAPI", job_id: str) -> None:
         error_code: str | None = None
         error: str | None = None
         stop_started: float | None = None
-        deadline = loop.time() + CALL_SECONDS
+        async with application.state.session_factory() as session:
+            job = await session.get(Job, job_id)
+            call_seconds = (
+                ANALYSIS_CALL_SECONDS
+                if job is not None and job.kind == "generate_analysis"
+                else CALL_SECONDS
+            )
+        deadline = loop.time() + call_seconds
         cancel_sent = False
         finalized = False
         try:
@@ -388,9 +449,10 @@ async def recover_chat_jobs(session: AsyncSession) -> None:
         assistant = await _assistant(session, job.id)
         if assistant is not None:
             assistant.status, assistant.updated_at = "interrupted", finished
-        run = await session.scalar(select(Run).where(Run.job_id == job.id))
-        if run is not None and run.status in ("queued", "running"):
-            run.status, run.error, run.finished_at = "interrupted", job.error, finished
+        runs = (await session.scalars(select(Run).where(Run.job_id == job.id))).all()
+        for run in runs:
+            if run.status in ("queued", "running"):
+                run.status, run.error, run.finished_at = "interrupted", job.error, finished
     await session.commit()
 
 

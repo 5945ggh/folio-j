@@ -8,10 +8,11 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
+from chat_tool_fixture import install_text_turn
 from httpx import AsyncClient
 from test_chat_api import accept, chat_client, seed_chat
 
-from app.jobs import runtime
+from app.jobs import agent, runtime
 from app.llm import adapters
 from app.services import settings as settings_service
 
@@ -60,7 +61,7 @@ async def test_worker_uses_accepted_snapshot_and_preserves_successful_history(
         await progress("これは過去形です。")
         return adapters.GenerateResult("これは過去形です。", True, None, "{}")
 
-    monkeypatch.setattr(adapters, "generate_text", generate)
+    install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)
         original = await accept(client, seed)
@@ -110,9 +111,9 @@ async def test_worker_uses_accepted_snapshot_and_preserves_successful_history(
         messages = captured[1][0].messages
         assert messages is not None
         assert any(
-            message["role"] == "assistant" and "過去形" in message["content"]
-            for message in messages
+            message["role"] == "user" and "過去形" in message["content"] for message in messages
         )
+        assert not any(message["role"] == "assistant" for message in messages)
         other = await client.post(
             f"/api/segments/{seed['segment']['id']}/threads", json={"request_id": str(uuid4())}
         )
@@ -136,7 +137,7 @@ async def test_incomplete_output_never_becomes_successful_history(
         await progress(text)
         return adapters.GenerateResult(text, complete, None, "{}")
 
-    monkeypatch.setattr(adapters, "generate_text", generate)
+    install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)
         job = await accept(client, seed)
@@ -174,7 +175,7 @@ async def test_stop_fences_late_output_without_releasing_call_slot_early(
         await progress("旧任务迟到的正文")
         return adapters.GenerateResult("旧任务迟到的完整回答", True, None, "{}")
 
-    monkeypatch.setattr(adapters, "generate_text", generate)
+    install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)
         job = await accept(client, seed)
@@ -228,6 +229,7 @@ async def test_chat_and_verification_share_two_generation_slots(
         finally:
             entered -= 1
 
+    install_text_turn(monkeypatch, generate)
     monkeypatch.setattr(adapters, "generate_text", generate)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)
@@ -275,7 +277,7 @@ async def test_second_process_owner_cannot_interrupt_existing_task(tmp_path: Pat
 async def test_output_budget_never_persists_oversized_results(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, via_progress: bool
 ) -> None:
-    monkeypatch.setattr(runtime, "OUTPUT_CHAR_LIMIT", 16)
+    monkeypatch.setattr(agent, "OUTPUT_CHAR_LIMIT", 16)
 
     async def generate(
         _snapshot: adapters.CallSnapshot,
@@ -286,7 +288,7 @@ async def test_output_budget_never_persists_oversized_results(
             await progress("长" * 17)
         return adapters.GenerateResult("长" * 17, True, None, "长" * 17)
 
-    monkeypatch.setattr(adapters, "generate_text", generate)
+    install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)
         job = await accept(client, seed)
@@ -330,7 +332,7 @@ async def test_stop_cannot_commit_between_dispatch_check_and_sdk_entry(
         return adapters.GenerateResult("成功", True, None, "{}")
 
     monkeypatch.setattr(runtime, "_call_authorized", delayed_check)
-    monkeypatch.setattr(adapters, "generate_text", generate)
+    install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)
         job = await accept(client, seed)

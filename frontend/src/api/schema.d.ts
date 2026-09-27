@@ -4,6 +4,41 @@
  */
 
 export interface paths {
+    "/api/analyses/{analysis_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Analysis */
+        get: operations["getAnalysis"];
+        put?: never;
+        post?: never;
+        /** Delete Analysis */
+        delete: operations["deleteAnalysis"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analyses/{analysis_id}/delete-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Delete Impact */
+        get: operations["getAnalysisDeleteImpact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -32,6 +67,23 @@ export interface paths {
         get: operations["getChatJob"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/jobs/{job_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide Job */
+        post: operations["decideChatJob"];
         delete?: never;
         options?: never;
         head?: never;
@@ -212,6 +264,23 @@ export interface paths {
         head?: never;
         /** Update Segment */
         patch: operations["updateSegment"];
+        trace?: never;
+    };
+    "/api/segments/{segment_id}/analyses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Analyses */
+        get: operations["listAnalyses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/segments/{segment_id}/delete-impact": {
@@ -480,6 +549,91 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnalysisDeleteImpact */
+        AnalysisDeleteImpact: {
+            /** Analysis Id */
+            analysis_id: string;
+            /**
+             * Occurrence Count
+             * @default 0
+             */
+            occurrence_count: number;
+            /** Revision Count */
+            revision_count: number;
+            /** Section Count */
+            section_count: number;
+            /** Title */
+            title: string;
+        };
+        /** AnalysisDetail */
+        AnalysisDetail: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Current Revision Id */
+            current_revision_id: string;
+            /** Excerpt */
+            excerpt: string;
+            /** Id */
+            id: string;
+            /** Normalizer Version */
+            normalizer_version: number;
+            /** Origin */
+            origin: string;
+            /** Parent Revision Id */
+            parent_revision_id: string | null;
+            /** Revision Id */
+            revision_id: string;
+            /** Run Id */
+            run_id: string | null;
+            /** Sections */
+            sections: components["schemas"]["SectionRead"][];
+            /** Segment Id */
+            segment_id: string;
+            /** Source Md */
+            source_md: string;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Warnings */
+            warnings: string[];
+        };
+        /** AnalysisListItem */
+        AnalysisListItem: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Current Revision Id */
+            current_revision_id: string;
+            /** Excerpt */
+            excerpt: string;
+            /** Id */
+            id: string;
+            /** Segment Id */
+            segment_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ArtifactResponse */
+        ArtifactResponse: {
+            /** Analysis Id */
+            analysis_id: string;
+            /** Revision Id */
+            revision_id: string;
+        };
         /** DefaultsInput */
         DefaultsInput: {
             /** Analysis Model Id */
@@ -528,6 +682,12 @@ export interface components {
         /** JobCreate */
         JobCreate: {
             /**
+             * Action
+             * @default chat
+             * @enum {string}
+             */
+            action: "chat" | "generate_analysis";
+            /**
              * Additional Instructions
              * @default
              */
@@ -550,10 +710,29 @@ export interface components {
             /** Style Id */
             style_id?: string | null;
         };
+        /** JobDecision */
+        JobDecision: {
+            /**
+             * Additional Instructions
+             * @default
+             */
+            additional_instructions: string;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "approve" | "reject";
+            /** Expected Version */
+            expected_version: number;
+        };
         /** JobResponse */
         JobResponse: {
+            /** Active Step */
+            active_step?: string | null;
             /** Additional Instructions */
             additional_instructions: string;
+            /** Artifacts */
+            artifacts?: components["schemas"]["ArtifactResponse"][];
             assistant_message: components["schemas"]["MessageResponse"];
             /**
              * Created At
@@ -568,6 +747,12 @@ export interface components {
             finished_at: string | null;
             /** Id */
             id: string;
+            /**
+             * Kind
+             * @default chat
+             * @enum {string}
+             */
+            kind: "chat" | "generate_analysis";
             model: components["schemas"]["ModelSnapshotResponse"];
             /**
              * Permission Mode
@@ -578,15 +763,18 @@ export interface components {
             question: string;
             /** Request Id */
             request_id: string;
+            review_proposal?: components["schemas"]["ReviewProposal"] | null;
             /** Run Id */
             run_id: string | null;
+            /** Runs */
+            runs?: components["schemas"]["RunSummary"][];
             /** Started At */
             started_at: string | null;
             /**
              * Status
              * @enum {string}
              */
-            status: "queued" | "running" | "stopping" | "succeeded" | "failed" | "interrupted";
+            status: "queued" | "running" | "waiting_review" | "stopping" | "succeeded" | "failed" | "interrupted";
             /** Stop Requested At */
             stop_requested_at: string | null;
             /** Thread Id */
@@ -835,6 +1023,29 @@ export interface components {
              */
             updated_at: string;
         };
+        /** ReviewProposal */
+        ReviewProposal: {
+            /** After */
+            after: string;
+            /** Analysis Id */
+            analysis_id: string;
+            /** Base Revision Id */
+            base_revision_id: string;
+            /** Before */
+            before: string;
+            operation: components["schemas"]["SectionOperation"];
+            /** Source Run Id */
+            source_run_id: string;
+            /** Title */
+            title: string;
+            /** Tool Call Id */
+            tool_call_id: string;
+            /**
+             * Tool Name
+             * @enum {string}
+             */
+            tool_name: "update_analysis_section" | "insert_analysis_sections" | "delete_analysis_section" | "update_analysis_preamble";
+        };
         /** RunResponse */
         RunResponse: {
             /**
@@ -870,7 +1081,7 @@ export interface components {
              * @default verification
              * @enum {string}
              */
-            purpose: "verification" | "chat";
+            purpose: "verification" | "chat" | "analysis";
             /** Started At */
             started_at: string | null;
             /**
@@ -881,6 +1092,67 @@ export interface components {
             /** Stream */
             stream: boolean;
             usage: components["schemas"]["UsageResponse"] | null;
+        };
+        /** RunSummary */
+        RunSummary: {
+            /** Id */
+            id: string;
+            /** Purpose */
+            purpose: string;
+            /** Status */
+            status: string;
+        };
+        /** SectionInput */
+        SectionInput: {
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /** Title */
+            title: string;
+        };
+        /**
+         * SectionOperation
+         * @description One reviewed operation, bound to a concrete base revision.
+         */
+        SectionOperation: {
+            /** After Sid */
+            after_sid?: string | null;
+            /** Body */
+            body?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "update_section" | "insert_sections" | "delete_section" | "update_preamble";
+            /** Sections */
+            sections?: components["schemas"]["SectionInput"][] | null;
+            /** Sid */
+            sid?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** SectionRead */
+        SectionRead: {
+            /** Display No */
+            display_no: string;
+            /** End Line */
+            end_line: number;
+            /** Handle */
+            handle: string;
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Raw */
+            raw: string;
+            /** Start Line */
+            start_line: number;
+            /** Title */
+            title: string | null;
+            /** Uid */
+            uid: string;
         };
         /** SegmentCreate */
         SegmentCreate: {
@@ -921,6 +1193,11 @@ export interface components {
         SegmentDeleteImpact: {
             /** Active Job Count */
             active_job_count: number;
+            /**
+             * Analysis Count
+             * @default 0
+             */
+            analysis_count: number;
             /** Message Count */
             message_count: number;
             /** Segment Id */
@@ -1006,6 +1283,11 @@ export interface components {
         SourceDeleteImpact: {
             /** Active Job Count */
             active_job_count: number;
+            /**
+             * Analysis Count
+             * @default 0
+             */
+            analysis_count: number;
             /** Message Count */
             message_count: number;
             /** Segment Count */
@@ -1133,6 +1415,12 @@ export interface components {
         };
         /** UsageResponse */
         UsageResponse: {
+            /** Cache Hit Tokens */
+            cache_hit_tokens?: number | null;
+            /** Cache Miss Tokens */
+            cache_miss_tokens?: number | null;
+            /** Cached Tokens */
+            cached_tokens?: number | null;
             /** Input Tokens */
             input_tokens?: number | null;
             /** Output Tokens */
@@ -1186,6 +1474,99 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getAnalysis: {
+        parameters: {
+            query?: {
+                revision_id?: string | null;
+            };
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deleteAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getAnalysisDeleteImpact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisDeleteImpact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health: {
         parameters: {
             query?: never;
@@ -1216,6 +1597,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decideChatJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobDecision"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -1726,6 +2142,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SegmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listAnalyses: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisListItem"][];
                 };
             };
             /** @description Validation Error */

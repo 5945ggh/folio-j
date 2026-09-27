@@ -55,7 +55,9 @@ class Job(Base):
             "uq_chat_job_active",
             "thread_id",
             unique=True,
-            sqlite_where=text("status IN ('queued','running','stopping') AND deleted_at IS NULL"),
+            sqlite_where=text(
+                "status IN ('queued','running','waiting_review','stopping') AND deleted_at IS NULL"
+            ),
         ),
     )
 
@@ -66,6 +68,7 @@ class Job(Base):
     request_payload: Mapped[dict[str, Any]] = mapped_column(JSON)
     status: Mapped[str] = mapped_column(String(20), index=True)
     input_snapshot: Mapped[dict[str, Any]] = mapped_column(JSON)
+    execution_state: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     model_snapshot: Mapped[dict[str, Any]] = mapped_column(JSON)
     credential_ref: Mapped[str | None] = mapped_column(String(26))
     permission_mode: Mapped[str] = mapped_column(String(20))

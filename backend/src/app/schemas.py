@@ -81,6 +81,7 @@ class SourceDeleteImpact(BaseModel):
     thread_count: int
     message_count: int
     active_job_count: int
+    analysis_count: int = 0
 
 
 class SegmentDeleteImpact(BaseModel):
@@ -88,6 +89,7 @@ class SegmentDeleteImpact(BaseModel):
     thread_count: int
     message_count: int
     active_job_count: int
+    analysis_count: int = 0
 
 
 class SegmentCreate(StrictInput):

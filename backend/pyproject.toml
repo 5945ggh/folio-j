@@ -12,6 +12,7 @@ dependencies = [
   "alembic",
   "fastapi",
   "jinja2>=3.1.6",
+  "markdown-it-py>=4.2.0",
   "openai>=3.19.2",
   "pydantic>=2",
   "sqlalchemy[asyncio]>=2",
@@ -19,7 +20,14 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["httpx", "pyright", "pytest", "pytest-asyncio", "ruff"]
+dev = [
+    "httpx",
+    "hypothesis>=6.168.2",
+    "pyright",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/app"]

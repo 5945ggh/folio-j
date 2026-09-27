@@ -200,11 +200,14 @@ class UsageResponse(BaseModel):
     input_tokens: int | None = None
     output_tokens: int | None = None
     total_tokens: int | None = None
+    cached_tokens: int | None = None
+    cache_hit_tokens: int | None = None
+    cache_miss_tokens: int | None = None
 
 
 class RunResponse(BaseModel):
     id: str
-    purpose: Literal["verification", "chat"] = "verification"
+    purpose: Literal["verification", "chat", "analysis"] = "verification"
     job_id: str | None = None
     provider_id: str
     provider_name: str

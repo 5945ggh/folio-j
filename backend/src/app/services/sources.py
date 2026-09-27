@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.analysis_models import Analysis
 from app.chat_models import ChatMessage, ChatThread, Job
 from app.ids import new_ulid
 from app.models import Segment, Source
@@ -89,7 +90,7 @@ async def discussion_counts(session: AsyncSession, segment_ids: list[str]) -> tu
                 .where(
                     *thread_filter,
                     Job.deleted_at.is_(None),
-                    Job.status.in_(["queued", "running", "stopping"]),
+                    Job.status.in_(["queued", "running", "waiting_review", "stopping"]),
                 )
             )
         )
@@ -182,6 +183,7 @@ async def source_delete_impact(session: AsyncSession, source_id: str) -> SourceD
         ).all()
     )
     thread_count, message_count, active_job_count = await discussion_counts(session, ids)
+    analysis_count = await analysis_count_for_segments(session, ids)
     return SourceDeleteImpact(
         source_id=source.id,
         title=source.title,
@@ -189,6 +191,7 @@ async def source_delete_impact(session: AsyncSession, source_id: str) -> SourceD
         thread_count=thread_count,
         message_count=message_count,
         active_job_count=active_job_count,
+        analysis_count=analysis_count,
     )
 
 
@@ -200,6 +203,20 @@ async def segment_delete_impact(session: AsyncSession, segment_id: str) -> Segme
         thread_count=thread_count,
         message_count=message_count,
         active_job_count=active_job_count,
+        analysis_count=await analysis_count_for_segments(session, [segment_id]),
+    )
+
+
+async def analysis_count_for_segments(session: AsyncSession, segment_ids: list[str]) -> int:
+    if not segment_ids:
+        return 0
+    return int(
+        await session.scalar(
+            select(func.count(Analysis.id)).where(
+                Analysis.segment_id.in_(segment_ids), Analysis.deleted_at.is_(None)
+            )
+        )
+        or 0
     )
 
 
@@ -225,7 +242,7 @@ async def soft_delete_discussions(
                 select(Job.id).where(
                     Job.thread_id.in_(thread_ids),
                     Job.deleted_at.is_(None),
-                    Job.status.in_(["queued", "running", "stopping"]),
+                    Job.status.in_(["queued", "running", "waiting_review", "stopping"]),
                 )
             )
         ).all()
@@ -301,6 +318,9 @@ async def _delete_source_committed(session: AsyncSession, source_id: str) -> lis
             ).all()
         )
         cancelled = await soft_delete_discussions(session, ids, deleted)
+        from app.services.analyses import soft_delete_for_segments
+
+        await soft_delete_for_segments(session, ids, deleted)
         source.deleted_at = deleted
         source.updated_at = deleted
         await session.execute(
@@ -393,6 +413,9 @@ async def _delete_segment_committed(session: AsyncSession, segment_id: str) -> l
         segment = await require_segment(session, segment_id)
         deleted = utc_now()
         cancelled = await soft_delete_discussions(session, [segment_id], deleted)
+        from app.services.analyses import soft_delete_for_segments
+
+        await soft_delete_for_segments(session, [segment_id], deleted)
         segment.deleted_at = deleted
         segment.updated_at = deleted
         await session.commit()

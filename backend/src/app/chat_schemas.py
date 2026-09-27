@@ -8,10 +8,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
+from app.analysis_schemas import SectionOperation
+
 ULID_PATTERN = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
 PermissionMode = Literal["review", "full_access"]
 MessageStatus = Literal["complete", "pending", "streaming", "failed", "interrupted"]
-JobStatus = Literal["queued", "running", "stopping", "succeeded", "failed", "interrupted"]
+JobStatus = Literal[
+    "queued", "running", "waiting_review", "stopping", "succeeded", "failed", "interrupted"
+]
 
 
 class Input(BaseModel):
@@ -49,6 +53,7 @@ class ThreadPatch(Input):
 
 
 class JobCreate(Input):
+    action: Literal["chat", "generate_analysis"] = "chat"
     request_id: str
     expected_thread_revision: int = Field(ge=1)
     expected_segment_revision: int = Field(ge=1)
@@ -121,6 +126,34 @@ class ModelSnapshotResponse(BaseModel):
     stream: bool
 
 
+class ArtifactResponse(BaseModel):
+    analysis_id: str
+    revision_id: str
+
+
+class RunSummary(BaseModel):
+    id: str
+    status: str
+    purpose: str
+
+
+class ReviewProposal(BaseModel):
+    tool_call_id: str
+    source_run_id: str
+    tool_name: Literal[
+        "update_analysis_section",
+        "insert_analysis_sections",
+        "delete_analysis_section",
+        "update_analysis_preamble",
+    ]
+    analysis_id: str
+    base_revision_id: str
+    title: str
+    before: str
+    after: str
+    operation: SectionOperation
+
+
 class JobResponse(BaseModel):
     id: str
     thread_id: str
@@ -130,6 +163,11 @@ class JobResponse(BaseModel):
     user_message_id: str
     assistant_message: MessageResponse
     run_id: str | None
+    kind: Literal["chat", "generate_analysis"] = "chat"
+    artifacts: list[ArtifactResponse] = Field(default_factory=lambda: list[ArtifactResponse]())
+    active_step: str | None = None
+    review_proposal: ReviewProposal | None = None
+    runs: list[RunSummary] = Field(default_factory=lambda: list[RunSummary]())
     model: ModelSnapshotResponse
     permission_mode: PermissionMode
     question: str
@@ -140,3 +178,17 @@ class JobResponse(BaseModel):
     started_at: datetime | None
     finished_at: datetime | None
     stop_requested_at: datetime | None
+
+
+class JobDecision(Input):
+    expected_version: int = Field(ge=1)
+    decision: Literal["approve", "reject"]
+    additional_instructions: str = ""
+
+    @field_validator("additional_instructions")
+    @classmethod
+    def normalize_instructions(cls, value: str) -> str:
+        normalized = unicodedata.normalize("NFC", value)
+        if len(normalized) > 10000:
+            raise ValueError("补充要求最多10000码点")
+        return normalized

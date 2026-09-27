@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chat_schemas import (
     JobCreate,
+    JobDecision,
     JobResponse,
     MessagePage,
     ThreadCreate,
@@ -100,4 +101,16 @@ async def stop_job(job_id: str, session: Session, request: Request) -> JobRespon
         from app.jobs.runtime import request_chat_cancel
 
         request_chat_cancel(request.app, job_id)
+    return response
+
+
+@router.post("/jobs/{job_id}/decision", response_model=JobResponse, operation_id="decideChatJob")
+async def decide_job(
+    job_id: str, data: JobDecision, session: Session, request: Request
+) -> JobResponse:
+    response = await service.decide_job(session, job_id, data)
+    if response.status == "queued":
+        from app.jobs.runtime import wake_chat_worker
+
+        wake_chat_worker(request.app)
     return response

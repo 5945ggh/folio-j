@@ -1,0 +1,12 @@
+{
+  "version": "v3",
+  "tools": [
+    {"type":"function","function":{"name":"list_analyses","description":"列出当前片段的持久讲解，返回身份、标题、摘录和当前修订。可分页。","parameters":{"type":"object","properties":{"limit":{"type":"integer","minimum":1,"maximum":50},"offset":{"type":"integer","minimum":0}},"additionalProperties":false}}},
+    {"type":"function","function":{"name":"read_analysis","description":"读取当前片段指定讲解的确切修订及Section内容；默认返回所有块正文，可按uid选择部分块。","parameters":{"type":"object","properties":{"analysis_id":{"type":"string"},"revision_id":{"type":"string"},"section_ids":{"type":"array","items":{"type":"string"}}},"required":["analysis_id"],"additionalProperties":false}}},
+    {"type":"function","function":{"name":"generate_analysis","description":"根据当前完整对话和用户要求，在内部写作分支生成并保存独立讲解。不要在参数重复正文或上下文。","parameters":{"type":"object","properties":{},"additionalProperties":false}}},
+    {"type":"function","function":{"name":"update_analysis_section","description":"基于确切修订更新一个Section；sid使用读取结果中的uid。title和body至少提供一项，省略项保持原值。","parameters":{"type":"object","properties":{"analysis_id":{"type":"string"},"base_revision_id":{"type":"string"},"sid":{"type":"string"},"title":{"type":"string"},"body":{"type":"string"}},"required":["analysis_id","base_revision_id","sid"],"additionalProperties":false}}},
+    {"type":"function","function":{"name":"insert_analysis_sections","description":"基于确切修订插入Section；after_sid使用读取结果中的uid，省略则插在总述后。","parameters":{"type":"object","properties":{"analysis_id":{"type":"string"},"base_revision_id":{"type":"string"},"after_sid":{"type":"string"},"sections":{"type":"array","items":{"type":"object","properties":{"title":{"type":"string"},"body":{"type":"string"}},"required":["title","body"],"additionalProperties":false}}},"required":["analysis_id","base_revision_id","sections"],"additionalProperties":false}}},
+    {"type":"function","function":{"name":"delete_analysis_section","description":"基于确切修订删除一个Section；sid使用读取结果中的uid。","parameters":{"type":"object","properties":{"analysis_id":{"type":"string"},"base_revision_id":{"type":"string"},"sid":{"type":"string"}},"required":["analysis_id","base_revision_id","sid"],"additionalProperties":false}}},
+    {"type":"function","function":{"name":"update_analysis_preamble","description":"基于确切修订更新或清空讲解总述。","parameters":{"type":"object","properties":{"analysis_id":{"type":"string"},"base_revision_id":{"type":"string"},"body":{"type":"string"}},"required":["analysis_id","base_revision_id","body"],"additionalProperties":false}}}
+  ]
+}

@@ -1,6 +1,207 @@
 {
   "components": {
     "schemas": {
+      "AnalysisDeleteImpact": {
+        "properties": {
+          "analysis_id": {
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "occurrence_count": {
+            "default": 0,
+            "title": "Occurrence Count",
+            "type": "integer"
+          },
+          "revision_count": {
+            "title": "Revision Count",
+            "type": "integer"
+          },
+          "section_count": {
+            "title": "Section Count",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "title",
+          "revision_count",
+          "section_count"
+        ],
+        "title": "AnalysisDeleteImpact",
+        "type": "object"
+      },
+      "AnalysisDetail": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current_revision_id": {
+            "title": "Current Revision Id",
+            "type": "string"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "normalizer_version": {
+            "title": "Normalizer Version",
+            "type": "integer"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "parent_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Revision Id"
+          },
+          "revision_id": {
+            "title": "Revision Id",
+            "type": "string"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SectionRead"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "segment_id": {
+            "title": "Segment Id",
+            "type": "string"
+          },
+          "source_md": {
+            "title": "Source Md",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "segment_id",
+          "title",
+          "excerpt",
+          "current_revision_id",
+          "created_at",
+          "updated_at",
+          "revision_id",
+          "parent_revision_id",
+          "origin",
+          "run_id",
+          "source_md",
+          "normalizer_version",
+          "warnings",
+          "sections"
+        ],
+        "title": "AnalysisDetail",
+        "type": "object"
+      },
+      "AnalysisListItem": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current_revision_id": {
+            "title": "Current Revision Id",
+            "type": "string"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "segment_id": {
+            "title": "Segment Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "segment_id",
+          "title",
+          "excerpt",
+          "current_revision_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AnalysisListItem",
+        "type": "object"
+      },
+      "ArtifactResponse": {
+        "properties": {
+          "analysis_id": {
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "revision_id": {
+            "title": "Revision Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "revision_id"
+        ],
+        "title": "ArtifactResponse",
+        "type": "object"
+      },
       "DefaultsInput": {
         "additionalProperties": false,
         "properties": {
@@ -163,6 +364,15 @@
       "JobCreate": {
         "additionalProperties": false,
         "properties": {
+          "action": {
+            "default": "chat",
+            "enum": [
+              "chat",
+              "generate_analysis"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
           "additional_instructions": {
             "default": "",
             "title": "Additional Instructions",
@@ -223,11 +433,58 @@
         "title": "JobCreate",
         "type": "object"
       },
+      "JobDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "additional_instructions": {
+            "default": "",
+            "title": "Additional Instructions",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_version",
+          "decision"
+        ],
+        "title": "JobDecision",
+        "type": "object"
+      },
       "JobResponse": {
         "properties": {
+          "active_step": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Step"
+          },
           "additional_instructions": {
             "title": "Additional Instructions",
             "type": "string"
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/ArtifactResponse"
+            },
+            "title": "Artifacts",
+            "type": "array"
           },
           "assistant_message": {
             "$ref": "#/components/schemas/MessageResponse"
@@ -275,6 +532,15 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "default": "chat",
+            "enum": [
+              "chat",
+              "generate_analysis"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "model": {
             "$ref": "#/components/schemas/ModelSnapshotResponse"
           },
@@ -294,6 +560,16 @@
             "title": "Request Id",
             "type": "string"
           },
+          "review_proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewProposal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "run_id": {
             "anyOf": [
               {
@@ -304,6 +580,13 @@
               }
             ],
             "title": "Run Id"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunSummary"
+            },
+            "title": "Runs",
+            "type": "array"
           },
           "started_at": {
             "anyOf": [
@@ -321,6 +604,7 @@
             "enum": [
               "queued",
               "running",
+              "waiting_review",
               "stopping",
               "succeeded",
               "failed",
@@ -1100,6 +1384,64 @@
         "title": "ProviderResponse",
         "type": "object"
       },
+      "ReviewProposal": {
+        "properties": {
+          "after": {
+            "title": "After",
+            "type": "string"
+          },
+          "analysis_id": {
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "base_revision_id": {
+            "title": "Base Revision Id",
+            "type": "string"
+          },
+          "before": {
+            "title": "Before",
+            "type": "string"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/SectionOperation"
+          },
+          "source_run_id": {
+            "title": "Source Run Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tool_call_id": {
+            "title": "Tool Call Id",
+            "type": "string"
+          },
+          "tool_name": {
+            "enum": [
+              "update_analysis_section",
+              "insert_analysis_sections",
+              "delete_analysis_section",
+              "update_analysis_preamble"
+            ],
+            "title": "Tool Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool_call_id",
+          "source_run_id",
+          "tool_name",
+          "analysis_id",
+          "base_revision_id",
+          "title",
+          "before",
+          "after",
+          "operation"
+        ],
+        "title": "ReviewProposal",
+        "type": "object"
+      },
       "RunResponse": {
         "properties": {
           "created_at": {
@@ -1177,7 +1519,8 @@
             "default": "verification",
             "enum": [
               "verification",
-              "chat"
+              "chat",
+              "analysis"
             ],
             "title": "Purpose",
             "type": "string"
@@ -1239,6 +1582,189 @@
         "title": "RunResponse",
         "type": "object"
       },
+      "RunSummary": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "purpose"
+        ],
+        "title": "RunSummary",
+        "type": "object"
+      },
+      "SectionInput": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "default": "",
+            "title": "Body",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "SectionInput",
+        "type": "object"
+      },
+      "SectionOperation": {
+        "additionalProperties": false,
+        "description": "One reviewed operation, bound to a concrete base revision.",
+        "properties": {
+          "after_sid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After Sid"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "kind": {
+            "enum": [
+              "update_section",
+              "insert_sections",
+              "delete_section",
+              "update_preamble"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "sections": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SectionInput"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sections"
+          },
+          "sid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sid"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "SectionOperation",
+        "type": "object"
+      },
+      "SectionRead": {
+        "properties": {
+          "display_no": {
+            "title": "Display No",
+            "type": "string"
+          },
+          "end_line": {
+            "title": "End Line",
+            "type": "integer"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "raw": {
+            "title": "Raw",
+            "type": "string"
+          },
+          "start_line": {
+            "title": "Start Line",
+            "type": "integer"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "uid": {
+            "title": "Uid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "uid",
+          "handle",
+          "kind",
+          "display_no",
+          "title",
+          "raw",
+          "start_line",
+          "end_line"
+        ],
+        "title": "SectionRead",
+        "type": "object"
+      },
       "SegmentCreate": {
         "additionalProperties": false,
         "properties": {
@@ -1287,6 +1813,11 @@
         "properties": {
           "active_job_count": {
             "title": "Active Job Count",
+            "type": "integer"
+          },
+          "analysis_count": {
+            "default": 0,
+            "title": "Analysis Count",
             "type": "integer"
           },
           "message_count": {
@@ -1481,6 +2012,11 @@
         "properties": {
           "active_job_count": {
             "title": "Active Job Count",
+            "type": "integer"
+          },
+          "analysis_count": {
+            "default": 0,
+            "title": "Analysis Count",
             "type": "integer"
           },
           "message_count": {
@@ -1804,6 +2340,39 @@
       },
       "UsageResponse": {
         "properties": {
+          "cache_hit_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Hit Tokens"
+          },
+          "cache_miss_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Miss Tokens"
+          },
+          "cached_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cached Tokens"
+          },
           "input_tokens": {
             "anyOf": [
               {
@@ -1959,6 +2528,130 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/analyses/{analysis_id}": {
+      "delete": {
+        "operationId": "deleteAnalysis",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Analysis"
+      },
+      "get": {
+        "operationId": "getAnalysis",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revision_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Revision Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Analysis"
+      }
+    },
+    "/api/analyses/{analysis_id}/delete-impact": {
+      "get": {
+        "operationId": "getAnalysisDeleteImpact",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisDeleteImpact"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Delete Impact"
+      }
+    },
     "/api/health": {
       "get": {
         "operationId": "health",
@@ -2014,6 +2707,55 @@
           }
         },
         "summary": "Get Job"
+      }
+    },
+    "/api/jobs/{job_id}/decision": {
+      "post": {
+        "operationId": "decideChatJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Job"
       }
     },
     "/api/jobs/{job_id}/stop": {
@@ -2655,6 +3397,72 @@
           }
         },
         "summary": "Update Segment"
+      }
+    },
+    "/api/segments/{segment_id}/analyses": {
+      "get": {
+        "operationId": "listAnalyses",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "segment_id",
+            "required": true,
+            "schema": {
+              "title": "Segment Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AnalysisListItem"
+                  },
+                  "title": "Response Listanalyses",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Analyses"
       }
     },
     "/api/segments/{segment_id}/delete-impact": {

@@ -13,10 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.chat_models import ChatMessage, ChatThread, Job
 from app.chat_schemas import (
     JobCreate,
+    JobDecision,
     JobResponse,
     MessagePage,
     MessageResponse,
     ModelSnapshotResponse,
+    RunSummary,
     ThreadCreate,
     ThreadPage,
     ThreadPatch,
@@ -155,9 +157,14 @@ async def job_response(session: AsyncSession, job: Job) -> JobResponse:
             ChatMessage.deleted_at.is_(None),
         )
     )
-    run_id = await session.scalar(
-        select(Run.id).where(Run.job_id == job.id, Run.deleted_at.is_(None))
-    )
+    runs = (
+        await session.scalars(
+            select(Run)
+            .where(Run.job_id == job.id, Run.deleted_at.is_(None))
+            .order_by(Run.created_at, Run.id)
+        )
+    ).all()
+    run_id = runs[0].id if runs else None
     if assistant is None or user is None:
         raise ChatError(404, "任务不存在", "not_found")
     model = ModelSnapshotResponse.model_validate(
@@ -172,6 +179,11 @@ async def job_response(session: AsyncSession, job: Job) -> JobResponse:
         user_message_id=user.id,
         assistant_message=message_response(assistant),
         run_id=run_id,
+        kind="generate_analysis" if job.kind == "generate_analysis" else "chat",
+        artifacts=(job.execution_state or {}).get("artifacts", []),
+        active_step=cast(str | None, (job.execution_state or {}).get("active_step")),
+        review_proposal=cast(Any, (job.execution_state or {}).get("review_proposal")),
+        runs=[RunSummary(id=row.id, status=row.status, purpose=row.purpose) for row in runs],
         model=model,
         permission_mode=cast(Any, job.permission_mode),
         question=cast(str, job.input_snapshot["question"]),
@@ -211,6 +223,7 @@ def explicit_payload(data: ThreadCreate | JobCreate) -> dict[str, Any]:
     if isinstance(data, ThreadCreate):
         return data.model_dump(exclude={"request_id"}, exclude_unset=True)
     return {
+        "action": data.action,
         "expected_thread_revision": data.expected_thread_revision,
         "expected_segment_revision": data.expected_segment_revision,
         "question": data.question,
@@ -410,6 +423,7 @@ async def accept_job(
             raise ChatError(409, "片段版本已变化", "stale_segment")
         model_id = data.model_id if data.model_id is not None else thread.selected_model_id
         model, provider = await model_for_accept(session, model_id)
+        protocol = model.protocol_override or provider.protocol
         defaults = await session.get(Defaults, 1)
         profile = await session.get(Profile, 1)
         assert defaults is not None and profile is not None
@@ -426,8 +440,9 @@ async def accept_job(
             style,
             data.question,
             data.additional_instructions,
+            protocol,
         )
-        if sum(len(message["content"]) for message in snapshot["messages"]) > MAX_MESSAGE_CHARS:
+        if len(json.dumps(snapshot["messages"], ensure_ascii=False)) > MAX_MESSAGE_CHARS:
             raise ChatError(422, "上下文超过本地上限，请缩短问题或新建对话", "context_limit")
         model_snapshot: dict[str, Any] = {
             "provider_id": provider.id,
@@ -437,7 +452,7 @@ async def accept_job(
             "provider_model_id": model.id,
             "model_id": model.model_id,
             "model_revision": model.revision,
-            "protocol": model.protocol_override or provider.protocol,
+            "protocol": protocol,
             "temperature": model.temperature,
             "max_output_tokens": model.max_output_tokens,
             "reasoning_effort": model.reasoning_effort,
@@ -460,12 +475,13 @@ async def accept_job(
         created = now()
         job = Job(
             id=new_ulid(),
-            kind="chat_reply",
+            kind="generate_analysis" if data.action == "generate_analysis" else "chat_reply",
             thread_id=thread_id,
             request_id=data.request_id,
             request_payload=payload,
             status="queued",
             input_snapshot=snapshot,
+            execution_state={"artifacts": [], "active_step": "queued", "review_proposal": None},
             model_snapshot=model_snapshot,
             credential_ref=provider.credential_ref,
             permission_mode=thread.permission_mode,
@@ -550,14 +566,14 @@ async def _stop_job_committed(session: AsyncSession, job_id: str) -> JobResponse
         await begin_write(session)
         job = await require_job(session, job_id)
         thread = await require_thread(session, job.thread_id)
-        if job.status in ("queued", "running"):
+        if job.status in ("queued", "running", "waiting_review"):
             changed = now()
             job.stop_requested_at = changed
             job.execution_token = None
             job.version += 1
             thread.revision += 1
             thread.updated_at = changed
-            if job.status == "queued":
+            if job.status in ("queued", "waiting_review"):
                 job.status = "interrupted"
                 job.error_code = "user_stopped"
                 job.error = "用户已停止本轮"
@@ -575,6 +591,46 @@ async def _stop_job_committed(session: AsyncSession, job_id: str) -> JobResponse
             else:
                 job.status = "stopping"
         await session.flush()
+        response = await job_response(session, job)
+        await session.commit()
+        return response
+    except BaseException:
+        await session.rollback()
+        raise
+
+
+async def decide_job(session: AsyncSession, job_id: str, data: JobDecision) -> JobResponse:
+    """Resolve a persisted, version-bound proposal before work is resumed."""
+    try:
+        await begin_write(session)
+        job = await require_job(session, job_id)
+        state = dict(job.execution_state or {})
+        request = {
+            "expected_version": data.expected_version,
+            "decision": data.decision,
+            "additional_instructions": data.additional_instructions,
+        }
+        if request in state.get("decision_requests", []):
+            response = await job_response(session, job)
+            await session.commit()
+            return response
+        if state.get("decision_request") is not None:
+            raise ChatError(409, "审核决定已提交", "decision_conflict")
+        if job.status != "waiting_review" or job.version != data.expected_version:
+            raise ChatError(409, "审核方案已经变化", "stale_review")
+        proposal = state.get("review_proposal")
+        if not isinstance(proposal, dict):
+            raise ChatError(409, "没有待审核方案", "review_unavailable")
+        state["decision"] = data.decision
+        state["decision_instructions"] = data.additional_instructions
+        state["decision_request"] = request
+        state["decision_requests"] = [*state.get("decision_requests", []), request]
+        state["active_step"] = (
+            "applying_review" if data.decision == "approve" else "review_rejected"
+        )
+        job.execution_state = state
+        job.status = "queued"
+        job.version += 1
         response = await job_response(session, job)
         await session.commit()
         return response

@@ -453,7 +453,7 @@ async def delete_provider(session: AsyncSession, provider_id: str) -> None:
     chat_active = await session.scalar(
         select(Job.id)
         .where(
-            Job.status.in_(["queued", "running", "stopping"]),
+            Job.status.in_(["queued", "running", "waiting_review", "stopping"]),
             Job.deleted_at.is_(None),
             Job.model_snapshot["provider_id"].as_string() == row.id,
         )
@@ -536,7 +536,7 @@ async def delete_model(session: AsyncSession, model_id: str) -> None:
     chat_active = await session.scalar(
         select(Job.id)
         .where(
-            Job.status.in_(["queued", "running", "stopping"]),
+            Job.status.in_(["queued", "running", "waiting_review", "stopping"]),
             Job.deleted_at.is_(None),
             Job.model_snapshot["provider_model_id"].as_string() == row.id,
         )

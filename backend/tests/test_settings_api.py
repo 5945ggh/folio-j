@@ -762,6 +762,9 @@ async def test_accepted_run_keeps_credential_and_call_snapshot_after_edits(
             "input_tokens": 3,
             "output_tokens": 2,
             "total_tokens": 5,
+            "cached_tokens": None,
+            "cache_hit_tokens": None,
+            "cache_miss_tokens": None,
         }
         assert original_key not in finished.text
         assert "[已隐藏凭据]" in finished.json()["output_text"]

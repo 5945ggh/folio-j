@@ -1,6 +1,7 @@
 """Persistent learner preferences, model access and verification runs."""
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -73,8 +74,8 @@ class Run(Base):
     __tablename__ = "runs"
     id: Mapped[str] = mapped_column(String(26), primary_key=True)
     purpose: Mapped[str] = mapped_column(String(20), nullable=False, default="verification")
-    job_id: Mapped[str | None] = mapped_column(String(26), unique=True)
-    messages: Mapped[list[dict[str, str]] | None] = mapped_column(JSON)
+    job_id: Mapped[str | None] = mapped_column(String(26), index=True)
+    messages: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     provider_id: Mapped[str] = mapped_column(String(26), index=True)
     provider_name: Mapped[str] = mapped_column(String(100))
@@ -88,7 +89,7 @@ class Run(Base):
     output_text: Mapped[str] = mapped_column(Text)
     error: Mapped[str | None] = mapped_column(Text)
     usage: Mapped[dict[str, int | None] | None] = mapped_column(JSON)
-    prompt_version: Mapped[str] = mapped_column(String(20))
+    prompt_version: Mapped[str] = mapped_column(String(64))
     prompt_text: Mapped[str] = mapped_column(Text)
     base_url: Mapped[str] = mapped_column(String(2048))
     credential_ref: Mapped[str | None] = mapped_column(String(26))

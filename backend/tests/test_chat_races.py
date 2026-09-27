@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from chat_tool_fixture import install_text_turn
 from test_chat_api import accept, chat_client, question_payload, seed_chat
 
 from app.jobs import runtime
@@ -105,7 +106,7 @@ async def test_stop_or_delete_after_claim_prevents_sdk_entry(
         return adapters.GenerateResult("should not happen", True, None, None)
 
     monkeypatch.setattr(runtime, "_claim", paused_claim)
-    monkeypatch.setattr(adapters, "generate_text", generate)
+    install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)
         job = await accept(client, seed)
@@ -148,7 +149,7 @@ async def test_missing_accepted_credential_fails_without_a_run(
         calls += 1
         return adapters.GenerateResult("unexpected", True, None, None)
 
-    monkeypatch.setattr(adapters, "generate_text", generate)
+    install_text_turn(monkeypatch, generate)
     database = tmp_path / "chat.db"
     async with chat_client(database) as (client, app):
         seed = await seed_chat(client)
@@ -193,7 +194,7 @@ async def test_recovery_interrupts_run_message_and_thread_without_late_overwrite
         await progress("迟到正文")
         return adapters.GenerateResult("迟到完整回答", True, None, "{}")
 
-    monkeypatch.setattr(adapters, "generate_text", generate)
+    install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)
         job = await accept(client, seed)
@@ -243,7 +244,7 @@ async def test_failed_round_remains_visible_but_is_not_sent_as_successful_histor
             return adapters.GenerateResult("残缺回答", False, None, None)
         return adapters.GenerateResult("完整回答", True, None, None)
 
-    monkeypatch.setattr(adapters, "generate_text", generate)
+    install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)
         failed = await accept(client, seed)

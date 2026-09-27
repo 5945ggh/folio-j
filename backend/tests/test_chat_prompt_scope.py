@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from chat_tool_fixture import install_text_turn
 from test_chat_api import accept, chat_client, seed_chat
 
 from app.jobs import runtime
@@ -44,7 +45,7 @@ async def test_chat_system_scope_is_rendered_for_each_style_choice(
 
         job = await accept(client, seed, question="这里的だった是什么用法？", **changes)
         snapshot = accepted_input(database, job["id"])
-        assert snapshot["prompt_version"] == "v2"
+        assert snapshot["prompt_version"] == "v4+tools_v3"
         assert [message["role"] for message in snapshot["messages"]] == ["system", "user"]
         system = snapshot["messages"][0]["content"]
         user = snapshot["messages"][1]["content"]
@@ -58,19 +59,24 @@ async def test_chat_system_scope_is_rendered_for_each_style_choice(
         assert "专题" in system and "不扩写为整个 Segment 的完整解析" in system
         assert "只有本轮明确要求总体讲解、完整解析" in system
         assert "不把上一轮的讲解或报告任务自动延续到本轮" in system
-        assert "当前对话没有创建、修改或删除 Analysis／Occurrence 的工具" in system
+        assert (
+            "主对话具备当前 Segment 的 Analysis 列表、读取、生成和 Section 局部编辑工具" in system
+        )
+        assert "收到运行时追加的专用写作分支要求时，直接输出讲解 Markdown 正文" in system
+        assert "不再调用生成工具，也不声称已经保存" in system
 
         if style_choice == "default":
             assert snapshot["style"]["id"] == seed["settings"]["defaults"]["style_id"]
-            assert "## 标题" in system
+            assert "## 标题" in user
+            assert "## 标题" not in system
         elif style_choice == "custom":
             assert snapshot["style"]["body_md"] == "只在需要时提示重音。"
-            assert "只在需要时提示重音。" in system
+            assert "只在需要时提示重音。" in user
             assert "## 标题" not in system
         else:
             assert snapshot["style"] is None
             assert "## 标题" not in system
-            assert "所选讲解预设（按上述本轮范围规则取用）" not in system
+            assert "本轮未选择讲解预设" in user
 
 
 @pytest.mark.asyncio
@@ -88,7 +94,7 @@ async def test_run_reuses_accepted_prompt_after_style_change(
         captured.append(snapshot.messages)
         return adapters.GenerateResult("过去式。", True, None, "{}")
 
-    monkeypatch.setattr(adapters, "generate_text", generate)
+    install_text_turn(monkeypatch, generate)
     async with chat_client(database) as (client, app):
         seed = await seed_chat(client)
         job = await accept(client, seed)
@@ -112,7 +118,7 @@ async def test_run_reuses_accepted_prompt_after_style_change(
         result = (await client.get(f"/api/jobs/{job['id']}")).json()
         assert result["status"] == "succeeded"
         run = (await client.get(f"/api/runs/{result['run_id']}")).json()
-        assert run["prompt_version"] == accepted["prompt_version"] == "v2"
+        assert run["prompt_version"] == accepted["prompt_version"] == "v4+tools_v3"
 
     with sqlite3.connect(database) as connection:
         row = connection.execute(
