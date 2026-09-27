@@ -13,7 +13,7 @@ from app.models import Segment, Source
 from app.settings_models import Profile, Style
 
 PROMPTS = Path(__file__).resolve().parents[3] / "prompts" / "chat"
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 MAX_MESSAGE_CHARS = 200000
 ENV = Environment(loader=FileSystemLoader(PROMPTS), undefined=StrictUndefined, autoescape=False)
 
@@ -98,7 +98,7 @@ async def make_input_snapshot(
             "message_ids": [item["message_id"] for item in history],
         },
     }
-    system = ENV.get_template("system_v1.j2").render(**snapshot).strip()
+    system = ENV.get_template("system_v2.j2").render(**snapshot).strip()
     user = ENV.get_template("user_v1.j2").render(**snapshot).strip()
     messages: list[dict[str, str]] = [{"role": "system", "content": system}]
     messages.extend({"role": item["role"], "content": item["content"]} for item in history)
