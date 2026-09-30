@@ -4,7 +4,7 @@
 
 ## 项目是什么
 
-一个 Agent 原生的日语学习辅助系统，当前已建立工程基础，正在准备首轮领域功能切片。用户围绕 Source 下的 Segment 阅读与讨论，按需留下可独立阅读的讲解和 Occurrence；工作台是活动界面，不拥有学习内容。不要求先有完整解析才能讨论，也不强制所有内容经过独立 AI 提取阶段。讨论成果先整理为持久讲解，Occurrence 再关联原文与具体讲解版本。具体首轮入口、共享资料读取与成果写入契约以 PRD 中已确认和待定的边界为准，不按旧的线 A／线 B 流水线直接实现。
+一个 Agent 原生的日语学习辅助系统，当前已实现来源与片段管理、设置与模型接入、后台讨论，以及 Analysis／Revision／Section、讲解生成与编辑审核、阅读导航；Occurrence 与积累库尚未实现。当前进度和验收依据集中见 [MVP 实施基线](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)。用户围绕 Source 下的 Segment 阅读与讨论，按需留下可独立阅读的讲解和 Occurrence；工作台是活动界面，不拥有学习内容。不要求先有完整解析才能讨论，也不强制所有内容经过独立 AI 提取阶段。讨论成果先整理为持久讲解，Occurrence 再关联原文与具体讲解版本。具体首轮入口、共享资料读取与成果写入契约以 PRD 中已确认和待定的边界为准，不按旧的线 A／线 B 流水线直接实现。
 
 文档入口见 [`docs/README.md`](docs/README.md)。开发任务先读以下长期规范，并按当前阶段查阅 [`docs/handovers/README.md`](docs/handovers/README.md)：
 

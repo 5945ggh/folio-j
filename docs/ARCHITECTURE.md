@@ -1,17 +1,17 @@
 # 架构设计
 
-> 状态：草案 v0.3（2026-09-26）。配套文档：[PRD.md](PRD.md)、[TECH_STACK.md](TECH_STACK.md)、[GLOSSARY.md](GLOSSARY.md)。`[TBD-xx]` 编号与 PRD 一致。
-> 本文规定已确认的领域边界、基本操作、片段读取范围与执行规则；具体协议、审核持久化和恢复实现仍待设计。Section 写操作的建议契约见第 4.5 节，不等于已实现的 OpenAPI。阶段性实施基线见 [MVP_IMPLEMENTATION_BASELINE.md](handovers/MVP_IMPLEMENTATION_BASELINE.md)，具体交付顺序仍待编排。
+> 状态：草案 v0.3（2026-09-26）；现状核对：2026-09-30（本轮不递增版本）。配套文档：[PRD.md](PRD.md)、[TECH_STACK.md](TECH_STACK.md)、[GLOSSARY.md](GLOSSARY.md)。`[TBD-xx]` 编号与 PRD 一致。
+> 本文同时记录已确认的领域规则、当前实现与未来草图。Source／Segment、设置与验证、后台问答、Analysis及其工具审核／恢复已实现；Occurrence、提取与知识库仍为未来设计。当前协议以实际模板、代码和生成OpenAPI为准，阶段性实施边界见 [MVP_IMPLEMENTATION_BASELINE.md](handovers/MVP_IMPLEMENTATION_BASELINE.md)，验收记录见 [阶段性交接索引](handovers/README.md)。
 
 ## 1. 总览
 
 ```mermaid
 flowchart LR
-  UI[React SPA] -- REST / SSE --> API[FastAPI 路由]
+  UI[React SPA] -- REST / 轮询 --> API[FastAPI 路由]
   API --> SVC[服务层]
   SVC --> CTX[上下文管理器]
   SVC --> NORM[规范化器]
-  SVC --> EXT[提取器]
+  SVC -. 未来 .-> EXT[提取器]
   SVC --> CHAT[讨论服务]
   SVC --> JOBS[Job 队列 + Worker]
   CTX --> PROMPTS[(prompts/*.j2)]
@@ -19,14 +19,14 @@ flowchart LR
   CHAT --> LLM
   LLM --> PROV[OpenAI-compatible providers]
   SVC --> DB[(SQLite)]
-  LLM --> DB
+  JOBS --> DB
 ```
 
 分层规则：
 
 - **路由层**只负责参数校验、调用服务层和序列化返回，不包含业务逻辑。
-- **服务层**负责编排业务数据写入（Job worker 通过服务层写入）；LLM 层负责记录每次模型调用的 Run。
-- **LLM 层**是唯一允许发起模型请求的地方。它统一负责 Run 记录、流式输出、重试和开发缓存。
+- **服务层**负责编排业务数据写入（Job worker 通过服务层写入）；服务／Job执行层负责持久记录每次经LLM层发起的调用及其Run。
+- **LLM 层**是唯一允许发起模型请求的地方。适配器负责协议与流式输出；服务／Job执行层在调用前后持久记录Run并协调预算。当前SDK关闭自动重试（`max_retries=0`），本地开发缓存尚未实现。
 - **规范化器**是纯函数，不访问数据库，也不访问网络。
 
 ## 2. 核心数据流
@@ -46,21 +46,19 @@ flowchart LR
   Revision -. 可选批量提取 .-> Occurrence
 ```
 
-用户可直接围绕原文讨论，无须先生成解析。系统性解析、专题讲解及讨论整理可以成为各自独立的 Analysis；修改明确选定的已有 Analysis 才生成该文档的新 Revision。Agent 保存讲解与生成待整理候选可分别触发，也可由一次明确请求组合；收录、仅参考或退回待整理由用户直接操作，首轮不向 Agent 开放这些状态工具。普通问答只保存线程消息，不自动生成讲解或条目。首轮暂缓手动创建 Occurrence，保留完整讲解生成与批量候选整理能力；总体讲解快捷入口随Analysis切片提供，其他独立快捷入口在闭环后打磨。业务逻辑留在服务层，后续路由或 Shortcut tool 复用能力，不预建所有组合接口。任何模型调用仍经 LLM 层并生成 Run；用户直接整理无需伪造 Run。
+讨论、成果保存和条目整理的产品路径见[PRD 6.3–6.5](PRD.md#63-形成并阅读讲解)。实现以Segment为共同归属：新建Analysis创建独立身份，编辑已有Analysis创建不可变Revision；Occurrence须定位目标原文并引用实际保存的Revision／Section，历史引用不漂移。当前Analysis已实现，Occurrence和可选提取尚未实现；用户直接整理不伪造Run。
 
-Occurrence 归属目标 Segment，定位其原文，并引用具体 AnalysisRevision 及 Section。讨论中得到的新理解需先整理成脱离聊天仍可阅读的讲解，再作为条目出处；不以聊天消息直接替代。历史引用不因新修订而漂移。
-
-Analysis 有创建和删除业务接口，整份删除仅向用户管理界面开放；删除前展示并确认全部修订、Section 及关联 Occurrence（含已收录／仅参考）的影响范围。Segment、其他 Analysis 和属于 Segment 的 ChatThread／消息保留，原有入口可识别来源已删除。Section 删除则是产生新修订的文档编辑，不删除旧修订与引用。迟到任务不能恢复已删除内容，物理清理及调用记录保留方式仍由持久化契约确定。
+删除范围及用户确认见[PRD F2](PRD.md#f2-source-与片段)。当前Source／Segment／Analysis使用deleted_at逻辑删除，相关事务和迟到结果检查阻止内容重新可见；Section删除只在新修订中移除。Occurrence关联删除与最终物理清理仍待其持久化契约落实。
 
 ## 3. 领域模型
 
-当前已落地 Source／Segment 管理、2A设置／模型验证，以及2B片段后台问答与历史。来源与片段具体 API 与字段见[第一阶段契约](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)，实现位于 `models.py`、`schemas.py`、`services/sources.py` 与 `api/sources.py`；设置与验证见第 4 节，其余实体和模块仍为后续设计。Source、Segment 使用 `deleted_at` 逻辑删除，删除来源在同一事务内标记所属片段，查询排除已删除对象。2B接受问答时在同一短写事务保存输入快照、消息与Job，并首次设置`text_locked_at`；原文编辑、来源／片段删除在同一事务边界核对当前状态。
+当前已落地 Source／Segment 管理、2A设置／模型验证，以及2B片段后台问答与历史、2C Analysis／Revision／Section与成果工具审核。来源与片段具体 API 与字段见[第一阶段契约](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)，实现位于 `models.py`、`schemas.py`、`services/sources.py` 与 `api/sources.py`；设置与验证见第 4 节，Analysis实现见第3.5节，Occurrence及提取／知识库模块仍为后续设计。Source、Segment 使用 `deleted_at` 逻辑删除，删除来源在同一事务内标记所属片段，查询排除已删除对象。2B接受问答时在同一短写事务保存输入快照、消息与Job，并首次设置`text_locked_at`；原文编辑、来源／片段删除在同一事务边界核对当前状态。
 
 数据库生命周期由应用 lifespan 管理，迁移从空库建立 schema，`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。
 
 ### 3.1 实体
 
-所有主键均为 ULID 字符串。所有表都带 `created_at`，可变实体另带 `updated_at`。以下是领域关系草图，不预先固定未讨论的表字段或关联实现。
+领域对象主键使用ULID字符串；时间与关联字段以实际ORM为准，不要求派生Section独立带创建时间。以下是领域关系草图，不能据此推断每个字段已经落库。已实现模型见`models.py`、`settings_models.py`、`chat_models.py`与`analysis_models.py`；Occurrence尚未建表。
 
 | 实体 | 关键字段／关系 | 说明 |
 |---|---|---|
@@ -68,20 +66,20 @@ Analysis 有创建和删除业务接口，整份删除仅向用户管理界面�
 | `AnalysisStyle` | `name`、`body_md`、`is_default` | 讲解偏好预设 |
 | `Source` | `title`、`note`、来源描述 | 用户声明的来源范围；未来可容纳不同形式的输入，不等于文件或 Collection |
 | `Segment` | `source_id`、`text`、可选译文／备注／听写／`source_ref`／`tokens` | 学习目标原文；`source_ref` 当前为自由文本出处，不是素材外键。入库做 NFC；片段顺序不能推断原作相邻或自动语境 |
-| `Run` | `kind`、关联的操作、实际 Provider／模型／协议／参数、完整消息、输出、用量、状态、时间 | 每次模型调用均记录，不包含密钥；具体操作关联待设计 |
-| `Analysis` | `segment_id`、文档身份与展示元信息 | 一个 Segment 可有多份独立的完整或专题讲解；默认展示选择待设计 |
+| `Run` | `kind`、关联的操作、实际 Provider／模型／协议／参数、完整消息、输出、用量、状态、时间 | 每次模型调用均记录，不包含密钥；当前通过purpose、job_id与parent_run_id区分用途及调用关系 |
+| `Analysis` | `segment_id`、文档身份与展示元信息 | 一个 Segment 可有多份独立的完整或专题讲解；当前普通入口不自动选第一份，精确入口可指定文档／修订 |
 | `AnalysisRevision` | `analysis_id`、`parent_revision_id?`、`origin`、`run_id?`、`source_md`、`normalizer_version`、`warnings` | 一经生成不可变；`source_md` 为文本真相，来源可追溯 |
 | `Section` | `revision_id`、`uid`、`handle`、`kind`、`display_no`、`title`、行号、`raw` | 由规范化器派生，可从原 Markdown 重算 |
 | `Occurrence` | `segment_id`、`revision_id`、`section_uids`、原文 `surface`／`spans`、`anchors`／`anchor_keys`、`gloss`、类型／标签／状态、创建来源 | 原文中的学习点实例；引用具体 Revision／Section。是否有提取 Run 取决于创建入口 |
 | `ChatThread` | `segment_id`、可选选定资料、标题及权限模式 | 各线程历史独立；参考资料与操作目标分开，不预设主分支结构或永久绑定单一文档 |
 | `ChatMessage` | `thread_id`、`role`、`content`、`run_id?` | 消息本身不替代持久讲解出处 |
-| `Job` | `kind`、`status`、`payload`、`run_id?`、`attempts`、错误及时间 | 后台 AI 任务状态 |
+| `Job` | `kind`、`status`、`input_snapshot`、`model_snapshot`、`execution_state`、`execution_token`、错误及时间 | 当前chat_jobs保存后台任务状态，一个Job可关联多个Run |
 
-`Occurrence` 的产品整理状态为 `pending`、`learning`、`reference`，用户可在三者间调整；`reference` 可主动查找和阅读，默认不参与后续学习活动，`learning` 不自动启动排期。删除是独立产品操作，在存储层仍以状态变更软删除，内部删除状态编码待定；不使用 `dismissed` 混合表达忽略与删除，也不提供独立忽略、归档或恢复入口。修订保留历史。再次整理遵循 PRD F5，不自动作废或替换候选，不迁移整理状态或历史引用，也不根据删除建立永久拒绝规则。具体手动／AI 创建来源、引用约束和删除保留策略须在实现前设计。
+Occurrence整理行为见[PRD F5](PRD.md#f5-学习条目创建与整理)。存储契约保留pending／learning／reference及独立的软删除编码（待定），不得用dismissed混合忽略与删除。出处引用具体不可变修订，整理或再次调用不能迁移历史引用。创建来源、引用约束及删除保留策略仍须在实现前落实。
 
 预留、MVP 不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`。未来素材的实体命名与数据关系待需求明确后设计，`MediaAsset` 不是已确定名称。
 
-工具审核需持久记录所属线程、目标及基础版本、具体拟执行操作、用户决定／附加指令与执行结果。这是执行契约的需求，不在此预定新表、实体名称或状态枚举。待审核方案与正式 AnalysisRevision／Occurrence 分开，批准后仍可能执行失败，二者不能混为一条成功记录。
+工具审核需持久记录所属线程、目标及基础版本、具体拟执行操作、用户决定／附加指令与执行结果。当前Analysis工具把具体方案、决定与执行事实保存在Job.execution_state中，状态包含waiting_review；Occurrence及复杂组合方案仍待设计。待审核方案与正式 AnalysisRevision／Occurrence 分开，批准后仍可能执行失败，二者不能混为一条成功记录。
 
 ### 3.2 关系
 
@@ -99,21 +97,21 @@ erDiagram
 
 ### 3.3 三个版本号
 
-以下三个版本号都以常量形式写在代码中，并记录到产物上：
+以下为版本追溯规则；prompt与normalizer版本已记录到当前调用／产物，extraction_schema_version留待提取实现：
 
 - `prompt_version`：每个 prompt 模板文件头部声明，渲染时写入 Run。
 - `normalizer_version`：规范化器的规则一旦变化就递增。**格式契约 prompt 与规范化器是一对**，修改其中一方时必须检查另一方。
 - `extraction_schema_version`：提取 schema 或 anchor 规则 `[TBD-03]` 变化时递增。
 
-### 3.4 2B 问答实现
+### 3.4 2B 问答历史基线
 
 [2B实施契约](handovers/archived/STAGE_2B_ASYNC_QA.md)固定本阶段的实体字段、API、状态机和验收矩阵；实现位于`chat_models.py`、`chat_schemas.py`、`services/chat.py`、`services/context.py`及`jobs/runtime.py`；API类型已从OpenAPI生成，增量迁移为`0004_chat_jobs`。以上实体表仍是完整MVP草图，2B已落实下列边界：
 
 - ChatThread归属Segment，ChatMessage归属线程和Job；同线程只有一个活动Job，数据库唯一约束与active_job_id共同维护。创建线程不锁原文，接受问答在同一短写事务内保存不可变输入／模型快照、用户消息、助手占位及Job，并首次设置text_locked_at。
 - 接受请求以线程内request_id幂等，原样重放返回原身份，异payload或并发新轮冲突；Segment用户编辑revision和Thread.revision用于拒绝陈旧提交。片段编辑、来源／片段删除必须同步参与事务保护，不能只修改新入口。
 - Job在接受时存在，Run在实际调用前创建；新增Run.purpose区分verification与chat，旧数据为verification。chat不进入模型验证历史／能力汇总，删除学习内容后也不能通过Run详情重见原文。
-- 2B实际输入为现有Source／Segment、学习背景、适用预设、本轮问题及本线程成功的完整历史；管理备注不自动发送，失败／中断残文保留展示但不自动拼入后续请求。messages接受时渲染并保存，worker不读取新的默认值、资料或模板替换输入。未来持久讲解读取须另行落实确切版本及出处。
-- 2B没有成果工具、审核等待或修复循环；review／full_access均为文本问答，保留权限字段与空闲切换规则。TBD-16只收口本阶段的接受、幂等、保存核实和单次预算，TBD-17继续保持未决。
+- 2B实际输入为现有Source／Segment、学习背景、适用预设、本轮问题及本线程成功的完整历史；管理备注不自动发送，失败／中断残文保留展示但不自动拼入后续请求。messages接受时渲染并保存，worker不读取新的默认值、资料或模板替换输入。持久讲解的确切版本读取已由2C工具落实，见第3.5节。
+- 2B交付时没有成果工具、审核等待或修复循环，单Job一次生成且60秒调用预算；这是历史切片边界。当前2C已增加工具循环、生成分支和具体操作审核，预算见第3.5节。TBD-16的Analysis执行部分已落实，Occurrence部分仍未实现；TBD-17继续保持未决。
 
 ### 3.5 2C Analysis 与工具执行实现
 
@@ -121,7 +119,7 @@ erDiagram
 
 `jobs/agent.py`执行主对话工具循环与内部写作分支。Job.execution_state持久保存实际协议历史、预算、成果和具体待审方案，一个Job可关联多个Run；Run结束、成果保存和Job完成分别判断。`waiting_review`仍占用线程活动任务身份，批准或拒绝须绑定方案版本；拒绝可附加指令，批准不把附加指令悄悄写进已展示方案。重启中断执行中的任务，待审核方案可重新打开；已保存的成果始终保留。
 
-首批统一预算为最多8次模型调用、每次180秒、累计模型执行600秒（不计人工审核等待）、输出和上下文各200000字符。分支与主循环共享计数和全局并发名额，不在审核恢复时重置预算。停止撤销执行标识，后续调用和保存均再核对持久状态；已进入的模型调用仅尽力取消，不能保证远端不再计费。
+当前预算常量集中在`jobs/agent.py`：最多8次模型调用，单次调用上限180秒，累计计时上限600秒，输出和上下文各200000字符。累计值通过`execution_state.model_seconds`持久保存各次`_invoke`的实际耗时（包含其内部授权核对／入口等待），不是整个Job的墙钟时长；人工审核等待和外部工具处理不计入。下一次调用时限取180秒与剩余累计时间的较小值。分支与主循环共享计数和全局并发名额，不在审核恢复时重置预算。停止撤销执行标识，后续调用和保存均再核对持久状态；已进入的模型调用仅尽力取消，不能保证远端不再计费。
 
 公开接口包括片段Analysis列表、指定Analysis／Revision读取、删除影响与用户删除，以及Job的具体审核决定。生成／局部写入经Job执行，未提供绕过审核的公开编辑端点。实际字段以生成的OpenAPI和版本化工具模板为准；Occurrence尚未实现，见[2C验收记录](handovers/archived/STAGE_2C_ANALYSIS_TOOLS.md)。
 
@@ -131,13 +129,15 @@ erDiagram
 
 ### 4.1 上下文管理器（`services/context.py`）
 
-职责：按操作把学习背景、片段、偏好及选定资料组装为 messages，是**唯一**拼接 prompt 的地方。首轮 Agent 仅按需读取当前 Segment 的原文、语境、Analysis／Revision／Section／Occurrence、必要 Source 信息、本线程历史与适用的学习背景／偏好；不跨片段检索、不搜索其他线程聊天历史。其他线程保存到本 Segment 的持久讲解可共享，用户界面的跨片段积累库不受此 Agent 边界限制。读取工具由执行层校验对象的 Segment 归属，不能只在 prompt 中限制。内容和执行状态以持久数据为准，来源实际使用情况留痕。
+职责：`services/context.py`组装主对话接受快照与历史，`jobs/agent.py`在实际工具触发点追加模板化写作指令与工具结果。资料范围遵循[PRD 4.5](PRD.md#45-讨论共享资料与成果保存)和[F7](PRD.md#f7-片段讨论与成果整理)：读取工具校验当前Segment归属，不搜索其他线程聊天历史；跨线程只共享本Segment持久成果。内容与执行状态依据持久记录，实际使用的出处留痕，不默认载入全部资料。当前已实现Analysis读取，Occurrence读取仍是目标约束。
 
 当前主对话加载`prompts/chat/system_v4.j2`、`user_v2.j2`和`tools_v4.json`，组合版本记录为`v4+tools_v4`。system区分普通问答、专题／总体讲解及内部写作场景；完整文档组织预设只在明确请求对应产物时生效。背景、预设、材料和本轮要求以user后缀加入，接受时固定。旧Job／Run的实际输入与版本不随升级改写，用户数据库中的预设也不自动覆盖。`generate_analysis`可传入独立的`title`（去除首尾空白并做NFC规范化后为1–200字符），省略时沿用首个二级标题／正文摘录的系统取名；总标题不随Section编辑改写。快捷总体讲解继续由系统自动取名。
 
-内部Analysis分支沿用父调用的Provider、模型、协议、参数、system、工具定义及完整有效前缀，仅追加`analysis/writer_v2.j2`，用`tool_choice=none`直接生成Markdown。实际工具调用以真实委派结果闭合后再进入写作；快捷生成不伪造assistant工具调用。主对话得到确切成果身份和保存结果，正文按需读取，写作模板和全篇正文不重复回灌主上下文。
+内部生成分支以主对话触发点的完整上下文快照启动，保留材料、已讨论要求、已读取资料和截至触发点的有效消息，不先摘要替代全文。分支沿用父调用的Provider、模型、协议、参数、system、工具定义及完整有效消息前缀；真实触发工具调用先以真实委派开始结果闭合，再在末尾追加`analysis/writer_v2.j2`，以`tool_choice=none`直接生成Markdown。快捷总体讲解复用同一能力；没有既有讨论时以片段材料和本次要求建立上下文，不伪造assistant工具调用。生成校验通过后保存Analysis及初始Revision。
 
-同协议历史保留实际reasoning与工具字段。旧版本或协议切换时，无法合法重放的原生消息作为按原顺序保留的历史资料追加，不伪造私有推理或用摘要替代内容。已保存但收尾失败的成果在下一轮以持久事实恢复。渲染后的messages、工具定义和模板版本写入快照及Run；完整可审阅文本见[提示词聚合视图](handovers/PROMPT_CHAIN_REVIEW.md)。
+保持相同前缀以争取Provider缓存命中，是执行意图而非命中率保证；实际命中通过服务端usage的cached／hit／miss字段观察，缺失值保持未知，不伪造为0。分支不切换解析默认模型或替换system，不以缓存为理由静默省略资料或沿用失效权限。主模型不在工具参数中搬运已有要求、上下文或完整新文档；主对话只接收成果身份、确切修订及真实保存结果，正文按需读取，写作模板与全篇正文不重复回灌主上下文。局部Section编辑在主对话执行，不自动推断Section语义依赖；该分支是Job内部过程，不等于用户可管理的聊天分支树。
+
+同协议历史保留实际reasoning与工具字段。旧版本或协议切换时，无法合法重放的原生消息作为按原顺序保留的历史资料追加，不伪造私有推理或用摘要替代内容。已保存但收尾失败的成果在下一轮以持久事实恢复。渲染后的messages、工具定义和模板版本写入快照及Run；长期依据为[主对话system](../backend/prompts/chat/system_v4.j2)、[本轮输入模板](../backend/prompts/chat/user_v2.j2)、[工具定义](../backend/prompts/chat/tools_v4.json)、[内部写作模板](../backend/prompts/analysis/writer_v2.j2)及[上下文实现](../backend/src/app/services/context.py)。历史转换与成果恢复另使用`chat/history_material_v1.j2`、`saved_artifact_v1.j2`和`recovered_artifacts_v1.j2`；临时聚合审阅快照不是生产依据。
 
 **持久讲解格式契约**（占位，`[TBD-07]`）：
 
@@ -148,16 +148,16 @@ erDiagram
 
 ### 4.2 LLM 层（`llm/`）
 
-- **统一接入配置**：Provider、模型和用途默认值通过设置 UI 经服务层维护。`config.py` 负责读取和校验统一配置来源，按 PRD F1 解析用途默认值、片段预选、对话线程选择及单次覆盖，不将 `providers.toml` 设为唯一入口。
-- **配置快照**：任务被接受时确定 Provider 配置身份、base_url、模型 ID、有效协议与参数，保存非敏感的实际请求配置。worker 执行时不得重新读取最新默认值来改变目标。凭据引用的保存、变更及失效处理须在实现前固定，不能把密钥复制进 Run 或普通配置响应。
+- **统一接入配置**：Provider、模型和用途默认值通过设置 UI 经服务层维护。`config.py`读取应用运行TOML，模型接入配置由`services/settings.py`维护SQLite来源；服务层按 PRD F1 解析用途默认值、片段预选、对话线程选择及单次覆盖，不将 `providers.toml` 设为唯一入口。
+- **配置快照**：任务被接受时确定 Provider 配置身份、base_url、模型 ID、有效协议与参数，保存非敏感的实际请求配置。worker 执行时不得重新读取最新默认值来改变目标。凭据已采用独立文件及内部引用，更新产生新引用，删除检查包含活动Job（含待审核），不能把密钥复制进 Run 或普通配置响应。
 - **协议适配**：基于 `openai.AsyncOpenAI` 分别适配 Chat Completions 与 Responses 的文本请求、响应及流式事件。上层业务使用统一文本与原生工具调用接口，不承担协议字段映射。2C覆盖两种协议普通／流式的工具结果、reasoning回放和缓存用量；结构化提取仍待Occurrence切片。
-- **结构化输出**：对已支持的 Provider／模型／协议组合优先采用原生结构化输出；明确采用兼容方式时，在 prompt 中给出 schema 并校验、重试。记录实际使用方式；鉴权、网络等错误不自动触发换协议或换模型，兼容输出同样不得绕过业务校验。
+- **结构化提取输出（未来）**：对已支持的 Provider／模型／协议组合优先采用原生结构化输出；明确采用兼容方式时，在 prompt 中给出 schema 并校验、重试。记录实际使用方式；鉴权、网络等错误不自动触发换协议或换模型，兼容输出同样不得绕过业务校验。
 - **模型发现与验证**：列表获取与用户手动模型登记并存；缓存列表并记录刷新结果。列表、文本调用与输出能力分别验证，不能把模型出现于列表当作完整能力声明。验证能力属于具体配置组合，不只属于模型名称。
 - **本地对话历史**：首轮文本问答在本地保存完整消息与来源，允许后续回复改选模型；Provider 远端会话标识不是唯一历史依据。协议内部状态的处理留在适配层。
 - **Run 记录**：每次模型调用前创建 Run，结束时写入输出、用量和状态；用户触发的模型调用验证同样记录。配置失效明确报告，不悄悄采用其他默认值。
-- **有限执行预算**：底层临时故障重试、结构化输出修复和 Agent 继续尝试需受协调后的有限预算约束，不能各自重新获得一套预算而无界叠加。具体次数、时间／调用上限和计数责任在执行契约中确定；所有实际模型调用继续记录 Run。
-- **开发缓存**（`app.toml` 中 `dev_cache = true` 时启用）：缓存身份包含 Provider 配置身份与端点、协议、模型、实际参数、消息和输出契约等非敏感请求内容，避免不同接入方式共享错误结果；缓存到 `data/llm_cache/`。测试时的录制与回放复用同一套机制（见第 8 节），不将凭据内容写入缓存。
-- **流式观察**：2A轮询持久Run；2B轮询Job的持久聚合正文，不新增SSE。后续SSE须为每个订阅者独立分发并支持从持久记录补读，不能用单个消费队列让不同页面分走事件。离开与重连不重复发起生成，具体协议见 [2B实施契约](handovers/archived/STAGE_2B_ASYNC_QA.md)。
+- **有限执行预算**：底层临时故障重试、结构化输出修复和 Agent 继续尝试需受协调后的有限预算约束，不能各自重新获得一套预算而无界叠加。当前Analysis主循环和分支由`jobs/agent.py`共享第3.5节预算；2A验证保留单次60秒预算。未来提取修复须复用协调预算；所有实际模型调用继续记录Run。
+- **开发缓存（未来预留，当前没有dev_cache配置项或本地缓存实现）**：缓存身份包含 Provider 配置身份与端点、协议、模型、实际参数、消息和输出契约等非敏感请求内容，避免不同接入方式共享错误结果；缓存到 `data/llm_cache/`。未来测试录制与回放可复用同一套机制（见第 8 节），不将凭据内容写入缓存。
+- **流式观察**：当前2A轮询持久Run，问答／Analysis轮询Job的持久状态和聚合正文，不新增SSE。后续SSE须为每个订阅者独立分发并支持从持久记录补读，不能用单个消费队列让不同页面分走事件。离开与重连不重复发起生成，具体协议见 [2B实施契约](handovers/archived/STAGE_2B_ASYNC_QA.md)。
 
 2A 已确定配置持久化与凭据更新规则：每次接入配置或模型参数变更提升版本，旧能力验证失效；运行结果仅在版本仍一致时更新能力状态。停用Provider阻止新验证，不改已接受快照；存在未完成验证时拒绝删除，否则逻辑删除并保留Run。凭据不回显，旧引用暂保留；物理清理策略及未来多步骤Job的凭据生命周期随后续执行契约细化。
 
@@ -184,98 +184,95 @@ erDiagram
 - R2 幂等：对同一输入多次规范化，得到的切分结果（行号范围、标题）相同。
 - R3 不改写：规范化器不修改任何文本。
 
-### 4.4 可选批量提取（`services/extraction.py`）
+### 4.4 可选批量提取（未来模块，`services/extraction.py`尚不存在）
 
-批量提取只整理明确选定的 AnalysisRevision 中已有讲解；目标 Segment 原文用于定位和核对，不读取独立讨论中的补充内容，也不自行补讲。它是创建 Occurrence 的可选入口，不是保存讲解或收录条目的必经阶段。
+产品范围与再次整理行为见[PRD F5](PRD.md#f5-学习条目创建与整理)。未来批量提取以明确选定的AnalysisRevision为讲解依据，目标原文仅用于定位核对，不读取独立讨论补充或自行补讲。
 
 输出契约带 `extraction_schema_version`，包含受控的 `kind`（`grammar`／`lexis`／`expression`／`other`）、受控 `tags`（见 GLOSSARY 第 4.1 节）、原文 `surface`、`anchors`、语境 `gloss` 与 `section_refs`。`surface` 必须定位到目标原文，`section_refs` 必须属于所选修订；系统补充 Segment、Source、具体 Revision／Section 和提取 Run 的出处。字符偏移以 Python `str` 码点计，anchor 比较使用 NFKC。具体的不连续定位、重复文字消歧及按类型制定的 anchor 规则 `[TBD-03]` 尚待设计。
 
-Agent 创建的条目无论单条还是批量均保存为 `pending`，不能由模型指定非待整理状态；收录由用户直接操作。按能够独立识别、校验和保存的条目反馈结果，成功项保留，失败项仅记录诊断，不形成无效 Occurrence。整个输出无法解析时，不推测哪些条目成功。操作成功表示契约、权限和状态检查通过且实际写入，不保证教学内容正确或知识覆盖完整。
+未来写入层将Agent创建限制为pending；每项必须可独立识别、校验并完整保存，失败项只存诊断，不形成无效Occurrence，整体不可解析时不猜测部分成功。校验通过不证明教学正确或覆盖完整。内容与出处修改须作为同一方案保存，不能按相同anchor或位置自动合并，不能迁移历史引用；不强制建立用户管理的提取批次，但每次操作及来源须可追溯。
 
-再次整理先读取相关已有条目，补充遗漏候选或明确修改已有 pending；learning／reference 只读参考。新修订下需要更新 pending 的内容与出处时一起形成修改方案；不自动将旧引用指向新内容，不以相同 anchor 或位置合并，也不保证语义重复判断完美。用户需要彻底重做时明确清理选定候选，不给普通再次整理附加整批替换语义。不强制建立用户需管理的提取批次；每次操作及来源仍记录。没有新增学习点可正常结束。
-
-校验失败回传具体问题，由 Agent 在有限预算内修复失败部分，不默认重跑成功项。旧的固定「最多重试两次」不再作为可以与 Agent 循环叠加的独立策略；预算协调见第 4.2 节。产品行为以 PRD F5、F8 为准，保存确认、幂等和继续执行等实现契约见 `[TBD-16]`。
+校验错误回传具体问题，恢复核实与幂等见第4.5节，预算见第4.2节。旧的固定“最多重试两次”不能作为与Agent循环叠加的独立策略。候选保存与继续执行协议仍见`[TBD-16]`；用户整理及部分失败行为由[PRD F5](PRD.md#f5-学习条目创建与整理)、[F8](PRD.md#f8-状态与诊断)维护。
 
 ### 4.5 讨论与成果保存（Analysis已实现，Occurrence待设计）
 
-- 线程可从 Segment 原文直接开始，也可围绕明确选定的讲解或条目追问；只读取第 4.1 节范围的资料。使用的 Source、Segment、Revision／Section 等出处可追溯，不默认载入全部共享资料。
-- 新建 Analysis 与修改选定 Analysis 均支持。明确指定对象优先，其次可用唯一选中对象消解指代或沿用明确的持续任务目标；选中参考资料本身不授权修改，歧义时才澄清。实际工具操作需带明确身份和基础版本，不能只使用聊天中的标题或指代。
-- 普通问答只产生聊天内容与相应 Run，不自动写 Analysis 或 Occurrence。自然语言指令确定任务意图，线程权限模式与操作分类决定是否需要审核；提示词不能代替执行层的权限检查和数据校验。
-- 讨论理解若需保存，先形成自足讲解；候选条目必须定位原文并引用实际保存的修订与 Section。保存讲解与生成候选可一次请求组合，也可分别完成，用户之后自行收录或设为仅参考。候选失败不撤销已独立保存的讲解，待审核修改不能提前成为正式修订或条目出处；Analysis工具粒度、读写协议及恢复已在2C落实；候选部分仍待设计。
-- 修订时保持 AnalysisRevision 不可变；有显式身份映射的块可延续 uid，全量替换若无映射则分配新 uid。纯问答不产生修订。
-- 总体讲解快捷入口与对话中的生成请求复用同一能力：以主对话触发点的完整上下文快照启动内部生成分支，沿用本轮模型／Provider／参数及相同system和有效消息前缀，将专用写作指令追加末尾，直接生成Markdown，校验后创建Analysis与初始Revision；不让主模型在工具参数中复述上下文或传完整新文档。主对话接收成果身份、修订和真实保存结果，正文按需读取，不重复回灌分支写作模板。局部Section编辑在主对话执行，不自动判断Section语义依赖。具体落地见[2C验收记录](handovers/archived/STAGE_2C_ANALYSIS_TOOLS.md)。
+讨论行为及目标判定见[PRD F7](PRD.md#f7-片段讨论与成果整理)。执行层要求实际操作带明确对象身份与基础版本，不能用标题或聊天指代替代定位，提示词不能替代权限／数据校验。候选必须引用实际保存的Revision／Section，待审方案不能充当正式出处。修订保持不可变；显式身份映射可延续uid，全量替换无映射则分配新uid。生成内部机制集中在第4.1节。
 
-#### 基本工具与 Section 写操作的建议契约
+#### 已实现Analysis工具与Section写操作契约
 
-提供 Analysis 创建、讲解读取和按块编辑，候选查询、创建一个或多个 pending、修改 pending 的基本能力。Analysis 删除业务接口不注册为首轮 Agent 工具；候选手动创建入口暂缓，状态操作保留给用户界面。
+当前提供Analysis生成／保存、列表／确切版本读取和按块编辑；候选查询、创建一个或多个pending、修改pending仍为首轮目标，尚未实现。Analysis 删除业务接口不注册为首轮 Agent 工具；候选手动创建入口暂缓，状态操作保留给用户界面。
 
-建议每次 Section 写操作显式传入以下目标信息，不仅在线程初始化时选择一次 Analysis：
+当前Section写操作显式传入目标信息；实际工具名称和字段见[tools_v4.json](../backend/prompts/chat/tools_v4.json)：
 
 ```text
-update_section(analysis_id, base_revision_id, sid, title?, body?)
-insert_sections(analysis_id, base_revision_id, after_sid, sections[])
-delete_section(analysis_id, base_revision_id, sid)
+update_analysis_section(analysis_id, base_revision_id, sid, title?, body?)
+insert_analysis_sections(analysis_id, base_revision_id, after_sid?, sections[])
+delete_analysis_section(analysis_id, base_revision_id, sid)
+update_analysis_preamble(analysis_id, base_revision_id, body)
 ```
 
-- `analysis_id` 表达目标文档，`base_revision_id` 表达本次依据的不可变快照，`sid` 表达该快照中的稳定块身份；不能以展示编号或未限定文档的短 handle 跨文档定位。具体字段编码由正式工具 schema 定义。
+- `analysis_id` 表达目标文档，`base_revision_id` 表达本次依据的不可变快照，`sid` 表达该快照中的稳定块身份；不能以展示编号或未限定文档的短 handle 跨文档定位。当前sid使用读取返回的uid，section_ids也使用uid；展示handle不能替代uid。
 - 读取返回可直接用于写操作的文档、修订和块标识。写入检查 Analysis 属于当前 Segment、修订属于该 Analysis、目标块／插入锚点属于该修订，并检查基础修订仍是当前可写版本。标识不一致或版本已变化时反馈冲突，不隐式切换文档或猜测目标。
-- `update_section` 省略字段保持原值，改名与正文改写均针对同一块；整体替换指单个 Section 的内容替换。普通块仍需满足一个二级标题对应一个块的格式约束，块身份通过显式编辑映射保留。
-- `insert_sections` 插入的每个普通块有独立新身份，`after_sid` 为空可表示插在正文开头、Preamble 之后；空值与字段校验在 schema 中明确。`delete_section` 仅在新修订中移除目标块。
-- Preamble 可更新或清空正文，不强制普通标题；不能把它误当普通 Section 改名或物理移除。接口如何标识这种操作在 schema 中说明。
-- 审核绑定这些目标信息与具体变更。成功应用返回新的 Revision 及块标识；连续后续修改应基于实际返回的新修订，不能反复提交最初的基线。每次成功应用的文档变更形成新修订，多个基本操作如何组合提交由执行契约明确，不按聊天回合隐式覆盖全部历史。
+- `update_analysis_section` 省略字段保持原值，改名与正文改写均针对同一块；整体替换指单个 Section 的内容替换。普通块仍需满足一个二级标题对应一个块的格式约束，块身份通过显式编辑映射保留。
+- `insert_analysis_sections` 插入的每个普通块有独立新身份，`after_sid`省略表示插在正文开头、Preamble之后；当前工具schema未声明JSON null，不能把省略和null混为一谈。`delete_analysis_section` 仅在新修订中移除目标块。
+- Preamble 可更新或清空正文，不强制普通标题；不能把它误当普通 Section 改名或物理移除。当前由`update_analysis_preamble`单独表达。
+- 审核绑定这些目标信息与具体变更。成功应用返回新的 Revision 及块标识；连续后续修改应基于实际返回的新修订，不能反复提交最初的基线。每次成功应用的文档变更形成新修订，当前逐操作应用与审核，复杂组合提交仍待设计，不按聊天回合隐式覆盖全部历史。
 
-上述为架构建议签名，不预设提前实现所有路由或高频组合工具；后续 Shortcut tool 应复用相同归属、校验、审批和修订规则。
+以上为当前基本工具；生成通过`generate_analysis(title?)`进入内部写作分支，列表／读取通过`list_analyses`和`read_analysis`完成。不预设所有高频组合工具；后续Shortcut tool应复用相同归属、校验、审批和修订规则。
 
 #### 工具审核与执行边界
 
-- 按 PRD F9 提供线程级审核模式与 Full access，产品初始默认审核模式；用户可改新对话默认值，不修改既有线程。线程只在空闲时切换模式，运行和待审期间拒绝切换，结束或停止完成后才可更改。执行层验证这一限制，不自动批准挂起方案；实际模式与操作决定可追溯。组合方案展示仍见 `[TBD-17]`。
-- 审核模式下读／检索、明确要求的新建讲解、创建待整理候选默认可直接执行；修改已有讲解、修改已有待整理候选内容及已开放的删除工具需审核。修改候选后仍为 `pending`，批准修改不表示收录。Full access 省去逐次审批，不扩大工具集合或任务意图。
-- 执行层限制 Agent 创建只写 `pending`，内容修改只作用于当前仍为 `pending` 的条目且不能改整理状态。首轮不向 Agent 暴露收录、仅参考、退回待整理的状态操作，不能通过先创建再调用状态接口完成收录。用户界面的状态操作仍由对应业务接口支持，工具范围与用户操作分开。两种权限模式均执行这些约束。
-- 按工具实际效果检查权限；混合操作包含修改已有讲解或候选时，应审核对应效果，不能因含有免审创建而跳过。组合方案展示与恢复实现仍待契约细化，已成功保存的独立操作不因其余操作失败而回滚。
-- 服务层在执行写入前核对操作是否需审核及对应决定；审核绑定明确对象、基础版本和已展示的具体内容。用户同意只应用该方案，拒绝不写入。同意附加指令在本次应用成功后继续，拒绝附加指令可用于重做；不能以新指令改掉已批准内容后直接写入。
-- 应用前检查目标版本；基础版本已变化时不能覆盖新内容，须重新准备。审核模式重新提交方案，Full access 重新核对并准备操作但不增加审批。实际写入需防止重复应用，重试／刷新不得产生重复修订或条目。
-- 候选内容写入前也须重新核对整理状态与存在性：若用户已收录、设为仅参考或删除，旧方案不能执行，更不能自动改回待整理来修改。审批不覆盖此约束，执行检查与写入之间不能留出绕过状态边界的竞争窗口。
-- 记录审核等待、决定与实际执行结果。拒绝不是可自动重试的模型错误；通过审核也不等于写入成功。两种模式都执行原文定位、引用归属、不可变修订及删除范围校验。
-- 用户从管理界面删除整份 Analysis 等对象时保留 PRD F2 的范围确认；Agent 的 delete_section 属于讲解编辑，按线程模式审核并产生新修订。Full access 不开放整份 Analysis 删除或其他未提供的管理工具。
+用户权限模式、操作分类及同意／拒绝附加指令的行为由[PRD F9](PRD.md#f9-agent-工具权限与审核)维护，删除范围见[F2](PRD.md#f2-source-与片段)。执行层保留以下机制：
 
-#### 逐项反馈与失败修复
+- 线程空闲检查控制模式切换；模式与实际操作决定留痕。按工具实际效果核对权限，混合效果不能借免审创建跳过修改审核；Full access不扩大工具集合。整份Analysis删除不注册为Agent工具，Section删除仍形成新修订。复杂组合展示／恢复保留`[TBD-17]`未决。
+- 审核方案持久绑定明确对象、基础版本与已展示内容；决定只应用该方案，附加指令不改写已批准payload。应用前重新检查版本；陈旧方案不能覆盖新内容，需重新准备。审核模式重新提交方案，Full access重新核对但不增加审批；操作身份与payload幂等防止重复应用。
+- 未来候选写入限制创建pending、只修改当前pending且不改变整理状态。写入前同时核对存在性、内容及整理状态；检查与写入不得留下竞争窗口，旧方案不能把已收录／仅参考／删除的目标退回pending。两种模式均执行原文定位、引用归属、不可变修订和删除范围校验。
+- 审核等待、决定与实际执行结果分别记录；拒绝／权限不允许不触发技术重试，审批通过不代表写入成功。依赖操作只有实际成功保存后才可继续。
 
-- 工具结果区分已经保存、尚未保存和保存结果需要核实的条目／操作，返回成功记录标识及逐项失败原因。确定是否写入由执行层依据持久化结果判断，不由模型猜测；具体反馈 schema 待设计。
-- 字段、原文定位或引用错误不落地该无效结果，反馈给 Agent 修正；目标内容或状态改变先重新读取并遵守现有范围；临时故障允许有限重试。写入结果不确定时先核实本地实际结果，不盲目再创建。
-- 等待审核不是失败，用户拒绝或权限不允许不触发技术重试。用户附加的新指令可形成新方案，但不能反复重交已拒绝方案或绕过工具范围。
-- 只修复未成功部分，不重建已成功候选或重复应用已成功修改。未成功创建的候选修复仍走创建；已保存候选的内容修复走修改及审核。旧内容在修改失败时保留，单条无效／残缺写入不能计为部分成功。
-- 以独立且完整保存的成果为恢复边界：前置讲解成功、后续候选失败时保留讲解；中断或耗尽预算同样保留已保存成果。依赖操作只能引用实际成功保存的内容。
-- 执行预算耗尽后停止自动修复，持久保存成功记录与剩余问题，用户之后可继续。后续执行如何识别已完成操作、核实不确定写入和防止重复保存，须在实现前固定；有限预算不能只写在 prompt 中。
+#### 保存核实与失败恢复
+
+产品反馈与修复行为由[PRD F8](PRD.md#f8-状态与诊断)维护。执行层依据持久结果区分已保存、未保存及待核实，返回成功身份与具体错误；当前Analysis通过artifacts、工具结果及Job错误反馈，候选逐项schema仍待设计。
+
+- 无效字段、定位或引用不落库；目标内容／状态改变先重新读取。写入不确定先核实本地实际成果，不盲目重复创建。
+- 完整独立保存的成果是恢复边界；失败修改保留旧内容，后续失败／中断／预算耗尽不回滚已保存成果。只修复未成功部分，未保存创建仍走创建，已保存对象走修改及其审核，不重建成功项。
+- 操作身份／payload支持Analysis保存核实和去重，已保存但收尾失败的成果在后续轮恢复为持久事实。候选继续执行、核实与去重须在实现前落实。预算耗尽停止自动修复，持久保存成功记录及剩余问题；预算由执行层协调，不能只写在prompt中。
 
 ### 4.6 Job 与 Worker（`jobs/`）
 
-- 2B使用queued／running／stopping／succeeded／failed／interrupted状态；lifespan先取得同一数据库的单进程排他锁，再恢复中断状态并启动调度。调度按持久queued任务领取，问答与2A验证共用并发上限2，每Job一次生成、60秒调用预算；不新建第二套并发名额或重试循环。细节、取消处理上限及数据字段以[2B实施契约](handovers/archived/STAGE_2B_ASYNC_QA.md)为准。
-- 2B调用入口和停止／来源／片段删除的提交共用短进程互斥，并在进入适配器前核对持久状态；互斥不覆盖网络等待。每次进度／终态写入检查execution_token、活动Job身份与对象未删除；停止先持久撤销token，再取消执行，收尾后释放线程。Run、助手消息、Job终态与线程释放同事务提交。以下工具审核与多步骤成果规则属于后续切片，不表示2B提前交付。
-- Job 覆盖解析、AI 讨论回复及可选提取等已接受的后台任务；具体任务名和保存工具执行边界随入口协议确定。离开页面不取消任务。
-- 同一线程运行或待审核时不接受新一轮，不建立消息排队；输入草稿可保留在界面。同意／拒绝附加指令属于审核反馈而非新轮。不能只靠前端禁用按钮，接受任务时需检查线程是否空闲。一个线程待审不阻止其他独立线程提交任务，worker 可按资源调度。
-- 支持主动停止本轮：持久记录停止意图，停止后不启动该轮后续模型请求、修复或工具操作，取消未执行的待审核方案。已保存成果保留；正在提交的操作按实际持久化结果反馈，不声称停止能回滚已提交写入。停止处理完成才释放线程继续发送和切换模式；迟到结果不能重新启动被停止的操作。中断消息与成功讲解区分显示，停止、写入和审核决策之间的并发契约在实现前固定。
-- 2B重启将残留queued／running／stopping任务及关联未完成消息、Run统一标为interrupted并释放线程，不自动重放；已终态历史不改。2A验证Run仍沿用其中断语义，不能只修改Run而留下忙碌线程。重复后台实例拿不到进程锁时须直接退出，不运行恢复逻辑。
-- 任务级中断或失败不抹去已经保存的逐项成果。查询结果需表达实际成功项、未完成项及原因；Run 调用结束、工具保存成功和整个任务完成分别判断，不用单一成功标记掩盖部分完成。继续执行优先处理未完成项，执行层协调修复预算，避免重复应用。
-- 审核等待与模型执行中分开表达。持久保存待审核方案及依赖关系，离开页面或后台重启都不替用户决定或自动执行；返回后可继续处理。依赖写入的后续动作等待其实际成功，恢复与重复决定的幂等契约在实现前细化，不预设等待审核必须占用运行中的 worker。
+- 当前Job使用queued／running／waiting_review／stopping／succeeded／failed／interrupted状态；lifespan先取得同一数据库的单进程排他锁，再恢复中断状态并启动调度。调度按持久queued任务领取，问答／Analysis与2A验证共用并发上限2。2B交付时每Job一次生成、60秒调用预算；当前工具循环及内部写作分支使用第3.5节统一预算，不新建第二套并发名额或独立重试循环。实际实现见[`jobs/runtime.py`](../backend/src/app/jobs/runtime.py)与[`jobs/agent.py`](../backend/src/app/jobs/agent.py)，2B历史边界见[归档契约](handovers/archived/STAGE_2B_ASYNC_QA.md)。
+- 调用入口和停止／来源／片段删除的提交共用短进程互斥，并在进入适配器前核对持久状态；互斥不覆盖网络等待。每次进度／终态写入检查execution_token、活动Job身份与对象未删除；停止先持久撤销token，再取消执行，收尾后释放线程。当前多个Run及已保存成果分别留存，助手消息、Job终态与线程释放由收尾事务维护，不能用2B单次调用的终态规则推断整轮成果回滚。
+- 当前Job.kind为`chat_reply`和`analysis_generate`，覆盖普通讨论／工具循环与快捷总体讲解；可选提取任务仍为预留，尚无对应实现。离开页面不取消任务。
+- 接受事务检查线程空闲，数据库唯一活动Job约束和active_job_id阻止同线程运行／待审时接收新轮；审核决定走既有Job，不建立消息队列。独立线程按全局资源调度。用户草稿与等待行为见[PRD 6.6](PRD.md#66-异步操作与离开页面)。
+- 停止语义见[PRD 6.6](PRD.md#66-异步操作与离开页面)。执行层持久记录停止意图、撤销token并取消未执行方案；后续调用／修复／保存再核对授权，提交竞争依据实际持久结果反馈，收尾完成才释放线程。迟到结果不能恢复旧任务或方案；Analysis并发保护已落实，候选写入仍待其切片。
+- 当前重启将残留queued／running／stopping任务及关联未完成消息、Run统一标为interrupted并释放线程；waiting_review不在中断集合内，保留具体方案与线程活动身份供用户继续决定，不自动重放；已终态历史不改。2A验证Run仍沿用其中断语义，不能只修改Run而留下忙碌线程。重复后台实例拿不到进程锁时须直接退出，不运行恢复逻辑。
+- Run调用结束、工具保存成功和Job完成分别判断，查询依据持久成果返回成功项与未完成原因；恢复及预算复用第3.5／4.5节机制，不因任务终态抹去成果。产品反馈见[PRD F8](PRD.md#f8-状态与诊断)。
+- 审核等待与模型执行中分开表达。持久保存待审核方案及依赖关系，离开页面或后台重启都不替用户决定或自动执行；返回后可继续处理。依赖写入的后续动作等待其实际成功，Analysis已实现方案版本绑定、重复决定幂等和待审恢复，待审不占用模型并发名额；复杂组合依赖和候选恢复仍待设计。
 
-### 4.7 知识库查询（`services/library.py`）
+### 4.7 知识库查询（未来模块，`services/library.py`尚不存在）
 
 - 列表：按 `kind`、`status`、`source_id` 筛选；文本搜索匹配 `surface`、`anchors` 和 `gloss`（MVP 用 `LIKE`，P1 改用 FTS5）。
 - 分组：`group_by=anchor` 时按 `anchor_keys` 展开后分组；一条 Occurrence 有多个 anchor 时出现在多个组中 `[TBD-08]`。
-- 可按待整理、已收录、仅参考筛选；仅参考仍可查找与阅读。已删除记录不进入日常浏览，首轮不提供忽略／归档视图或恢复入口。积累库默认展示哪些未删除状态仍待 PRD 收口；再次整理的保留规则遵循 PRD F5，不强制用户管理批次。
+- 查询排除已删除记录；整理行为见[PRD F5](PRD.md#f5-学习条目创建与整理)，阅读与筛选范围见[F6](PRD.md#f6-知识库)。积累库默认展示哪些未删除状态仍待PRD收口。
 
-## 5. API 草图
+## 5. 当前API与未来草图
 
-所有接口以 `/api` 为前缀，最终以 FastAPI 生成的 OpenAPI 为准。Source／Segment 管理、选定 Analysis 及 Revision 的阅读、独立线程、Occurrence 创建和整理、Run／Job 查询都需要服务接口。以下仅列稳定资源方向，不预定未讨论的写入端点或工具协议：
+所有接口以`/api`为前缀，实际请求／响应以FastAPI生成的OpenAPI及[`frontend/src/api/schema.d.ts`](../frontend/src/api/schema.d.ts)为准。当前路由实现见[`api/`](../backend/src/app/api/)：
 
 ```text
-/profile, /styles, /sources, /segments
-/segments/{id}/analyses, /analyses/{id}/revisions, /revisions/{id}
-/segments/{id}/threads, /threads/{id}/messages
-/occurrences, /runs/{id}, /runs/{id}/events, /jobs/{id}
+/settings, /settings/profile, /settings/styles, /settings/defaults
+/providers, /providers/{provider_id}/refresh-models, /providers/{provider_id}/models
+/provider-models/{model_id}, /provider-models/{model_id}/verifications
+/sources, /sources/{source_id}, /sources/{source_id}/segments, /segments/{segment_id}
+/segments/{segment_id}/analyses, /analyses/{analysis_id}, /analyses/{analysis_id}/delete-impact
+/segments/{segment_id}/threads, /threads/{thread_id}, /threads/{thread_id}/messages
+/threads/{thread_id}/jobs, /threads/{thread_id}/jobs/by-request/{request_id}
+/jobs/{job_id}, /jobs/{job_id}/stop, /jobs/{job_id}/decision
+/runs, /runs/{run_id}
 ```
 
-Provider、模型与用途默认值需有统一配置接口；普通读取响应不得暴露密钥。需要 Analysis 创建与用户确认后的删除接口、Section 基本编辑操作、候选基本操作、停止本轮接口，以及线程权限与新对话默认模式、待审核方案读取和决定／执行结果查询。公开业务接口不等于全部注册为 Agent 工具，注册与执行均遵循当前 Segment 范围及工具权限。正式路径、请求／响应 schema、组合操作及恢复机制在实现前确定。
+指定历史讲解通过`GET /analyses/{analysis_id}?revision_id=...`读取；当前没有独立`/revisions/{id}`路由。Analysis生成／保存和Section编辑走Job执行及工具审核，没有绕过审核的公开编辑端点；整份Analysis删除提供影响预览及用户DELETE接口。线程权限与新对话默认模式、具体审核决定、停止及保存核实接口已实现。普通读取不返回密钥，公开业务接口不等于全部注册为Agent工具。
+
+Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未来资源方向；尚无`/occurrences`或`/runs/{id}/events`路由。其字段、组合操作和恢复机制须在对应切片确定，不从本节草图推定交付。
 
 ## 6. 前端结构
 
@@ -283,7 +280,7 @@ Provider、模型与用途默认值需有统一配置接口；普通读取响应
 
 收起讨论与返回讨论列表不卸载当前挂载的ThreadPanel，不等同于停止任务；保留本页草稿、待核实提交与审核补充要求。Segment按身份切换时重新挂载以隔离局部状态，同一Segment的查询参数变化不重新挂载。生成与审核继续使用已有Job／Run和确切成果引用，不新增后台协议或自动模型调用。视觉验收覆盖长原文与讲解对照、桌面独立滚动、窄屏和返回路径。
 
-以下为路由草图，不规定必须独立分屏或页面：
+以下标明当前路由与未来入口，实际定义见[`App.tsx`](../frontend/src/App.tsx)：
 
 | 路由 | 内容 |
 |---|---|
@@ -291,65 +288,61 @@ Provider、模型与用途默认值需有统一配置接口；普通读取响应
 | `/sources` | Source 列表 |
 | `/sources/:id` | Source 详情：片段列表和新增片段入口 |
 | `/segments/:id` | 片段阅读与按需展开的讨论；`analysis`／`revision`／`thread`／`chat`定位已有内容。Occurrence仍未实现 |
-| `/library` | 知识库：筛选、搜索、按 anchor 分组，每条都能跳转回来源 |
+| `/library`（未来，尚未注册） | 知识库：筛选、搜索、按 anchor 分组，每条都能跳转回来源 |
 | `/settings` | 学习背景、讲解预设、Provider／模型／用途默认值的维护，以及模型列表刷新与按需验证 |
 
 诊断入口按 PRD F8 确定，不预设独立完整调试页面为首轮前提。
 
-目录结构：
+当前前端按页面及chat／analysis／settings模块组织，尚未建立统一features目录；API类型在`api/schema.d.ts`生成，业务查询hooks位于各模块的`api.ts`。轮询由TanStack Query读取持久状态，没有SSE订阅工具。
 
-```
-frontend/src/
-  api/          # openapi 生成的类型与客户端（禁止手改）+ query hooks
-  components/   # 通用组件（含 shadcn/ui）
-  features/     # 按业务划分：sources, segments, analysis, occurrences, chat, settings, debug
-  routes/
-  lib/          # SSE 订阅等工具
-```
+## 7. 当前仓库目录
 
-## 7. 仓库目录
-
-```
+```text
 .
-├── AGENTS.md
-├── justfile
-├── config/
-│   └── app.example.toml  # 应用运行配置；模型接入配置存储另行确定
-├── docs/            # PRD.md, TECH_STACK.md, ARCHITECTURE.md, adr/
+├── AGENTS.md / justfile
+├── config/app.example.toml      # 运行配置；模型配置在SQLite
+├── docs/                       # 长期规范与handovers
 ├── backend/
-│   ├── pyproject.toml
+│   ├── pyproject.toml / uv.lock
 │   ├── alembic/
 │   ├── prompts/
-│   │   ├── analysis/     # system.j2, profile.j2, style.j2, user.j2
-│   │   ├── extraction/   # system.j2, anchor_rules.md
-│   │   └── chat/
+│   │   ├── model_verification_v1.j2 / default_explanation_style_v1.j2
+│   │   ├── chat/                # system、user、工具定义和历史／成果模板
+│   │   └── analysis/            # writer版本化模板
 │   ├── src/app/
-│   │   ├── main.py       # FastAPI 应用、lifespan、静态文件托管
-│   │   ├── api/          # 路由
-│   │   ├── schemas/      # Pydantic API 模型
-│   │   ├── db/           # ORM 模型、会话
-│   │   ├── services/     # context, normalizer, extraction, chat, library ...
-│   │   ├── llm/          # config, client, cache, stream
-│   │   ├── jobs/
-│   │   └── nlp/          # sudachi 封装
-│   └── tests/
-│       ├── corpus/       # 固定回归语料
-│       └── cassettes/    # LLM 录制响应
-├── frontend/
-└── data/            # 运行时数据（gitignore）：app.db, llm_cache/
+│   │   ├── main.py / config.py / db.py / ids.py
+│   │   ├── models.py / schemas.py
+│   │   ├── settings_models.py / settings_schemas.py
+│   │   ├── chat_models.py / chat_schemas.py
+│   │   ├── analysis_models.py / analysis_schemas.py
+│   │   ├── api/                 # health、sources、settings、chat、analyses
+│   │   ├── services/            # health、sources、settings、context、chat、analyses、normalizer
+│   │   ├── llm/adapters.py       # 两种协议与文本／工具调用适配
+│   │   └── jobs/                # runtime与agent
+│   └── tests/                   # 离线API、服务、迁移、适配器与运行边界测试
+├── frontend/src/
+│   ├── api/                     # 生成类型与客户端
+│   ├── App.tsx / SourcePages.tsx / SegmentPage.tsx
+│   ├── Shared.tsx / Forms.tsx / navigation.ts / content.ts / styles.css
+│   └── analysis/ / chat/ / settings/
+└── data/                       # gitignore：默认app.db与独立凭据目录
 ```
+
+`services/extraction.py`、`services/library.py`、`nlp/`、`prompts/extraction/`、测试`corpus/`／`cassettes/`与`data/llm_cache/`尚未建立；上文相关规格保留为未来规则，不表示当前存在这些模块。
 
 ## 8. 测试策略
 
+当前`just test`运行后端pytest与前端Node.js纯逻辑测试。现有覆盖见[`backend/tests/`](../backend/tests/)；下列Occurrence／提取规则是未来实现的验收要求，不能作为当前通过证据。
+
 - **规范化器**：单元测试加 hypothesis 性质测试（R1、R2、R3），并覆盖边界用例：没有 h2、代码块中的 `#`、Setext 标题、结尾没有换行、CRLF 换行。
-- **提取校验**：纯函数测试，覆盖 surface 定位、不连续片段、非法 handle 等情况。
-- **再次整理与部分失败**：覆盖已有条目与状态保留、pending 内容及出处修改、旧引用不漂移；部分创建成功保留、无效项不入库、整体不可解析不冒充部分成功、零新增正常完成、已保存讲解不随候选失败回滚。验证错误反馈与实际保存结果一致，写入不确定时先核实、修复不重建成功项、预算耗尽保留成果且不无界重试。
+- **提取校验（未来）**：纯函数测试，覆盖 surface 定位、不连续片段、非法 handle 等情况。
+- **再次整理与部分失败（候选部分为未来）**：覆盖已有条目与状态保留、pending 内容及出处修改、旧引用不漂移；部分创建成功保留、无效项不入库、整体不可解析不冒充部分成功、零新增正常完成、已保存讲解不随候选失败回滚。验证错误反馈与实际保存结果一致，写入不确定时先核实、修复不重建成功项、预算耗尽保留成果且不无界重试。
 - **多文档与运行边界**：覆盖 Analysis／Revision／Section 错配和陈旧基线拒绝、三种块编辑产生修订及旧引用保留、用户删除 Analysis 保留线程；验证 Agent 不能跨 Segment 或读取其他线程历史，同线程运行／待审不能重复接收新轮或切换模式、待审不占住其他线程，以及停止取消未执行方案、保留实际已保存成果并阻断后续写入。
-- **工具审核**：覆盖审核模式分类与 Full access、具体方案同意／拒绝、附加指令不改变已批准内容、离开／重启后待审核可找回、旧版本不覆盖新版本、重复决定不重复写入，以及审批通过后写入失败。验证两种模式均只能创建 pending、修改 pending 后仍保持状态，且审核期间已被用户收录／设为参考／删除的候选不能继续修改。使用离线数据与模拟调用验证，不调用真实模型。
-- **LLM 相关流程**：**测试中禁止发起真实网络请求。** 使用录制与回放：以 `RECORD=1` 运行时调用真实模型，把响应写入 `tests/cassettes/`；默认模式只回放，找不到录制就让测试失败。
-- **回归语料**：`tests/corpus/` 中放 5 到 10 条代表性片段（包括口语缩略、不连续语法、长句），用于检查提取结果的校验通过率。
-- **API**：使用 FastAPI TestClient，配合临时 SQLite 数据库。
-- **前端**：以类型检查为主；界面效果由 coding agent 用浏览器能力实际打开页面验证。
+- **工具审核（候选部分为未来）**：覆盖审核模式分类与 Full access、具体方案同意／拒绝、附加指令不改变已批准内容、离开／重启后待审核可找回、旧版本不覆盖新版本、重复决定不重复写入，以及审批通过后写入失败。验证两种模式均只能创建 pending、修改 pending 后仍保持状态，且审核期间已被用户收录／设为参考／删除的候选不能继续修改。使用离线数据与模拟调用验证，不调用真实模型。
+- **LLM相关流程**：**测试中禁止发起真实网络请求。** 当前由`conftest.py`自动禁用socket连接，使用假适配器、内存流及`httpx.MockTransport`验证真实协议字段和运行状态。尚无`RECORD=1`录制／回放入口；未来需要真实LLM响应时由人类录制并保存至`tests/cassettes/`，默认测试只回放，缺录制应失败，不在测试中绕过网络禁令。
+- **回归语料（未来）**：`tests/corpus/` 中放 5 到 10 条代表性片段（包括口语缩略、不连续语法、长句），用于检查提取结果的校验通过率。
+- **API**：当前使用`httpx.AsyncClient`与`ASGITransport`，配合临时SQLite数据库及应用lifespan；覆盖接受幂等、并发／停止／删除、审核恢复及空库／增量迁移。
+- **前端**：TypeScript类型检查加Node.js纯逻辑测试，覆盖导航、确切成果链接、恢复显示、审核及布局状态；界面效果仍由coding agent实际打开浏览器验证，历史验收见[阅读导航记录](handovers/archived/READING_NAVIGATION_ACCEPTANCE.md)。离线验收不证明真实模型教学质量或第三方工具兼容性。
 
 ## 9. 演进预留
 

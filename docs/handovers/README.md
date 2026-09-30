@@ -1,11 +1,10 @@
 # 阶段性交接
 
-本目录只放当前阶段可执行的指导；完成或被新决策取代后移入 [archived/](archived/)。长期规范见 [文档导航](../README.md)，产品行为以 [PRD](../PRD.md) 为准。归档材料保存历史上下文，不能据此恢复过时的产品需求。
+本目录保存当前实施基线和阶段指导；阶段任务完成或被新决策取代后移入 [archived/](archived/)。长期规范见 [文档导航](../README.md)，产品行为以 [PRD](../PRD.md) 为准。归档材料保存历史上下文，不能据此恢复过时的产品需求。
 
 ## Active
 
-- [全链路提示词聚合视图](PROMPT_CHAIN_REVIEW.md)：当前实际system、工具、生成分支及历史恢复模板，包含加载条件与虚构输入渲染示例。
-- [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：已确认的首轮能力与切片约束；Analysis切片已完成，后续Occurrence须先落实字段与anchor契约。
+- [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：集中记录已实现能力、首轮目标差额、尚未落实的契约及验收依据；产品规则链接至负责规范，不另立交付顺序。
 
 ## Archived
 
