@@ -17,14 +17,14 @@ export function Shell({ children }: { children: ReactNode }) {
 	return (
 		<div className="app-shell">
 			<header className="topbar">
-				<Link className="brand" to="/" aria-label="Folio-J 来源目录">
+				<Link className="brand" to="/" aria-label="Folio-J">
 					<span className="brand-mark" aria-hidden="true">
 						文
 					</span>
 					<span>Folio-J</span>
 				</Link>
 				<nav className="topbar-nav" aria-label="主导航">
-					<Link to="/">来源目录</Link>
+					<Link to="/sources">来源目录</Link>
 					<Link to="/settings">设置</Link>
 				</nav>
 			</header>
@@ -46,7 +46,7 @@ export function PageError({
 				<h1>{missing ? "找不到这条记录" : "暂时无法加载"}</h1>
 				<p>{displayError(error)}</p>
 				<div className="actions">
-					<Link className="button secondary" to="/">
+					<Link className="button secondary" to="/sources">
 						返回来源目录
 					</Link>
 					{retry && !missing && (

@@ -33,6 +33,7 @@ import {
 	draftAfterAcceptance,
 	submissionMayHaveSucceeded,
 	threadChanged,
+	usableThread,
 } from "./state";
 
 type Pending = { input: JobInput; uncertain: boolean };
@@ -203,10 +204,16 @@ function ThreadPanel({
 			const previous = client.getQueryData<Thread>(chatKeys.thread(threadId));
 			return previous && previous.revision > fresh.revision ? previous : fresh;
 		},
+		select: (item) => {
+			if (item.segment_id !== segment.id)
+				throw new Error("这条讨论不属于当前片段，请返回对话列表选择。");
+			return item;
+		},
 		refetchInterval: 2000,
 	});
 	const history = useInfiniteQuery({
 		queryKey: chatKeys.messages(threadId),
+		enabled: thread.isSuccess,
 		queryFn: ({ pageParam }) => listMessages(threadId, pageParam),
 		initialPageParam: 0,
 		getNextPageParam: (page) => page.next_cursor ?? undefined,
@@ -342,7 +349,12 @@ function ThreadPanel({
 		void client.invalidateQueries({ queryKey: analysisKeys.list(segment.id) });
 		void client.invalidateQueries({ queryKey: ["analysis"] });
 		const artifact = job.artifacts?.[0];
-		if (artifact?.analysis_id && artifact.revision_id) {
+		if (
+			artifact?.analysis_id &&
+			artifact.revision_id &&
+			job.kind !== "generate_analysis"
+		) {
+			// Quick generation is opened by the reader, which tracks intervening navigation.
 			onOpenArtifact(artifact.analysis_id, artifact.revision_id);
 		}
 	}, [active.data, client, threadId, segment.id, onOpenArtifact]);
@@ -464,6 +476,7 @@ function ThreadPanel({
 			!quickGenerateToken ||
 			quickHandled.current === quickGenerateToken ||
 			!thread.data ||
+			!usableThread(thread.data, segment.id, thread.isSuccess) ||
 			!providers.isSuccess ||
 			!settings.isSuccess ||
 			!history.isSuccess
@@ -484,6 +497,8 @@ function ThreadPanel({
 	}, [
 		quickGenerateToken,
 		thread.data,
+		thread.isSuccess,
+		segment.id,
 		providers.isSuccess,
 		settings.isSuccess,
 		history.isSuccess,
@@ -816,11 +831,15 @@ function ThreadPanel({
 export function Workbench({
 	segment,
 	generateToken,
+	selectedThreadId,
+	onSelectThread,
 	onGenerationAccepted,
 	onOpenArtifact,
 }: {
 	segment: Segment;
 	generateToken: string | null;
+	selectedThreadId: string | null;
+	onSelectThread: (threadId: string | null) => void;
 	onGenerationAccepted: (job: Job) => void;
 	onOpenArtifact: (analysisId: string, revisionId: string) => void;
 }) {
@@ -831,8 +850,10 @@ export function Workbench({
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (page) => page.next_cursor ?? undefined,
 	});
-	const [selected, setSelected] = useState<string | null>(null);
-	const [view, setView] = useState<"list" | "detail">("list");
+	const [selected, setSelected] = useState<string | null>(selectedThreadId);
+	const [view, setView] = useState<"list" | "detail">(
+		selectedThreadId ? "detail" : "list",
+	);
 	const [drafts, setDrafts] = useState<Record<string, Draft>>({});
 	const [pending, setPending] = useState<Record<string, Pending | null>>({});
 	const [createKey, setCreateKey] = useState<string | null>(null);
@@ -846,10 +867,36 @@ export function Workbench({
 		queryFn: getProviders,
 	});
 	const allThreads = threads.data?.pages.flatMap((page) => page.items) ?? [];
-	const selectedThread = allThreads.find((item) => item.id === selected);
+	const selectedInfo = useQuery({
+		queryKey: chatKeys.thread(selected ?? ""),
+		queryFn: () => getThread(selected ?? ""),
+		enabled: Boolean(selected),
+	});
+	const selectedThread = usableThread(
+		selectedInfo.data,
+		segment.id,
+		selectedInfo.isSuccess,
+	);
 	useEffect(() => {
-		if (!selected && allThreads[0]) setSelected(allThreads[0].id);
-	}, [selected, allThreads]);
+		// Keep valid panels mounted for drafts and review instructions, but do not
+		// reuse a failed or foreign target after returning to the thread list.
+		if (
+			!selectedThreadId &&
+			(selectedInfo.isError || selectedInfo.isSuccess) &&
+			!usableThread(selectedInfo.data, segment.id, true)
+		)
+			setSelected(null);
+	}, [
+		selectedThreadId,
+		selectedInfo.isError,
+		selectedInfo.isSuccess,
+		selectedInfo.data,
+		segment.id,
+	]);
+	useEffect(() => {
+		if (selectedThreadId) setSelected(selectedThreadId);
+		setView(selectedThreadId ? "detail" : "list");
+	}, [selectedThreadId]);
 	useEffect(() => {
 		if (generateToken) setView("detail");
 	}, [generateToken]);
@@ -868,6 +915,7 @@ export function Workbench({
 		onSuccess: (item) => {
 			setCreateKey(null);
 			setSelected(item.id);
+			onSelectThread(item.id);
 			setView("detail");
 			void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
 		},
@@ -915,6 +963,7 @@ export function Workbench({
 							className="chat-thread"
 							onClick={() => {
 								setSelected(item.id);
+								onSelectThread(item.id);
 								setView("detail");
 							}}
 						>
@@ -977,7 +1026,10 @@ export function Workbench({
 						type="button"
 						className="chat-back-button"
 						aria-label="返回对话列表"
-						onClick={() => setView("list")}
+						onClick={() => {
+							setView("list");
+							onSelectThread(null);
+						}}
 					>
 						←
 					</button>

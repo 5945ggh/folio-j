@@ -267,7 +267,15 @@ export function SourceDetail() {
 			void client.invalidateQueries({ queryKey: queries.source(id) });
 			void client.invalidateQueries({ queryKey: queries.sources });
 			void client.invalidateQueries({ queryKey: queries.segments(id) });
-			if (activeId.current === id) navigate(`/segments/${segment.id}`);
+			if (activeId.current === id)
+				navigate(`/segments/${segment.id}`, {
+					state: {
+						returnTo: {
+							to: `/sources/${id}`,
+							label: source.data?.title ?? "来源详情",
+						},
+					},
+				});
 		},
 	});
 	if (source.isPending) return <Loading />;
@@ -278,7 +286,7 @@ export function SourceDetail() {
 	return (
 		<Shell>
 			<nav className="breadcrumb" aria-label="位置">
-				<Link to="/">来源目录</Link>
+				<Link to="/sources">来源目录</Link>
 				<span aria-hidden="true">/</span>
 				<span aria-current="page">{source.data.title}</span>
 			</nav>
@@ -372,6 +380,9 @@ export function SourceDetail() {
 								className="segment-row"
 								key={segment.id}
 								to={`/segments/${segment.id}`}
+								state={{
+									returnTo: { to: `/sources/${id}`, label: source.data.title },
+								}}
 							>
 								<span className="segment-text" lang="ja">
 									{segment.text}
@@ -400,7 +411,7 @@ export function SourceDetail() {
 					close={() => setDeleting(false)}
 					deleted={() => {
 						void client.invalidateQueries({ queryKey: queries.sources });
-						if (activeId.current === id) navigate("/");
+						if (activeId.current === id) navigate("/sources");
 					}}
 				/>
 			)}

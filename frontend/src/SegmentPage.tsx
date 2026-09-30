@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import {
+	type CSSProperties,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { AnalysisPanel } from "./analysis/AnalysisPanel";
 import { analysisKeys } from "./analysis/api";
 import { api } from "./api/client";
@@ -22,6 +28,12 @@ import {
 	type SegmentFields,
 } from "./content";
 import { SegmentForm } from "./Forms";
+import {
+	readSegmentLocation,
+	returnDestination,
+	type SegmentLocation,
+	updateSegmentLocation,
+} from "./navigation";
 import {
 	ConfirmDialog,
 	dateLabel,
@@ -124,17 +136,76 @@ function DetailField({
 export function SegmentDetail() {
 	const { id = "" } = useParams();
 	const navigate = useNavigate();
-	const client = useQueryClient();
+	const location = useLocation();
+	const {
+		analysisId: selectedAnalysis,
+		revisionId: selectedRevision,
+		threadId: selectedThread,
+		chatOpen,
+	} = readSegmentLocation(location.search);
+	const returnTo = returnDestination(location.state);
+	const locationRef = useRef({ rendered: location, latest: location });
+	if (locationRef.current.rendered !== location) {
+		locationRef.current = { rendered: location, latest: location };
+	}
 	const activeId = useRef<string | null>(id);
-	activeId.current = id;
+	const updateLocation = useCallback(
+		(patch: Partial<SegmentLocation>) => {
+			if (activeId.current !== id) return;
+			const latest = locationRef.current.latest;
+			const next = {
+				...latest,
+				search: updateSegmentLocation(latest.search, patch),
+				hash:
+					patch.analysisId !== undefined || patch.revisionId !== undefined
+						? ""
+						: latest.hash,
+			};
+			// Merge consecutive updates before React Router delivers its next render.
+			locationRef.current.latest = next;
+			navigate(
+				{ pathname: next.pathname, search: next.search, hash: next.hash },
+				{ state: next.state },
+			);
+		},
+		[navigate, id],
+	);
+	const setChatOpen = (open: boolean) => updateLocation({ chatOpen: open });
+	const [originalExpanded, setOriginalExpanded] = useState(false);
+	const originalRef = useRef<HTMLElement>(null);
+	const analysisRef = useRef<HTMLElement>(null);
+	const readerRef = useRef<HTMLElement>(null);
+	const scrollReading = (target: "original" | "analysis") => {
+		requestAnimationFrame(() => {
+			const reader = readerRef.current;
+			const section =
+				target === "original" ? originalRef.current : analysisRef.current;
+			if (!reader || !section) return;
+			const reference = originalRef.current;
+			const inset =
+				target === "analysis" &&
+				reference &&
+				getComputedStyle(reference).position === "sticky"
+					? reference.getBoundingClientRect().height + 16
+					: 15;
+			reader.scrollTo({
+				top:
+					reader.scrollTop +
+					section.getBoundingClientRect().top -
+					reader.getBoundingClientRect().top -
+					inset,
+			});
+		});
+	};
+	const client = useQueryClient();
 	useEffect(() => {
+		activeId.current = id;
 		return () => {
 			activeId.current = null;
 		};
-	}, []);
+	}, [id]);
 	const [editing, setEditing] = useState(false);
 	const [deleting, setDeleting] = useState(false);
-	const [chatOpen, setChatOpen] = useState(true);
 	const [conversationWidth, setConversationWidth] = useState(
 		initialConversationWidth,
 	);
@@ -148,12 +219,13 @@ export function SegmentDetail() {
 		lastWidth: number;
 	} | null>(null);
 	const widthRange = conversationWidthRange(workspaceWidth);
-	const [readerTab, setReaderTab] = useState<"source" | "analysis">("source");
-	const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
-	const [selectedRevision, setSelectedRevision] = useState<string | null>(null);
 	const [generateToken, setGenerateToken] = useState<string | null>(null);
 	const [generationJobId, setGenerationJobId] = useState<string | null>(null);
 	const openedGenerationArtifact = useRef<string | null>(null);
+	const generationReading = useRef<{
+		analysisId: string | null;
+		revisionId: string | null;
+	} | null>(null);
 	const generation = useQuery({
 		queryKey: chatKeys.job(generationJobId ?? ""),
 		queryFn: () => getJob(generationJobId ?? ""),
@@ -170,11 +242,20 @@ export function SegmentDetail() {
 		const key = `${generation.data?.id}:${artifact.analysis_id}:${artifact.revision_id}`;
 		if (openedGenerationArtifact.current === key) return;
 		openedGenerationArtifact.current = key;
-		setSelectedAnalysis(artifact.analysis_id);
-		setSelectedRevision(artifact.revision_id);
-		setReaderTab("analysis");
 		void client.invalidateQueries({ queryKey: analysisKeys.list(id) });
-	}, [generation.data, client, id]);
+		const latest = readSegmentLocation(locationRef.current.latest.search);
+		const requested = generationReading.current;
+		if (
+			!requested ||
+			latest.analysisId !== requested.analysisId ||
+			latest.revisionId !== requested.revisionId
+		)
+			return;
+		updateLocation({
+			analysisId: artifact.analysis_id,
+			revisionId: artifact.revision_id,
+		});
+	}, [generation.data, client, id, updateLocation]);
 	const [menuOpen, setMenuOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 	const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -211,6 +292,23 @@ export function SegmentDetail() {
 		observer.observe(workspaceRef.current);
 		return () => observer.disconnect();
 	}, [segment.isSuccess]);
+	useEffect(() => {
+		const reference = originalRef.current;
+		const reader = readerRef.current;
+		if (!segment.isSuccess || !reference || !reader) return;
+		const measureReference = () => {
+			reader.style.setProperty(
+				"--original-reference-height",
+				selectedAnalysis
+					? `${reference.getBoundingClientRect().height}px`
+					: "0px",
+			);
+		};
+		measureReference();
+		const observer = new ResizeObserver(measureReference);
+		observer.observe(reference);
+		return () => observer.disconnect();
+	}, [segment.isSuccess, selectedAnalysis]);
 	const source = useQuery({
 		queryKey: queries.source(segment.data?.source_id ?? ""),
 		queryFn: () => getSource(segment.data?.source_id ?? ""),
@@ -290,9 +388,9 @@ export function SegmentDetail() {
 		<div className={`segment-shell ${chatOpen ? "" : "conversation-closed"}`}>
 			<nav className="segment-rail" aria-label="工作台导航">
 				<Link
-					to={`/sources/${current.source_id}`}
-					title="返回来源"
-					aria-label="返回来源"
+					to={returnTo.to}
+					title={`返回${returnTo.label}`}
+					aria-label={`返回${returnTo.label}`}
 				>
 					<WorkspaceIcon name="back" />
 				</Link>
@@ -321,7 +419,9 @@ export function SegmentDetail() {
 			</nav>
 			<header className="segment-toolbar">
 				<div className="segment-toolbar-title">
-					<strong>{source.data?.title ?? "来源"}</strong>
+					<Link to={`/sources/${current.source_id}`} title="查看所属来源">
+						{source.data?.title ?? "来源"}
+					</Link>
 					<span>{current.source_ref || "片段阅读"}</span>
 				</div>
 				<div className="segment-toolbar-actions">
@@ -381,84 +481,134 @@ export function SegmentDetail() {
 					{ "--conversation-width": `${conversationWidth}px` } as CSSProperties
 				}
 			>
-				<main className="segment-reader">
+				<main className="segment-reader" ref={readerRef}>
 					<div className="segment-reader-inner">
-						<div className="reader-tabs" role="tablist" aria-label="阅读内容">
-							<button
-								type="button"
-								role="tab"
-								aria-selected={readerTab === "source"}
-								onClick={() => setReaderTab("source")}
-							>
+						<nav className="reader-navigation" aria-label="片段内容导航">
+							<button type="button" onClick={() => scrollReading("original")}>
 								原文
 							</button>
 							<button
 								type="button"
-								role="tab"
-								aria-selected={readerTab === "analysis"}
-								onClick={() => setReaderTab("analysis")}
+								onClick={() => {
+									updateLocation({ analysisId: null, revisionId: null });
+									scrollReading("analysis");
+								}}
 							>
 								讲解
 							</button>
-						</div>
-						<div hidden={readerTab !== "source"}>
+							<button
+								type="button"
+								aria-expanded={chatOpen}
+								aria-controls="segment-conversation"
+								onClick={() =>
+									updateLocation({ chatOpen: true, threadId: null })
+								}
+							>
+								讨论
+							</button>
+						</nav>
+						<section
+							ref={originalRef}
+							id="segment-original"
+							aria-label="原文"
+							className={`original-reading ${selectedAnalysis ? "original-reference" : ""} ${originalExpanded ? "original-expanded" : ""}`}
+						>
 							<div className="segment-reader-label">
-								<span>原文</span>
-								<span>{dateLabel(current.created_at)} 保存</span>
+								<span>{selectedAnalysis ? "原文参照" : "原文"}</span>
+								{selectedAnalysis && (
+									<button
+										type="button"
+										className="analysis-quiet-button"
+										aria-expanded={originalExpanded}
+										aria-controls="segment-original-content"
+										onClick={() => setOriginalExpanded(!originalExpanded)}
+									>
+										{originalExpanded ? "收起参照" : "展开原文"}
+									</button>
+								)}
+								<span className="segment-saved-at">
+									{dateLabel(current.created_at)} 保存
+								</span>
 							</div>
-							<p className="segment-original" lang="ja">
-								{current.text}
-							</p>
-							{current.translation && (
-								<DetailField label="译文" value={current.translation} />
-							)}
-							{(current.context_before ||
-								current.context_after ||
-								current.transcription ||
-								current.note ||
-								current.source_ref) && (
-								<details className="segment-reader-more">
-									<summary>补充资料</summary>
-									<div className="segment-reader-fields">
-										<DetailField
-											label="前文"
-											value={current.context_before}
-											lang="ja"
-										/>
-										<DetailField
-											label="后文"
-											value={current.context_after}
-											lang="ja"
-										/>
-										<DetailField
-											label="听写"
-											value={current.transcription}
-											lang="ja"
-										/>
-										<DetailField label="具体出处" value={current.source_ref} />
-										<DetailField label="个人管理备注" value={current.note} />
-									</div>
-								</details>
-							)}
-						</div>
-						<div hidden={readerTab !== "analysis"}>
+							<div
+								id="segment-original-content"
+								className="original-content"
+								tabIndex={selectedAnalysis ? 0 : undefined}
+							>
+								<p className="segment-original" lang="ja">
+									{current.text}
+								</p>
+								{current.translation && (
+									<DetailField label="译文" value={current.translation} />
+								)}
+								{(current.context_before ||
+									current.context_after ||
+									current.transcription ||
+									current.note ||
+									current.source_ref) && (
+									<details className="segment-reader-more">
+										<summary>补充资料</summary>
+										<div className="segment-reader-fields">
+											<DetailField
+												label="前文"
+												value={current.context_before}
+												lang="ja"
+											/>
+											<DetailField
+												label="后文"
+												value={current.context_after}
+												lang="ja"
+											/>
+											<DetailField
+												label="听写"
+												value={current.transcription}
+												lang="ja"
+											/>
+											<DetailField
+												label="具体出处"
+												value={current.source_ref}
+											/>
+											<DetailField label="个人管理备注" value={current.note} />
+										</div>
+									</details>
+								)}
+							</div>
+						</section>
+						<section
+							ref={analysisRef}
+							id="segment-analyses"
+							aria-label="讲解"
+							className="segment-analyses"
+						>
 							<AnalysisPanel
 								segmentId={current.id}
 								selectedId={selectedAnalysis}
 								revisionId={selectedRevision}
 								onSelect={(analysisId, revisionId) => {
-									setSelectedAnalysis(analysisId || null);
-									setSelectedRevision(revisionId);
-									setReaderTab("analysis");
+									updateLocation({
+										analysisId: analysisId || null,
+										revisionId,
+									});
+									setOriginalExpanded(false);
+									scrollReading("analysis");
 								}}
 								onGenerate={() => {
+									const latest = readSegmentLocation(
+										locationRef.current.latest.search,
+									);
+									generationReading.current = {
+										analysisId: latest.analysisId,
+										revisionId: latest.revisionId,
+									};
 									setChatOpen(true);
-									setReaderTab("analysis");
 									setGenerateToken(crypto.randomUUID());
 								}}
+								onDiscuss={() =>
+									updateLocation({ chatOpen: true, threadId: null })
+								}
 								job={generation.data}
 							/>
-						</div>
+						</section>
 					</div>
 				</main>
 				<aside
@@ -540,15 +690,21 @@ export function SegmentDetail() {
 					<Workbench
 						key={current.id}
 						segment={current}
+						selectedThreadId={selectedThread}
+						onSelectThread={(threadId) =>
+							updateLocation({ threadId, chatOpen: true })
+						}
 						generateToken={generateToken}
 						onGenerationAccepted={(job: Job) => {
+							if (activeId.current !== id) return;
 							setGenerationJobId(job.id);
+							updateLocation({ threadId: job.thread_id });
 							setGenerateToken(null);
 						}}
 						onOpenArtifact={(analysisId, revisionId) => {
-							setSelectedAnalysis(analysisId);
-							setSelectedRevision(revisionId);
-							setReaderTab("analysis");
+							updateLocation({ analysisId, revisionId });
+							setOriginalExpanded(false);
+							scrollReading("analysis");
 						}}
 					/>
 				</aside>

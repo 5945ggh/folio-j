@@ -2,6 +2,14 @@ import type { JobInput, Thread } from "./api";
 
 export type Draft = { question: string; additional: string };
 
+export function usableThread<T extends { segment_id: string }>(
+	thread: T | undefined,
+	segmentId: string,
+	isSuccess: boolean,
+): T | null {
+	return isSuccess && thread?.segment_id === segmentId ? thread : null;
+}
+
 export function draftAfterAcceptance(
 	current: Draft,
 	submitted: JobInput,

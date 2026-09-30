@@ -9,6 +9,8 @@
 
 ## Archived
 
+- [2C 后阅读与导航打磨验收](archived/READING_NAVIGATION_ACCEPTANCE.md)：普通入口阅读、原文参照、精确导航及讲解总标题已通过离线验收；记录恢复修复、浏览器证据与限制。
+
 - [第二阶段2C：Analysis与成果工具](archived/STAGE_2C_ANALYSIS_TOOLS.md)：生成并保存、确切修订读取、Section编辑／审核已完成离线验收；保留迁移、协议、浏览器及限制证据。
 
 - [第二阶段 2B：片段后台异步问答](archived/STAGE_2B_ASYNC_QA.md)：已完成实现与离线验收；保留输入快照、原子锁定、持久历史、停止／重启、迁移及浏览器证据。
