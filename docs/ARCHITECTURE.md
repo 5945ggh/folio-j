@@ -133,7 +133,7 @@ erDiagram
 
 职责：按操作把学习背景、片段、偏好及选定资料组装为 messages，是**唯一**拼接 prompt 的地方。首轮 Agent 仅按需读取当前 Segment 的原文、语境、Analysis／Revision／Section／Occurrence、必要 Source 信息、本线程历史与适用的学习背景／偏好；不跨片段检索、不搜索其他线程聊天历史。其他线程保存到本 Segment 的持久讲解可共享，用户界面的跨片段积累库不受此 Agent 边界限制。读取工具由执行层校验对象的 Segment 归属，不能只在 prompt 中限制。内容和执行状态以持久数据为准，来源实际使用情况留痕。
 
-当前主对话加载`prompts/chat/system_v4.j2`、`user_v2.j2`和`tools_v3.json`，组合版本记录为`v4+tools_v3`。system区分普通问答、专题／总体讲解及内部写作场景；完整文档组织预设只在明确请求对应产物时生效。背景、预设、材料和本轮要求以user后缀加入，接受时固定。旧Job／Run的实际输入与版本不随升级改写，用户数据库中的预设也不自动覆盖。
+当前主对话加载`prompts/chat/system_v4.j2`、`user_v2.j2`和`tools_v4.json`，组合版本记录为`v4+tools_v4`。system区分普通问答、专题／总体讲解及内部写作场景；完整文档组织预设只在明确请求对应产物时生效。背景、预设、材料和本轮要求以user后缀加入，接受时固定。旧Job／Run的实际输入与版本不随升级改写，用户数据库中的预设也不自动覆盖。`generate_analysis`可传入独立的`title`（去除首尾空白并做NFC规范化后为1–200字符），省略时沿用首个二级标题／正文摘录的系统取名；总标题不随Section编辑改写。快捷总体讲解继续由系统自动取名。
 
 内部Analysis分支沿用父调用的Provider、模型、协议、参数、system、工具定义及完整有效前缀，仅追加`analysis/writer_v2.j2`，用`tool_choice=none`直接生成Markdown。实际工具调用以真实委派结果闭合后再进入写作；快捷生成不伪造assistant工具调用。主对话得到确切成果身份和保存结果，正文按需读取，写作模板和全篇正文不重复回灌主上下文。
 

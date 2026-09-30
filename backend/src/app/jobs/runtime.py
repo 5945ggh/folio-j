@@ -29,7 +29,7 @@ ACTIVE = ("queued", "running", "stopping")
 
 
 def tool_definitions() -> list[dict[str, Any]]:
-    path = Path(__file__).resolve().parents[3] / "prompts" / "chat" / "tools_v3.json"
+    path = Path(__file__).resolve().parents[3] / "prompts" / "chat" / "tools_v4.json"
     data: dict[str, Any] = json.loads(path.read_text())
     return data["tools"]
 

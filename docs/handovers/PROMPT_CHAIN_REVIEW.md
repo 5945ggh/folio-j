@@ -1,18 +1,18 @@
 # 全链路提示词聚合视图
 
-> 2026-09-27，2C验收版本。以下正文直接摘录当前被代码加载的模板和工具定义；不含用户数据库中的背景、预设、正文或凭据。真实模型教学效果与实际缓存命中尚未实测。
+> 2026-09-29，工具总标题参数更新版本。以下正文直接摘录当前被代码加载的模板和工具定义；不含用户数据库中的背景、预设、正文或凭据。真实模型教学效果与实际缓存命中尚未实测。
 
 ## 调用与加载顺序
 
 | 阶段 | 实际消息／定义 | 加载边界 |
 |---|---|---|
-| 接受主对话 | system_v4 + 原有有效历史 + user_v2；tools_v3单独作为工具定义 | 通用system稳定；学习背景、预设、材料与本轮要求位于user后缀，接受时冻结 |
+| 接受主对话 | system_v4 + 原有有效历史 + user_v2；tools_v4单独作为工具定义 | 通用system稳定；学习背景、预设、材料与本轮要求位于user后缀，接受时冻结 |
 | 普通问答／工具循环 | 原样追加模型原生回复及真实工具结果 | 不自动生成Analysis；模型明确调用生成工具后才进入写作 |
 | Analysis生成分支 | 父调用相同模型、Provider、参数、system、工具定义及完整有效前缀；真实委派结果闭合工具调用后，末尾追加writer_v2 | tool_choice=none，直接输出Markdown；保存成功后主对话仅得到成果引用与结果 |
 | 快捷总体讲解 | 同一线程的主上下文末尾追加writer_v2，省去规划调用 | 已有线程沿用本轮模型；无线程时显示解析默认模型并允许改选后建立线程 |
 | 快捷完成／部分成功恢复 | saved_artifact_v1／recovered_artifacts_v1 | 用明确的后台事实传递已保存身份，不把写作全文或合成确认冒充原生模型历史 |
 | 旧线程或协议转换 | history_material_v1 | 无法有效原生重放时，原顺序保留可见历史和真实工具事实；不以摘要代替内容，不伪造私有推理字段 |
-| Section编辑／审核 | tools_v3中的操作约束；后端持久方案、基础修订和权限检查 | 局部正文可以是工具参数，批准只应用已展示方案；整份Analysis删除仍由用户界面处理 |
+| Section编辑／审核 | tools_v4中的操作约束；后端持久方案、基础修订和权限检查 | 局部正文可以是工具参数，批准只应用已展示方案；整份Analysis删除仍由用户界面处理 |
 
 输入、工具定义、writer正文和保存事实模板在任务接受时固定；实际调用逐条记录Run。写作模板只追加到分支末尾，不替换system，也不回灌整篇讲解到主对话。模型输出是否完整、软格式警告、实际保存是否成功是不同事实。
 
@@ -74,15 +74,15 @@
 
 ## 当前已注册工具的完整定义
 
-来源：[chat/tools_v3.json](../../backend/prompts/chat/tools_v3.json)
+来源：[chat/tools_v4.json](../../backend/prompts/chat/tools_v4.json)
 
 ```json
 {
-  "version": "v3",
+  "version": "v4",
   "tools": [
     {"type":"function","function":{"name":"list_analyses","description":"列出当前片段的持久讲解，返回身份、标题、摘录和当前修订。可分页。","parameters":{"type":"object","properties":{"limit":{"type":"integer","minimum":1,"maximum":50},"offset":{"type":"integer","minimum":0}},"additionalProperties":false}}},
     {"type":"function","function":{"name":"read_analysis","description":"读取当前片段指定讲解的确切修订及Section内容；默认返回所有块正文，可按uid选择部分块。","parameters":{"type":"object","properties":{"analysis_id":{"type":"string"},"revision_id":{"type":"string"},"section_ids":{"type":"array","items":{"type":"string"}}},"required":["analysis_id"],"additionalProperties":false}}},
-    {"type":"function","function":{"name":"generate_analysis","description":"根据当前完整对话和用户要求，在内部写作分支生成并保存独立讲解。不要在参数重复正文或上下文。","parameters":{"type":"object","properties":{},"additionalProperties":false}}},
+    {"type":"function","function":{"name":"generate_analysis","description":"根据当前完整对话和用户要求，在内部写作分支生成并保存独立讲解。建议提供概括整份讲解主题的简洁总标题，而非首个Section标题；省略时由系统从正文自动取名。不要在参数重复正文或上下文。","parameters":{"type":"object","properties":{"title":{"type":"string","minLength":1,"maxLength":200,"description":"整份Analysis的总标题，概括主题与范围；独立于正文中的Section标题。"}},"additionalProperties":false}}},
     {"type":"function","function":{"name":"update_analysis_section","description":"基于确切修订更新一个Section；sid使用读取结果中的uid。title和body至少提供一项，省略项保持原值。","parameters":{"type":"object","properties":{"analysis_id":{"type":"string"},"base_revision_id":{"type":"string"},"sid":{"type":"string"},"title":{"type":"string"},"body":{"type":"string"}},"required":["analysis_id","base_revision_id","sid"],"additionalProperties":false}}},
     {"type":"function","function":{"name":"insert_analysis_sections","description":"基于确切修订插入Section；after_sid使用读取结果中的uid，省略则插在总述后。","parameters":{"type":"object","properties":{"analysis_id":{"type":"string"},"base_revision_id":{"type":"string"},"after_sid":{"type":"string"},"sections":{"type":"array","items":{"type":"object","properties":{"title":{"type":"string"},"body":{"type":"string"}},"required":["title","body"],"additionalProperties":false}}},"required":["analysis_id","base_revision_id","sections"],"additionalProperties":false}}},
     {"type":"function","function":{"name":"delete_analysis_section","description":"基于确切修订删除一个Section；sid使用读取结果中的uid。","parameters":{"type":"object","properties":{"analysis_id":{"type":"string"},"base_revision_id":{"type":"string"},"sid":{"type":"string"}},"required":["analysis_id","base_revision_id","sid"],"additionalProperties":false}}},
@@ -164,7 +164,7 @@
 
 ## 一组虚构输入的渲染示例
 
-以下由实际`user_v2`模板渲染，不读取用户配置；此前真实历史仍按前文规则保留。主调用先放上面的完整`system_v4`，再放历史与此消息，独立传入工具定义。当模型实际调用`generate_analysis({})`时，分支在这个完整前缀后追加真实委派结果和上面的完整`writer_v2`。示例只展示组装，不代表模型输出或效果评测。
+以下由实际`user_v2`模板渲染，不读取用户配置；此前真实历史仍按前文规则保留。主调用先放上面的完整`system_v4`，再放历史与此消息，独立传入工具定义。当模型实际调用`generate_analysis({"title":"だった的过去状态用法"})`时，分支在这个完整前缀后追加真实委派结果和上面的完整`writer_v2`。示例只展示组装，不代表模型输出或效果评测。
 
 ```text
 来源：虚构验收示例
@@ -191,6 +191,6 @@
 - 默认讲解模板只初始化数据库预设；已保存的用户预设不会被本次代码更新覆盖，实际调用采用当时所选内容。
 - 普通“讲一下这个词”可以只回答；生成一份讲解文档或整理为持久成果才创建Analysis。专题不扩成整段报告。
 - Markdown缺少二级标题等仍按既有软规则记录警告，不为过检自动重写。规范化负责可复原切分，不能改变正文。
-- tools_v3中的JSON是工具契约；新Analysis正文经普通文本调用生成，不要求主模型把整篇Markdown放入工具参数。
+- tools_v4中的JSON是工具契约；新Analysis正文经普通文本调用生成，不要求主模型把整篇Markdown放入工具参数。
 - 当前只注册Analysis工具。Occurrence仍为后续切片；它是结构化条目，引用具体Revision／Section，不能把候选草案当成已实现能力。
 - 旧版本模板保留用于历史追溯，不参与新请求组装。模板升级不会重写已经接受任务的输入。

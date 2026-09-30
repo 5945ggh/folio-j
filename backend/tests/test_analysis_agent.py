@@ -191,16 +191,34 @@ async def test_quick_save_freezes_model_and_keeps_writer_out_of_next_chat(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
+@pytest.mark.parametrize(
+    ("title", "expected_title"),
+    [
+        (None, "大意"),
+        ("  だった的过去状态  ", "だった的过去状态"),
+        ("  か\u3099ち的用法  ", "がち的用法"),
+        ("题" * 200, "题" * 200),
+    ],
+)
 async def test_native_generate_branch_reuses_parent_prefix_and_returns_identity(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    protocol: str,
+    title: str | None,
+    expected_title: str,
 ) -> None:
     async with chat_client(tmp_path / "agent.db") as (client, app):
         seed = await seed_chat(client)
+        if protocol == "responses":
+            changed = await client.patch(
+                f"/api/providers/{seed['provider']['id']}", json={"protocol": protocol}
+            )
+            assert changed.status_code == 200
         captured = scripted_turn(
             monkeypatch,
             [
-                ("", [call("generate_analysis")], True),
+                ("", [call("generate_analysis", {"title": title} if title else {})], True),
                 (DOCUMENT, [], True),
                 ("已经为你保存讲解。", [], True),
             ],
@@ -211,6 +229,9 @@ async def test_native_generate_branch_reuses_parent_prefix_and_returns_identity(
         assert result["status"] == "succeeded"
         assert len(result["runs"]) == 3
         assert result["artifacts"]
+        detail = (await client.get(f"/api/analyses/{result['artifacts'][0]['analysis_id']}")).json()
+        assert detail["title"] == expected_title
+        assert detail["source_md"] == DOCUMENT
         parent, branch, follow = captured
         assert parent["snapshot"].model_id == branch["snapshot"].model_id
         assert parent["snapshot"].protocol == branch["snapshot"].protocol
@@ -220,8 +241,15 @@ async def test_native_generate_branch_reuses_parent_prefix_and_returns_identity(
         assert parent["tools"] == branch["tools"] == follow["tools"]
         assert branch["tool_choice"] == "none"
         assert branch["messages"][: len(parent["messages"])] == parent["messages"]
-        assert branch["messages"][len(parent["messages"])]["role"] == "assistant"
-        assert branch["messages"][len(parent["messages"]) + 1]["role"] == "tool"
+        native_call = branch["messages"][len(parent["messages"]) : -2]
+        assert any(
+            item.get("role") == "assistant" or item.get("type") == "function_call"
+            for item in native_call
+        )
+        tool_result = branch["messages"][-2]
+        assert (
+            tool_result.get("role") == "tool" or tool_result.get("type") == "function_call_output"
+        )
         assert branch["messages"][-1]["role"] == "user"
         assert "先给学习者一眼能把握" in branch["messages"][-1]["content"]
         assert not any(
@@ -232,6 +260,38 @@ async def test_native_generate_branch_reuses_parent_prefix_and_returns_identity(
             for item in follow["messages"]
         )
         assert result["artifacts"][0]["analysis_id"] in json.dumps(follow["messages"])
+        assert expected_title in json.dumps(follow["messages"], ensure_ascii=False)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "args",
+    [
+        {"title": ""},
+        {"title": "  "},
+        {"title": "题" * 201},
+        {"title": None},
+        {"title": 123},
+        {"title": "主题", "body": "正文"},
+    ],
+)
+async def test_generate_rejects_invalid_title_before_starting_writer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, args: dict[str, Any]
+) -> None:
+    async with chat_client(tmp_path / "invalid-title.db") as (client, app):
+        seed = await seed_chat(client)
+        captured = scripted_turn(
+            monkeypatch,
+            [("", [call("generate_analysis", args)], True), ("标题参数无效。", [], True)],
+        )
+        job = await accept(client, seed, question="请生成讲解")
+        await runtime.execute_job(app, job["id"])
+        result = (await client.get(f"/api/jobs/{job['id']}")).json()
+        assert result["status"] == "succeeded"
+        assert result["artifacts"] == []
+        assert len(result["runs"]) == len(captured) == 2
+        assert json.loads(captured[1]["messages"][-1]["content"])["error"]
+        assert (await client.get(f"/api/segments/{seed['segment']['id']}/analyses")).json() == []
 
 
 @pytest.mark.asyncio

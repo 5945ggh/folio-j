@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import unicodedata
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
 
@@ -354,6 +355,7 @@ async def _branch(
     messages: list[dict[str, Any]],
     call_id: str,
     tools: list[dict[str, Any]],
+    title: str | None = None,
 ) -> dict[str, Any]:
     """Start a real delegation, close its protocol call, then append writer suffix."""
     start = _tool_output(
@@ -433,6 +435,7 @@ async def _branch(
             source_md=turn.text,
             operation_key=f"job:{job.id}:generate:{call_id}",
             origin="agent",
+            title=title,
             run_id=(
                 await session.scalar(
                     select(Run.id)
@@ -765,14 +768,22 @@ async def execute_agent_job(
                 if name in {"list_analyses", "read_analysis"}:
                     output = await _read_tool(app, segment_id, name, args)
                 elif name == "generate_analysis":
-                    if args:
-                        raise ValueError("生成工具无需正文或上下文参数")
+                    if set(args) - {"title"}:
+                        raise ValueError("生成工具只接受title参数，不接受正文或上下文")
+                    title: str | None = None
+                    if "title" in args:
+                        value = args["title"]
+                        if not isinstance(value, str):
+                            raise ValueError("讲解总标题须为字符串")
+                        title = unicodedata.normalize("NFC", value.strip())
+                        if not title or len(title) > 200:
+                            raise ValueError("讲解总标题须非空且不超过200字符")
                     async with app.state.session_factory() as session:
                         job = await session.get(Job, job_id)
                         if job is None:
                             return
                         output = await _branch(
-                            app, job, token, key, snapshot, messages, call["id"], tools
+                            app, job, token, key, snapshot, messages, call["id"], tools, title
                         )
                 elif name in EDIT_NAMES:
                     proposal = await _proposal(app, segment_id, name, call["id"], args)

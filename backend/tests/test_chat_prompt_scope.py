@@ -45,7 +45,17 @@ async def test_chat_system_scope_is_rendered_for_each_style_choice(
 
         job = await accept(client, seed, question="这里的だった是什么用法？", **changes)
         snapshot = accepted_input(database, job["id"])
-        assert snapshot["prompt_version"] == "v4+tools_v3"
+        assert snapshot["prompt_version"] == "v4+tools_v4"
+        generation = next(
+            tool["function"]
+            for tool in snapshot["tools"]
+            if tool["function"]["name"] == "generate_analysis"
+        )["parameters"]
+        assert generation["properties"]["title"]["type"] == "string"
+        assert generation["properties"]["title"]["maxLength"] == 200
+        assert generation["properties"]["title"]["minLength"] == 1
+        assert "title" not in generation.get("required", [])
+        assert generation["additionalProperties"] is False
         assert [message["role"] for message in snapshot["messages"]] == ["system", "user"]
         system = snapshot["messages"][0]["content"]
         user = snapshot["messages"][1]["content"]
@@ -118,7 +128,7 @@ async def test_run_reuses_accepted_prompt_after_style_change(
         result = (await client.get(f"/api/jobs/{job['id']}")).json()
         assert result["status"] == "succeeded"
         run = (await client.get(f"/api/runs/{result['run_id']}")).json()
-        assert run["prompt_version"] == accepted["prompt_version"] == "v4+tools_v3"
+        assert run["prompt_version"] == accepted["prompt_version"] == "v4+tools_v4"
 
     with sqlite3.connect(database) as connection:
         row = connection.execute(

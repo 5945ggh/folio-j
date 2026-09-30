@@ -14,7 +14,7 @@ from app.models import Segment, Source
 from app.settings_models import Profile, Style
 
 PROMPTS = Path(__file__).resolve().parents[3] / "prompts" / "chat"
-PROMPT_VERSION = "v4+tools_v3"
+PROMPT_VERSION = "v4+tools_v4"
 MAX_MESSAGE_CHARS = 200000
 ENV = Environment(loader=FileSystemLoader(PROMPTS), undefined=StrictUndefined, autoescape=False)
 
@@ -285,7 +285,7 @@ async def make_input_snapshot(
         )
     messages.append({"role": "user", "content": user})
     snapshot["messages"] = messages
-    snapshot["tools"] = json.loads((PROMPTS / "tools_v3.json").read_text())["tools"]
+    snapshot["tools"] = json.loads((PROMPTS / "tools_v4.json").read_text())["tools"]
     snapshot["writer_text"] = (
         Environment(
             loader=FileSystemLoader(PROMPTS.parent / "analysis"),
