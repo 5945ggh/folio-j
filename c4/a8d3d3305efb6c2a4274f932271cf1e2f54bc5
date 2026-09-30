@@ -1,0 +1,42 @@
+docs/ARCHITECTURE.md
+  s_967bed991b13e9::t_4897df4741b846 136
+backend/tests/test_chat_prompt_scope.py
+  s_967bed991b13e9::t_4897df4741b846 48,131
+  s_967bed991b13e9::t_86419b903c56f0 49,52-58
+  s_967bed991b13e9::t_eeaddd9d80b92b 50-51
+backend/prompts/chat/tools_v4.json
+  s_967bed991b13e9::t_4897df4741b846 1-12
+backend/src/app/jobs/runtime.py
+  s_967bed991b13e9::t_a6dad79ca1992f 32
+docs/handovers/PROMPT_CHAIN_REVIEW.md
+  s_967bed991b13e9::t_4897df4741b846 3,9,15,77,81,85,167,194
+backend/src/app/jobs/agent.py
+  s_967bed991b13e9::t_a6dad79ca1992f 5,358,438,771-780,786
+backend/src/app/services/context.py
+  s_967bed991b13e9::t_a6dad79ca1992f 17,288
+backend/tests/test_analysis_agent.py
+  s_967bed991b13e9::t_eeaddd9d80b92b 197-202,232,250-252,269-276
+  s_967bed991b13e9::t_5827e0927d9f48 194-196,203,207-209,213-217,221,233-234,263-268,277-294
+  s_967bed991b13e9::t_86419b903c56f0 244-249
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c4a8d3d3305efb6c2a4274f932271cf1e2f54bc5",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_967bed991b13e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e2b5-cab4-7ce2-8bcb-e969520be243",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
