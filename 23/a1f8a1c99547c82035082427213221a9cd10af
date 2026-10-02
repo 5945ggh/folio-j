@@ -1,0 +1,25 @@
+backend/src/app/jobs/runtime.py
+  s_ab588b57ab2395::t_96b2c520951af4 15
+  s_ab588b57ab2395::t_7da9d0e291a20d 150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "23a1f8a1c99547c82035082427213221a9cd10af",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_ab588b57ab2395": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fd28-fb79-73a0-8622-b055725bf167",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
