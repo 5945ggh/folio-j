@@ -10,8 +10,11 @@ import pytest
 from httpx import AsyncClient
 from test_chat_api import accept, chat_client, seed_chat
 
+from app.analysis_schemas import SectionOperation
 from app.jobs import runtime
 from app.llm import adapters
+from app.services import analyses
+from app.services.sources import begin_write
 
 DOCUMENT = "## 大意\n\n昨日は雨だった。\n\n## 语法\n\nだった是过去式。\n"
 
@@ -114,9 +117,13 @@ async def refreshed(client: AsyncClient, seed: dict[str, Any]) -> dict[str, Any]
 
 
 async def quick_document(
-    client: AsyncClient, app: Any, seed: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+    client: AsyncClient,
+    app: Any,
+    seed: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+    source_md: str = DOCUMENT,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    scripted_turn(monkeypatch, [(DOCUMENT, [], True)])
+    scripted_turn(monkeypatch, [(source_md, [], True)])
     job = await accept(
         client,
         seed,
@@ -537,6 +544,189 @@ async def test_legacy_and_protocol_switch_history_is_material_not_fake_assistant
         assert [item["role"] for item in snapshot["messages"]] == ["system", "user", "user"]
         assert "Responses 可见答案" in snapshot["messages"][1]["content"]
         assert "reasoning" not in snapshot["messages"][1]["content"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "line_ending,terminated",
+    [("\n", True), ("\r\n", True), ("\r", True), ("\n", False)],
+)
+async def test_reviewed_insert_preview_matches_saved_markdown_across_line_endings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    line_ending: str,
+    terminated: bool,
+) -> None:
+    source_md = DOCUMENT.replace("\n", line_ending)
+    if not terminated:
+        source_md = source_md.removesuffix(line_ending)
+    async with chat_client(tmp_path / "preview-save.db") as (client, app):
+        seed = await seed_chat(client)
+        _, document = await quick_document(client, app, seed, monkeypatch, source_md)
+        args = {
+            "analysis_id": document["id"],
+            "base_revision_id": document["revision_id"],
+            "after_sid": document["sections"][1]["uid"],
+            "sections": [{"title": "  は\u3099  ", "body": "は\u3099"}],
+        }
+        scripted_turn(
+            monkeypatch,
+            [
+                ("", [call("insert_analysis_sections", args, "preview_insert")], True),
+                ("已完成。", [], True),
+            ],
+        )
+        job = await accept(client, await refreshed(client, seed), question="审核这次插入")
+        await runtime.execute_job(app, job["id"])
+        waiting = (await client.get(f"/api/jobs/{job['id']}")).json()
+        proposal = waiting["review_proposal"]
+        assert waiting["status"] == "waiting_review"
+        approved = await client.post(
+            f"/api/jobs/{job['id']}/decision",
+            json={"expected_version": waiting["version"], "decision": "approve"},
+        )
+        assert approved.status_code == 200
+        await runtime.execute_job(app, job["id"])
+        saved = (await client.get(f"/api/analyses/{document['id']}")).json()
+        assert (
+            next(section["raw"] for section in saved["sections"] if section["title"] == "ば")
+            == (proposal["after"])
+            == "## ば\n\nば\n"
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("source_md", "body", "expected"),
+    [(DOCUMENT, "", ""), ("仅有总述", "新的总述", "新的总述\n")],
+)
+async def test_reviewed_preamble_preview_matches_saved_empty_and_no_h2_documents(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    source_md: str,
+    body: str,
+    expected: str,
+) -> None:
+    async with chat_client(tmp_path / "preamble-preview.db") as (client, app):
+        seed = await seed_chat(client)
+        _, document = await quick_document(client, app, seed, monkeypatch, source_md)
+        args = {
+            "analysis_id": document["id"],
+            "base_revision_id": document["revision_id"],
+            "body": body,
+        }
+        scripted_turn(
+            monkeypatch,
+            [("", [call("update_analysis_preamble", args)], True), ("已完成。", [], True)],
+        )
+        job = await accept(client, await refreshed(client, seed), question="审核总述")
+        await runtime.execute_job(app, job["id"])
+        waiting = (await client.get(f"/api/jobs/{job['id']}")).json()
+        proposal = waiting["review_proposal"]
+        assert waiting["status"] == "waiting_review"
+        approved = await client.post(
+            f"/api/jobs/{job['id']}/decision",
+            json={"expected_version": waiting["version"], "decision": "approve"},
+        )
+        assert approved.status_code == 200
+        await runtime.execute_job(app, job["id"])
+        saved = (await client.get(f"/api/analyses/{document['id']}")).json()
+        assert saved["sections"][0]["raw"] == proposal["after"] == expected
+
+
+@pytest.mark.asyncio
+async def test_approved_review_rechecks_an_expired_base_revision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async with chat_client(tmp_path / "expired-review.db") as (client, app):
+        seed = await seed_chat(client)
+        _, document = await quick_document(client, app, seed, monkeypatch)
+        sid = document["sections"][1]["uid"]
+        args = {
+            "analysis_id": document["id"],
+            "base_revision_id": document["revision_id"],
+            "sid": sid,
+            "title": "审核标题",
+        }
+        scripted_turn(
+            monkeypatch,
+            [
+                ("", [call("update_analysis_section", args)], True),
+                ("版本已变化，未保存。", [], True),
+            ],
+        )
+        job = await accept(client, await refreshed(client, seed), question="审核后修改")
+        await runtime.execute_job(app, job["id"])
+        waiting = (await client.get(f"/api/jobs/{job['id']}")).json()
+        assert waiting["status"] == "waiting_review"
+        async with app.state.session_factory() as session:
+            await begin_write(session)
+            external = await analyses.apply_operation(
+                session,
+                segment_id=seed["segment"]["id"],
+                analysis_id=document["id"],
+                base_revision_id=document["revision_id"],
+                operation_key="external-edit",
+                operation=SectionOperation(kind="update_section", sid=sid, title="外部标题"),
+            )
+            await session.commit()
+        approved = await client.post(
+            f"/api/jobs/{job['id']}/decision",
+            json={"expected_version": waiting["version"], "decision": "approve"},
+        )
+        assert approved.status_code == 200
+        await runtime.execute_job(app, job["id"])
+        completed = (await client.get(f"/api/jobs/{job['id']}")).json()
+        assert completed["status"] == "succeeded"
+        assert completed["artifacts"] == []
+        current = (await client.get(f"/api/analyses/{document['id']}")).json()
+        assert current["revision_id"] == external.revision_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("tool_name", "invalid"),
+    [
+        (
+            "insert_analysis_sections",
+            {"after_sid": "missing", "sections": [{"title": "有效", "body": "正文"}]},
+        ),
+        (
+            "update_analysis_preamble",
+            {"body": "总述\n## 非法二级标题"},
+        ),
+        (
+            "insert_analysis_sections",
+            {
+                "sections": [{"title": "有效", "body": "正文\n## 额外二级标题"}],
+            },
+        ),
+    ],
+)
+async def test_invalid_edit_never_enters_waiting_review(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tool_name: str,
+    invalid: dict[str, Any],
+) -> None:
+    async with chat_client(tmp_path / "invalid-review.db") as (client, app):
+        seed = await seed_chat(client)
+        _, document = await quick_document(client, app, seed, monkeypatch)
+        args = {
+            "analysis_id": document["id"],
+            "base_revision_id": document["revision_id"],
+            **invalid,
+        }
+        scripted_turn(
+            monkeypatch,
+            [("", [call(tool_name, args)], True), ("方案无效，未提交审核。", [], True)],
+        )
+        job = await accept(client, await refreshed(client, seed), question="编辑讲解")
+        await runtime.execute_job(app, job["id"])
+        result = (await client.get(f"/api/jobs/{job['id']}")).json()
+        assert result["status"] == "succeeded"
+        assert result["review_proposal"] is None
+        assert result["artifacts"] == []
 
 
 @pytest.mark.asyncio
