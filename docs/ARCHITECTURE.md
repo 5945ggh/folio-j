@@ -1,6 +1,6 @@
 # 架构设计
 
-> 状态：草案 v0.3（2026-09-26）；现状核对：2026-09-30（本轮不递增版本）。配套文档：[PRD.md](PRD.md)、[TECH_STACK.md](TECH_STACK.md)、[GLOSSARY.md](GLOSSARY.md)。`[TBD-xx]` 编号与 PRD 一致。
+> 状态：草案 v0.3（2026-09-26）；现状核对：2026-09-30，编辑与讨论执行部分补充核对于 2026-10-03 的 `e416f58`（本轮不递增版本）。配套文档：[PRD.md](PRD.md)、[TECH_STACK.md](TECH_STACK.md)、[GLOSSARY.md](GLOSSARY.md)。`[TBD-xx]` 编号与 PRD 一致。
 > 本文同时记录已确认的领域规则、当前实现与未来草图。Source／Segment、设置与验证、后台问答、Analysis及其工具审核／恢复已实现；Occurrence、提取与知识库仍为未来设计。当前协议以实际模板、代码和生成OpenAPI为准，阶段性实施边界见 [MVP_IMPLEMENTATION_BASELINE.md](handovers/MVP_IMPLEMENTATION_BASELINE.md)，验收记录见 [阶段性交接索引](handovers/README.md)。
 
 ## 1. 总览
@@ -243,7 +243,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 - 当前Job使用queued／running／waiting_review／stopping／succeeded／failed／interrupted状态；lifespan先取得同一数据库的单进程排他锁，再恢复中断状态并启动调度。调度按持久queued任务领取，问答／Analysis与2A验证共用并发上限2。2B交付时每Job一次生成、60秒调用预算；当前工具循环及内部写作分支使用第3.5节统一预算，不新建第二套并发名额或独立重试循环。实际实现见[`jobs/runtime.py`](../backend/src/app/jobs/runtime.py)与[`jobs/agent.py`](../backend/src/app/jobs/agent.py)，2B历史边界见[归档契约](handovers/archived/STAGE_2B_ASYNC_QA.md)。
 - 调用入口和停止／来源／片段删除的提交共用短进程互斥，并在进入适配器前核对持久状态；互斥不覆盖网络等待。每次进度／终态写入检查execution_token、活动Job身份与对象未删除；停止先持久撤销token，再取消执行，收尾后释放线程。当前多个Run及已保存成果分别留存，助手消息、Job终态与线程释放由收尾事务维护，不能用2B单次调用的终态规则推断整轮成果回滚。
-- 当前Job.kind为`chat_reply`和`analysis_generate`，覆盖普通讨论／工具循环与快捷总体讲解；可选提取任务仍为预留，尚无对应实现。离开页面不取消任务。
+- 当前Job.kind为`chat_reply`和`generate_analysis`，覆盖普通讨论／工具循环与快捷总体讲解；可选提取任务仍为预留，尚无对应实现。离开页面不取消任务。
 - 接受事务检查线程空闲，数据库唯一活动Job约束和active_job_id阻止同线程运行／待审时接收新轮；审核决定走既有Job，不建立消息队列。独立线程按全局资源调度。用户草稿与等待行为见[PRD 6.6](PRD.md#66-异步操作与离开页面)。
 - 停止语义见[PRD 6.6](PRD.md#66-异步操作与离开页面)。执行层持久记录停止意图、撤销token并取消未执行方案；后续调用／修复／保存再核对授权，提交竞争依据实际持久结果反馈，收尾完成才释放线程。迟到结果不能恢复旧任务或方案；Analysis并发保护已落实，候选写入仍待其切片。
 - 当前重启将残留queued／running／stopping任务及关联未完成消息、Run统一标为interrupted并释放线程；waiting_review不在中断集合内，保留具体方案与线程活动身份供用户继续决定，不自动重放；已终态历史不改。2A验证Run仍沿用其中断语义，不能只修改Run而留下忙碌线程。重复后台实例拿不到进程锁时须直接退出，不运行恢复逻辑。
@@ -284,6 +284,8 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 
 `chat/discussion.ts` 集中讨论受理、按同一 `request_id` 核实、Job 版本合并与终态刷新／成果通知。直接受理和核实受理进入同一处理函数，以函数式更新只清除尚未改写的提交草稿；轮询、停止和审核返回的 Job 共用版本合并规则。页面保留本地草稿、显示状态和 URL 导航适配，阅读保护绑定首次提交时的确切讲解／Revision，不因响应丢失后的重试覆盖该快照。终态通知在当前讨论实例内按 Job 身份去重，不新增状态库、队列或刷新恢复契约。
 
+缓存合并保留较新的 Job；相同或较旧版本的重复观察不再写入缓存，避免共享查询订阅形成更新循环。普通讨论成果由协调器在终态通知页面，快捷生成的成果观察与自动阅读仍由 `SegmentPage.tsx` 承接；两者共用阅读位置判断。轮询可能先于受理核实发现成果，此时也按 Job 的 `request_id` 查找首次提交快照。
+
 以下标明当前路由与未来入口，实际定义见[`App.tsx`](../frontend/src/App.tsx)：
 
 | 路由 | 内容 |
@@ -297,7 +299,7 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 
 诊断入口按 PRD F8 确定，不预设独立完整调试页面为首轮前提。
 
-当前前端按页面及chat／analysis／settings模块组织，尚未建立统一features目录；API类型在`api/schema.d.ts`生成，业务查询hooks位于各模块的`api.ts`。轮询由TanStack Query读取持久状态，没有SSE订阅工具。
+当前前端按页面及chat／analysis／settings模块组织，尚未建立统一features目录；API类型在`api/schema.d.ts`生成，API调用封装位于各模块的`api.ts`，TanStack Query查询和mutation hooks由页面／组件接入，讨论推进规则见`chat/discussion.ts`。轮询读取持久状态，没有SSE订阅工具。
 
 ## 7. 当前仓库目录
 
@@ -346,7 +348,7 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 - **LLM相关流程**：**测试中禁止发起真实网络请求。** 当前由`conftest.py`自动禁用socket连接，使用假适配器、内存流及`httpx.MockTransport`验证真实协议字段和运行状态。尚无`RECORD=1`录制／回放入口；未来需要真实LLM响应时由人类录制并保存至`tests/cassettes/`，默认测试只回放，缺录制应失败，不在测试中绕过网络禁令。
 - **回归语料（未来）**：`tests/corpus/` 中放 5 到 10 条代表性片段（包括口语缩略、不连续语法、长句），用于检查提取结果的校验通过率。
 - **API**：当前使用`httpx.AsyncClient`与`ASGITransport`，配合临时SQLite数据库及应用lifespan；覆盖接受幂等、并发／停止／删除、审核恢复及空库／增量迁移。
-- **前端**：TypeScript类型检查加Node.js纯逻辑测试，覆盖导航、确切成果链接、恢复显示、审核及布局状态；界面效果仍由coding agent实际打开浏览器验证，历史验收见[阅读导航记录](handovers/archived/READING_NAVIGATION_ACCEPTANCE.md)。离线验收不证明真实模型教学质量或第三方工具兼容性。
+- **前端**：TypeScript类型检查加Node.js测试，覆盖导航、确切成果链接、恢复显示、审核及布局状态；讨论测试使用真实QueryClient和假API，覆盖受理／核实的组合推进、条件清草稿、版本合并、终态通知和重复观察的缓存事件。页面挂载、收起／返回列表及实际阅读仍由浏览器验证，证据见[阅读导航记录](handovers/archived/READING_NAVIGATION_ACCEPTANCE.md)和[架构重构验收](handovers/archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)。离线验收不证明真实模型教学质量或第三方工具兼容性。
 
 ## 9. 演进预留
 

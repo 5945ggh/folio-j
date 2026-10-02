@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-09-30，代码基准 `8d468c0`。Source／Segment、设置、讨论、Analysis 及阅读导航已有实现；Occurrence 与积累库尚未实现，首轮 MVP 尚未全部完成。
+> 状态核对：2026-10-03，代码基准 `e416f58`（含本轮架构重构）。Source／Segment、设置、讨论、Analysis 及阅读导航已有实现；Occurrence 与积累库尚未实现，首轮 MVP 尚未全部完成。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件维护当前实现、首轮目标差额、尚未落实的技术契约和验收依据；产品规则按下文链接回到负责文档，不另立一份功能规格。
 
