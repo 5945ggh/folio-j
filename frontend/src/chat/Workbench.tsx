@@ -27,18 +27,20 @@ import {
 	submitJob,
 	type Thread,
 } from "./api";
-import { describeReview } from "./review";
 import {
+	DiscussionCoordinator,
 	type Draft,
-	draftAfterAcceptance,
+	freshestJob,
+	isTerminalJob,
+	type PendingSubmission,
 	submissionMayHaveSucceeded,
 	threadChanged,
 	usableThread,
-} from "./state";
+} from "./discussion";
+import { describeReview } from "./review";
 
-type Pending = { input: JobInput; uncertain: boolean };
+type Pending = PendingSubmission;
 const emptyDraft: Draft = { question: "", additional: "" };
-const terminal = new Set<Job["status"]>(["succeeded", "failed", "interrupted"]);
 const generationQuestion = "请为当前片段生成总体讲解。";
 
 function jobLabel(job: Job): string {
@@ -67,9 +69,13 @@ function FailedJob({
 	jobId: string;
 	onRetry: (draft: Draft) => void;
 }) {
+	const client = useQueryClient();
 	const job = useQuery({
 		queryKey: chatKeys.job(jobId),
-		queryFn: () => getJob(jobId),
+		queryFn: async () => {
+			const fresh = await getJob(jobId);
+			return freshestJob(client.getQueryData<Job>(chatKeys.job(jobId)), fresh);
+		},
 	});
 	return (
 		<div className="chat-failure-detail">
@@ -102,11 +108,18 @@ function MessageItem({
 	message: Message;
 	activeJob?: Job;
 	onRetry: (draft: Draft) => void;
-	onOpenArtifact: (analysisId: string, revisionId: string) => void;
+	onOpenArtifact: (analysisId: string, revisionId: string, job?: Job) => void;
 }) {
+	const client = useQueryClient();
 	const savedJob = useQuery({
 		queryKey: chatKeys.job(message.job_id),
-		queryFn: () => getJob(message.job_id),
+		queryFn: async () => {
+			const fresh = await getJob(message.job_id);
+			return freshestJob(
+				client.getQueryData<Job>(chatKeys.job(message.job_id)),
+				fresh,
+			);
+		},
 		enabled:
 			message.role === "assistant" &&
 			!["pending", "streaming"].includes(message.status) &&
@@ -184,6 +197,8 @@ function ThreadPanel({
 	setPending,
 	quickGenerateToken,
 	onGenerationAccepted,
+	onSubmissionStarted,
+	onJobAccepted,
 	onOpenArtifact,
 }: {
 	segment: Segment;
@@ -194,7 +209,9 @@ function ThreadPanel({
 	setPending: (pending: Pending | null) => void;
 	quickGenerateToken: string | null;
 	onGenerationAccepted: (job: Job) => void;
-	onOpenArtifact: (analysisId: string, revisionId: string) => void;
+	onSubmissionStarted: (requestId: string) => void;
+	onJobAccepted: (job: Job) => void;
+	onOpenArtifact: (analysisId: string, revisionId: string, job?: Job) => void;
 }) {
 	const client = useQueryClient();
 	const thread = useQuery({
@@ -229,11 +246,11 @@ function ThreadPanel({
 		queryFn: async () => {
 			const fresh = await getJob(jobId ?? "");
 			const previous = client.getQueryData<Job>(chatKeys.job(jobId ?? ""));
-			return previous && previous.version > fresh.version ? previous : fresh;
+			return freshestJob(previous, fresh);
 		},
 		enabled: Boolean(jobId),
 		refetchInterval: (query) =>
-			query.state.data && terminal.has(query.state.data.status) ? false : 1000,
+			query.state.data && isTerminalJob(query.state.data) ? false : 1000,
 	});
 	const proposal = active.data?.review_proposal;
 	const reviewAnalysisId =
@@ -251,7 +268,10 @@ function ThreadPanel({
 	});
 	const pendingCheck = useQuery({
 		queryKey: chatKeys.request(threadId, pending?.input.request_id ?? ""),
-		queryFn: () => getJobByRequest(threadId, pending?.input.request_id ?? ""),
+		queryFn: async () => {
+			if (!pending) throw new Error("没有待核实的提交。");
+			return (await coordinator.current?.verify(threadId, pending))?.job;
+		},
 		enabled: Boolean(pending?.uncertain),
 		retry: false,
 		refetchInterval: pending?.uncertain ? 1000 : false,
@@ -268,7 +288,12 @@ function ThreadPanel({
 	const [stream, setStream] = useState(true);
 	const [sendError, setSendError] = useState<Error | null>(null);
 	const [sending, setSending] = useState(false);
-	const seenTerminal = useRef<string | null>(null);
+	const coordinator = useRef<DiscussionCoordinator | null>(null);
+	if (!coordinator.current)
+		coordinator.current = new DiscussionCoordinator(client, {
+			submit: submitJob,
+			findByRequest: getJobByRequest,
+		});
 	const quickHandled = useRef<string | null>(null);
 	const seenThread = useRef<Pick<Thread, "revision" | "active_job_id"> | null>(
 		null,
@@ -283,7 +308,7 @@ function ThreadPanel({
 	const usable = chosen?.provider.enabled && chosen.model.enabled;
 	const busy =
 		Boolean(thread.data?.active_job_id) ||
-		Boolean(active.data && !terminal.has(active.data.status)) ||
+		Boolean(active.data && !isTerminalJob(active.data)) ||
 		Boolean(pending) ||
 		sending;
 	const messages = history.data?.pages.flatMap((page) => page.items) ?? [];
@@ -295,36 +320,33 @@ function ThreadPanel({
 				)
 			: messages;
 	const review = describeReview(proposal, reviewBase.data);
+	const acceptSubmission = useCallback(
+		(accepted: Job, input: JobInput) =>
+			coordinator.current?.acceptSubmission(accepted, {
+				threadId,
+				segmentId: segment.id,
+				input,
+				setRecentJobId,
+				setPending,
+				setDraft: (update) => setDraft(update),
+				setError: setSendError,
+				onJobAccepted,
+				onGenerationAccepted,
+			}),
+		[
+			threadId,
+			segment.id,
+			setPending,
+			setDraft,
+			onGenerationAccepted,
+			onJobAccepted,
+		],
+	);
 
 	useEffect(() => {
 		if (!pendingCheck.data || !pending?.uncertain) return;
-		client.setQueryData(
-			chatKeys.job(pendingCheck.data.id),
-			(old: Job | undefined) =>
-				old && old.version > pendingCheck.data.version
-					? old
-					: pendingCheck.data,
-		);
-		setRecentJobId(pendingCheck.data.id);
-		setPending(null);
-		if (pending.input.action === "generate_analysis")
-			onGenerationAccepted(pendingCheck.data);
-		else setDraft((current) => draftAfterAcceptance(current, pending.input));
-		setSendError(null);
-		void client.invalidateQueries({ queryKey: chatKeys.thread(threadId) });
-		void client.invalidateQueries({ queryKey: chatKeys.messages(threadId) });
-		void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
-	}, [
-		pendingCheck.data,
-		pending?.uncertain,
-		pending?.input,
-		client,
-		threadId,
-		segment.id,
-		setPending,
-		setDraft,
-		onGenerationAccepted,
-	]);
+		acceptSubmission(pendingCheck.data, pending.input);
+	}, [pendingCheck.data, pending?.uncertain, pending?.input, acceptSubmission]);
 	useEffect(() => {
 		if (!thread.data) return;
 		if (threadChanged(seenThread.current, thread.data)) {
@@ -337,27 +359,19 @@ function ThreadPanel({
 			active_job_id: thread.data.active_job_id,
 		};
 	}, [thread.data, client, threadId, segment.id]);
+	const applyJobUpdate = useCallback(
+		(job: Job) =>
+			coordinator.current?.observeJob(job, {
+				threadId,
+				segmentId: segment.id,
+				onArtifact: onOpenArtifact,
+			}),
+		[threadId, segment.id, onOpenArtifact],
+	);
 	useEffect(() => {
 		const job = active.data;
-		if (!job || !terminal.has(job.status) || seenTerminal.current === job.id)
-			return;
-		seenTerminal.current = job.id;
-		void client.invalidateQueries({ queryKey: chatKeys.thread(threadId) });
-		void client.invalidateQueries({ queryKey: chatKeys.messages(threadId) });
-		void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
-		void client.invalidateQueries({ queryKey: queries.segment(segment.id) });
-		void client.invalidateQueries({ queryKey: analysisKeys.list(segment.id) });
-		void client.invalidateQueries({ queryKey: ["analysis"] });
-		const artifact = job.artifacts?.[0];
-		if (
-			artifact?.analysis_id &&
-			artifact.revision_id &&
-			job.kind !== "generate_analysis"
-		) {
-			// Quick generation is opened by the reader, which tracks intervening navigation.
-			onOpenArtifact(artifact.analysis_id, artifact.revision_id);
-		}
-	}, [active.data, client, threadId, segment.id, onOpenArtifact]);
+		if (job) applyJobUpdate(job);
+	}, [active.data, applyJobUpdate]);
 
 	const patch = useMutation({
 		mutationFn: (input: Parameters<typeof patchThread>[1]) =>
@@ -370,9 +384,7 @@ function ThreadPanel({
 	const stop = useMutation({
 		mutationFn: (id: string) => stopJob(id),
 		onSuccess: (updated) => {
-			client.setQueryData(chatKeys.job(updated.id), (old: Job | undefined) =>
-				old && old.version > updated.version ? old : updated,
-			);
+			applyJobUpdate(updated);
 			void client.invalidateQueries({ queryKey: chatKeys.thread(threadId) });
 		},
 	});
@@ -385,7 +397,7 @@ function ThreadPanel({
 				additional_instructions: reviewInstructions,
 			}),
 		onSuccess: (updated) => {
-			client.setQueryData(chatKeys.job(updated.id), updated);
+			applyJobUpdate(updated);
 			setReviewInstructions("");
 			void client.invalidateQueries({ queryKey: chatKeys.thread(threadId) });
 		},
@@ -398,30 +410,14 @@ function ThreadPanel({
 	const send = useCallback(
 		async (input: JobInput) => {
 			if (sending) return;
+			onSubmissionStarted(input.request_id);
 			setSending(true);
 			setSendError(null);
+			const result = await coordinator.current?.submit(threadId, input);
 			try {
-				const accepted = await submitJob(threadId, input);
-				client.setQueryData(
-					chatKeys.job(accepted.id),
-					(old: Job | undefined) =>
-						old && old.version > accepted.version ? old : accepted,
-				);
-				setRecentJobId(accepted.id);
-				setPending(null);
-				if (input.action === "generate_analysis")
-					onGenerationAccepted(accepted);
-				else setDraft((current) => draftAfterAcceptance(current, input));
-				void client.invalidateQueries({ queryKey: chatKeys.thread(threadId) });
-				void client.invalidateQueries({
-					queryKey: chatKeys.messages(threadId),
-				});
-				void client.invalidateQueries({
-					queryKey: chatKeys.threads(segment.id),
-				});
-				void client.invalidateQueries({
-					queryKey: queries.segment(segment.id),
-				});
+				if (!result?.job) throw result?.error ?? new Error("提交失败");
+				const accepted = result.job;
+				acceptSubmission(accepted, input);
 			} catch (error) {
 				const uncertain = submissionMayHaveSucceeded(error);
 				if (uncertain) setPending({ input, uncertain: true });
@@ -442,11 +438,11 @@ function ThreadPanel({
 		[
 			sending,
 			threadId,
-			client,
 			setPending,
-			setDraft,
+			onSubmissionStarted,
+			acceptSubmission,
+			client.invalidateQueries,
 			segment.id,
-			onGenerationAccepted,
 		],
 	);
 
@@ -834,6 +830,8 @@ export function Workbench({
 	selectedThreadId,
 	onSelectThread,
 	onGenerationAccepted,
+	onSubmissionStarted,
+	onJobAccepted,
 	onOpenArtifact,
 }: {
 	segment: Segment;
@@ -841,7 +839,9 @@ export function Workbench({
 	selectedThreadId: string | null;
 	onSelectThread: (threadId: string | null) => void;
 	onGenerationAccepted: (job: Job) => void;
-	onOpenArtifact: (analysisId: string, revisionId: string) => void;
+	onSubmissionStarted: (requestId: string) => void;
+	onJobAccepted: (job: Job) => void;
+	onOpenArtifact: (analysisId: string, revisionId: string, job?: Job) => void;
 }) {
 	const client = useQueryClient();
 	const threads = useInfiniteQuery({
@@ -1060,6 +1060,8 @@ export function Workbench({
 							}
 							quickGenerateToken={generateToken}
 							onGenerationAccepted={onGenerationAccepted}
+							onSubmissionStarted={onSubmissionStarted}
+							onJobAccepted={onJobAccepted}
 							onOpenArtifact={onOpenArtifact}
 						/>
 					) : generateToken ? (

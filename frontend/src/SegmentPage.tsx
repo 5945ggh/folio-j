@@ -12,6 +12,12 @@ import { analysisKeys } from "./analysis/api";
 import { api } from "./api/client";
 import { chatKeys, getJob, type Job } from "./chat/api";
 import {
+	captureReadingPosition,
+	freshestJob,
+	readingPositionForJob,
+	shouldOpenArtifact,
+} from "./chat/discussion";
+import {
 	clampConversationWidth,
 	conversationWidthRange,
 	MAX_CONVERSATION_WIDTH,
@@ -222,13 +228,21 @@ export function SegmentDetail() {
 	const [generateToken, setGenerateToken] = useState<string | null>(null);
 	const [generationJobId, setGenerationJobId] = useState<string | null>(null);
 	const openedGenerationArtifact = useRef<string | null>(null);
-	const generationReading = useRef<{
-		analysisId: string | null;
-		revisionId: string | null;
-	} | null>(null);
+	const jobReading = useRef<
+		Record<string, { analysisId: string | null; revisionId: string | null }>
+	>({});
+	const requestReading = useRef<
+		Record<string, { analysisId: string | null; revisionId: string | null }>
+	>({});
 	const generation = useQuery({
 		queryKey: chatKeys.job(generationJobId ?? ""),
-		queryFn: () => getJob(generationJobId ?? ""),
+		queryFn: async () => {
+			const fresh = await getJob(generationJobId ?? "");
+			return freshestJob(
+				client.getQueryData<Job>(chatKeys.job(generationJobId ?? "")),
+				fresh,
+			);
+		},
 		enabled: Boolean(generationJobId),
 		refetchInterval: (query) =>
 			query.state.data &&
@@ -244,13 +258,14 @@ export function SegmentDetail() {
 		openedGenerationArtifact.current = key;
 		void client.invalidateQueries({ queryKey: analysisKeys.list(id) });
 		const latest = readSegmentLocation(locationRef.current.latest.search);
-		const requested = generationReading.current;
-		if (
-			!requested ||
-			latest.analysisId !== requested.analysisId ||
-			latest.revisionId !== requested.revisionId
-		)
-			return;
+		const expected = generation.data
+			? readingPositionForJob(
+					jobReading.current,
+					requestReading.current,
+					generation.data,
+				)
+			: undefined;
+		if (!shouldOpenArtifact(expected, latest)) return;
 		updateLocation({
 			analysisId: artifact.analysis_id,
 			revisionId: artifact.revision_id,
@@ -593,13 +608,6 @@ export function SegmentDetail() {
 									scrollReading("analysis");
 								}}
 								onGenerate={() => {
-									const latest = readSegmentLocation(
-										locationRef.current.latest.search,
-									);
-									generationReading.current = {
-										analysisId: latest.analysisId,
-										revisionId: latest.revisionId,
-									};
 									setChatOpen(true);
 									setGenerateToken(crypto.randomUUID());
 								}}
@@ -701,7 +709,37 @@ export function SegmentDetail() {
 							updateLocation({ threadId: job.thread_id });
 							setGenerateToken(null);
 						}}
-						onOpenArtifact={(analysisId, revisionId) => {
+						onSubmissionStarted={(requestId) => {
+							const latest = readSegmentLocation(
+								locationRef.current.latest.search,
+							);
+							requestReading.current = captureReadingPosition(
+								requestReading.current,
+								requestId,
+								latest,
+							);
+						}}
+						onJobAccepted={(job: Job) => {
+							jobReading.current[job.id] = requestReading.current[
+								job.request_id
+							] ?? { analysisId: null, revisionId: null };
+						}}
+						onOpenArtifact={(analysisId, revisionId, job) => {
+							const latest = readSegmentLocation(
+								locationRef.current.latest.search,
+							);
+							if (
+								job &&
+								!shouldOpenArtifact(
+									readingPositionForJob(
+										jobReading.current,
+										requestReading.current,
+										job,
+									),
+									latest,
+								)
+							)
+								return;
 							updateLocation({ analysisId, revisionId });
 							setOriginalExpanded(false);
 							scrollReading("analysis");

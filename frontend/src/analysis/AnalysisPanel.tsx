@@ -5,7 +5,8 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { chatKeys, type Job, stopJob } from "../chat/api";
+import { type Job, stopJob } from "../chat/api";
+import { generationResult, isTerminalJob, mergeJob } from "../chat/discussion";
 import { ConfirmDialog, InlineError } from "../Shared";
 import {
 	analysisKeys,
@@ -15,7 +16,7 @@ import {
 	listAnalyses,
 } from "./api";
 import { Markdown } from "./Markdown";
-import { generationResult, readingAnalysis } from "./state";
+import { readingAnalysis } from "./state";
 
 const pageSize = 100;
 
@@ -94,8 +95,7 @@ export function AnalysisPanel({
 	});
 	const stop = useMutation({
 		mutationFn: (jobId: string) => stopJob(jobId),
-		onSuccess: (updated) =>
-			client.setQueryData(chatKeys.job(updated.id), updated),
+		onSuccess: (updated) => mergeJob(client, updated),
 	});
 
 	return (
@@ -142,10 +142,7 @@ export function AnalysisPanel({
 					<button
 						type="button"
 						className="button primary"
-						disabled={Boolean(
-							job &&
-								!["succeeded", "failed", "interrupted"].includes(job.status),
-						)}
+						disabled={Boolean(job && !isTerminalJob(job))}
 						onClick={onGenerate}
 					>
 						生成总体讲解
@@ -196,7 +193,7 @@ export function AnalysisPanel({
 					{analyses.isFetchingNextPage ? "加载中…" : "加载更多讲解"}
 				</button>
 			)}
-			{job && !["succeeded", "failed", "interrupted"].includes(job.status) && (
+			{job && !isTerminalJob(job) && (
 				<section className="analysis-draft" aria-label="尚未保存的讲解">
 					<div className="analysis-draft-header">
 						<span>
