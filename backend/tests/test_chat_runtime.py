@@ -158,7 +158,6 @@ async def test_stop_fences_late_output_without_releasing_call_slot_early(
 ) -> None:
     started = asyncio.Event()
     release = asyncio.Event()
-    monkeypatch.setattr(runtime, "STOP_GRACE_SECONDS", 0.01)
 
     async def generate(
         _snapshot: adapters.CallSnapshot,

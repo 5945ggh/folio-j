@@ -454,7 +454,6 @@ async def test_stubborn_cancel_releases_thread_but_keeps_generation_slot(
 ) -> None:
     entered = asyncio.Event()
     release = asyncio.Event()
-    monkeypatch.setattr(runtime, "STOP_GRACE_SECONDS", 0.01)
 
     async def fake(
         snapshot: adapters.CallSnapshot,
