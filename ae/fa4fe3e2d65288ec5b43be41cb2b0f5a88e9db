@@ -1,0 +1,38 @@
+docs/ARCHITECTURE.md
+  s_ab588b57ab2395::t_e8f6dae8749c88 221-222
+  s_ab588b57ab2395::t_dcfeeb990311b8 285
+  s_ab588b57ab2395::t_e7d05bb73c19dd 286
+docs/handovers/README.md
+  s_ab588b57ab2395::t_8ed417f7c9c522 11-12
+docs/handovers/archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md
+  s_ab588b57ab2395::t_8b2a812d95a130 1-2,4-23,27,57-63
+  s_ab588b57ab2395::t_16f43134a112f8 40
+  s_ab588b57ab2395::t_46fe7d7daae3d3 3
+  s_ab588b57ab2395::t_6e0390a4a4a73d 55
+  s_ab588b57ab2395::t_8ed417f7c9c522 28,41,43-54
+  s_ab588b57ab2395::t_1e9c82ce1e08fc 24-26,29-39,42,56,64
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_ab588b57ab2395::t_46fe7d7daae3d3 22
+  s_ab588b57ab2395::t_8ed417f7c9c522 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "aefa4fe3e2d65288ec5b43be41cb2b0f5a88e9db",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_ab588b57ab2395": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fd28-fb79-73a0-8622-b055725bf167",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
