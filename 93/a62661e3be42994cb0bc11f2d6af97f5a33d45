@@ -1,0 +1,41 @@
+backend/src/app/services/analyses.py
+  s_ab588b57ab2395::t_28cae824d47f09 7,28-37,371-417,420-422,425-430,471,475,481
+  s_ab588b57ab2395::t_c15978d934f112 423-424
+  s_ab588b57ab2395::t_9d93a760b58f9d 151-162,418-419,465-470
+  s_ab588b57ab2395::t_f01347c0b3111f 431-432
+backend/src/app/jobs/agent.py
+  s_ab588b57ab2395::t_9d93a760b58f9d 506-510
+  s_ab588b57ab2395::t_28cae824d47f09 512,518-520
+backend/tests/test_analyses.py
+  s_ab588b57ab2395::t_a2fae6f21a9324 22,128-136,143,149,173,188,203
+backend/tests/test_analysis_agent.py
+  s_ab588b57ab2395::t_94f7b3653e60ee 595,687-692,697-731
+  s_ab588b57ab2395::t_131ba8f64f2b05 13,670
+  s_ab588b57ab2395::t_8e1c89c06a32e7 599-637,693-696
+  s_ab588b57ab2395::t_99ad92adc43a6f 16-17,596-598,638-652,657-669,671-681
+  s_ab588b57ab2395::t_0e0fe2e4d34700 559,563-564,684-686
+  s_ab588b57ab2395::t_1dd88a5933e494 653-656,682-683
+  s_ab588b57ab2395::t_ad4f20f3a92322 120-124,126,549-558,560-562,565-575,577-590,592-594
+  s_ab588b57ab2395::t_4472d1707c55d7 576,591
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "93a62661e3be42994cb0bc11f2d6af97f5a33d45",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_ab588b57ab2395": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fd28-fb79-73a0-8622-b055725bf167",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
