@@ -1,0 +1,48 @@
+docs/handovers/epub-reading/MATERIAL_BASELINE.md
+  s_e7418d71164f9a::t_ff727e9fb0e490 1-145
+docs/handovers/epub-reading/DIRECTION.md
+  s_e7418d71164f9a::t_a2e633a78c944d 1-101
+docs/GLOSSARY.md
+  s_e7418d71164f9a::t_4233e43975d6a0 37
+  s_e7418d71164f9a::t_15e5f64ada6c97 8,39
+  s_e7418d71164f9a::t_7c6f891820c938 33
+  s_e7418d71164f9a::t_e0a223e01879a7 3,16,31,35,38
+docs/ARCHITECTURE.md
+  s_e7418d71164f9a::t_a04d191ad5f815 358
+docs/handovers/epub-reading/README.md
+  s_e7418d71164f9a::t_ff727e9fb0e490 1-12,14-87
+  s_e7418d71164f9a::t_4c26b048416a91 13
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_e7418d71164f9a::t_4c26b048416a91 1-29
+docs/README.md
+  s_e7418d71164f9a::t_7c6f891820c938 3,8
+docs/handovers/README.md
+  s_e7418d71164f9a::t_7c6f891820c938 7-8
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e7418d71164f9a::t_a04d191ad5f815 7-8
+docs/TECH_STACK.md
+  s_e7418d71164f9a::t_a04d191ad5f815 38
+  s_e7418d71164f9a::t_7c6f891820c938 31
+  s_e7418d71164f9a::t_3141cac72c0b2e 39
+docs/PRODUCT_DIRECTION.md
+  s_e7418d71164f9a::t_7c6f891820c938 63
+  s_e7418d71164f9a::t_e0a223e01879a7 59,68-70,74,76
+  s_e7418d71164f9a::t_6f40eea3520dca 153
+  s_e7418d71164f9a::t_15e5f64ada6c97 5,30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "58da2d8e12a858832841b880b41e7ead9d876a0b",
+  "prompts": {},
+  "sessions": {
+    "s_e7418d71164f9a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f512-d6db-7131-a73c-580ff8a275f3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
