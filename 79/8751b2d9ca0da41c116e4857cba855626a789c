@@ -1,0 +1,14 @@
+AGENTS.md
+  h_c735ec7f46d14b 46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "798751b2d9ca0da41c116e4857cba855626a789c",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
