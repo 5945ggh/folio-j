@@ -28,12 +28,14 @@
 | LLM 客户端 | `openai` 官方 Python SDK，通过 `base_url` 对接 | BYOK、多 Provider；适配 OpenAI 兼容的 Chat Completions 与 Responses 文本调用 |
 | Prompt 模板 | Jinja2 | 模板以文件形式放在 `backend/prompts/`，文件头部标注版本号 |
 | Markdown 解析 | markdown-it-py | 规范化器用它获取标题 token 及其行号映射 |
-| 日语分词 | SudachiPy + SudachiDict-core，A 粒度切分（预留，未安装） | 当前无分词模块；不使用 UniDic |
+| 日语分词 | SudachiPy + SudachiDict-core，A 粒度切分（预留，未安装） | 当前无分词模块；可在阅读导入后按需要独立生成 sidecar，不作为基本阅读或引用定位的前置条件；不使用 UniDic |
 | 配置 | 应用运行配置使用 TOML + Pydantic；模型接入设置通过 UI 维护 | 已采用；Provider／模型／用途默认值保存在 SQLite，凭据保存在数据库旁私有目录，不将 providers.toml 设为唯一入口 |
 | ID | ULID（当前由 `app/ids.py` 实现） | 已用于主键和 Section uid；未安装 `python-ulid` |
 | 后台任务 | SQLite `jobs` 表 + 进程内 asyncio worker | 不使用 Celery |
 | 测试 | pytest、pytest-asyncio、hypothesis | 用 hypothesis 对规范化器做"可复原"的性质测试 |
 | 静态检查 | ruff（lint + format）、pyright（strict） | |
+
+分词接入采用固定材料正文之上的可重建派生数据，输入版本、分析器、词典和配置与结果一起记录；不改写定位正文，不用 token 身份替代原文位置。具体预留边界见[EPUB 材料基线](handovers/epub-reading/MATERIAL_BASELINE.md#8-分词与派生数据的后续接入)。此处的数据 sidecar 与分发阶段的后端 sidecar 进程是不同含义。
 
 ## 2. 前端
 

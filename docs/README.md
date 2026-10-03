@@ -1,10 +1,11 @@
 # 文档导航
 
-开发前先读仓库根目录的 [AGENTS.md](../AGENTS.md)。长期规范保留在本目录：
+开发前先读仓库根目录的 [AGENTS.md](../AGENTS.md)。长期规范保留在本目录，阶段方案与执行记录放在 `handovers/`；下表按需要确认的问题导航。
 
 | 想确认的问题 | 负责文档 | 维护边界 |
 |---|---|---|
 | 为什么做、长期怎样演进 | [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) | 动机、取舍与待验证设想；方向不自动成为实施要求 |
+| 下一阶段如何接入原生阅读与已有学习能力 | [EPUB 原生阅读阶段](handovers/epub-reading/README.md) | 汇集方向、材料定位基线、分词后补边界、准备条件与开发切片；不是另一套长期规范 |
 | 首轮承诺什么行为、哪些决定未定 | [PRD.md](PRD.md) | 范围、用户行为、验收与 `[TBD-xx]`；P0 不表示已经交付 |
 | 名词指什么、身份与引用如何区分 | [GLOSSARY.md](GLOSSARY.md) | 定义、不变式、词表和反例；完整操作流程引用 PRD |
 | 系统如何保证已确认行为 | [ARCHITECTURE.md](ARCHITECTURE.md) | 模型、执行校验、事务与恢复机制；未来草图明确标识 |
