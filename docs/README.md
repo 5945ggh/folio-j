@@ -7,6 +7,7 @@
 | 为什么做、长期怎样演进 | [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) | 动机、取舍与待验证设想；方向不自动成为实施要求 |
 | 下一阶段如何接入原生阅读与已有学习能力 | [EPUB 原生阅读阶段](handovers/epub-reading/README.md) | 汇集方向、材料定位基线、分词后补边界、准备条件与开发切片；不是另一套长期规范 |
 | 本轮前端调整如何实施与验收 | [前端调整](handovers/frontend-refresh/PLAN.md) | 目录、Source 视图、状态与统一外壳已验收；新证据独立于历史 EPUB 记录 |
+| 素材库 A.1 如何实施与回归 | [素材库 A.1 计划](handovers/library-a1/PLAN.md) | 已实现并验收；空库入口、工具与书卡、封面回退及缓存，不重做其他页面 |
 | 首轮承诺什么行为、哪些决定未定 | [PRD.md](PRD.md) | 范围、用户行为、验收与 `[TBD-xx]`；P0 不表示已经交付 |
 | 名词指什么、身份与引用如何区分 | [GLOSSARY.md](GLOSSARY.md) | 定义、不变式、词表和反例；完整操作流程引用 PRD |
 | 系统如何保证已确认行为 | [ARCHITECTURE.md](ARCHITECTURE.md) | 模型、执行校验、事务与恢复机制；未来草图明确标识 |
