@@ -19,6 +19,7 @@ from app.catalog_schemas import (
 )
 from app.material_models import Material, MaterialCover, MaterialUsage
 from app.models import Segment, Source
+from app.services.covers import COVER_RULE_VERSION
 from app.services.materials import summary
 from app.services.sources import as_utc, require_source, segment_response
 
@@ -50,6 +51,7 @@ async def material_catalog(
             MaterialUsage.last_opened_at,
             MaterialCover.material_id,
             MaterialCover.media_type,
+            MaterialCover.rule_version,
         )
         .join(Source, Material.source_id == Source.id)
         .outerjoin(MaterialUsage, MaterialUsage.material_id == Material.id)
@@ -80,15 +82,24 @@ async def material_catalog(
         .limit(page_size)
     )
     items: list[MaterialCatalogItem] = []
-    for material, source_title, usage_status, revision, opened, cover_id, media_type in (
-        await session.execute(statement)
-    ).all():
+    for (
+        material,
+        source_title,
+        usage_status,
+        revision,
+        opened,
+        cover_id,
+        media_type,
+        cover_version,
+    ) in (await session.execute(statement)).all():
         items.append(
             MaterialCatalogItem(
                 **summary(material).model_dump(),
                 source_title=source_title,
-                cover_url=f"/api/materials/{material.id}/cover"
-                if cast(str | None, cover_id) is None or media_type
+                cover_url=f"/api/materials/{material.id}/cover?v={COVER_RULE_VERSION}"
+                if cast(str | None, cover_id) is None
+                or media_type
+                or cover_version != COVER_RULE_VERSION
                 else None,
                 status=cast(ReadingStatus, usage_status or "not_started"),
                 usage_revision=revision or 0,

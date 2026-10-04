@@ -53,7 +53,7 @@ def test_material_migration_from_empty_database(
     command.upgrade(config, "head")
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0008_material_usage",
+            "0009_cover_rules",
         )
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 

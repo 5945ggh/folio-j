@@ -62,3 +62,5 @@ class MaterialCover(Base):
     material_id: Mapped[str] = mapped_column(ForeignKey("materials.id"), primary_key=True)
     media_type: Mapped[str | None] = mapped_column(String(40))
     data: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
+    rule_version: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
+    diagnostic_reason: Mapped[str] = mapped_column(Text, nullable=False, default="unexamined")
