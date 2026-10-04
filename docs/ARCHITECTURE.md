@@ -31,7 +31,7 @@ flowchart LR
 
 ## 2. 核心数据流
 
-Segment 是学习的共同起点；片段工作台只是呈现原文、讲解、对话和条目的界面，不是必须按顺序完成的管线。
+Segment 是现有片段学习的共同起点；片段工作台只是呈现原文、讲解、对话和条目的界面，不是必须按顺序完成的管线。当前 EPUB 阶段按 [PRD 4.7](PRD.md#47-当前-epub-阶段安排)先验证原文阅读与位置引用，材料问答不要求预先创建 Segment；下图仍表示已有片段领域，不将材料线程塞入 `segment_id`。
 
 ```mermaid
 flowchart LR
@@ -77,7 +77,13 @@ flowchart LR
 
 Occurrence整理行为见[PRD F5](PRD.md#f5-学习条目创建与整理)。存储契约保留pending／learning／reference及独立的软删除编码（待定），不得用dismissed混合忽略与删除。出处引用具体不可变修订，整理或再次调用不能迁移历史引用。创建来源、引用约束及删除保留策略仍须在实现前落实。
 
-预留、MVP 不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`。未来素材的实体命名与数据关系待需求明确后设计，`MediaAsset` 不是已确定名称。
+预留、不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`。EPUB 切片 1 新增 `materials` 与 `reading_positions`，增量迁移为 `0007_materials`；原始字节、不可变编译包和版本身份由 Material 承载，资源与逻辑章节在版本包内表达，不为每个逻辑层单建表。接口与发布／恢复约束见[切片 1 契约](handovers/epub-reading/SLICE_1_DRAFT.md)，验收状态见[阶段入口](handovers/epub-reading/README.md)。
+
+EPUB 已确定的不变式：原始素材字节不可变，材料归属 Source；处理版本保存规则、实际产物与摘要，版本内资源保留原始 spine 身份。引用绑定具体版本、资源、Unicode 码点半开范围及原文快照；正文全局 NFC，ruby 的 `rt`／`rp` 不参与偏移，布局与分词不影响身份。DOM 使用 UTF-16，适配器必须转换并核对正文，不能逐节点规范化后直接相加；不能校验的引用明确失败。材料文本投影与第 4.3 节 Analysis 规范化器分别执行各自契约，不改变后者的可复原保证。具体隔离试验、范围限制和证据见 [EPUB 阶段入口](handovers/epub-reading/README.md)；持久化、删除及权限不由试验自动定案。
+
+阅读章是版本内资源范围的呈现组织：优先采用书内目录标题与入口、按 spine 顺序连续呈现图文，不改变资源局部引用身份。阅读位置保存逻辑章和资源内锚点，百分比派生展示；布局变化允许近似恢复，精确引用仍须严格校验。原书 ruby 优先于未来分词生成注音，自动注音属于可重建显示层，不改核心正文。具体样书调查及切片 1 细化继续见上述阶段文档。
+
+材料导入用受限原始 EPUB 请求体，编译与包的编解码移出事件循环；原始字节及压缩产物同事务发布。来源内相同摘要复用身份，跨来源独立；发布前再次校验 Source 存活。来源删除确认计入材料，读书／保存位置均检查 Source，托管字节暂不物理清理。阅读位置用 `expected_revision` 条件写入，陈旧请求返回 409；版本、章节、part 与资源范围必须吻合。
 
 工具审核需持久记录所属线程、目标及基础版本、具体拟执行操作、用户决定／附加指令与执行结果。当前Analysis工具把具体方案、决定与执行事实保存在Job.execution_state中，状态包含waiting_review；Occurrence及复杂组合方案仍待设计。待审核方案与正式 AnalysisRevision／Occurrence 分开，批准后仍可能执行失败，二者不能混为一条成功记录。
 

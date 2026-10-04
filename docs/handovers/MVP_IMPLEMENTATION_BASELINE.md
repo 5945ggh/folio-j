@@ -1,10 +1,10 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-03，代码基准 `e416f58`（含本轮架构重构）。Source／Segment、设置、讨论、Analysis 及阅读导航已有实现；Occurrence 与积累库尚未实现，首轮 MVP 尚未全部完成。
+> 状态核对：2026-10-04，代码基准 `2214fc9`（含 EPUB 切片 1）。Source／Segment、设置、讨论、Analysis、阅读导航及 EPUB 基础阅读已有实现；Occurrence 与积累库尚未实现，首轮 MVP 尚未全部完成。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件维护当前实现、首轮目标差额、尚未落实的技术契约和验收依据；产品规则按下文链接回到负责文档，不另立一份功能规格。
 
-**后续阶段安排：** 用户已认可优先接入原生 EPUB 阅读的方向和主要方案，Occurrence 暂缓深化，见[EPUB 阶段入口](epub-reading/README.md)。下表继续记录已有实现与原首轮差额；新的生产切片开始前须按阶段计划同步 PRD 范围与技术契约，不将阶段方案描述成已经交付。
+**当前阶段安排：** EPUB 切片 1 的正式导入与基础阅读已验收，用户确认当前阅读体验及 Yomitan 配合正常；后续先安排整体前端调整与全量注音两个独立切片，再推进选区学习。产品边界见 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)，顺序见[EPUB 阶段入口](epub-reading/README.md)。Occurrence 与积累库继续暂缓。
 
 ## 1. 当前实现、差额与验收依据
 
@@ -15,7 +15,8 @@
 | 片段讨论 | 持久线程、后台工具循环、输入快照、历史、停止、重启恢复与线程权限 | 当前资料工具仅覆盖 Analysis；不读取其他线程聊天历史或跨片段内容 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)；2B 的单次调用机制已由 2C 扩展 |
 | 持久讲解 | 多份 Analysis、不可变 Revision、Section／Preamble、总体讲解快捷入口、生成保存、块级编辑与具体操作审核、用户删除 | 不开放整份 Analysis 的 Agent 删除工具；Occurrence 引用尚无法接入 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
 | 阅读与导航 | 普通入口默认阅读、原文与讲解对照、确切修订／讨论定位、独立讲解总标题、本页讨论草稿保留 | 刷新或离开页面不承诺恢复未提交草稿；构建有主 JS 包大于 500 kB 的历史提示 | [阅读导航验收](archived/READING_NAVIGATION_ACCEPTANCE.md)，已在 `219cd24` 提交 |
-| 学习条目与积累库 | 尚无 Occurrence 持久化、候选工具、整理状态操作或积累库页面 | PRD F5／F6 仍是首轮目标；字段、定位、anchor 与相关恢复契约未落实 | 只有 [A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md)，不等于生产实现或契约 |
+| 学习条目与积累库 | 尚无 Occurrence 持久化、候选工具、整理状态操作或积累库页面 | PRD F5／F6 保留后续目标，本 EPUB 阶段暂缓；字段、定位、anchor 与相关恢复契约未落实 | 只有 [A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md)，不等于生产实现或契约 |
+| EPUB 原生阅读 | 来源下导入、原书托管、目录组章与连续图文、横竖排／字号／行距、持久阅读位置及重排恢复、Source 删除材料门禁；用户实测 Yomitan 配合正常 | 选区学习、材料对话及讨论形成讲解尚未接入；自动注音未实现，用户认可当前不做分页 | [切片 1 验收](epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](epub-reading/SLICE_0_ACCEPTANCE.md) |
 
 **实现占位：** Analysis 删除影响响应的 `occurrence_count` 当前默认 `0`，服务未查询 Occurrence 引用；不能据此声称已提供学习条目引用计数。实现依据见 [响应模型](../../backend/src/app/analysis_schemas.py)与[讲解服务](../../backend/src/app/services/analyses.py)。
 
@@ -36,7 +37,7 @@
 | 组合操作与恢复 | [PRD F8](../PRD.md#f8-状态与诊断)、`TBD-16/17`、[架构执行契约](../ARCHITECTURE.md#45-讨论与成果保存analysis已实现occurrence待设计) | Occurrence 的逐项结果、幂等身份、保存核实、局部修复与统一预算协调，以及混合方案的审核呈现；Analysis 已落实部分沿用现有机制 |
 | 积累阅读与删除关联 | [PRD F6](../PRD.md#f6-知识库)、[F2](../PRD.md#f2-source-与片段)、[阅读基线](../GLOSSARY.md#5-阅读再理解与主动学习阅读基线已确认) | 条目列表、筛选／搜索、anchor 分组、原句和确切来源 Section 阅读；接上真实删除影响与引用范围 |
 
-讨论不依赖已有 Analysis，保存讲解不依赖条目收录；创建条目则依赖持久、自足讲解和确切原文定位，见 [PRD 4.3](../PRD.md#43-语境与学习条目边界)。原生 Reader、素材导入、KnowledgePoint 归属与主动学习不作为这些已确认首轮能力的前置依赖；范围见 [PRD 4.6](../PRD.md#46-首轮不包含的能力)。
+讨论不依赖已有 Analysis，保存讲解不依赖条目收录；创建条目则依赖持久、自足讲解和确切原文定位，见 [PRD 4.3](../PRD.md#43-语境与学习条目边界)。当前按 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)先推进 EPUB；已有手动片段学习继续独立使用，KnowledgePoint 归属与主动学习仍不在本阶段范围。
 
 ## 3. 验收与交接
 

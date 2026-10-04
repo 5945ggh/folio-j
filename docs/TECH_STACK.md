@@ -37,6 +37,8 @@
 
 分词接入采用固定材料正文之上的可重建派生数据，输入版本、分析器、词典和配置与结果一起记录；不改写定位正文，不用 token 身份替代原文位置。具体预留边界见[EPUB 材料基线](handovers/epub-reading/MATERIAL_BASELINE.md#8-分词与派生数据的后续接入)。此处的数据 sidecar 与分发阶段的后端 sidecar 进程是不同含义。
 
+EPUB 切片 1 使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义编译产物；包内资源清洗和有界编译不引入阅读器引擎或新依赖。不可变原 EPUB 与压缩编译包保存为 SQLite BLOB，材料发布和副本保存共用事务；首轮接受数据库体积增长，避免外置文件的双提交及无主文件清理。阅读使用按章节排列的无脚本 sandbox iframe，隔离各原始资源的作者样式。导航、版本与阅读恢复边界见[切片 1 契约](handovers/epub-reading/SLICE_1_DRAFT.md)。
+
 ## 2. 前端
 
 | 用途 | 选择 | 说明 |

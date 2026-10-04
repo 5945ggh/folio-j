@@ -1,5 +1,7 @@
 # EPUB 阶段开发主代理交接提示词
 
+> 本文保留切片 0 启动时的交接指令。2026-10-04 已完成切片 0／1；接力时先读[阶段入口的当前顺序](README.md#下一阶段接力顺序)和[切片 1 验收](SLICE_1_ACCEPTANCE.md)，不要重复执行本文的启动步骤。近期先做整体前端调整与全量注音两个独立切片，再进入切片 2。
+
 请接手 `/Users/ningcc/Products/folio-j` 的 EPUB 原生阅读阶段，作为主代理负责范围、契约、迁移取舍与集成。当前交接分支是 `codex/epub-reading-foundation`，承接已有架构重构；不要从尚未包含这些改动的旧 `main` 重建开发基础。
 
 先读仓库 AGENTS 和文档导航，再读本目录的 [阶段安排](README.md)、[方向稿](DIRECTION.md)与[材料定位基线](MATERIAL_BASELINE.md)。其中主要方向已经获得我的认可，未决交互仍需按阶段收口。现有 Source、Segment、片段讨论、Analysis、Section 编辑基础符合预期；UI 尚不完善，不阻止本阶段推进。
