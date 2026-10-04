@@ -1,0 +1,73 @@
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_e017f7b7db14fb::t_f20141e616b75f 3-4
+docs/handovers/epub-reading/SLICE_1_ACCEPTANCE.md
+  s_e017f7b7db14fb::t_59e39c88a8a7bd 1-2,4-15,17-38,40,43-57,59-61,63-67
+  s_e017f7b7db14fb::t_e6e3f3c5d26c06 16,39,41-42,58,62
+  s_e017f7b7db14fb::t_0f41739b11855f 3
+  s_e017f7b7db14fb::t_f20141e616b75f 68
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e017f7b7db14fb::t_0f41739b11855f 3,7
+  s_e017f7b7db14fb::t_f20141e616b75f 19
+  s_e017f7b7db14fb::t_47de74003d1d68 18,40
+docs/PRD.md
+  s_e017f7b7db14fb::t_51e69b8e165456 53,61,73,129,137-144,148-152
+  s_e017f7b7db14fb::t_3813a412f1b159 355-357,374,384
+  s_e017f7b7db14fb::t_55dab308b94859 145-146
+  s_e017f7b7db14fb::t_f20141e616b75f 147,153
+  s_e017f7b7db14fb::t_81842c9acee26d 154
+docs/handovers/epub-reading/SLICE_1_DRAFT.md
+  s_e017f7b7db14fb::t_15ba55f6400dcb 20-21,48,54-55,57-65,68
+  s_e017f7b7db14fb::t_57606e1fd25de5 2,4-12,14-16,22,24-31,34-38,40,42,44,46,51,53,66-67
+  s_e017f7b7db14fb::t_df15964712a45f 18
+  s_e017f7b7db14fb::t_e11d4b868d58aa 1,3,13,17,19,23,32-33,39,41,43,45,47,49-50,52
+  s_e017f7b7db14fb::t_3c5a6449b729d4 56
+docs/INFORMATION_ARCHITECTURE.md
+  s_e017f7b7db14fb::t_3813a412f1b159 3,10-11,42-44
+docs/ARCHITECTURE.md
+  s_e017f7b7db14fb::t_220d8013681fa6 84
+  s_e017f7b7db14fb::t_47de74003d1d68 34,81-82
+  s_e017f7b7db14fb::t_548415c8a8a9df 80,85-86
+  s_e017f7b7db14fb::t_e551dc3923ed82 83
+docs/handovers/epub-reading/CHAPTER_RESEARCH.md
+  s_e017f7b7db14fb::t_00ebfec2498a9c 1-47
+docs/handovers/epub-reading/README.md
+  s_e017f7b7db14fb::t_f20141e616b75f 92-101
+  s_e017f7b7db14fb::t_8365574019f4b9 17
+  s_e017f7b7db14fb::t_e6e3f3c5d26c06 3,15,19
+  s_e017f7b7db14fb::t_2d96602ca02d57 16,38
+  s_e017f7b7db14fb::t_55dab308b94859 52,54
+  s_e017f7b7db14fb::t_3c5a6449b729d4 18
+docs/TECH_STACK.md
+  s_e017f7b7db14fb::t_94ee6b7e29ec94 40-41
+docs/handovers/epub-reading/MATERIAL_BASELINE.md
+  s_e017f7b7db14fb::t_8365574019f4b9 3,116
+  s_e017f7b7db14fb::t_55dab308b94859 130-131
+  s_e017f7b7db14fb::t_220d8013681fa6 56-59
+docs/GLOSSARY.md
+  s_e017f7b7db14fb::t_df15964712a45f 33,39
+  s_e017f7b7db14fb::t_51e69b8e165456 10,23
+docs/handovers/epub-reading/DIRECTION.md
+  s_e017f7b7db14fb::t_2d96602ca02d57 17
+docs/handovers/README.md
+  s_e017f7b7db14fb::t_e6e3f3c5d26c06 7
+docs/handovers/epub-reading/SLICE_0_ACCEPTANCE.md
+  s_e017f7b7db14fb::t_e6be30d03052d4 1-57,59-61,63,65,69
+  s_e017f7b7db14fb::t_220d8013681fa6 62,64,66-68,70
+  s_e017f7b7db14fb::t_8365574019f4b9 58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f16b5e288125b557feb49bd10d70927690c7cd3b",
+  "prompts": {},
+  "sessions": {
+    "s_e017f7b7db14fb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a10203-98e2-7b92-9309-1566fa60dcf5",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
