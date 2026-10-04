@@ -103,3 +103,8 @@ EPUB 切片 1 使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义�
 ## 7. 2C 已安装依赖
 
 2026-09-27经用户授权安装并锁定既定选型：后端`markdown-it-py 4.2.0`负责CommonMark标题行映射，开发依赖`hypothesis 6.168.2`验证规范化性质；前端`react-markdown 10.1.0`与`remark-gfm 4.0.1`渲染持久讲解。沿用uv／pnpm锁文件，不新增Agent框架或浏览器测试依赖。
+
+
+## 8. 2026-10-04 前端调整采用情况
+
+本轮目录、状态及统一外壳沿用 React Router、TanStack Query、现有 CSS、SQLite 与标准库，未新增依赖；shadcn/ui、Zustand 仍为预留，不能视为已安装。封面缓存只支持有界静态 PNG／JPEG（4 MiB、1600 万像素），标准库校验头部／结构，不引入图像解码库；为保持静态约束，APNG、GIF、WebP、SVG 与异常文件占位。可验证 EPUB 声明封面按需提取，不改不可变书籍产物，不下载远程图片。详细接口与支持范围见[前端调整契约](handovers/frontend-refresh/API.md)。

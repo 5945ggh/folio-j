@@ -87,6 +87,14 @@ EPUB 已确定的不变式：原始素材字节不可变，材料归属 Source�
 
 工具审核需持久记录所属线程、目标及基础版本、具体拟执行操作、用户决定／附加指令与执行结果。当前Analysis工具把具体方案、决定与执行事实保存在Job.execution_state中，状态包含waiting_review；Occurrence及复杂组合方案仍待设计。待审核方案与正式 AnalysisRevision／Occurrence 分开，批准后仍可能执行失败，二者不能混为一条成功记录。
 
+### 3.1.1 本轮目录与材料使用状态（已实现并完成本轮验收）
+
+2026-10-04 核对 catalog_schemas.py、material_models.py、api/catalog.py 与服务层，增量迁移 `0008_material_usage` 接续 `0007_materials`，新增 material_usage、material_covers；本轮综合与浏览器验收证据见[验收表](handovers/frontend-refresh/ACCEPTANCE.md)。材料使用状态以 material_id 关联，保存可空 last_opened_at、not_started／in_progress／completed 及独立 revision，不变更 Material 版本或 ReadingPosition revision。显式打开 mutation 仅在新进入成功呈现目标章后执行；GET、预取与 refetch 无写入副作用。重复动作去重、条件版本校验拒绝迟到打开覆盖新手工状态；409 后读真实状态，不循环盲重试。状态失败不破坏位置队列，缓存更新不重挂载阅读器。
+
+目录由服务端先完整筛选、排序再分页，返回真实总数；字段白名单，普通文字搜索，标题比较集中测试，ID 破同值，最近打开空值双向置后，分页 50／上限 100。Source 概览有限样本与真实计数；讲解关联未删除 Segment，携带确切修订及原文短摘，避免前端 N+1。封面按 EPUB3 cover-image／EPUB2 meta name=cover 明确声明提取静态 PNG／JPEG，最大 4 MiB、1600 万像素；APNG、GIF、WebP、SVG、缺失及异常回退占位。不新增图像解码依赖，沿用标准库做有界头部／结构校验而非完整像素解码；浏览器加载失败仍占位。首次封面读取在线程中提取并缓存成功／失败，不修改原始字节、编译包和版本，目录不逐书解压。新查询、封面和写入检查完整 Source 可见性链。
+
+新增结构采用保留旧数据的增量迁移，旧有效位置初始化进行中，其余未开始，历史打开时间为空、不推断完成。空库／旧库测试保留 ID、原书字节、修订、位置，不用日常库验收。Query key 包含全部条件；导入、状态、Source 和 Analysis 变更刷新受影响目录及计数，旧请求不污染新条件，失效页码回有效页。API 收口见[本轮契约](handovers/frontend-refresh/API.md)，DTO 仍仅由 OpenAPI 生成，业务仍在 services。
+
 ### 3.2 关系
 
 ```mermaid
@@ -267,6 +275,9 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 所有接口以`/api`为前缀，实际请求／响应以FastAPI生成的OpenAPI及[`frontend/src/api/schema.d.ts`](../frontend/src/api/schema.d.ts)为准。当前路由实现见[`api/`](../backend/src/app/api/)：
 
 ```text
+/materials, /materials/{material_id}/usage, /materials/{material_id}/opened
+/materials/{material_id}/cover, /catalog/sources
+/sources/{source_id}/catalog/segments, /sources/{source_id}/catalog/analyses
 /settings, /settings/profile, /settings/styles, /settings/defaults
 /providers, /providers/{provider_id}/refresh-models, /providers/{provider_id}/models
 /provider-models/{model_id}, /provider-models/{model_id}/verifications
@@ -292,13 +303,15 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 
 缓存合并保留较新的 Job；相同或较旧版本的重复观察不再写入缓存，避免共享查询订阅形成更新循环。普通讨论成果由协调器在终态通知页面，快捷生成的成果观察与自动阅读仍由 `SegmentPage.tsx` 承接；两者共用阅读位置判断。轮询可能先于受理核实发现成果，此时也按 Job 的 `request_id` 查找首次提交快照。
 
-以下标明当前路由与未来入口，实际定义见[`App.tsx`](../frontend/src/App.tsx)：
+以下标明已注册路由与未来入口，实际定义见[`App.tsx`](../frontend/src/App.tsx)：
 
 | 路由 | 内容 |
 |---|---|
-| `/` | 暂时替换式跳转至`/sources`，保留未来Home入口 |
+| `/` | 替换式跳转 `/materials?type=book` |
 | `/sources` | Source 列表 |
-| `/sources/:id` | Source 详情：片段列表和新增片段入口 |
+| `/sources/:id` | 素材／片段／讲解与 `expanded=book` 展开窗口 |
+| `/materials` | 跨 Source 书籍目录 |
+| `/materials/:id` | 已有 EPUB 阅读，本轮统一导航及状态 |
 | `/segments/:id` | 片段阅读与按需展开的讨论；`analysis`／`revision`／`thread`／`chat`定位已有内容。Occurrence仍未实现 |
 | `/library`（未来，尚未注册） | 知识库：筛选、搜索、按 anchor 分组，每条都能跳转回来源 |
 | `/settings` | 学习背景、讲解预设、Provider／模型／用途默认值的维护，以及模型列表刷新与按需验证 |

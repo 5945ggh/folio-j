@@ -1,10 +1,14 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-04，代码基准 `2214fc9`（含 EPUB 切片 1）。Source／Segment、设置、讨论、Analysis、阅读导航及 EPUB 基础阅读已有实现；Occurrence 与积累库尚未实现，首轮 MVP 尚未全部完成。
+> 状态核对：2026-10-04，代码基准 `0c82ac1`（含 EPUB 切片 1 与前端调整）。Source／Segment、设置、讨论、Analysis、素材库、Source 聚合、阅读管理及 EPUB 基础阅读已有实现；Occurrence 与积累库尚未实现，首轮 MVP 尚未全部完成。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件维护当前实现、首轮目标差额、尚未落实的技术契约和验收依据；产品规则按下文链接回到负责文档，不另立一份功能规格。
 
-**当前阶段安排：** EPUB 切片 1 的正式导入与基础阅读已验收，用户确认当前阅读体验及 Yomitan 配合正常；后续先安排整体前端调整与全量注音两个独立切片，再推进选区学习。产品边界见 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)，顺序见[EPUB 阶段入口](epub-reading/README.md)。Occurrence 与积累库继续暂缓。
+**当前阶段安排：** EPUB 切片 1 的正式导入与基础阅读已验收，用户确认当前阅读体验及 Yomitan 配合正常；整体前端调整已完成本轮验收，后续全量注音及选区学习保持独立切片。产品边界见 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)，顺序见[EPUB 阶段入口](epub-reading/README.md)。Occurrence 与积累库继续暂缓。
+
+2026-10-04 已收口整体前端调整的素材库、Source 三视图、展开窗口、侧栏及轻量阅读管理行为，目录、状态 API、统一外壳及页面完成，综合检查与导入／工作台／重排浏览器回归已通过。计划与新增验收入口见[前端调整](frontend-refresh/PLAN.md)；旧 EPUB 验收继续仅证明原切片。后续注音与选区学习仍独立。
+
+主代理本轮 `gen-api`、`lint`、`test`、`build`、`check-docs` 与 diff 检查通过，测试合计 288（后端 233、前端 51、实验 4）；生产主包 600.92 kB 提示保留。独立测试库实际验证四视口、Source 窗口及概览往返、长文重排恢复、导入失败／取消／复用、状态失败重试和工作台审核／停止／迟到成果；范围及截图见[本轮验收](frontend-refresh/ACCEPTANCE.md)。日常数据库未迁移或写入。
 
 ## 1. 当前实现、差额与验收依据
 
@@ -16,6 +20,7 @@
 | 持久讲解 | 多份 Analysis、不可变 Revision、Section／Preamble、总体讲解快捷入口、生成保存、块级编辑与具体操作审核、用户删除 | 不开放整份 Analysis 的 Agent 删除工具；Occurrence 引用尚无法接入 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
 | 阅读与导航 | 普通入口默认阅读、原文与讲解对照、确切修订／讨论定位、独立讲解总标题、本页讨论草稿保留 | 刷新或离开页面不承诺恢复未提交草稿；构建有主 JS 包大于 500 kB 的历史提示 | [阅读导航验收](archived/READING_NAVIGATION_ACCEPTANCE.md)，已在 `219cd24` 提交 |
 | 学习条目与积累库 | 尚无 Occurrence 持久化、候选工具、整理状态操作或积累库页面 | PRD F5／F6 保留后续目标，本 EPUB 阶段暂缓；字段、定位、anchor 与相关恢复契约未落实 | 只有 [A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md)，不等于生产实现或契约 |
+| 前端调整 | 集中书籍目录、Source 三视图及展开窗口、可收窄全局侧栏、轻量使用状态与最近打开，增量迁移 0008_material_usage | 静态封面仅有界 PNG／JPEG，其余占位；主包体积提示；无新依赖；不包含注音／选区学习 | [本轮验收表](frontend-refresh/ACCEPTANCE.md)（本轮真实证据与限制） |
 | EPUB 原生阅读 | 来源下导入、原书托管、目录组章与连续图文、横竖排／字号／行距、持久阅读位置及重排恢复、Source 删除材料门禁；用户实测 Yomitan 配合正常 | 选区学习、材料对话及讨论形成讲解尚未接入；自动注音未实现，用户认可当前不做分页 | [切片 1 验收](epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](epub-reading/SLICE_0_ACCEPTANCE.md) |
 
 **实现占位：** Analysis 删除影响响应的 `occurrence_count` 当前默认 `0`，服务未查询 Occurrence 引用；不能据此声称已提供学习条目引用计数。实现依据见 [响应模型](../../backend/src/app/analysis_schemas.py)与[讲解服务](../../backend/src/app/services/analyses.py)。
