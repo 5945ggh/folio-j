@@ -41,3 +41,24 @@ class ReadingPosition(Base):
     revision: Mapped[int] = mapped_column(Integer, nullable=False)
     payload: Mapped[str] = mapped_column(Text, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class MaterialUsage(Base):
+    """Mutable management state; its revision is independent of reading position."""
+
+    __tablename__ = "material_usage"
+    material_id: Mapped[str] = mapped_column(ForeignKey("materials.id"), primary_key=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    last_opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    last_action_id: Mapped[str | None] = mapped_column(String(100))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class MaterialCover(Base):
+    """Rebuildable bounded raster cache; null data is a cached fallback."""
+
+    __tablename__ = "material_covers"
+    material_id: Mapped[str] = mapped_column(ForeignKey("materials.id"), primary_key=True)
+    media_type: Mapped[str | None] = mapped_column(String(40))
+    data: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)

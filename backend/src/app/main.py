@@ -108,6 +108,9 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         )
 
     application.include_router(health_router)
+    from app.api.catalog import router as catalog_router
+
+    application.include_router(catalog_router)
     application.include_router(materials_router)
     application.include_router(analyses_router)
     application.include_router(sources_router)

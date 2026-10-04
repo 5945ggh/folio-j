@@ -822,3 +822,17 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
 parse_xml = _xml
 inline_css = _inline_css
 presentation_attributes = _presentation_attributes
+
+
+def parse_package_xml(data: bytes) -> ET.Element:
+    """Shared bounded/entity-safe XML parser for rebuildable display extraction."""
+    return _xml(data)
+
+
+def resolve_package_path(base: str, target: str) -> str:
+    """Resolve local package paths under the compiler's established safety boundary."""
+    return _resolve(base, target)
+
+
+def package_tag(element: ET.Element) -> str:
+    return _tag(element)

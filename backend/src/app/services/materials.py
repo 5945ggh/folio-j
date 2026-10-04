@@ -35,12 +35,17 @@ def bundle(material: Material) -> CompiledBook:
     return CompiledBook.model_validate_json(zlib.decompress(material.compiled_bundle))
 
 
-async def require_material(session: AsyncSession, material_id: str) -> Material:
-    material = await session.scalar(
+async def require_material(
+    session: AsyncSession, material_id: str, *, with_bundle: bool = True
+) -> Material:
+    statement = (
         select(Material)
         .join(Source, Material.source_id == Source.id)
         .where(Material.id == material_id, Source.deleted_at.is_(None))
     )
+    if not with_bundle:
+        statement = statement.options(defer(Material.compiled_bundle))
+    material = await session.scalar(statement)
     if material is None:
         raise HTTPException(404, "材料不存在")
     return material

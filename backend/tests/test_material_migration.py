@@ -53,6 +53,85 @@ def test_material_migration_from_empty_database(
     command.upgrade(config, "head")
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0007_materials",
+            "0008_material_usage",
         )
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+
+
+def test_usage_upgrade_validates_positions_and_preserves_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+    import zlib
+
+    from test_materials import compiled
+
+    database = tmp_path / "old-books.db"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
+    config = Config()
+    config.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
+    command.upgrade(config, "0007_materials")
+    stamp = "2026-09-26 00:00:00"
+    book = zlib.compress(compiled(b"").model_dump_json().encode())
+    source = "source"
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO sources(id,title,description,note,created_at,updated_at) "
+            "VALUES (?,?,?,?,?,?)",
+            (source, "旧书", "原描述", "", stamp, stamp),
+        )
+        for i in range(4):
+            mid = str(i)
+            connection.execute(
+                "INSERT INTO materials(id,source_id,title,source_sha256,version_id,"
+                "product_sha256,contract_version,original_bytes,warnings,compiled_bundle,"
+                "created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    mid,
+                    source,
+                    "旧书" + mid,
+                    mid,
+                    "version" + mid,
+                    "hash",
+                    "test",
+                    b"original" + mid.encode(),
+                    "[]",
+                    book,
+                    stamp,
+                ),
+            )
+            if i < 3:
+                payload = {
+                    "version_id": "version" + mid,
+                    "chapter_id": "c1",
+                    "part_index": 0,
+                    "resource_id": "r1",
+                    "kind": "text",
+                    "offset": 2,
+                }
+                if i == 1:
+                    payload["version_id"] = "stale"
+                if i == 2:
+                    payload["resource_id"] = "foreign"
+                connection.execute(
+                    "INSERT INTO reading_positions(material_id,revision,payload,updated_at) "
+                    "VALUES (?,1,?,?)",
+                    (mid, json.dumps(payload), stamp),
+                )
+        before = connection.execute("SELECT * FROM materials ORDER BY id").fetchall()
+        positions = connection.execute(
+            "SELECT * FROM reading_positions ORDER BY material_id"
+        ).fetchall()
+    command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("SELECT * FROM materials ORDER BY id").fetchall() == before
+        assert (
+            connection.execute("SELECT * FROM reading_positions ORDER BY material_id").fetchall()
+            == positions
+        )
+        rows = connection.execute(
+            "SELECT status,revision,last_opened_at,last_action_id "
+            "FROM material_usage ORDER BY material_id"
+        ).fetchall()
+        assert rows == [("in_progress", 0, None, None)] + [("not_started", 0, None, None)] * 3
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
