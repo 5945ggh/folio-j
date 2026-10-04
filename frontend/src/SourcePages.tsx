@@ -1,13 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { api } from "./api/client";
+import { catalogKeys } from "./catalog/api";
+import { readPreference, savePreference } from "./catalog/hooks";
+import { SourceContent, SourceDirectory } from "./catalog/SourceViews";
+import { sourceListSearch } from "./catalog/state";
 import {
 	errorMessage,
 	getDeleteImpact,
 	getSource,
-	listSegments,
-	listSources,
 	queries,
 	requireData,
 	type SegmentFields,
@@ -15,10 +17,8 @@ import {
 	type SourceFields,
 } from "./content";
 import { SegmentForm, SourceForm } from "./Forms";
-import { MaterialList } from "./materials/MaterialList";
 import {
 	ConfirmDialog,
-	dateLabel,
 	InlineError,
 	Loading,
 	PageError,
@@ -36,7 +36,6 @@ export function SourceIndex() {
 		};
 	}, []);
 	const [creating, setCreating] = useState(false);
-	const sources = useQuery({ queryKey: queries.sources, queryFn: listSources });
 	const create = useMutation({
 		mutationFn: async (fields: SourceFields) => {
 			const { data, error, response } = await api.POST("/api/sources", {
@@ -46,20 +45,16 @@ export function SourceIndex() {
 		},
 		onSuccess: (source) => {
 			void client.invalidateQueries({ queryKey: queries.sources });
+			void client.invalidateQueries({ queryKey: catalogKeys.all });
 			if (active.current) navigate(`/sources/${source.id}`);
 		},
 	});
-	if (sources.isPending) return <Loading />;
-	if (sources.isError)
-		return (
-			<PageError error={sources.error} retry={() => void sources.refetch()} />
-		);
 	return (
 		<Shell>
 			<div className="page-heading">
 				<div>
 					<p className="eyebrow">SOURCES</p>
-					<h1>来源目录</h1>
+					<h1>Source</h1>
 					<p>按作品或出处整理学习片段，随时返回原文阅读。</p>
 				</div>
 				<button
@@ -70,53 +65,22 @@ export function SourceIndex() {
 						setCreating(true);
 					}}
 				>
-					新建来源
+					新建 Source
 				</button>
 			</div>
 			{creating && (
-				<section aria-label="新建来源" className="form-section">
-					<h2>新建来源</h2>
+				<section aria-label="新建 Source" className="form-section">
+					<h2>新建 Source</h2>
 					<SourceForm
 						onSave={(fields) => create.mutate(fields)}
 						onCancel={() => setCreating(false)}
 						pending={create.isPending}
 						error={create.error}
-						submitLabel="保存来源"
+						submitLabel="保存 Source"
 					/>
 				</section>
 			)}
-			<section className="list-section" aria-label="来源列表">
-				<div className="section-heading">
-					<h2>全部来源</h2>
-					<span>{sources.data.length} 个来源</span>
-				</div>
-				{sources.data.length === 0 ? (
-					<div className="empty-state">
-						<p>
-							还没有来源。先为作品或出处创建一条来源记录，再添加想学习的片段。
-						</p>
-					</div>
-				) : (
-					<div className="source-list">
-						{sources.data.map((source) => (
-							<Link
-								key={source.id}
-								className="source-row"
-								to={`/sources/${source.id}`}
-							>
-								<div>
-									<h3>{source.title}</h3>
-									{source.description && <p>{source.description}</p>}
-								</div>
-								<span className="count">{source.segment_count} 个片段</span>
-								<span className="row-arrow" aria-hidden="true">
-									→
-								</span>
-							</Link>
-						))}
-					</div>
-				)}
-			</section>
+			<SourceDirectory />
 		</Shell>
 	);
 }
@@ -222,6 +186,11 @@ function SourceDelete({
 }
 
 export function SourceDetail() {
+	const location = useLocation();
+	const sourceIndex = `/sources${sourceListSearch(location.search, "s", "")}`;
+	const [contextCollapsed, setContextCollapsed] = useState(
+		() => readPreference("source-context") === "collapsed",
+	);
 	const { id = "" } = useParams();
 	const navigate = useNavigate();
 	const client = useQueryClient();
@@ -239,11 +208,6 @@ export function SourceDetail() {
 		queryKey: queries.source(id),
 		queryFn: () => getSource(id),
 	});
-	const segments = useQuery({
-		queryKey: queries.segments(id),
-		queryFn: () => listSegments(id),
-		enabled: source.isSuccess,
-	});
 	const update = useMutation({
 		mutationFn: async (fields: SourceFields) => {
 			const { data, error, response } = await api.PATCH(
@@ -256,6 +220,7 @@ export function SourceDetail() {
 			if (activeId.current === id) setEditing(false);
 			void client.invalidateQueries({ queryKey: queries.source(id) });
 			void client.invalidateQueries({ queryKey: queries.sources });
+			void client.invalidateQueries({ queryKey: catalogKeys.all });
 		},
 	});
 	const create = useMutation({
@@ -269,12 +234,13 @@ export function SourceDetail() {
 		onSuccess: (segment) => {
 			void client.invalidateQueries({ queryKey: queries.source(id) });
 			void client.invalidateQueries({ queryKey: queries.sources });
+			void client.invalidateQueries({ queryKey: catalogKeys.all });
 			void client.invalidateQueries({ queryKey: queries.segments(id) });
 			if (activeId.current === id)
 				navigate(`/segments/${segment.id}`, {
 					state: {
 						returnTo: {
-							to: `/sources/${id}`,
+							to: `/sources/${id}?view=segments`,
 							label: source.data?.title ?? "来源详情",
 						},
 					},
@@ -288,137 +254,126 @@ export function SourceDetail() {
 		);
 	return (
 		<Shell>
-			<nav className="breadcrumb" aria-label="位置">
-				<Link to="/sources">来源目录</Link>
-				<span aria-hidden="true">/</span>
-				<span aria-current="page">{source.data.title}</span>
-			</nav>
-			<div className="page-heading">
-				<div>
-					<p className="eyebrow">SOURCE</p>
-					<h1>{source.data.title}</h1>
-					<p>{source.data.description || "这份来源还没有描述。"}</p>
-				</div>
-				<div className="heading-actions">
-					<button
-						className="button secondary"
-						type="button"
-						onClick={() => {
-							update.reset();
-							setEditing(!editing);
-						}}
-					>
-						编辑来源
-					</button>
-					<button
-						className="button primary"
-						type="button"
-						onClick={() => {
-							create.reset();
-							setCreating(true);
-						}}
-					>
-						添加片段
-					</button>
-				</div>
-			</div>
-			{source.data.note && !editing && (
-				<aside className="note-card">
-					<span>管理备注</span>
-					<p>{source.data.note}</p>
+			<div
+				className={`source-space ${contextCollapsed ? "source-context-hidden" : ""}`}
+			>
+				<aside className="source-context-panel">
+					<Link className="button secondary" to={sourceIndex}>
+						管理 Source
+					</Link>
+					<SourceDirectory compact />
 				</aside>
-			)}
-			{editing && (
-				<section className="form-section" aria-label="编辑来源">
-					<h2>编辑来源</h2>
-					<SourceForm
-						key={source.data.updated_at}
-						initial={source.data}
-						onSave={(fields) => update.mutate(fields)}
-						onCancel={() => setEditing(false)}
-						pending={update.isPending}
-						error={update.error}
-						submitLabel="保存更改"
-					/>
-				</section>
-			)}
-			{creating && (
-				<section className="form-section" aria-label="添加片段">
-					<h2>添加片段</h2>
-					<SegmentForm
-						onSave={(fields) => create.mutate(fields)}
-						onCancel={() => setCreating(false)}
-						pending={create.isPending}
-						error={create.error}
-						submitLabel="保存片段"
-					/>
-				</section>
-			)}
-			<MaterialList key={id} sourceId={id} />
-			<section className="list-section" aria-label="片段列表">
-				<div className="section-heading">
-					<h2>学习片段</h2>
-					<span>{source.data.segment_count} 个片段</span>
-				</div>
-				{segments.isPending ? (
-					<p className="loading">正在加载片段…</p>
-				) : segments.isError ? (
-					<div className="state-card">
-						<InlineError error={segments.error} />
-						<button
-							className="button secondary"
-							type="button"
-							onClick={() => void segments.refetch()}
-						>
-							重试
-						</button>
-					</div>
-				) : segments.data.length === 0 ? (
-					<div className="empty-state">
-						<p>还没有片段。手动添加一段日文，保存后可随时重读。</p>
-					</div>
-				) : (
-					<div className="segment-list">
-						{segments.data.map((segment) => (
-							<Link
-								className="segment-row"
-								key={segment.id}
-								to={`/segments/${segment.id}`}
-								state={{
-									returnTo: { to: `/sources/${id}`, label: source.data.title },
+				<div className="source-detail-content">
+					<nav className="breadcrumb" aria-label="位置">
+						<Link to={sourceIndex}>Source</Link>
+						<span aria-hidden="true">/</span>
+						<span aria-current="page">{source.data.title}</span>
+					</nav>
+					<div className="page-heading">
+						<div>
+							<p className="eyebrow">SOURCE</p>
+							<h1>{source.data.title}</h1>
+							<p>{source.data.description || "这份来源还没有描述。"}</p>
+						</div>
+						<div className="heading-actions">
+							<details className="source-management">
+								<summary className="button secondary">更多</summary>
+								<div>
+									<button
+										className="text-danger"
+										type="button"
+										onClick={(event) => {
+											event.currentTarget.focus();
+											setDeleting(true);
+										}}
+									>
+										删除 Source 及其内容…
+									</button>
+								</div>
+							</details>
+							<button
+								className="button secondary source-context-toggle"
+								type="button"
+								aria-expanded={!contextCollapsed}
+								onClick={() => {
+									setContextCollapsed(!contextCollapsed);
+									savePreference(
+										"source-context",
+										contextCollapsed ? "expanded" : "collapsed",
+									);
 								}}
 							>
-								<span className="segment-text" lang="ja">
-									{segment.text}
-								</span>
-								<span className="segment-meta">
-									{segment.source_ref || dateLabel(segment.created_at)}{" "}
-									<span aria-hidden="true">→</span>
-								</span>
-							</Link>
-						))}
+								{contextCollapsed ? "展开 Source 列表" : "收起 Source 列表"}
+							</button>
+							<button
+								className="button secondary"
+								type="button"
+								onClick={() => {
+									update.reset();
+									setEditing(!editing);
+								}}
+							>
+								编辑 Source
+							</button>
+							<button
+								className="button primary"
+								type="button"
+								onClick={() => {
+									create.reset();
+									setCreating(true);
+								}}
+							>
+								添加片段
+							</button>
+						</div>
 					</div>
-				)}
-			</section>
-			<div className="danger-zone">
-				<button
-					className="text-danger"
-					type="button"
-					onClick={() => setDeleting(true)}
-				>
-					删除此来源及其片段
-				</button>
+					{source.data.note && !editing && (
+						<aside className="note-card">
+							<span>管理备注</span>
+							<p>{source.data.note}</p>
+						</aside>
+					)}
+					{editing && (
+						<section className="form-section" aria-label="编辑 Source">
+							<h2>编辑 Source</h2>
+							<SourceForm
+								key={source.data.updated_at}
+								initial={source.data}
+								onSave={(fields) => update.mutate(fields)}
+								onCancel={() => setEditing(false)}
+								pending={update.isPending}
+								error={update.error}
+								submitLabel="保存更改"
+							/>
+						</section>
+					)}
+					{creating && (
+						<section className="form-section" aria-label="添加片段">
+							<h2>添加片段</h2>
+							<SegmentForm
+								onSave={(fields) => create.mutate(fields)}
+								onCancel={() => setCreating(false)}
+								pending={create.isPending}
+								error={create.error}
+								submitLabel="保存片段"
+							/>
+						</section>
+					)}
+					<SourceContent source={source.data} />
+
+					{deleting && (
+						<SourceDelete
+							source={source.data}
+							close={() => setDeleting(false)}
+							deleted={() => {
+								void client.invalidateQueries({ queryKey: queries.sources });
+								void client.invalidateQueries({ queryKey: catalogKeys.all });
+								if (activeId.current === id) navigate("/sources");
+							}}
+						/>
+					)}
+				</div>
 			</div>
-			{deleting && (
-				<SourceDelete
-					source={source.data}
-					close={() => setDeleting(false)}
-					deleted={() => {
-						void client.invalidateQueries({ queryKey: queries.sources });
-						if (activeId.current === id) navigate("/sources");
-					}}
-				/>
-			)}
 		</Shell>
 	);
 }

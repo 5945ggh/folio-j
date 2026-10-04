@@ -1,16 +1,24 @@
+import "./reader-refresh.css";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { getSource, queries, RequestError } from "../content";
+import { returnDestination } from "../navigation";
 import { InlineError, Loading, PageError, Shell } from "../Shared";
 import {
 	type Chapter,
 	getChapter,
 	getMaterial,
+	getUsage,
 	type Material,
+	type MaterialUsage,
 	materialKeys,
 	type Position,
+	recordOpened,
 	type Settings,
 	savePosition,
+	setUsage,
+	usageKey,
 } from "./api";
 import {
 	htmlEscape,
@@ -28,6 +36,7 @@ import {
 	PositionQueue,
 	scrollProgress,
 } from "./position";
+import { freshestUsage, OpenAction } from "./usage";
 import { type LayoutPass, ViewportRecovery, viewportSize } from "./viewport";
 
 const defaults: Settings = {
@@ -54,8 +63,102 @@ function partDocument(
 	// Compiled author CSS is isolated in this document; CSP prevents external resource loads.
 	return `<!doctype html><html ${attrs(resource.html_attributes)}><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; script-src 'none'; connect-src 'none'"><style>${resource.css.replace(/<\/style/gi, "&lt;/style")}</style><style>html,body{margin:0!important;padding:0!important;background:transparent!important;}body{font-size:${settings.font_size}px!important;line-height:${settings.line_height}!important;writing-mode:${settings.writing_mode}!important;color:#292b28!important;}img{max-width:100%;max-height:600px;object-fit:contain;}ruby rt{font-size:.55em;}a{pointer-events:none;}html,body{overflow:hidden!important;}</style></head><body ${attrs(resource.body_attributes)}>${part.html}</body></html>`;
 }
-function Reader({ book, notice }: { book: Material; notice: boolean }) {
+function Reader({
+	book,
+	notice,
+}: {
+	book: Material;
+	notice: "imported" | "reused" | null;
+}) {
 	const client = useQueryClient();
+	const location = useLocation();
+	const returnTo = returnDestination(location.state, {
+		to: "/materials",
+		label: "素材库",
+	});
+	const source = useQuery({
+		queryKey: queries.source(book.source_id),
+		queryFn: () => getSource(book.source_id),
+	});
+	const usage = useQuery({
+		queryKey: usageKey(book.id),
+		queryFn: async () => {
+			const fresh = await getUsage(book.id);
+			return freshestUsage(
+				client.getQueryData<MaterialUsage>(usageKey(book.id)),
+				fresh,
+			);
+		},
+		refetchOnMount: "always",
+	});
+	const [usageError, setUsageError] = useState<Error | null>(null);
+	const [usageBusy, setUsageBusy] = useState(false);
+	const [retryOpen, setRetryOpen] = useState(false);
+	const [presented, setPresented] = useState(false);
+	const [openAction] = useState(() => new OpenAction(crypto.randomUUID()));
+	const acceptUsage = useCallback(
+		(fresh: MaterialUsage) => {
+			client.setQueryData<MaterialUsage>(usageKey(book.id), (previous) =>
+				freshestUsage(previous, fresh),
+			);
+			void client.invalidateQueries({ queryKey: ["catalog"] });
+		},
+		[book.id, client],
+	);
+	const opened = useCallback(async () => {
+		if (!usage.data || !usage.isFetchedAfterMount) return;
+		try {
+			await openAction.run(usage.data.revision, async (actionId, revision) => {
+				try {
+					acceptUsage(await recordOpened(book.id, actionId, revision));
+					setRetryOpen(false);
+				} catch (failure) {
+					if (failure instanceof RequestError && failure.status === 409) {
+						await client.invalidateQueries({ queryKey: usageKey(book.id) });
+						setRetryOpen(false);
+						setUsageError(new Error("阅读状态已更新，打开记录未覆盖新状态。"));
+						return;
+					}
+					throw failure;
+				}
+			});
+		} catch (failure) {
+			setRetryOpen(true);
+			setUsageError(
+				failure instanceof Error ? failure : new Error(String(failure)),
+			);
+		}
+	}, [
+		usage.data,
+		usage.isFetchedAfterMount,
+		openAction,
+		acceptUsage,
+		book.id,
+		client,
+	]);
+	useEffect(() => {
+		if (presented) void opened();
+	}, [presented, opened]);
+	const updateUsage = async (next: MaterialUsage["status"]) => {
+		if (!usage.data || usageBusy) return;
+		setUsageBusy(true);
+		setUsageError(null);
+		try {
+			acceptUsage(await setUsage(book.id, next, usage.data.revision));
+		} catch (failure) {
+			if (failure instanceof RequestError && failure.status === 409) {
+				await client.invalidateQueries({ queryKey: usageKey(book.id) });
+				setUsageError(
+					new Error("阅读状态已被其他操作更新，请确认当前状态后重新选择。"),
+				);
+			} else
+				setUsageError(
+					failure instanceof Error ? failure : new Error(String(failure)),
+				);
+		} finally {
+			setUsageBusy(false);
+		}
+	};
 	const warnings = Array.from(new Set(book.warnings));
 	const [chapterId, setChapterId] = useState(
 		book.reading_position?.chapter_id ?? book.chapters[0]?.id ?? "",
@@ -263,6 +366,7 @@ function Reader({ book, notice }: { book: Material; notice: boolean }) {
 				}
 			}
 			if (!recovery.current.finish(pass, viewportSize(root))) return;
+			setPresented(true);
 			observe();
 		},
 		[chapter.data, chapterId, settings.writing_mode, observe],
@@ -453,172 +557,230 @@ function Reader({ book, notice }: { book: Material; notice: boolean }) {
 	};
 	const renderToken = generation.current;
 	return (
-		<Shell>
-			<div className="material-heading">
-				<Link
-					className="breadcrumb"
-					to={`/sources/${book.source_id}`}
-					onClick={() => {
-						if (timer.current) clearTimeout(timer.current);
-						const anchor = anchorBeforeLayout(
-							recovery.current.restoring,
-							pending.current,
-							capture,
-						);
-						if (anchor) {
-							pending.current = anchor;
-							queue.current?.enqueue(anchor);
-						}
-					}}
-				>
-					← 返回来源
-				</Link>
-				<h1 className="material-title">{book.title}</h1>
-				{notice && <p role="status">已打开此前导入的材料。</p>}
-				{warnings.length > 0 && (
-					<details className="material-import-notes">
-						<summary>导入提示（{warnings.length}）</summary>
-						<ul>
-							{warnings.map((warning) => (
-								<li key={warning}>{warning}</li>
-							))}
-						</ul>
-					</details>
-				)}
-				<div className="material-tools">
-					<label>
-						目录{" "}
-						<select
-							aria-label="阅读章节"
-							value={chapterId}
-							onChange={(e) => choose(e.target.value)}
-						>
-							{book.chapters.map((c) => (
-								<option key={c.id} value={c.id}>
-									{"　".repeat(Math.max(0, c.level - 1))}
-									{c.title}
-								</option>
-							))}
-						</select>
-					</label>
-					<button
-						className="button secondary"
-						type="button"
-						onClick={() => setExpanded(!expanded)}
-						aria-expanded={expanded}
+		<Shell fullWidth>
+			<div className="reader-refresh">
+				<div className="material-heading">
+					<Link
+						className="breadcrumb"
+						to={returnTo.to}
+						onClick={() => {
+							if (timer.current) clearTimeout(timer.current);
+							const anchor = anchorBeforeLayout(
+								recovery.current.restoring,
+								pending.current,
+								capture,
+							);
+							if (anchor) {
+								pending.current = anchor;
+								queue.current?.enqueue(anchor);
+							}
+						}}
 					>
-						阅读设置
-					</button>
-				</div>
-				{expanded && (
-					<div className="material-settings">
+						← {returnTo.label}
+					</Link>
+					<h1 className="material-title" title={book.title}>
+						{book.title}
+					</h1>
+					<Link
+						className="reader-source"
+						to={`/sources/${book.source_id}?view=materials`}
+					>
+						{source.data?.title ?? "所属 Source"}
+					</Link>
+					{notice && (
+						<p role="status">
+							{notice === "reused"
+								? "已打开此前导入的材料。"
+								: "已新导入书籍，开始阅读。"}
+						</p>
+					)}
+					{warnings.length > 0 && (
+						<details className="material-import-notes">
+							<summary>导入提示（{warnings.length}）</summary>
+							<ul>
+								{warnings.map((warning) => (
+									<li key={warning}>{warning}</li>
+								))}
+							</ul>
+						</details>
+					)}
+					<div className="material-tools">
 						<label>
-							字号{" "}
-							<input
-								aria-label="字号"
-								type="range"
-								min="12"
-								max="40"
-								value={settings.font_size}
-								onChange={(e) =>
-									change({ ...settings, font_size: Number(e.target.value) })
-								}
-							/>
-							{settings.font_size}
-						</label>
-						<label>
-							行距{" "}
-							<input
-								aria-label="行距"
-								type="range"
-								min="1"
-								max="3"
-								step="0.1"
-								value={settings.line_height}
-								onChange={(e) =>
-									change({ ...settings, line_height: Number(e.target.value) })
-								}
-							/>
-							{settings.line_height}
-						</label>
-						<label>
-							排版{" "}
+							阅读状态{" "}
 							<select
-								aria-label="排版"
-								value={settings.writing_mode}
-								onChange={(e) =>
-									change({
-										...settings,
-										writing_mode: e.target.value as Settings["writing_mode"],
-									})
+								aria-label="阅读状态"
+								value={usage.data?.status ?? "not_started"}
+								disabled={!usage.isSuccess || usageBusy}
+								onChange={(event) =>
+									void updateUsage(
+										event.target.value as MaterialUsage["status"],
+									)
 								}
 							>
-								<option value="horizontal-tb">横排</option>
-								<option value="vertical-rl">竖排</option>
+								<option value="not_started">未开始</option>
+								<option value="in_progress">进行中</option>
+								<option value="completed">已完成</option>
 							</select>
 						</label>
+						<label>
+							目录{" "}
+							<select
+								aria-label="阅读章节"
+								value={chapterId}
+								onChange={(e) => choose(e.target.value)}
+							>
+								{book.chapters.map((c) => (
+									<option key={c.id} value={c.id}>
+										{"　".repeat(Math.max(0, c.level - 1))}
+										{c.title}
+									</option>
+								))}
+							</select>
+						</label>
+						<button
+							className="button secondary"
+							type="button"
+							onClick={() => setExpanded(!expanded)}
+							aria-expanded={expanded}
+						>
+							阅读设置
+						</button>
 					</div>
-				)}
-			</div>
-			<InlineError error={error} />
-			<div className="material-status" aria-live="polite">
-				<span>{Math.round(progress * 100)}% · 章内进度</span>
-				<span>{status}</span>
-				{error && (
+					{expanded && (
+						<div className="material-settings">
+							<label>
+								字号{" "}
+								<input
+									aria-label="字号"
+									type="range"
+									min="12"
+									max="40"
+									value={settings.font_size}
+									onChange={(e) =>
+										change({ ...settings, font_size: Number(e.target.value) })
+									}
+								/>
+								{settings.font_size}
+							</label>
+							<label>
+								行距{" "}
+								<input
+									aria-label="行距"
+									type="range"
+									min="1"
+									max="3"
+									step="0.1"
+									value={settings.line_height}
+									onChange={(e) =>
+										change({ ...settings, line_height: Number(e.target.value) })
+									}
+								/>
+								{settings.line_height}
+							</label>
+							<label>
+								排版{" "}
+								<select
+									aria-label="排版"
+									value={settings.writing_mode}
+									onChange={(e) =>
+										change({
+											...settings,
+											writing_mode: e.target.value as Settings["writing_mode"],
+										})
+									}
+								>
+									<option value="horizontal-tb">横排</option>
+									<option value="vertical-rl">竖排</option>
+								</select>
+							</label>
+						</div>
+					)}
+				</div>
+				<InlineError error={usage.error ?? usageError} />
+				{retryOpen && (
 					<button
-						type="button"
 						className="button secondary"
-						onClick={() => window.location.reload()}
+						type="button"
+						onClick={() => {
+							setUsageError(null);
+							void opened();
+						}}
 					>
-						重新打开
+						重试打开记录
 					</button>
 				)}
+				<InlineError error={error} />
+				<div className="material-status" aria-live="polite">
+					<span>{Math.round(progress * 100)}% · 章内进度</span>
+					<span>{status}</span>
+					{error && (
+						<button
+							type="button"
+							className="button secondary"
+							onClick={() => window.location.reload()}
+						>
+							重新打开
+						</button>
+					)}
+				</div>
+				{chapter.isPending ? (
+					<p>正在打开章节…</p>
+				) : chapter.isError ? (
+					<div className="reader-chapter-error">
+						<InlineError error={chapter.error} />
+						<button
+							className="button secondary"
+							type="button"
+							onClick={() => void chapter.refetch()}
+						>
+							重试章节
+						</button>
+					</div>
+				) : (
+					<section
+						key={chapterId}
+						ref={container}
+						onScroll={observe}
+						className={`material-reading ${settings.writing_mode === "vertical-rl" ? "material-vertical" : ""}`}
+						aria-label={chapter.data.title}
+					>
+						{chapter.data.parts.map((part, index) => {
+							const resource = chapter.data.resources.find(
+								(r) => r.id === part.resource_id,
+							);
+							return resource ? (
+								<iframe
+									key={`${chapterId}-${part.spine_index}-${part.resource_id}-${part.start}-${settings.font_size}-${settings.line_height}-${settings.writing_mode}`}
+									title={`${chapter.data.title} ${index + 1}`}
+									className="material-part"
+									sandbox="allow-same-origin"
+									srcDoc={partDocument(part, resource, settings)}
+									ref={(element) => {
+										if (element) elements.current.set(index, element);
+										else elements.current.delete(index);
+									}}
+									onLoad={(e) => load(index, e.currentTarget, renderToken)}
+								/>
+							) : null;
+						})}
+					</section>
+				)}
 			</div>
-			{chapter.isPending ? (
-				<p>正在打开章节…</p>
-			) : chapter.isError ? (
-				<PageError error={chapter.error} retry={() => void chapter.refetch()} />
-			) : (
-				<section
-					key={chapterId}
-					ref={container}
-					onScroll={observe}
-					className={`material-reading ${settings.writing_mode === "vertical-rl" ? "material-vertical" : ""}`}
-					aria-label={chapter.data.title}
-				>
-					{chapter.data.parts.map((part, index) => {
-						const resource = chapter.data.resources.find(
-							(r) => r.id === part.resource_id,
-						);
-						return resource ? (
-							<iframe
-								key={`${chapterId}-${part.spine_index}-${part.resource_id}-${part.start}-${settings.font_size}-${settings.line_height}-${settings.writing_mode}`}
-								title={`${chapter.data.title} ${index + 1}`}
-								className="material-part"
-								sandbox="allow-same-origin"
-								srcDoc={partDocument(part, resource, settings)}
-								ref={(element) => {
-									if (element) elements.current.set(index, element);
-									else elements.current.delete(index);
-								}}
-								onLoad={(e) => load(index, e.currentTarget, renderToken)}
-							/>
-						) : null;
-					})}
-				</section>
-			)}
 		</Shell>
 	);
 }
 function MaterialOpening({ id }: { id: string }) {
 	const location = useLocation();
 	const navigate = useNavigate();
-	const [notice] = useState(
-		() =>
-			typeof location.state === "object" &&
-			location.state !== null &&
-			location.state.materialReused === true,
-	);
+	const [notice] = useState<"imported" | "reused" | null>(() => {
+		if (typeof location.state !== "object" || location.state === null)
+			return null;
+		if (location.state.materialReused === true) return "reused";
+		return location.state.materialImported === true ||
+			location.state.materialReused === false
+			? "imported"
+			: null;
+	});
 	const [snapshot, setSnapshot] = useState<Material | null>(null);
 	const book = useQuery({
 		queryKey: materialKeys.book(id),
@@ -626,9 +788,16 @@ function MaterialOpening({ id }: { id: string }) {
 		refetchOnMount: "always",
 	});
 	useEffect(() => {
-		if (notice && location.state?.materialReused === true) {
+		if (
+			notice &&
+			typeof location.state === "object" &&
+			location.state !== null &&
+			("materialReused" in location.state ||
+				"materialImported" in location.state)
+		) {
 			const state = { ...location.state };
 			delete state.materialReused;
+			delete state.materialImported;
 			navigate(location.pathname, { replace: true, state });
 		}
 	}, [notice, location.pathname, location.state, navigate]);

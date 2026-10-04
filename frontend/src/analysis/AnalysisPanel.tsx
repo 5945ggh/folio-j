@@ -91,6 +91,7 @@ export function AnalysisPanel({
 			client.removeQueries({ queryKey: analysisKeys.impact(deletedId) });
 			if (selectedRef.current === deletedId) onSelect(null, null);
 			void client.invalidateQueries({ queryKey: analysisKeys.list(segmentId) });
+			void client.invalidateQueries({ queryKey: ["catalog"] });
 		},
 	});
 	const stop = useMutation({

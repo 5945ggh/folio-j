@@ -227,6 +227,7 @@ export class DiscussionCoordinator {
 			queryKey: ["analyses", callbacks.segmentId],
 		});
 		void this.client.invalidateQueries({ queryKey: ["analysis"] });
+		void this.client.invalidateQueries({ queryKey: ["catalog"] });
 		const artifact = savedArtifact(current);
 		if (artifact && current.kind !== "generate_analysis")
 			callbacks.onArtifact(artifact.analysisId, artifact.revisionId, current);

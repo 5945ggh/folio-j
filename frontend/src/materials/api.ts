@@ -63,3 +63,41 @@ export async function savePosition(
 	);
 	return requireData(data, error, response.status);
 }
+
+export type MaterialUsage = components["schemas"]["MaterialUsageResponse"];
+export const usageKey = (id: string) => ["materials", id, "usage"] as const;
+export async function getUsage(id: string) {
+	const { data, error, response } = await api.GET(
+		"/api/materials/{material_id}/usage",
+		{ params: { path: { material_id: id } } },
+	);
+	return requireData(data, error, response.status);
+}
+export async function recordOpened(
+	id: string,
+	actionId: string,
+	revision: number,
+) {
+	const { data, error, response } = await api.POST(
+		"/api/materials/{material_id}/opened",
+		{
+			params: { path: { material_id: id } },
+			body: { action_id: actionId, expected_revision: revision },
+		},
+	);
+	return requireData(data, error, response.status);
+}
+export async function setUsage(
+	id: string,
+	status: MaterialUsage["status"],
+	revision: number,
+) {
+	const { data, error, response } = await api.PUT(
+		"/api/materials/{material_id}/usage",
+		{
+			params: { path: { material_id: id } },
+			body: { status, expected_revision: revision },
+		},
+	);
+	return requireData(data, error, response.status);
+}

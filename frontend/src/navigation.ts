@@ -46,11 +46,13 @@ export function updateSegmentLocation(
 	return query ? `?${query}` : "";
 }
 
-export function returnDestination(state: unknown): {
+export function returnDestination(
+	state: unknown,
+	fallback = { to: "/sources", label: "来源目录" },
+): {
 	to: string;
 	label: string;
 } {
-	const fallback = { to: "/sources", label: "来源目录" };
 	if (!state || typeof state !== "object" || !("returnTo" in state))
 		return fallback;
 	const target = state.returnTo;
@@ -79,7 +81,7 @@ export function returnDestination(state: unknown): {
 	)
 		return fallback;
 	if (
-		!/^\/(?:sources(?:\/[A-Za-z0-9_-]+)?|segments\/[A-Za-z0-9_-]+|settings)?$/.test(
+		!/^\/(?:sources(?:\/[A-Za-z0-9_-]+)?|materials(?:\/[A-Za-z0-9_-]+)?|segments\/[A-Za-z0-9_-]+|settings)?$/.test(
 			url.pathname,
 		)
 	)

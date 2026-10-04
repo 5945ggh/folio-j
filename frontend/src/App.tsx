@@ -1,9 +1,15 @@
 import { Link, Navigate, Route, Routes, useParams } from "react-router";
+import { MaterialsPage } from "./catalog/MaterialsPage";
 import { MaterialReader } from "./materials/MaterialReader";
 import { SegmentDetail } from "./SegmentPage";
 import { Shell } from "./Shared";
 import { SourceDetail, SourceIndex } from "./SourcePages";
 import { SettingsPage } from "./settings/SettingsPage";
+
+function SourceRoute() {
+	const { id } = useParams();
+	return <SourceDetail key={id} />;
+}
 
 function SegmentRoute() {
 	const { id } = useParams();
@@ -13,9 +19,13 @@ function SegmentRoute() {
 export function App() {
 	return (
 		<Routes>
-			<Route path="/" element={<Navigate to="/sources" replace />} />
+			<Route
+				path="/"
+				element={<Navigate to="/materials?type=book" replace />}
+			/>
+			<Route path="/materials" element={<MaterialsPage />} />
 			<Route path="/sources" element={<SourceIndex />} />
-			<Route path="/sources/:id" element={<SourceDetail />} />
+			<Route path="/sources/:id" element={<SourceRoute />} />
 			<Route path="/materials/:id" element={<MaterialReader />} />
 			<Route path="/segments/:id" element={<SegmentRoute />} />
 			<Route path="/settings" element={<SettingsPage />} />

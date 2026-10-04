@@ -1,3 +1,4 @@
+import "../materials/reader-refresh.css";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router";
 import { InlineError, Loading, Shell } from "../Shared";

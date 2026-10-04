@@ -398,6 +398,7 @@ function ThreadPanel({
 			}),
 		onSuccess: (updated) => {
 			applyJobUpdate(updated);
+			void client.invalidateQueries({ queryKey: ["catalog"] });
 			setReviewInstructions("");
 			void client.invalidateQueries({ queryKey: chatKeys.thread(threadId) });
 		},
