@@ -1,0 +1,40 @@
+backend/src/app/services/covers.py
+  s_901401df340766::t_fefd4940f5c2c7 195-198
+  s_901401df340766::t_de63c627afa86b 8,166
+  s_901401df340766::t_62b6f3b072a4f3 58-59,65,76,78-79,94-99,108-113,116,213,222-224
+  s_901401df340766::t_0ded46e7ac1957 7,19,52,56-57,60-64,66,69,71-75,80-89,100-101,103-107,114-115,117,121-128,133,145,148,164-165,167-194,199-212,214-221,225-239,241-267,278-282,288,293-294,299-306
+backend/src/app/material_models.py
+  s_901401df340766::t_0ded46e7ac1957 65-66
+backend/src/app/services/catalog.py
+  s_901401df340766::t_0ded46e7ac1957 22,54,85-94,99-102
+backend/alembic/versions/0009_cover_rules.py
+  s_901401df340766::t_0ded46e7ac1957 1-5,7-29
+  s_901401df340766::t_de63c627afa86b 6
+backend/tests/test_covers.py
+  s_901401df340766::t_fefd4940f5c2c7 207-209
+  s_901401df340766::t_0ded46e7ac1957 165-167,173-187,191-194,198,202-206
+  s_901401df340766::t_d23c9dba0703eb 161-164,168-172,195-197,199-201
+  s_901401df340766::t_de63c627afa86b 107,134,188-190,210-282
+  s_901401df340766::t_62b6f3b072a4f3 283-308
+backend/tests/test_cover_migration.py
+  s_901401df340766::t_f1d6785e1fefbe 1-22,25-46
+  s_901401df340766::t_b8498c70705e8e 23-24
+backend/tests/test_material_migration.py
+  s_901401df340766::t_f1d6785e1fefbe 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "adb7cc2eb806da0de9fd2bad8b6b2eb907f6b49b",
+  "prompts": {},
+  "sessions": {
+    "s_901401df340766": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a105d8-ee5a-7ab3-8af6-cad8fc409490",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
