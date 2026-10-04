@@ -1,0 +1,103 @@
+scripts/make_epub_fixtures.py
+  s_e017f7b7db14fb::t_d7cdc47e5e9ee5 1,4-10,18,33,35-37,49,55,69-71,73-80,84,89-90,92
+  s_e017f7b7db14fb::t_512f6fa70e8084 81-83
+  s_e017f7b7db14fb::t_01f132020f227b 2-3,11-17,19-32,34,38-48,50-54,56-68,72,85-88,91
+prototypes/epub-reading/public/books/synthetic-malicious.json
+  s_e017f7b7db14fb::t_d040c6005f68eb 1-5,8-14,16,19-27,30-32,68
+  s_e017f7b7db14fb::t_0f3ab7c17317eb 17-18,28-29
+  s_e017f7b7db14fb::t_5ee4ceffa91909 6-7,15,33-67
+prototypes/epub-reading/locator.mjs
+  s_e017f7b7db14fb::t_2128d81b9f6103 2-14,57-71,74-76,80-95,98-109,112-141,144-162,165-176,184
+  s_e017f7b7db14fb::t_5567aca706b210 1,15-16,55-56,72-73,96-97,110-111,142-143,163-164,185
+  s_e017f7b7db14fb::t_12ea709d59d032 77,177
+  s_e017f7b7db14fb::t_bacb02ca94c900 17-54,78-79,178-183
+.gitignore
+  s_e017f7b7db14fb::t_47de74003d1d68 56-58
+prototypes/epub-reading/style.css
+  s_e017f7b7db14fb::t_2128d81b9f6103 1-148
+  s_e017f7b7db14fb::t_e3b4da5c100346 149-205
+backend/tests/test_epub_spike.py
+  s_e017f7b7db14fb::t_62d8638457c2b6 1,3-16,18-24,27-29,31-36,40,44,46-48,56-58,60-63,65,67-68,70,73-76,80,83-84,86-87,89-91,93-96,98,102-103
+  s_e017f7b7db14fb::t_678f737d3e7c30 39,69,71-72,104-127
+  s_e017f7b7db14fb::t_01f132020f227b 2,17,25-26,30,37-38,41-43,45,49-55,59,64,66,77-79,81-82,85,88,92,97,99-101
+  s_e017f7b7db14fb::t_5ee4ceffa91909 137,141-180
+  s_e017f7b7db14fb::t_8df32ae5d325a8 128-136,138-140
+backend/tests/test_epub_compiler.py
+  s_e017f7b7db14fb::t_43d11d9fd16015 1-73,75-86,88-98,100-111,113-135,137-139
+  s_e017f7b7db14fb::t_6b48e82ca93e04 140-159
+  s_e017f7b7db14fb::t_3c21213df48edf 74,87,99,112,136
+  s_e017f7b7db14fb::t_59b0c869a306b0 160-192
+prototypes/epub-reading/index.html
+  s_e017f7b7db14fb::t_c3a97a4f13f334 1
+prototypes/epub-reading/app.mjs
+  s_e017f7b7db14fb::t_2128d81b9f6103 1-27,29-33,45-67,69-75,77-108,110-178,180-199,201-256,265-270
+  s_e017f7b7db14fb::t_c3a97a4f13f334 28,68,76,109,179,271
+  s_e017f7b7db14fb::t_bacb02ca94c900 34-44,200,257-264
+prototypes/epub-reading/README.md
+  s_e017f7b7db14fb::t_7b45685e9c3303 1-18,20-31,33,35
+  s_e017f7b7db14fb::t_12d4bee2d2b69c 19,34
+  s_e017f7b7db14fb::t_f7c9f96fcf67ae 32,36
+backend/src/app/services/epub.py
+  s_e017f7b7db14fb::t_2879271e5ce00a 560-565
+  s_e017f7b7db14fb::t_da529c3a62d86e 278
+  s_e017f7b7db14fb::t_999b19c26c4285 1-8,10-13,15,17-19,22-23,30-146,166-176,189-201,204-212,214-220,222-230,232-240,242-277,283-295,297-307,309,312-380,382-423,425-433,435-439,441-446,448-450,452,455-456,463-465,469-507
+  s_e017f7b7db14fb::t_7ad71ea5911488 24
+  s_e017f7b7db14fb::t_b39e5eb3dcf3cd 9,14,16,20-21,654,674
+  s_e017f7b7db14fb::t_6b48e82ca93e04 147-150,154,281-282
+  s_e017f7b7db14fb::t_63924ce0e56ebc 151-153,155-165,177-188,213,221,231,241,424,440,591,635,735-742,777-782
+  s_e017f7b7db14fb::t_69d83dea4735db 25-29,532
+  s_e017f7b7db14fb::t_a6e6443aec46b9 202-203,569,679-728
+  s_e017f7b7db14fb::t_a54bf7d001bdf7 508-531,533-558,567-568,570-572,582-588,596-600,602-608,617,621-632,640-642,644-653,666,670,675,678,729-734,743-744,750-756,815-818
+  s_e017f7b7db14fb::t_a4b0baf1fce643 279-280,296,308,310-311,381,434,447,454,559,566,573-581,589-590,592-595,601,609-616,618-620,633-634,636-639,643,655-665,667-669,671-673,745-749,757-776,783-814
+  s_e017f7b7db14fb::t_c839b2ce370f33 451,453,457-462,466-468,676-677,819
+  s_e017f7b7db14fb::t_7b18f8f1e2a5e5 820-824
+prototypes/epub-reading/locator.test.mjs
+  s_e017f7b7db14fb::t_2128d81b9f6103 1-30
+  s_e017f7b7db14fb::t_bacb02ca94c900 31-47
+prototypes/epub-reading/public/books/synthetic-vertical.json
+  s_e017f7b7db14fb::t_5ee4ceffa91909 4-6,13,29-62,65
+  s_e017f7b7db14fb::t_d040c6005f68eb 1-3,7-12,14,17-25,28,63-64,66
+  s_e017f7b7db14fb::t_0f3ab7c17317eb 15-16,26-27
+scripts/epub_spike.py
+  s_e017f7b7db14fb::t_a4b0baf1fce643 2,31-35,39,45-48,54-56,58
+  s_e017f7b7db14fb::t_999b19c26c4285 1,7,10,27,29-30,36,51
+  s_e017f7b7db14fb::t_3c21213df48edf 11-15
+  s_e017f7b7db14fb::t_b39e5eb3dcf3cd 4,9,19
+  s_e017f7b7db14fb::t_5ee4ceffa91909 22-26,28
+  s_e017f7b7db14fb::t_7b18f8f1e2a5e5 16-18
+  s_e017f7b7db14fb::t_7197bfd82ba04d 3,5-6,8,20-21,37-38,40-44,49-50,52-53,57,59-61
+prototypes/epub-reading/public/books/synthetic-reading.json
+  s_e017f7b7db14fb::t_0f3ab7c17317eb 15-16,26-27
+  s_e017f7b7db14fb::t_d040c6005f68eb 1-3,7-12,14,17-25,28,63-64,66
+  s_e017f7b7db14fb::t_5ee4ceffa91909 4-6,13,29-62,65
+prototypes/epub-reading/public/books/index.json
+  s_e017f7b7db14fb::t_933b5287682f16 13-20
+  s_e017f7b7db14fb::t_d040c6005f68eb 1-2,4-6,8-10,12,21-22
+  s_e017f7b7db14fb::t_c780537c0eddc4 3,7,11
+prototypes/epub-reading/fixtures/README.md
+  s_e017f7b7db14fb::t_c780537c0eddc4 15,20
+  s_e017f7b7db14fb::t_933b5287682f16 1-7,11-14,16-19,21-22,25-27
+  s_e017f7b7db14fb::t_4269ede8babf0e 8-10,23-24
+justfile
+  s_e017f7b7db14fb::t_de2e8bebd4e62b 31-32,43
+backend/src/app/epub_schemas.py
+  s_e017f7b7db14fb::t_a4b0baf1fce643 2,8,21,31,37
+  s_e017f7b7db14fb::t_b39e5eb3dcf3cd 5
+  s_e017f7b7db14fb::t_999b19c26c4285 1,3-4,6-7,9-20,22-30,32-36,38-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d8f5bc4cad977e62f5eb219d72530316fd787af0",
+  "prompts": {},
+  "sessions": {
+    "s_e017f7b7db14fb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a10203-98e2-7b92-9309-1566fa60dcf5",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
