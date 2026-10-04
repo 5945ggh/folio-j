@@ -202,6 +202,126 @@
         "title": "ArtifactResponse",
         "type": "object"
       },
+      "ChapterPart": {
+        "properties": {
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "html": {
+            "title": "Html",
+            "type": "string"
+          },
+          "leaf_end": {
+            "title": "Leaf End",
+            "type": "integer"
+          },
+          "leaf_start": {
+            "title": "Leaf Start",
+            "type": "integer"
+          },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "spine_index": {
+            "title": "Spine Index",
+            "type": "integer"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "resource_id",
+          "spine_index",
+          "start",
+          "end",
+          "html",
+          "leaf_start",
+          "leaf_end"
+        ],
+        "title": "ChapterPart",
+        "type": "object"
+      },
+      "ChapterResource": {
+        "properties": {
+          "body_attributes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Body Attributes",
+            "type": "object"
+          },
+          "css": {
+            "title": "Css",
+            "type": "string"
+          },
+          "href": {
+            "title": "Href",
+            "type": "string"
+          },
+          "html_attributes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Html Attributes",
+            "type": "object"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "text_sha256": {
+            "title": "Text Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "href",
+          "text",
+          "css",
+          "html_attributes",
+          "body_attributes",
+          "text_sha256"
+        ],
+        "title": "ChapterResource",
+        "type": "object"
+      },
+      "ChapterSummary": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "part_count": {
+            "title": "Part Count",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "level",
+          "part_count"
+        ],
+        "title": "ChapterSummary",
+        "type": "object"
+      },
       "DefaultsInput": {
         "additionalProperties": false,
         "properties": {
@@ -659,6 +779,205 @@
           "stop_requested_at"
         ],
         "title": "JobResponse",
+        "type": "object"
+      },
+      "MaterialChapterResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/ChapterPart"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "resources": {
+            "items": {
+              "$ref": "#/components/schemas/ChapterResource"
+            },
+            "title": "Resources",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "version_id",
+          "id",
+          "title",
+          "level",
+          "parts",
+          "resources"
+        ],
+        "title": "MaterialChapterResponse",
+        "type": "object"
+      },
+      "MaterialImportResponse": {
+        "properties": {
+          "material": {
+            "$ref": "#/components/schemas/MaterialResponse"
+          },
+          "reused": {
+            "title": "Reused",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "material",
+          "reused"
+        ],
+        "title": "MaterialImportResponse",
+        "type": "object"
+      },
+      "MaterialResponse": {
+        "properties": {
+          "chapters": {
+            "items": {
+              "$ref": "#/components/schemas/ChapterSummary"
+            },
+            "title": "Chapters",
+            "type": "array"
+          },
+          "contract_version": {
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "product_sha256": {
+            "title": "Product Sha256",
+            "type": "string"
+          },
+          "reading_position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReadingPositionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_sha256": {
+            "title": "Source Sha256",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "source_id",
+          "title",
+          "source_sha256",
+          "version_id",
+          "product_sha256",
+          "contract_version",
+          "created_at",
+          "warnings",
+          "chapters",
+          "reading_position"
+        ],
+        "title": "MaterialResponse",
+        "type": "object"
+      },
+      "MaterialSummary": {
+        "properties": {
+          "contract_version": {
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "product_sha256": {
+            "title": "Product Sha256",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_sha256": {
+            "title": "Source Sha256",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "source_id",
+          "title",
+          "source_sha256",
+          "version_id",
+          "product_sha256",
+          "contract_version",
+          "created_at",
+          "warnings"
+        ],
+        "title": "MaterialSummary",
         "type": "object"
       },
       "MessagePage": {
@@ -1384,6 +1703,211 @@
         "title": "ProviderResponse",
         "type": "object"
       },
+      "ReadingPositionResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "string"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
+          },
+          "image_progress": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Progress"
+          },
+          "kind": {
+            "enum": [
+              "text",
+              "image"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "offset": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset"
+          },
+          "part_index": {
+            "minimum": 0.0,
+            "title": "Part Index",
+            "type": "integer"
+          },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/ReadingSettings"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version_id",
+          "chapter_id",
+          "part_index",
+          "resource_id",
+          "kind",
+          "revision",
+          "updated_at"
+        ],
+        "title": "ReadingPositionResponse",
+        "type": "object"
+      },
+      "ReadingPositionUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
+          },
+          "image_progress": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Progress"
+          },
+          "kind": {
+            "enum": [
+              "text",
+              "image"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "offset": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset"
+          },
+          "part_index": {
+            "minimum": 0.0,
+            "title": "Part Index",
+            "type": "integer"
+          },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/ReadingSettings"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version_id",
+          "chapter_id",
+          "part_index",
+          "resource_id",
+          "kind",
+          "expected_revision"
+        ],
+        "title": "ReadingPositionUpdate",
+        "type": "object"
+      },
+      "ReadingSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "font_size": {
+            "default": 20,
+            "maximum": 40.0,
+            "minimum": 12.0,
+            "title": "Font Size",
+            "type": "number"
+          },
+          "line_height": {
+            "default": 1.8,
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Line Height",
+            "type": "number"
+          },
+          "writing_mode": {
+            "default": "horizontal-tb",
+            "enum": [
+              "horizontal-tb",
+              "vertical-rl"
+            ],
+            "title": "Writing Mode",
+            "type": "string"
+          }
+        },
+        "title": "ReadingSettings",
+        "type": "object"
+      },
       "ReviewProposal": {
         "properties": {
           "after": {
@@ -2017,6 +2541,11 @@
           "analysis_count": {
             "default": 0,
             "title": "Analysis Count",
+            "type": "integer"
+          },
+          "material_count": {
+            "default": 0,
+            "title": "Material Count",
             "type": "integer"
           },
           "message_count": {
@@ -2795,6 +3324,142 @@
           }
         },
         "summary": "Stop Job"
+      }
+    },
+    "/api/materials/{material_id}": {
+      "get": {
+        "operationId": "getMaterial",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Material"
+      }
+    },
+    "/api/materials/{material_id}/chapters/{chapter_id}": {
+      "get": {
+        "operationId": "getMaterialChapter",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "chapter_id",
+            "required": true,
+            "schema": {
+              "title": "Chapter Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialChapterResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Chapter"
+      }
+    },
+    "/api/materials/{material_id}/reading-position": {
+      "put": {
+        "operationId": "saveReadingPosition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadingPositionUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingPositionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Position"
       }
     },
     "/api/provider-models/{model_id}": {
@@ -4040,6 +4705,113 @@
           }
         },
         "summary": "Source Delete Impact"
+      }
+    },
+    "/api/sources/{source_id}/materials": {
+      "get": {
+        "operationId": "listMaterials",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MaterialSummary"
+                  },
+                  "title": "Response Listmaterials",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Materials"
+      },
+      "post": {
+        "operationId": "importMaterial",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "filename",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Filename"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/epub+zip": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialImportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Material"
       }
     },
     "/api/sources/{source_id}/segments": {

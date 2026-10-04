@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.analysis_models import Analysis
 from app.chat_models import ChatMessage, ChatThread, Job
 from app.ids import new_ulid
+from app.material_models import Material
 from app.models import Segment, Source
 from app.schemas import (
     SegmentCreate,
@@ -187,6 +188,14 @@ async def source_delete_impact(session: AsyncSession, source_id: str) -> SourceD
     return SourceDeleteImpact(
         source_id=source.id,
         title=source.title,
+        material_count=int(
+            (
+                await session.scalar(
+                    select(func.count(Material.id)).where(Material.source_id == source_id)
+                )
+            )
+            or 0
+        ),
         segment_count=len(ids),
         thread_count=thread_count,
         message_count=message_count,

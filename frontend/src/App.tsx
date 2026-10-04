@@ -1,4 +1,5 @@
 import { Link, Navigate, Route, Routes, useParams } from "react-router";
+import { MaterialReader } from "./materials/MaterialReader";
 import { SegmentDetail } from "./SegmentPage";
 import { Shell } from "./Shared";
 import { SourceDetail, SourceIndex } from "./SourcePages";
@@ -15,6 +16,7 @@ export function App() {
 			<Route path="/" element={<Navigate to="/sources" replace />} />
 			<Route path="/sources" element={<SourceIndex />} />
 			<Route path="/sources/:id" element={<SourceDetail />} />
+			<Route path="/materials/:id" element={<MaterialReader />} />
 			<Route path="/segments/:id" element={<SegmentRoute />} />
 			<Route path="/settings" element={<SettingsPage />} />
 			<Route

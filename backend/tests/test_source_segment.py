@@ -245,6 +245,7 @@ async def test_delete_impact_soft_deletion_and_isolation(tmp_path: Path) -> None
         assert impact.status_code == 200
         assert impact.json() == {
             "source_id": source_a["id"],
+            "material_count": 0,
             "title": "A",
             "segment_count": 2,
             "thread_count": 0,

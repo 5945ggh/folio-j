@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.api.analyses import router as analyses_router
 from app.api.health import router as health_router
+from app.api.materials import router as materials_router
 from app.api.settings import router as settings_router
 from app.api.sources import router as sources_router
 from app.config import REPO_ROOT, load_settings
@@ -107,6 +108,7 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         )
 
     application.include_router(health_router)
+    application.include_router(materials_router)
     application.include_router(analyses_router)
     application.include_router(sources_router)
     application.include_router(settings_router)

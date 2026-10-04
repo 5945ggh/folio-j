@@ -15,6 +15,7 @@ import {
 	type SourceFields,
 } from "./content";
 import { SegmentForm, SourceForm } from "./Forms";
+import { MaterialList } from "./materials/MaterialList";
 import {
 	ConfirmDialog,
 	dateLabel,
@@ -144,6 +145,7 @@ function SourceDelete({
 				throw latest.error ?? new Error("无法核对删除范围，请重试。");
 			}
 			if (
+				latest.data.material_count !== impact.data?.material_count ||
 				latest.data.segment_count !== impact.data?.segment_count ||
 				latest.data.thread_count !== impact.data?.thread_count ||
 				latest.data.message_count !== impact.data?.message_count ||
@@ -179,7 +181,8 @@ function SourceDelete({
 					<strong>{impact.data.message_count} 条消息</strong>。
 					{impact.data.active_job_count > 0 &&
 						`其中 ${impact.data.active_job_count} 个进行中的任务会被中断。`}
-					删除后无法从页面恢复；其他来源不受影响。
+					该来源下的 {impact.data.material_count}{" "}
+					份阅读材料也将不可再打开，托管原书暂时保留。删除后无法从页面恢复；其他来源不受影响。
 				</p>
 			)}
 			<InlineError
@@ -351,6 +354,7 @@ export function SourceDetail() {
 					/>
 				</section>
 			)}
+			<MaterialList key={id} sourceId={id} />
 			<section className="list-section" aria-label="片段列表">
 				<div className="section-heading">
 					<h2>学习片段</h2>
