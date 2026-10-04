@@ -13,12 +13,43 @@ function displayError(error: Error): string {
 	return error.message;
 }
 
+function NavigationIcon({
+	name,
+}: {
+	name: "book" | "library" | "folder" | "settings";
+}) {
+	const paths = {
+		book: "M12 5v16M12 5C8 2 4 3 2 4v16c4-2 7-1 10 1 3-2 6-3 10-1V4c-2-1-6-2-10 1",
+		library: "M3 5h3v15H3zM9 3h3v17H9zM15 5l3-1 4 15-3 1z",
+		folder: "M3 7V4h6l3 3h9M3 7h18v13H3z",
+		settings:
+			"M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1z",
+	};
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			width="20"
+			height="20"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<path d={paths[name]} />
+		</svg>
+	);
+}
+
 export function Shell({
 	children,
 	fullWidth = false,
+	className = "",
 }: {
 	children: ReactNode;
 	fullWidth?: boolean;
+	className?: string;
 }) {
 	const [collapsed, setCollapsed] = useState(() => {
 		try {
@@ -42,12 +73,16 @@ export function Shell({
 	const navigation = (
 		<nav className="app-navigation" aria-label="主导航">
 			<NavLink onClick={() => setDrawer(false)} to="/materials" title="素材库">
-				<span aria-hidden="true">▤</span>
+				<span aria-hidden="true">
+					<NavigationIcon name="library" />
+				</span>
 				<span className="nav-label">素材库</span>
 			</NavLink>
-			<NavLink onClick={() => setDrawer(false)} to="/sources" title="Source">
-				<span aria-hidden="true">◫</span>
-				<span className="nav-label">Source</span>
+			<NavLink onClick={() => setDrawer(false)} to="/sources" title="来源目录">
+				<span aria-hidden="true">
+					<NavigationIcon name="folder" />
+				</span>
+				<span className="nav-label">来源目录</span>
 			</NavLink>
 			<NavLink
 				onClick={() => setDrawer(false)}
@@ -55,33 +90,47 @@ export function Shell({
 				to="/settings"
 				title="设置"
 			>
-				<span aria-hidden="true">⚙</span>
+				<span aria-hidden="true">
+					<NavigationIcon name="settings" />
+				</span>
 				<span className="nav-label">设置</span>
 			</NavLink>
 		</nav>
 	);
 	return (
 		<div
-			className={`app-shell ${collapsed ? "sidebar-collapsed" : ""} ${fullWidth ? "shell-full-width" : ""}`}
+			className={`app-shell ${className} ${collapsed ? "sidebar-collapsed" : ""} ${fullWidth ? "shell-full-width" : ""}`}
 		>
 			<aside className="app-sidebar">
-				<Link className="brand" to="/materials" aria-label="Folio-J 素材库">
-					<span className="brand-mark" aria-hidden="true">
-						文
-					</span>
-					<span className="nav-label">Folio-J</span>
-				</Link>
+				<div className="sidebar-brand-row">
+					<Link className="brand" to="/materials" aria-label="Folio-J 素材库">
+						<span className="brand-mark" aria-hidden="true">
+							<NavigationIcon name="book" />
+						</span>
+						<span className="nav-label">Folio-J</span>
+					</Link>
+					<button
+						className="sidebar-toggle"
+						type="button"
+						onClick={toggle}
+						aria-label={collapsed ? "展开导航" : "收窄导航"}
+						title={collapsed ? "展开导航" : "收窄导航"}
+					>
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							aria-hidden="true"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="1.5"
+						>
+							<rect x="3" y="4" width="18" height="16" rx="2" />
+							<path d="M9 4v16" />
+						</svg>
+					</button>
+				</div>
 				{navigation}
-				<button
-					className="sidebar-toggle"
-					type="button"
-					onClick={toggle}
-					aria-label={collapsed ? "展开导航" : "收窄导航"}
-					title={collapsed ? "展开导航" : "收窄导航"}
-				>
-					<span aria-hidden="true">{collapsed ? "»" : "«"}</span>
-					<span className="nav-label">收窄导航</span>
-				</button>
 			</aside>
 			<header className="mobile-topbar">
 				<button

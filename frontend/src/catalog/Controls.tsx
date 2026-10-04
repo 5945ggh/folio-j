@@ -177,6 +177,7 @@ export function Pagination({
 	onChange: (page: number) => void;
 }) {
 	const pages = Math.max(1, Math.ceil(total / pageSize));
+	if (pages === 1) return <p className="catalog-count">共 {total} 项</p>;
 	return (
 		<nav className="catalog-pagination" aria-label="分页">
 			<span className="pagination-count">

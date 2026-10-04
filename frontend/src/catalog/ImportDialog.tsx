@@ -77,6 +77,7 @@ export function ImportDialog({
 			className="import-dialog"
 			titleId="import-title"
 			onClose={close}
+			restoreFocusId="library-add"
 		>
 			<div className="section-heading">
 				<h2 id="import-title">添加书籍</h2>
