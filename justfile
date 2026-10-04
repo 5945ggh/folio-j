@@ -28,6 +28,8 @@ lint:
     uv run --project backend pyright --project backend
     pnpm --dir frontend lint
     pnpm --dir frontend typecheck
+    node --check prototypes/epub-reading/app.mjs
+    node --check prototypes/epub-reading/locator.mjs
 
 format:
     uv run --project backend ruff check --fix backend scripts
@@ -38,6 +40,7 @@ format:
 test:
     uv run --project backend pytest backend/tests
     pnpm --dir frontend test
+    node --test prototypes/epub-reading/locator.test.mjs
 
 # 从本地 FastAPI 导出契约，再生成前端类型；不需启动服务。
 gen-api:

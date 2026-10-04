@@ -1,0 +1,22 @@
+[
+  {
+    "title": "日语正文与定位样例",
+    "path": "./books/synthetic-reading.json"
+  },
+  {
+    "title": "竖排与特殊布局样例",
+    "path": "./books/synthetic-vertical.json"
+  },
+  {
+    "title": "恶意内容隔离样例",
+    "path": "./books/synthetic-malicious.json"
+  },
+  {
+    "title": "安達としまむら（本机样书）",
+    "path": "./books/local/adachi-1.json"
+  },
+  {
+    "title": "安達としまむら8（本机样书）",
+    "path": "./books/local/adachi-8.json"
+  }
+]
