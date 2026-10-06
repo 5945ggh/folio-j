@@ -1050,6 +1050,100 @@
         "title": "MaterialChapterResponse",
         "type": "object"
       },
+      "MaterialIllustrationItem": {
+        "properties": {
+          "alt": {
+            "title": "Alt",
+            "type": "string"
+          },
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "string"
+          },
+          "chapter_title": {
+            "title": "Chapter Title",
+            "type": "string"
+          },
+          "content_url": {
+            "title": "Content Url",
+            "type": "string"
+          },
+          "image_id": {
+            "title": "Image Id",
+            "type": "integer"
+          },
+          "ordinal": {
+            "title": "Ordinal",
+            "type": "integer"
+          },
+          "part_index": {
+            "title": "Part Index",
+            "type": "integer"
+          },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "spine_index": {
+            "title": "Spine Index",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ordinal",
+          "chapter_id",
+          "chapter_title",
+          "part_index",
+          "spine_index",
+          "resource_id",
+          "image_id",
+          "alt",
+          "content_url"
+        ],
+        "title": "MaterialIllustrationItem",
+        "type": "object"
+      },
+      "MaterialIllustrationsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialIllustrationItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "version_id",
+          "total",
+          "offset",
+          "limit",
+          "items"
+        ],
+        "title": "MaterialIllustrationsResponse",
+        "type": "object"
+      },
       "MaterialImportResponse": {
         "properties": {
           "material": {
@@ -1163,6 +1257,110 @@
           "reading_position"
         ],
         "title": "MaterialResponse",
+        "type": "object"
+      },
+      "MaterialSearchItem": {
+        "properties": {
+          "after": {
+            "title": "After",
+            "type": "string"
+          },
+          "before": {
+            "title": "Before",
+            "type": "string"
+          },
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "string"
+          },
+          "chapter_title": {
+            "title": "Chapter Title",
+            "type": "string"
+          },
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "match": {
+            "title": "Match",
+            "type": "string"
+          },
+          "part_index": {
+            "title": "Part Index",
+            "type": "integer"
+          },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "spine_index": {
+            "title": "Spine Index",
+            "type": "integer"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "chapter_id",
+          "chapter_title",
+          "part_index",
+          "spine_index",
+          "resource_id",
+          "start",
+          "end",
+          "before",
+          "match",
+          "after"
+        ],
+        "title": "MaterialSearchItem",
+        "type": "object"
+      },
+      "MaterialSearchResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialSearchItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "version_id",
+          "query",
+          "total",
+          "offset",
+          "limit",
+          "items"
+        ],
+        "title": "MaterialSearchResponse",
         "type": "object"
       },
       "MaterialSummary": {
@@ -4118,6 +4316,134 @@
         "summary": "Cover"
       }
     },
+    "/api/materials/{material_id}/illustrations": {
+      "get": {
+        "operationId": "getMaterialIllustrations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 40,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialIllustrationsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Illustrations"
+      }
+    },
+    "/api/materials/{material_id}/illustrations/{ordinal}/content": {
+      "get": {
+        "operationId": "getMaterialIllustrationContent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "ordinal",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Ordinal",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/gif": {},
+              "image/jpeg": {},
+              "image/png": {},
+              "image/webp": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Illustration Content"
+      }
+    },
     "/api/materials/{material_id}/opened": {
       "post": {
         "operationId": "recordMaterialOpened",
@@ -4214,6 +4540,88 @@
           }
         },
         "summary": "Save Position"
+      }
+    },
+    "/api/materials/{material_id}/search": {
+      "get": {
+        "operationId": "searchMaterial",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 160,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 40,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Material"
       }
     },
     "/api/materials/{material_id}/usage": {

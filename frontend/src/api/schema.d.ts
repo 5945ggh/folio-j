@@ -192,6 +192,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/illustrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Illustrations */
+        get: operations["getMaterialIllustrations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/illustrations/{ordinal}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Illustration Content */
+        get: operations["getMaterialIllustrationContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/materials/{material_id}/opened": {
         parameters: {
             query?: never;
@@ -219,6 +253,23 @@ export interface paths {
         get?: never;
         /** Save Position */
         put: operations["saveReadingPosition"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Material */
+        get: operations["searchMaterial"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1129,6 +1180,42 @@ export interface components {
             /** Version Id */
             version_id: string;
         };
+        /** MaterialIllustrationItem */
+        MaterialIllustrationItem: {
+            /** Alt */
+            alt: string;
+            /** Chapter Id */
+            chapter_id: string;
+            /** Chapter Title */
+            chapter_title: string;
+            /** Content Url */
+            content_url: string;
+            /** Image Id */
+            image_id: number;
+            /** Ordinal */
+            ordinal: number;
+            /** Part Index */
+            part_index: number;
+            /** Resource Id */
+            resource_id: string;
+            /** Spine Index */
+            spine_index: number;
+        };
+        /** MaterialIllustrationsResponse */
+        MaterialIllustrationsResponse: {
+            /** Items */
+            items: components["schemas"]["MaterialIllustrationItem"][];
+            /** Limit */
+            limit: number;
+            /** Material Id */
+            material_id: string;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+            /** Version Id */
+            version_id: string;
+        };
         /** MaterialImportResponse */
         MaterialImportResponse: {
             material: components["schemas"]["MaterialResponse"];
@@ -1168,6 +1255,46 @@ export interface components {
             version_id: string;
             /** Warnings */
             warnings: string[];
+        };
+        /** MaterialSearchItem */
+        MaterialSearchItem: {
+            /** After */
+            after: string;
+            /** Before */
+            before: string;
+            /** Chapter Id */
+            chapter_id: string;
+            /** Chapter Title */
+            chapter_title: string;
+            /** End */
+            end: number;
+            /** Match */
+            match: string;
+            /** Part Index */
+            part_index: number;
+            /** Resource Id */
+            resource_id: string;
+            /** Spine Index */
+            spine_index: number;
+            /** Start */
+            start: number;
+        };
+        /** MaterialSearchResponse */
+        MaterialSearchResponse: {
+            /** Items */
+            items: components["schemas"]["MaterialSearchItem"][];
+            /** Limit */
+            limit: number;
+            /** Material Id */
+            material_id: string;
+            /** Offset */
+            offset: number;
+            /** Query */
+            query: string;
+            /** Total */
+            total: number;
+            /** Version Id */
+            version_id: string;
         };
         /** MaterialSummary */
         MaterialSummary: {
@@ -2426,6 +2553,78 @@ export interface operations {
             };
         };
     };
+    getMaterialIllustrations: {
+        parameters: {
+            query: {
+                version_id: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialIllustrationsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialIllustrationContent: {
+        parameters: {
+            query: {
+                version_id: string;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+                ordinal: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/gif": unknown;
+                    "image/jpeg": unknown;
+                    "image/png": unknown;
+                    "image/webp": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     recordMaterialOpened: {
         parameters: {
             query?: never;
@@ -2483,6 +2682,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReadingPositionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    searchMaterial: {
+        parameters: {
+            query: {
+                version_id: string;
+                q?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialSearchResponse"];
                 };
             };
             /** @description Validation Error */

@@ -101,3 +101,44 @@ export async function setUsage(
 	);
 	return requireData(data, error, response.status);
 }
+
+export type SearchHit = components["schemas"]["MaterialSearchItem"];
+export type Illustration = components["schemas"]["MaterialIllustrationItem"];
+export async function searchMaterial(
+	id: string,
+	versionId: string,
+	query: string,
+	offset: number,
+	signal?: AbortSignal,
+) {
+	const { data, error, response } = await api.GET(
+		"/api/materials/{material_id}/search",
+		{
+			params: {
+				path: { material_id: id },
+				query: { version_id: versionId, q: query, offset, limit: 40 },
+			},
+			signal,
+		},
+	);
+	return requireData(data, error, response.status);
+}
+export async function listIllustrations(
+	id: string,
+	versionId: string,
+	offset: number,
+	limit = 40,
+	signal?: AbortSignal,
+) {
+	const { data, error, response } = await api.GET(
+		"/api/materials/{material_id}/illustrations",
+		{
+			params: {
+				path: { material_id: id },
+				query: { version_id: versionId, offset, limit },
+			},
+			signal,
+		},
+	);
+	return requireData(data, error, response.status);
+}

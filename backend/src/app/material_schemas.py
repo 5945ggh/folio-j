@@ -95,3 +95,47 @@ class MaterialChapterResponse(BaseModel):
     level: int
     parts: list[ChapterPart]
     resources: list[ChapterResource]
+
+
+class MaterialSearchItem(BaseModel):
+    chapter_id: str
+    chapter_title: str
+    part_index: int
+    spine_index: int
+    resource_id: str
+    start: int
+    end: int
+    before: str
+    match: str
+    after: str
+
+
+class MaterialSearchResponse(BaseModel):
+    material_id: str
+    version_id: str
+    query: str
+    total: int
+    offset: int
+    limit: int
+    items: list[MaterialSearchItem]
+
+
+class MaterialIllustrationItem(BaseModel):
+    ordinal: int
+    chapter_id: str
+    chapter_title: str
+    part_index: int
+    spine_index: int
+    resource_id: str
+    image_id: int
+    alt: str
+    content_url: str
+
+
+class MaterialIllustrationsResponse(BaseModel):
+    material_id: str
+    version_id: str
+    total: int
+    offset: int
+    limit: int
+    items: list[MaterialIllustrationItem]

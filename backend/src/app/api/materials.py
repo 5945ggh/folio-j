@@ -2,19 +2,22 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Path, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.material_schemas import (
     MaterialChapterResponse,
+    MaterialIllustrationsResponse,
     MaterialImportResponse,
     MaterialResponse,
+    MaterialSearchResponse,
     MaterialSummary,
     ReadingPositionResponse,
     ReadingPositionUpdate,
 )
 from app.services import materials as service
+from app.services import reader_queries
 
 router = APIRouter(prefix="/api")
 Session = Annotated[AsyncSession, Depends(get_session)]
@@ -71,3 +74,53 @@ async def save_position(
     material_id: str, data: ReadingPositionUpdate, session: Session
 ) -> ReadingPositionResponse:
     return await service.save_position(session, material_id, data)
+
+
+@router.get(
+    "/materials/{material_id}/search",
+    response_model=MaterialSearchResponse,
+    operation_id="searchMaterial",
+)
+async def search_material(
+    material_id: str,
+    session: Session,
+    version_id: str,
+    q: Annotated[str, Query(max_length=160)] = "",
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 40,
+) -> MaterialSearchResponse:
+    return await reader_queries.search(session, material_id, version_id, q, offset, limit)
+
+
+@router.get(
+    "/materials/{material_id}/illustrations",
+    response_model=MaterialIllustrationsResponse,
+    operation_id="getMaterialIllustrations",
+)
+async def get_illustrations(
+    material_id: str,
+    session: Session,
+    version_id: str,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 40,
+) -> MaterialIllustrationsResponse:
+    return await reader_queries.illustrations(session, material_id, version_id, offset, limit)
+
+
+@router.get(
+    "/materials/{material_id}/illustrations/{ordinal}/content",
+    operation_id="getMaterialIllustrationContent",
+    responses={
+        200: {
+            "content": {mime: {} for mime in ("image/png", "image/jpeg", "image/gif", "image/webp")}
+        }
+    },
+    response_class=Response,
+)
+async def get_illustration_content(
+    material_id: str,
+    ordinal: Annotated[int, Path(ge=0)],
+    session: Session,
+    version_id: str,
+) -> Response:
+    return await reader_queries.illustration_content(session, material_id, version_id, ordinal)
