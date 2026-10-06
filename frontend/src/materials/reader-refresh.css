@@ -1,105 +1,8 @@
-/* Reading surfaces share the application shell and preserve their own scrollports. */
-.shell-full-width .page-content:has(.reader-refresh),
+/* Segment and settings styles retained after Reader moved to its own shell. */
 .shell-full-width .page-content:has(.segment-shell) {
 	padding: 0;
 	max-width: none;
 	min-width: 0;
-}
-.reader-refresh {
-	display: flex;
-	flex-direction: column;
-	min-width: 0;
-	height: 100dvh;
-	overflow: hidden;
-	background: #faf9f6;
-}
-.reader-refresh .material-heading {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 10px 16px;
-	padding: 12px 20px;
-	border-bottom: 1px solid var(--line, #e5e3dd);
-	background: #fffefa;
-	margin: 0;
-}
-.reader-refresh .material-title {
-	font-size: 16px;
-	margin: 0;
-	min-width: 0;
-	flex: 1 1 180px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.reader-source {
-	color: var(--muted, #777);
-	font-size: 12px;
-	max-width: 180px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.reader-refresh .material-tools {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	margin: 0;
-	flex-wrap: wrap;
-}
-.reader-refresh .material-tools label {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	font-size: 12px;
-}
-.reader-refresh .material-tools select {
-	max-width: 240px;
-	min-height: 32px;
-}
-.reader-refresh .material-settings {
-	width: 100%;
-	margin: 0;
-	padding: 12px 0 0;
-	border: 0;
-	border-radius: 0;
-	box-shadow: none;
-}
-.reader-refresh .material-import-notes {
-	font-size: 12px;
-	max-width: 100%;
-	margin: 0;
-}
-.reader-refresh .material-import-notes[open] {
-	flex-basis: 100%;
-}
-.reader-refresh .material-heading > p {
-	flex-basis: 100%;
-	margin: 0;
-	font-size: 12px;
-}
-.reader-refresh .material-status {
-	padding: 8px 20px;
-	margin: 0;
-	font-size: 11px;
-	border: 0;
-}
-.reader-refresh .inline-error {
-	margin: 8px 20px;
-}
-.reader-refresh .material-reading {
-	flex: 1;
-	height: auto;
-	min-height: 0;
-	border: 0;
-	border-radius: 0;
-	margin: 0;
-	padding: 28px clamp(20px, 5vw, 72px);
-	box-shadow: none;
-	background: #fffefa;
-}
-.reader-refresh .material-vertical {
-	padding: 24px;
 }
 .app-shell .segment-shell {
 	position: relative;
@@ -138,27 +41,8 @@
 	font-size: 24px;
 }
 @media (max-width: 720px) {
-	.reader-refresh,
 	.app-shell .segment-shell {
 		height: calc(100dvh - 54px);
-	}
-	.reader-refresh .material-heading {
-		padding: 10px 12px;
-		gap: 8px;
-	}
-	.reader-refresh .material-title {
-		order: -1;
-		flex-basis: 100%;
-	}
-	.reader-refresh .material-tools {
-		width: 100%;
-		gap: 8px;
-	}
-	.reader-refresh .material-tools select {
-		max-width: 180px;
-	}
-	.reader-refresh .material-status {
-		padding: 8px 12px;
 	}
 	.app-shell .segment-toolbar {
 		padding: 8px 12px;

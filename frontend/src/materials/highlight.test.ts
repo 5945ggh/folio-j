@@ -1,0 +1,81 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import type { Projection } from "./dom.ts";
+import { highlightRange } from "./highlight.ts";
+
+function harness(supported = true) {
+	const boundaries: Array<[string, unknown, number]> = [];
+	const range = {
+		setStart: (node: unknown, offset: number) =>
+			boundaries.push(["start", node, offset]),
+		setEnd: (node: unknown, offset: number) =>
+			boundaries.push(["end", node, offset]),
+	};
+	const marks = new Map<string, unknown>();
+	const style = { textContent: "" };
+	class Highlight {
+		range: unknown;
+		constructor(range: unknown) {
+			this.range = range;
+		}
+	}
+	const doc = {
+		createRange: () => range,
+		getElementById: () => style,
+		defaultView: supported ? { Highlight, CSS: { highlights: marks } } : {},
+	};
+	return { doc: doc as unknown as Document, boundaries, marks, style };
+}
+function projection(chunks: string[]): Projection {
+	let offset = 0;
+	return {
+		raw: chunks.join(""),
+		entries: chunks.map((data) => {
+			const start = offset;
+			offset += data.length;
+			return {
+				node: { data, length: data.length } as Text,
+				start,
+				end: offset,
+			};
+		}),
+	};
+}
+
+test("Unicode search offsets highlight exact repeated occurrence across existing leaves", () => {
+	const p = projection(["𠮷あ", "いう𠮷", "あいう"]);
+	const h = harness();
+	highlightRange(h.doc, p, 4, 8);
+	assert.deepEqual(h.boundaries, [
+		["start", p.entries[1]?.node, 2],
+		["end", p.entries[2]?.node, 3],
+	]);
+	assert.equal(h.marks.size, 1);
+	assert.ok(h.marks.has("folio-search"));
+	assert.deepEqual(
+		p.entries.map((e) => e.node.data),
+		["𠮷あ", "いう𠮷", "あいう"],
+	);
+});
+test("NFC range boundaries project decomposed source text without changing original nodes", () => {
+	const p = projection(["か", "\u3099く", "せい"]);
+	const h = harness();
+	highlightRange(h.doc, p, 0, 2);
+	assert.deepEqual(h.boundaries, [
+		["start", p.entries[0]?.node, 0],
+		["end", p.entries[1]?.node, 2],
+	]);
+	assert.equal(p.raw, "か\u3099くせい");
+});
+test("missing mapping and unsupported highlights report honest errors without painting guessed text", () => {
+	const p = projection(["原文"]);
+	const h = harness(false);
+	assert.throws(() => highlightRange(h.doc, p, 0, 1), /已定位到原文.*不支持/);
+	assert.equal(h.marks.size, 0);
+	const missing = harness();
+	assert.throws(
+		() => highlightRange(missing.doc, { raw: "原文", entries: [] }, 0, 1),
+		/无法映射/,
+	);
+	assert.equal(missing.marks.size, 0);
+});

@@ -10,6 +10,7 @@ import {
 	catalogKeys,
 	updateUsage,
 } from "./api";
+import { BookCoverPlaceholder } from "./BookCoverPlaceholder";
 import { CatalogToolbar, Pagination, statusLabels } from "./Controls";
 import {
 	readPreference,
@@ -74,10 +75,7 @@ export function BookCard({
 							onError={() => setFailedCoverUrl(book.cover_url)}
 						/>
 					) : (
-						<div className="book-cover-placeholder">
-							<Icon name="book" />
-							<span>暂无封面</span>
-						</div>
+						<BookCoverPlaceholder title={book.title} />
 					)}
 				</div>
 				<h3 className="book-title" title={book.title}>

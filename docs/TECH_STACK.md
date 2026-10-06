@@ -110,3 +110,9 @@ EPUB 切片 1 使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义�
 本轮目录、状态及统一外壳沿用 React Router、TanStack Query、现有 CSS、SQLite 与标准库，未新增依赖；shadcn/ui、Zustand 仍为预留，不能视为已安装。封面缓存只支持有界静态 PNG／JPEG（4 MiB、1600 万像素），标准库校验头部／结构，不引入图像解码库；为保持静态约束，APNG、GIF、WebP、SVG 与异常文件占位。可验证 EPUB 声明封面按需提取，不改不可变书籍产物，不下载远程图片。详细接口与支持范围见[前端调整契约](handovers/frontend-refresh/API.md)。
 
 2026-10-05 素材库 A.1 实施沿用上述依赖与安全边界；声明不可用时按有序包内图片候选回退，并用版本缓存恢复旧书封面。SVG `image` 只作为包内静态图片引用来源，不代表支持 SVG 封面。共享控件不强制统一路由外壳；具体规则见[本轮封面契约](handovers/library-a1/API.md)，本轮工程验收见[独立记录](handovers/library-a1/ACCEPTANCE.md)。
+
+## 9. 阅读器 R1.1 技术边界
+
+本轮沿用 React、TanStack Query、生成的 OpenAPI 客户端、FastAPI／Pydantic 与现有 EPUB 编译包，不新增依赖或数据库索引实体。搜索及图库为服务层只读派生接口，扫描与解压离开事件循环；响应分页有界，图片由受控 content endpoint 按需加载。详见[实施计划](handovers/reader-r1/PLAN.md)与[API 契约](handovers/reader-r1/API.md)。图库原图规则依现有编译安全预算，不将上轮封面的 4 MiB／PNG-JPEG 限制直接套用到全部正文图片。
+
+呈现继续使用无脚本、同源隔离 iframe；工具事件由父应用适配，保留 CSP／sandbox。搜索高亮采用 DOM Range／CSS Highlight 保持正文定位叶子不变；图库与大图使用非模态局部面板，保留正文交互并处理 Escape 层级和关闭焦点恢复。轻量动画仅作用于展示层，退出保留时长集中配置，支持减少动态效果偏好，不改变正文布局与位置保存。主题与新增 UI 偏好在 Reader 作用域及浏览器 Storage 内校验，失败退回内存；不引入通用媒体框架、图像处理服务、分词或自动注音依赖。浏览器支持及真实扩展兼容性的验证结果另记，不因采用这些技术就视为通过。

@@ -70,7 +70,7 @@ function ActionMenu({
 	}, []);
 	return (
 		<details className={className} ref={ref}>
-			<summary className="button secondary" aria-label={label}>
+			<summary className="button secondary" aria-label={label} title={label}>
 				{glyph}
 			</summary>
 			<div className="action-menu-panel">{children}</div>
@@ -451,6 +451,7 @@ function ProviderCard({
 						className="provider-heading-toggle"
 						type="button"
 						aria-label={`${expanded ? "收起" : "展开"} ${provider.name}`}
+						title={`${expanded ? "收起" : "展开"} ${provider.name}`}
 						aria-expanded={expanded}
 						aria-controls={`provider-body-${provider.id}`}
 						onClick={() => setExpanded(!expanded)}

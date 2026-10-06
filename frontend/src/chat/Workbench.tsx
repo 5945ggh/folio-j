@@ -1027,6 +1027,7 @@ export function Workbench({
 						type="button"
 						className="chat-back-button"
 						aria-label="返回对话列表"
+						title="返回对话列表"
 						onClick={() => {
 							setView("list");
 							onSelectThread(null);

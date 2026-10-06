@@ -1,0 +1,57 @@
+/* Reference only: place AFTER existing placeholder rules; do not change card/grid sizing. */
+.book-cover-placeholder.r1-cover-fallback {
+	position: relative;
+	isolation: isolate;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	padding: 18px;
+	border-radius: 5px;
+	background: #e8eeee;
+	color: #3f5b65;
+}
+.r1-cover-fallback .r1-cover-title {
+	position: relative;
+	z-index: 1;
+	display: -webkit-box;
+	-webkit-line-clamp: 4;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+	text-align: center;
+	font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+	font-size: clamp(13px, calc(var(--card-width, 200px) * 0.11), 25px);
+	font-weight: 500;
+	line-height: 1.85;
+	letter-spacing: 0.08em;
+}
+.r1-cover-fallback .r1-cover-slashes {
+	position: absolute;
+	display: block;
+	width: 175%;
+	height: 1px;
+	transform: rotate(-35deg);
+	background: #a1b7bc;
+	bottom: 21%;
+	box-shadow:
+		0 11px 0 #becacc,
+		0 22px 0 #becacc,
+		0 100px 0 #cad5d6;
+	pointer-events: none;
+}
+/* Existing SourceOverview hides placeholder spans. Use explicit localized sizing instead. */
+.overview-books .book-cover-placeholder.r1-cover-fallback {
+	padding: 0;
+}
+.overview-books .r1-cover-fallback .r1-cover-title {
+	display: none;
+}
+.overview-books .r1-cover-fallback .r1-cover-slashes {
+	box-shadow:
+		0 3px 0 #becacc,
+		0 6px 0 #becacc,
+		0 27px 0 #cad5d6;
+}

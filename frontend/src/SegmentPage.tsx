@@ -432,6 +432,7 @@ export function SegmentDetail() {
 								type="button"
 								className="segment-icon-button"
 								aria-label="更多片段操作"
+								title="更多片段操作"
 								aria-expanded={menuOpen}
 								onClick={() => setMenuOpen(!menuOpen)}
 							>

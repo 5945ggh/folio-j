@@ -103,7 +103,12 @@ export function Shell({
 		>
 			<aside className="app-sidebar">
 				<div className="sidebar-brand-row">
-					<Link className="brand" to="/materials" aria-label="Folio-J 素材库">
+					<Link
+						className="brand"
+						to="/materials"
+						aria-label="Folio-J 素材库"
+						title="Folio-J 素材库"
+					>
 						<span className="brand-mark" aria-hidden="true">
 							<NavigationIcon name="book" />
 						</span>
@@ -141,6 +146,7 @@ export function Shell({
 						setDrawer(true);
 					}}
 					aria-label="打开主导航"
+					title="打开主导航"
 				>
 					☰
 				</button>
