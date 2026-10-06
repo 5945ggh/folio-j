@@ -1,0 +1,39 @@
+backend/openapi.json
+  s_e0d77368f30c2c::t_307a19feb46e87 1053-1146,1262-1365,4319-4446,4545-4626
+frontend/src/materials/api.ts
+  s_e0d77368f30c2c::t_7459408a1e4151 104-106,124-125,143-144
+  s_e0d77368f30c2c::t_c0b0045c88f27d 107-123,126-142
+frontend/src/api/schema.d.ts
+  s_e0d77368f30c2c::t_307a19feb46e87 195-228,263-279,1183-1218,1259-1298,2556-2627,2698-2733
+backend/src/app/api/materials.py
+  s_e0d77368f30c2c::t_307a19feb46e87 5,11,14,20,77-126
+backend/src/app/material_schemas.py
+  s_e0d77368f30c2c::t_5192b2aeeaef54 98-141
+backend/tests/test_reader_queries.py
+  s_e0d77368f30c2c::t_dc2a6c5f0385ce 1-19,22-66,68-164,166-168,227,245,248,254,262,267,269-271,285,292,298,301
+  s_e0d77368f30c2c::t_09b23964b857f1 175-224,236,246
+  s_e0d77368f30c2c::t_40369da835927d 20-21,165,171
+  s_e0d77368f30c2c::t_5d141d58c4790a 67,174,228-235,241-243
+  s_e0d77368f30c2c::t_3fa2a1ef250a18 169-170,172-173,225-226,237-240,244,247,249-253,255-261,263-266,268,272-284,286-291,293-297,299-300,302-311
+backend/src/app/services/reader_queries.py
+  s_e0d77368f30c2c::t_c0cacffa38e2ec 148-150
+  s_e0d77368f30c2c::t_307a19feb46e87 68-81,85-91,96-101,119-129,137-139,156-169,171-176,181-185,216-219,223-230
+  s_e0d77368f30c2c::t_09b23964b857f1 50,105,188
+  s_e0d77368f30c2c::t_5192b2aeeaef54 1-49,51-67,82-84,92-95,102-104,106-118,130-136,140-147,151-155,170,177-180,186-187,189-215,220-222
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9576c99392a72c9e70b31140bacca7bbc95a815d",
+  "prompts": {},
+  "sessions": {
+    "s_e0d77368f30c2c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a10c73-9070-7481-beb4-b80bb6fcc2d3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
