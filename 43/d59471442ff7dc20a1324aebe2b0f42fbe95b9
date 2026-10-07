@@ -1,0 +1,19 @@
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_541d1e36ced8ed::t_4d5edd4139060a 3,19,41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "43d59471442ff7dc20a1324aebe2b0f42fbe95b9",
+  "prompts": {},
+  "sessions": {
+    "s_541d1e36ced8ed": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a114bf-02bb-75d3-b890-0f47a24d36b5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
