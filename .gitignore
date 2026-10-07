@@ -49,7 +49,12 @@ coverage/
 # Local agent/runtime state
 .omx/
 .codex/
-.agents/
+/.agents/*
+!/.agents/skills/
+/.agents/skills/*
+# 共享两份项目文档 skill，其余本地代理资源继续忽略。
+!/.agents/skills/document-maintenance/
+!/.agents/skills/document-writing-style/
 
 # Local scratch files and repository snapshots
 /temp/

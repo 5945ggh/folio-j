@@ -1,0 +1,4 @@
+interface:
+  display_name: "文档维护原则"
+  short_description: "集中维护项目交付状态、产品契约与验收证据，减少重复更新和状态漂移"
+  default_prompt: "使用 $document-maintenance 核对并整理本项目文档的维护归属与交付状态。"

@@ -4,7 +4,9 @@
 
 ## 项目是什么
 
-一个 Agent 原生的日语学习辅助系统，当前已实现来源与片段管理、设置与模型接入、后台讨论，以及 Analysis／Revision／Section、讲解生成与编辑审核、阅读导航；Occurrence 与积累库尚未实现。当前进度和验收依据集中见 [MVP 实施基线](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)。用户围绕 Source 下的 Segment 阅读与讨论，按需留下可独立阅读的讲解和 Occurrence；工作台是活动界面，不拥有学习内容。不要求先有完整解析才能讨论，也不强制所有内容经过独立 AI 提取阶段。讨论成果先整理为持久讲解，Occurrence 再关联原文与具体讲解版本。具体首轮入口、共享资料读取与成果写入契约以 PRD 中已确认和待定的边界为准，不按旧的线 A／线 B 流水线直接实现。
+一个 Agent 原生的日语学习辅助系统，面向原版阅读与片段学习。当前交付状态、实现缺口与验收依据集中见 [MVP 实施基线](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)。
+
+用户围绕 Source 下的 Segment 阅读与讨论，按需留下可独立阅读的讲解和 Occurrence；工作台是活动界面，不拥有学习内容。不要求先有完整解析才能讨论，也不强制所有内容经过独立 AI 提取阶段。讨论成果先整理为持久讲解，Occurrence 再关联原文与具体讲解版本。具体首轮入口、共享资料读取与成果写入契约以 PRD 中已确认和待定的边界为准，不按旧的线 A／线 B 流水线直接实现。
 
 文档入口见 [`docs/README.md`](docs/README.md)。开发任务先读以下长期规范，并按当前阶段查阅 [`docs/handovers/README.md`](docs/handovers/README.md)：
 
@@ -14,6 +16,10 @@
 - `docs/TECH_STACK.md`：技术选型，以及明确不选的方案
 
 `docs/handovers/` 放阶段性实施指导；`archived/` 仅保存历史任务和实验上下文。产品行为以 PRD 为准，不能从旧 brief 恢复过时需求。已完成的工程初始化记录见 [`docs/handovers/archived/DEV_PREPARATION.md`](docs/handovers/archived/DEV_PREPARATION.md)，实施基线见 [`docs/handovers/MVP_IMPLEMENTATION_BASELINE.md`](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)；两者不替代长期规范或敲定 PRD 未决项。
+
+## 文档维护
+
+维护项目文档时，先读项目级 skill [文档维护原则](.agents/skills/document-maintenance/SKILL.md)与[文档写作风格](.agents/skills/document-writing-style/SKILL.md)。前者规定信息归属与更新流程，后者规定直接、准确、简明的表达方式。
 
 ## 常用命令
 
