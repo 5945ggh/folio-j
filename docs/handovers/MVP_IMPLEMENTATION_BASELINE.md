@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-07，已提交代码基准 `2132e00`；核对范围包含当前工作区。
+> 状态核对：2026-10-07，已提交代码基准 `fc7537e`。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
 
@@ -16,7 +16,7 @@
 | 持久讲解 | 已提交 | 多份 Analysis、不可变 Revision、Section／Preamble、总体讲解快捷生成、块级编辑与具体方案审核；整份删除由用户操作 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
 | 片段阅读与导航 | 已提交 | 默认阅读、原文与讲解对照、确切修订／讨论定位、讲解总标题、本页讨论草稿保留；未提交草稿仅在当前挂载页面保留 | [阅读导航](archived/READING_NAVIGATION_ACCEPTANCE.md)、[架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md) |
 | 素材库与阅读管理 | 已提交 | 跨 Source 书籍目录、搜索／筛选／排序／分页、书卡大小与状态菜单、空库整区导入；阅读三态和最近打开持久化，封面按规则版本 2 回退与缓存 | [前端调整](frontend-refresh/ACCEPTANCE.md)、[素材库 A.1](library-a1/ACCEPTANCE.md) |
-| 来源空间 S2 | 工作区待提交 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；工程验收完成，用户使用验收待进行 | [S2 工程验收](sources-s2/ACCEPTANCE.md) |
+| 来源空间 S2 | 已提交 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；工程验收完成，用户使用验收待进行 | [S2 工程验收](sources-s2/ACCEPTANCE.md) |
 | EPUB 导入与恢复 | 已提交 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读，托管字节暂保留 | [切片 1](epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](epub-reading/SLICE_0_ACCEPTANCE.md) |
 | 阅读器 R1.1 | 已提交 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级 | [R1.1 工程验收](reader-r1/ACCEPTANCE.md)、[交互优化](reader-r1/INTERACTION_POLISH.md) |
 | EPUB 学习衔接 | 未实现 | 全量注音、选区创建或选用 Segment、材料对话与消息引用、从材料讨论形成讲解按后续切片推进 | [EPUB 阶段安排](epub-reading/README.md) |
@@ -38,6 +38,7 @@
 | 2026-10-05 来源空间 S2 | [S2 工程验收](sources-s2/ACCEPTANCE.md) |
 | 2026-10-05 阅读器 R1.1 | [R1.1 工程验收](reader-r1/ACCEPTANCE.md) |
 | 2026-10-06 阅读交互优化与提交隔离检查 | [交互优化](reader-r1/INTERACTION_POLISH.md) |
+| 2026-10-07 来源空间 S2 提交前复核 | [审计与复测](sources-s2/ACCEPTANCE.md#2026-10-07-提交前复核) |
 
 测试数量、包体积与提交隔离检查范围在原记录中维护；离线、真实模型与扩展验证各自对应其方法和观察。
 
