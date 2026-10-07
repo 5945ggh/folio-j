@@ -1,0 +1,31 @@
+AGENTS.md
+  s_541d1e36ced8ed::t_f3fb7b89763300 8-9
+  s_541d1e36ced8ed::t_f928da47b0f5f0 7,20-22
+  s_541d1e36ced8ed::t_e5c7fa81bf2118 23
+.gitignore
+  s_541d1e36ced8ed::t_f928da47b0f5f0 52-57
+.agents/skills/document-maintenance/SKILL.md
+  s_541d1e36ced8ed::t_1aa2449b94d419 1-45
+.agents/skills/document-maintenance/agents/openai.yaml
+  s_541d1e36ced8ed::t_8eb7ba18bb66dc 1-4
+.agents/skills/document-writing-style/SKILL.md
+  s_541d1e36ced8ed::t_e0c2582339b8ec 1-52
+.agents/skills/document-writing-style/agents/openai.yaml
+  s_541d1e36ced8ed::t_b556433847eff9 1-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "265d3b05e10b9e89d38e5e7a2d0f7a0c5d173574",
+  "prompts": {},
+  "sessions": {
+    "s_541d1e36ced8ed": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a114bf-02bb-75d3-b890-0f47a24d36b5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
