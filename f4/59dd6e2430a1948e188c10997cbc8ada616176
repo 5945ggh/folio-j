@@ -1,0 +1,98 @@
+docs/ARCHITECTURE.md
+  s_541d1e36ced8ed::t_57e7ff9de3d042 3-4,105-107,109,113,115,350-351,358,395
+  s_541d1e36ced8ed::t_76d2960477375c 17-18,25-26,38,43-46,51-52,63-65,71,75-77,79-82,84,88-90,129-130,134-137,308,311-317,360,382-384,386-387,396,424
+  s_541d1e36ced8ed::t_f5ab259801985d 111
+  s_541d1e36ced8ed::t_4ab6a875a8f1c4 83,385
+docs/handovers/library-a1/PLAN.md
+  s_541d1e36ced8ed::t_77cb84fa3ac924 19
+  s_541d1e36ced8ed::t_66aa7f636c1f65 3
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_541d1e36ced8ed::t_e619666c64e7ff 5,11-14,16-23,25,27,29,44,48,52
+  s_541d1e36ced8ed::t_4ab6a875a8f1c4 15
+  s_541d1e36ced8ed::t_f928da47b0f5f0 3,7,31,33-40,42
+  s_ecc981d4a33611::t_131ccc8cdc27b5 9
+docs/PRD.md
+  s_541d1e36ced8ed::t_69909c4b3e20b0 133
+  s_541d1e36ced8ed::t_ec560cca44cca1 6,87,99,179,187
+  s_541d1e36ced8ed::t_07b34333c6f781 189
+  s_dc907c73c5665f::t_4b368a936ca0d1 95,101-105
+  s_541d1e36ced8ed::t_6a367ae58a2485 73
+  s_541d1e36ced8ed::t_fcd9c2c8b60aa4 188
+  s_541d1e36ced8ed::t_3fc364edac0bde 100
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_541d1e36ced8ed::t_9eac41e91d509b 3,5,7,15,17-21,23,25,27,29
+  s_541d1e36ced8ed::t_6a367ae58a2485 9,11,13
+docs/handovers/epub-reading/README.md
+  s_541d1e36ced8ed::t_ccc8e3075967f2 34-37,44,101-104
+  s_541d1e36ced8ed::t_6a367ae58a2485 3,27,29,31-33,43,95,99,106
+docs/handovers/reader-r1/PLAN.md
+  s_541d1e36ced8ed::t_66aa7f636c1f65 5-7,11
+docs/handovers/epub-reading/MATERIAL_BASELINE.md
+  s_541d1e36ced8ed::t_6a367ae58a2485 3,150
+  s_541d1e36ced8ed::t_07b34333c6f781 117
+  s_541d1e36ced8ed::t_69909c4b3e20b0 4,21,40
+docs/handovers/README.md
+  s_541d1e36ced8ed::t_66aa7f636c1f65 5,7,9-13
+docs/handovers/library-a1/API.md
+  s_541d1e36ced8ed::t_66aa7f636c1f65 3
+docs/handovers/sources-s2/PLAN.md
+  s_dc907c73c5665f::t_4b368a936ca0d1 1-2,4-6,8-19
+  s_dc907c73c5665f::t_22e80a573f4e89 7
+  s_541d1e36ced8ed::t_66aa7f636c1f65 3
+docs/README.md
+  s_541d1e36ced8ed::t_66aa7f636c1f65 8-12,18-19
+  s_541d1e36ced8ed::t_77cb84fa3ac924 21
+README.md
+  s_541d1e36ced8ed::t_57e7ff9de3d042 5
+  s_541d1e36ced8ed::t_69909c4b3e20b0 16-18
+docs/handovers/frontend-refresh/PLAN.md
+  s_541d1e36ced8ed::t_66aa7f636c1f65 3
+docs/TECH_STACK.md
+  s_541d1e36ced8ed::t_ec560cca44cca1 3,112
+  s_541d1e36ced8ed::t_f3fb7b89763300 34
+docs/INFORMATION_ARCHITECTURE.md
+  s_dc907c73c5665f::t_4b368a936ca0d1 7,16-18,37-39,41-43,47
+  s_541d1e36ced8ed::t_f3fb7b89763300 51
+  s_541d1e36ced8ed::t_57e7ff9de3d042 3,9,27,49
+  s_541d1e36ced8ed::t_5a6c96c892919a 48
+docs/handovers/sources-s2/ACCEPTANCE.md
+  s_dc907c73c5665f::t_78bd3b71fbf4dc 11,17,41,46,48-49,52,72,74,76,81-92
+  s_dc907c73c5665f::t_4b368a936ca0d1 2,4,6
+  s_dc907c73c5665f::t_8b87b77b7f7ba9 3,38,64
+  s_dc907c73c5665f::t_80815bf4ad4d5b 8,10,12
+  s_dc907c73c5665f::t_0272014bd69222 1,5,7,9,13-16,18-37,39-40,42-45,47,50-51,53-63,65-71,73,75,77-80
+docs/GLOSSARY.md
+  s_541d1e36ced8ed::t_6a367ae58a2485 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f459dd6e2430a1948e188c10997cbc8ada616176",
+  "prompts": {},
+  "sessions": {
+    "s_541d1e36ced8ed": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a114bf-02bb-75d3-b890-0f47a24d36b5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_dc907c73c5665f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a10b0a-ed3a-7a10-9903-eaeca24a57b7",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_ecc981d4a33611": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11590-5b46-7352-aa28-d9c3b193ba13",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
