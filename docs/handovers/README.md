@@ -2,15 +2,15 @@
 
 本目录保存当前实施基线和阶段指导；阶段任务完成或被新决策取代后移入 [archived/](archived/)。长期规范见 [文档导航](../README.md)，产品行为以 [PRD](../PRD.md) 为准。归档材料保存历史上下文，不能据此恢复过时的产品需求。
 
-## Active
+## 阶段资料
 
-- [阅读器 R1.1](reader-r1/PLAN.md)：独立阅读空间、专注与主题、原书注音、真实搜索／图库及共享无封面占位；本轮证据与未验证边界见[工程验收](reader-r1/ACCEPTANCE.md)。
+当前交付、提交状态与验收结论汇总见 [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)。以下按阶段职责组织实施安排、接口契约和原始证据。
 
-- [素材库 A.1](library-a1/PLAN.md)：已选定轻原生素材库、整区空库导入入口与封面回退／缓存修复；已完成本轮工程验收，证据与一般限制见[验收记录](library-a1/ACCEPTANCE.md)。
-
-- [EPUB 原生阅读阶段](epub-reading/README.md)：切片 0 与切片 1 已验收；来源材料导入、目录拼章和基础阅读恢复已接入，后续学习与材料对话边界按切片收口。
-
-- [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：集中记录已实现能力、首轮目标差额、尚未落实的契约及验收依据；产品规则链接至负责规范，不另立交付顺序。
+- 阅读器 R1.1：独立阅读空间、阅读偏好、原书 ruby、书内搜索／插图库及面板交互；见[计划](reader-r1/PLAN.md)、[API 契约](reader-r1/API.md)、[工程验收](reader-r1/ACCEPTANCE.md)和[交互优化](reader-r1/INTERACTION_POLISH.md)。
+- 来源空间 S2：主导航／来源列表／来源内容三栏、四视图、有界概览与精确恢复；见[计划](sources-s2/PLAN.md)和[验收记录](sources-s2/ACCEPTANCE.md)。
+- 素材库 A.1：轻原生素材库、整区空库导入和封面回退／缓存；见[计划](library-a1/PLAN.md)、[封面工程契约](library-a1/API.md)和[验收记录](library-a1/ACCEPTANCE.md)。
+- 前端调整：目录、Source 三视图、使用状态与统一导航；见[计划](frontend-refresh/PLAN.md)、[API 契约](frontend-refresh/API.md)和[验收记录](frontend-refresh/ACCEPTANCE.md)。
+- [EPUB 原生阅读阶段](epub-reading/README.md)：组织导入、基础阅读、注音、选区学习、材料对话和讲解形成的切片顺序与准备条件。
 
 ## Archived
 

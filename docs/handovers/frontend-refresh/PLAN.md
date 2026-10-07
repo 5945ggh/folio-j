@@ -1,6 +1,6 @@
 # 前端调整实施计划
 
-> 2026-10-04；A–E 已完成，主代理综合检查及本轮真实浏览器回归通过；证据和范围见 [ACCEPTANCE.md](ACCEPTANCE.md)。先规范后实施；FUTURE_NOTES 不执行。
+> 2026-10-04 实施安排。先规范后实施；FUTURE_NOTES 不执行。验收证据和范围见 [ACCEPTANCE.md](ACCEPTANCE.md)，当前交付与提交状态见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)。
 
 | 增量 | 范围 | 验证关口 |
 | --- | --- | --- |

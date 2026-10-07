@@ -1,7 +1,7 @@
 # 架构设计
 
-> 状态：草案 v0.3（2026-09-26）；现状核对：2026-09-30，编辑与讨论执行部分补充核对于 2026-10-03 的 `e416f58`（本轮不递增版本）。配套文档：[PRD.md](PRD.md)、[TECH_STACK.md](TECH_STACK.md)、[GLOSSARY.md](GLOSSARY.md)。`[TBD-xx]` 编号与 PRD 一致。
-> 本文同时记录已确认的领域规则、当前实现与未来草图。Source／Segment、设置与验证、后台问答、Analysis及其工具审核／恢复已实现；Occurrence、提取与知识库仍为未来设计。当前协议以实际模板、代码和生成OpenAPI为准，阶段性实施边界见 [MVP_IMPLEMENTATION_BASELINE.md](handovers/MVP_IMPLEMENTATION_BASELINE.md)，验收记录见 [阶段性交接索引](handovers/README.md)。
+> 草案 v0.3。本文维护模型、模块、执行机制与不变式，未来草图单独标明。配套文档：[PRD.md](PRD.md)、[TECH_STACK.md](TECH_STACK.md)、[GLOSSARY.md](GLOSSARY.md)。`[TBD-xx]` 编号与 PRD 一致。
+> 当前交付状态与验收入口见 [MVP 实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)；接口以代码、模板和生成 OpenAPI 为准。
 
 ## 1. 总览
 
@@ -14,12 +14,16 @@ flowchart LR
   SVC -. 未来 .-> EXT[提取器]
   SVC --> CHAT[讨论服务]
   SVC --> JOBS[Job 队列 + Worker]
+  SVC --> MAT[材料与阅读服务]
+  SVC --> CAT[目录与使用状态]
   CTX --> PROMPTS[(prompts/*.j2)]
   JOBS --> LLM[LLM 层]
   CHAT --> LLM
   LLM --> PROV[OpenAI-compatible providers]
   SVC --> DB[(SQLite)]
   JOBS --> DB
+  MAT --> DB
+  CAT --> DB
 ```
 
 分层规则：
@@ -31,17 +35,21 @@ flowchart LR
 
 ## 2. 核心数据流
 
-Segment 是现有片段学习的共同起点；片段工作台只是呈现原文、讲解、对话和条目的界面，不是必须按顺序完成的管线。当前 EPUB 阶段按 [PRD 4.7](PRD.md#47-当前-epub-阶段安排)先验证原文阅读与位置引用，材料问答不要求预先创建 Segment；下图仍表示已有片段领域，不将材料线程塞入 `segment_id`。
+当前有两条内容路径：Source 下的 Material 承载 EPUB 阅读，Segment 承载片段讨论与讲解。材料中的选区学习和材料对话按 [PRD 4.7](PRD.md#47-当前-epub-阶段安排)接入。下图同时标出已有关系与未来的 Occurrence 路径。
 
 ```mermaid
 flowchart LR
   Source --> Segment
+  Source --> Material[EPUB Material]
+  Material --> Position[ReadingPosition]
+  Material --> Usage[MaterialUsage]
+  Material --> Cover[MaterialCover 缓存]
   Segment --> ChatThread[独立讨论线程]
   Segment --> Analysis[多份自足 Analysis]
   Analysis --> Revision[不可变 AnalysisRevision]
   Revision --> Section[Section]
-  Segment --> Occurrence[Occurrence]
-  Section --> Occurrence
+  Segment -. 未来 .-> Occurrence[Occurrence]
+  Section -. 未来 .-> Occurrence
   ChatThread -. 明确保存意图、整理后 .-> Analysis
   Revision -. 可选批量提取 .-> Occurrence
 ```
@@ -52,27 +60,34 @@ flowchart LR
 
 ## 3. 领域模型
 
-当前已落地 Source／Segment 管理、2A设置／模型验证，以及2B片段后台问答与历史、2C Analysis／Revision／Section与成果工具审核。来源与片段具体 API 与字段见[第一阶段契约](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)，实现位于 `models.py`、`schemas.py`、`services/sources.py` 与 `api/sources.py`；设置与验证见第 4 节，Analysis实现见第3.5节，Occurrence及提取／知识库模块仍为后续设计。Source、Segment 使用 `deleted_at` 逻辑删除，删除来源在同一事务内标记所属片段，查询排除已删除对象。2B接受问答时在同一短写事务保存输入快照、消息与Job，并首次设置`text_locked_at`；原文编辑、来源／片段删除在同一事务边界核对当前状态。
+当前模型覆盖 Source／Segment、设置与模型验证、讨论与 Analysis，以及材料、阅读位置、使用状态和封面缓存。来源与片段字段见[第一阶段契约](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)，Analysis 执行见第 3.5 节，材料与目录见第 3.1 节。
+
+Source、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。接受问答时在短写事务中保存输入快照、消息与 Job，并首次设置 `text_locked_at`；原文编辑、来源／片段删除共用事务校验边界。
 
 数据库生命周期由应用 lifespan 管理，迁移从空库建立 schema，`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。
 
 ### 3.1 实体
 
-领域对象主键使用ULID字符串；时间与关联字段以实际ORM为准，不要求派生Section独立带创建时间。以下是领域关系草图，不能据此推断每个字段已经落库。已实现模型见`models.py`、`settings_models.py`、`chat_models.py`与`analysis_models.py`；Occurrence尚未建表。
+Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profile／Defaults 为单例整数主键，阅读位置、使用状态与封面以 `material_id` 为主键。下表概述已实现实体及 Occurrence 的未来草图，字段以 ORM 和生成 DTO 为准。模型位于 `models.py`、`settings_models.py`、`chat_models.py`、`analysis_models.py` 与 `material_models.py`。
 
 | 实体 | 关键字段／关系 | 说明 |
 |---|---|---|
-| `UserProfile` | `native_language`、`explain_language`、`level_note`、`profile_md` | 单用户学习背景 |
-| `AnalysisStyle` | `name`、`body_md`、`is_default` | 讲解偏好预设 |
+| 学习背景（`Profile`） | `native_language`、`explain_language`、`level_note` | 单用户学习背景 |
+| 讲解预设（`Style`） | `name`、`body_md` | 命名预设，默认选择由 `Defaults.style_id` 维护 |
+| `Defaults` | 三种用途的模型 ID、`style_id`、`permission_mode` | 新操作与新线程采用的默认设置 |
 | `Source` | `title`、`note`、来源描述 | 用户声明的来源范围；未来可容纳不同形式的输入，不等于文件或 Collection |
-| `Segment` | `source_id`、`text`、可选译文／备注／听写／`source_ref`／`tokens` | 学习目标原文；`source_ref` 当前为自由文本出处，不是素材外键。入库做 NFC；片段顺序不能推断原作相邻或自动语境 |
-| `Run` | `kind`、关联的操作、实际 Provider／模型／协议／参数、完整消息、输出、用量、状态、时间 | 每次模型调用均记录，不包含密钥；当前通过purpose、job_id与parent_run_id区分用途及调用关系 |
+| `Segment` | `source_id`、`text`、译文、语境、备注、听写、`source_ref`、`text_locked_at` | 学习目标原文入库做 NFC；`source_ref` 为自由文本出处，材料外键与分词数据待后续接入 |
+| `Material` | `source_id`、标题、源字节摘要、`version_id`、产物摘要、契约版本、原 EPUB 字节、压缩编译包 | 同 Source 同源字节复用身份；版本、正文与资源不可变，章节及 spine 资源在包内表达 |
+| `ReadingPosition` | `material_id`、`revision`、位置与三项阅读设置的 `payload`、`updated_at` | 每材料最多一条，按条件版本更新；位置绑定具体版本、章、part 和资源 |
+| `MaterialUsage` | `material_id`、状态、独立 `revision`、`last_opened_at`、`last_action_id` | 每材料最多一条；未开始／进行中／已完成与最近打开独立于位置保存 |
+| `MaterialCover` | `material_id`、媒体类型、图片字节、`rule_version`、诊断原因 | 每材料最多一条可重建缓存；`data=NULL` 表示无可用封面，版本 2 可重提旧缓存 |
+| `Run` | `purpose`、`job_id`、实际 Provider／模型／协议／参数、消息、输出、用量、状态、时间 | 每次模型调用均记录；以用途和 Job 关联区分验证与讨论调用 |
 | `Analysis` | `segment_id`、文档身份与展示元信息 | 一个 Segment 可有多份独立的完整或专题讲解；当前普通入口不自动选第一份，精确入口可指定文档／修订 |
 | `AnalysisRevision` | `analysis_id`、`parent_revision_id?`、`origin`、`run_id?`、`source_md`、`normalizer_version`、`warnings` | 一经生成不可变；`source_md` 为文本真相，来源可追溯 |
 | `Section` | `revision_id`、`uid`、`handle`、`kind`、`display_no`、`title`、行号、`raw` | 由规范化器派生，可从原 Markdown 重算 |
-| `Occurrence` | `segment_id`、`revision_id`、`section_uids`、原文 `surface`／`spans`、`anchors`／`anchor_keys`、`gloss`、类型／标签／状态、创建来源 | 原文中的学习点实例；引用具体 Revision／Section。是否有提取 Run 取决于创建入口 |
-| `ChatThread` | `segment_id`、可选选定资料、标题及权限模式 | 各线程历史独立；参考资料与操作目标分开，不预设主分支结构或永久绑定单一文档 |
-| `ChatMessage` | `thread_id`、`role`、`content`、`run_id?` | 消息本身不替代持久讲解出处 |
+| `Occurrence`（未来） | `segment_id`、`revision_id`、`section_uids`、原文 `surface`／`spans`、`anchors`／`anchor_keys`、`gloss`、类型／标签／状态、创建来源 | 尚未建表；学习点引用具体 Revision／Section，生产字段契约待落实 |
+| `ChatThread` | `segment_id`、选定模型、权限模式、`active_job_id`、`revision` | 各线程历史独立，空闲时可切换模型和权限；资料与写入目标由操作表达 |
+| `ChatMessage` | `thread_id`、`job_id`、顺序、角色、状态、正文 | 消息归属线程和 Job，模型调用通过 Job 关联 |
 | `Job` | `kind`、`status`、`input_snapshot`、`model_snapshot`、`execution_state`、`execution_token`、错误及时间 | 当前chat_jobs保存后台任务状态，一个Job可关联多个Run |
 
 Occurrence整理行为见[PRD F5](PRD.md#f5-学习条目创建与整理)。存储契约保留pending／learning／reference及独立的软删除编码（待定），不得用dismissed混合忽略与删除。出处引用具体不可变修订，整理或再次调用不能迁移历史引用。创建来源、引用约束及删除保留策略仍须在实现前落实。
@@ -87,15 +102,17 @@ EPUB 已确定的不变式：原始素材字节不可变，材料归属 Source�
 
 工具审核需持久记录所属线程、目标及基础版本、具体拟执行操作、用户决定／附加指令与执行结果。当前Analysis工具把具体方案、决定与执行事实保存在Job.execution_state中，状态包含waiting_review；Occurrence及复杂组合方案仍待设计。待审核方案与正式 AnalysisRevision／Occurrence 分开，批准后仍可能执行失败，二者不能混为一条成功记录。
 
-### 3.1.1 本轮目录与材料使用状态（已实现并完成本轮验收）
+### 3.1.1 目录与材料使用状态
 
-2026-10-04 核对 catalog_schemas.py、material_models.py、api/catalog.py 与服务层，增量迁移 `0008_material_usage` 接续 `0007_materials`，新增 material_usage、material_covers；本轮综合与浏览器验收证据见[验收表](handovers/frontend-refresh/ACCEPTANCE.md)。材料使用状态以 material_id 关联，保存可空 last_opened_at、not_started／in_progress／completed 及独立 revision，不变更 Material 版本或 ReadingPosition revision。显式打开 mutation 仅在新进入成功呈现目标章后执行；GET、预取与 refetch 无写入副作用。重复动作去重、条件版本校验拒绝迟到打开覆盖新手工状态；409 后读真实状态，不循环盲重试。状态失败不破坏位置队列，缓存更新不重挂载阅读器。
+材料使用状态以 material_id 关联，保存可空 last_opened_at、not_started／in_progress／completed 及独立 revision，不变更 Material 版本或 ReadingPosition revision。显式打开 mutation 仅在新进入成功呈现目标章后执行；GET、预取与 refetch 无写入副作用。重复动作去重、条件版本校验拒绝迟到打开覆盖新手工状态；409 后读真实状态，不循环盲重试。状态失败不破坏位置队列，缓存更新不重挂载阅读器。
 
-目录由服务端先完整筛选、排序再分页，返回真实总数；字段白名单，普通文字搜索，标题比较集中测试，ID 破同值，最近打开空值双向置后，分页 50／上限 100。Source 概览有限样本与真实计数；讲解关联未删除 Segment，携带确切修订及原文短摘，避免前端 N+1。封面按 EPUB3 cover-image／EPUB2 meta name=cover 明确声明提取静态 PNG／JPEG，最大 4 MiB、1600 万像素；APNG、GIF、WebP、SVG、缺失及异常回退占位。不新增图像解码依赖，沿用标准库做有界头部／结构校验而非完整像素解码；浏览器加载失败仍占位。首次封面读取在线程中提取并缓存成功／失败，不修改原始字节、编译包和版本，目录不逐书解压。新查询、封面和写入检查完整 Source 可见性链。
+目录由服务端先完整筛选、排序再分页，返回真实总数；字段白名单，普通文字搜索，标题比较集中测试，ID 破同值，最近打开空值双向置后，分页 50／上限 100。Source 概览有限样本与真实计数；讲解关联未删除 Segment，携带确切修订及原文短摘，避免前端 N+1。查询、封面和写入检查完整 Source 可见性链。
 
-2026-10-05 素材库 A.1 封面修复已实现并验收：上段描述上一轮提取范围，新规则优先有效声明，其后按 spine 顺序的 XHTML `img`／SVG `image` 包内引用、manifest 图像顺序回退首张可用静态 PNG／JPEG；坏候选继续，全局归档安全失败整体拒绝。规则版本 `2`，资源 URL 带 `?v=2`；缓存增量增加规则版本及诊断，旧成功／失败均懒重建，仅当前失败目录 URL 为空。不会重建不可变材料；具体迁移及候选契约见[封面工程契约](handovers/library-a1/API.md)，验收见[本轮记录](handovers/library-a1/ACCEPTANCE.md)。
+封面规则版本 `2` 优先采用有效的 EPUB3 cover-image／EPUB2 meta name=cover 声明，再按 spine 中 XHTML `img`／SVG `image` 包内引用、manifest 图像顺序回退首张可用静态 PNG／JPEG。坏候选继续，全局归档安全失败整体拒绝。图片限制为 4 MiB、1600 万像素；APNG、GIF、WebP、SVG 不作为有效封面候选，无可用候选时使用占位。标准库执行有界头部／结构校验，浏览器加载失败仍占位。
 
-新增结构采用保留旧数据的增量迁移，旧有效位置初始化进行中，其余未开始，历史打开时间为空、不推断完成。空库／旧库测试保留 ID、原书字节、修订、位置，不用日常库验收。Query key 包含全部条件；导入、状态、Source 和 Analysis 变更刷新受影响目录及计数，旧请求不污染新条件，失效页码回有效页。API 收口见[本轮契约](handovers/frontend-refresh/API.md)，DTO 仍仅由 OpenAPI 生成，业务仍在 services。
+首次封面读取在线程中提取并缓存成功／失败，资源 URL 带 `?v=2`；旧成功／失败缓存均懒重建，当前失败的目录 URL 为空。缓存保持原始字节、编译包和版本不变，目录不逐书解压。候选和缓存规则见[封面工程契约](handovers/library-a1/API.md)。
+
+迁移 `0008_material_usage` 接续 `0007_materials`，新增 material_usage 与 material_covers；`0009_cover_rules` 增加缓存规则版本和诊断，保留旧数据。旧有效位置初始化进行中，其余未开始，历史打开时间为空、不推断完成。空库／旧库测试核对 ID、原书字节、修订与位置，使用独立测试库。Query key 包含全部条件；导入、状态、Source 和 Analysis 变更刷新受影响目录及计数，旧请求不污染新条件，失效页码回有效页。API 见[目录契约](handovers/frontend-refresh/API.md)，DTO 由 OpenAPI 生成，业务位于 services。
 
 ### 3.1.2 阅读器 R1.1 呈现与只读派生查询
 
@@ -109,14 +126,18 @@ TanStack Query key 包含材料／版本／查询／分页，输入法组合期�
 
 ### 3.2 关系
 
+下图为已实现实体关系。Occurrence 未来关联 Segment 和具体 AnalysisRevision／Section，契约见上表与第 4.4–4.5 节。
+
 ```mermaid
 erDiagram
   Source ||--o{ Segment : contains
+  Source ||--o{ Material : contains
+  Material ||--o| ReadingPosition : resumes
+  Material ||--o| MaterialUsage : tracks
+  Material ||--o| MaterialCover : caches
   Segment ||--o{ Analysis : has
   Analysis ||--o{ AnalysisRevision : versions
   AnalysisRevision ||--o{ Section : derives
-  Segment ||--o{ Occurrence : locates
-  AnalysisRevision ||--o{ Occurrence : explains
   Segment ||--o{ ChatThread : has
   ChatThread ||--o{ ChatMessage : contains
 ```
@@ -284,10 +305,16 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 ## 5. 当前API与未来草图
 
-所有接口以`/api`为前缀，实际请求／响应以FastAPI生成的OpenAPI及[`frontend/src/api/schema.d.ts`](../frontend/src/api/schema.d.ts)为准。当前路由实现见[`api/`](../backend/src/app/api/)：
+所有接口以 `/api` 为前缀。以下列出主要路由，方法与完整请求／响应见生成 OpenAPI 和[`前端类型`](../frontend/src/api/schema.d.ts)；实现位于[`api/`](../backend/src/app/api/)。
 
 ```text
-/materials, /materials/{material_id}/usage, /materials/{material_id}/opened
+/sources/{source_id}/materials
+/materials, /materials/{material_id}
+/materials/{material_id}/chapters/{chapter_id}
+/materials/{material_id}/reading-position
+/materials/{material_id}/search, /materials/{material_id}/illustrations
+/materials/{material_id}/illustrations/{ordinal}/content
+/materials/{material_id}/usage, /materials/{material_id}/opened
 /materials/{material_id}/cover, /catalog/sources
 /sources/{source_id}/catalog/segments, /sources/{source_id}/catalog/analyses
 /settings, /settings/profile, /settings/styles, /settings/defaults
@@ -320,17 +347,17 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 | 路由 | 内容 |
 |---|---|
 | `/` | 替换式跳转 `/materials?type=book` |
-| `/sources` | Source 列表 |
-| `/sources/:id` | 素材／片段／讲解与 `expanded=book` 展开窗口 |
+| `/sources` | 来源目录；S2 普通进入上次有效来源，否则选择当前排序首项 |
+| `/sources/:id` | S2 为概览／素材／片段／讲解四视图，默认概览；素材视图保留 `expanded=book` 窗口 |
 | `/materials` | 跨 Source 书籍目录 |
 | `/materials/:id` | 独立 EPUB Reader；目录／搜索、图库、设置、专注及既有位置／状态 |
 | `/segments/:id` | 片段阅读与按需展开的讨论；`analysis`／`revision`／`thread`／`chat`定位已有内容。Occurrence仍未实现 |
 | `/library`（未来，尚未注册） | 知识库：筛选、搜索、按 anchor 分组，每条都能跳转回来源 |
 | `/settings` | 学习背景、讲解预设、Provider／模型／用途默认值的维护，以及模型列表刷新与按需验证 |
 
-诊断入口按 PRD F8 确定，不预设独立完整调试页面为首轮前提。
+S2 路由适用范围与提交状态见 [MVP 实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md#1-当前实现差额与验收依据)。诊断入口按 PRD F8 确定，不预设独立完整调试页面为首轮前提。
 
-当前前端按页面及chat／analysis／settings模块组织，尚未建立统一features目录；API类型在`api/schema.d.ts`生成，API调用封装位于各模块的`api.ts`，TanStack Query查询和mutation hooks由页面／组件接入，讨论推进规则见`chat/discussion.ts`。轮询读取持久状态，没有SSE订阅工具。
+当前前端按页面及 `catalog`／`materials`／`chat`／`analysis`／`settings` 模块组织。API 类型在 `api/schema.d.ts` 生成，各模块 `api.ts` 封装调用，TanStack Query 维护查询与 mutation；讨论推进见 `chat/discussion.ts`，阅读位置队列见 `materials/persistence.ts`。后台状态由轮询读取。
 
 ## 7. 当前仓库目录
 
@@ -352,8 +379,12 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 │   │   ├── settings_models.py / settings_schemas.py
 │   │   ├── chat_models.py / chat_schemas.py
 │   │   ├── analysis_models.py / analysis_schemas.py
-│   │   ├── api/                 # health、sources、settings、chat、analyses
-│   │   ├── services/            # health、sources、settings、context、chat、analyses、normalizer
+│   │   ├── material_models.py / material_schemas.py / epub_schemas.py
+│   │   ├── catalog_schemas.py
+│   │   ├── api/                 # health、sources、settings、chat、analyses、materials、catalog
+│   │   ├── services/            # 下列为 Python 模块（.py）
+│   │   │   ├── health / sources / settings / context / chat / analyses / normalizer
+│   │   │   └── epub / materials / material_usage / catalog / covers / reader_queries
 │   │   ├── llm/adapters.py       # 两种协议与文本／工具调用适配
 │   │   └── jobs/                # runtime与agent
 │   └── tests/                   # 离线API、服务、迁移、适配器与运行边界测试
@@ -361,6 +392,8 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 │   ├── api/                     # 生成类型与客户端
 │   ├── App.tsx / SourcePages.tsx / SegmentPage.tsx
 │   ├── Shared.tsx / Forms.tsx / navigation.ts / content.ts / styles.css
+│   ├── catalog/                # 素材库、Source 视图与目录状态
+│   ├── materials/              # 阅读器、工具面板、定位与位置保存
 │   └── analysis/ / chat/ / settings/
 └── data/                       # gitignore：默认app.db与独立凭据目录
 ```
@@ -388,6 +421,6 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 | 知识点软聚类与 IR | 保留 anchor 检索信息；将来依据实例归属需求设计聚类和用户判断，不在写入时预设同一性 |
 | lexeme 挂载 | 在固定材料正文之上按需增加可重建分词派生结果，版本与定位正文分开管理；token 位置与 lexeme 归并分别表达，不要求首轮预存 tokens。边界见[EPUB 材料基线](handovers/epub-reading/MATERIAL_BASELINE.md#8-分词与派生数据的后续接入)，当前未实现 |
 | 主动学习与 SRS | 从具体练习方式确定内容与调度契约；Occurrence 可提供原文和讲解依据，不直接等于卡片，`learning` 不自动启动排期 |
-| 素材与多模态 | 将来按实际输入和选取需求设计可选的素材定位；手动录入与素材选取均进入 Segment 学习流程。`source_ref` 当前保留自由文本出处，不预定素材实体、时间区间或播放器集成 |
+| 素材与多模态 | 已接入 EPUB 托管与定位；从材料选取进入 Segment、消息引用及其他媒体按后续需求接入。`source_ref` 当前保留自由文本出处 |
 | 听写诊断 | 保留用户提供的听写，后续按需求讨论与原文对齐及学习反馈，不自动更新用户画像 |
 | 后端重写 | 业务规则集中在服务层和纯函数中，API 契约由 OpenAPI 固定 |

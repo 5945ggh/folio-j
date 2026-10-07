@@ -1,6 +1,6 @@
 # 技术选型
 
-> 状态：选型草案 v0.3；采用状态核对于 2026-09-30。已采用与预留分别标注，不因列入选型表就视为已安装或已实现。
+> 选型草案 v0.3。表中区分已采用技术与预留选型，实际依赖以锁文件为准。
 > 选型原则：
 > 1. 优先选择主流、AI 训练语料充分的方案（coding agent 友好）；
 > 2. 前后端之间只有一份类型契约（OpenAPI）；
@@ -31,7 +31,7 @@
 | 日语分词 | SudachiPy + SudachiDict-core，A 粒度切分（预留，未安装） | 当前无分词模块；可在阅读导入后按需要独立生成 sidecar，不作为基本阅读或引用定位的前置条件；不使用 UniDic |
 | 配置 | 应用运行配置使用 TOML + Pydantic；模型接入设置通过 UI 维护 | 已采用；Provider／模型／用途默认值保存在 SQLite，凭据保存在数据库旁私有目录，不将 providers.toml 设为唯一入口 |
 | ID | ULID（当前由 `app/ids.py` 实现） | 已用于主键和 Section uid；未安装 `python-ulid` |
-| 后台任务 | SQLite `jobs` 表 + 进程内 asyncio worker | 不使用 Celery |
+| 后台任务 | SQLite `chat_jobs` 表（领域 Job）+ 进程内 asyncio worker | 问答与讲解共用执行机制；模型调用记录存于 `runs` |
 | 测试 | pytest、pytest-asyncio、hypothesis | 用 hypothesis 对规范化器做"可复原"的性质测试 |
 | 静态检查 | ruff（lint + format）、pyright（strict） | |
 
@@ -109,7 +109,7 @@ EPUB 切片 1 使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义�
 
 本轮目录、状态及统一外壳沿用 React Router、TanStack Query、现有 CSS、SQLite 与标准库，未新增依赖；shadcn/ui、Zustand 仍为预留，不能视为已安装。封面缓存只支持有界静态 PNG／JPEG（4 MiB、1600 万像素），标准库校验头部／结构，不引入图像解码库；为保持静态约束，APNG、GIF、WebP、SVG 与异常文件占位。可验证 EPUB 声明封面按需提取，不改不可变书籍产物，不下载远程图片。详细接口与支持范围见[前端调整契约](handovers/frontend-refresh/API.md)。
 
-2026-10-05 素材库 A.1 实施沿用上述依赖与安全边界；声明不可用时按有序包内图片候选回退，并用版本缓存恢复旧书封面。SVG `image` 只作为包内静态图片引用来源，不代表支持 SVG 封面。共享控件不强制统一路由外壳；具体规则见[本轮封面契约](handovers/library-a1/API.md)，本轮工程验收见[独立记录](handovers/library-a1/ACCEPTANCE.md)。
+素材库 A.1 沿用上述依赖与安全边界；声明不可用时按有序包内图片候选回退，并用版本缓存恢复旧书封面。SVG `image` 只作为包内静态图片引用来源，不代表支持 SVG 封面。共享控件不强制统一路由外壳；具体规则见[封面契约](handovers/library-a1/API.md)，验证结果见[记录](handovers/library-a1/ACCEPTANCE.md)。
 
 ## 9. 阅读器 R1.1 技术边界
 

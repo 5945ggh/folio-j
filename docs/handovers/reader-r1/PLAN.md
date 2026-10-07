@@ -2,11 +2,13 @@
 
 本轮依据本地交接包定稿，实施真实 `/materials/:id`，不替换 EPUB 引擎。验收结果与未验证事项另记 [ACCEPTANCE](ACCEPTANCE.md)，实际数据契约见 [API](API.md)。2026-10-06 后续用户反馈的交互优化另记 [INTERACTION_POLISH](INTERACTION_POLISH.md)，不改写原验收结论。
 
-## 基线
+当前交付与提交状态见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)。
+
+## 实施起点
 
 2026-10-05 起始分支 `codex/sources-s2`，HEAD `079b56f80d09e4d2abc66c1844f53d18713ffaa6`；新分支 `codex/reader-r1`。开始已有 S2 未提交变更：GLOSSARY、INFORMATION_ARCHITECTURE、PRD、MVP_IMPLEMENTATION_BASELINE、阶段索引、SourcePages、catalog/SourceViews、hooks、state 及测试、main；未跟踪 sources-s2 交接目录、SourceDirectory、SourceOverview、source-content.css、sources-s2.css、repomix-output.xml。完整保留，不视作本轮新增。
 
-源码与交接导航一致：真实章节按 part 使用无脚本同源 sandbox iframe；已有文本投影、串行 revision 保存、布局恢复、opened 去重。当前仍使用应用 Shell，搜索及图库尚无正式接口。
+实施起点的源码与交接导航一致：真实章节按 part 使用无脚本同源 sandbox iframe；已有文本投影、串行 revision 保存、布局恢复、opened 去重。当时仍使用应用 Shell，搜索及图库尚无正式接口。
 
 ## 切片和回归关口
 

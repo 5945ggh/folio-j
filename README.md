@@ -2,7 +2,7 @@
 
 Lingua Portfolio - Japanese
 
-围绕原版日语片段阅读、讨论，并按需留下可独立阅读的讲解和有出处的学习条目。当前已实现来源与片段管理、学习背景与模型设置、后台讨论和持久历史，以及 Analysis 生成保存、不可变修订、讲解块编辑与审核、原文和讲解对照阅读。Occurrence 与学习积累库尚未实现。当前手动录入片段，不接入或管理素材文件。详细实现状态与验收依据见 [MVP 实施基线](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)。
+围绕原版日语阅读与片段学习，按需保存和重读讲解。用户可导入 EPUB 阅读，也可手动录入片段，进行讨论和讲解编辑。当前交付状态、实现缺口与验收依据见 [MVP 实施基线](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
 ## 本地开发
 
@@ -13,7 +13,9 @@ just setup       # 安装锁定依赖
 just dev         # 初始化／升级数据库，FastAPI + Vite 热重载，Ctrl-C 一并停止
 ```
 
-开发页面：[127.0.0.1:5173](http://127.0.0.1:5173)；API 文档：[127.0.0.1:8000/api/docs](http://127.0.0.1:8000/api/docs)。从来源目录新建来源、手动录入日文片段，再打开片段阅读与编辑；数据通过真实 API 保存在本地 SQLite。后端绑定 `127.0.0.1`。
+开发页面：[127.0.0.1:5173](http://127.0.0.1:5173)；API 文档：[127.0.0.1:8000/api/docs](http://127.0.0.1:8000/api/docs)。后端绑定 `127.0.0.1`，数据保存在本地 SQLite。
+
+打开应用进入素材库，选择已有或新建来源，导入 EPUB 后即可阅读。也可从来源目录添加日文片段，进入片段阅读、讨论和讲解编辑。
 
 ```sh
 just lint        # Ruff、pyright strict、Biome、TypeScript
