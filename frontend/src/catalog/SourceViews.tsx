@@ -10,117 +10,20 @@ import {
 	catalogBooks,
 	catalogKeys,
 	catalogSegments,
-	catalogSources,
 	type SegmentQuery,
 } from "./api";
 import { BookCatalog, BookGrid } from "./Books";
 import { CatalogToolbar, Pagination, Tabs } from "./Controls";
-import {
-	readPreference,
-	savePreference,
-	useCatalogScroll,
-	useCatalogState,
-} from "./hooks";
+import { readPreference, useCatalogScroll, useCatalogState } from "./hooks";
 import { ImportDialog } from "./ImportDialog";
+import { SourceOverview } from "./SourceOverview";
 import {
 	analysisDestination,
 	lastCatalogPage,
 	readCatalogState,
-	sourceListSearch,
 	sourceView,
 } from "./state";
-export function SourceDirectory({ compact = false }: { compact?: boolean }) {
-	const location = useLocation();
-	const { state, change } = useCatalogState(
-		"sources",
-		"sources",
-		compact ? "s" : "",
-	);
-	const query = {
-		q: state.q,
-		sort: state.sort as "title" | "created_at" | "updated_at",
-		order: state.order,
-		page: state.page,
-		page_size: 50,
-	};
-	const sources = useQuery({
-		queryKey: catalogKeys.sources(query),
-		queryFn: () => catalogSources(query),
-	});
-	const scroll = useCatalogScroll(
-		sources.isSuccess,
-		compact ? "source-context" : "sources",
-		compact,
-	);
-	const last = sources.data
-		? lastCatalogPage(sources.data.total, sources.data.page_size)
-		: null;
-	useEffect(() => {
-		if (last !== null && state.page > last) change({ page: last });
-	}, [last, state.page, change]);
-	return (
-		<section
-			className={`source-directory ${compact ? "source-context" : ""}`}
-			aria-label="Source 列表"
-		>
-			<CatalogToolbar kind="sources" state={state} change={change} />
-			<div ref={scroll} className={compact ? "source-context-scroll" : ""}>
-				{sources.isPending ? (
-					<p role="status">正在加载 Source…</p>
-				) : sources.isError ? (
-					<>
-						<InlineError error={sources.error} />
-						<button
-							type="button"
-							className="button secondary"
-							onClick={() => void sources.refetch()}
-						>
-							重试
-						</button>
-					</>
-				) : sources.data.items.length === 0 ? (
-					<div className="empty-state">
-						<p>
-							{state.q
-								? "没有匹配的 Source。"
-								: "还没有 Source。先新建来源，再添加书籍或学习片段。"}
-						</p>
-					</div>
-				) : (
-					<div className="source-list">
-						{sources.data.items.map((source) => (
-							<Link
-								className={`source-row ${location.pathname === `/sources/${source.id}` ? "selected" : ""}`}
-								key={source.id}
-								to={`/sources/${source.id}${sourceListSearch(location.search, compact ? "s" : "", "s")}`}
-							>
-								<div>
-									<h3>{source.title}</h3>
-									{!compact && source.description && (
-										<p>{source.description}</p>
-									)}
-									<span className="source-counts">
-										{source.material_count} 本书 · {source.segment_count} 个片段
-										· {source.analysis_count} 篇讲解
-									</span>
-								</div>
-								<span aria-hidden="true">→</span>
-							</Link>
-						))}
-					</div>
-				)}
-				{sources.data && (
-					<Pagination
-						page={state.page}
-						total={sources.data.total}
-						pageSize={sources.data.page_size}
-						onChange={(page) => change({ page })}
-					/>
-				)}
-			</div>
-		</section>
-	);
-}
+
 function SourceBooks({ source }: { source: Source }) {
 	const [params, setParams] = useSearchParams();
 	const [adding, setAdding] = useState(false);
@@ -139,11 +42,12 @@ function SourceBooks({ source }: { source: Source }) {
 	const expanded = params.get("expanded") === "book";
 	useCatalogScroll(
 		books.isSuccess && !expanded,
-		`source-overview-${source.id}`,
+		`source-materials-${source.id}`,
 	);
 	function close() {
 		const next = new URLSearchParams(params);
 		next.delete("expanded");
+		next.set("view", "materials");
 		for (const key of ["q", "status", "sort", "order", "page"])
 			next.delete(key);
 		setParams(next, { replace: true });
@@ -172,20 +76,18 @@ function SourceBooks({ source }: { source: Source }) {
 							setAdding(true);
 						}}
 					>
-						添加书籍
+						导入书籍
 					</button>
-					{books.data && books.data.total > 6 && (
-						<button
-							className="button secondary"
-							type="button"
-							onClick={(event) => {
-								event.currentTarget.focus();
-								expand();
-							}}
-						>
-							查看全部
-						</button>
-					)}
+					<button
+						className="button secondary"
+						type="button"
+						onClick={(event) => {
+							event.currentTarget.focus();
+							expand();
+						}}
+					>
+						查看全部
+					</button>
 				</div>
 			</div>
 			{books.isPending ? (
@@ -203,9 +105,7 @@ function SourceBooks({ source }: { source: Source }) {
 				</>
 			) : books.data.total === 0 ? (
 				<div className="empty-state">
-					<p>
-						此 Source 还没有书籍。可添加 EPUB，或切换到片段查看手动录入的内容。
-					</p>
+					<p>此来源还没有书籍。可导入 EPUB，或切换到片段查看手动录入的内容。</p>
 				</div>
 			) : (
 				<BookGrid books={books.data.items} returnLabel={source.title} />
@@ -240,7 +140,13 @@ function SourceBooks({ source }: { source: Source }) {
 		</>
 	);
 }
-function SourceSegments({ source }: { source: Source }) {
+function SourceSegments({
+	source,
+	onAddSegment,
+}: {
+	source: Source;
+	onAddSegment: () => void;
+}) {
 	const location = useLocation();
 	const { state, change } = useCatalogState(
 		"segments",
@@ -270,7 +176,19 @@ function SourceSegments({ source }: { source: Source }) {
 	};
 	return (
 		<>
-			<CatalogToolbar kind="segments" state={state} change={change} />
+			<div className="source-list-tools">
+				<CatalogToolbar kind="segments" state={state} change={change} />
+				<button
+					type="button"
+					className="button secondary"
+					onClick={(event) => {
+						event.currentTarget.focus();
+						onAddSegment();
+					}}
+				>
+					添加片段
+				</button>
+			</div>
 			{segments.isPending ? (
 				<p role="status">正在加载片段…</p>
 			) : segments.isError ? (
@@ -306,7 +224,7 @@ function SourceSegments({ source }: { source: Source }) {
 								</span>
 								<span className="segment-meta">
 									{segment.source_ref || "未填写出处"} ·{" "}
-									{dateLabel(segment.created_at)} · 阅读／讲解 →
+									{dateLabel(segment.created_at)}
 								</span>
 							</Link>
 							<Link
@@ -376,7 +294,7 @@ function SourceAnalyses({ source }: { source: Source }) {
 					<p>
 						{state.q
 							? "没有匹配的讲解。"
-							: "此 Source 还没有已保存讲解。可进入片段阅读或讨论。"}
+							: "此来源还没有已保存讲解。可进入片段阅读或讨论。"}
 					</p>
 				</div>
 			) : (
@@ -394,14 +312,9 @@ function SourceAnalyses({ source }: { source: Source }) {
 							}}
 						>
 							<h3 className="analysis-catalog-title">{analysis.title}</h3>
-							<p className="analysis-excerpt">
-								<span className="excerpt-label">正文摘录</span>
-								{analysis.excerpt}
-							</p>
+							<p className="analysis-excerpt">{analysis.excerpt}</p>
 							<blockquote lang="ja">{analysis.segment_excerpt}</blockquote>
-							<small>
-								更新于 {dateLabel(analysis.updated_at)} · 打开讲解 →
-							</small>
+							<small>更新于 {dateLabel(analysis.updated_at)}</small>
 						</Link>
 					))}
 				</div>
@@ -417,34 +330,47 @@ function SourceAnalyses({ source }: { source: Source }) {
 		</>
 	);
 }
-export function SourceContent({ source }: { source: Source }) {
+export function SourceContent({
+	source,
+	onAddSegment,
+	onShowInfo,
+}: {
+	source: Source;
+	onAddSegment: () => void;
+	onShowInfo: () => void;
+}) {
 	const [params, setParams] = useSearchParams();
-	const view = sourceView(
-		params.toString(),
-		readPreference(`source-view-${source.id}`),
-	);
+	const view = sourceView(params.toString());
 	const sortScope =
 		view === "materials" ? `source-books-${source.id}` : `${view}-${source.id}`;
-	const defaults = readCatalogState(
-		params.toString(),
-		view === "materials" ? "books" : view,
-		readPreference(`sort-${sortScope}`),
-	);
+	const defaults =
+		view === "overview"
+			? null
+			: readCatalogState(
+					params.toString(),
+					view === "materials" ? "books" : view,
+					readPreference(`sort-${sortScope}`),
+				);
+	const defaultSort = defaults?.sort;
+	const defaultOrder = defaults?.order;
 	useEffect(() => {
 		if (
 			params.get("view") !== view ||
-			params.get("sort") !== defaults.sort ||
-			params.get("order") !== defaults.order
+			(defaultSort &&
+				defaultOrder &&
+				(params.get("sort") !== defaultSort ||
+					params.get("order") !== defaultOrder))
 		) {
 			const next = new URLSearchParams(params);
 			next.set("view", view);
-			next.set("sort", defaults.sort);
-			next.set("order", defaults.order);
+			if (defaultSort && defaultOrder) {
+				next.set("sort", defaultSort);
+				next.set("order", defaultOrder);
+			}
 			setParams(next, { replace: true });
 		}
-	}, [params, setParams, view, defaults.sort, defaults.order]);
+	}, [params, setParams, view, defaultSort, defaultOrder]);
 	function change(value: string) {
-		savePreference(`source-view-${source.id}`, value);
 		const next = new URLSearchParams(params);
 		next.set("view", value);
 		for (const name of ["expanded", "q", "status", "sort", "order", "page"])
@@ -455,8 +381,9 @@ export function SourceContent({ source }: { source: Source }) {
 		<>
 			<Tabs
 				id="source-content"
-				label="Source 内容"
+				label="来源内容"
 				items={[
+					{ value: "overview", label: "概览" },
 					{ value: "materials", label: "素材" },
 					{ value: "segments", label: "片段" },
 					{ value: "analyses", label: "讲解" },
@@ -464,25 +391,34 @@ export function SourceContent({ source }: { source: Source }) {
 				value={view}
 				onChange={change}
 			/>
-			{(["materials", "segments", "analyses"] as const).map((panel) => (
-				<section
-					className="source-view-panel"
-					role="tabpanel"
-					id={`source-content-panel-${panel}`}
-					aria-labelledby={`source-content-tab-${panel}`}
-					key={`${source.id}-${panel}`}
-					hidden={panel !== view}
-				>
-					{panel === view &&
-						(panel === "materials" ? (
-							<SourceBooks source={source} />
-						) : panel === "segments" ? (
-							<SourceSegments source={source} />
-						) : (
-							<SourceAnalyses source={source} />
-						))}
-				</section>
-			))}
+			{(["overview", "materials", "segments", "analyses"] as const).map(
+				(panel) => (
+					<section
+						className="source-view-panel"
+						role="tabpanel"
+						id={`source-content-panel-${panel}`}
+						aria-labelledby={`source-content-tab-${panel}`}
+						key={`${source.id}-${panel}`}
+						hidden={panel !== view}
+					>
+						{panel === view &&
+							(panel === "overview" ? (
+								<SourceOverview
+									source={source}
+									onView={change}
+									onAddSegment={onAddSegment}
+									onShowInfo={onShowInfo}
+								/>
+							) : panel === "materials" ? (
+								<SourceBooks source={source} />
+							) : panel === "segments" ? (
+								<SourceSegments source={source} onAddSegment={onAddSegment} />
+							) : (
+								<SourceAnalyses source={source} />
+							))}
+					</section>
+				),
+			)}
 		</>
 	);
 }

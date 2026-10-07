@@ -3,7 +3,9 @@ import { useLocation, useSearchParams } from "react-router";
 import {
 	type CatalogKind,
 	type CatalogState,
+	catalogScrollSearch,
 	readCatalogState,
+	sourceListSearch,
 	updateCatalogSearch,
 } from "./state";
 export function readPreference(key: string) {
@@ -44,10 +46,15 @@ export function useCatalogState(kind: CatalogKind, scope: string, prefix = "") {
 export function useCatalogScroll(ready: boolean, scope = "", internal = false) {
 	const location = useLocation();
 	const element = useRef<HTMLDivElement>(null);
-	const key = `folio-scroll:${scope}:${location.pathname}${location.search}`;
+	const key =
+		scope === "source-directory"
+			? `folio-scroll:${scope}:${sourceListSearch(location.search, "s", "s")}`
+			: `folio-scroll:${scope}:${location.pathname}?${catalogScrollSearch(location.search)}`;
 	useEffect(() => {
 		if (!ready) return;
-		const target = internal ? element.current : null;
+		const target = internal
+			? element.current
+			: document.querySelector<HTMLElement>(".source-detail-content");
 		let position = 0;
 		try {
 			position = Number(sessionStorage.getItem(key)) || 0;

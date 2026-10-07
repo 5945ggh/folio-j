@@ -80,12 +80,24 @@ export function analysisDestination(item: {
 	});
 	return `/segments/${encodeURIComponent(item.segment_id)}?${params}`;
 }
-export function sourceView(
-	search: string,
-	preference = "",
-): "materials" | "segments" | "analyses" {
-	const view = new URLSearchParams(search).get("view") ?? preference;
-	return view === "segments" || view === "analyses" ? view : "materials";
+export type SourceView = "overview" | "materials" | "segments" | "analyses";
+export function sourceView(search: string, _legacyPreference = ""): SourceView {
+	const params = new URLSearchParams(search);
+	const view = params.get("view");
+	if (
+		view === "overview" ||
+		view === "materials" ||
+		view === "segments" ||
+		view === "analyses"
+	)
+		return view;
+	return !view && params.get("expanded") === "book" ? "materials" : "overview";
+}
+
+export function sourceOverviewDestination(id: string, search = ""): string {
+	const params = new URLSearchParams(sourceListSearch(search, "s", "s"));
+	params.set("view", "overview");
+	return `/sources/${encodeURIComponent(id)}?${params}`;
 }
 
 export function sourceListSearch(
@@ -101,4 +113,24 @@ export function sourceListSearch(
 	}
 	const query = next.toString();
 	return query ? `?${query}` : "";
+}
+
+export function catalogScrollSearch(search: string): string {
+	const params = new URLSearchParams(search);
+	for (const key of ["sq", "ssort", "sorder", "spage"]) params.delete(key);
+	params.sort();
+	return params.toString();
+}
+
+// The former standalone source directory used unprefixed list parameters.
+export function sourceEntrySearch(search: string): string {
+	const current = new URLSearchParams(search);
+	const params = new URLSearchParams(sourceListSearch(search, "", "s"));
+	for (const key of ["sq", "ssort", "sorder", "spage"]) {
+		if (!current.has(key)) continue;
+		const value = current.get(key);
+		if (value) params.set(key, value);
+		else params.delete(key);
+	}
+	return params.toString();
 }
