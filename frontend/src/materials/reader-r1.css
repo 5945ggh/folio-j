@@ -493,3 +493,27 @@
 .reader-r1[data-active-side="right"] [data-reader-panel-side="right"] {
 	z-index: 7;
 }
+
+.import-preparation {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.import-preparation-indicator {
+	width: 12px;
+	height: 12px;
+	border: 2px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 50%;
+	animation: ruby-preparing 1s linear infinite;
+}
+@keyframes ruby-preparing {
+	to {
+		transform: rotate(360deg);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.import-preparation-indicator {
+		animation: none;
+	}
+}

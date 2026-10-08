@@ -37,6 +37,15 @@ export function snapshotReaderFrameTargets(doc: Document): void {
 			new WeakSet(doc.querySelectorAll<Element>("*")),
 		);
 }
+/** Explicitly register only reader-created nodes; extension descendants remain outside the boundary. */
+export function registerReaderFrameTargets(
+	doc: Document,
+	targets: Element[],
+): void {
+	snapshotReaderFrameTargets(doc);
+	const original = originalFrameTargets.get(doc);
+	for (const target of targets) original?.add(target);
+}
 export function isReaderFrameTarget(
 	doc: Document,
 	target: EventTarget | null,

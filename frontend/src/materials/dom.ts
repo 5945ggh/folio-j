@@ -1,4 +1,4 @@
-import { nearestLineBoundary, rawBoundary, rawOffset } from "./position";
+import { nearestLineBoundary, rawBoundary, rawOffset } from "./position.ts";
 export type Projection = ReturnType<typeof projectPart>;
 export function projectPart(
 	doc: Document,
@@ -14,12 +14,23 @@ export function projectPart(
 		if (
 			leaf.dataset.locatorLeaf !== String(leafStart + index) ||
 			leaf.closest("rt,rp") ||
-			leaf.children.length
+			Array.from(leaf.children).some(
+				(child) =>
+					!child.matches("ruby[data-auto-ruby]") ||
+					child.children.length !== 1 ||
+					Array.from(child.children).some(
+						(annotation) =>
+							!annotation.matches("rt") || annotation.children.length > 0,
+					),
+			)
 		)
 			throw new Error("正文叶子身份失配");
-		for (const node of leaf.childNodes) {
-			if (node.nodeType !== 3) continue;
+		const walker = doc.createTreeWalker(leaf, 4);
+		let node = walker.nextNode();
+		while (node) {
 			const text = node as Text;
+			node = walker.nextNode();
+			if (text.parentElement?.closest("rt,rp")) continue;
 			entries.push({
 				node: text,
 				start: raw.length,
@@ -31,7 +42,13 @@ export function projectPart(
 	if (raw.normalize("NFC") !== expected) throw new Error("正文定位投影失配");
 	return { raw, entries };
 }
-export function textRect(doc: Document, projection: Projection, point: number) {
+export function textRect(
+	doc: Document,
+	projection: Projection,
+	point: number,
+	vertical = false,
+	fontSize = 0,
+) {
 	const offset = rawOffset(projection.raw, point);
 	const entry =
 		projection.entries.find((e) => e.end > offset) ?? projection.entries.at(-1);
@@ -40,7 +57,43 @@ export function textRect(doc: Document, projection: Projection, point: number) {
 	const local = Math.min(entry.node.length, offset - entry.start);
 	range.setStart(entry.node, local);
 	range.setEnd(entry.node, Math.min(entry.node.length, local + 1));
-	return range.getBoundingClientRect();
+	const rect = range.getBoundingClientRect();
+	if (
+		![rect.left, rect.right, rect.top, rect.bottom].every(Number.isFinite) ||
+		(rect.right <= rect.left && rect.bottom <= rect.top)
+	)
+		return null;
+	return textAnchorRect(rect, fontSize, vertical);
+}
+/** A fixed body-font one-em leading gutter reveals the entire line's ruby even when the anchor starts with kana. */
+export function textAnchorRect(
+	base: Pick<DOMRect, "left" | "right" | "top" | "bottom">,
+	fontSize: number,
+	vertical = false,
+): DOMRect {
+	const margin = Number.isFinite(fontSize) && fontSize > 0 ? fontSize : 0;
+	const top = base.top - (vertical ? 0 : margin);
+	const right = base.right + (vertical ? margin : 0);
+	const bounds = {
+		left: base.left,
+		right,
+		top,
+		bottom: base.bottom,
+		x: base.left,
+		y: top,
+		width: right - base.left,
+		height: base.bottom - top,
+	};
+	return { ...bounds, toJSON: () => bounds };
+}
+/** Sampling is the inverse of the fixed leading gutter used by restoration. */
+export function textSamplingTarget(
+	target: number,
+	fontSize: number,
+	vertical: boolean,
+): number {
+	const margin = Number.isFinite(fontSize) && fontSize > 0 ? fontSize : 0;
+	return target + (vertical ? -margin : margin);
 }
 export function nearestText(
 	doc: Document,

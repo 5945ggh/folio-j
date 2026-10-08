@@ -64,3 +64,28 @@ class MaterialCover(Base):
     data: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
     rule_version: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     diagnostic_reason: Mapped[str] = mapped_column(Text, nullable=False, default="unexamined")
+
+
+class MaterialReadingsGeneration(Base):
+    """Validated immutable generations; older derived assets remain available."""
+
+    __tablename__ = "material_readings_generations"
+    __table_args__ = (
+        UniqueConstraint("material_id", "version_id", "asset_sha256", name="uq_readings_asset"),
+    )
+    id: Mapped[str] = mapped_column(String(26), primary_key=True)
+    material_id: Mapped[str] = mapped_column(ForeignKey("materials.id"), nullable=False)
+    version_id: Mapped[str] = mapped_column(String(26), nullable=False)
+    asset_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    configuration: Mapped[str] = mapped_column(Text, nullable=False)
+    token_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    payload: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class MaterialReadingsCurrent(Base):
+    __tablename__ = "material_readings_current"
+    material_id: Mapped[str] = mapped_column(ForeignKey("materials.id"), primary_key=True)
+    generation_id: Mapped[str] = mapped_column(
+        ForeignKey("material_readings_generations.id"), nullable=False
+    )

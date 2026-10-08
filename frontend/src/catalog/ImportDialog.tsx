@@ -23,10 +23,18 @@ export function ImportDialog({
 	const navigate = useNavigate();
 	const location = useLocation();
 	const mounted = useRef(true);
+	const dismissed = useRef(false);
+	const transition = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const dismiss = () => {
+		dismissed.current = true;
+		if (transition.current) clearTimeout(transition.current);
+		close();
+	};
 	useEffect(() => {
 		mounted.current = true;
 		return () => {
 			mounted.current = false;
+			if (transition.current) clearTimeout(transition.current);
 		};
 	}, []);
 	const [selected, setSelected] = useState(sourceId ?? "");
@@ -60,23 +68,26 @@ export function ImportDialog({
 			void client.invalidateQueries({ queryKey: catalogKeys.all });
 			void client.invalidateQueries({ queryKey: materialKeys.list(selected) });
 			void client.invalidateQueries({ queryKey: queries.source(selected) });
-			if (mounted.current)
-				navigate(`/materials/${material.id}`, {
-					state: {
-						materialReused: reused,
-						returnTo: {
-							to: `${location.pathname}${location.search}`,
-							label: sourceId ? "Source" : "素材库",
+			if (mounted.current && !dismissed.current)
+				transition.current = setTimeout(() => {
+					if (!mounted.current || dismissed.current) return;
+					navigate(`/materials/${material.id}`, {
+						state: {
+							materialReused: reused,
+							returnTo: {
+								to: `${location.pathname}${location.search}`,
+								label: sourceId ? "Source" : "素材库",
+							},
 						},
-					},
-				});
+					});
+				}, 320);
 		},
 	});
 	return (
 		<ConfirmDialog
 			className="import-dialog"
 			titleId="import-title"
-			onClose={close}
+			onClose={dismiss}
 			restoreFocusId="library-add"
 		>
 			<div className="section-heading">
@@ -85,7 +96,7 @@ export function ImportDialog({
 					type="button"
 					className="button secondary"
 					data-dialog-cancel
-					onClick={close}
+					onClick={dismiss}
 				>
 					关闭
 				</button>
@@ -152,15 +163,33 @@ export function ImportDialog({
 				<button
 					className="button primary"
 					type="button"
-					disabled={!file || !selected || newSource || upload.isPending}
+					disabled={
+						!file ||
+						!selected ||
+						newSource ||
+						upload.isPending ||
+						upload.isSuccess
+					}
 					onClick={() => upload.mutate()}
 				>
-					{upload.isPending ? "导入中…" : "导入并阅读"}
+					{upload.isPending
+						? "正在导入并准备注音…"
+						: upload.isSuccess
+							? "已准备好，正在打开…"
+							: "导入并阅读"}
 				</button>
-				<button type="button" className="button secondary" onClick={close}>
+				<button type="button" className="button secondary" onClick={dismiss}>
 					取消
 				</button>
 			</div>
+			{(upload.isPending || upload.isSuccess) && (
+				<p className="import-preparation" role="status">
+					<span aria-hidden="true" className="import-preparation-indicator" />
+					{upload.isSuccess
+						? "全书注音已准备完成。"
+						: "正在解析书籍并生成全书注音，请稍候。"}
+				</p>
+			)}
 			{upload.isPending && (
 				<p className="field-help">
 					关闭窗口不会撤销已经提交的导入，完成后书籍仍会出现在目录。

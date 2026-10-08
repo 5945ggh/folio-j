@@ -10,6 +10,7 @@
 | 素材库 A.1 如何实施与回归 | [素材库 A.1 计划](handovers/library-a1/PLAN.md) | 空库导入、工具与书卡、封面回退及缓存的实施与回归安排 |
 | 来源空间 S2 如何实施与回归 | [S2 计划](handovers/sources-s2/PLAN.md) | 三栏／四视图、有界概览与精确恢复的实施范围和验收入口 |
 | 独立阅读器有哪些能力与验证边界 | [R1.1 计划](handovers/reader-r1/PLAN.md)、[交互优化](handovers/reader-r1/INTERACTION_POLISH.md) | 阅读偏好、原书 ruby、搜索、插图库及面板交互的契约和验证边界 |
+| 全量注音如何生成、重建与展示 | [实施计划](handovers/full-ruby/PLAN.md)、[工程验收](handovers/full-ruby/ACCEPTANCE.md) | 导入等待、持久分词代次、原书注音优先、两维设置及实际验证 |
 | 首轮承诺什么行为、哪些决定未定 | [PRD.md](PRD.md) | 范围、用户行为、验收与 `[TBD-xx]`；P0 不表示已经交付 |
 | 名词指什么、身份与引用如何区分 | [GLOSSARY.md](GLOSSARY.md) | 定义、不变式、词表和反例；完整操作流程引用 PRD |
 | 系统如何保证已确认行为 | [ARCHITECTURE.md](ARCHITECTURE.md) | 模型、执行校验、事务与恢复机制；未来草图明确标识 |

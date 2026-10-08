@@ -11,17 +11,21 @@ import {
 
 test("gesture thresholds reject drag and long press while permitting touch taps", () => {
 	const start = { x: 10, y: 20 };
-	assert.equal(ordinaryTap(start, { x: 15, y: 20 }, 499), true);
-	assert.equal(ordinaryTap(start, { x: 16, y: 20 }, 100), false);
-	assert.equal(ordinaryTap(start, start, 500), false);
+	for (const offset of [-1, 0, 1]) {
+		assert.equal(
+			ordinaryTap(
+				start,
+				{ x: start.x + FOCUS_TIMING.drag + offset, y: start.y },
+				0,
+			),
+			offset < 0,
+		);
+		assert.equal(
+			ordinaryTap(start, start, FOCUS_TIMING.longPress + offset),
+			offset < 0,
+		);
+	}
 	assert.equal(distance(start, { x: 13, y: 24 }), 5);
-	assert.deepEqual(FOCUS_TIMING, {
-		idle: 3000,
-		jitter: 4,
-		clickDelay: 240,
-		drag: 6,
-		longPress: 500,
-	});
 });
 
 test("controller idle, overlay, focus preference, and teardown share one timer", (t) => {
@@ -57,23 +61,23 @@ test("controller idle, overlay, focus preference, and teardown share one timer",
 		onVisibilityChange: (value) => updates.push(value),
 		hasOverlay: () => overlay,
 	});
-	t.mock.timers.tick(3000);
+	t.mock.timers.tick(FOCUS_TIMING.idle);
 	assert.equal(controller.visible, false);
 	controller.show();
 	overlay = true;
 	controller.refresh();
-	t.mock.timers.tick(6000);
+	t.mock.timers.tick(FOCUS_TIMING.idle * 2);
 	assert.equal(controller.visible, true);
 	overlay = false;
 	controller.refresh();
-	t.mock.timers.tick(3000);
+	t.mock.timers.tick(FOCUS_TIMING.idle);
 	assert.equal(controller.visible, false);
 	controller.setFocus(false);
-	t.mock.timers.tick(6000);
+	t.mock.timers.tick(FOCUS_TIMING.idle * 2);
 	assert.equal(controller.visible, true);
 	controller.setFocus(true);
 	controller.dispose();
-	t.mock.timers.tick(6000);
+	t.mock.timers.tick(FOCUS_TIMING.idle * 2);
 	assert.equal(controller.visible, true);
 	assert.deepEqual(updates, [true, false, true, false, true]);
 });
@@ -130,7 +134,7 @@ test("frame taps, selection, double clicks, and normalized mouse jitter preserve
 	pointer(frameDoc, "pointerdown", 10, 10, "touch");
 	pointer(frameDoc, "pointerup", 10, 10, "touch");
 	pointer(frameDoc, "pointerout", 10, 10, "touch");
-	t.mock.timers.tick(240);
+	t.mock.timers.tick(FOCUS_TIMING.clickDelay);
 	assert.equal(controller.visible, false);
 	pointer(root, "pointermove", 111, 110);
 	assert.equal(controller.visible, false);
@@ -139,15 +143,20 @@ test("frame taps, selection, double clicks, and normalized mouse jitter preserve
 	pointer(frameDoc, "pointerdown", 10, 10);
 	pointer(frameDoc, "pointerup", 10, 10);
 	frameDoc.dispatchEvent(new Event("dblclick"));
-	t.mock.timers.tick(240);
+	t.mock.timers.tick(FOCUS_TIMING.clickDelay);
+	assert.equal(controller.visible, true);
+	pointer(frameDoc, "pointerdown", 10, 10, "touch");
+	pointer(frameDoc, "pointermove", 10 + FOCUS_TIMING.drag, 10, "touch");
+	pointer(frameDoc, "pointerup", 10 + FOCUS_TIMING.drag, 10, "touch");
+	t.mock.timers.tick(FOCUS_TIMING.clickDelay);
 	assert.equal(controller.visible, true);
 	selection = "word";
 	frameDoc.dispatchEvent(new Event("selectionchange"));
-	t.mock.timers.tick(3000);
+	t.mock.timers.tick(FOCUS_TIMING.idle);
 	assert.equal(controller.visible, true);
 	selection = "";
 	frameDoc.dispatchEvent(new Event("selectionchange"));
-	t.mock.timers.tick(3000);
+	t.mock.timers.tick(FOCUS_TIMING.idle);
 	assert.equal(controller.visible, false);
 	cleanup();
 	controller.dispose();
@@ -207,9 +216,9 @@ test("folding a pre-existing selection and disposing an old duplicate frame cann
 	pointer("pointerdown");
 	selection = "";
 	pointer("pointerup");
-	t.mock.timers.tick(240);
+	t.mock.timers.tick(FOCUS_TIMING.clickDelay);
 	assert.equal(controller.visible, true);
-	t.mock.timers.tick(3000);
+	t.mock.timers.tick(FOCUS_TIMING.idle);
 	assert.equal(controller.visible, false);
 	const tab = new Event("keydown");
 	Object.assign(tab, { key: "Tab" });
@@ -245,7 +254,7 @@ test("native Tab on document body reveals tools before navigation once, but igno
 			assert.equal(controller.visible, true);
 		},
 	});
-	t.mock.timers.tick(3000);
+	t.mock.timers.tick(FOCUS_TIMING.idle);
 	assert.equal(controller.visible, false);
 	const tab = () => {
 		const e = new Event("keydown");
@@ -254,7 +263,7 @@ test("native Tab on document body reveals tools before navigation once, but igno
 	};
 	tab();
 	assert.equal(reveals, 1);
-	t.mock.timers.tick(3000);
+	t.mock.timers.tick(FOCUS_TIMING.idle);
 	doc.activeElement = {};
 	tab();
 	assert.equal(controller.visible, false);
@@ -323,7 +332,7 @@ test("extension frame pointer and keyboard events run naturally without revealin
 		frameDoc as unknown as Document,
 		{ getBoundingClientRect: () => ({ left: 0, top: 0 }) } as HTMLIFrameElement,
 	);
-	t.mock.timers.tick(3000);
+	t.mock.timers.tick(FOCUS_TIMING.idle);
 	assert.equal(controller.visible, false);
 	for (const key of ["Tab", "Escape"]) {
 		const e = new Event("keydown", { cancelable: true });

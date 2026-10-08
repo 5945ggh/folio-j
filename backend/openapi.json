@@ -1183,6 +1183,163 @@
         "title": "MaterialOpenedInput",
         "type": "object"
       },
+      "MaterialReadingToken": {
+        "properties": {
+          "dictionary_form": {
+            "title": "Dictionary Form",
+            "type": "string"
+          },
+          "end": {
+            "minimum": 0.0,
+            "title": "End",
+            "type": "integer"
+          },
+          "is_oov": {
+            "title": "Is Oov",
+            "type": "boolean"
+          },
+          "normalized_form": {
+            "title": "Normalized Form",
+            "type": "string"
+          },
+          "pos": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Pos",
+            "type": "array"
+          },
+          "reading": {
+            "title": "Reading",
+            "type": "string"
+          },
+          "start": {
+            "minimum": 0.0,
+            "title": "Start",
+            "type": "integer"
+          },
+          "surface": {
+            "title": "Surface",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "surface",
+          "reading",
+          "dictionary_form",
+          "normalized_form",
+          "pos",
+          "is_oov"
+        ],
+        "title": "MaterialReadingToken",
+        "type": "object"
+      },
+      "MaterialReadingsPrepare": {
+        "additionalProperties": false,
+        "properties": {
+          "force": {
+            "default": false,
+            "title": "Force",
+            "type": "boolean"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version_id"
+        ],
+        "title": "MaterialReadingsPrepare",
+        "type": "object"
+      },
+      "MaterialReadingsResponse": {
+        "properties": {
+          "generation_id": {
+            "title": "Generation Id",
+            "type": "string"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "resources": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialResourceReadings"
+            },
+            "title": "Resources",
+            "type": "array"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "version_id",
+          "generation_id",
+          "resources"
+        ],
+        "title": "MaterialReadingsResponse",
+        "type": "object"
+      },
+      "MaterialReadingsSummary": {
+        "properties": {
+          "generation_id": {
+            "title": "Generation Id",
+            "type": "string"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "token_count": {
+            "title": "Token Count",
+            "type": "integer"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "version_id",
+          "generation_id",
+          "token_count"
+        ],
+        "title": "MaterialReadingsSummary",
+        "type": "object"
+      },
+      "MaterialResourceReadings": {
+        "properties": {
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "text_sha256": {
+            "title": "Text Sha256",
+            "type": "string"
+          },
+          "tokens": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialReadingToken"
+            },
+            "title": "Tokens",
+            "type": "array"
+          }
+        },
+        "required": [
+          "resource_id",
+          "text_sha256",
+          "tokens"
+        ],
+        "title": "MaterialResourceReadings",
+        "type": "object"
+      },
       "MaterialResponse": {
         "properties": {
           "chapters": {
@@ -4540,6 +4697,128 @@
           }
         },
         "summary": "Save Position"
+      }
+    },
+    "/api/materials/{material_id}/readings": {
+      "get": {
+        "operationId": "getMaterialReadings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chapter_id",
+            "required": true,
+            "schema": {
+              "title": "Chapter Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "generation_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Generation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialReadingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Readings"
+      }
+    },
+    "/api/materials/{material_id}/readings/prepare": {
+      "post": {
+        "operationId": "prepareMaterialReadings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialReadingsPrepare"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialReadingsSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Prepare Readings"
       }
     },
     "/api/materials/{material_id}/search": {

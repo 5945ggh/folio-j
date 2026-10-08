@@ -9,7 +9,7 @@
 >
 > 版本策略：项目初始化时取各依赖的最新稳定版，由 lockfile（`uv.lock`、`pnpm-lock.yaml`）锁定；升级需显式进行。
 
-当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.11、Node.js 24，Python 包最低支持 3.11；实际依赖以锁文件为准。已采用 `openai` 官方 SDK、Jinja2、markdown-it-py、hypothesis、react-markdown 与 remark-gfm，覆盖模型协议、提示词模板、规范化与性质测试、讲解渲染；分词、SSE、shadcn/ui 与 Zustand 尚未引入。
+当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.11、Node.js 24，Python 包最低支持 3.11；实际依赖以锁文件为准。已采用 `openai` 官方 SDK、Jinja2、markdown-it-py、hypothesis、react-markdown 与 remark-gfm，覆盖模型协议、提示词模板、规范化与性质测试、讲解渲染；全量注音切片新增 SudachiPy 与 SudachiDict-core。SSE、shadcn/ui 与 Zustand 尚未引入。
 
 基础运行补充依赖：Uvicorn 承载 ASGI 服务，httpx 通过本地 ASGI transport 测试 API，Hatchling 构建 Python 的 src 布局包。前端 TypeScript 暂锁 5.9.3，以满足所选 openapi-typescript 7.x 的 peer 范围；Node 类型锁在 24 系列，与运行时一致。Tailwind 使用官方 Vite 插件，不提前引入未使用的 shadcn 组件或 Zustand。
 
@@ -28,14 +28,14 @@
 | LLM 客户端 | `openai` 官方 Python SDK，通过 `base_url` 对接 | BYOK、多 Provider；适配 OpenAI 兼容的 Chat Completions 与 Responses 文本调用 |
 | Prompt 模板 | Jinja2 | 模板以文件形式放在 `backend/prompts/`，文件头部标注版本号 |
 | Markdown 解析 | markdown-it-py | 规范化器用它获取标题 token 及其行号映射 |
-| 日语分词 | SudachiPy + SudachiDict-core，A 粒度切分（预留，未安装） | 当前无分词模块；可在阅读导入后按需要独立生成 sidecar，不作为基本阅读或引用定位的前置条件；不使用 UniDic |
+| 日语分词 | SudachiPy + SudachiDict-core，A 粒度切分 | 全量注音切片接入；新书导入完整生成后可读，旧书可补算，结果独立版本化；不使用 UniDic |
 | 配置 | 应用运行配置使用 TOML + Pydantic；模型接入设置通过 UI 维护 | 已采用；Provider／模型／用途默认值保存在 SQLite，凭据保存在数据库旁私有目录，不将 providers.toml 设为唯一入口 |
 | ID | ULID（当前由 `app/ids.py` 实现） | 已用于主键和 Section uid；未安装 `python-ulid` |
 | 后台任务 | SQLite `chat_jobs` 表（领域 Job）+ 进程内 asyncio worker | 问答与讲解共用执行机制；模型调用记录存于 `runs` |
 | 测试 | pytest、pytest-asyncio、hypothesis | 用 hypothesis 对规范化器做"可复原"的性质测试 |
 | 静态检查 | ruff（lint + format）、pyright（strict） | |
 
-分词接入采用固定材料正文之上的可重建派生数据，输入版本、分析器、词典和配置与结果一起记录；不改写定位正文，不用 token 身份替代原文位置。具体预留边界见[EPUB 材料基线](handovers/epub-reading/MATERIAL_BASELINE.md#8-分词与派生数据的后续接入)。此处的数据 sidecar 与分发阶段的后端 sidecar 进程是不同含义。
+分词采用固定材料正文之上的可重建派生数据，输入版本、分析器、词典和配置与结果一起记录；不改写定位正文，不用 token 身份替代原文位置。生成使用本地词典，不调用模型；结果以 SQLite 中的压缩 JSON 保存，复用已有标准库能力。具体边界见[EPUB 材料基线](handovers/epub-reading/MATERIAL_BASELINE.md#8-分词与派生数据的后续接入)。此处的数据 sidecar 与分发阶段的后端 sidecar 进程是不同含义。
 
 EPUB 切片 1 使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义编译产物；包内资源清洗和有界编译不引入阅读器引擎或新依赖。不可变原 EPUB 与压缩编译包保存为 SQLite BLOB，材料发布和副本保存共用事务；首轮接受数据库体积增长，避免外置文件的双提交及无主文件清理。阅读使用按章节排列的无脚本 sandbox iframe，隔离各原始资源的作者样式。导航、版本与阅读恢复边界见[切片 1 契约](handovers/epub-reading/SLICE_1_DRAFT.md)。
 
@@ -97,7 +97,7 @@ EPUB 切片 1 使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义�
 | LangChain / LlamaIndex 等重型框架 | 抽象层厚、版本变化快；首轮讨论不依赖重型 Agent 框架，后续检索与写入工具协议再按需求设计 |
 | SQLModel | 与 SQLAlchemy 2.0 的类型化写法混用时容易踩坑，训练语料也更少 |
 | Celery / Redis | 单用户本地应用不需要 |
-| UniDic / MeCab 系 | 体积大，更偏 NLP；分词选型为 Sudachi，尚未接入 |
+| UniDic / MeCab 系 | 体积大，更偏 NLP；分词采用 Sudachi |
 | Electron | 体积大；Tauri 优先 |
 
 ## 7. 2C 已安装依赖

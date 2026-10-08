@@ -16,8 +16,13 @@ from app.material_schemas import (
     ReadingPositionResponse,
     ReadingPositionUpdate,
 )
+from app.readings_schemas import (
+    MaterialReadingsPrepare,
+    MaterialReadingsResponse,
+    MaterialReadingsSummary,
+)
 from app.services import materials as service
-from app.services import reader_queries
+from app.services import reader_queries, readings
 
 router = APIRouter(prefix="/api")
 Session = Annotated[AsyncSession, Depends(get_session)]
@@ -124,3 +129,29 @@ async def get_illustration_content(
     version_id: str,
 ) -> Response:
     return await reader_queries.illustration_content(session, material_id, version_id, ordinal)
+
+
+@router.post(
+    "/materials/{material_id}/readings/prepare",
+    response_model=MaterialReadingsSummary,
+    operation_id="prepareMaterialReadings",
+)
+async def prepare_readings(
+    material_id: str, data: MaterialReadingsPrepare, session: Session
+) -> MaterialReadingsSummary:
+    return await readings.prepare(session, material_id, data)
+
+
+@router.get(
+    "/materials/{material_id}/readings",
+    response_model=MaterialReadingsResponse,
+    operation_id="getMaterialReadings",
+)
+async def get_readings(
+    material_id: str,
+    version_id: str,
+    chapter_id: str,
+    session: Session,
+    generation_id: str | None = None,
+) -> MaterialReadingsResponse:
+    return await readings.get_readings(session, material_id, version_id, chapter_id, generation_id)

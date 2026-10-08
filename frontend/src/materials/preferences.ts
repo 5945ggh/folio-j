@@ -1,10 +1,11 @@
 export type ReaderTheme = "system" | "white" | "black";
 export type ReaderFont = "mincho" | "gothic";
-export type ReaderRuby = "show" | "dim" | "on-demand" | "hide";
+export type ReaderRuby = "show" | "on-demand" | "hide";
 export type ReaderUiPreferences = { theme: ReaderTheme; focus: boolean };
 export type BookUiPreferences = {
 	font: ReaderFont;
 	ruby: ReaderRuby;
+	rubyScope?: "original" | "all";
 	width: number;
 };
 export const DEFAULT_READER_UI: ReaderUiPreferences = {
@@ -13,7 +14,8 @@ export const DEFAULT_READER_UI: ReaderUiPreferences = {
 };
 export const DEFAULT_BOOK_UI: BookUiPreferences = {
 	font: "mincho",
-	ruby: "dim",
+	ruby: "show",
+	rubyScope: "original",
 	width: 760,
 };
 export const READER_UI_KEY = "folio-reader-ui-v1";
@@ -63,7 +65,8 @@ export function normalizeBookUi(
 			value.ruby === "hide" ||
 			value.ruby === "on-demand"
 				? value.ruby
-				: "dim",
+				: "show",
+		rubyScope: value.rubyScope === "all" ? "all" : "original",
 		width:
 			typeof value.width === "number" &&
 			Number.isFinite(value.width) &&
@@ -117,4 +120,15 @@ export function resolveReaderTheme(
 	systemDark: boolean,
 ): "white" | "black" {
 	return theme === "system" ? (systemDark ? "black" : "white") : theme;
+}
+
+/** Range requests may outlive a reset or chapter change; only the latest intent can commit. */
+export class ReaderPreferenceRequests {
+	private ticket = 0;
+	begin(): number {
+		return ++this.ticket;
+	}
+	accepts(ticket: number): boolean {
+		return ticket === this.ticket;
+	}
 }

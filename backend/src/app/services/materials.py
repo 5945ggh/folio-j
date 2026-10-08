@@ -25,6 +25,8 @@ from app.material_schemas import (
     ReadingPositionUpdate,
 )
 from app.models import Source
+from app.readings_schemas import MaterialReadingsPrepare
+from app.services import readings
 from app.services.epub import EpubError, compile_epub_bytes
 from app.services.sources import as_utc, begin_write, require_source, utc_now
 
@@ -122,7 +124,11 @@ async def import_material(
         )
     )
     if existing is not None:
-        existing_id = existing.id
+        existing_id, existing_version = existing.id, existing.version_id
+        await session.rollback()
+        await readings.prepare(
+            session, existing_id, MaterialReadingsPrepare(version_id=existing_version)
+        )
         await session.rollback()
         try:
             await begin_write(session)
@@ -138,6 +144,7 @@ async def import_material(
         book = await asyncio.to_thread(compile_epub_bytes, raw)
     except EpubError as exc:
         raise HTTPException(422, str(exc)) from exc
+    generated = await readings.build(book)
     compiled = await asyncio.to_thread(lambda: zlib.compress(book.model_dump_json().encode()))
     try:
         await begin_write(session)
@@ -164,6 +171,7 @@ async def import_material(
             )
             session.add(material)
             await session.flush()
+        await readings.publish(session, material, generated, None)
         await session.commit()
         return MaterialImportResponse(material=await response(session, material), reused=reused)
     except BaseException:

@@ -26,7 +26,9 @@ export function applyFramePresentation(
 		doc.head.append(style);
 	}
 	doc.documentElement.dataset.readerRuby = preferences.ruby;
-	style.textContent = `html,body { background: ${theme === "black" ? "#191919" : "#fff"} !important; color: ${theme === "black" ? "#e5e5e5" : "#282828"} !important; } body { font-family: ${READER_FONT_FAMILIES[preferences.font]} !important; } body :not(img):not(svg):not(svg *) { color: inherit !important; background-color: transparent !important; font-family: inherit !important; } rt { opacity: ${preferences.ruby === "hide" || preferences.ruby === "on-demand" ? 0 : preferences.ruby === "dim" ? ".48" : 1} !important; } @media (hover:hover) { html[data-reader-ruby="on-demand"] ruby:hover rt { opacity: 1 !important; } } html[data-reader-ruby="on-demand"] ruby[data-reader-ruby-selected] rt, html[data-reader-ruby="on-demand"] ruby[data-reader-ruby-open] rt { opacity: 1 !important; }`;
+	doc.documentElement.dataset.readerRubyScope =
+		preferences.rubyScope ?? "original";
+	style.textContent = `html,body { background: ${theme === "black" ? "#191919" : "#fff"} !important; color: ${theme === "black" ? "#e5e5e5" : "#282828"} !important; } body { font-family: ${READER_FONT_FAMILIES[preferences.font]} !important; } body :not(img):not(svg):not(svg *) { color: inherit !important; background-color: transparent !important; font-family: inherit !important; } rt { opacity: ${preferences.ruby === "hide" || preferences.ruby === "on-demand" ? 0 : 1} !important; } @media (hover:hover) { html[data-reader-ruby="on-demand"] ruby:hover rt { opacity: 1 !important; } } html[data-reader-ruby="on-demand"][data-reader-ruby-keyboard] rt, html[data-reader-ruby="on-demand"] ruby[data-reader-ruby-selected] rt, html[data-reader-ruby="on-demand"] ruby[data-reader-ruby-open] rt { opacity: 1 !important; }`;
 	let tap: { point: Point; time: number; id: number } | null = null;
 	const selected = () => {
 		const selection = doc.getSelection();
@@ -90,12 +92,46 @@ export function applyFramePresentation(
 				);
 		if (selected()) tap = null;
 	};
+	const keyboard = (event: KeyboardEvent) => {
+		if (
+			event.key.toLowerCase() === "r" &&
+			isReaderFrameTarget(doc, event.target) &&
+			!event.defaultPrevented &&
+			!event.repeat &&
+			!event.ctrlKey &&
+			!event.metaKey &&
+			!event.altKey &&
+			!event.isComposing &&
+			doc.documentElement.dataset.readerRuby === "on-demand"
+		)
+			doc.documentElement.toggleAttribute("data-reader-ruby-keyboard");
+	};
+	const copy = (event: ClipboardEvent) => {
+		const selection = doc.getSelection();
+		if (
+			!selection ||
+			selection.isCollapsed ||
+			!event.clipboardData ||
+			!isReaderFrameTarget(doc, selection.anchorNode)
+		)
+			return;
+		const fragment = doc.createElement("div");
+		for (let i = 0; i < selection.rangeCount; i++)
+			fragment.append(selection.getRangeAt(i).cloneContents());
+		for (const reading of fragment.querySelectorAll("rt,rp")) reading.remove();
+		event.clipboardData.setData("text/plain", fragment.textContent ?? "");
+		event.preventDefault();
+	};
+	doc.addEventListener("keydown", keyboard);
+	doc.addEventListener("copy", copy);
 	doc.addEventListener("pointerdown", down);
 	doc.addEventListener("pointerup", reveal);
 	doc.addEventListener("pointercancel", cancel);
 	doc.addEventListener("selectionchange", selectionChanged);
 	selectionChanged();
 	return () => {
+		doc.removeEventListener("keydown", keyboard);
+		doc.removeEventListener("copy", copy);
 		doc.removeEventListener("pointerdown", down);
 		doc.removeEventListener("pointerup", reveal);
 		doc.removeEventListener("pointercancel", cancel);

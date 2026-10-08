@@ -193,20 +193,38 @@ export function ReaderSettings({
 				)}
 			</fieldset>
 			<fieldset>
-				<legend>原书注音</legend>
+				<legend>注音范围</legend>
 				<div className="reader-options">
-					{(["show", "dim", "on-demand", "hide"] as const).map((v, i) => (
+					{(["original", "all"] as const).map((scope, i) => (
+						<button
+							key={scope}
+							type="button"
+							aria-pressed={(bookUi.rubyScope ?? "original") === scope}
+							onClick={() => onBookUi({ ...bookUi, rubyScope: scope })}
+						>
+							{["原书", "全量"][i]}
+						</button>
+					))}
+				</div>
+			</fieldset>
+			<fieldset>
+				<legend>注音显示</legend>
+				<div className="reader-options">
+					{(["show", "on-demand", "hide"] as const).map((v, i) => (
 						<button
 							key={v}
 							type="button"
 							aria-pressed={bookUi.ruby === v}
 							onClick={() => onBookUi({ ...bookUi, ruby: v })}
 						>
-							{["显示", "淡化", "按需", "隐藏"][i]}
+							{["显示", "按需", "隐藏"][i]}
 						</button>
 					))}
 				</div>
-				<p>只控制书中已有的注音，不自动补全。</p>
+				<p>
+					原书注音优先；全量补充未标注的汉字。按需时可悬停、轻点、选中或按 R
+					显现。
+				</p>
 			</fieldset>
 			<label className="reader-focus-label">
 				<span>

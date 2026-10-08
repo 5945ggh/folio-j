@@ -142,3 +142,52 @@ export async function listIllustrations(
 	);
 	return requireData(data, error, response.status);
 }
+
+export type ReadingsSummary = components["schemas"]["MaterialReadingsSummary"];
+export type ReadingsResponse =
+	components["schemas"]["MaterialReadingsResponse"];
+export type ReadingsToken =
+	ReadingsResponse["resources"][number]["tokens"][number];
+export const readingsKey = (
+	id: string,
+	version: string,
+	chapter: string,
+	generation: string,
+) => ["materials", id, "readings", version, chapter, generation] as const;
+export async function prepareReadings(
+	id: string,
+	version: string,
+	force = false,
+) {
+	const { data, error, response } = await api.POST(
+		"/api/materials/{material_id}/readings/prepare",
+		{
+			params: { path: { material_id: id } },
+			body: { version_id: version, force },
+		},
+	);
+	return requireData(data, error, response.status);
+}
+export async function getReadings(
+	id: string,
+	version: string,
+	chapter: string,
+	generation: string,
+	signal?: AbortSignal,
+) {
+	const { data, error, response } = await api.GET(
+		"/api/materials/{material_id}/readings",
+		{
+			params: {
+				path: { material_id: id },
+				query: {
+					version_id: version,
+					chapter_id: chapter,
+					generation_id: generation,
+				},
+			},
+			signal,
+		},
+	);
+	return requireData(data, error, response.status);
+}
