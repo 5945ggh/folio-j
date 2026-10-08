@@ -1,0 +1,226 @@
+frontend/src/materials/ruby.ts
+  s_70dbadaa64c816::t_262c738c1ffa46 91-92,99-102,107-109
+  s_70dbadaa64c816::t_3ec9fa623934ff 2,84,89-90,110-111,178,189,193,200-204
+  s_70dbadaa64c816::t_4e722ba35835b0 93-98
+  s_3bc7aa4f7cd0ac::t_b5b0281477b9a2 6-8,13-14,16-24,78-82,125-128,142,147-148,155-160,162-166
+  s_3bc7aa4f7cd0ac::t_85d0790e6af179 1,4-5,9-12,15,25-27,77,120-124,129,134-137,161,167-176,212,214
+  s_70dbadaa64c816::t_32cb496f524f38 179,183-184
+  s_70dbadaa64c816::t_d3cbbf09fbb12d 85-88,103-106,112-118,185-188,190-192,194-199,205-211
+  s_70dbadaa64c816::t_ae5036175a9516 180-182
+  s_3bc7aa4f7cd0ac::t_015e4017b0acf8 83,119,177,213
+  s_3bc7aa4f7cd0ac::t_11498038b11229 3,28-76,130-133,138-141,143-146,149-154
+backend/alembic/versions/0010_material_readings.py
+  s_3bc7aa4f7cd0ac::t_2b5980a468c30f 1-42
+backend/tests/test_tokenization.py
+  s_3bc7aa4f7cd0ac::t_3e7a614aff1ac2 51-70
+  s_3bc7aa4f7cd0ac::t_5dc7e7a20799fb 1-45
+  s_3bc7aa4f7cd0ac::t_d087a770cfd536 46-50,71
+frontend/src/materials/focus.ts
+  s_3bc7aa4f7cd0ac::t_015e4017b0acf8 40-48
+backend/src/app/material_models.py
+  s_3bc7aa4f7cd0ac::t_2b5980a468c30f 67-91
+backend/src/app/readings_schemas.py
+  s_3bc7aa4f7cd0ac::t_4c73ee82670df2 1-41
+frontend/src/materials/ruby-anchor.test.ts
+  s_3bc7aa4f7cd0ac::t_4ef02c550146ed 5,8,16-22,24-27,29-31,34-38,61,63-66
+  s_3bc7aa4f7cd0ac::t_cb58b0608a86c0 23
+  s_3bc7aa4f7cd0ac::t_e06d69025fcd4a 1-2,4,6-7,9-15,32-33,67
+  s_3bc7aa4f7cd0ac::t_03b20ebba48991 68-119
+  s_3bc7aa4f7cd0ac::t_9571b9d6923f53 3,28,40-59
+  s_3bc7aa4f7cd0ac::t_e25bc63ebc324c 39,60,62
+backend/tests/test_material_readings.py
+  s_3bc7aa4f7cd0ac::t_5e80be728a9f6b 165-179
+  s_3bc7aa4f7cd0ac::t_5dc7e7a20799fb 1-94,103-108,111,113-115,118,120-129,157,161-163
+  s_3bc7aa4f7cd0ac::t_3128e38b48fa78 95-102
+  s_3bc7aa4f7cd0ac::t_fc7c3d7f6ca533 109-110,112,116-117,119,130-156,158-160,164
+frontend/src/materials/return-recovery.ts
+  s_3bc7aa4f7cd0ac::t_8b016d5ba1acdb 1-25
+frontend/src/materials/ruby-return.test.ts
+  s_3bc7aa4f7cd0ac::t_8b016d5ba1acdb 1-27,36-55
+  s_3bc7aa4f7cd0ac::t_5a562a6869b624 28-35
+frontend/src/materials/ruby-selection.test.ts
+  s_70dbadaa64c816::t_d4e4b60c4c5674 3,6,131-134,207-208,235
+  s_70dbadaa64c816::t_d3cbbf09fbb12d 142-145,152-157,159-164,171-174,178-183,185,188-199,210-226,234,236-237,244-258
+  s_70dbadaa64c816::t_a1b40effb6a39a 33-40,311-330
+  s_70dbadaa64c816::t_d28fd6d3b90a79 7-31,42-125
+  s_70dbadaa64c816::t_4e722ba35835b0 32,41
+  s_70dbadaa64c816::t_aed41f581625d7 202-206,209,227-229,238-243,259-260
+  s_70dbadaa64c816::t_6f047ff27a53e0 186-187,230-233
+  s_70dbadaa64c816::t_b02aefe24ec9e5 261-267,279-281,285,289-294,303
+  s_70dbadaa64c816::t_506db07a792787 138,140,149-151,158,165-167
+  s_70dbadaa64c816::t_1469eb9afa44ab 268-278,282-284,286-288,295-302
+  s_70dbadaa64c816::t_59e1115cf6dac6 1-2,4-5,126-130,135-137,139,141,146-148,168-170,175-177,184,200-201
+  s_70dbadaa64c816::t_ef2519b6bb889f 304-310,332-333
+  s_70dbadaa64c816::t_32cb496f524f38 331
+frontend/src/materials/preferences.test.ts
+  s_541d1e36ced8ed::t_ee665bf7fe8304 39,51-52,63
+  s_541d1e36ced8ed::t_3ff0eb92ba40d0 20,34-36
+  s_541d1e36ced8ed::t_7f4d80f34b50eb 5-6,33
+  s_3bc7aa4f7cd0ac::t_d13413946862a8 21-23,31-32
+docs/handovers/epub-reading/README.md
+  s_3bc7aa4f7cd0ac::t_88dd606a08e249 33,83,101
+docs/handovers/full-ruby/ACCEPTANCE.md
+  s_3bc7aa4f7cd0ac::t_5f7f6ca65e8d8a 84-85
+  s_70dbadaa64c816::t_5158af27e0eac9 117-126
+  s_3bc7aa4f7cd0ac::t_b8f79d73e80621 20
+  s_3bc7aa4f7cd0ac::t_89244163349f39 1-19,21-58
+  s_3bc7aa4f7cd0ac::t_98cc06addcb8d1 59-83
+  s_3bc7aa4f7cd0ac::t_8644d36e6f3d49 86-114
+  s_3bc7aa4f7cd0ac::t_cf0a9127b6d6f0 115-116
+frontend/src/catalog/ImportDialog.tsx
+  s_3bc7aa4f7cd0ac::t_b5b0281477b9a2 26-32,37,71-80,82-83,90,99,166-172,175-179,181,185-192
+frontend/src/materials/presentation.ts
+  s_3bc7aa4f7cd0ac::t_b26d43711d88c4 98-100,111-117
+  s_3bc7aa4f7cd0ac::t_12c5c8878095e1 108-110,118,121-126,133-134
+  s_3bc7aa4f7cd0ac::t_dd45a4629c629f 31
+  s_3bc7aa4f7cd0ac::t_015e4017b0acf8 29-30
+  s_3bc7aa4f7cd0ac::t_b5b0281477b9a2 95-97,101-107,119-120
+frontend/src/materials/ruby-layout.test.ts
+  s_3bc7aa4f7cd0ac::t_dd45a4629c629f 1-20,28-62
+  s_3bc7aa4f7cd0ac::t_c657ad6677852c 21-27
+frontend/src/materials/highlight.ts
+  s_3bc7aa4f7cd0ac::t_8931d2117c2df4 34,48
+  s_3bc7aa4f7cd0ac::t_796b9c926f5654 17-33,35-38
+docs/handovers/epub-reading/MATERIAL_BASELINE.md
+  s_3bc7aa4f7cd0ac::t_2092505832a16d 121,123,132-133
+docs/TECH_STACK.md
+  s_3bc7aa4f7cd0ac::t_2092505832a16d 12,31,38,100
+docs/README.md
+  s_3bc7aa4f7cd0ac::t_89244163349f39 13
+frontend/src/materials/ruby-reset.test.ts
+  s_3bc7aa4f7cd0ac::t_4181cb5743e721 1-18,20-54
+  s_3bc7aa4f7cd0ac::t_dd615f733e87c7 19
+frontend/src/materials/ruby-component-timing.test.ts
+  s_3bc7aa4f7cd0ac::t_abb10aef07fc91 5,84,148-151,155-175
+  s_3bc7aa4f7cd0ac::t_283f2a44a8f5f1 1-4,6-83,85-147,176
+  s_3bc7aa4f7cd0ac::t_3424afc46faa1e 152-154
+backend/src/app/api/materials.py
+  s_3bc7aa4f7cd0ac::t_4c73ee82670df2 19-23,25,132-150,156
+  s_3bc7aa4f7cd0ac::t_2c3f9c6f664d5e 151-155,157
+frontend/src/materials/ReaderControls.tsx
+  s_3bc7aa4f7cd0ac::t_b5b0281477b9a2 198-207,224-227
+  s_3bc7aa4f7cd0ac::t_12c5c8878095e1 196,208-213,220
+docs/ARCHITECTURE.md
+  s_3bc7aa4f7cd0ac::t_910ce2eca69880 127-132,134-136,144,419,440
+  s_3bc7aa4f7cd0ac::t_b8f79d73e80621 99
+  s_3bc7aa4f7cd0ac::t_98cc06addcb8d1 133,137-140,143
+  s_3bc7aa4f7cd0ac::t_8644d36e6f3d49 141-142
+frontend/src/materials/ruby-layout-recovery.test.ts
+  s_3bc7aa4f7cd0ac::t_dd615f733e87c7 1-36
+frontend/src/materials/ruby-dom.test.ts
+  s_3bc7aa4f7cd0ac::t_c826f5eab469b7 1-6,8-11,16-37,39-45,47-48,53-75,77-103,105-161
+  s_3bc7aa4f7cd0ac::t_3f59157b413b28 12-15,49-52
+  s_70dbadaa64c816::t_d28fd6d3b90a79 7,46,76,104
+  s_3bc7aa4f7cd0ac::t_b26d43711d88c4 38
+  s_3bc7aa4f7cd0ac::t_8ea9db8afa1e58 162-175
+backend/src/app/nlp/tokenization.py
+  s_3bc7aa4f7cd0ac::t_52978eed8cbce2 9,127-129,144-145
+  s_3bc7aa4f7cd0ac::t_2b5980a468c30f 1-8,10,12-69,71-72,74-126,130-143,146-157
+  s_3bc7aa4f7cd0ac::t_2c3f9c6f664d5e 11,70
+  s_3bc7aa4f7cd0ac::t_d1a5f47820c49d 73
+backend/src/app/services/readings.py
+  s_3bc7aa4f7cd0ac::t_2c3f9c6f664d5e 30,39,43-44,70-71,82,148-149,165-178,188
+  s_3bc7aa4f7cd0ac::t_2fad7898946984 52
+  s_3bc7aa4f7cd0ac::t_d730f0d3964d95 158
+  s_3bc7aa4f7cd0ac::t_3c9a0aeb2aa41f 1-29,31-38,40-42,45-51,53-69,72-81,83-147,150-157,159-164,179-187
+frontend/src/materials/dom.ts
+  s_3bc7aa4f7cd0ac::t_12c5c8878095e1 28-30,32-33
+  s_3bc7aa4f7cd0ac::t_9571b9d6923f53 50,88-96
+  s_3bc7aa4f7cd0ac::t_4ef02c550146ed 66,69,71,74-76
+  s_3bc7aa4f7cd0ac::t_b5b0281477b9a2 17,25
+  s_3bc7aa4f7cd0ac::t_cb58b0608a86c0 68
+  s_3bc7aa4f7cd0ac::t_e25bc63ebc324c 45-49,51,72
+  s_3bc7aa4f7cd0ac::t_c826f5eab469b7 1
+  s_3bc7aa4f7cd0ac::t_b26d43711d88c4 18-24
+  s_3bc7aa4f7cd0ac::t_e06d69025fcd4a 60,67,70,73,77-87
+  s_3bc7aa4f7cd0ac::t_03b20ebba48991 61-65
+frontend/src/materials/ruby-preferences.test.ts
+  s_3bc7aa4f7cd0ac::t_b5b0281477b9a2 5,10-13,17-28
+  s_3bc7aa4f7cd0ac::t_85d0790e6af179 1-4,6-9,14-16,29-31
+frontend/src/materials/reader-r1.css
+  s_3bc7aa4f7cd0ac::t_b5b0281477b9a2 496-519
+docs/PRD.md
+  s_3bc7aa4f7cd0ac::t_f11f510f8a18df 195
+  s_3bc7aa4f7cd0ac::t_98a0863944a09f 191-194
+  s_3bc7aa4f7cd0ac::t_88dd606a08e249 189
+  s_3bc7aa4f7cd0ac::t_84d426b3ce251c 190
+backend/src/app/nlp/__init__.py
+  s_3bc7aa4f7cd0ac::t_2b5980a468c30f 1
+frontend/src/materials/MaterialReader.tsx
+  s_3bc7aa4f7cd0ac::t_dd615f733e87c7 423,450-451,885,1072,1125
+  s_3bc7aa4f7cd0ac::t_dd45a4629c629f 113,1057
+  s_3bc7aa4f7cd0ac::t_b5b0281477b9a2 21,27-29,432-439,449,771-776,781-785,1058,1293-1294,1296-1297,1300-1306,1566-1568,1604,1610-1618,1636-1642
+  s_3bc7aa4f7cd0ac::t_3f59157b413b28 440-446
+  s_3bc7aa4f7cd0ac::t_c657ad6677852c 142,565-566,1068
+  s_3bc7aa4f7cd0ac::t_015e4017b0acf8 7,44-48,100,114-130,284,294,713-714,765,777-780,789,861,1054-1055,1060-1061,1075,1077-1098,1100-1104,1106-1107,1109,1111-1120,1124,1126-1128,1131,1136,1139,1147,1150,1182,1184-1186,1325,1329,1421-1429
+  s_3bc7aa4f7cd0ac::t_8b016d5ba1acdb 83,458,602,638-639,692-701,915,954-956
+  s_3bc7aa4f7cd0ac::t_94d3a063eb4b1f 1187-1188,1190-1194,1196
+  s_3bc7aa4f7cd0ac::t_cea5e6fe5f6d6a 2,84,135,138,448,766,786,1299,1565,1569,1605-1609,1633,1635,1647
+  s_3bc7aa4f7cd0ac::t_4181cb5743e721 64,1056,1059,1076,1099,1105,1110,1414
+  s_3bc7aa4f7cd0ac::t_e25bc63ebc324c 621
+  s_3bc7aa4f7cd0ac::t_9571b9d6923f53 42,549,622,705-711
+  s_3bc7aa4f7cd0ac::t_882f8ed8c2b640 486-498,715-729,877,883,891,897,906,1129-1130,1132-1135,1137-1138,1140-1146,1148-1149,1151-1181,1183,1189,1195
+  s_3bc7aa4f7cd0ac::t_41c1cb2396f8d8 447,1062,1430
+docs/handovers/README.md
+  s_3bc7aa4f7cd0ac::t_910ce2eca69880 9
+docs/INFORMATION_ARCHITECTURE.md
+  s_3bc7aa4f7cd0ac::t_f11f510f8a18df 55,59
+  s_3bc7aa4f7cd0ac::t_910ce2eca69880 57-58
+frontend/src/materials/focus.test.ts
+  s_541d1e36ced8ed::t_7f4d80f34b50eb 14-15,21-22,27,147-151
+  s_541d1e36ced8ed::t_ee665bf7fe8304 64,69,73,76,80,137,146,155,159,219,221,257,266,335
+  s_541d1e36ced8ed::t_3ff0eb92ba40d0 16-20,23-26
+frontend/src/materials/preferences.ts
+  s_3bc7aa4f7cd0ac::t_4181cb5743e721 124-133
+  s_3bc7aa4f7cd0ac::t_12c5c8878095e1 3,8,17-18,68-69
+  s_3bc7aa4f7cd0ac::t_1af2944eefecf7 134
+frontend/src/materials/api.ts
+  s_3bc7aa4f7cd0ac::t_85d0790e6af179 145-146,169-170,192-193
+  s_3bc7aa4f7cd0ac::t_b5b0281477b9a2 147-168,171-174,176-182,188-191
+  s_3bc7aa4f7cd0ac::t_3f59157b413b28 175,183-187
+docs/handovers/full-ruby/PLAN.md
+  s_3bc7aa4f7cd0ac::t_98a0863944a09f 1-9,11-21,24-33
+  s_3bc7aa4f7cd0ac::t_f11f510f8a18df 10,22-23
+backend/openapi.json
+  s_70dbadaa64c816::t_5677e368b58b46 1186-1342,4702-4823
+backend/pyproject.toml
+  s_3bc7aa4f7cd0ac::t_a0bccd063311f3 19-20
+backend/src/app/services/materials.py
+  s_3bc7aa4f7cd0ac::t_b6caef7b998117 28-29,127-131,147,174
+backend/uv.lock
+  s_3bc7aa4f7cd0ac::t_d2a9e065207130 119-120,144-145,1005-1058
+frontend/src/api/schema.d.ts
+  s_70dbadaa64c816::t_9a722b37197ff1 263-296,1266-1325,2792-2861
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fedad611f15688ed5cb77f652240a0f04b24a141",
+  "prompts": {},
+  "sessions": {
+    "s_3bc7aa4f7cd0ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1160a-98f1-7f80-b80e-446b5e7ce341",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_541d1e36ced8ed": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a114bf-02bb-75d3-b890-0f47a24d36b5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_70dbadaa64c816": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a05-ced5-7cd2-ab82-837e46f4667c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
