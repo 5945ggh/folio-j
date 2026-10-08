@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-07，已提交代码基准 `fc7537e`。
+> 状态核对：2026-10-08，已提交代码基准 `fedad61`。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
 
@@ -19,7 +19,8 @@
 | 来源空间 S2 | 已提交 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；工程验收完成，用户使用验收待进行 | [S2 工程验收](sources-s2/ACCEPTANCE.md) |
 | EPUB 导入与恢复 | 已提交 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读，托管字节暂保留 | [切片 1](epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](epub-reading/SLICE_0_ACCEPTANCE.md) |
 | 阅读器 R1.1 | 已提交 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级 | [R1.1 工程验收](reader-r1/ACCEPTANCE.md)、[交互优化](reader-r1/INTERACTION_POLISH.md) |
-| EPUB 学习衔接 | 未实现 | 全量注音、选区创建或选用 Segment、材料对话与消息引用、从材料讨论形成讲解按后续切片推进 | [EPUB 阶段安排](epub-reading/README.md) |
+| 全量注音 | 已提交、工程验收通过 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](full-ruby/ACCEPTANCE.md) |
+| EPUB 学习衔接 | 未实现 | 选区创建或选用 Segment、材料对话与消息引用、从材料讨论形成讲解按后续切片推进 | [EPUB 阶段安排](epub-reading/README.md) |
 | 学习条目与积累库 | 未实现 | 尚无 Occurrence 持久化、候选工具、整理操作或积累库页面；生产字段、定位、anchor 与恢复契约待落实 | [PRD F5／F6](../PRD.md#f5-学习条目创建与整理)、[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md) |
 
 **当前限制：** 接入类型为普通可重排 EPUB；封面缓存支持有界静态 PNG／JPEG。原书 ruby 控制使用书中已有注音。2026-10-04 切片 1 用户试读确认 Yomitan 配合正常；R1.1 的扩展、实体触屏、Safari／Firefox 等验证缺口见[工程验收](reader-r1/ACCEPTANCE.md#明确未验证与限制)。
@@ -50,7 +51,7 @@
 
 | 缺口 | 负责规范 | 实施前需要明确或补齐的内容 |
 | --- | --- | --- |
-| EPUB 学习衔接 | [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)、[阶段安排](epub-reading/README.md) | 全量注音的阅读交互与派生数据；选区目标、语境和返回路径；材料线程、引用、权限与费用；从讨论整理讲解的目标及部分成功反馈 |
+| EPUB 学习衔接 | [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)、[阶段安排](epub-reading/README.md) | 选区目标、语境和返回路径；材料线程、引用、权限与费用；从讨论整理讲解的目标及部分成功反馈 |
 | Occurrence 生产契约 | [术语与知识表示](../GLOSSARY.md#4-知识表示与提取边界已对齐)、[PRD F5](../PRD.md#f5-学习条目创建与整理)、`TBD-02/03` | 带版本的字段与语义、类型边界、不连续 Surface／重复文字定位、anchor 规则和多个 Section 的确切引用；A0 不作为生产定案 |
 | 条目读取与候选写入 | [PRD F5](../PRD.md#f5-学习条目创建与整理)、[F9](../PRD.md#f9-agent-工具权限与审核)、[架构 4.4–4.5](../ARCHITECTURE.md#44-可选批量提取未来模块servicesextractionpy尚不存在) | 将已确认读取、候选创建／修改及用户整理边界落实为 API、工具和执行校验；不能从 Analysis 工具签名推断候选协议 |
 | 组合操作与恢复 | [PRD F8](../PRD.md#f8-状态与诊断)、`TBD-16/17`、[架构执行契约](../ARCHITECTURE.md#45-讨论与成果保存analysis已实现occurrence待设计) | Occurrence 的逐项结果、幂等身份、保存核实、局部修复与统一预算协调，以及混合方案的审核呈现；Analysis 已落实部分沿用现有机制 |
