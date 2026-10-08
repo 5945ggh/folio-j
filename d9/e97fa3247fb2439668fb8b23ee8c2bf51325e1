@@ -1,0 +1,28 @@
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_3bc7aa4f7cd0ac::t_89244163349f39 23,54
+  s_70dbadaa64c816::t_d4309e595da342 3,22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d9e97fa3247fb2439668fb8b23ee8c2bf51325e1",
+  "prompts": {},
+  "sessions": {
+    "s_3bc7aa4f7cd0ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1160a-98f1-7f80-b80e-446b5e7ce341",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_70dbadaa64c816": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a05-ced5-7cd2-ab82-837e46f4667c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
