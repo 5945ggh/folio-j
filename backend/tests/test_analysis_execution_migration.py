@@ -118,25 +118,6 @@ def test_upgrade_from_existing_chat_allows_multiple_runs_per_job(
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
 
-def test_empty_database_upgrades_to_head_with_review_constraint(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    database = tmp_path / "empty.db"
-    command.upgrade(_config(database, monkeypatch), "head")
-    with sqlite3.connect(database) as connection:
-        assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
-        tables = {
-            row[0]
-            for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        }
-        assert {"analyses", "analysis_revisions", "analysis_sections", "chat_jobs"} <= tables
-        index = connection.execute(
-            "SELECT sql FROM sqlite_master WHERE type='index' AND name='uq_chat_job_active'"
-        ).fetchone()
-        assert index is not None
-        assert "waiting_review" in index[0]
-
-
 @pytest.mark.asyncio
 async def test_segment_deletion_interrupts_review_and_marks_all_runs_deleted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch

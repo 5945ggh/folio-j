@@ -66,6 +66,12 @@ test("返回来处保留应用内精确路径，直达及不可信来处退回�
 	);
 	assert.deepEqual(
 		returnDestination({
+			returnTo: { to: "/sources/s?expanded=book&q=雨&page=2", label: "Source" },
+		}),
+		{ to: "/sources/s?expanded=book&q=%E9%9B%A8&page=2", label: "Source" },
+	);
+	assert.deepEqual(
+		returnDestination({
 			returnTo: { to: "/settings?section=learning", label: "学习偏好" },
 		}),
 		{ to: "/settings?section=learning", label: "学习偏好" },

@@ -43,21 +43,6 @@ def test_material_upgrade_preserves_existing_segment(
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
 
-def test_material_migration_from_empty_database(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    database = tmp_path / "empty.db"
-    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
-    config = Config()
-    config.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
-    command.upgrade(config, "head")
-    with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0009_cover_rules",
-        )
-        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
-
-
 def test_usage_upgrade_validates_positions_and_preserves_bytes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

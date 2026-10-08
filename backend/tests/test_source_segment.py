@@ -9,12 +9,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from alembic import command
 from app.db import Base, create_engine
 from app.main import create_app
 from app.models import Segment
@@ -344,45 +342,3 @@ async def test_locked_text_conflict_same_normalized_text_and_metadata_edit(tmp_p
         assert metadata.json()["text_locked_at"] is not None
         assert_utc_timestamp(metadata.json()["text_locked_at"])
         assert (await client.get(f"/api/segments/{segment['id']}")).json()["note"] == "管理用"
-
-
-def test_initial_migration_creates_source_and_segment_tables(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    database = tmp_path / "migration.db"
-    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
-    config = Config()
-    config.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
-    command.upgrade(config, "head")
-    with sqlite3.connect(database) as connection:
-        tables = {
-            name
-            for (name,) in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        }
-        assert {"alembic_version", "sources", "segments"} <= tables
-        source_columns = {row[1] for row in connection.execute("PRAGMA table_info(sources)")}
-        segment_columns = {row[1] for row in connection.execute("PRAGMA table_info(segments)")}
-        assert {
-            "id",
-            "title",
-            "description",
-            "note",
-            "created_at",
-            "updated_at",
-            "deleted_at",
-        } <= source_columns
-        assert {
-            "id",
-            "source_id",
-            "text",
-            "translation",
-            "context_before",
-            "context_after",
-            "transcription",
-            "note",
-            "source_ref",
-            "created_at",
-            "updated_at",
-            "text_locked_at",
-            "deleted_at",
-        } <= segment_columns

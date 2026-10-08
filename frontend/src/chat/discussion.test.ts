@@ -3,11 +3,9 @@ import { test } from "node:test";
 import { QueryClient } from "@tanstack/react-query";
 import type { Job } from "./api.ts";
 import {
-	acceptedDraft,
 	captureReadingPosition,
 	DiscussionCoordinator,
 	freshestJob,
-	generationResult,
 	readingPositionForJob,
 	savedArtifact,
 	shouldOpenArtifact,
@@ -22,17 +20,6 @@ const submitted = {
 	additional_instructions: "原补充",
 	stream: true,
 };
-
-test("核实到同一 request_id 的受理结果才清除未继续编辑的草稿", () => {
-	assert.deepEqual(
-		acceptedDraft({ question: "原问题", additional: "原补充" }, submitted),
-		{ question: "", additional: "" },
-	);
-	assert.deepEqual(
-		acceptedDraft({ question: "继续编辑", additional: "原补充" }, submitted),
-		{ question: "继续编辑", additional: "原补充" },
-	);
-});
 
 test("停止或审核后的新 Job 版本不会被旧轮询结果回退", () => {
 	const stopping: { version: number; status: Job["status"] } = {
@@ -51,7 +38,7 @@ test("停止或审核后的新 Job 版本不会被旧轮询结果回退", () => 
 	assert.equal(freshestJob(stopping, review), review);
 });
 
-test("同一终态 Job 只产生一次通知，且成果身份来自持久 artifacts", () => {
+test("成果身份来自持久 artifacts", () => {
 	const terminal = {
 		id: "job-1",
 		status: "succeeded" as const,
@@ -61,10 +48,6 @@ test("同一终态 Job 只产生一次通知，且成果身份来自持久 artif
 		analysisId: "analysis-1",
 		revisionId: "revision-1",
 	});
-	assert.equal(
-		generationResult({ ...terminal, status: "interrupted" }),
-		"saved_with_unfinished_reply",
-	);
 });
 
 test("迟到生成只有阅读位置未变时才自动打开成果", () => {
@@ -181,29 +164,6 @@ test("讨论协调器在丢失受理响应后以同一 request_id 核实并刷�
 	assert.equal(client.getQueryData<Job>(["chat-job", "job-1"])?.version, 2);
 });
 
-test("讨论协调器拒绝旧轮询并对重复终态只通知一次", () => {
-	const client = new QueryClient();
-	const coordinator = new DiscussionCoordinator(client, {
-		submit: async () => job(1),
-		findByRequest: async () => job(1),
-	});
-	const callbacks = {
-		threadId: "thread-1",
-		segmentId: "segment-1",
-		onArtifact: () => {},
-	};
-	coordinator.observeJob(job(4, "stopping"), callbacks);
-	coordinator.observeJob(job(3, "running"), callbacks);
-	assert.equal(
-		client.getQueryData<Job>(["chat-job", "job-1"])?.status,
-		"stopping",
-	);
-	const first = coordinator.observeJob(job(5, "interrupted"), callbacks);
-	const duplicate = coordinator.observeJob(job(5, "interrupted"), callbacks);
-	assert.equal(first.notify, true);
-	assert.equal(duplicate.notify, false);
-});
-
 test("生产受理入口以函数式草稿更新保留迟到响应期间的新编辑", () => {
 	const client = new QueryClient();
 	const coordinator = new DiscussionCoordinator(client, {
@@ -258,6 +218,10 @@ test("生产 Job 入口只对合并后的终态刷新并通知一次", () => {
 	assert.equal(
 		coordinator.observeJob(job(5, "interrupted"), callbacks).notify,
 		true,
+	);
+	assert.equal(
+		coordinator.observeJob(job(5, "interrupted"), callbacks).notify,
+		false,
 	);
 	assert.equal(
 		coordinator.observeJob(job(3, "running"), callbacks).notify,

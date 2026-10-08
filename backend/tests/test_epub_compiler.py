@@ -90,7 +90,11 @@ def test_nav_precedes_ncx_and_diagnoses_invalid_reverse_duplicate(tmp_path: Path
     )
     book = epub.compile_epub_bytes(publication(tmp_path, nav, ncx))
     assert [chapter.title for chapter in book.chapters] == ["前置内容", "本文"]
-    assert len(book.warnings) == 5
+    for title in ("重複", "逆順"):
+        assert any(f"目录目标重复或逆序，已跳过：{title}" in warning for warning in book.warnings)
+    for title in ("欠落", "不存在"):
+        assert any(f"目录目标缺失或无效，已跳过：{title}" in warning for warning in book.warnings)
+    assert any("前置内容" in warning for warning in book.warnings)
     assert len(book.chapters[1].parts) == 2
     assert_partition(book)
 
@@ -190,3 +194,139 @@ def test_same_document_fragment_nav_target_on_spine(tmp_path: Path) -> None:
     assert book.chapters[1].parts[0].spine_index == 0
     assert "同文档正文" in book.chapters[1].parts[0].html
     assert_partition(book)
+
+
+def compile_fixture(tmp_path: Path, **kwargs: Any) -> epub.CompiledBook:
+    path = tmp_path / "sample.epub"
+    fixtures.build_fixture(path, **kwargs)
+    return epub.compile_epub_bytes(path.read_bytes())
+
+
+def test_projection_keeps_base_entities_blocks_and_global_nfc(tmp_path: Path) -> None:
+    book = compile_fixture(tmp_path)
+    resource = book.resources[0]
+    assert resource.text == (
+        "第一章\n漢字 & 本。\n同じ言葉。\n同じ言葉。\nがと𠮷、👩\u200d💻。\n前\n後\nＡ①\n"
+    )
+    assert "<ruby>" in resource.html and "<rt>かんじ</rt>" in resource.html
+    assert "かんじ" not in resource.text
+    assert "data:image/png;base64," in resource.html
+    # NFKC is deliberately not used; fullwidth/compatibility source characters survive.
+    assert "Ａ①" in resource.text
+
+
+def test_output_and_fixture_bytes_are_deterministic(tmp_path: Path) -> None:
+    first, second = tmp_path / "a.epub", tmp_path / "b.epub"
+    fixtures.build_fixture(first)
+    fixtures.build_fixture(second)
+    assert first.read_bytes() == second.read_bytes()
+    assert epub.compile_epub_bytes(first.read_bytes()) == epub.compile_epub_bytes(
+        second.read_bytes()
+    )
+    original = epub.compile_epub_bytes(first.read_bytes()).product_sha256
+    fixtures.build_fixture(second, vertical=True)
+    assert epub.compile_epub_bytes(second.read_bytes()).product_sha256 != original
+
+
+def test_author_styles_do_not_enter_projection(tmp_path: Path) -> None:
+    book = compile_fixture(tmp_path, vertical=True)
+    assert all("position:absolute" in resource.css for resource in book.resources)
+    assert all("position:absolute" not in resource.text for resource in book.resources)
+
+
+def test_publication_active_and_remote_content_is_isolated(tmp_path: Path) -> None:
+    book = compile_fixture(tmp_path, malicious=True)
+    resource = book.resources[0]
+    markup = resource.html
+    for forbidden in ("<script", "<iframe", "onclick", "javascript:", "example.invalid", "../../"):
+        assert forbidden not in markup
+    assert "秘密" not in resource.text
+    assert "安全な本文" in resource.text
+
+
+@pytest.mark.parametrize("entry", ["../escape", "/absolute", "OEBPS/../../escape"])
+def test_unsafe_zip_members_are_rejected(tmp_path: Path, entry: str) -> None:
+    with pytest.raises(epub.EpubError):
+        compile_fixture(tmp_path, extra_entries={entry: b"bad"})
+
+
+def test_fixed_layout_is_explicitly_rejected(tmp_path: Path) -> None:
+    with pytest.raises(epub.EpubError, match="[Ff]ixed"):
+        compile_fixture(tmp_path, fixed=True)
+
+
+def test_duplicate_zip_members_are_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "duplicate.epub"
+    fixtures.build_fixture(path)
+    with pytest.warns(UserWarning, match="Duplicate"):
+        with ZipFile(path, "a") as archive:
+            archive.writestr("OEBPS/chapter1.xhtml", "<html/>")
+    with pytest.raises(epub.EpubError):
+        epub.compile_epub_bytes(path.read_bytes())
+
+
+def test_image_only_fixed_spine_page_in_reflowable_book(tmp_path: Path) -> None:
+    path = tmp_path / "mixed.epub"
+    fixtures.build_fixture(path)
+    with ZipFile(path) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    entries["OEBPS/package.opf"] = entries["OEBPS/package.opf"].replace(
+        b'<itemref idref="c1"/>',
+        b'<itemref idref="c1" properties="rendition:layout-pre-paginated"/>',
+    )
+    entries["OEBPS/chapter1.xhtml"] = (
+        b'<html xmlns="http://www.w3.org/1999/xhtml"><body>'
+        b'<svg xmlns="http://www.w3.org/2000/svg">'
+        b'<image xmlns:xlink="http://www.w3.org/1999/xlink" '
+        b'xlink:href="images/pixel.png"/></svg></body></html>'
+    )
+    with ZipFile(path, "w") as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    book = epub.compile_epub_bytes(path.read_bytes())
+    assert book.resources[0].text.strip() == ""
+    assert "<img" in book.resources[0].html
+    assert book.warnings
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-16-le", "utf-16-be"])
+def test_entity_declarations_rejected_in_every_xml_encoding(encoding: str) -> None:
+    declared = "UTF-8" if encoding == "utf-8" else "UTF-16"
+    document = (
+        f'<?xml version="1.0" encoding="{declared}"?>'
+        '<!DOCTYPE html [<!ENTITY injected "ENTITY-MUST-NOT-EXPAND">]>'
+        "<html><body><p>&injected;</p></body></html>"
+    )
+    bom = {"utf-8": b"", "utf-16-le": b"\xff\xfe", "utf-16-be": b"\xfe\xff"}[encoding]
+    with pytest.raises(epub.EpubError, match="entity declarations"):
+        epub.sanitize_xhtml(bom + document.encode(encoding), "chapter.xhtml", {})
+
+
+def test_author_css_imports_and_document_attributes() -> None:
+    warnings: list[str] = []
+    files = {
+        "styles/base.css": b'@import "nested.css"; .base { color: red; }',
+        "styles/nested.css": b".vrtl { writing-mode: vertical-rl; }",
+    }
+    css = epub.inline_css("@import url(base.css);", "styles/main.css", files, warnings)
+    assert "writing-mode: vertical-rl" in css
+    assert ".base" in css
+    assert "@import" not in css
+    assert warnings == []
+    root = epub.parse_xml(b'<html class="vrtl" xml:lang="ja" dir="rtl" onclick="evil()"/>')
+    assert epub.presentation_attributes(root) == {"class": "vrtl", "lang": "ja", "dir": "rtl"}
+
+
+def test_css_import_cycles_remote_and_unsupported_syntax_warn() -> None:
+    warnings: list[str] = []
+    css = epub.inline_css(
+        '@import "cycle.css"; @import "https://evil.test/style.css"; @import nonsense;',
+        "styles/main.css",
+        {"styles/cycle.css": b'@import "cycle.css";'},
+        warnings,
+    )
+    assert "@import" not in css
+    assert any("cycle or depth limit" in warning for warning in warnings)
+    assert any("External package resource is unsupported" in warning for warning in warnings)
+    assert any("Unsupported CSS import syntax" in warning for warning in warnings)
+    assert css.strip() == ""

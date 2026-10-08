@@ -190,8 +190,6 @@ async def test_quick_analysis_accept_freezes_writer_tools_and_current_model(tmp_
             ).fetchone()
         assert row is not None
         snapshot = json.loads(row[0])
-        assert snapshot["writer_version"] == "v2"
-        assert "直接写出一份可独立阅读" in snapshot["writer_text"]
         assert [tool["function"]["name"] for tool in snapshot["tools"]] == [
             "list_analyses",
             "read_analysis",

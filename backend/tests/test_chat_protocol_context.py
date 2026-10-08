@@ -1,4 +1,4 @@
-"""Portable history conversion when a user explicitly switches provider protocol."""
+"""Frozen chat input keeps the complete provider protocol prefix."""
 
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -7,72 +7,8 @@ from typing import Any, cast
 import pytest
 
 from app.models import Segment, Source
-from app.services.context import convert_protocol_messages, make_input_snapshot
+from app.services.context import make_input_snapshot
 from app.settings_models import Profile
-
-
-def test_chat_to_responses_closes_real_tool_call_and_counts_private_reasoning() -> None:
-    history = [
-        {"role": "system", "content": "稳定规则"},
-        {"role": "user", "content": "讲解这句"},
-        {
-            "role": "assistant",
-            "content": None,
-            "reasoning_content": "provider-only",
-            "tool_calls": [
-                {
-                    "id": "call_1",
-                    "type": "function",
-                    "function": {"name": "list_analyses", "arguments": "{}"},
-                }
-            ],
-        },
-        {"role": "tool", "tool_call_id": "call_1", "content": '{"items":[]}'},
-        {"role": "assistant", "content": "已有清单为空"},
-    ]
-    result, omitted = convert_protocol_messages(history, "chat_completions", "responses")
-    assert result[:2] == history[:2]
-    assert result[2] == {
-        "type": "function_call",
-        "call_id": "call_1",
-        "name": "list_analyses",
-        "arguments": "{}",
-    }
-    assert result[3] == {
-        "type": "function_call_output",
-        "call_id": "call_1",
-        "output": '{"items":[]}',
-    }
-    assert result[4] == history[4]
-    assert omitted == 1
-
-
-def test_responses_to_chat_preserves_call_and_visible_answer() -> None:
-    history = [
-        {"role": "system", "content": "稳定规则"},
-        {"role": "user", "content": "读取讲解"},
-        {"type": "reasoning", "id": "r1"},
-        {
-            "type": "function_call",
-            "call_id": "call_2",
-            "name": "read_analysis",
-            "arguments": '{"analysis_id":"A"}',
-        },
-        {"type": "function_call_output", "call_id": "call_2", "output": "讲解内容"},
-        {"type": "message", "content": [{"type": "output_text", "text": "已读到讲解"}]},
-    ]
-    result, omitted = convert_protocol_messages(history, "responses", "chat_completions")
-    assert result[2]["tool_calls"][0]["id"] == "call_2"
-    assert result[3] == {"role": "tool", "tool_call_id": "call_2", "content": "讲解内容"}
-    assert result[4] == {"role": "assistant", "content": "已读到讲解"}
-    assert omitted == 1
-
-
-def test_same_protocol_keeps_every_prefix_object_unmodified() -> None:
-    history = [{"role": "assistant", "content": "答复", "reasoning_content": "保留"}]
-    result, omitted = convert_protocol_messages(history, "chat_completions", "chat_completions")
-    assert result is history
-    assert omitted == 0
 
 
 @pytest.mark.asyncio

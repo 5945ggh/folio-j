@@ -40,7 +40,6 @@ format:
 test:
     uv run --project backend pytest backend/tests
     pnpm --dir frontend test
-    node --test prototypes/epub-reading/locator.test.mjs
 
 # 从本地 FastAPI 导出契约，再生成前端类型；不需启动服务。
 gen-api:
@@ -53,6 +52,7 @@ migrate:
 
 # 验证保留的实验与静态视觉原型。
 check-assets:
+    node --test prototypes/epub-reading/locator.test.mjs
     node --check prototypes/reading-native/app.js
     node --test prototypes/reading-native/verify.mjs
     node references/occurrence_anchor_pilot/reading-experiment/parser-test.mjs
