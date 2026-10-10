@@ -121,14 +121,3 @@ export function resolveReaderTheme(
 ): "white" | "black" {
 	return theme === "system" ? (systemDark ? "black" : "white") : theme;
 }
-
-/** Range requests may outlive a reset or chapter change; only the latest intent can commit. */
-export class ReaderPreferenceRequests {
-	private ticket = 0;
-	begin(): number {
-		return ++this.ticket;
-	}
-	accepts(ticket: number): boolean {
-		return ticket === this.ticket;
-	}
-}

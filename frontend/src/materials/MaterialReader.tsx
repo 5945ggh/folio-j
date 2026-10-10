@@ -50,18 +50,17 @@ import { highlightRange } from "./highlight";
 import { READER_EXIT_MS, useReaderPresence } from "./motion";
 import { cacheSavedPosition, registerPositionWriter } from "./persistence";
 import {
-	anchorBeforeLayout,
 	currentSurface,
 	imageCoordinate,
 	imageFraction,
 	PositionQueue,
 	scrollProgress,
 } from "./position";
+import { ReaderPreferenceSubmission } from "./preference-submission";
 import {
 	type BookUiPreferences,
 	DEFAULT_BOOK_UI,
 	DEFAULT_READER_UI,
-	ReaderPreferenceRequests,
 	type ReaderUiPreferences,
 	readBookUiPreferences,
 	readReaderUiPreferences,
@@ -72,6 +71,7 @@ import {
 import { applyFramePresentation, normalizeFrameImages } from "./presentation";
 import { ReaderIcon, ReaderPanel, ReaderSettings } from "./ReaderControls";
 import { ReaderGalleryPanel, ReaderNavigationPanel } from "./ReaderPanels";
+import { ReaderLayout } from "./reader-layout";
 import {
 	closeReaderPanel,
 	EMPTY_READER_PANELS,
@@ -83,7 +83,7 @@ import {
 import { type PendingReturn, returnWasLocated } from "./return-recovery";
 import { applyAutomaticRuby } from "./ruby";
 import { freshestUsage, OpenAction } from "./usage";
-import { type LayoutPass, ViewportRecovery, viewportSize } from "./viewport";
+import { viewportSize } from "./viewport";
 
 const defaults: Settings = {
 	font_size: 22,
@@ -451,13 +451,10 @@ function Reader({
 		chapter.isSuccess && (bookUi.rubyScope !== "all" || readings.isSuccess);
 	const container = useRef<HTMLElement>(null);
 	const frames = useRef(new Map<number, Frame>());
-	const ready = useRef(new Set<number>());
 	const elements = useRef(new Map<number, HTMLIFrameElement>());
-	const recovery = useRef(new ViewportRecovery());
+	const layout = useRef(new ReaderLayout<Position>(book.reading_position));
 	const generation = useRef(0);
 	const pendingReturn = useRef<PendingReturn | null>(null);
-	const pending = useRef<Position | null>(book.reading_position);
-	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const alive = useRef(true);
 	const queue = useRef<PositionQueue<Position> | null>(null);
 	if (!queue.current)
@@ -493,16 +490,9 @@ function Reader({
 		bookUi.width,
 		bookUi.rubyScope,
 	].join("|");
-	const geometryKeyRef = useRef(geometryKey);
-	geometryKeyRef.current = geometryKey;
-	const appliedGeometry = useRef<string | null>(null);
 	const capture = useCallback((): Position | null => {
 		const root = container.current;
-		if (
-			!root ||
-			!chapter.data ||
-			!recovery.current.canSample(viewportSize(root))
-		)
+		if (!root || !chapter.data || !layout.current.canSample(viewportSize(root)))
 			return null;
 		const vertical = settings.writing_mode === "vertical-rl";
 		const viewport = root.getBoundingClientRect();
@@ -562,8 +552,6 @@ function Reader({
 			};
 		return null;
 	}, [book.version_id, chapterId, chapter.data, settings]);
-	const captureLatest = useRef(capture);
-	captureLatest.current = capture;
 	const observe = useCallback(() => {
 		const root = container.current;
 		if (!root) return;
@@ -576,29 +564,15 @@ function Reader({
 					: root.scrollHeight - root.clientHeight,
 			),
 		);
-		const anchor = recovery.current.observe(viewportSize(root), capture);
-		if (!recovery.current.canSample(viewportSize(root))) {
-			if (timer.current) clearTimeout(timer.current);
-			return;
-		}
-		if (!anchor) return;
-		pending.current = anchor;
-		if (timer.current) clearTimeout(timer.current);
-		timer.current = setTimeout(() => queue.current?.enqueue(anchor), 550);
+		layout.current.observe(viewportSize(root), capture, (anchor) =>
+			queue.current?.enqueue(anchor),
+		);
 	}, [capture, settings.writing_mode]);
 	const restore = useCallback(
-		(pass: LayoutPass) => {
+		(anchor: Position | null) => {
 			const root = container.current;
 			const data = chapter.data;
-			if (
-				!recovery.current.restoring ||
-				!root ||
-				!data ||
-				ready.current.size !== data.parts.length ||
-				!recovery.current.canFinish(pass, viewportSize(root))
-			)
-				return;
-			const anchor = pending.current;
+			if (!root || !data) return false;
 			let located = false;
 			const vertical = settings.writing_mode === "vertical-rl";
 			if (anchor && anchor.chapter_id === chapterId) {
@@ -688,19 +662,20 @@ function Reader({
 				);
 			}
 
-			if (!recovery.current.finish(pass, viewportSize(root))) return;
-			const returning = pendingReturn.current;
-			if (returning?.generation === generation.current) {
-				pendingReturn.current = null;
-				if (returnWasLocated(returning, generation.current, anchor, located))
-					setOrigin(null);
-				else
-					setNavigationError(
-						new Error("无法返回跳转前的位置，已保留返回点，请重试。"),
-					);
-			}
-			setPresented(true);
-			observe();
+			return () => {
+				const returning = pendingReturn.current;
+				if (returning?.generation === generation.current) {
+					pendingReturn.current = null;
+					if (returnWasLocated(returning, generation.current, anchor, located))
+						setOrigin(null);
+					else
+						setNavigationError(
+							new Error("无法返回跳转前的位置，已保留返回点，请重试。"),
+						);
+				}
+				setPresented(true);
+				observe();
+			};
 		},
 		[
 			chapter.data,
@@ -710,23 +685,7 @@ function Reader({
 			observe,
 		],
 	);
-	const restoreLatest = useRef(restore);
-	restoreLatest.current = restore;
-	const reflowFrames = useCallback((update?: () => void) => {
-		const root = container.current;
-		if (!root || !frames.current.size) return;
-		pending.current = anchorBeforeLayout(
-			recovery.current.restoring,
-			pending.current,
-			captureLatest.current,
-		);
-		if (timer.current) clearTimeout(timer.current);
-		const pass = recovery.current.begin(viewportSize(root));
-		update?.();
-		for (const frame of frames.current.values()) frame.resize();
-		appliedGeometry.current = geometryKeyRef.current;
-		restoreLatest.current(pass);
-	}, []);
+	const reflowFrames = useCallback(() => layout.current.reflow(), []);
 	useEffect(() => {
 		alive.current = true;
 		const unregister = queue.current
@@ -739,8 +698,9 @@ function Reader({
 				frame.cleanup();
 				frame.presentationCleanup();
 			}
-			if (timer.current) clearTimeout(timer.current);
-			if (pending.current) queue.current?.enqueue(pending.current);
+			layout.current.cancelSave();
+			const anchor = layout.current.anchor(() => null);
+			if (anchor) queue.current?.enqueue(anchor);
 			unregister();
 		};
 	}, [book.id]);
@@ -873,8 +833,7 @@ function Reader({
 				),
 			]).then(() => {
 				if (!valid()) return;
-				ready.current.add(index);
-				if (ready.current.size === data.parts.length) reflowFrames();
+				layout.current.resourcesReady(token, index);
 			});
 		} catch (failure) {
 			setError(failure instanceof Error ? failure : new Error(String(failure)));
@@ -933,15 +892,14 @@ function Reader({
 					!part.html.includes(`data-epub-image="${target.image_id}"`))
 			)
 				throw new Error("无法定位到原文位置，请重新打开目录或重试。");
-			const last = anchorBeforeLayout(
-				recovery.current.restoring,
-				pending.current,
-				capture,
-			);
+			const last = layout.current.anchor(capture);
 			if (last) queue.current?.enqueue(last);
 			if (!returning) setOrigin((previous) => previous ?? last);
-			if (timer.current) clearTimeout(timer.current);
-			pending.current = { ...target, settings: latest.current.settings };
+			layout.current.cancelSave();
+			layout.current.setAnchor({
+				...target,
+				settings: latest.current.settings,
+			});
 			highlight.current = mark
 				? {
 						chapterId: target.chapter_id,
@@ -954,13 +912,12 @@ function Reader({
 			pendingReturn.current = returning
 				? { generation: generation.current, target }
 				: null;
-			recovery.current.invalidate();
+			layout.current.invalidateSurface();
 			for (const frame of frames.current.values()) {
 				frame.cleanup();
 				frame.presentationCleanup();
 			}
 			frames.current.clear();
-			ready.current.clear();
 			setChapterId(target.chapter_id);
 			setSurfaceRevision((value) => value + 1);
 			setProgress(0);
@@ -1053,33 +1010,21 @@ function Reader({
 	}, [readKey]);
 	const [rubyPreparing, setRubyPreparing] = useState(false);
 	const [rubyError, setRubyError] = useState<Error | null>(null);
-	const preferenceTicket = useRef(new ReaderPreferenceRequests());
-	// biome-ignore lint/correctness/useExhaustiveDependencies: chapter changes cancel any pending range preference for the old chapter.
-	useEffect(() => {
-		preferenceTicket.current.begin();
-		setRubyPreparing(false);
-		setRubyError(null);
-	}, [chapterId]);
+	const preferenceSubmission = useRef(new ReaderPreferenceSubmission());
 	const change = (next: Settings) => {
-		if (timer.current) clearTimeout(timer.current);
-		const anchor = anchorBeforeLayout(
-			recovery.current.restoring,
-			pending.current,
-			captureLatest.current,
-		);
-		pending.current = anchor ? { ...anchor, settings: next } : null;
-		recovery.current.invalidate();
+		layout.current.cancelSave();
+		const anchor = layout.current.anchor(capture);
+		layout.current.setAnchor(anchor ? { ...anchor, settings: next } : null);
 		setLayoutRevision((revision) => revision + 1);
 		setSettings(next);
 	};
-	const changeBookUi = async (next: BookUiPreferences) => {
-		const ticket = preferenceTicket.current.begin();
-		setRubyPreparing(false);
-		setRubyError(null);
-		if (next.rubyScope === "all" && !readings.isSuccess) {
-			setRubyPreparing(true);
-			try {
-				await client.fetchQuery({
+	useLayoutEffect(() => {
+		preferenceSubmission.current.bind({
+			chapter: chapterId,
+			current: bookUi,
+			readingsReady: readings.isSuccess,
+			loadReadings: () =>
+				client.fetchQuery({
 					queryKey: readingsKey(
 						book.id,
 						book.version_id,
@@ -1094,93 +1039,93 @@ function Reader({
 							readingGeneration,
 							signal,
 						),
-				});
-			} catch (failure) {
-				if (preferenceTicket.current.accepts(ticket) && alive.current)
-					setRubyError(
-						failure instanceof Error ? failure : new Error(String(failure)),
-					);
-				return;
-			} finally {
-				if (preferenceTicket.current.accepts(ticket) && alive.current)
-					setRubyPreparing(false);
-			}
-		}
-		if (
-			!preferenceTicket.current.accepts(ticket) ||
-			!alive.current ||
-			latest.current.chapterId !== chapterId
-		)
-			return;
-		if (
-			next.font !== latest.current.bookUi.font ||
-			next.width !== latest.current.bookUi.width ||
-			next.rubyScope !== latest.current.bookUi.rubyScope
-		)
-			change(latest.current.settings);
-		setBookUi(next);
-		setStorageFailed(!writeBookUiPreferences(book.id, book.version_id, next));
-	};
+				}),
+			store: (next) => writeBookUiPreferences(book.id, book.version_id, next),
+			commit: (next, result) => {
+				if (result.geometryChanged) change(settings);
+				setBookUi(next);
+				setStorageFailed(result.storageFailed);
+			},
+			status: (preparing, failure) => {
+				setRubyPreparing(preparing);
+				setRubyError(failure);
+			},
+		});
+	});
+	useLayoutEffect(() => () => preferenceSubmission.current.suspend(), []);
+	const changeBookUi = (next: BookUiPreferences) =>
+		preferenceSubmission.current.submit(next);
 	useLayoutEffect(() => {
 		if (!viewportReady) return;
 		const root = container.current;
 		const data = chapter.data;
-		if (!root || !data || !frames.current.size) return;
-		const geometricChange =
-			appliedGeometry.current !== geometryKey || recovery.current.restoring;
-		try {
-			if (!geometricChange) {
-				for (const frame of frames.current.values()) {
-					frame.presentationCleanup();
-					frame.presentationCleanup = applyFramePresentation(
-						frame.doc,
-						theme,
-						bookUi,
-					);
-				}
-				return;
+		if (!root || !data) return;
+		const presentation = () => {
+			for (const frame of frames.current.values()) {
+				frame.presentationCleanup();
+				frame.presentationCleanup = applyFramePresentation(
+					frame.doc,
+					theme,
+					bookUi,
+				);
 			}
-			reflowFrames(() => {
-				for (const [index, frame] of frames.current) {
-					frame.presentationCleanup();
-					frame.presentationCleanup = applyFramePresentation(
-						frame.doc,
-						theme,
-						bookUi,
-					);
-					applyDocumentSettings(frame.doc, settings);
-					const part = data.parts[index];
-					const resource = data.resources.find(
-						(r) => r.id === part?.resource_id,
-					);
-					if (
-						bookUi.rubyScope === "all" &&
-						!frame.rubyApplied &&
-						part &&
-						resource
-					) {
-						const asset = readings.data?.resources.find(
-							(r) => r.resource_id === part.resource_id,
-						);
-						if (!asset) throw new Error("章节注音暂不可用，请重试。");
-						registerReaderFrameTargets(
+		};
+		try {
+			layout.current.commit(
+				{
+					generation: generation.current,
+					parts: data.parts.length,
+					geometry: geometryKey,
+					size: () => (container.current === root ? viewportSize(root) : null),
+					capture,
+					measure: () => {
+						for (const frame of frames.current.values()) frame.resize();
+					},
+					restore,
+				},
+				presentation,
+				() => {
+					for (const [index, frame] of frames.current) {
+						frame.presentationCleanup();
+						frame.presentationCleanup = applyFramePresentation(
 							frame.doc,
-							applyAutomaticRuby(
+							theme,
+							bookUi,
+						);
+						applyDocumentSettings(frame.doc, settings);
+						const part = data.parts[index];
+						const resource = data.resources.find(
+							(r) => r.id === part?.resource_id,
+						);
+						if (
+							bookUi.rubyScope === "all" &&
+							!frame.rubyApplied &&
+							part &&
+							resource
+						) {
+							const asset = readings.data?.resources.find(
+								(r) => r.resource_id === part.resource_id,
+							);
+							if (!asset) throw new Error("章节注音暂不可用，请重试。");
+							registerReaderFrameTargets(
 								frame.doc,
-								frame.projection,
-								asset.tokens,
-								part.start,
-							),
-						);
-						frame.projection = projectPart(
-							frame.doc,
-							Array.from(resource.text).slice(part.start, part.end).join(""),
-							part.leaf_start,
-						);
-						frame.rubyApplied = true;
+								applyAutomaticRuby(
+									frame.doc,
+									frame.projection,
+									asset.tokens,
+									part.start,
+								),
+							);
+							frame.projection = projectPart(
+								frame.doc,
+								Array.from(resource.text).slice(part.start, part.end).join(""),
+								part.leaf_start,
+							);
+							frame.rubyApplied = true;
+						}
 					}
-				}
-			});
+				},
+			);
 		} catch (failure) {
 			setError(failure instanceof Error ? failure : new Error(String(failure)));
 		}
@@ -1192,17 +1137,14 @@ function Reader({
 		theme,
 		chapter.data,
 		readings.data,
-		reflowFrames,
+		capture,
+		restore,
 	]);
 	const leave = () => {
-		if (timer.current) clearTimeout(timer.current);
-		const anchor = anchorBeforeLayout(
-			recovery.current.restoring,
-			pending.current,
-			capture,
-		);
+		layout.current.cancelSave();
+		const anchor = layout.current.anchor(capture);
 		if (anchor) {
-			pending.current = anchor;
+			layout.current.setAnchor(anchor);
 			queue.current?.enqueue(anchor);
 		}
 	};
