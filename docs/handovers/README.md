@@ -15,6 +15,8 @@
 
 ## Archived
 
+- [阅读恢复、注音偏好与来源导航重构验收](archived/READER_STATE_REFACTOR_ACCEPTANCE.md)：集中三个生产协调入口，记录行为基线、独立审查、离线测试与浏览器验收。
+
 - [编辑规则与讨论状态重构验收](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)：统一审核与保存、集中讨论推进、删除不可达 Job 代码；记录回归、CR 与离线浏览器验收。
 
 - [2C 后阅读与导航打磨验收](archived/READING_NAVIGATION_ACCEPTANCE.md)：普通入口阅读、原文参照、精确导航及讲解总标题已通过离线验收；记录恢复修复、浏览器证据与限制。
