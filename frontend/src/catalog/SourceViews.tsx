@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router";
+import { Link, useLocation } from "react-router";
 import type { Source } from "../content";
 import { ConfirmDialog, dateLabel, InlineError } from "../Shared";
 import {
@@ -14,18 +14,24 @@ import {
 } from "./api";
 import { BookCatalog, BookGrid } from "./Books";
 import { CatalogToolbar, Pagination, Tabs } from "./Controls";
-import { readPreference, useCatalogScroll, useCatalogState } from "./hooks";
+import {
+	useCatalogScroll,
+	useCatalogState,
+	useSourceContentLocation,
+} from "./hooks";
 import { ImportDialog } from "./ImportDialog";
 import { SourceOverview } from "./SourceOverview";
-import {
-	analysisDestination,
-	lastCatalogPage,
-	readCatalogState,
-	sourceView,
-} from "./state";
+import { analysisDestination, lastCatalogPage } from "./state";
 
-function SourceBooks({ source }: { source: Source }) {
-	const [params, setParams] = useSearchParams();
+function SourceBooks({
+	source,
+	expanded,
+	onExpandedChange,
+}: {
+	source: Source;
+	expanded: boolean;
+	onExpandedChange: (expanded: boolean) => void;
+}) {
 	const [adding, setAdding] = useState(false);
 	const { state } = useCatalogState("books", `source-books-${source.id}`);
 	const query: BookQuery = {
@@ -39,24 +45,15 @@ function SourceBooks({ source }: { source: Source }) {
 		queryKey: catalogKeys.books(query),
 		queryFn: () => catalogBooks(query),
 	});
-	const expanded = params.get("expanded") === "book";
 	useCatalogScroll(
 		books.isSuccess && !expanded,
 		`source-materials-${source.id}`,
 	);
 	function close() {
-		const next = new URLSearchParams(params);
-		next.delete("expanded");
-		next.set("view", "materials");
-		for (const key of ["q", "status", "sort", "order", "page"])
-			next.delete(key);
-		setParams(next, { replace: true });
+		onExpandedChange(false);
 	}
 	function expand() {
-		const next = new URLSearchParams(params);
-		next.set("view", "materials");
-		next.set("expanded", "book");
-		setParams(next);
+		onExpandedChange(true);
 	}
 	return (
 		<>
@@ -339,43 +336,9 @@ export function SourceContent({
 	onAddSegment: () => void;
 	onShowInfo: () => void;
 }) {
-	const [params, setParams] = useSearchParams();
-	const view = sourceView(params.toString());
-	const sortScope =
-		view === "materials" ? `source-books-${source.id}` : `${view}-${source.id}`;
-	const defaults =
-		view === "overview"
-			? null
-			: readCatalogState(
-					params.toString(),
-					view === "materials" ? "books" : view,
-					readPreference(`sort-${sortScope}`),
-				);
-	const defaultSort = defaults?.sort;
-	const defaultOrder = defaults?.order;
-	useEffect(() => {
-		if (
-			params.get("view") !== view ||
-			(defaultSort &&
-				defaultOrder &&
-				(params.get("sort") !== defaultSort ||
-					params.get("order") !== defaultOrder))
-		) {
-			const next = new URLSearchParams(params);
-			next.set("view", view);
-			if (defaultSort && defaultOrder) {
-				next.set("sort", defaultSort);
-				next.set("order", defaultOrder);
-			}
-			setParams(next, { replace: true });
-		}
-	}, [params, setParams, view, defaultSort, defaultOrder]);
+	const { view, expanded, navigate } = useSourceContentLocation(source.id);
 	function change(value: string) {
-		const next = new URLSearchParams(params);
-		next.set("view", value);
-		for (const name of ["expanded", "q", "status", "sort", "order", "page"])
-			next.delete(name);
-		setParams(next);
+		navigate({ type: "view", view: value });
 	}
 	return (
 		<>
@@ -410,7 +373,13 @@ export function SourceContent({
 									onShowInfo={onShowInfo}
 								/>
 							) : panel === "materials" ? (
-								<SourceBooks source={source} />
+								<SourceBooks
+									source={source}
+									expanded={expanded}
+									onExpandedChange={(open) =>
+										navigate({ type: open ? "open-books" : "close-books" })
+									}
+								/>
 							) : panel === "segments" ? (
 								<SourceSegments source={source} onAddSegment={onAddSegment} />
 							) : (

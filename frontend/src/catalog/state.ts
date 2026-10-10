@@ -94,6 +94,53 @@ export function sourceView(search: string, _legacyPreference = ""): SourceView {
 	return !view && params.get("expanded") === "book" ? "materials" : "overview";
 }
 
+/** Resolve the content pane without consuming the independent source-directory query. */
+export function readSourceContentLocation(
+	search: string,
+	sourceId: string,
+	preference: (key: string) => string,
+) {
+	const params = new URLSearchParams(search);
+	const view = sourceView(search);
+	params.set("view", view);
+	if (view !== "overview") {
+		const kind = view === "materials" ? "books" : view;
+		const scope = view === "materials" ? "source-books" : view;
+		const defaults = readCatalogState(
+			search,
+			kind,
+			preference(`sort-${scope}-${sourceId}`),
+		);
+		params.set("sort", defaults.sort);
+		params.set("order", defaults.order);
+	}
+	return {
+		view,
+		expanded: view === "materials" && params.get("expanded") === "book",
+		search: params.toString(),
+	};
+}
+
+export type SourceContentAction =
+	| { type: "view"; view: string }
+	| { type: "open-books" }
+	| { type: "close-books" };
+
+/** User navigation owns both query cleanup and push/replace history semantics. */
+export function sourceContentTransition(
+	search: string,
+	action: SourceContentAction,
+) {
+	const params = new URLSearchParams(search);
+	params.set("view", action.type === "view" ? action.view : "materials");
+	params.set("view", sourceView(params.toString()));
+	if (action.type === "open-books") params.set("expanded", "book");
+	else
+		for (const key of ["expanded", "q", "status", "sort", "order", "page"])
+			params.delete(key);
+	return { search: params.toString(), replace: action.type === "close-books" };
+}
+
 export function sourceOverviewDestination(id: string, search = ""): string {
 	const params = new URLSearchParams(sourceListSearch(search, "s", "s"));
 	params.set("view", "overview");

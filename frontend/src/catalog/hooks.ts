@@ -5,6 +5,9 @@ import {
 	type CatalogState,
 	catalogScrollSearch,
 	readCatalogState,
+	readSourceContentLocation,
+	type SourceContentAction,
+	sourceContentTransition,
 	sourceListSearch,
 	updateCatalogSearch,
 } from "./state";
@@ -42,6 +45,21 @@ export function useCatalogState(kind: CatalogKind, scope: string, prefix = "") {
 		});
 	}
 	return { state, change };
+}
+export function useSourceContentLocation(sourceId: string) {
+	const [params, setParams] = useSearchParams();
+	const search = params.toString();
+	const location = readSourceContentLocation(search, sourceId, readPreference);
+	const canonicalSearch = location.search;
+	useEffect(() => {
+		if (search !== canonicalSearch)
+			setParams(canonicalSearch, { replace: true });
+	}, [search, canonicalSearch, setParams]);
+	function navigate(action: SourceContentAction) {
+		const next = sourceContentTransition(search, action);
+		setParams(next.search, { replace: next.replace });
+	}
+	return { ...location, navigate };
 }
 export function useCatalogScroll(ready: boolean, scope = "", internal = false) {
 	const location = useLocation();
