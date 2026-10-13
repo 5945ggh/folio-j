@@ -1,0 +1,34 @@
+docs/handovers/README.md
+  s_b7c8334aced548::t_16f437961dc380 10
+docs/handovers/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md
+  s_b7c8334aced548::t_f81c98e1b1793c 1-2,4-10,12-29,31-38,40-43
+  s_65b4e219b1451f::t_71ed1b293320ba 44-62
+  s_b7c8334aced548::t_2d9a993d935124 3,11,30,39
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_65b4e219b1451f::t_71ed1b293320ba 3,22,45
+  s_b7c8334aced548::t_16f437961dc380 44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "86111ee0ba099080d4c4f71fe7169bd5af03f283",
+  "prompts": {},
+  "sessions": {
+    "s_65b4e219b1451f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1330a-0f3a-70b0-82bf-3d92c3edc564",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_b7c8334aced548": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12a17-e15b-72d2-aaeb-840ebb8d16e5",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
