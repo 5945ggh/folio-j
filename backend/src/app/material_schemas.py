@@ -46,6 +46,7 @@ class ReadingPositionUpdate(PositionAnchor):
 class ReadingPositionResponse(PositionAnchor):
     revision: int
     updated_at: datetime
+    progress: float | None = Field(ge=0, le=1)
 
 
 class MaterialSummary(BaseModel):
@@ -70,6 +71,9 @@ class ChapterSummary(BaseModel):
 class MaterialResponse(MaterialSummary):
     chapters: list[ChapterSummary]
     reading_position: ReadingPositionResponse | None
+    chapter_positions: list[ReadingPositionResponse] = Field(
+        default_factory=lambda: list[ReadingPositionResponse]()
+    )
 
 
 class MaterialImportResponse(BaseModel):

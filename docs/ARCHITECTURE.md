@@ -42,6 +42,7 @@ flowchart LR
   Source --> Segment
   Source --> Material[EPUB Material]
   Material --> Position[ReadingPosition]
+  Material --> ChapterPosition[ChapterReadingPosition]
   Material --> Usage[MaterialUsage]
   Material --> Cover[MaterialCover 缓存]
   Segment --> ChatThread[独立讨论线程]
@@ -68,7 +69,7 @@ Source、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务�
 
 ### 3.1 实体
 
-Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profile／Defaults 为单例整数主键，阅读位置、使用状态与封面以 `material_id` 为主键。下表概述已实现实体及 Occurrence 的未来草图，字段以 ORM 和生成 DTO 为准。模型位于 `models.py`、`settings_models.py`、`chat_models.py`、`analysis_models.py` 与 `material_models.py`。
+Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profile／Defaults 为单例整数主键，全书阅读位置、使用状态与封面以 `material_id` 为主键，各章位置以 `material_id` + `chapter_id` 为主键。下表概述已实现实体及 Occurrence 的未来草图，字段以 ORM 和生成 DTO 为准。模型位于 `models.py`、`settings_models.py`、`chat_models.py`、`analysis_models.py` 与 `material_models.py`。
 
 | 实体 | 关键字段／关系 | 说明 |
 |---|---|---|
@@ -79,6 +80,7 @@ Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profi
 | `Segment` | `source_id`、`text`、译文、语境、备注、听写、`source_ref`、`text_locked_at` | 学习目标原文入库做 NFC；`source_ref` 为自由文本出处，材料外键与分词数据待后续接入 |
 | `Material` | `source_id`、标题、源字节摘要、`version_id`、产物摘要、契约版本、原 EPUB 字节、压缩编译包 | 同 Source 同源字节复用身份；版本、正文与资源不可变，章节及 spine 资源在包内表达 |
 | `ReadingPosition` | `material_id`、`revision`、位置与三项阅读设置的 `payload`、`updated_at` | 每材料最多一条，按条件版本更新；位置绑定具体版本、章、part 和资源 |
+| `ChapterReadingPosition` | `material_id` + `chapter_id` 复合主键、位置 `payload`、`revision`、`updated_at` | 各章最后位置；revision 为该次材料位置写入的版本，与全书最后位置原子更新 |
 | `MaterialUsage` | `material_id`、状态、独立 `revision`、`last_opened_at`、`last_action_id` | 每材料最多一条；未开始／进行中／已完成与最近打开独立于位置保存 |
 | `MaterialCover` | `material_id`、媒体类型、图片字节、`rule_version`、诊断原因 | 每材料最多一条可重建缓存；`data=NULL` 表示无可用封面，版本 2 可重提旧缓存 |
 | `Run` | `purpose`、`job_id`、实际 Provider／模型／协议／参数、消息、输出、用量、状态、时间 | 每次模型调用均记录；以用途和 Job 关联区分验证与讨论调用 |
@@ -99,6 +101,12 @@ EPUB 已确定的不变式：原始素材字节不可变，材料归属 Source�
 阅读章是版本内资源范围的呈现组织：优先采用书内目录标题与入口、按 spine 顺序连续呈现图文，不改变资源局部引用身份。阅读位置保存逻辑章和资源内锚点，百分比派生展示；布局变化允许近似恢复，精确引用仍须严格校验。原书 ruby 优先于分词生成注音，自动注音属于可重建显示层，不改核心正文。具体样书调查及切片 1 细化继续见上述阶段文档。
 
 材料导入用受限原始 EPUB 请求体，编译与包的编解码移出事件循环；原始字节及压缩产物同事务发布。来源内相同摘要复用身份，跨来源独立；发布前再次校验 Source 存活。来源删除确认计入材料，读书／保存位置均检查 Source，托管字节暂不物理清理。阅读位置用 `expected_revision` 条件写入，陈旧请求返回 409；版本、章节、part 与资源范围必须吻合。
+
+章节记忆由 `chapter_reading_positions` 保存；增量迁移从有效的旧全书位置回填对应一章，保留旧位置和 revision。位置 PUT 沿用材料级 CAS，同一事务更新全书最后位置和当前章；GET 材料按章序返回 `chapter_positions`，查询无写入副作用。章内 `progress` 按有序 part 的正文码点跨度派生，文字锚点加上当前 part 内偏移，图片锚点取当前 part 起点；正文跨度保留规范空白，章内没有非空白正文时返回 null。它不随排版变化，也不表达累计已读；首屏锚点位于末屏时仍可能小于 100%。
+
+前端位置队列在同一材料 revision 下串行写入，只合并同章待写值；更新待写章时将其移至末尾，兼顾各章记忆与全书最后位置的时间顺序。成功呈现位置与等待恢复的目标分别维护，切章或卸载不保存尚未呈现的目标。缓存同时合并全书位置和对应章记录，章节恢复沿用当前阅读设置。
+
+无记录章与显式回章首在当前代次资源就绪后将阅读容器归零，再采样实际锚点，保留开头插图；该意图在呈现后清除或由新导航替换。重复回章首以稳定视口的阅读轴偏移判断，避免前导空白造成锚点差异而覆盖返回点。首图前空白按横竖排方向归入首图位置，前置非空白正文阻止此回退。
 
 工具审核需持久记录所属线程、目标及基础版本、具体拟执行操作、用户决定／附加指令与执行结果。当前Analysis工具把具体方案、决定与执行事实保存在Job.execution_state中，状态包含waiting_review；Occurrence及复杂组合方案仍待设计。待审核方案与正式 AnalysisRevision／Occurrence 分开，批准后仍可能执行失败，二者不能混为一条成功记录。
 
@@ -151,6 +159,7 @@ erDiagram
   Source ||--o{ Segment : contains
   Source ||--o{ Material : contains
   Material ||--o| ReadingPosition : resumes
+  Material ||--o{ ChapterReadingPosition : remembers
   Material ||--o| MaterialUsage : tracks
   Material ||--o| MaterialCover : caches
   Segment ||--o{ Analysis : has

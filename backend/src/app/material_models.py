@@ -43,6 +43,17 @@ class ReadingPosition(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class ChapterReadingPosition(Base):
+    """Last chapter anchor sharing the material position CAS revision."""
+
+    __tablename__ = "chapter_reading_positions"
+    material_id: Mapped[str] = mapped_column(ForeignKey("materials.id"), primary_key=True)
+    chapter_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    payload: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class MaterialUsage(Base):
     """Mutable management state; its revision is independent of reading position."""
 

@@ -55,10 +55,26 @@ export function rawOffset(raw: string, point: number): number {
 export function scrollProgress(distance: number, extent: number): number {
 	return extent <= 0 ? 0 : Math.max(0, Math.min(1, distance / extent));
 }
-/** A serial CAS queue retains only the latest observed position. A conflict stops writing. */
+
+/** Keep the whitespace before a leading image attached to that image in either reading direction. */
+export function imageAtReadingEdge(
+	local: number,
+	start: number,
+	size: number,
+	vertical: boolean,
+	leading: boolean,
+): boolean {
+	return (
+		size > 0 &&
+		((local >= start && local <= start + size) ||
+			(leading && (vertical ? local > start + size : local < start)))
+	);
+}
+/** Serial CAS writes coalesce by chapter, preserving the latest observation order. */
 export class PositionQueue<T> {
 	revision: number;
-	pending: T | undefined;
+	private pending = new Map<string, T>();
+	private key: (value: T) => string;
 	private flight: Promise<void> | null = null;
 	private stopped = false;
 	private save: (value: T, revision: number) => Promise<number>;
@@ -70,34 +86,40 @@ export class PositionQueue<T> {
 		revision: number,
 		save: (value: T, revision: number) => Promise<number>,
 		status: (state: "saving" | "saved" | "error", error?: unknown) => void,
+		key: (value: T) => string = () => "position",
 	) {
+		this.key = key;
 		this.revision = revision;
 		this.save = save;
 		this.status = status;
 	}
 	enqueue(value: T) {
 		if (this.stopped) return;
-		this.pending = value;
+		const key = this.key(value);
+		this.pending.delete(key);
+		this.pending.set(key, value);
 		void this.flush();
 	}
 	flush(): Promise<void> {
 		if (this.flight) return this.flight;
-		if (this.stopped || this.pending === undefined) return Promise.resolve();
+		if (this.stopped || this.pending.size === 0) return Promise.resolve();
 		this.flight = this.drain();
 		return this.flight;
 	}
 	private async drain(): Promise<void> {
 		try {
-			while (this.pending !== undefined && !this.stopped) {
-				const value = this.pending;
-				this.pending = undefined;
+			while (this.pending.size > 0 && !this.stopped) {
+				const entry = this.pending.entries().next().value;
+				if (!entry) break;
+				const [key, value] = entry;
+				this.pending.delete(key);
 				this.status("saving");
 				this.revision = await this.save(value, this.revision);
 			}
 			if (!this.stopped) this.status("saved");
 		} catch (error) {
 			this.stopped = true;
-			this.pending = undefined;
+			this.pending.clear();
 			this.status("error", error);
 		} finally {
 			this.flight = null;
@@ -105,7 +127,7 @@ export class PositionQueue<T> {
 	}
 	stop() {
 		this.stopped = true;
-		this.pending = undefined;
+		this.pending.clear();
 	}
 }
 
@@ -169,4 +191,37 @@ export function anchorBeforeLayout<T>(
 	capture: () => T | null,
 ): T | null {
 	return restoring ? previous : (capture() ?? previous);
+}
+
+/** Stable chapter progress uses canonical text spans, independent of viewport geometry. */
+export function chapterProgress(
+	parts: readonly { start: number; end: number; resource_id: string }[],
+	resources: readonly { id: string; text: string }[],
+	anchor: { part_index: number; kind: string; offset?: number | null },
+): number | null {
+	const hasText = parts.some((part) => {
+		const resource = resources.find((item) => item.id === part.resource_id);
+		return (
+			resource &&
+			Array.from(resource.text).slice(part.start, part.end).join("").trim()
+				.length > 0
+		);
+	});
+	const total = parts.reduce((sum, part) => sum + part.end - part.start, 0);
+	const part = parts[anchor.part_index];
+	if (!hasText || !part || total <= 0) return null;
+	const before = parts
+		.slice(0, anchor.part_index)
+		.reduce((sum, item) => sum + item.end - item.start, 0);
+	const local =
+		anchor.kind === "text"
+			? Math.max(
+					0,
+					Math.min(
+						part.end - part.start,
+						(anchor.offset ?? part.start) - part.start,
+					),
+				)
+			: 0;
+	return scrollProgress(before + local, total);
 }

@@ -1,5 +1,17 @@
 import { nearestLineBoundary, rawBoundary, rawOffset } from "./position.ts";
 export type Projection = ReturnType<typeof projectPart>;
+
+/** Collapsed whitespace before a leading image must not make its anchor skip to later text. */
+export function imagePrecedesText(
+	image: Pick<Element, "compareDocumentPosition">,
+	entries: readonly { node: Text }[],
+): boolean {
+	return !entries.some(
+		({ node }) =>
+			node.data.trim().length > 0 &&
+			(image.compareDocumentPosition(node) & 2) !== 0,
+	);
+}
 export function projectPart(
 	doc: Document,
 	expected: string,

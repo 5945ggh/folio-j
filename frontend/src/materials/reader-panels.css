@@ -528,3 +528,26 @@
 		animation: none;
 	}
 }
+
+.reader-r1 .reader-toc button {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	justify-content: space-between;
+}
+.reader-toc-progress {
+	color: var(--reader-muted, #898b83);
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	flex-shrink: 0;
+}
+.reader-chapter-beginning {
+	margin-top: 8px;
+	font-size: 12px;
+}
+
+.reader-toc-hint {
+	margin: 12px 24px 0;
+	color: var(--reader-muted, #898b83);
+	font-size: 12px;
+}

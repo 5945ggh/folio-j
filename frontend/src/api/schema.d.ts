@@ -1325,6 +1325,8 @@ export interface components {
         };
         /** MaterialResponse */
         MaterialResponse: {
+            /** Chapter Positions */
+            chapter_positions?: components["schemas"]["ReadingPositionResponse"][];
             /** Chapters */
             chapters: components["schemas"]["ChapterSummary"][];
             /** Contract Version */
@@ -1699,6 +1701,8 @@ export interface components {
             offset?: number | null;
             /** Part Index */
             part_index: number;
+            /** Progress */
+            progress: number | null;
             /** Resource Id */
             resource_id: string;
             /** Revision */

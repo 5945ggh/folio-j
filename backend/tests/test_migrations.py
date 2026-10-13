@@ -48,6 +48,7 @@ def test_empty_database_rebuilds_current_schema(
             "analysis_sections",
             "materials",
             "reading_positions",
+            "chapter_reading_positions",
             "material_usage",
             "material_covers",
         } <= tables

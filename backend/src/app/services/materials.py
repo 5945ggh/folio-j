@@ -12,7 +12,7 @@ from sqlalchemy.orm import defer
 
 from app.epub_schemas import CompiledBook
 from app.ids import new_ulid
-from app.material_models import Material, ReadingPosition
+from app.material_models import ChapterReadingPosition, Material, ReadingPosition
 from app.material_schemas import (
     ChapterResource,
     ChapterSummary,
@@ -28,6 +28,7 @@ from app.models import Source
 from app.readings_schemas import MaterialReadingsPrepare
 from app.services import readings
 from app.services.epub import EpubError, compile_epub_bytes
+from app.services.position_progress import chapter_progress
 from app.services.sources import as_utc, begin_write, require_source, utc_now
 
 MAX_UPLOAD_BYTES = 32 * 1024 * 1024
@@ -70,19 +71,36 @@ def summary(material: Material) -> MaterialSummary:
 async def response(session: AsyncSession, material: Material) -> MaterialResponse:
     book = await asyncio.to_thread(bundle, material)
     position = await session.get(ReadingPosition, material.id)
+    chapter_rows = {
+        row.chapter_id: row
+        for row in (
+            await session.scalars(
+                select(ChapterReadingPosition).where(
+                    ChapterReadingPosition.material_id == material.id
+                )
+            )
+        ).all()
+    }
+
+    def position_response(row: ReadingPosition | ChapterReadingPosition) -> ReadingPositionResponse:
+        anchor = PositionAnchor.model_validate_json(row.payload)
+        return ReadingPositionResponse(
+            **anchor.model_dump(),
+            revision=row.revision,
+            updated_at=as_utc(row.updated_at),
+            progress=chapter_progress(book, anchor),
+        )
+
     return MaterialResponse(
         **summary(material).model_dump(),
         chapters=[
             ChapterSummary(id=c.id, title=c.title, level=c.level, part_count=len(c.parts))
             for c in book.chapters
         ],
-        reading_position=ReadingPositionResponse(
-            **PositionAnchor.model_validate_json(position.payload).model_dump(),
-            revision=position.revision,
-            updated_at=as_utc(position.updated_at),
-        )
-        if position
-        else None,
+        reading_position=position_response(position) if position else None,
+        chapter_positions=[
+            position_response(chapter_rows[c.id]) for c in book.chapters if c.id in chapter_rows
+        ],
     )
 
 
@@ -247,8 +265,20 @@ async def save_position(
             position.revision += 1
             position.payload = anchor.model_dump_json()
             position.updated_at = now
+        chapter_position = await session.get(ChapterReadingPosition, (material_id, data.chapter_id))
+        if chapter_position is None:
+            chapter_position = ChapterReadingPosition(
+                material_id=material_id, chapter_id=data.chapter_id
+            )
+            session.add(chapter_position)
+        chapter_position.revision = position.revision
+        chapter_position.payload = anchor.model_dump_json()
+        chapter_position.updated_at = now
         result = ReadingPositionResponse(
-            **anchor.model_dump(), revision=position.revision, updated_at=now
+            **anchor.model_dump(),
+            revision=position.revision,
+            updated_at=now,
+            progress=chapter_progress(book, anchor),
         )
         await session.commit()
         return result

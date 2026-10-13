@@ -1342,6 +1342,13 @@
       },
       "MaterialResponse": {
         "properties": {
+          "chapter_positions": {
+            "items": {
+              "$ref": "#/components/schemas/ReadingPositionResponse"
+            },
+            "title": "Chapter Positions",
+            "type": "array"
+          },
           "chapters": {
             "items": {
               "$ref": "#/components/schemas/ChapterSummary"
@@ -2429,6 +2436,19 @@
             "title": "Part Index",
             "type": "integer"
           },
+          "progress": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
+          },
           "resource_id": {
             "title": "Resource Id",
             "type": "string"
@@ -2457,7 +2477,8 @@
           "resource_id",
           "kind",
           "revision",
-          "updated_at"
+          "updated_at",
+          "progress"
         ],
         "title": "ReadingPositionResponse",
         "type": "object"

@@ -120,3 +120,74 @@ def test_usage_upgrade_validates_positions_and_preserves_bytes(
         ).fetchall()
         assert rows == [("in_progress", 0, None, None)] + [("not_started", 0, None, None)] * 3
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+
+
+def test_chapter_position_upgrade_backfills_only_valid_last_anchor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+    import zlib
+
+    from test_materials import compiled
+
+    database = tmp_path / "chapter-upgrade.db"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
+    config = Config()
+    config.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
+    command.upgrade(config, "0010_material_readings")
+    stamp = "2026-10-01 00:00:00"
+    book = zlib.compress(compiled(b"").model_dump_json().encode())
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO sources(id,title,description,note,created_at,updated_at) "
+            "VALUES ('s','旧书','','',?,?)",
+            (stamp, stamp),
+        )
+        for mid, changes in [
+            ("valid", {}),
+            ("stale", {"version_id": "old"}),
+            ("foreign", {"resource_id": "foreign"}),
+            ("missing", {"chapter_id": "unknown"}),
+        ]:
+            connection.execute(
+                "INSERT INTO materials(id,source_id,title,source_sha256,version_id,"
+                "product_sha256,contract_version,original_bytes,warnings,compiled_bundle,"
+                "created_at) VALUES (?,'s','旧书',?,?,'hash','test',?,'[]',?,?)",
+                (mid, mid, "v" + mid, b"original", book, stamp),
+            )
+            payload = {
+                "version_id": "v" + mid,
+                "chapter_id": "c1",
+                "part_index": 0,
+                "resource_id": "r1",
+                "kind": "text",
+                "offset": 2,
+                **changes,
+            }
+            connection.execute(
+                "INSERT INTO reading_positions VALUES (?,7,?,?)", (mid, json.dumps(payload), stamp)
+            )
+        materials = connection.execute("SELECT * FROM materials ORDER BY id").fetchall()
+        positions = connection.execute(
+            "SELECT * FROM reading_positions ORDER BY material_id"
+        ).fetchall()
+    command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("SELECT * FROM materials ORDER BY id").fetchall() == materials
+        assert (
+            connection.execute("SELECT * FROM reading_positions ORDER BY material_id").fetchall()
+            == positions
+        )
+        rows = connection.execute(
+            "SELECT material_id,chapter_id,revision,payload,updated_at "
+            "FROM chapter_reading_positions"
+        ).fetchall()
+        valid = next(row for row in positions if row[0] == "valid")
+        assert rows == [("valid", "c1", 7, valid[2], stamp)]
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    command.downgrade(config, "0010_material_readings")
+    with sqlite3.connect(database) as connection:
+        assert (
+            connection.execute("SELECT * FROM reading_positions ORDER BY material_id").fetchall()
+            == positions
+        )

@@ -15,18 +15,25 @@ type LayoutSurface<A> = {
 export class ReaderLayout<A> {
 	private recovery = new ViewportRecovery();
 	private pending: A | null;
+	private presented: A | null;
 	private surface: LayoutSurface<A> | null = null;
 	private ready = new Set<number>();
 	private appliedGeometry: string | null = null;
 	private timer: ReturnType<typeof setTimeout> | null = null;
 	constructor(anchor: A | null) {
 		this.pending = anchor;
+		this.presented = null;
 	}
 	canSample(size: ViewportSize): boolean {
 		return this.recovery.canSample(size);
 	}
 	anchor(capture: () => A | null): A | null {
 		return anchorBeforeLayout(this.recovery.restoring, this.pending, capture);
+	}
+	/** Navigation targets are provisional until successfully sampled after presentation. */
+	presentedAnchor(capture: () => A | null): A | null {
+		if (!this.recovery.restoring) this.presented = capture() ?? this.presented;
+		return this.presented;
 	}
 	setAnchor(anchor: A | null): void {
 		this.cancelSave();
@@ -48,19 +55,21 @@ export class ReaderLayout<A> {
 		size: ViewportSize,
 		capture: () => A | null,
 		save: (anchor: A) => void,
-	): void {
+	): A | null {
 		const anchor = this.recovery.observe(size, capture);
 		if (!this.recovery.canSample(size)) {
 			this.cancelSave();
-			return;
+			return null;
 		}
-		if (!anchor) return;
+		if (!anchor) return null;
 		this.cancelSave();
 		this.pending = anchor;
+		this.presented = anchor;
 		this.timer = setTimeout(() => {
 			this.timer = null;
 			save(anchor);
 		}, 550);
+		return anchor;
 	}
 	commit(
 		surface: LayoutSurface<A>,

@@ -35,6 +35,7 @@ import {
 } from "./api";
 import {
 	htmlEscape,
+	imagePrecedesText,
 	nearestText,
 	type Projection,
 	projectPart,
@@ -50,11 +51,12 @@ import { highlightRange } from "./highlight";
 import { READER_EXIT_MS, useReaderPresence } from "./motion";
 import { cacheSavedPosition, registerPositionWriter } from "./persistence";
 import {
+	chapterProgress,
 	currentSurface,
+	imageAtReadingEdge,
 	imageCoordinate,
 	imageFraction,
 	PositionQueue,
-	scrollProgress,
 } from "./position";
 import { ReaderPreferenceSubmission } from "./preference-submission";
 import {
@@ -80,6 +82,11 @@ import {
 	type ReaderPanelsState,
 	selectReaderPanel,
 } from "./reader-panel-logic";
+import {
+	atChapterStart,
+	type JumpOriginPolicy,
+	jumpOrigin,
+} from "./return-origin";
 import { type PendingReturn, returnWasLocated } from "./return-recovery";
 import { applyAutomaticRuby } from "./ruby";
 import { freshestUsage, OpenAction } from "./usage";
@@ -420,8 +427,20 @@ function Reader({
 		controller.current?.refresh();
 	}, [panels, presented]);
 	const [surfaceRevision, setSurfaceRevision] = useState(0);
+	const pendingBeginning = useRef<number | null>(null);
 	const [layoutRevision, setLayoutRevision] = useState(0);
-	const [progress, setProgress] = useState(0);
+	const [progress, setProgress] = useState<number | null>(
+		book.reading_position?.progress ?? null,
+	);
+	const [chapterPositions, setChapterPositions] = useState(
+		() =>
+			new Map(
+				(book.chapter_positions ?? []).map((position) => [
+					position.chapter_id,
+					{ anchor: position as Position, progress: position.progress },
+				]),
+			),
+	);
 	const [status, setStatus] = useState("已保存");
 	const [error, setError] = useState<Error | null>(null);
 	const chapter = useQuery({
@@ -463,6 +482,19 @@ function Reader({
 			async (value, revision) => {
 				const saved = await savePosition(book.id, value, revision);
 				cacheSavedPosition<Material>(client, book.id, saved);
+				client.setQueryData<Material>(materialKeys.book(book.id), (current) =>
+					current
+						? {
+								...current,
+								chapter_positions: [
+									...(current.chapter_positions ?? []).filter(
+										(position) => position.chapter_id !== saved.chapter_id,
+									),
+									saved,
+								],
+							}
+						: undefined,
+				);
 				return saved.revision;
 			},
 			(state, failure) => {
@@ -479,6 +511,7 @@ function Reader({
 						failure instanceof Error ? failure : new Error(String(failure)),
 					);
 			},
+			(value) => value.chapter_id,
 		);
 	const geometryKey = [
 		surfaceRevision,
@@ -525,7 +558,15 @@ function Reader({
 			const r = image.getBoundingClientRect();
 			const start = vertical ? r.left : r.top;
 			const size = vertical ? r.width : r.height;
-			if (size > 0 && local >= start && local <= start + size)
+			if (
+				imageAtReadingEdge(
+					local,
+					start,
+					size,
+					vertical,
+					imagePrecedesText(image, best.frame.projection.entries),
+				)
+			)
 				return {
 					...base,
 					kind: "image",
@@ -555,19 +596,23 @@ function Reader({
 	const observe = useCallback(() => {
 		const root = container.current;
 		if (!root) return;
-		const vertical = settings.writing_mode === "vertical-rl";
-		setProgress(
-			scrollProgress(
-				vertical ? Math.abs(root.scrollLeft) : root.scrollTop,
-				vertical
-					? root.scrollWidth - root.clientWidth
-					: root.scrollHeight - root.clientHeight,
-			),
+		const anchor = layout.current.observe(
+			viewportSize(root),
+			capture,
+			(position) => queue.current?.enqueue(position),
 		);
-		layout.current.observe(viewportSize(root), capture, (anchor) =>
-			queue.current?.enqueue(anchor),
-		);
-	}, [capture, settings.writing_mode]);
+		if (anchor && chapter.data) {
+			const value = chapterProgress(
+				chapter.data.parts,
+				chapter.data.resources,
+				anchor,
+			);
+			setProgress(value);
+			setChapterPositions((previous) =>
+				new Map(previous).set(anchor.chapter_id, { anchor, progress: value }),
+			);
+		}
+	}, [capture, chapter.data]);
 	const restore = useCallback(
 		(anchor: Position | null) => {
 			const root = container.current;
@@ -575,7 +620,13 @@ function Reader({
 			if (!root || !data) return false;
 			let located = false;
 			const vertical = settings.writing_mode === "vertical-rl";
-			if (anchor && anchor.chapter_id === chapterId) {
+			const beginningGeneration = pendingBeginning.current;
+			if (beginningGeneration === generation.current) {
+				// A chapter may start with images or invisible whitespace before its first text.
+				root.scrollLeft = 0;
+				root.scrollTop = 0;
+				located = true;
+			} else if (anchor && anchor.chapter_id === chapterId) {
 				const frame = frames.current.get(anchor.part_index);
 				const part = data.parts[anchor.part_index];
 				if (frame && part && part.resource_id === anchor.resource_id) {
@@ -663,6 +714,11 @@ function Reader({
 			}
 
 			return () => {
+				if (
+					beginningGeneration === generation.current &&
+					pendingBeginning.current === beginningGeneration
+				)
+					pendingBeginning.current = null;
 				const returning = pendingReturn.current;
 				if (returning?.generation === generation.current) {
 					pendingReturn.current = null;
@@ -699,7 +755,7 @@ function Reader({
 				frame.presentationCleanup();
 			}
 			layout.current.cancelSave();
-			const anchor = layout.current.anchor(() => null);
+			const anchor = layout.current.presentedAnchor(() => null);
 			if (anchor) queue.current?.enqueue(anchor);
 			unregister();
 		};
@@ -869,6 +925,7 @@ function Reader({
 		returning = false,
 		requestTicket?: number,
 		side?: ReaderPanelSide,
+		options?: { origin: JumpOriginPolicy; beginning: boolean },
 	) => {
 		const ticket = requestTicket ?? ++navigationTicket.current;
 		pendingReturn.current = null;
@@ -892,9 +949,32 @@ function Reader({
 					!part.html.includes(`data-epub-image="${target.image_id}"`))
 			)
 				throw new Error("无法定位到原文位置，请重新打开目录或重试。");
-			const last = layout.current.anchor(capture);
+			const last = layout.current.presentedAnchor(capture);
+			const policy = options?.origin ?? "preserve";
+			const root = container.current;
+			const beginningPresented = options?.beginning
+				? !!root &&
+					atChapterStart(
+						settings.writing_mode === "vertical-rl"
+							? root.scrollLeft
+							: root.scrollTop,
+						layout.current.canSample(viewportSize(root)),
+					)
+				: undefined;
+			if (
+				!returning &&
+				!jumpOrigin(origin, last, target, policy, beginningPresented).jump
+			) {
+				closePanel(side);
+				return;
+			}
 			if (last) queue.current?.enqueue(last);
-			if (!returning) setOrigin((previous) => previous ?? last);
+			if (!returning)
+				setOrigin(
+					(previous) =>
+						jumpOrigin(previous, last, target, policy, beginningPresented)
+							.origin,
+				);
 			layout.current.cancelSave();
 			layout.current.setAnchor({
 				...target,
@@ -909,6 +989,7 @@ function Reader({
 					}
 				: null;
 			generation.current++;
+			pendingBeginning.current = options?.beginning ? generation.current : null;
 			pendingReturn.current = returning
 				? { generation: generation.current, target }
 				: null;
@@ -920,7 +1001,7 @@ function Reader({
 			frames.current.clear();
 			setChapterId(target.chapter_id);
 			setSurfaceRevision((value) => value + 1);
-			setProgress(0);
+			setProgress(null);
 			closePanel(side);
 		} catch (failure) {
 			if (ticket === navigationTicket.current && alive.current)
@@ -929,7 +1010,12 @@ function Reader({
 				);
 		}
 	};
-	const choose = async (id: string) => {
+	const choose = async (id: string, beginning = false) => {
+		if (id === chapterId && !beginning) {
+			navigationTicket.current++;
+			closePanel("left");
+			return;
+		}
 		const ticket = ++navigationTicket.current;
 		setNavigationError(null);
 		try {
@@ -942,7 +1028,7 @@ function Reader({
 			if (!part) throw new Error("章节没有可阅读内容");
 			const image = part.html.match(/data-epub-image="(\d+)"/);
 			await navigateTo(
-				{
+				(!beginning && chapterPositions.get(id)?.anchor) || {
 					version_id: book.version_id,
 					chapter_id: id,
 					part_index: 0,
@@ -960,6 +1046,10 @@ function Reader({
 				false,
 				ticket,
 				"left",
+				{
+					origin: beginning ? "replace" : "preserve",
+					beginning: beginning || !chapterPositions.has(id),
+				},
 			);
 		} catch (failure) {
 			if (ticket !== navigationTicket.current || !alive.current) return;
@@ -1142,7 +1232,7 @@ function Reader({
 	]);
 	const leave = () => {
 		layout.current.cancelSave();
-		const anchor = layout.current.anchor(capture);
+		const anchor = layout.current.presentedAnchor(capture);
 		if (anchor) {
 			layout.current.setAnchor(anchor);
 			queue.current?.enqueue(anchor);
@@ -1286,8 +1376,10 @@ function Reader({
 				aria-hidden={!toolsVisible}
 			>
 				<nav aria-label="书内工具">
-					<span className="reader-progress" title="当前章节的阅读进度">
-						章内 {Math.round(progress * 100)}%
+					<span className="reader-progress" title="当前章节位置">
+						{progress === null
+							? "章内 —"
+							: `章内 ${Math.round(progress * 100)}%`}
 					</span>
 					{origin && (
 						<button
@@ -1384,6 +1476,15 @@ function Reader({
 					chapters={book.chapters}
 					chapterId={chapterId}
 					progress={progress}
+					chapterProgress={
+						new Map(
+							Array.from(chapterPositions, ([id, value]) => [
+								id,
+								value.progress,
+							]),
+						)
+					}
+					onBeginning={() => void choose(chapterId, true)}
 					closing={leftView.exiting}
 					inactive={
 						compactPanels && !!panels.right && panels.activeSide === "right"

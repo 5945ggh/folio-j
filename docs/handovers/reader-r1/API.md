@@ -32,6 +32,8 @@ operationId 为 `getMaterialIllustrationContent`。ordinal 是版本内出现顺
 
 位置 API 沿用 `PUT /api/materials/{material_id}/reading-position`：文字使用资源局部码点 offset；图片使用 image_id / image_progress；expected_revision 串行乐观写入。spine_index 用于 UI 核验，未加入严格位置 body。原三项设置 font_size（12–40）、line_height（1–3）、writing_mode（horizontal-tb / vertical-rl）仍按材料随位置保存。
 
+2026-10-11 章节记忆扩展：`MaterialResponse.chapter_positions` 返回按章序排列的已有 `ReadingPositionResponse`，未记录的章不返回占位项。`ReadingPositionResponse.progress` 为 0–1 的正文位置比例或 null，既用于全书最后位置，也用于章节记录和 PUT 响应；纯图片章返回 null。PUT 请求保持不变，同一材料级 revision 校验及事务更新全书和当前章；其他章位置保留。正文比例和迁移规则由[架构](../../ARCHITECTURE.md#31-实体)维护。
+
 新增浏览器全局 UI 偏好使用 `folio-reader-ui-v1`，保存 theme（system / white / black）和 focus（布尔值）。逐材料版本偏好使用 `folio-reader-book-ui-v1:<encodeURIComponent(material_id)>:<encodeURIComponent(version_id)>`，保存 font（mincho / gothic）、ruby（show / dim / on-demand / hide）、width（有限数值 560–1040）。默认 system / focus=true，mincho / ruby=dim / width=760。读取损坏值逐字段回默认，旧 soft 主题兼容为 white；Storage 不可用或写失败时内存状态继续可读，不承诺跨设备同步。
 
 搜索、目录或图库显式导航建立会话原点，图库单纯浏览不改正文位置；返回原点按当前排版恢复，不以重新搜索同句猜测位置。主题、专注和新增 UI 偏好不产生材料版本、位置 revision 或 opened 动作。opened 与手动 usage 仍走既有接口和 revision 保护。

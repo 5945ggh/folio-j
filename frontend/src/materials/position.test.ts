@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
 	anchorBeforeLayout,
+	chapterProgress,
 	currentSurface,
+	imageAtReadingEdge,
 	imageCoordinate,
 	imageFraction,
 	nearestLineBoundary,
@@ -23,6 +25,17 @@ test("image-only progress never divides by zero and clamps", () => {
 	assert.equal(scrollProgress(10, 0), 0);
 	assert.equal(scrollProgress(-10, 100), 0);
 	assert.equal(scrollProgress(150, 100), 1);
+});
+
+test("leading-image whitespace follows horizontal and right-to-left reading edges", () => {
+	assert.equal(imageAtReadingEdge(0, 20, 300, false, true), true);
+	assert.equal(imageAtReadingEdge(0, 20, 300, false, false), false);
+	assert.equal(imageAtReadingEdge(350, 20, 300, true, true), true);
+	assert.equal(imageAtReadingEdge(350, 20, 300, true, false), false);
+	assert.equal(imageAtReadingEdge(0, 20, 300, true, true), false);
+	assert.equal(imageAtReadingEdge(350, 20, 300, false, true), false);
+	assert.equal(imageAtReadingEdge(100, 20, 300, true, false), true);
+	assert.equal(imageAtReadingEdge(0, 20, 0, false, true), false);
 });
 test("CAS queue serializes writes and coalesces newer positions", async () => {
 	const calls: { value: number; revision: number }[] = [];
@@ -133,4 +146,84 @@ test("long decomposed Japanese restores using only target grapheme boundary prob
 	} finally {
 		String.prototype.normalize = original;
 	}
+});
+
+test("chapter queue preserves visits to distinct chapters and latest overall order", async () => {
+	let release: () => void = () => {};
+	const gate = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	const calls: string[] = [];
+	const queue = new PositionQueue<{ chapter: string; offset: number }>(
+		0,
+		async (value, revision) => {
+			calls.push(`${value.chapter}:${value.offset}`);
+			if (calls.length === 1) await gate;
+			return revision + 1;
+		},
+		() => {},
+		(value) => value.chapter,
+	);
+	queue.enqueue({ chapter: "A", offset: 1 });
+	queue.enqueue({ chapter: "B", offset: 2 });
+	queue.enqueue({ chapter: "A", offset: 3 });
+	queue.enqueue({ chapter: "B", offset: 4 });
+	release();
+	await queue.flush();
+	assert.deepEqual(calls, ["A:1", "A:3", "B:4"]);
+	assert.equal(queue.revision, 3);
+});
+test("chapter progress uses part spans and canonical code points rather than scroll geometry", () => {
+	const parts = [
+		{ resource_id: "a", start: 2, end: 6 },
+		{ resource_id: "b", start: 0, end: 6 },
+	];
+	const resources = [
+		{ id: "a", text: "__𠮷日本語" },
+		{ id: "b", text: "あいうえおか" },
+	];
+	assert.equal(
+		chapterProgress(parts, resources, {
+			part_index: 1,
+			kind: "text",
+			offset: 1,
+		}),
+		0.5,
+	);
+	assert.equal(
+		chapterProgress(parts, resources, { part_index: 1, kind: "image" }),
+		0.4,
+	);
+	assert.equal(
+		chapterProgress(parts, resources, {
+			part_index: 0,
+			kind: "text",
+			offset: 2,
+		}),
+		0,
+	);
+	assert.equal(
+		chapterProgress(parts, resources, {
+			part_index: 1,
+			kind: "text",
+			offset: 99,
+		}),
+		1,
+	);
+	assert.equal(
+		chapterProgress(
+			[{ resource_id: "a", start: 0, end: 2 }],
+			[{ id: "a", text: " \n" }],
+			{ part_index: 0, kind: "image" },
+		),
+		null,
+	);
+	assert.equal(
+		chapterProgress(
+			[{ resource_id: "a", start: 1, end: 2 }],
+			[{ id: "a", text: "𠮷語" }],
+			{ part_index: 0, kind: "text", offset: 2 },
+		),
+		1,
+	);
 });

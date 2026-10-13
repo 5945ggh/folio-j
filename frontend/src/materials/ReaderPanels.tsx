@@ -143,7 +143,9 @@ export function ReaderNavigationPanel(
 		bookTitle: string;
 		chapters: Material["chapters"];
 		chapterId: string;
-		progress: number;
+		progress: number | null;
+		chapterProgress: ReadonlyMap<string, number | null>;
+		onBeginning: () => void;
 		tab: "toc" | "search";
 		onTab: (tab: "toc" | "search") => void;
 		onChoose: (chapterId: string) => void;
@@ -165,9 +167,18 @@ export function ReaderNavigationPanel(
 					<div className="reader-navigation-book">
 						<strong lang="ja">{props.bookTitle}</strong>
 						<span>
-							正在阅读 · {current?.title} · 章内{" "}
-							{Math.round(props.progress * 100)}%
+							正在阅读 · {current?.title}
+							{props.progress === null
+								? ""
+								: ` · 章内 ${Math.round(props.progress * 100)}%`}
 						</span>
+						<button
+							type="button"
+							className="reader-chapter-beginning"
+							onClick={props.onBeginning}
+						>
+							回到章首
+						</button>
 					</div>
 					<div
 						className="reader-query-tabs"
@@ -222,11 +233,13 @@ export function ReaderNavigationPanel(
 					error={props.navigationError}
 					retryHint="请再次点击章节重试，或继续阅读。"
 				/>
+				<p className="reader-toc-hint">显示各章上次停留位置</p>
 				<ol className="reader-toc">
 					{props.chapters.map((chapter) => (
 						<li key={chapter.id}>
 							<button
 								type="button"
+								aria-label={`${chapter.title}，${!props.chapterProgress.has(chapter.id) ? "尚无停留记录" : props.chapterProgress.get(chapter.id) == null ? "已记录上次停留位置" : `上次停留位置 ${Math.round((props.chapterProgress.get(chapter.id) ?? 0) * 100)}%`}`}
 								aria-current={
 									chapter.id === props.chapterId ? "location" : undefined
 								}
@@ -235,7 +248,14 @@ export function ReaderNavigationPanel(
 								}}
 								onClick={() => props.onChoose(chapter.id)}
 							>
-								{chapter.title}
+								<span>{chapter.title}</span>
+								<small className="reader-toc-progress">
+									{!props.chapterProgress.has(chapter.id)
+										? ""
+										: props.chapterProgress.get(chapter.id) == null
+											? "有记录"
+											: `${Math.round((props.chapterProgress.get(chapter.id) ?? 0) * 100)}%`}
+								</small>
 							</button>
 						</li>
 					))}

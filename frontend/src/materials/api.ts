@@ -2,6 +2,7 @@ import { api } from "../api/client";
 import type { components } from "../api/schema";
 import { requireData } from "../content";
 import { waitForPositionWrites } from "./persistence";
+import { positionRequest } from "./position-request";
 export type Material = components["schemas"]["MaterialResponse"];
 export type Chapter = components["schemas"]["MaterialChapterResponse"];
 export type Position = Omit<
@@ -58,7 +59,7 @@ export async function savePosition(
 		"/api/materials/{material_id}/reading-position",
 		{
 			params: { path: { material_id: id } },
-			body: { ...position, expected_revision: revision },
+			body: positionRequest(position, revision),
 		},
 	);
 	return requireData(data, error, response.status);
