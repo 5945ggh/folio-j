@@ -1,0 +1,121 @@
+docs/ARCHITECTURE.md
+  s_b7c8334aced548::t_48ebd5745dec9f 45,72,162
+  s_b7c8334aced548::t_580f40b4ac881a 83,105-107
+  s_65b4e219b1451f::t_159bc1f27a3cd2 109-110
+  s_65b4e219b1451f::t_264cd5c248c1fa 108
+frontend/src/materials/reader-panels.css
+  s_b7c8334aced548::t_d701fbc378100b 531
+  s_b7c8334aced548::t_230458138095d5 532-547
+  s_b7c8334aced548::t_ed09ff7bbf7a11 550
+  s_b7c8334aced548::t_0cac7c1530025a 548-549,551-553
+frontend/src/materials/return-origin.test.ts
+  s_65b4e219b1451f::t_13e40b51fc9feb 65
+  s_65b4e219b1451f::t_4eb631bfa804cb 51-57,71-74
+  s_65b4e219b1451f::t_4e04bcab2c1a4a 3,47-50,58-64,70
+  s_b7c8334aced548::t_e37462a116d87d 1-2,4-46,75
+  s_65b4e219b1451f::t_0de6c91919e0fb 66-69
+backend/src/app/services/materials.py
+  s_b7c8334aced548::t_9b0948623eb3da 15,74-75,83-87,91-93,100,268-269,273-276,281
+  s_b7c8334aced548::t_2333c8906b21f0 31,76-82,88-90,101-103,270-272,278-280
+backend/src/app/material_schemas.py
+  s_b7c8334aced548::t_9b0948623eb3da 49,74,76
+  s_b7c8334aced548::t_a4eb2ca69fe657 75
+docs/handovers/epub-reading/SLICE_1_DRAFT.md
+  s_b7c8334aced548::t_c7eba97c9afce4 62
+docs/handovers/reader-r1/API.md
+  s_b7c8334aced548::t_580f40b4ac881a 35-36
+backend/src/app/material_models.py
+  s_b7c8334aced548::t_9b0948623eb3da 46-47,49-56
+  s_b7c8334aced548::t_2333c8906b21f0 48
+backend/tests/test_material_migration.py
+  s_b7c8334aced548::t_2333c8906b21f0 123-141,144-152,157-158,160-193
+  s_b7c8334aced548::t_a1447ba1ac68dc 142-143,153-156,159
+frontend/src/materials/MaterialReader.tsx
+  s_65b4e219b1451f::t_4eb631bfa804cb 85-89,964-967,974-976
+  s_b7c8334aced548::t_d701fbc378100b 54,514,604,610,614-615,758,952,1004,1013-1014,1016-1018,1031,1235,1487
+  s_65b4e219b1451f::t_e43458085b1906 430,623-629,717-721,928,954,992,1049-1052
+  s_b7c8334aced548::t_e37462a116d87d 953,968-970,972-973,977
+  s_b7c8334aced548::t_14f4fd1c4b61e7 1015
+  s_65b4e219b1451f::t_0de6c91919e0fb 955-963
+  s_b7c8334aced548::t_0cac7c1530025a 1379
+  s_65b4e219b1451f::t_de9fc454673e5a 38
+  s_65b4e219b1451f::t_4173a1edabe7e3 561-569
+  s_b7c8334aced548::t_230458138095d5 432-443,485-497,599-602,605-609,611-613,1380-1382,1479-1486
+  s_65b4e219b1451f::t_260410982ca3ce 56
+docs/PRD.md
+  s_b7c8334aced548::t_c7eba97c9afce4 198-200
+  s_b7c8334aced548::t_0f5a2159a2898f 197
+backend/alembic/versions/0011_chapter_reading_positions.py
+  s_b7c8334aced548::t_2333c8906b21f0 1-63
+frontend/src/api/schema.d.ts
+  s_b7c8334aced548::t_9b0948623eb3da 1328-1329,1704-1705
+frontend/src/materials/ReaderPanels.tsx
+  s_b7c8334aced548::t_0cac7c1530025a 236,242,253,255-257
+  s_b7c8334aced548::t_230458138095d5 171-173,175-181,252,254,258
+  s_b7c8334aced548::t_d701fbc378100b 146-148,170,251
+frontend/src/materials/position-request.test.ts
+  s_b7c8334aced548::t_89e463fa2bb221 1-38
+docs/INFORMATION_ARCHITECTURE.md
+  s_b7c8334aced548::t_c7eba97c9afce4 86
+backend/openapi.json
+  s_b7c8334aced548::t_9b0948623eb3da 1345-1351,2439-2451,2480-2481
+frontend/src/materials/position.test.ts
+  s_b7c8334aced548::t_230458138095d5 5,39,150-229
+  s_65b4e219b1451f::t_e5ba622c42706c 7,29-38
+backend/tests/test_chapter_positions.py
+  s_b7c8334aced548::t_2333c8906b21f0 1-98
+frontend/src/materials/api.ts
+  s_b7c8334aced548::t_89e463fa2bb221 5,62
+frontend/src/materials/reader-layout.ts
+  s_b7c8334aced548::t_1fd4909888493e 18,33-37,58,62,64,67,72
+  s_b7c8334aced548::t_89e463fa2bb221 25
+frontend/src/materials/reader-layout.test.ts
+  s_b7c8334aced548::t_230458138095d5 204-238
+  s_b7c8334aced548::t_89e463fa2bb221 239-257
+frontend/src/materials/position-request.ts
+  s_b7c8334aced548::t_89e463fa2bb221 1-27
+frontend/src/materials/return-origin.ts
+  s_b7c8334aced548::t_e37462a116d87d 1-8,14-35,37,46-51
+  s_65b4e219b1451f::t_13e40b51fc9feb 36,40-42,44
+  s_65b4e219b1451f::t_e43458085b1906 9-13,38-39,43,45
+frontend/src/materials/position.ts
+  s_b7c8334aced548::t_1fd4909888493e 73,76-77,89,91,98-100,105,111-115,122,130,195-197,201
+  s_65b4e219b1451f::t_de9fc454673e5a 58-66,71-72,227
+  s_b7c8334aced548::t_230458138095d5 198-200,202-226
+  s_65b4e219b1451f::t_4173a1edabe7e3 67-70
+frontend/src/materials/dom.ts
+  s_65b4e219b1451f::t_3722eb65583daa 3-9,13-14
+  s_65b4e219b1451f::t_4173a1edabe7e3 10-12
+backend/src/app/services/position_progress.py
+  s_b7c8334aced548::t_9b0948623eb3da 1,3-12,16-19,21,25
+  s_b7c8334aced548::t_2333c8906b21f0 2,13-15,20,22-24
+frontend/src/materials/dom.test.ts
+  s_65b4e219b1451f::t_4173a1edabe7e3 10,12-19
+  s_65b4e219b1451f::t_3722eb65583daa 1-9,11,20-21
+backend/tests/test_migrations.py
+  s_b7c8334aced548::t_2333c8906b21f0 51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "02ac5b0af4ea427c41f290eab1f18216d080195f",
+  "prompts": {},
+  "sessions": {
+    "s_65b4e219b1451f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1330a-0f3a-70b0-82bf-3d92c3edc564",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_b7c8334aced548": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12a17-e15b-72d2-aaeb-840ebb8d16e5",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
