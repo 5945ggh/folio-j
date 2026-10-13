@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-10，已提交代码基准 `06a1177`。
+> 状态核对：2026-10-13，已提交代码基准 `02ac5b0`。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
 
@@ -19,6 +19,7 @@
 | 来源空间 S2 | 已提交 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；工程验收完成，用户使用验收待进行 | [S2 工程验收](sources-s2/ACCEPTANCE.md) |
 | EPUB 导入与恢复 | 已提交 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读，托管字节暂保留 | [切片 1](epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](epub-reading/SLICE_0_ACCEPTANCE.md) |
 | 阅读器 R1.1 | 已提交 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级 | [R1.1 工程验收](reader-r1/ACCEPTANCE.md)、[交互优化](reader-r1/INTERACTION_POLISH.md) |
+| 章节位置记忆 | 已提交、工程验收通过 | 各章最后位置持久化、目录恢复、当前章不跳与回到章首；目录显示上次位置，文字章按正文码点派生比例，纯图片章保留锚点 | [章节位置验收](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md) |
 | 全量注音 | 已提交、工程验收通过 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](full-ruby/ACCEPTANCE.md) |
 | EPUB 学习衔接 | 未实现 | 选区创建或选用 Segment、材料对话与消息引用、从材料讨论形成讲解按后续切片推进 | [EPUB 阶段安排](epub-reading/README.md) |
 | 学习条目与积累库 | 未实现 | 尚无 Occurrence 持久化、候选工具、整理操作或积累库页面；生产字段、定位、anchor 与恢复契约待落实 | [PRD F5／F6](../PRD.md#f5-学习条目创建与整理)、[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md) |
@@ -40,6 +41,8 @@
 | 2026-10-05 阅读器 R1.1 | [R1.1 工程验收](reader-r1/ACCEPTANCE.md) |
 | 2026-10-06 阅读交互优化与提交隔离检查 | [交互优化](reader-r1/INTERACTION_POLISH.md) |
 | 2026-10-07 来源空间 S2 提交前复核 | [审计与复测](sources-s2/ACCEPTANCE.md#2026-10-07-提交前复核) |
+| 2026-10-11 章节位置记忆 | [工程与浏览器验收](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md) |
+| 2026-10-13 章节位置记忆提交前复核 | [独立审查与章首边界复测](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-13-提交前复核) |
 
 测试数量、包体积与提交隔离检查范围在原记录中维护；离线、真实模型与扩展验证各自对应其方法和观察。
 
