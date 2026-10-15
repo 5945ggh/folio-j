@@ -1,0 +1,54 @@
+frontend/src/catalog/SourceSpace.tsx
+  s_e6cec3836268a6::t_2ce91736ab8d12 1-104
+frontend/src/catalog/directory-layout.ts
+  s_e6cec3836268a6::t_2ce91736ab8d12 1-16
+frontend/src/catalog/source-content.css
+  s_e6cec3836268a6::t_3dbf291ed243d5 200-202,204-213,216-219,222,224,227-229
+  s_e6cec3836268a6::t_e64f5c54aedd95 230-236
+frontend/src/catalog/SourceDirectory.tsx
+  s_e6cec3836268a6::t_2ce91736ab8d12 23,58,118,124-127,131,134,138
+frontend/src/styles.css
+  s_228abd489e6821::t_7cdce3c73b70a9 2731-2734
+  s_e6cec3836268a6::t_a8206c795029e8 2621-2645,2737
+  s_228abd489e6821::t_9c9261b36467ab 2533,2548,2727-2730,2735-2736
+frontend/src/catalog/directory-layout.test.ts
+  s_e6cec3836268a6::t_7233b367c0761c 1-15,26-38
+  s_e6cec3836268a6::t_54f5d7938a0d46 16-25
+frontend/src/catalog/SourceOverview.tsx
+  s_e6cec3836268a6::t_3dbf291ed243d5 18,147,149-153,157,167,173
+frontend/src/catalog/sources-s2.css
+  s_e6cec3836268a6::t_04b78815a6729c 26
+  s_e6cec3836268a6::t_2ce91736ab8d12 8,13,19-25,27-44,68-76,82,85-90,92-97
+frontend/src/SourcePages.tsx
+  s_e6cec3836268a6::t_2ce91736ab8d12 9,85,100
+frontend/src/Shared.tsx
+  s_e6cec3836268a6::t_a8206c795029e8 75-81,87-93,103-105,136-137
+frontend/src/catalog/library-a1.css
+  s_228abd489e6821::t_3fe45f524f431a 7
+  s_228abd489e6821::t_03bdbff36cf3a5 5,10-12,14-17
+  s_228abd489e6821::t_b9f82a06c86852 54-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b1d6b912010b7652e01dc2b2ed955ab87edcf303",
+  "prompts": {},
+  "sessions": {
+    "s_228abd489e6821": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13edc-92d5-76e2-a0ea-e1f4808cd370",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_e6cec3836268a6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13ef7-2eda-79f2-a8ea-3ade86d78164",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
