@@ -1,0 +1,50 @@
+docs/PRD.md
+  s_e373edb5b64e7a::t_bbb9d698b45e72 292-297
+  s_486604358cecf6::t_23ec2dbbf2170a 6
+  s_486604358cecf6::t_8cbf2b4f273c4e 594
+docs/INFORMATION_ARCHITECTURE.md
+  s_e373edb5b64e7a::t_bbb9d698b45e72 23-26,54-62
+  s_486604358cecf6::t_8cbf2b4f273c4e 42-43
+  s_e373edb5b64e7a::t_5fa80e160ed3e2 63
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e373edb5b64e7a::t_2a07e486430600 46
+  s_486604358cecf6::t_833b279a94d45f 3,14,19
+docs/TECH_STACK.md
+  s_e373edb5b64e7a::t_bbb9d698b45e72 51
+docs/handovers/settings-refresh/ACCEPTANCE.md
+  s_486604358cecf6::t_8cbf2b4f273c4e 3
+  s_486604358cecf6::t_833b279a94d45f 51-67
+  s_e373edb5b64e7a::t_2a07e486430600 1-2,4-50
+docs/handovers/README.md
+  s_e373edb5b64e7a::t_2a07e486430600 10
+docs/handovers/sources-s2/ACCEPTANCE.md
+  s_486604358cecf6::t_bc82b5145c5295 103-108
+docs/handovers/settings-refresh/PLAN.md
+  s_e373edb5b64e7a::t_871d487c991df8 1-28
+docs/ARCHITECTURE.md
+  s_e373edb5b64e7a::t_bbb9d698b45e72 66-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "73fe9ab2f686f2a668f3686c6a2dd0e9a8ef2215",
+  "prompts": {},
+  "sessions": {
+    "s_486604358cecf6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f04-65a7-79a3-b55b-f1412b14ba99",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_e373edb5b64e7a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e27-92de-7b92-a9c6-848d28a118a2",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
