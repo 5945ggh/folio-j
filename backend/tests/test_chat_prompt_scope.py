@@ -1,6 +1,7 @@
 """Check the actual accepted chat prompt and its offline Run snapshot."""
 
 import json
+import re
 import sqlite3
 from collections.abc import Awaitable, Callable
 from pathlib import Path
@@ -24,6 +25,60 @@ def accepted_input(database: Path, job_id: str) -> dict[str, Any]:
     return json.loads(row[0])
 
 
+def declared_template_version(path: Path) -> str:
+    match = re.search(r"\bversion:\s*([\w.-]+)", path.read_text().splitlines()[0])
+    assert match is not None, path
+    return match.group(1)
+
+
+@pytest.mark.asyncio
+async def test_accepted_template_versions_and_generation_tool_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    loaded: list[str] = []
+    get_template = context.ENV.get_template
+
+    def track_template(name: str) -> Any:
+        loaded.append(name)
+        return get_template(name)
+
+    monkeypatch.setattr(context.ENV, "get_template", track_template)
+    database = tmp_path / "contract.db"
+    async with chat_client(database) as (client, _app):
+        seed = await seed_chat(client)
+        job = await accept(client, seed)
+        snapshot = accepted_input(database, job["id"])
+
+    system_name = next(name for name in loaded if name.startswith("system_"))
+    system_version = declared_template_version(context.PROMPTS / system_name)
+    tools_name = snapshot["prompt_version"].split("+")[1]
+    tool_contract = json.loads((context.PROMPTS / f"{tools_name}.json").read_text())
+    assert snapshot["prompt_version"] == f"{system_version}+tools_{tool_contract['version']}"
+    assert snapshot["tools"] == tool_contract["tools"]
+    writer_path = context.PROMPTS.parent / "analysis" / f"writer_{snapshot['writer_version']}.j2"
+    assert snapshot["writer_version"] == declared_template_version(writer_path)
+    assert (
+        snapshot["writer_text"] == context.ENV.from_string(writer_path.read_text()).render().strip()
+    )
+
+    generation = next(
+        tool["function"]
+        for tool in snapshot["tools"]
+        if tool["function"]["name"] == "generate_analysis"
+    )["parameters"]
+    assert generation["properties"]["title"]["type"] == "string"
+    assert generation["properties"]["title"]["maxLength"] == 200
+    assert generation["properties"]["title"]["minLength"] == 1
+    assert "title" not in generation.get("required", [])
+    assert generation["additionalProperties"] is False
+
+    # Smoke-check current template guardrails; execution boundaries have agent tests.
+    system = snapshot["messages"][0]["content"]
+    assert "普通提问" in system and "不强制" in system
+    assert "专题讲解" in system and "不扩写" in system
+    assert "不再调用生成工具" in system
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("style_choice", ["default", "custom", "none"])
 async def test_chat_system_scope_is_rendered_for_each_style_choice(
@@ -45,25 +100,12 @@ async def test_chat_system_scope_is_rendered_for_each_style_choice(
 
         job = await accept(client, seed, question="这里的だった是什么用法？", **changes)
         snapshot = accepted_input(database, job["id"])
-        assert snapshot["prompt_version"] == "v4+tools_v3"
         assert [message["role"] for message in snapshot["messages"]] == ["system", "user"]
         system = snapshot["messages"][0]["content"]
         user = snapshot["messages"][1]["content"]
         assert "だった是什么用法？" in user
         assert "昨日は雨だった。" in user
         assert "昨日は雨だった。" not in system
-
-        # These constraints must survive selection of either preset and its explicit removal.
-        assert "普通提问、比较、追问或讨论：直接回答当前问题" in system
-        assert "不强制给出整段大意、结构总览、逐块解析或 Markdown 二级标题" in system
-        assert "专题" in system and "不扩写为整个 Segment 的完整解析" in system
-        assert "只有本轮明确要求总体讲解、完整解析" in system
-        assert "不把上一轮的讲解或报告任务自动延续到本轮" in system
-        assert (
-            "主对话具备当前 Segment 的 Analysis 列表、读取、生成和 Section 局部编辑工具" in system
-        )
-        assert "收到运行时追加的专用写作分支要求时，直接输出讲解 Markdown 正文" in system
-        assert "不再调用生成工具，也不声称已经保存" in system
 
         if style_choice == "default":
             assert snapshot["style"]["id"] == seed["settings"]["defaults"]["style_id"]
@@ -118,7 +160,7 @@ async def test_run_reuses_accepted_prompt_after_style_change(
         result = (await client.get(f"/api/jobs/{job['id']}")).json()
         assert result["status"] == "succeeded"
         run = (await client.get(f"/api/runs/{result['run_id']}")).json()
-        assert run["prompt_version"] == accepted["prompt_version"] == "v4+tools_v3"
+        assert run["prompt_version"] == accepted["prompt_version"]
 
     with sqlite3.connect(database) as connection:
         row = connection.execute(

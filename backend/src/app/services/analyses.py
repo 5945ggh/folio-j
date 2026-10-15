@@ -4,6 +4,7 @@ Write functions only flush. Their caller owns BEGIN IMMEDIATE, job checks and co
 """
 
 import unicodedata
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
@@ -22,6 +23,16 @@ from app.ids import new_ulid
 from app.models import Segment, Source
 from app.services.normalizer import NORMALIZER_VERSION, Block, normalize, split_source_lines
 from app.services.sources import require_segment
+
+
+@dataclass(frozen=True)
+class OperationPreview:
+    """Validated Markdown transformation for one Section edit."""
+
+    source_md: str
+    identity: list[tuple[str, str] | None]
+    before: str
+    after: str
 
 
 def _now() -> datetime:
@@ -135,6 +146,18 @@ async def get_analysis(
 ) -> AnalysisDetail:
     analysis = await _active_analysis(session, analysis_id)
     return await _detail(session, analysis, revision_id or analysis.current_revision_id)
+
+
+async def get_editable_analysis(
+    session: AsyncSession, *, segment_id: str, analysis_id: str, base_revision_id: str
+) -> AnalysisDetail:
+    """Load the current revision only after enforcing the edit target contract."""
+    analysis = await _active_analysis(session, analysis_id)
+    if analysis.segment_id != segment_id:
+        raise HTTPException(status_code=404, detail="讲解不属于当前片段")
+    if analysis.current_revision_id != base_revision_id:
+        raise HTTPException(status_code=409, detail="讲解版本已变化")
+    return await _detail(session, analysis, base_revision_id)
 
 
 def _handle(uid: str, existing: set[str]) -> str:
@@ -345,6 +368,68 @@ def join_revision_blocks(blocks: list[str]) -> str:
     return "".join(pieces)
 
 
+def preview_operation(detail: AnalysisDetail, operation: SectionOperation) -> OperationPreview:
+    """Validate and render the exact reviewed edit without persisting it."""
+    blocks = list(normalize(detail.source_md).blocks)
+    identity: list[tuple[str, str] | None] = [(row.uid, row.handle) for row in detail.sections]
+    if len(blocks) != len(identity):
+        raise HTTPException(status_code=409, detail="修订结构不一致")
+    raw = [block.raw for block in blocks]
+    by_uid = {section.uid: index for index, section in enumerate(detail.sections)}
+    before = ""
+    affected_start = 0
+    affected_count = 0
+    if operation.kind == "update_preamble":
+        if operation.body is None:
+            raise HTTPException(status_code=422, detail="缺少总述正文")
+        before = raw[0]
+        preamble = unicodedata.normalize("NFC", operation.body)
+        if any(block.kind == "section" for block in normalize(preamble).blocks):
+            raise HTTPException(status_code=422, detail="总述不能包含二级标题")
+        raw[0] = preamble + ("\n" if preamble and not preamble.endswith(("\n", "\r")) else "")
+        affected_start, affected_count = 0, 1
+    elif operation.kind == "insert_sections":
+        if not operation.sections:
+            raise HTTPException(status_code=422, detail="至少插入一个块")
+        index = 1 if operation.after_sid is None else by_uid.get(operation.after_sid, -1) + 1
+        if index <= 0:
+            raise HTTPException(status_code=404, detail="插入锚点不存在")
+        if raw[index - 1] and not raw[index - 1].endswith(("\n", "\r")):
+            raw[index - 1] += "\n"
+        inserted = [_section_raw(entry.title, entry.body) for entry in operation.sections]
+        raw[index:index] = inserted
+        identity[index:index] = [None] * len(inserted)
+        affected_start, affected_count = index, len(inserted)
+    else:
+        index = by_uid.get(operation.sid or "", -1)
+        if index <= 0:
+            raise HTTPException(status_code=404, detail="目标块不存在")
+        before = raw[index]
+        if operation.kind == "delete_section":
+            del raw[index]
+            del identity[index]
+            affected_start, affected_count = index, 0
+        else:
+            if operation.title is None and operation.body is None:
+                raise HTTPException(status_code=422, detail="没有修改内容")
+            raw[index] = preview_section_replacement(blocks[index], operation.title, operation.body)
+            affected_start, affected_count = index, 1
+    source_md = join_revision_blocks(raw)
+    if len(source_md) > 500_000:
+        raise HTTPException(status_code=422, detail="讲解正文超过 500000 字符")
+    rendered = list(normalize(source_md).blocks)
+    if len(rendered) != len(identity):
+        raise HTTPException(status_code=422, detail="编辑后的块边界与方案不一致")
+    affected = rendered[affected_start : affected_start + affected_count]
+    after = "".join(block.raw for block in affected)
+    return OperationPreview(
+        source_md=source_md,
+        identity=identity,
+        before=before,
+        after=after,
+    )
+
+
 async def apply_operation(
     session: AsyncSession,
     *,
@@ -377,63 +462,23 @@ async def apply_operation(
             raise HTTPException(status_code=404, detail="讲解不属于当前片段")
         return await _detail(session, analysis, prior.id)
     analysis = await _active_analysis(session, analysis_id)
-    if analysis.segment_id != segment_id:
-        raise HTTPException(status_code=404, detail="讲解不属于当前片段")
-    if analysis.current_revision_id != base_revision_id:
-        raise HTTPException(status_code=409, detail="讲解版本已变化")
-    current = await _detail(session, analysis, base_revision_id)
-    blocks = list(normalize(current.source_md).blocks)
-    identity: list[tuple[str, str] | None] = [(row.uid, row.handle) for row in current.sections]
-    if len(blocks) != len(identity):
-        raise HTTPException(status_code=409, detail="修订结构不一致")
-    raw = [block.raw for block in blocks]
-    by_uid = {section.uid: index for index, section in enumerate(current.sections)}
-    sid = operation.sid
-    if operation.kind == "update_preamble":
-        if operation.body is None:
-            raise HTTPException(status_code=422, detail="缺少总述正文")
-        preamble = unicodedata.normalize("NFC", operation.body)
-        if any(block.kind == "section" for block in normalize(preamble).blocks):
-            raise HTTPException(status_code=422, detail="总述不能包含二级标题")
-        raw[0] = preamble + ("\n" if preamble and not preamble.endswith(("\n", "\r")) else "")
-    elif operation.kind == "insert_sections":
-        if not operation.sections:
-            raise HTTPException(status_code=422, detail="至少插入一个块")
-        index = 1 if operation.after_sid is None else by_uid.get(operation.after_sid, -1) + 1
-        if index <= 0:
-            raise HTTPException(status_code=404, detail="插入锚点不存在")
-        if index == 1 and raw[0] and not raw[0].endswith(("\n", "\r")):
-            raw[0] += "\n"
-        if index > 1 and raw[index - 1] and not raw[index - 1].endswith(("\n", "\r")):
-            raw[index - 1] += "\n"
-        for offset, entry in enumerate(operation.sections):
-            raw.insert(index + offset, _section_raw(entry.title, entry.body))
-            identity.insert(index + offset, None)
-    else:
-        index = by_uid.get(sid or "", -1)
-        if index <= 0:
-            raise HTTPException(status_code=404, detail="目标块不存在")
-        if operation.kind == "delete_section":
-            del raw[index]
-            del identity[index]
-        else:
-            block = blocks[index]
-            if operation.title is None and operation.body is None:
-                raise HTTPException(status_code=422, detail="没有修改内容")
-            raw[index] = preview_section_replacement(block, operation.title, operation.body)
-    source = join_revision_blocks(raw)
-    if len(source) > 500_000:
-        raise HTTPException(status_code=422, detail="讲解正文超过 500000 字符")
+    current = await get_editable_analysis(
+        session,
+        segment_id=segment_id,
+        analysis_id=analysis_id,
+        base_revision_id=base_revision_id,
+    )
+    preview = preview_operation(current, operation)
     return await _save_revision(
         session,
         analysis,
-        source_md=source,
+        source_md=preview.source_md,
         parent_revision_id=base_revision_id,
         operation_key=operation_key,
         operation_payload=operation_payload,
         origin="section_edit",
         run_id=run_id,
-        identity=identity,
+        identity=preview.identity,
     )
 
 

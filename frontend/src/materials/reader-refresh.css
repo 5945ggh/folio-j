@@ -1,0 +1,59 @@
+/* Segment and settings styles retained after Reader moved to its own shell. */
+.shell-full-width .page-content:has(.segment-shell) {
+	padding: 0;
+	max-width: none;
+	min-width: 0;
+}
+.app-shell .segment-shell {
+	position: relative;
+	inset: auto;
+	z-index: auto;
+	height: 100dvh;
+	width: 100%;
+	grid-template-columns: minmax(0, 1fr);
+	background: #fffefa;
+}
+.app-shell .segment-toolbar,
+.app-shell .segment-workspace {
+	grid-column: 1;
+}
+.app-shell .segment-toolbar {
+	background: #fffefa;
+	border-color: var(--line, #e5e3dd);
+}
+.app-shell .segment-toolbar-title {
+	min-width: 0;
+}
+.app-shell .segment-toolbar-title > a:first-child {
+	flex-shrink: 0;
+}
+.app-shell .segment-reader {
+	background: #fffefa;
+}
+.app-shell .segment-conversation {
+	background: #f8f7f3;
+}
+.settings-page-heading {
+	border-bottom: 1px solid var(--line, #e5e3dd);
+	padding-bottom: 18px;
+}
+.settings-page-heading h1 {
+	font-size: 24px;
+}
+@media (max-width: 720px) {
+	.app-shell .segment-shell {
+		height: calc(100dvh - 54px);
+	}
+	.app-shell .segment-toolbar {
+		padding: 8px 12px;
+	}
+}
+
+.app-shell .segment-toolbar-title a {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.app-shell .segment-shell .segment-workspace {
+	min-width: 0;
+}

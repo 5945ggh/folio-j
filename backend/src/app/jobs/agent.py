@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import unicodedata
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
 
@@ -14,7 +15,6 @@ from app.chat_models import ChatMessage, ChatThread, Job
 from app.ids import new_ulid
 from app.llm import adapters
 from app.services import analyses
-from app.services.normalizer import normalize
 from app.services.settings import now, redact_credential, safe_verification_error
 from app.settings_models import Run
 
@@ -354,6 +354,7 @@ async def _branch(
     messages: list[dict[str, Any]],
     call_id: str,
     tools: list[dict[str, Any]],
+    title: str | None = None,
 ) -> dict[str, Any]:
     """Start a real delegation, close its protocol call, then append writer suffix."""
     start = _tool_output(
@@ -433,6 +434,7 @@ async def _branch(
             source_md=turn.text,
             operation_key=f"job:{job.id}:generate:{call_id}",
             origin="agent",
+            title=title,
             run_id=(
                 await session.scalar(
                     select(Run.id)
@@ -501,49 +503,21 @@ async def _proposal(
 ) -> dict[str, Any]:
     operation = _operation(name, args)
     async with app.state.session_factory() as session:
-        record = await analyses.get_analysis(session, args["analysis_id"], args["base_revision_id"])
-        if record.segment_id != segment_id:
-            raise HTTPException(status_code=404, detail="讲解不属于当前片段")
-        detail = record.model_dump(mode="json")
-    target = next((row for row in detail["sections"] if row["uid"] == operation.sid), None)
-    before = target["raw"] if target is not None else ""
-    if operation.kind == "insert_sections":
-        insert_raw: list[str] = []
-        for row in operation.sections or []:
-            raw = f"## {row.title}\n"
-            if row.body:
-                raw += "\n" + row.body.lstrip("\r\n")
-                if not raw.endswith(("\n", "\r")):
-                    raw += "\n"
-            insert_raw.append(raw)
-        after = "".join(insert_raw)
-    elif operation.kind == "delete_section":
-        after = ""
-    elif operation.kind == "update_preamble":
-        before = next((row["raw"] for row in detail["sections"] if row["kind"] == "preamble"), "")
-        after = operation.body or ""
-    else:
-        if target is None:
-            raise HTTPException(status_code=404, detail="目标块不存在")
-        index = next(
-            index for index, row in enumerate(detail["sections"]) if row["uid"] == operation.sid
+        record = await analyses.get_editable_analysis(
+            session,
+            segment_id=segment_id,
+            analysis_id=args["analysis_id"],
+            base_revision_id=args["base_revision_id"],
         )
-        after = analyses.preview_section_replacement(
-            normalize(detail["source_md"]).blocks[index], operation.title, operation.body
-        )
-        if index < len(detail["sections"]) - 1 and after and not after.endswith(("\n", "\r")):
-            after += "\n"
-    if operation.kind == "update_preamble" and len(detail["sections"]) > 1:
-        if after and not after.endswith(("\n", "\r")):
-            after += "\n"
+        preview = analyses.preview_operation(record, operation)
     return {
         "tool_call_id": call_id,
         "tool_name": name,
         "analysis_id": args["analysis_id"],
         "base_revision_id": args["base_revision_id"],
-        "title": detail["title"],
-        "before": before,
-        "after": after,
+        "title": record.title,
+        "before": preview.before,
+        "after": preview.after,
         "operation": operation.model_dump(mode="json"),
     }
 
@@ -765,14 +739,22 @@ async def execute_agent_job(
                 if name in {"list_analyses", "read_analysis"}:
                     output = await _read_tool(app, segment_id, name, args)
                 elif name == "generate_analysis":
-                    if args:
-                        raise ValueError("生成工具无需正文或上下文参数")
+                    if set(args) - {"title"}:
+                        raise ValueError("生成工具只接受title参数，不接受正文或上下文")
+                    title: str | None = None
+                    if "title" in args:
+                        value = args["title"]
+                        if not isinstance(value, str):
+                            raise ValueError("讲解总标题须为字符串")
+                        title = unicodedata.normalize("NFC", value.strip())
+                        if not title or len(title) > 200:
+                            raise ValueError("讲解总标题须非空且不超过200字符")
                     async with app.state.session_factory() as session:
                         job = await session.get(Job, job_id)
                         if job is None:
                             return
                         output = await _branch(
-                            app, job, token, key, snapshot, messages, call["id"], tools
+                            app, job, token, key, snapshot, messages, call["id"], tools, title
                         )
                 elif name in EDIT_NAMES:
                     proposal = await _proposal(app, segment_id, name, call["id"], args)

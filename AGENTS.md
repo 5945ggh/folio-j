@@ -4,7 +4,9 @@
 
 ## 项目是什么
 
-一个 Agent 原生的日语学习辅助系统，当前已建立工程基础，正在准备首轮领域功能切片。用户围绕 Source 下的 Segment 阅读与讨论，按需留下可独立阅读的讲解和 Occurrence；工作台是活动界面，不拥有学习内容。不要求先有完整解析才能讨论，也不强制所有内容经过独立 AI 提取阶段。讨论成果先整理为持久讲解，Occurrence 再关联原文与具体讲解版本。具体首轮入口、共享资料读取与成果写入契约以 PRD 中已确认和待定的边界为准，不按旧的线 A／线 B 流水线直接实现。
+一个 Agent 原生的日语学习辅助系统，面向原版阅读与片段学习。当前交付状态、实现缺口与验收依据集中见 [MVP 实施基线](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)。
+
+用户围绕 Source 下的 Segment 阅读与讨论，按需留下可独立阅读的讲解和 Occurrence；工作台是活动界面，不拥有学习内容。不要求先有完整解析才能讨论，也不强制所有内容经过独立 AI 提取阶段。讨论成果先整理为持久讲解，Occurrence 再关联原文与具体讲解版本。具体首轮入口、共享资料读取与成果写入契约以 PRD 中已确认和待定的边界为准，不按旧的线 A／线 B 流水线直接实现。
 
 文档入口见 [`docs/README.md`](docs/README.md)。开发任务先读以下长期规范，并按当前阶段查阅 [`docs/handovers/README.md`](docs/handovers/README.md)：
 
@@ -14,6 +16,10 @@
 - `docs/TECH_STACK.md`：技术选型，以及明确不选的方案
 
 `docs/handovers/` 放阶段性实施指导；`archived/` 仅保存历史任务和实验上下文。产品行为以 PRD 为准，不能从旧 brief 恢复过时需求。已完成的工程初始化记录见 [`docs/handovers/archived/DEV_PREPARATION.md`](docs/handovers/archived/DEV_PREPARATION.md)，实施基线见 [`docs/handovers/MVP_IMPLEMENTATION_BASELINE.md`](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)；两者不替代长期规范或敲定 PRD 未决项。
+
+## 文档维护
+
+维护项目文档时，先读项目级 skill [文档维护原则](.agents/skills/document-maintenance/SKILL.md)与[文档写作风格](.agents/skills/document-writing-style/SKILL.md)。前者规定信息归属与更新流程，后者规定直接、准确、简明的表达方式。
 
 ## 常用命令
 
@@ -26,7 +32,10 @@ just test       # 后端 pytest + 前端纯逻辑测试（禁用真实网络；�
 just lint       # ruff + pyright + biome + tsc
 just gen-api    # 从后端 OpenAPI 重新生成前端客户端
 just migrate    # alembic upgrade head
+just snapshot   # Repomix 在 .snapshots/ 生成带时间戳的 XML 仓库快照；别名 just snap
 ```
+
+`just` 或 `just --list` 列出可用命令；快照工具依赖与输出说明见 [README](README.md#本地开发)。
 
 ## 硬性规则
 
@@ -43,7 +52,7 @@ just migrate    # alembic upgrade head
 
 ## 编码约定
 
-- **子代理模型**：调用 Codex 原生子代理时，显式指定 `gpt-6-sol` 或 `gpt-6-luna`。
+- **子代理模型与思考强度**：调用 Codex 原生子代理时，必须显式指定 `model="gpt-6.1-sol"` 和 `reasoning_effort`，思考强度从 `medium`、`high`、`xhigh` 中选择。显式指定该模型但省略思考强度时，实际使用模型默认的 `low` 思考强度。
 - **PRD 版本**：审订期间不随每次编辑递增文档版本号，待最终收口时统一调整。
 - **视觉参考**：`prototypes/reading-native` 提供风格与布局思路；具体交互按真实功能设计，不照搬模拟行为，产品边界以 PRD 为准。
 - **分支与协作**：默认使用稳定 `main` 加短期 `codex/*` 功能分支，不额外维护长期 `develop`。主代理负责范围、契约、派遣和集成验收，开发与测试子代理分工；并行任务明确文件所有权，完成检查后再集成。

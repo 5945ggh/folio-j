@@ -21,6 +21,8 @@ from app.settings_schemas import (
     ProviderPatch,
     ProviderResponse,
     RunResponse,
+    RunStatus,
+    SettingsPatch,
     SettingsResponse,
     StyleInput,
     StyleResponse,
@@ -38,6 +40,11 @@ def database_path(request: Request) -> Path:
 @router.get("/settings", response_model=SettingsResponse, operation_id="getSettings")
 async def get_settings(session: Session) -> SettingsResponse:
     return await service.get_settings(session)
+
+
+@router.patch("/settings", response_model=SettingsResponse, operation_id="patchSettings")
+async def patch_settings(data: SettingsPatch, session: Session) -> SettingsResponse:
+    return await service.patch_settings(session, data)
 
 
 @router.put("/settings/profile", response_model=ProfileResponse, operation_id="putProfile")
@@ -173,8 +180,18 @@ async def list_runs(
     session: Session,
     limit: Annotated[int, Query(ge=1, le=50)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
+    provider_id: Annotated[str | None, Query(description="Provider 登记身份")] = None,
+    model_id: Annotated[str | None, Query(description="ProviderModel 登记身份，非模型名称")] = None,
+    status: RunStatus | None = None,
 ) -> list[RunResponse]:
-    return await service.list_runs(session, limit=limit, offset=offset)
+    return await service.list_runs(
+        session,
+        limit=limit,
+        offset=offset,
+        provider_id=provider_id,
+        model_id=model_id,
+        status=status,
+    )
 
 
 @router.get("/runs/{run_id}", response_model=RunResponse, operation_id="getRun")

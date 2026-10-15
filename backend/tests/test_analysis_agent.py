@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import sqlite3
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
@@ -10,10 +11,14 @@ import pytest
 from httpx import AsyncClient
 from test_chat_api import accept, chat_client, seed_chat
 
+from app.analysis_schemas import SectionOperation
 from app.jobs import runtime
 from app.llm import adapters
+from app.services import analyses
+from app.services.sources import begin_write
 
-DOCUMENT = "## 大意\n\n昨日は雨だった。\n\n## 语法\n\nだった是过去式。\n"
+DOCUMENT_BODY_MARKER = "だった是过去式。"
+DOCUMENT = f"## 大意\n\n昨日は雨だった。\n\n## 语法\n\n{DOCUMENT_BODY_MARKER}\n"
 
 
 def call(name: str, args: dict[str, Any] | None = None, identity: str = "call_1") -> dict[str, str]:
@@ -114,9 +119,13 @@ async def refreshed(client: AsyncClient, seed: dict[str, Any]) -> dict[str, Any]
 
 
 async def quick_document(
-    client: AsyncClient, app: Any, seed: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+    client: AsyncClient,
+    app: Any,
+    seed: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+    source_md: str = DOCUMENT,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    scripted_turn(monkeypatch, [(DOCUMENT, [], True)])
+    scripted_turn(monkeypatch, [(source_md, [], True)])
     job = await accept(
         client,
         seed,
@@ -146,7 +155,7 @@ async def test_quick_save_freezes_model_and_keeps_writer_out_of_next_chat(
                 json={"protocol": "responses"},
             )
             assert changed.status_code == 200, changed.text
-        captured = scripted_turn(monkeypatch, [(DOCUMENT, [], True)])
+        captured = scripted_turn(monkeypatch, [(DOCUMENT, [], True), ("后续回答", [], True)])
         job = await accept(
             client,
             seed,
@@ -154,6 +163,12 @@ async def test_quick_save_freezes_model_and_keeps_writer_out_of_next_chat(
             question="请为当前片段生成总体讲解。",
         )
         accepted = (await client.get(f"/api/jobs/{job['id']}")).json()
+        from app.chat_models import Job
+
+        async with app.state.session_factory() as session:
+            frozen_writer = await session.get(Job, job["id"])
+            assert frozen_writer is not None
+            writer_snapshot = frozen_writer.input_snapshot
         await runtime.execute_job(app, job["id"])
         result = (await client.get(f"/api/jobs/{job['id']}")).json()
         assert result["status"] == "succeeded"
@@ -170,47 +185,87 @@ async def test_quick_save_freezes_model_and_keeps_writer_out_of_next_chat(
         assert detail["revision_id"] == artifact["revision_id"]
         assert detail["source_md"] == DOCUMENT
         run = (await client.get(f"/api/runs/{result['run_id']}")).json()
-        assert run["prompt_version"].endswith("+writer_v2")
+        assert (
+            run["prompt_version"]
+            == writer_snapshot["prompt_version"] + f"+writer_{writer_snapshot['writer_version']}"
+        )
         assert run["output_text"] == DOCUMENT
+        for text in (DOCUMENT_BODY_MARKER, writer_snapshot["writer_text"]):
+            encoded = json.dumps(text, ensure_ascii=False)[1:-1]
+            assert encoded in json.dumps([{"role": "user", "content": text}], ensure_ascii=False)
 
         second = await accept(
             client, await refreshed(client, seed), question="刚才的讲解说了什么？"
         )
         async with app.state.session_factory() as session:
-            from app.chat_models import Job
-
             frozen = await session.get(Job, second["id"])
             assert frozen is not None
             history = frozen.input_snapshot["messages"]
-        assert not any(DOCUMENT in json.dumps(item, ensure_ascii=False) for item in history)
         assert not any(
-            "先给学习者一眼能把握" in json.dumps(item, ensure_ascii=False) for item in history
+            json.dumps(DOCUMENT_BODY_MARKER, ensure_ascii=False)[1:-1]
+            in json.dumps(item, ensure_ascii=False)
+            for item in history
+        )
+        assert not any(
+            json.dumps(writer_snapshot["writer_text"], ensure_ascii=False)[1:-1]
+            in json.dumps(item, ensure_ascii=False)
+            for item in history
         )
         assert any(artifact["analysis_id"] in json.dumps(item) for item in history)
         assert not any(item.get("role") == "assistant" for item in history)
+        await runtime.execute_job(app, second["id"])
+        assert (await client.get(f"/api/jobs/{second['id']}")).json()["status"] == "succeeded"
+        assert captured[1]["messages"] == history
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("protocol", "title", "expected_title"),
+    [
+        ("chat_completions", None, "大意"),
+        ("responses", None, "大意"),
+        ("chat_completions", "  だった的过去状态  ", "だった的过去状态"),
+        ("chat_completions", "  か\u3099ち的用法  ", "がち的用法"),
+        ("chat_completions", "题" * 200, "题" * 200),
+    ],
+)
 async def test_native_generate_branch_reuses_parent_prefix_and_returns_identity(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    protocol: str,
+    title: str | None,
+    expected_title: str,
 ) -> None:
     async with chat_client(tmp_path / "agent.db") as (client, app):
         seed = await seed_chat(client)
+        if protocol == "responses":
+            changed = await client.patch(
+                f"/api/providers/{seed['provider']['id']}", json={"protocol": protocol}
+            )
+            assert changed.status_code == 200
         captured = scripted_turn(
             monkeypatch,
             [
-                ("", [call("generate_analysis")], True),
+                ("", [call("generate_analysis", {"title": title} if title else {})], True),
                 (DOCUMENT, [], True),
                 ("已经为你保存讲解。", [], True),
             ],
         )
         job = await accept(client, seed, question="整理成总体讲解并保存")
+        from app.chat_models import Job
+
+        async with app.state.session_factory() as session:
+            frozen = await session.get(Job, job["id"])
+            assert frozen is not None
+            writer_text = frozen.input_snapshot["writer_text"]
         await runtime.execute_job(app, job["id"])
         result = (await client.get(f"/api/jobs/{job['id']}")).json()
         assert result["status"] == "succeeded"
         assert len(result["runs"]) == 3
         assert result["artifacts"]
+        detail = (await client.get(f"/api/analyses/{result['artifacts'][0]['analysis_id']}")).json()
+        assert detail["title"] == expected_title
+        assert detail["source_md"] == DOCUMENT
         parent, branch, follow = captured
         assert parent["snapshot"].model_id == branch["snapshot"].model_id
         assert parent["snapshot"].protocol == branch["snapshot"].protocol
@@ -220,18 +275,83 @@ async def test_native_generate_branch_reuses_parent_prefix_and_returns_identity(
         assert parent["tools"] == branch["tools"] == follow["tools"]
         assert branch["tool_choice"] == "none"
         assert branch["messages"][: len(parent["messages"])] == parent["messages"]
-        assert branch["messages"][len(parent["messages"])]["role"] == "assistant"
-        assert branch["messages"][len(parent["messages"]) + 1]["role"] == "tool"
+        native_call = branch["messages"][len(parent["messages"]) : -2]
+        assert any(
+            item.get("role") == "assistant" or item.get("type") == "function_call"
+            for item in native_call
+        )
+        tool_result = branch["messages"][-2]
+        assert (
+            tool_result.get("role") == "tool" or tool_result.get("type") == "function_call_output"
+        )
         assert branch["messages"][-1]["role"] == "user"
-        assert "先给学习者一眼能把握" in branch["messages"][-1]["content"]
+        assert branch["messages"][-1]["content"] == writer_text
         assert not any(
-            DOCUMENT in json.dumps(item, ensure_ascii=False) for item in follow["messages"]
+            json.dumps(DOCUMENT_BODY_MARKER, ensure_ascii=False)[1:-1]
+            in json.dumps(item, ensure_ascii=False)
+            for item in follow["messages"]
         )
         assert not any(
-            "先给学习者一眼能把握" in json.dumps(item, ensure_ascii=False)
+            json.dumps(writer_text, ensure_ascii=False)[1:-1]
+            in json.dumps(item, ensure_ascii=False)
             for item in follow["messages"]
         )
         assert result["artifacts"][0]["analysis_id"] in json.dumps(follow["messages"])
+        assert expected_title in json.dumps(follow["messages"], ensure_ascii=False)
+        assert follow["tool_choice"] == "auto"
+        assert parent["snapshot"].model_id == follow["snapshot"].model_id
+        assert parent["snapshot"].protocol == follow["snapshot"].protocol == protocol
+        assert parent["messages"][0] == follow["messages"][0]
+        if protocol == "responses":
+            continuation = branch["messages"][len(parent["messages"]) :]
+            assert [item["type"] for item in continuation[:3]] == [
+                "reasoning",
+                "function_call",
+                "function_call_output",
+            ]
+        with sqlite3.connect(tmp_path / "agent.db") as connection:
+            rows = connection.execute(
+                "SELECT id,output_text FROM runs WHERE job_id=? ORDER BY created_at,id",
+                (job["id"],),
+            ).fetchall()
+            revision_run_id = connection.execute(
+                "SELECT run_id FROM analysis_revisions WHERE id=?",
+                (result["artifacts"][0]["revision_id"],),
+            ).fetchone()[0]
+        assert len(rows) == 3
+        assert [row[1] for row in rows] == ["", DOCUMENT, "已经为你保存讲解。"]
+        assert revision_run_id == rows[1][0]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "args",
+    [
+        {"title": ""},
+        {"title": "  "},
+        {"title": "题" * 201},
+        {"title": None},
+        {"title": 123},
+        {"title": "主题", "body": "正文"},
+    ],
+)
+async def test_generate_rejects_invalid_title_before_starting_writer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, args: dict[str, Any]
+) -> None:
+    async with chat_client(tmp_path / "invalid-title.db") as (client, app):
+        seed = await seed_chat(client)
+        captured = scripted_turn(
+            monkeypatch,
+            [("", [call("generate_analysis", args)], True), ("标题参数无效。", [], True)],
+        )
+        job = await accept(client, seed, question="请生成讲解")
+        await runtime.execute_job(app, job["id"])
+        result = (await client.get(f"/api/jobs/{job['id']}")).json()
+        assert result["status"] == "succeeded"
+        assert result["artifacts"] == []
+        assert len(result["runs"]) == len(captured) == 2
+        assert json.loads(captured[1]["messages"][-1]["content"])["error"]
+        assert (await client.get(f"/api/segments/{seed['segment']['id']}/analyses")).json() == []
 
 
 @pytest.mark.asyncio
@@ -480,6 +600,189 @@ async def test_legacy_and_protocol_switch_history_is_material_not_fake_assistant
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "line_ending,terminated",
+    [("\n", True), ("\r\n", True), ("\r", True), ("\n", False)],
+)
+async def test_reviewed_insert_preview_matches_saved_markdown_across_line_endings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    line_ending: str,
+    terminated: bool,
+) -> None:
+    source_md = DOCUMENT.replace("\n", line_ending)
+    if not terminated:
+        source_md = source_md.removesuffix(line_ending)
+    async with chat_client(tmp_path / "preview-save.db") as (client, app):
+        seed = await seed_chat(client)
+        _, document = await quick_document(client, app, seed, monkeypatch, source_md)
+        args = {
+            "analysis_id": document["id"],
+            "base_revision_id": document["revision_id"],
+            "after_sid": document["sections"][1]["uid"],
+            "sections": [{"title": "  は\u3099  ", "body": "は\u3099"}],
+        }
+        scripted_turn(
+            monkeypatch,
+            [
+                ("", [call("insert_analysis_sections", args, "preview_insert")], True),
+                ("已完成。", [], True),
+            ],
+        )
+        job = await accept(client, await refreshed(client, seed), question="审核这次插入")
+        await runtime.execute_job(app, job["id"])
+        waiting = (await client.get(f"/api/jobs/{job['id']}")).json()
+        proposal = waiting["review_proposal"]
+        assert waiting["status"] == "waiting_review"
+        approved = await client.post(
+            f"/api/jobs/{job['id']}/decision",
+            json={"expected_version": waiting["version"], "decision": "approve"},
+        )
+        assert approved.status_code == 200
+        await runtime.execute_job(app, job["id"])
+        saved = (await client.get(f"/api/analyses/{document['id']}")).json()
+        assert (
+            next(section["raw"] for section in saved["sections"] if section["title"] == "ば")
+            == (proposal["after"])
+            == "## ば\n\nば\n"
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("source_md", "body", "expected"),
+    [(DOCUMENT, "", ""), ("仅有总述", "新的总述", "新的总述\n")],
+)
+async def test_reviewed_preamble_preview_matches_saved_empty_and_no_h2_documents(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    source_md: str,
+    body: str,
+    expected: str,
+) -> None:
+    async with chat_client(tmp_path / "preamble-preview.db") as (client, app):
+        seed = await seed_chat(client)
+        _, document = await quick_document(client, app, seed, monkeypatch, source_md)
+        args = {
+            "analysis_id": document["id"],
+            "base_revision_id": document["revision_id"],
+            "body": body,
+        }
+        scripted_turn(
+            monkeypatch,
+            [("", [call("update_analysis_preamble", args)], True), ("已完成。", [], True)],
+        )
+        job = await accept(client, await refreshed(client, seed), question="审核总述")
+        await runtime.execute_job(app, job["id"])
+        waiting = (await client.get(f"/api/jobs/{job['id']}")).json()
+        proposal = waiting["review_proposal"]
+        assert waiting["status"] == "waiting_review"
+        approved = await client.post(
+            f"/api/jobs/{job['id']}/decision",
+            json={"expected_version": waiting["version"], "decision": "approve"},
+        )
+        assert approved.status_code == 200
+        await runtime.execute_job(app, job["id"])
+        saved = (await client.get(f"/api/analyses/{document['id']}")).json()
+        assert saved["sections"][0]["raw"] == proposal["after"] == expected
+
+
+@pytest.mark.asyncio
+async def test_approved_review_rechecks_an_expired_base_revision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async with chat_client(tmp_path / "expired-review.db") as (client, app):
+        seed = await seed_chat(client)
+        _, document = await quick_document(client, app, seed, monkeypatch)
+        sid = document["sections"][1]["uid"]
+        args = {
+            "analysis_id": document["id"],
+            "base_revision_id": document["revision_id"],
+            "sid": sid,
+            "title": "审核标题",
+        }
+        scripted_turn(
+            monkeypatch,
+            [
+                ("", [call("update_analysis_section", args)], True),
+                ("版本已变化，未保存。", [], True),
+            ],
+        )
+        job = await accept(client, await refreshed(client, seed), question="审核后修改")
+        await runtime.execute_job(app, job["id"])
+        waiting = (await client.get(f"/api/jobs/{job['id']}")).json()
+        assert waiting["status"] == "waiting_review"
+        async with app.state.session_factory() as session:
+            await begin_write(session)
+            external = await analyses.apply_operation(
+                session,
+                segment_id=seed["segment"]["id"],
+                analysis_id=document["id"],
+                base_revision_id=document["revision_id"],
+                operation_key="external-edit",
+                operation=SectionOperation(kind="update_section", sid=sid, title="外部标题"),
+            )
+            await session.commit()
+        approved = await client.post(
+            f"/api/jobs/{job['id']}/decision",
+            json={"expected_version": waiting["version"], "decision": "approve"},
+        )
+        assert approved.status_code == 200
+        await runtime.execute_job(app, job["id"])
+        completed = (await client.get(f"/api/jobs/{job['id']}")).json()
+        assert completed["status"] == "succeeded"
+        assert completed["artifacts"] == []
+        current = (await client.get(f"/api/analyses/{document['id']}")).json()
+        assert current["revision_id"] == external.revision_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("tool_name", "invalid"),
+    [
+        (
+            "insert_analysis_sections",
+            {"after_sid": "missing", "sections": [{"title": "有效", "body": "正文"}]},
+        ),
+        (
+            "update_analysis_preamble",
+            {"body": "总述\n## 非法二级标题"},
+        ),
+        (
+            "insert_analysis_sections",
+            {
+                "sections": [{"title": "有效", "body": "正文\n## 额外二级标题"}],
+            },
+        ),
+    ],
+)
+async def test_invalid_edit_never_enters_waiting_review(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tool_name: str,
+    invalid: dict[str, Any],
+) -> None:
+    async with chat_client(tmp_path / "invalid-review.db") as (client, app):
+        seed = await seed_chat(client)
+        _, document = await quick_document(client, app, seed, monkeypatch)
+        args = {
+            "analysis_id": document["id"],
+            "base_revision_id": document["revision_id"],
+            **invalid,
+        }
+        scripted_turn(
+            monkeypatch,
+            [("", [call(tool_name, args)], True), ("方案无效，未提交审核。", [], True)],
+        )
+        job = await accept(client, await refreshed(client, seed), question="编辑讲解")
+        await runtime.execute_job(app, job["id"])
+        result = (await client.get(f"/api/jobs/{job['id']}")).json()
+        assert result["status"] == "succeeded"
+        assert result["review_proposal"] is None
+        assert result["artifacts"] == []
+
+
+@pytest.mark.asyncio
 async def test_eight_call_budget_is_shared_by_tool_loop(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -507,12 +810,13 @@ async def test_saved_branch_survives_parent_failure_and_next_turn_gets_identity(
 ) -> None:
     async with chat_client(tmp_path / "partial.db") as (client, app):
         seed = await seed_chat(client)
-        scripted_turn(
+        captured = scripted_turn(
             monkeypatch,
             [
                 ("", [call("generate_analysis")], True),
                 (DOCUMENT, [], True),
                 ("残缺主回复", [], False),
+                ("还能继续讨论", [], True),
             ],
         )
         job = await accept(client, seed, question="生成总体讲解并保存")
@@ -531,8 +835,15 @@ async def test_saved_branch_survives_parent_failure_and_next_turn_gets_identity(
             assert frozen is not None
             history = frozen.input_snapshot["messages"]
         assert any(artifact["analysis_id"] in json.dumps(item) for item in history)
-        assert not any("残缺主回复" in json.dumps(item) for item in history)
-        assert not any(DOCUMENT in json.dumps(item, ensure_ascii=False) for item in history)
+        assert not any("残缺主回复" in json.dumps(item, ensure_ascii=False) for item in history)
+        assert not any(
+            json.dumps(DOCUMENT_BODY_MARKER, ensure_ascii=False)[1:-1]
+            in json.dumps(item, ensure_ascii=False)
+            for item in history
+        )
+        await runtime.execute_job(app, second["id"])
+        assert (await client.get(f"/api/jobs/{second['id']}")).json()["status"] == "succeeded"
+        assert captured[3]["messages"] == history
 
 
 @pytest.mark.asyncio
@@ -808,44 +1119,3 @@ async def test_stop_after_branch_save_retains_artifact_and_continuation_fact(
             history = frozen.input_snapshot["messages"]
         assert any(artifact["analysis_id"] in json.dumps(item) for item in history)
         assert not any("迟到的主回复" in json.dumps(item) for item in history)
-
-
-@pytest.mark.asyncio
-async def test_responses_native_branch_replays_output_items_without_previous_response_id(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    async with chat_client(tmp_path / "responses-branch.db") as (client, app):
-        seed = await seed_chat(client)
-        changed = await client.patch(
-            f"/api/providers/{seed['provider']['id']}", json={"protocol": "responses"}
-        )
-        assert changed.status_code == 200
-        captured = scripted_turn(
-            monkeypatch,
-            [
-                ("", [call("generate_analysis")], True),
-                (DOCUMENT, [], True),
-                ("已保存。", [], True),
-            ],
-        )
-        job = await accept(client, seed, question="生成并保存总体讲解")
-        await runtime.execute_job(app, job["id"])
-        result = (await client.get(f"/api/jobs/{job['id']}")).json()
-        assert result["status"] == "succeeded"
-        assert len(result["runs"]) == 3
-        parent, branch, follow = captured
-        assert branch["messages"][: len(parent["messages"])] == parent["messages"]
-        continuation = branch["messages"][len(parent["messages"]) :]
-        assert [item["type"] for item in continuation[:3]] == [
-            "reasoning",
-            "function_call",
-            "function_call_output",
-        ]
-        assert continuation[-1]["role"] == "user"
-        assert branch["tool_choice"] == "none"
-        assert parent["tools"] == branch["tools"] == follow["tools"]
-        assert not any(
-            DOCUMENT in json.dumps(item, ensure_ascii=False) for item in follow["messages"]
-        )
-        assert result["artifacts"][0]["analysis_id"] in json.dumps(follow["messages"])

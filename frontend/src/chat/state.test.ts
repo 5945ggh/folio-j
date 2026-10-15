@@ -4,7 +4,16 @@ import {
 	draftAfterAcceptance,
 	submissionMayHaveSucceeded,
 	threadChanged,
+	usableThread,
 } from "./state.ts";
+
+test("快捷生成只使用成功加载且属于当前片段的线程", () => {
+	const current = { id: "t", segment_id: "s" };
+	assert.equal(usableThread(current, "s", true), current);
+	assert.equal(usableThread(current, "other", true), null);
+	assert.equal(usableThread(current, "s", false), null);
+	assert.equal(usableThread(undefined, "s", false), null);
+});
 
 const submitted = {
 	action: "chat" as const,

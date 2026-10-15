@@ -1,0 +1,68 @@
+{
+  "contract": "epub-spike-v1",
+  "title": "日語定位合成樣書",
+  "warnings": [
+    "Removed unsupported image in OEBPS/chapter1.xhtml",
+    "Removed unsupported image in OEBPS/chapter1.xhtml",
+    "没有有效目录，按原始 spine 资源组织阅读。"
+  ],
+  "resources": [
+    {
+      "id": "c1",
+      "href": "OEBPS/chapter1.xhtml",
+      "title": "第一章",
+      "text": "第一章\n漢字 & 本。\n同じ言葉。\n同じ言葉。\nがと𠮷、👩‍💻。\n前\n後\nＡ①\n安全な本文\nリンク",
+      "html": "<h1><span data-locator-leaf=\"0\">第一章</span></h1><span data-locator-leaf=\"1\">\n</span><p id=\"ruby-line\"><ruby><span data-locator-leaf=\"2\">漢字</span><rp>（</rp><rt>かんじ</rt><rp>）</rp></ruby><span data-locator-leaf=\"3\"> &amp; 本。</span></p><span data-locator-leaf=\"4\">\n</span><p id=\"duplicate-one\"><span data-locator-leaf=\"5\">同じ言葉。</span></p><span data-locator-leaf=\"6\">\n</span><p id=\"duplicate-two\"><span data-locator-leaf=\"7\">同じ言葉。</span></p><span data-locator-leaf=\"8\">\n</span><p id=\"unicode\"><span><span data-locator-leaf=\"9\">か</span></span><em><span data-locator-leaf=\"10\">゙</span></em><span data-locator-leaf=\"11\">と𠮷、👩‍💻。</span></p><span data-locator-leaf=\"12\">\n</span><p id=\"lines\"><span data-locator-leaf=\"13\">前</span><span data-locator-leaf=\"14\">\n</span><span data-locator-leaf=\"15\">後</span></p><span data-locator-leaf=\"16\">\n</span><p><span data-locator-leaf=\"17\">Ａ①</span></p><span data-locator-leaf=\"18\">\n</span><p><img data-epub-image=\"0\" src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAaX2RUAAAAAASUVORK5CYII=\" alt=\"挿絵\"></p><p><span data-locator-leaf=\"19\">安全な本文</span></p><span data-locator-leaf=\"20\">\n</span><a><span data-locator-leaf=\"21\">リンク</span></a>",
+      "css": "body{font-size:1em}\nbody{background:url(https://example.invalid/x)}",
+      "htmlAttributes": {},
+      "bodyAttributes": {},
+      "textSha256": "3df6dd723ce07ba427ae35c341c5bbf3fd44f8900c6fa7baae163c723c4778fe"
+    },
+    {
+      "id": "c2",
+      "href": "OEBPS/chapter2.xhtml",
+      "title": "第二章",
+      "text": "第二章\n次の章でも日本語を読む。\n引用の文章。\n",
+      "html": "<h1><span data-locator-leaf=\"0\">第二章</span></h1><span data-locator-leaf=\"1\">\n</span><p><span data-locator-leaf=\"2\">次の章でも</span><ruby><span data-locator-leaf=\"3\">日本語</span><rt>にほんご</rt></ruby><span data-locator-leaf=\"4\">を読む。</span></p><span data-locator-leaf=\"5\">\n</span><blockquote><p><span data-locator-leaf=\"6\">引用の文章。</span></p><span data-locator-leaf=\"7\">\n</span></blockquote>",
+      "css": "body{font-size:1em}",
+      "htmlAttributes": {},
+      "bodyAttributes": {},
+      "textSha256": "dc76e82a1fcccf6d696312e86bd556539277288331e7004ab28e8b6587ddfa8d"
+    }
+  ],
+  "chapters": [
+    {
+      "id": "chapter-0",
+      "title": "第一章",
+      "level": 0,
+      "parts": [
+        {
+          "resource_id": "c1",
+          "spine_index": 0,
+          "start": 0,
+          "end": 49,
+          "html": "<h1><span data-locator-leaf=\"0\">第一章</span></h1><span data-locator-leaf=\"1\">\n</span><p id=\"ruby-line\"><ruby><span data-locator-leaf=\"2\">漢字</span><rp>（</rp><rt>かんじ</rt><rp>）</rp></ruby><span data-locator-leaf=\"3\"> &amp; 本。</span></p><span data-locator-leaf=\"4\">\n</span><p id=\"duplicate-one\"><span data-locator-leaf=\"5\">同じ言葉。</span></p><span data-locator-leaf=\"6\">\n</span><p id=\"duplicate-two\"><span data-locator-leaf=\"7\">同じ言葉。</span></p><span data-locator-leaf=\"8\">\n</span><p id=\"unicode\"><span><span data-locator-leaf=\"9\">か</span></span><em><span data-locator-leaf=\"10\">゙</span></em><span data-locator-leaf=\"11\">と𠮷、👩‍💻。</span></p><span data-locator-leaf=\"12\">\n</span><p id=\"lines\"><span data-locator-leaf=\"13\">前</span><span data-locator-leaf=\"14\">\n</span><span data-locator-leaf=\"15\">後</span></p><span data-locator-leaf=\"16\">\n</span><p><span data-locator-leaf=\"17\">Ａ①</span></p><span data-locator-leaf=\"18\">\n</span><p><img data-epub-image=\"0\" src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAaX2RUAAAAAASUVORK5CYII=\" alt=\"挿絵\"></p><p><span data-locator-leaf=\"19\">安全な本文</span></p><span data-locator-leaf=\"20\">\n</span><a><span data-locator-leaf=\"21\">リンク</span></a>",
+          "leaf_start": 0,
+          "leaf_end": 22
+        }
+      ]
+    },
+    {
+      "id": "chapter-1",
+      "title": "第二章",
+      "level": 0,
+      "parts": [
+        {
+          "resource_id": "c2",
+          "spine_index": 1,
+          "start": 0,
+          "end": 24,
+          "html": "<h1><span data-locator-leaf=\"0\">第二章</span></h1><span data-locator-leaf=\"1\">\n</span><p><span data-locator-leaf=\"2\">次の章でも</span><ruby><span data-locator-leaf=\"3\">日本語</span><rt>にほんご</rt></ruby><span data-locator-leaf=\"4\">を読む。</span></p><span data-locator-leaf=\"5\">\n</span><blockquote><p><span data-locator-leaf=\"6\">引用の文章。</span></p><span data-locator-leaf=\"7\">\n</span></blockquote>",
+          "leaf_start": 0,
+          "leaf_end": 8
+        }
+      ]
+    }
+  ],
+  "materialVersion": "970771f7c0c039c42078833b9996d6f4ee4b3db2aa5b55eb14e4224c26f4da36"
+}

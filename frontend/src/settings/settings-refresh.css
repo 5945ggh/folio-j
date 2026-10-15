@@ -1,0 +1,433 @@
+/* Settings-only composition; the shared library shell supplies primary navigation. */
+.app-shell.library-a1.settings-page > .page-content {
+	padding: 0 0 64px;
+}
+.settings-page {
+	--settings-line: #e7e9ed;
+	--settings-blue: #326bd1;
+	--settings-muted: #717782;
+	font-size: 14px;
+}
+.settings-page .settings-topbar {
+	min-height: 64px;
+	padding: 0 28px;
+	display: flex;
+	align-items: center;
+	border-bottom: 1px solid var(--settings-line);
+}
+.settings-page .settings-topbar h1 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 500;
+}
+.settings-page .settings-tabs {
+	display: flex;
+	gap: 26px;
+	padding: 0 28px;
+	border-bottom: 1px solid var(--settings-line);
+	overflow-x: auto;
+}
+.settings-page .settings-tabs a {
+	flex: none;
+	padding: 15px 0 12px;
+	border-bottom: 2px solid transparent;
+	font-size: 13px;
+	color: var(--settings-muted);
+	text-decoration: none;
+	white-space: nowrap;
+}
+.settings-page .settings-tabs a[aria-current="page"] {
+	color: var(--settings-blue);
+	border-color: var(--settings-blue);
+}
+.settings-page .settings-content {
+	width: 100%;
+	max-width: 790px;
+	min-width: 0;
+	margin: 0 auto;
+	padding: 28px 36px;
+}
+.settings-page .settings-page-head {
+	margin-bottom: 28px;
+}
+.settings-page .settings-page-head h2 {
+	margin: 0;
+	font-size: 22px;
+	font-weight: 500;
+	letter-spacing: -0.025em;
+}
+.settings-page .settings-page-head p {
+	margin: 6px 0 0;
+	font-size: 13px;
+	color: var(--settings-muted);
+}
+.settings-page .settings-section {
+	margin: 0 0 28px;
+}
+.settings-page .settings-section-heading,
+.settings-page .settings-dialog-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+.settings-page .settings-section-heading h3 {
+	margin: 0;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--settings-muted);
+}
+.settings-page .settings-group {
+	padding: 0;
+	border: 1px solid var(--settings-line);
+	border-radius: 10px;
+	background: white;
+}
+.settings-page fieldset {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+.settings-page fieldset.settings-group {
+	border: 1px solid var(--settings-line);
+}
+.settings-page .settings-preference-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 18px;
+	padding: 18px 16px;
+}
+.settings-page .settings-preference-row + .settings-preference-row {
+	border-top: 1px solid var(--settings-line);
+}
+.settings-page .settings-row-copy {
+	min-width: 0;
+	flex: 1;
+	font-size: 13px;
+}
+.settings-page .settings-row-copy strong {
+	font-weight: 500;
+}
+.settings-page .settings-row-copy small,
+.settings-page .settings-permission small {
+	display: block;
+	margin-top: 4px;
+	font-size: 12px;
+	line-height: 1.6;
+	color: var(--settings-muted);
+}
+.settings-page .settings-control,
+.settings-page .settings-field input,
+.settings-page .settings-field textarea,
+.settings-page .settings-field select {
+	width: 100%;
+	min-width: 0;
+	padding: 8px 11px;
+	min-height: 38px;
+	border: 1px solid var(--settings-line);
+	border-radius: 7px;
+	color: inherit;
+	background: white;
+	font: inherit;
+	font-size: 13px;
+}
+.settings-page .settings-preference-row > .settings-control {
+	max-width: 230px;
+	width: 48%;
+}
+.settings-page .settings-preference-row.background {
+	align-items: flex-start;
+}
+.settings-page .settings-preference-row.background textarea {
+	width: 60%;
+	max-width: none;
+	min-height: 105px;
+	resize: vertical;
+}
+.settings-page .settings-model-control {
+	display: block;
+	width: 54%;
+	max-width: 310px;
+	min-width: 0;
+}
+.settings-page .settings-model-control small {
+	display: block;
+	margin-top: 5px;
+	font-size: 12px;
+}
+.settings-page .settings-control:focus-visible,
+.settings-page .settings-field :is(input, select, textarea):focus-visible {
+	outline: 2px solid #adc7f2;
+	outline-offset: 1px;
+	border-color: var(--settings-blue);
+}
+.settings-page .settings-hint {
+	color: var(--settings-muted);
+	font-size: 12px;
+	line-height: 1.6;
+}
+.settings-page .settings-section-note {
+	margin: 10px 0 12px;
+}
+.settings-page .settings-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+.settings-page .settings-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	gap: 6px;
+	min-height: 34px;
+	padding: 7px 11px;
+	border: 1px solid transparent;
+	border-radius: 7px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 13px;
+	line-height: 1.4;
+	text-decoration: none;
+	cursor: pointer;
+	white-space: nowrap;
+}
+.settings-page .settings-button.secondary {
+	border-color: var(--settings-line);
+	background: white;
+}
+.settings-page .settings-button.primary {
+	background: var(--settings-blue);
+	color: white;
+}
+.settings-page .settings-button.danger {
+	color: #b44b45;
+}
+.settings-page .settings-button:hover:not(:disabled) {
+	filter: brightness(0.96);
+}
+.settings-page .settings-button:focus-visible,
+.settings-page .settings-tabs a:focus-visible {
+	outline: 2px solid #adc7f2;
+	outline-offset: 3px;
+}
+.settings-page .settings-button:disabled {
+	cursor: default;
+	opacity: 0.45;
+}
+.settings-page .settings-savebar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 24px;
+	padding-top: 20px;
+	border-top: 1px solid var(--settings-line);
+	font-size: 12px;
+}
+.settings-page .settings-dirty {
+	color: var(--settings-blue);
+}
+.settings-page .settings-badge {
+	display: inline-block;
+	padding: 1px 5px;
+	margin-left: 6px;
+	border-radius: 4px;
+	background: #edf3ff;
+	color: var(--settings-blue);
+	font-size: 11px;
+}
+.settings-page .settings-preset,
+.settings-page .settings-preset-choice {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	min-width: 0;
+}
+.settings-page .settings-preset {
+	padding: 16px;
+}
+.settings-page .settings-preset-choice {
+	flex: 1;
+}
+.settings-page .settings-preset input,
+.settings-page .settings-permission input {
+	width: auto;
+	flex: none;
+	margin: 4px 0 0;
+	accent-color: var(--settings-blue);
+}
+.settings-page .settings-row-copy .settings-style-preview {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.settings-page .settings-permission-group {
+	overflow: clip;
+}
+.settings-page .settings-permission {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 20px;
+}
+.settings-page .settings-permission:has(input:checked) {
+	background: #edf3ff;
+}
+.settings-page .settings-permission strong {
+	font-size: 13px;
+	font-weight: 500;
+}
+.settings-page .settings-preset + .settings-preset,
+.settings-page .settings-permission + .settings-permission {
+	border-top: 1px solid var(--settings-line);
+}
+.settings-page .settings-tools-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding-top: 8px;
+	font-size: 12px;
+}
+.settings-page .settings-tools-footer a,
+.settings-page .settings-back-link {
+	color: var(--settings-muted);
+	text-decoration: none;
+}
+.settings-page .settings-back-link {
+	display: inline-block;
+	margin-bottom: 14px;
+	font-size: 12px;
+}
+.settings-page .settings-dialog {
+	width: min(620px, calc(100vw - 32px));
+	max-height: calc(100dvh - 40px);
+	padding: 24px;
+	border: 1px solid var(--settings-line);
+	border-radius: 12px;
+	background: white;
+	color: #292d35;
+	box-shadow: 0 12px 45px #20293820;
+	font-size: 14px;
+}
+.settings-page .settings-dialog::backdrop {
+	background: #20273538;
+}
+.settings-page .settings-dialog-heading h2,
+.settings-page .settings-dialog > h2 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 500;
+}
+.settings-page .settings-dialog > p {
+	margin: 14px 0 20px;
+	line-height: 1.6;
+}
+.settings-page .settings-dialog-heading {
+	margin-bottom: 20px;
+}
+.settings-page .settings-dialog-heading > button {
+	min-height: 30px;
+	padding: 3px 9px;
+	font-size: 18px;
+	border: 0;
+}
+.settings-page .settings-editor-form > .settings-actions {
+	justify-content: flex-end;
+	margin-top: 22px;
+}
+.settings-page .settings-form-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px;
+}
+.settings-page .settings-field {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	min-width: 0;
+	font-size: 13px;
+}
+.settings-page .settings-field.full {
+	grid-column: 1 / -1;
+}
+.settings-page .settings-field > small {
+	font-size: 12px;
+	color: var(--settings-muted);
+}
+.settings-page .settings-leave-dialog {
+	width: min(480px, calc(100vw - 32px));
+}
+.settings-page .settings-state {
+	margin-bottom: 24px;
+	padding: 16px;
+	border: 1px solid var(--settings-line);
+	border-radius: 10px;
+}
+.settings-page .settings-loading {
+	margin: 20px 0;
+	color: var(--settings-muted);
+	font-size: 13px;
+}
+@media (max-width: 620px) {
+	.settings-page .settings-topbar {
+		min-height: 54px;
+		padding: 0 20px;
+	}
+	.settings-page .settings-tabs {
+		padding: 0 20px;
+		gap: 22px;
+	}
+	.settings-page .settings-content {
+		padding: 24px 20px;
+	}
+	.settings-page .settings-page-head h2 {
+		font-size: 20px;
+	}
+	.settings-page .settings-preference-row {
+		flex-wrap: wrap;
+		gap: 12px;
+		padding: 15px;
+	}
+	.settings-page .settings-preference-row > .settings-row-copy {
+		flex-basis: 100%;
+	}
+	.settings-page .settings-control,
+	.settings-page .settings-field :is(input, select, textarea) {
+		font-size: 16px;
+	}
+	.settings-page .settings-preference-row > .settings-control,
+	.settings-page .settings-preference-row.background textarea,
+	.settings-page .settings-model-control {
+		width: 100%;
+		max-width: none;
+	}
+	.settings-page .settings-preset {
+		flex-wrap: wrap;
+	}
+	.settings-page .settings-preset > .settings-actions {
+		margin-left: 23px;
+	}
+	.settings-page .settings-savebar,
+	.settings-page .settings-tools-footer {
+		flex-wrap: wrap;
+	}
+	.settings-page .settings-savebar > .settings-actions {
+		margin-left: auto;
+	}
+	.settings-page .settings-form-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.settings-page .settings-dialog {
+		padding: 20px;
+	}
+}

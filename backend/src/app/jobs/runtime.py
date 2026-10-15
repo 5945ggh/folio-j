@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -13,23 +12,19 @@ from app.chat_models import ChatMessage, ChatThread, Job
 from app.ids import new_ulid
 from app.llm import adapters
 from app.models import Segment, Source
-from app.services.settings import now, read_credential, redact_credential, safe_verification_error
+from app.services.settings import now, read_credential, redact_credential
 from app.settings_models import Run
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
-CALL_SECONDS = 60
 ANALYSIS_CALL_SECONDS = 180
-OUTPUT_CHAR_LIMIT = 200_000
-PROGRESS_SECONDS = 0.25
-STOP_GRACE_SECONDS = 2.0
 SCAN_SECONDS = 0.25
 ACTIVE = ("queued", "running", "stopping")
 
 
 def tool_definitions() -> list[dict[str, Any]]:
-    path = Path(__file__).resolve().parents[3] / "prompts" / "chat" / "tools_v3.json"
+    path = Path(__file__).resolve().parents[3] / "prompts" / "chat" / "tools_v4.json"
     data: dict[str, Any] = json.loads(path.read_text())
     return data["tools"]
 
@@ -152,28 +147,7 @@ async def _claim(
         return token, key, snapshot
 
 
-async def _write_progress(application: "FastAPI", job_id: str, token: str, value: str) -> bool:
-    async with application.state.session_factory() as session:
-        await session.execute(text("BEGIN IMMEDIATE"))
-        job = await session.get(Job, job_id)
-        if job is None or job.status != "running" or job.execution_token != token:
-            return False
-        thread = await session.get(ChatThread, job.thread_id)
-        if thread is None or not await _parents_valid(session, job, thread):
-            return False
-        run = await session.scalar(select(Run).where(Run.job_id == job_id))
-        assistant = await _assistant(session, job_id)
-        if run is None or run.status != "running" or assistant is None:
-            return False
-        run.output_text = value
-        assistant.content = value
-        assistant.updated_at = now()
-        job.version += 1
-        await session.commit()
-        return True
-
-
-async def _finish(
+async def _finish(  # pyright: ignore[reportUnusedFunction]
     application: "FastAPI",
     job_id: str,
     token: str,
@@ -236,12 +210,6 @@ async def _finish(
         job.version += 1
         _release(thread, job)
         await session.commit()
-
-
-async def _status(application: "FastAPI", job_id: str) -> str | None:
-    async with application.state.session_factory() as session:
-        job = await session.get(Job, job_id)
-        return job.status if job is not None else None
 
 
 async def _call_authorized(application: "FastAPI", job_id: str, token: str) -> bool:
@@ -308,127 +276,6 @@ async def execute_job(application: "FastAPI", job_id: str) -> None:
         from app.jobs.agent import execute_quick_job
 
         await execute_quick_job(application, job_id, token, key, snapshot)
-        return
-        partial = ""
-        last_write = 0.0
-        loop = asyncio.get_running_loop()
-
-        async def progress(value: str) -> None:
-            nonlocal partial, last_write
-            safe = redact_credential(value, key) or ""
-            partial = safe[:OUTPUT_CHAR_LIMIT]
-            if len(safe) > OUTPUT_CHAR_LIMIT:
-                raise OutputLimitError()
-            current = loop.time()
-            if current - last_write >= PROGRESS_SECONDS:
-                await _write_progress(application, job_id, token, safe)
-                last_write = current
-
-        # Stop/delete hold this same lock around their durable commit. An accepted
-        # stop therefore either wins before the SDK entry or observes an entered call.
-        async with application.state.chat_dispatch_lock:
-            if not await _call_authorized(application, job_id, token):
-                authorized = False
-                call: asyncio.Task[adapters.GenerateResult] | None = None
-            else:
-                authorized = True
-                entered = asyncio.Event()
-
-                async def invoke() -> adapters.GenerateResult:
-                    entered.set()
-                    return await adapters.generate_text(snapshot, key, progress)
-
-                call = asyncio.create_task(invoke())
-                await entered.wait()
-        if not authorized or call is None:
-            await _finalize_stop(application, job_id)
-            return
-        result: adapters.GenerateResult | None = None
-        error_code: str | None = None
-        error: str | None = None
-        stop_started: float | None = None
-        async with application.state.session_factory() as session:
-            job = await session.get(Job, job_id)
-            call_seconds = (
-                ANALYSIS_CALL_SECONDS
-                if job is not None and job.kind == "generate_analysis"
-                else CALL_SECONDS
-            )
-        deadline = loop.time() + call_seconds
-        cancel_sent = False
-        finalized = False
-        try:
-            while not call.done():
-                await asyncio.wait({call}, timeout=0.05)
-                status = await _status(application, job_id)
-                if status == "stopping":
-                    if stop_started is None:
-                        stop_started = loop.time()
-                    if not cancel_sent:
-                        call.cancel()
-                        cancel_sent = True
-                    if loop.time() - stop_started >= STOP_GRACE_SECONDS:
-                        await _finalize_stop(application, job_id)
-                        finalized = True
-                elif status == "running" and loop.time() >= deadline and not finalized:
-                    if not cancel_sent:
-                        call.cancel()
-                        cancel_sent = True
-                    await _finish(
-                        application,
-                        job_id,
-                        token,
-                        result=None,
-                        error_code="timeout",
-                        error="模型调用超时（60 秒）",
-                        partial=partial,
-                        key=key,
-                    )
-                    finalized = True
-                elif status != "running":
-                    if not cancel_sent:
-                        call.cancel()
-                        cancel_sent = True
-            if stop_started is not None or await _status(application, job_id) == "stopping":
-                await _finalize_stop(application, job_id)
-                finalized = True
-            try:
-                result = call.result()
-                if len(result.text) > OUTPUT_CHAR_LIMIT:
-                    raise OutputLimitError()
-            except asyncio.CancelledError:
-                error_code, error = "user_stopped", "已停止本轮回答"
-            except OutputLimitError:
-                result = None
-                error_code, error = "output_limit", "回答超过本地长度上限"
-            except TimeoutError:
-                error_code, error = "timeout", "模型调用超时（60 秒）"
-            except Exception as exc:
-                error_code, error = "provider_error", safe_verification_error(exc)
-            if finalized:
-                return
-            if stop_started is not None or await _status(application, job_id) == "stopping":
-                await _finalize_stop(application, job_id)
-            else:
-                await _finish(
-                    application,
-                    job_id,
-                    token,
-                    result=result,
-                    error_code=error_code,
-                    error=error,
-                    partial=partial,
-                    key=key,
-                )
-        except asyncio.CancelledError:
-            call.cancel()
-            with suppress(BaseException):
-                await call
-            raise
-
-
-class OutputLimitError(Exception):
-    """Local visible-output budget was exceeded."""
 
 
 async def recover_chat_jobs(session: AsyncSession) -> None:

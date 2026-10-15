@@ -4,6 +4,7 @@ import {
 	capabilityPresentation,
 	isActiveVerification,
 	undiscoveredRegistrations,
+	type VerificationState,
 } from "./verification.ts";
 
 test("discovery excludes registered IDs and duplicate remote entries", () => {
@@ -13,10 +14,30 @@ test("discovery excludes registered IDs and duplicate remote entries", () => {
 	);
 });
 
-test("interrupted is distinct from failed, and active states are only queued/running", () => {
-	assert.equal(capabilityPresentation("interrupted").label, "验证中断");
-	assert.equal(capabilityPresentation("failed").label, "验证失败");
-	assert.equal(isActiveVerification("queued"), true);
-	assert.equal(isActiveVerification("running"), true);
-	assert.equal(isActiveVerification("interrupted"), false);
+test("interrupted and failed have distinct nonempty labels and icons", () => {
+	const interrupted = capabilityPresentation("interrupted");
+	const failed = capabilityPresentation("failed");
+	for (const field of ["icon", "label"] as const) {
+		assert.ok(interrupted[field].trim());
+		assert.ok(failed[field].trim());
+		assert.notEqual(interrupted[field], failed[field]);
+	}
+});
+
+test("the complete verification state set has only queued and running active", () => {
+	const expected = {
+		unknown: false,
+		queued: true,
+		running: true,
+		succeeded: false,
+		failed: false,
+		interrupted: false,
+	} satisfies Record<VerificationState, boolean>;
+	for (const [state, active] of Object.entries(expected)) {
+		assert.equal(
+			isActiveVerification(state as VerificationState),
+			active,
+			state,
+		);
+	}
 });

@@ -39,6 +39,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalog/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sources */
+        get: operations["getSourceCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -101,6 +118,211 @@ export interface paths {
         put?: never;
         /** Stop Job */
         post: operations["stopChatJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Materials */
+        get: operations["getMaterialCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Material */
+        get: operations["getMaterial"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/chapters/{chapter_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Chapter */
+        get: operations["getMaterialChapter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cover */
+        get: operations["getMaterialCover"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/illustrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Illustrations */
+        get: operations["getMaterialIllustrations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/illustrations/{ordinal}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Illustration Content */
+        get: operations["getMaterialIllustrationContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/opened": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Opened */
+        post: operations["recordMaterialOpened"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/reading-position": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save Position */
+        put: operations["saveReadingPosition"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Readings */
+        get: operations["getMaterialReadings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/readings/prepare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Prepare Readings */
+        post: operations["prepareMaterialReadings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Material */
+        get: operations["searchMaterial"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Usage */
+        get: operations["getMaterialUsage"];
+        /** Set Usage */
+        put: operations["setMaterialUsage"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -332,7 +554,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Patch Settings */
+        patch: operations["patchSettings"];
         trace?: never;
     };
     "/api/settings/defaults": {
@@ -441,6 +664,40 @@ export interface paths {
         patch: operations["updateSource"];
         trace?: never;
     };
+    "/api/sources/{source_id}/catalog/analyses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Analyses */
+        get: operations["getAnalysisCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sources/{source_id}/catalog/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Segments */
+        get: operations["getSegmentCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sources/{source_id}/delete-impact": {
         parameters: {
             query?: never;
@@ -452,6 +709,24 @@ export interface paths {
         get: operations["getSourceDeleteImpact"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sources/{source_id}/materials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Materials */
+        get: operations["listMaterials"];
+        put?: never;
+        /** Import Material */
+        post: operations["importMaterial"];
         delete?: never;
         options?: never;
         head?: never;
@@ -549,6 +824,42 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnalysisCatalogItem */
+        AnalysisCatalogItem: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Current Revision Id */
+            current_revision_id: string;
+            /** Excerpt */
+            excerpt: string;
+            /** Id */
+            id: string;
+            /** Segment Excerpt */
+            segment_excerpt: string;
+            /** Segment Id */
+            segment_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** AnalysisCatalogPage */
+        AnalysisCatalogPage: {
+            /** Items */
+            items: components["schemas"]["AnalysisCatalogItem"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
         /** AnalysisDeleteImpact */
         AnalysisDeleteImpact: {
             /** Analysis Id */
@@ -634,6 +945,55 @@ export interface components {
             /** Revision Id */
             revision_id: string;
         };
+        /** ChapterPart */
+        ChapterPart: {
+            /** End */
+            end: number;
+            /** Html */
+            html: string;
+            /** Leaf End */
+            leaf_end: number;
+            /** Leaf Start */
+            leaf_start: number;
+            /** Resource Id */
+            resource_id: string;
+            /** Spine Index */
+            spine_index: number;
+            /** Start */
+            start: number;
+        };
+        /** ChapterResource */
+        ChapterResource: {
+            /** Body Attributes */
+            body_attributes: {
+                [key: string]: string;
+            };
+            /** Css */
+            css: string;
+            /** Href */
+            href: string;
+            /** Html Attributes */
+            html_attributes: {
+                [key: string]: string;
+            };
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+            /** Text Sha256 */
+            text_sha256: string;
+        };
+        /** ChapterSummary */
+        ChapterSummary: {
+            /** Id */
+            id: string;
+            /** Level */
+            level: number;
+            /** Part Count */
+            part_count: number;
+            /** Title */
+            title: string;
+        };
         /** DefaultsInput */
         DefaultsInput: {
             /** Analysis Model Id */
@@ -649,6 +1009,22 @@ export interface components {
             permission_mode: "review" | "full_access";
             /** Style Id */
             style_id: string | null;
+        };
+        /** DefaultsPatch */
+        DefaultsPatch: {
+            /** Analysis Model Id */
+            analysis_model_id?: string | null;
+            /** Chat Model Id */
+            chat_model_id?: string | null;
+            /** Extraction Model Id */
+            extraction_model_id?: string | null;
+            /**
+             * Permission Mode
+             * @enum {string}
+             */
+            permission_mode?: "review" | "full_access";
+            /** Style Id */
+            style_id?: string | null;
         };
         /** DefaultsResponse */
         DefaultsResponse: {
@@ -783,6 +1159,308 @@ export interface components {
             user_message_id: string;
             /** Version */
             version: number;
+        };
+        /** MaterialCatalogItem */
+        MaterialCatalogItem: {
+            /** Contract Version */
+            contract_version: string;
+            /** Cover Url */
+            cover_url: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Last Opened At */
+            last_opened_at: string | null;
+            /** Product Sha256 */
+            product_sha256: string;
+            /** Source Id */
+            source_id: string;
+            /** Source Sha256 */
+            source_sha256: string;
+            /** Source Title */
+            source_title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "not_started" | "in_progress" | "completed";
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @default book
+             * @constant
+             */
+            type: "book";
+            /** Usage Revision */
+            usage_revision: number;
+            /** Version Id */
+            version_id: string;
+            /** Warnings */
+            warnings: string[];
+        };
+        /** MaterialCatalogPage */
+        MaterialCatalogPage: {
+            /** Items */
+            items: components["schemas"]["MaterialCatalogItem"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
+        /** MaterialChapterResponse */
+        MaterialChapterResponse: {
+            /** Id */
+            id: string;
+            /** Level */
+            level: number;
+            /** Material Id */
+            material_id: string;
+            /** Parts */
+            parts: components["schemas"]["ChapterPart"][];
+            /** Resources */
+            resources: components["schemas"]["ChapterResource"][];
+            /** Title */
+            title: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /** MaterialIllustrationItem */
+        MaterialIllustrationItem: {
+            /** Alt */
+            alt: string;
+            /** Chapter Id */
+            chapter_id: string;
+            /** Chapter Title */
+            chapter_title: string;
+            /** Content Url */
+            content_url: string;
+            /** Image Id */
+            image_id: number;
+            /** Ordinal */
+            ordinal: number;
+            /** Part Index */
+            part_index: number;
+            /** Resource Id */
+            resource_id: string;
+            /** Spine Index */
+            spine_index: number;
+        };
+        /** MaterialIllustrationsResponse */
+        MaterialIllustrationsResponse: {
+            /** Items */
+            items: components["schemas"]["MaterialIllustrationItem"][];
+            /** Limit */
+            limit: number;
+            /** Material Id */
+            material_id: string;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+            /** Version Id */
+            version_id: string;
+        };
+        /** MaterialImportResponse */
+        MaterialImportResponse: {
+            material: components["schemas"]["MaterialResponse"];
+            /** Reused */
+            reused: boolean;
+        };
+        /** MaterialOpenedInput */
+        MaterialOpenedInput: {
+            /** Action Id */
+            action_id: string;
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** MaterialReadingToken */
+        MaterialReadingToken: {
+            /** Dictionary Form */
+            dictionary_form: string;
+            /** End */
+            end: number;
+            /** Is Oov */
+            is_oov: boolean;
+            /** Normalized Form */
+            normalized_form: string;
+            /** Pos */
+            pos: string[];
+            /** Reading */
+            reading: string;
+            /** Start */
+            start: number;
+            /** Surface */
+            surface: string;
+        };
+        /** MaterialReadingsPrepare */
+        MaterialReadingsPrepare: {
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+            /** Version Id */
+            version_id: string;
+        };
+        /** MaterialReadingsResponse */
+        MaterialReadingsResponse: {
+            /** Generation Id */
+            generation_id: string;
+            /** Material Id */
+            material_id: string;
+            /** Resources */
+            resources: components["schemas"]["MaterialResourceReadings"][];
+            /** Version Id */
+            version_id: string;
+        };
+        /** MaterialReadingsSummary */
+        MaterialReadingsSummary: {
+            /** Generation Id */
+            generation_id: string;
+            /** Material Id */
+            material_id: string;
+            /** Token Count */
+            token_count: number;
+            /** Version Id */
+            version_id: string;
+        };
+        /** MaterialResourceReadings */
+        MaterialResourceReadings: {
+            /** Resource Id */
+            resource_id: string;
+            /** Text Sha256 */
+            text_sha256: string;
+            /** Tokens */
+            tokens: components["schemas"]["MaterialReadingToken"][];
+        };
+        /** MaterialResponse */
+        MaterialResponse: {
+            /** Chapter Positions */
+            chapter_positions?: components["schemas"]["ReadingPositionResponse"][];
+            /** Chapters */
+            chapters: components["schemas"]["ChapterSummary"][];
+            /** Contract Version */
+            contract_version: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Product Sha256 */
+            product_sha256: string;
+            reading_position: components["schemas"]["ReadingPositionResponse"] | null;
+            /** Source Id */
+            source_id: string;
+            /** Source Sha256 */
+            source_sha256: string;
+            /** Title */
+            title: string;
+            /** Version Id */
+            version_id: string;
+            /** Warnings */
+            warnings: string[];
+        };
+        /** MaterialSearchItem */
+        MaterialSearchItem: {
+            /** After */
+            after: string;
+            /** Before */
+            before: string;
+            /** Chapter Id */
+            chapter_id: string;
+            /** Chapter Title */
+            chapter_title: string;
+            /** End */
+            end: number;
+            /** Match */
+            match: string;
+            /** Part Index */
+            part_index: number;
+            /** Resource Id */
+            resource_id: string;
+            /** Spine Index */
+            spine_index: number;
+            /** Start */
+            start: number;
+        };
+        /** MaterialSearchResponse */
+        MaterialSearchResponse: {
+            /** Items */
+            items: components["schemas"]["MaterialSearchItem"][];
+            /** Limit */
+            limit: number;
+            /** Material Id */
+            material_id: string;
+            /** Offset */
+            offset: number;
+            /** Query */
+            query: string;
+            /** Total */
+            total: number;
+            /** Version Id */
+            version_id: string;
+        };
+        /** MaterialSummary */
+        MaterialSummary: {
+            /** Contract Version */
+            contract_version: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Product Sha256 */
+            product_sha256: string;
+            /** Source Id */
+            source_id: string;
+            /** Source Sha256 */
+            source_sha256: string;
+            /** Title */
+            title: string;
+            /** Version Id */
+            version_id: string;
+            /** Warnings */
+            warnings: string[];
+        };
+        /** MaterialUsageInput */
+        MaterialUsageInput: {
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "not_started" | "in_progress" | "completed";
+        };
+        /** MaterialUsageResponse */
+        MaterialUsageResponse: {
+            /** Last Opened At */
+            last_opened_at: string | null;
+            /** Material Id */
+            material_id: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "not_started" | "in_progress" | "completed";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** MessagePage */
         MessagePage: {
@@ -1023,6 +1701,82 @@ export interface components {
              */
             updated_at: string;
         };
+        /** ReadingPositionResponse */
+        ReadingPositionResponse: {
+            /** Chapter Id */
+            chapter_id: string;
+            /** Image Id */
+            image_id?: number | null;
+            /** Image Progress */
+            image_progress?: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "image";
+            /** Offset */
+            offset?: number | null;
+            /** Part Index */
+            part_index: number;
+            /** Progress */
+            progress: number | null;
+            /** Resource Id */
+            resource_id: string;
+            /** Revision */
+            revision: number;
+            settings?: components["schemas"]["ReadingSettings"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /** ReadingPositionUpdate */
+        ReadingPositionUpdate: {
+            /** Chapter Id */
+            chapter_id: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Image Id */
+            image_id?: number | null;
+            /** Image Progress */
+            image_progress?: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "image";
+            /** Offset */
+            offset?: number | null;
+            /** Part Index */
+            part_index: number;
+            /** Resource Id */
+            resource_id: string;
+            settings?: components["schemas"]["ReadingSettings"];
+            /** Version Id */
+            version_id: string;
+        };
+        /** ReadingSettings */
+        ReadingSettings: {
+            /**
+             * Font Size
+             * @default 20
+             */
+            font_size: number;
+            /**
+             * Line Height
+             * @default 1.8
+             */
+            line_height: number;
+            /**
+             * Writing Mode
+             * @default horizontal-tb
+             * @enum {string}
+             */
+            writing_mode: "horizontal-tb" | "vertical-rl";
+        };
         /** ReviewProposal */
         ReviewProposal: {
             /** After */
@@ -1154,6 +1908,17 @@ export interface components {
             /** Uid */
             uid: string;
         };
+        /** SegmentCatalogPage */
+        SegmentCatalogPage: {
+            /** Items */
+            items: components["schemas"]["SegmentResponse"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
         /** SegmentCreate */
         SegmentCreate: {
             /**
@@ -1257,12 +2022,55 @@ export interface components {
             /** Translation */
             translation?: string;
         };
+        /** SettingsPatch */
+        SettingsPatch: {
+            defaults?: components["schemas"]["DefaultsPatch"];
+            profile?: components["schemas"]["ProfileInput"];
+        };
         /** SettingsResponse */
         SettingsResponse: {
             defaults: components["schemas"]["DefaultsResponse"];
             profile: components["schemas"]["ProfileResponse"];
             /** Styles */
             styles: components["schemas"]["StyleResponse"][];
+        };
+        /** SourceCatalogItem */
+        SourceCatalogItem: {
+            /** Analysis Count */
+            analysis_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Description */
+            description: string;
+            /** Id */
+            id: string;
+            /** Material Count */
+            material_count: number;
+            /** Note */
+            note: string;
+            /** Segment Count */
+            segment_count: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** SourceCatalogPage */
+        SourceCatalogPage: {
+            /** Items */
+            items: components["schemas"]["SourceCatalogItem"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
         };
         /** SourceCreate */
         SourceCreate: {
@@ -1288,6 +2096,11 @@ export interface components {
              * @default 0
              */
             analysis_count: number;
+            /**
+             * Material Count
+             * @default 0
+             */
+            material_count: number;
             /** Message Count */
             message_count: number;
             /** Segment Count */
@@ -1567,6 +2380,41 @@ export interface operations {
             };
         };
     };
+    getSourceCatalog: {
+        parameters: {
+            query?: {
+                q?: string;
+                sort?: "title" | "created_at" | "updated_at";
+                order?: "asc" | "desc";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceCatalogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health: {
         parameters: {
             query?: never;
@@ -1671,6 +2519,461 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialCatalog: {
+        parameters: {
+            query?: {
+                type?: "book";
+                source_id?: string | null;
+                q?: string;
+                status?: ("not_started" | "in_progress" | "completed") | null;
+                sort?: "title" | "created_at" | "last_opened_at";
+                order?: "asc" | "desc";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialCatalogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialChapter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+                chapter_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialChapterResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialCover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/jpeg": unknown;
+                    "image/png": unknown;
+                };
+            };
+            /** @description 无可用封面或材料不可见 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialIllustrations: {
+        parameters: {
+            query: {
+                version_id: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialIllustrationsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialIllustrationContent: {
+        parameters: {
+            query: {
+                version_id: string;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+                ordinal: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/gif": unknown;
+                    "image/jpeg": unknown;
+                    "image/png": unknown;
+                    "image/webp": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recordMaterialOpened: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialOpenedInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialUsageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    saveReadingPosition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadingPositionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingPositionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialReadings: {
+        parameters: {
+            query: {
+                version_id: string;
+                chapter_id: string;
+                generation_id?: string | null;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialReadingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    prepareMaterialReadings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialReadingsPrepare"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialReadingsSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    searchMaterial: {
+        parameters: {
+            query: {
+                version_id: string;
+                q?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialUsageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    setMaterialUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialUsageInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialUsageResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2002,6 +3305,11 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                /** @description Provider 登记身份 */
+                provider_id?: string | null;
+                /** @description ProviderModel 登记身份，非模型名称 */
+                model_id?: string | null;
+                status?: ("queued" | "running" | "succeeded" | "failed" | "interrupted") | null;
             };
             header?: never;
             path?: never;
@@ -2305,6 +3613,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsResponse"];
+                };
+            };
+        };
+    };
+    patchSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -2620,6 +3961,80 @@ export interface operations {
             };
         };
     };
+    getAnalysisCatalog: {
+        parameters: {
+            query?: {
+                q?: string;
+                sort?: "title" | "created_at" | "updated_at";
+                order?: "asc" | "desc";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisCatalogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getSegmentCatalog: {
+        parameters: {
+            query?: {
+                q?: string;
+                sort?: "created_at" | "updated_at";
+                order?: "asc" | "desc";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentCatalogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     getSourceDeleteImpact: {
         parameters: {
             query?: never;
@@ -2638,6 +4053,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceDeleteImpact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listMaterials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    importMaterial: {
+        parameters: {
+            query?: {
+                filename?: string | null;
+            };
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/epub+zip": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialImportResponse"];
                 };
             };
             /** @description Validation Error */

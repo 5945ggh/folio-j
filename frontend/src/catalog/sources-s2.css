@@ -1,0 +1,313 @@
+/* S2 composes the existing A.1 navigation and controls with its own source space. */
+.app-shell.sources-s2 > .page-content {
+	width: 100%;
+	padding: 0;
+}
+.sources-s2 .s2-space {
+	display: grid;
+	grid-template-columns: var(--source-directory-width, 260px) minmax(0, 1fr);
+	height: 100dvh;
+	overflow: hidden;
+}
+.s2-source-panel {
+	position: relative;
+	min-width: 0;
+	min-height: 0;
+	background: #f9fafb;
+	border-right: 1px solid var(--border);
+}
+.s2-source-resizer {
+	position: absolute;
+	z-index: 1;
+	top: 0;
+	bottom: 0;
+	right: -4px;
+	width: 8px;
+	height: 100%;
+	margin: 0;
+	border: 0;
+	cursor: col-resize;
+	touch-action: none;
+}
+.s2-source-resizer::after {
+	content: "";
+	position: absolute;
+	inset: 0 3px;
+	border-radius: 2px;
+}
+.s2-source-resizer:hover::after,
+.s2-source-resizer:focus-visible::after {
+	background: #b8c7dc;
+}
+.s2-source-resizer:focus-visible {
+	outline: none;
+}
+.s2-directory {
+	height: 100%;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+.s2-directory-heading {
+	min-height: 64px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 18px;
+}
+.s2-directory-heading h2 {
+	font-size: 14px;
+	margin: 0 auto 0 0;
+}
+.s2-tools {
+	display: flex;
+	gap: 2px;
+}
+.s2-tools .library-icon {
+	width: 28px;
+	height: 28px;
+}
+.s2-tools .library-icon svg {
+	width: 16px;
+	height: 16px;
+}
+.s2-tools .library-icon[aria-expanded="true"] {
+	background: #e9edf2;
+	color: #232832;
+}
+.s2-source-search {
+	padding: 0 12px 10px;
+}
+.s2-source-search input {
+	display: block;
+	min-width: 0;
+	width: 100%;
+	height: 32px;
+	padding: 5px 10px;
+	border: 1px solid #dce1e7;
+	border-radius: 7px;
+	background: #fff;
+	color: inherit;
+	font-size: 13px;
+	line-height: 20px;
+}
+.s2-source-search input:focus {
+	border-color: #9bb5d3;
+	outline: 2px solid #2168d41a;
+	outline-offset: 0;
+}
+.s2-source-scroll {
+	overflow: auto;
+	flex: 1;
+	min-height: 0;
+	padding: 8px 10px;
+	overscroll-behavior: contain;
+}
+.s2-source-row {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 14px 12px;
+	margin-bottom: 5px;
+	border-radius: 7px;
+	color: inherit;
+}
+.s2-source-row:hover {
+	background: #f0f2f5;
+}
+.s2-source-row.selected {
+	background: #eaf0fb;
+	color: #35567f;
+}
+.s2-source-row strong {
+	font-size: 13px;
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.s2-source-row span {
+	font-size: 11px;
+	color: var(--muted);
+}
+.s2-directory .catalog-pagination {
+	padding: 10px 12px;
+	margin: 0;
+	gap: 6px;
+	flex-wrap: wrap;
+	font-size: 11px;
+	border-top: 1px solid var(--border);
+}
+.s2-directory .catalog-pagination .button {
+	padding: 4px 8px;
+	font-size: 11px;
+}
+.s2-directory-empty {
+	color: var(--muted);
+	font-size: 13px;
+	padding: 15px 8px;
+}
+.s2-search-chip {
+	align-self: flex-start;
+	max-width: calc(100% - 24px);
+	margin: 0 12px 6px;
+	background: #eaf0fb;
+	border: 0;
+	padding: 5px 8px;
+	border-radius: 5px;
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+.sources-s2 .source-detail-content {
+	min-width: 0;
+	overflow: auto;
+	height: 100%;
+	padding: 26px 30px 64px;
+	overscroll-behavior: contain;
+}
+.s2-source-heading {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 20px;
+	margin-bottom: 18px;
+}
+.s2-source-heading > div:first-child {
+	min-width: 0;
+}
+.s2-source-heading h1 {
+	font-size: 22px;
+	line-height: 1.4;
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+.s2-source-heading p {
+	color: var(--muted);
+	font-size: 13px;
+	margin: 7px 0 0;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.s2-source-menu {
+	inset: 64px 28px auto auto;
+	min-width: 200px;
+}
+.s2-source-menu button {
+	display: block;
+	width: 100%;
+	background: transparent;
+	border: 0;
+	text-align: left;
+	padding: 10px 12px;
+	border-radius: 4px;
+}
+.s2-source-menu button:hover,
+.s2-source-menu button:focus-visible {
+	background: #edf1f6;
+}
+.s2-sort {
+	inset: 64px auto auto calc(var(--sidebar-width) + 80px);
+}
+.sources-s2 .s2-source-reveal {
+	display: none;
+}
+.s2-full-text {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.s2-welcome {
+	margin: 12vh auto;
+	max-width: 430px;
+}
+.s2-welcome h1 {
+	font-size: 24px;
+}
+.s2-welcome p {
+	color: var(--muted);
+	line-height: 1.8;
+}
+.s2-source-drawer {
+	margin: 0 auto 0 0;
+	width: min(340px, 94vw);
+	height: 100dvh;
+	max-height: 100dvh;
+	border-radius: 0;
+	padding: 16px 8px;
+}
+.s2-source-drawer[open] {
+	display: flex;
+	flex-direction: column;
+}
+.s2-source-drawer > .section-heading {
+	padding: 0 12px;
+}
+.s2-source-drawer .s2-directory {
+	flex: 1;
+	min-height: 0;
+}
+@media (max-width: 1100px) {
+	.sources-s2 .source-detail-content {
+		padding: 22px 22px 48px;
+	}
+}
+@media (max-width: 900px) {
+	.sources-s2 .s2-space {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.s2-source-panel {
+		display: none;
+	}
+	.sources-s2 .s2-source-reveal {
+		display: inline-flex;
+		margin-bottom: 18px;
+		font-size: 12px;
+	}
+	.s2-sort {
+		left: 60px;
+	}
+}
+@media (max-width: 720px) {
+	.sources-s2 .s2-space {
+		height: calc(100dvh - 54px);
+	}
+	.sources-s2 .source-detail-content {
+		padding: 16px 18px 40px;
+	}
+	.s2-source-heading h1 {
+		font-size: 21px;
+	}
+	.s2-source-heading {
+		gap: 10px;
+	}
+}
+.sources-s2 .source-detail-content > .catalog-tabs {
+	display: inline-flex;
+	border: 0;
+	gap: 2px;
+	padding: 3px;
+	border-radius: 8px;
+	background: #f0f1f4;
+	margin-bottom: 20px;
+}
+.sources-s2 .source-view-panel {
+	border-top: 1px solid var(--border);
+	padding-top: 24px;
+}
+.sources-s2 .source-view-panel[hidden] {
+	display: none;
+}
+.s2-directory .pagination-count {
+	flex-basis: 100%;
+}
+.s2-directory .catalog-pagination .button {
+	min-height: 26px;
+}
+.s2-directory > .catalog-count {
+	margin: 0;
+	padding: 12px 20px;
+	border-top: 1px solid var(--border);
+}

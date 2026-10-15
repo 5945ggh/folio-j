@@ -2,8 +2,24 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 export UV_CACHE_DIR := justfile_directory() / ".cache/uv"
 
+# 列出可用命令。
 default:
     @just --list
+
+alias snap := snapshot
+
+# 生成带时间戳的仓库快照，供远端 agent 阅读。
+snapshot:
+    #!/usr/bin/env sh
+    set -eu
+    if ! command -v repomix >/dev/null 2>&1; then
+        printf '缺少 repomix，请先安装并加入 PATH。\n' >&2
+        exit 1
+    fi
+    mkdir -p .snapshots
+    snapshot_path=".snapshots/$(basename "$PWD")_仓库快照_$(date +%Y%m%d%H%M%S).xml"
+    repomix --style xml --token-count-tree --output "$snapshot_path"
+    printf '\n快照已生成：%s/%s\n' "$PWD" "$snapshot_path"
 
 # 安装锁定的后端与前端依赖。
 setup:
@@ -28,6 +44,8 @@ lint:
     uv run --project backend pyright --project backend
     pnpm --dir frontend lint
     pnpm --dir frontend typecheck
+    node --check prototypes/epub-reading/app.mjs
+    node --check prototypes/epub-reading/locator.mjs
 
 format:
     uv run --project backend ruff check --fix backend scripts
@@ -50,6 +68,7 @@ migrate:
 
 # 验证保留的实验与静态视觉原型。
 check-assets:
+    node --test prototypes/epub-reading/locator.test.mjs
     node --check prototypes/reading-native/app.js
     node --test prototypes/reading-native/verify.mjs
     node references/occurrence_anchor_pilot/reading-experiment/parser-test.mjs

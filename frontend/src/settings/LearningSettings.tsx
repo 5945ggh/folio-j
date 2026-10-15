@@ -1,172 +1,179 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { type FormEvent, useState } from "react";
+import { useRef, useState } from "react";
 import { api } from "../api/client";
 import { requireData } from "../content";
 import { ConfirmDialog, InlineError } from "../Shared";
 import {
-	type DefaultsInput,
-	type Model,
 	type ProfileInput,
-	type Provider,
+	patchSettings,
 	type Settings,
 	type Style,
 	type StyleInput,
 	settingsKeys,
 } from "./api";
+import {
+	SettingsEditorDialog,
+	SettingsSaveBar,
+	useSettingsDraft,
+	useSettingsFields,
+} from "./SettingsForms";
+import { commitSettingsResponse } from "./settings-cache";
 
-export function LearningSettings({
-	settings,
-	providers,
-}: {
-	settings: Settings;
-	providers: Provider[];
-}) {
-	const [profileSaved, setProfileSaved] = useState(false);
-	const [defaultsSaved, setDefaultsSaved] = useState(false);
-	return (
-		<>
-			<ProfileEditor
-				key={JSON.stringify(settings.profile)}
-				initial={settings.profile}
-				saved={profileSaved}
-				onSaved={setProfileSaved}
-			/>
-			<StyleEditor
-				styles={settings.styles}
-				defaultId={settings.defaults.style_id}
-			/>
-			<DefaultsEditor
-				key={JSON.stringify(settings.defaults)}
-				initial={settings.defaults}
-				styles={settings.styles}
-				providers={providers}
-				saved={defaultsSaved}
-				onSaved={setDefaultsSaved}
-			/>
-		</>
-	);
-}
+type LearningFields = { profile: ProfileInput; style_id: string | null };
+const learningFields = (settings: Settings): LearningFields => ({
+	profile: {
+		native_language: settings.profile.native_language,
+		explain_language: settings.profile.explain_language,
+		level_note: settings.profile.level_note,
+	},
+	style_id: settings.defaults.style_id,
+});
 
-function ProfileEditor({
-	initial,
-	saved,
-	onSaved,
-}: {
-	initial: Settings["profile"];
-	saved: boolean;
-	onSaved: (value: boolean) => void;
-}) {
+export function LearningSettings({ settings }: { settings: Settings }) {
 	const client = useQueryClient();
-	const [fields, setFields] = useState<ProfileInput>({
-		native_language: initial.native_language,
-		explain_language: initial.explain_language,
-		level_note: initial.level_note,
-	});
+	const draft = useSettingsFields(learningFields(settings));
+	const form = useRef<HTMLFormElement>(null);
 	const save = useMutation({
-		mutationFn: async () => {
-			const { data, error, response } = await api.PUT("/api/settings/profile", {
-				body: fields,
-			});
-			return requireData(data, error, response.status);
-		},
-		onSuccess: () => {
-			onSaved(true);
-			void client.invalidateQueries({ queryKey: settingsKeys.settings });
-		},
+		mutationFn: (fields: LearningFields) =>
+			patchSettings({
+				profile: fields.profile,
+				defaults: { style_id: fields.style_id },
+			}),
 	});
+	async function persist() {
+		if (!form.current?.reportValidity()) return false;
+		const submitted = draft.fields;
+		try {
+			const result = await save.mutateAsync(submitted);
+			await commitSettingsResponse(client, result, () =>
+				draft.accept(submitted, learningFields(result)),
+			);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+	useSettingsDraft({
+		id: "learning-preferences",
+		label: "学习偏好",
+		dirty: draft.dirty,
+		pending: save.isPending,
+		save: persist,
+		discard: draft.reset,
+	});
+	const { profile } = draft.fields;
 	return (
-		<section className="settings-section" aria-labelledby="profile-heading">
-			<div className="section-heading">
-				<h2 id="profile-heading">学习背景</h2>
-			</div>
+		<div className="settings-page-form">
 			<form
-				className="editor-card"
+				id="learning-settings-form"
+				ref={form}
 				onSubmit={(event) => {
 					event.preventDefault();
-					onSaved(false);
-					save.mutate();
+					void persist();
 				}}
 			>
-				<div className="form-grid">
-					<label className="field">
-						<span>母语</span>
-						<input
-							required
-							value={fields.native_language}
-							onChange={(event) =>
-								setFields({ ...fields, native_language: event.target.value })
-							}
-						/>
-					</label>
-					<label className="field">
-						<span>讲解语言</span>
-						<input
-							required
-							value={fields.explain_language}
-							onChange={(event) =>
-								setFields({ ...fields, explain_language: event.target.value })
-							}
-						/>
-					</label>
-					<label className="field full">
-						<span>学习水平与背景</span>
-						<textarea
-							rows={4}
-							value={fields.level_note}
-							onChange={(event) =>
-								setFields({ ...fields, level_note: event.target.value })
-							}
-							placeholder="写下当前水平、目标或希望讲解时考虑的背景"
-						/>
-					</label>
-				</div>
-				<InlineError error={save.error} />
-				<div className="actions">
-					<button
-						className="button primary"
-						type="submit"
-						disabled={save.isPending}
+				<fieldset disabled={save.isPending}>
+					<section
+						className="settings-section"
+						aria-labelledby="learning-background-heading"
 					>
-						保存学习背景
-					</button>
-					{saved && (
-						<span className="save-note" role="status">
-							已保存
-						</span>
-					)}
-				</div>
+						<div className="settings-section-heading">
+							<h3 id="learning-background-heading">学习背景</h3>
+						</div>
+						<div className="settings-group">
+							<label className="settings-preference-row">
+								<span className="settings-row-copy">
+									<strong>母语</strong>
+									<small>用于理解语言差异与表达习惯。</small>
+								</span>
+								<input
+									className="settings-control"
+									required
+									value={profile.native_language}
+									onChange={(event) =>
+										draft.change({
+											...draft.fields,
+											profile: {
+												...profile,
+												native_language: event.target.value,
+											},
+										})
+									}
+								/>
+							</label>
+							<label className="settings-preference-row">
+								<span className="settings-row-copy">
+									<strong>讲解语言</strong>
+									<small>讲解时优先使用的语言。</small>
+								</span>
+								<input
+									className="settings-control"
+									required
+									value={profile.explain_language}
+									onChange={(event) =>
+										draft.change({
+											...draft.fields,
+											profile: {
+												...profile,
+												explain_language: event.target.value,
+											},
+										})
+									}
+								/>
+							</label>
+							<label className="settings-preference-row background">
+								<span className="settings-row-copy">
+									<strong>学习水平与背景</strong>
+									<small>记录当前水平、阅读目标和希望照顾的背景。</small>
+								</span>
+								<textarea
+									className="settings-control"
+									rows={4}
+									value={profile.level_note}
+									placeholder="例如：正在阅读日语小说，希望多解释口语和省略。"
+									onChange={(event) =>
+										draft.change({
+											...draft.fields,
+											profile: { ...profile, level_note: event.target.value },
+										})
+									}
+								/>
+							</label>
+						</div>
+					</section>
+				</fieldset>
 			</form>
-		</section>
+			<fieldset disabled={save.isPending}>
+				<StyleList
+					settings={settings}
+					selected={draft.fields.style_id}
+					onSelect={(id) => draft.change({ ...draft.fields, style_id: id })}
+				/>
+			</fieldset>
+			<InlineError error={save.error} />
+			<SettingsSaveBar
+				formId="learning-settings-form"
+				dirty={draft.dirty}
+				saved={draft.saved}
+				pending={save.isPending}
+				onReset={draft.reset}
+			/>
+		</div>
 	);
 }
 
-function StyleEditor({
-	styles,
-	defaultId,
+function StyleList({
+	settings,
+	selected,
+	onSelect,
 }: {
-	styles: Style[];
-	defaultId: string | null;
+	settings: Settings;
+	selected: string | null;
+	onSelect: (id: string | null) => void;
 }) {
 	const client = useQueryClient();
 	const [editing, setEditing] = useState<Style | "new" | null>(null);
 	const [deleting, setDeleting] = useState<Style | null>(null);
-	const [fields, setFields] = useState<StyleInput>({ name: "", body_md: "" });
-	const save = useMutation({
-		mutationFn: async () => {
-			const result =
-				editing === "new"
-					? await api.POST("/api/settings/styles", { body: fields })
-					: await api.PUT("/api/settings/styles/{style_id}", {
-							params: { path: { style_id: (editing as Style).id } },
-							body: fields,
-						});
-			return requireData(result.data, result.error, result.response.status);
-		},
-		onSuccess: () => {
-			setEditing(null);
-			void client.invalidateQueries({ queryKey: settingsKeys.settings });
-		},
-	});
 	const remove = useMutation({
 		mutationFn: async (id: string) => {
 			const { error, response } = await api.DELETE(
@@ -189,50 +196,71 @@ function StyleEditor({
 		},
 	});
 	return (
-		<section className="settings-section" aria-labelledby="styles-heading">
-			<div className="section-heading">
-				<h2 id="styles-heading">讲解预设</h2>
+		<section
+			className="settings-section"
+			aria-labelledby="learning-styles-heading"
+		>
+			<div className="settings-section-heading">
+				<h3 id="learning-styles-heading">讲解预设</h3>
 				<button
-					className="button secondary"
+					className="settings-button secondary"
 					type="button"
-					onClick={() => {
-						save.reset();
-						setFields({ name: "", body_md: "" });
-						setEditing("new");
-					}}
+					onClick={() => setEditing("new")}
 				>
-					新建预设
+					＋ 新建预设
 				</button>
 			</div>
-			<p className="settings-hint">
-				按需要为讲解要求命名；新建线程会使用选中的默认预设。
+			<p className="settings-hint settings-section-note">
+				选择新对话使用的默认预设，也可以按阅读需要调整讲解要求。
 			</p>
-			<div className="settings-list">
-				{styles.map((style) => (
-					<div className="settings-row" key={style.id}>
-						<div>
-							<strong>{style.name}</strong>
-							{style.id === defaultId && (
-								<span className="status-tag">默认</span>
-							)}
-							<p className="settings-preview">{style.body_md}</p>
-						</div>
-						<div className="actions">
+			<div className="settings-group">
+				<label className="settings-preset">
+					<input
+						type="radio"
+						name="default-style"
+						checked={selected === null}
+						onChange={() => onSelect(null)}
+					/>
+					<span className="settings-row-copy">
+						<strong>不使用预设</strong>
+						<small>仅使用学习背景与当前对话要求。</small>
+					</span>
+				</label>
+				{settings.styles.map((style) => (
+					<div className="settings-preset" key={style.id}>
+						<label className="settings-preset-choice">
+							<input
+								type="radio"
+								name="default-style"
+								checked={selected === style.id}
+								onChange={() => onSelect(style.id)}
+							/>
+							<span className="settings-row-copy">
+								<strong>{style.name}</strong>
+								{style.id === settings.defaults.style_id && (
+									<span className="settings-badge">默认</span>
+								)}
+								<small className="settings-style-preview">
+									{style.body_md}
+								</small>
+							</span>
+						</label>
+						<div className="settings-actions">
 							<button
-								className="button secondary"
+								className="settings-button secondary"
 								type="button"
-								onClick={() => {
-									save.reset();
-									setFields({ name: style.name, body_md: style.body_md });
-									setEditing(style);
-								}}
+								onClick={() => setEditing(style)}
 							>
 								编辑
 							</button>
 							<button
-								className="text-danger"
+								className="settings-button danger"
 								type="button"
-								disabled={style.id === defaultId || remove.isPending}
+								disabled={
+									style.id === settings.defaults.style_id ||
+									style.id === selected ||
+									remove.isPending
+								}
 								onClick={() => {
 									remove.reset();
 									setDeleting(style);
@@ -245,20 +273,27 @@ function StyleEditor({
 				))}
 			</div>
 			<InlineError error={remove.error} />
+			{editing && (
+				<StyleEditor
+					key={editing === "new" ? "new" : editing.id}
+					style={editing}
+					onClose={() => setEditing(null)}
+				/>
+			)}
 			{deleting && (
 				<ConfirmDialog
+					className="settings-dialog"
 					titleId="delete-style-title"
 					onClose={() => {
 						if (!remove.isPending) setDeleting(null);
 					}}
 				>
-					<p className="eyebrow">删除确认</p>
 					<h2 id="delete-style-title">删除「{deleting.name}」？</h2>
-					<p>此操作会删除该讲解预设。当前默认预设不能删除。</p>
+					<p>此操作会删除该讲解预设，当前默认预设不能删除。</p>
 					<InlineError error={remove.error} />
-					<div className="actions">
+					<div className="settings-actions">
 						<button
-							className="button danger"
+							className="settings-button danger"
 							type="button"
 							disabled={remove.isPending}
 							onClick={() => remove.mutate(deleting.id)}
@@ -266,9 +301,10 @@ function StyleEditor({
 							{remove.isPending ? "删除中…" : "确认删除"}
 						</button>
 						<button
-							className="button secondary"
+							className="settings-button secondary"
 							type="button"
 							disabled={remove.isPending}
+							data-dialog-cancel
 							onClick={() => setDeleting(null)}
 						>
 							取消
@@ -276,206 +312,114 @@ function StyleEditor({
 					</div>
 				</ConfirmDialog>
 			)}
-			{editing && (
-				<form
-					className="editor-card settings-editor"
-					onSubmit={(event: FormEvent) => {
-						event.preventDefault();
-						save.mutate();
-					}}
-				>
-					<h3>{editing === "new" ? "新建讲解预设" : "编辑讲解预设"}</h3>
-					<div className="form-grid">
-						<label className="field full">
-							<span>名称</span>
-							<input
-								required
-								value={fields.name}
-								onChange={(event) =>
-									setFields({ ...fields, name: event.target.value })
-								}
-							/>
-						</label>
-						<label className="field full">
-							<span>讲解要求</span>
-							<textarea
-								rows={8}
-								required
-								value={fields.body_md}
-								onChange={(event) =>
-									setFields({ ...fields, body_md: event.target.value })
-								}
-							/>
-						</label>
-					</div>
-					<InlineError error={save.error} />
-					<div className="actions">
-						<button
-							className="button primary"
-							type="submit"
-							disabled={save.isPending}
-						>
-							保存预设
-						</button>
-						<button
-							className="button secondary"
-							type="button"
-							onClick={() => setEditing(null)}
-						>
-							取消
-						</button>
-					</div>
-				</form>
-			)}
 		</section>
 	);
 }
 
-function DefaultsEditor({
-	initial,
-	styles,
-	providers,
-	saved,
-	onSaved,
+function StyleEditor({
+	style,
+	onClose,
 }: {
-	initial: Settings["defaults"];
-	styles: Style[];
-	providers: Provider[];
-	saved: boolean;
-	onSaved: (value: boolean) => void;
+	style: Style | "new";
+	onClose: () => void;
 }) {
 	const client = useQueryClient();
-	const [fields, setFields] = useState<DefaultsInput>({
-		analysis_model_id: initial.analysis_model_id,
-		chat_model_id: initial.chat_model_id,
-		extraction_model_id: initial.extraction_model_id,
-		style_id: initial.style_id,
-		permission_mode: initial.permission_mode,
-	});
+	const initial: StyleInput =
+		style === "new"
+			? { name: "", body_md: "" }
+			: { name: style.name, body_md: style.body_md };
+	const draft = useSettingsFields(initial);
+	const form = useRef<HTMLFormElement>(null);
 	const save = useMutation({
-		mutationFn: async () => {
-			const { data, error, response } = await api.PUT(
-				"/api/settings/defaults",
-				{ body: fields },
-			);
-			return requireData(data, error, response.status);
-		},
-		onSuccess: () => {
-			onSaved(true);
-			void client.invalidateQueries({ queryKey: settingsKeys.settings });
+		mutationFn: async (fields: StyleInput) => {
+			const result =
+				style === "new"
+					? await api.POST("/api/settings/styles", { body: fields })
+					: await api.PUT("/api/settings/styles/{style_id}", {
+							params: { path: { style_id: style.id } },
+							body: fields,
+						});
+			return requireData(result.data, result.error, result.response.status);
 		},
 	});
-	const choices: { model: Model; provider: Provider }[] = providers.flatMap(
-		(provider) => provider.models.map((model) => ({ model, provider })),
-	);
-	function modelSelect(
-		label: string,
-		key: "analysis_model_id" | "chat_model_id" | "extraction_model_id",
-	) {
-		const selected = choices.find(({ model }) => model.id === fields[key]);
-		return (
-			<label className="field">
-				<span>{label}</span>
-				<select
-					value={fields[key] ?? ""}
-					onChange={(event) =>
-						setFields({ ...fields, [key]: event.target.value || null })
-					}
-				>
-					<option value="">未选择</option>
-					{choices
-						.filter(
-							({ model, provider }) =>
-								(provider.enabled && model.enabled) || model.id === fields[key],
-						)
-						.map(({ model, provider }) => (
-							<option key={model.id} value={model.id}>
-								{provider.name} / {model.model_id}
-								{!provider.enabled || !model.enabled ? "（已停用）" : ""}
-							</option>
-						))}
-				</select>
-				{selected &&
-					(!selected.provider.enabled || !selected.model.enabled) && (
-						<small className="field-warning">
-							当前默认模型已停用，请重新选择。
-						</small>
-					)}
-				{fields[key] && !selected && (
-					<small className="field-warning">
-						当前默认模型不可用，请重新选择。
-					</small>
-				)}
-			</label>
-		);
+	async function persist() {
+		if (!form.current?.reportValidity()) return false;
+		try {
+			await save.mutateAsync(draft.fields);
+			void client.invalidateQueries({ queryKey: settingsKeys.settings });
+			onClose();
+			return true;
+		} catch {
+			return false;
+		}
 	}
 	return (
-		<section className="settings-section" aria-labelledby="defaults-heading">
-			<div className="section-heading">
-				<h2 id="defaults-heading">新任务默认值</h2>
-			</div>
-			<form
-				className="editor-card"
-				onSubmit={(event) => {
-					event.preventDefault();
-					onSaved(false);
-					save.mutate();
-				}}
-			>
-				<div className="form-grid">
-					{modelSelect("讲解模型", "analysis_model_id")}
-					{modelSelect("讨论模型", "chat_model_id")}
-					{modelSelect("条目整理模型", "extraction_model_id")}
-					<label className="field">
-						<span>默认讲解预设</span>
-						<select
-							value={fields.style_id ?? ""}
-							onChange={(event) =>
-								setFields({ ...fields, style_id: event.target.value || null })
-							}
+		<SettingsEditorDialog
+			id="style-editor"
+			title={style === "new" ? "新建讲解预设" : "编辑讲解预设"}
+			dirty={draft.dirty}
+			pending={save.isPending}
+			save={persist}
+			onClose={onClose}
+		>
+			{(requestClose) => (
+				<form
+					ref={form}
+					className="settings-editor-form"
+					onSubmit={(event) => {
+						event.preventDefault();
+						event.stopPropagation();
+						void persist();
+					}}
+				>
+					<fieldset disabled={save.isPending}>
+						<div className="settings-form-grid">
+							<label className="settings-field full">
+								<span>名称</span>
+								<input
+									required
+									value={draft.fields.name}
+									onChange={(event) =>
+										draft.change({ ...draft.fields, name: event.target.value })
+									}
+								/>
+							</label>
+							<label className="settings-field full">
+								<span>讲解要求</span>
+								<textarea
+									required
+									rows={8}
+									value={draft.fields.body_md}
+									onChange={(event) =>
+										draft.change({
+											...draft.fields,
+											body_md: event.target.value,
+										})
+									}
+								/>
+							</label>
+						</div>
+					</fieldset>
+					<InlineError error={save.error} />
+					<div className="settings-actions">
+						<button
+							className="settings-button secondary"
+							type="button"
+							disabled={save.isPending}
+							onClick={requestClose}
 						>
-							<option value="">未选择</option>
-							{styles.map((style) => (
-								<option key={style.id} value={style.id}>
-									{style.name}
-								</option>
-							))}
-						</select>
-					</label>
-					<label className="field full">
-						<span>新线程默认权限</span>
-						<select
-							value={fields.permission_mode}
-							onChange={(event) =>
-								setFields({
-									...fields,
-									permission_mode: event.target
-										.value as DefaultsInput["permission_mode"],
-								})
-							}
+							取消
+						</button>
+						<button
+							className="settings-button primary"
+							type="submit"
+							disabled={save.isPending}
 						>
-							<option value="review">审核模式</option>
-							<option value="full_access">Full access</option>
-						</select>
-						<small>只影响此后创建的新线程；已有线程保留自己的权限。</small>
-					</label>
-				</div>
-				<InlineError error={save.error} />
-				<div className="actions">
-					<button
-						className="button primary"
-						type="submit"
-						disabled={save.isPending}
-					>
-						保存默认值
-					</button>
-					{saved && (
-						<span className="save-note" role="status">
-							已保存
-						</span>
-					)}
-				</div>
-			</form>
-		</section>
+							{save.isPending ? "保存中…" : "保存预设"}
+						</button>
+					</div>
+				</form>
+			)}
+		</SettingsEditorDialog>
 	);
 }

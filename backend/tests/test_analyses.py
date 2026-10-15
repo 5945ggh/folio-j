@@ -19,6 +19,7 @@ from app.services.analyses import (
     get_analysis,
     join_revision_blocks,
     list_analyses,
+    preview_operation,
     preview_section_replacement,
 )
 from app.services.normalizer import normalize
@@ -124,22 +125,28 @@ async def test_create_edit_and_read_old_revision(tmp_path: Path) -> None:
             first_uid = created.sections[1].uid
             await session.commit()
             await begin_write(session)
+            insert = SectionOperation(
+                kind="insert_sections",
+                after_sid=first_uid,
+                sections=[SectionInput(title=" C ", body="\u0065\u0301")],
+            )
+            preview = preview_operation(created, insert)
+            assert preview.before == ""
+            assert preview.after == "## C\n\n\u00e9\n"
+            assert preview.source_md == "总述\n\n## A\n解释\n## C\n\n\u00e9\n## B\n第二\n"
             edited = await apply_operation(
                 session,
                 segment_id="G" * 26,
                 analysis_id=created.id,
                 base_revision_id=original_id,
                 operation_key="edit-1",
-                operation=SectionOperation(
-                    kind="insert_sections",
-                    after_sid=first_uid,
-                    sections=[SectionInput(title="C", body="追加")],
-                ),
+                operation=insert,
                 run_id="R" * 26,
             )
             await session.commit()
             assert edited.parent_revision_id == original_id
             assert edited.run_id == "R" * 26
+            assert edited.source_md == preview.source_md
             assert [row.title for row in edited.sections] == [None, "A", "C", "B"]
             assert edited.sections[1].uid == first_uid
             assert edited.sections[2].uid not in {row.uid for row in created.sections}
@@ -163,7 +170,7 @@ async def test_create_edit_and_read_old_revision(tmp_path: Path) -> None:
                 operation=SectionOperation(
                     kind="insert_sections",
                     after_sid=first_uid,
-                    sections=[SectionInput(title="C", body="追加")],
+                    sections=[SectionInput(title=" C ", body="\u0065\u0301")],
                 ),
                 run_id="R" * 26,
             )
@@ -178,7 +185,7 @@ async def test_create_edit_and_read_old_revision(tmp_path: Path) -> None:
                     operation=SectionOperation(
                         kind="insert_sections",
                         after_sid=first_uid,
-                        sections=[SectionInput(title="C", body="追加")],
+                        sections=[SectionInput(title=" C ", body="\u0065\u0301")],
                     ),
                     run_id="Q" * 26,
                 )
@@ -193,7 +200,7 @@ async def test_create_edit_and_read_old_revision(tmp_path: Path) -> None:
                     operation=SectionOperation(
                         kind="insert_sections",
                         after_sid=first_uid,
-                        sections=[SectionInput(title="C", body="追加")],
+                        sections=[SectionInput(title=" C ", body="\u0065\u0301")],
                     ),
                     run_id="R" * 26,
                 )

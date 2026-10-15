@@ -4,8 +4,9 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { chatKeys, type Job, stopJob } from "../chat/api";
+import { useEffect, useRef, useState } from "react";
+import { type Job, stopJob } from "../chat/api";
+import { generationResult, isTerminalJob, mergeJob } from "../chat/discussion";
 import { ConfirmDialog, InlineError } from "../Shared";
 import {
 	analysisKeys,
@@ -15,7 +16,7 @@ import {
 	listAnalyses,
 } from "./api";
 import { Markdown } from "./Markdown";
-import { generationResult } from "./state";
+import { readingAnalysis } from "./state";
 
 const pageSize = 100;
 
@@ -25,18 +26,24 @@ export function AnalysisPanel({
 	revisionId,
 	onSelect,
 	onGenerate,
+	onDiscuss,
 	job,
 }: {
 	segmentId: string;
 	selectedId: string | null;
 	revisionId: string | null;
-	onSelect: (analysisId: string, revisionId: string | null) => void;
+	onSelect: (analysisId: string | null, revisionId: string | null) => void;
 	onGenerate: () => void;
+	onDiscuss?: () => void;
 	job?: Job;
 }) {
 	const client = useQueryClient();
 	const [deleting, setDeleting] = useState(false);
-	const [listOpen, setListOpen] = useState(false);
+	const selectedRef = useRef(selectedId);
+	useEffect(() => {
+		selectedRef.current = selectedId;
+	}, [selectedId]);
+
 	const analyses = useInfiniteQuery({
 		queryKey: analysisKeys.list(segmentId),
 		initialPageParam: 0,
@@ -45,21 +52,27 @@ export function AnalysisPanel({
 			last.length === pageSize ? all.length * pageSize : undefined,
 	});
 	const items = analyses.data?.pages.flat() ?? [];
-	const effectiveId = selectedId ?? items[0]?.id ?? null;
+	const effectiveId = selectedId;
 	const detail = useQuery({
 		queryKey: analysisKeys.detail(effectiveId ?? "", revisionId),
 		queryFn: () => getAnalysis(effectiveId ?? "", revisionId),
 		enabled: Boolean(effectiveId),
 	});
+	const document = readingAnalysis(
+		detail.data,
+		segmentId,
+		selectedId,
+		detail.isError,
+	);
 	const impact = useQuery({
 		queryKey: analysisKeys.impact(effectiveId ?? ""),
 		queryFn: () => getAnalysisImpact(effectiveId ?? ""),
-		enabled: deleting && Boolean(effectiveId),
+		enabled: deleting && Boolean(document),
 		staleTime: 0,
 	});
 	const remove = useMutation({
 		mutationFn: async () => {
-			if (!effectiveId) return;
+			if (!document) throw new Error("请先打开当前片段的讲解。");
 			const fresh = await impact.refetch();
 			if (fresh.isError || !fresh.data)
 				throw fresh.error ?? new Error("无法核对删除影响，请重试。");
@@ -69,86 +82,82 @@ export function AnalysisPanel({
 				fresh.data.occurrence_count !== impact.data?.occurrence_count
 			)
 				throw new Error("删除影响刚刚变化，请核对后再确认。");
-			await deleteAnalysis(effectiveId);
+			await deleteAnalysis(document.id);
+			return document.id;
 		},
-		onSuccess: () => {
+		onSuccess: (deletedId) => {
 			setDeleting(false);
-			onSelect("", null);
+			client.removeQueries({ queryKey: ["analysis", deletedId] });
+			client.removeQueries({ queryKey: analysisKeys.impact(deletedId) });
+			if (selectedRef.current === deletedId) onSelect(null, null);
 			void client.invalidateQueries({ queryKey: analysisKeys.list(segmentId) });
+			void client.invalidateQueries({ queryKey: ["catalog"] });
 		},
 	});
 	const stop = useMutation({
 		mutationFn: (jobId: string) => stopJob(jobId),
-		onSuccess: (updated) =>
-			client.setQueryData(chatKeys.job(updated.id), updated),
+		onSuccess: (updated) => mergeJob(client, updated),
 	});
-	useEffect(() => {
-		if (!selectedId || analyses.isPending) return;
-		if (items.some((item) => item.id === selectedId)) return;
-		if (analyses.hasNextPage) return;
-		onSelect("", null);
-	}, [selectedId, analyses.isPending, analyses.hasNextPage, items, onSelect]);
 
 	return (
 		<div className="analysis-panel">
 			<div className="analysis-toolbar">
 				<div className="analysis-picker-wrap">
-					<label htmlFor="analysis-picker">讲解</label>
-					<select
-						id="analysis-picker"
-						value={effectiveId ?? ""}
-						onChange={(event) => onSelect(event.target.value, null)}
-					>
-						{items.length === 0 && <option value="">还没有讲解</option>}
-						{items.map((item) => (
-							<option key={item.id} value={item.id}>
-								{item.title}
-							</option>
-						))}
-					</select>
-					{items.length > 0 && (
+					{effectiveId ? (
 						<button
 							type="button"
 							className="analysis-quiet-button"
-							onClick={() => setListOpen(!listOpen)}
+							onClick={() => {
+								setDeleting(false);
+								onSelect(null, null);
+							}}
 						>
-							{listOpen ? "收起讲解列表" : "查看讲解列表"}
+							← 返回讲解列表
 						</button>
+					) : (
+						<h2>讲解列表</h2>
 					)}
 				</div>
 				<div className="analysis-toolbar-actions">
-					{effectiveId && (
+					{document && (
 						<button
 							type="button"
 							className="analysis-quiet-button"
-							onClick={() => setDeleting(true)}
+							onClick={() => {
+								remove.reset();
+								setDeleting(true);
+							}}
 						>
 							删除讲解
+						</button>
+					)}
+					{document && onDiscuss && (
+						<button
+							type="button"
+							className="analysis-quiet-button"
+							onClick={onDiscuss}
+						>
+							展开讨论
 						</button>
 					)}
 					<button
 						type="button"
 						className="button primary"
-						disabled={Boolean(
-							job &&
-								!["succeeded", "failed", "interrupted"].includes(job.status),
-						)}
+						disabled={Boolean(job && !isTerminalJob(job))}
 						onClick={onGenerate}
 					>
 						生成总体讲解
 					</button>
 				</div>
 			</div>
-			{listOpen && items.length > 0 && (
+			{!effectiveId && items.length > 0 && (
 				<section className="analysis-list" aria-label="讲解列表">
 					{items.map((item) => (
 						<button
 							key={item.id}
 							type="button"
-							aria-current={item.id === effectiveId ? "true" : undefined}
 							onClick={() => {
 								onSelect(item.id, null);
-								setListOpen(false);
 							}}
 						>
 							<strong>{item.title}</strong>
@@ -160,9 +169,22 @@ export function AnalysisPanel({
 					))}
 				</section>
 			)}
-			{analyses.isPending && <p className="loading">正在加载讲解…</p>}
-			{analyses.isError && <InlineError error={analyses.error} />}
-			{analyses.hasNextPage && (
+			{!effectiveId && analyses.isPending && (
+				<p className="loading">正在加载讲解…</p>
+			)}
+			{!effectiveId && analyses.isError && (
+				<>
+					<InlineError error={analyses.error} />
+					<button
+						type="button"
+						className="analysis-quiet-button"
+						onClick={() => void analyses.refetch()}
+					>
+						重试加载讲解列表
+					</button>
+				</>
+			)}
+			{!effectiveId && analyses.hasNextPage && (
 				<button
 					type="button"
 					className="analysis-quiet-button"
@@ -172,7 +194,7 @@ export function AnalysisPanel({
 					{analyses.isFetchingNextPage ? "加载中…" : "加载更多讲解"}
 				</button>
 			)}
-			{job && !["succeeded", "failed", "interrupted"].includes(job.status) && (
+			{job && !isTerminalJob(job) && (
 				<section className="analysis-draft" aria-label="尚未保存的讲解">
 					<div className="analysis-draft-header">
 						<span>
@@ -220,7 +242,7 @@ export function AnalysisPanel({
 					；尚未保存新讲解。{job.error || "可重新发起。"}
 				</p>
 			)}
-			{!effectiveId && analyses.isSuccess && !job && (
+			{!effectiveId && items.length === 0 && analyses.isSuccess && !job && (
 				<div className="analysis-empty">
 					<h2>从这段原文开始</h2>
 					<p>生成一份可独立阅读的总体讲解，也可以在对话中提出专题问题。</p>
@@ -229,42 +251,59 @@ export function AnalysisPanel({
 			{detail.isPending && effectiveId && (
 				<p className="loading">正在打开讲解…</p>
 			)}
-			{detail.isError && <InlineError error={detail.error} />}
-			{detail.data && (
+			{effectiveId && detail.isError && (
+				<>
+					<InlineError error={detail.error} />
+					<button
+						type="button"
+						className="analysis-quiet-button"
+						onClick={() => void detail.refetch()}
+					>
+						重试打开讲解
+					</button>
+				</>
+			)}
+			{effectiveId && detail.isSuccess && detail.data && !document && (
+				<p className="inline-error" role="alert">
+					这份讲解不属于当前片段，请返回讲解列表选择。
+				</p>
+			)}
+			{document && (
 				<article className="analysis-document">
 					<div className="analysis-document-meta">
 						<span>已保存讲解</span>
-						<span title={detail.data.revision_id}>
-							修订 {detail.data.revision_id.slice(-6)}
-							{detail.data.revision_id !== detail.data.current_revision_id &&
-								" · 历史版本"}
+						<span title={document.revision_id}>
+							{document.revision_id === document.current_revision_id
+								? "当前版本"
+								: "历史版本"}{" "}
+							· 修订 {document.revision_id.slice(-6)}
 						</span>
 					</div>
-					{detail.data.revision_id !== detail.data.current_revision_id && (
+					{document.revision_id !== document.current_revision_id && (
 						<button
 							type="button"
 							className="analysis-quiet-button"
-							onClick={() => onSelect(detail.data.id, null)}
+							onClick={() => onSelect(document.id, null)}
 						>
 							查看当前版本
 						</button>
 					)}
-					{!/^\s*#\s+\S/m.test(
-						detail.data.source_md.split("\n", 2)[0] ?? "",
-					) && <h2>{detail.data.title}</h2>}
-					{detail.data.warnings.length > 0 && (
+					{!/^\s*#\s+\S/m.test(document.source_md.split("\n", 2)[0] ?? "") && (
+						<h2>{document.title}</h2>
+					)}
+					{document.warnings.length > 0 && (
 						<details className="analysis-warnings">
-							<summary>格式提醒（{detail.data.warnings.length}）</summary>
+							<summary>格式提醒（{document.warnings.length}）</summary>
 							<ul>
-								{detail.data.warnings.map((warning) => (
+								{document.warnings.map((warning) => (
 									<li key={warning}>{warning}</li>
 								))}
 							</ul>
 						</details>
 					)}
-					{detail.data.sections.length > 0 && (
+					{document.sections.length > 0 && (
 						<nav className="analysis-toc" aria-label="讲解目录">
-							{detail.data.sections
+							{document.sections
 								.filter((section) => section.kind === "section")
 								.map((section) => (
 									<a key={section.id} href={`#analysis-section-${section.id}`}>
@@ -274,7 +313,7 @@ export function AnalysisPanel({
 								))}
 						</nav>
 					)}
-					{detail.data.sections.map((section) => (
+					{document.sections.map((section) => (
 						<section
 							key={section.id}
 							id={`analysis-section-${section.id}`}
@@ -283,12 +322,12 @@ export function AnalysisPanel({
 							<Markdown text={section.raw} />
 						</section>
 					))}
-					{detail.data.sections.length === 0 && (
-						<Markdown text={detail.data.source_md} />
+					{document.sections.length === 0 && (
+						<Markdown text={document.source_md} />
 					)}
 				</article>
 			)}
-			{deleting && effectiveId && (
+			{deleting && document && (
 				<ConfirmDialog
 					titleId="delete-analysis-title"
 					onClose={() => setDeleting(false)}
@@ -298,7 +337,16 @@ export function AnalysisPanel({
 					{impact.isPending ? (
 						<p>正在核对关联范围…</p>
 					) : impact.isError ? (
-						<InlineError error={impact.error} />
+						<>
+							<InlineError error={impact.error} />
+							<button
+								type="button"
+								className="analysis-quiet-button"
+								onClick={() => void impact.refetch()}
+							>
+								重新核对删除影响
+							</button>
+						</>
 					) : (
 						<p>
 							“{impact.data.title}”的 {impact.data.revision_count} 个修订、

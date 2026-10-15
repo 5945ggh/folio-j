@@ -75,6 +75,7 @@ class SourceResponse(BaseModel):
 
 
 class SourceDeleteImpact(BaseModel):
+    material_count: int = 0
     source_id: str
     title: str
     segment_count: int

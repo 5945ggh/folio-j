@@ -14,7 +14,7 @@ from app.models import Segment, Source
 from app.settings_models import Profile, Style
 
 PROMPTS = Path(__file__).resolve().parents[3] / "prompts" / "chat"
-PROMPT_VERSION = "v4+tools_v3"
+PROMPT_VERSION = "v4+tools_v4"
 MAX_MESSAGE_CHARS = 200000
 ENV = Environment(loader=FileSystemLoader(PROMPTS), undefined=StrictUndefined, autoescape=False)
 
@@ -22,91 +22,6 @@ ENV = Environment(loader=FileSystemLoader(PROMPTS), undefined=StrictUndefined, a
 def snapshot_time(value: datetime) -> str:
     timestamp = value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
     return timestamp.isoformat()
-
-
-def convert_protocol_messages(
-    messages: list[dict[str, Any]], source: str, target: str
-) -> tuple[list[dict[str, Any]], int]:
-    """Convert portable conversation facts when a user explicitly switches protocol."""
-    if source == target:
-        return messages, 0
-    result: list[dict[str, Any]] = []
-    omitted_reasoning = 0
-    if source == "chat_completions":
-        for item in messages:
-            role = item.get("role")
-            if role == "tool":
-                result.append(
-                    {
-                        "type": "function_call_output",
-                        "call_id": item["tool_call_id"],
-                        "output": item.get("content") or "",
-                    }
-                )
-            elif role == "assistant":
-                if item.get("reasoning_content"):
-                    omitted_reasoning += 1
-                if item.get("content"):
-                    result.append({"role": "assistant", "content": item["content"]})
-                for call in item.get("tool_calls", []):
-                    result.append(
-                        {
-                            "type": "function_call",
-                            "call_id": call["id"],
-                            "name": call["function"]["name"],
-                            "arguments": call["function"]["arguments"],
-                        }
-                    )
-            else:
-                result.append(item)
-        return result, omitted_reasoning
-    pending: dict[str, Any] | None = None
-
-    def flush() -> None:
-        nonlocal pending
-        if pending is not None:
-            result.append(pending)
-            pending = None
-
-    for item in messages:
-        kind = item.get("type")
-        if kind == "reasoning":
-            omitted_reasoning += 1
-        elif kind == "function_call":
-            if pending is None:
-                pending = {"role": "assistant", "content": None}
-            pending.setdefault("tool_calls", []).append(
-                {
-                    "id": item["call_id"],
-                    "type": "function",
-                    "function": {"name": item["name"], "arguments": item["arguments"]},
-                }
-            )
-        elif kind == "function_call_output":
-            flush()
-            result.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": item["call_id"],
-                    "content": item.get("output") or "",
-                }
-            )
-        elif kind == "message":
-            content = cast(list[dict[str, Any]], item.get("content", []))
-            visible = "".join(
-                str(value.get("text", ""))
-                for value in content
-                if value.get("type") in {"output_text", "text"}
-            )
-            if pending is None:
-                pending = {"role": "assistant", "content": visible}
-            else:
-                pending["content"] = (pending.get("content") or "") + visible
-        else:
-            flush()
-            result.append(item)
-    flush()
-    return result, omitted_reasoning
 
 
 def _history_material(messages: list[dict[str, Any]]) -> str:
@@ -285,7 +200,7 @@ async def make_input_snapshot(
         )
     messages.append({"role": "user", "content": user})
     snapshot["messages"] = messages
-    snapshot["tools"] = json.loads((PROMPTS / "tools_v3.json").read_text())["tools"]
+    snapshot["tools"] = json.loads((PROMPTS / "tools_v4.json").read_text())["tools"]
     snapshot["writer_text"] = (
         Environment(
             loader=FileSystemLoader(PROMPTS.parent / "analysis"),

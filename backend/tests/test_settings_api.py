@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from test_source_segment import assert_utc_timestamp
 
 from app.db import Base, create_engine
 from app.llm import adapters
@@ -283,10 +284,10 @@ async def test_persisted_provider_and_run_timestamps_keep_utc_offset(tmp_path: P
 
         persisted_provider = (await client.get(f"/api/providers/{provider_id}")).json()
         for field in ("created_at", "updated_at", "last_discovered_at"):
-            assert persisted_provider[field].endswith("Z"), field
+            assert_utc_timestamp(persisted_provider[field])
         persisted_run = (await client.get(f"/api/runs/{accepted['id']}")).json()
         for field in ("created_at", "started_at", "finished_at"):
-            assert persisted_run[field].endswith("Z"), field
+            assert_utc_timestamp(persisted_run[field])
         summary = persisted_provider["models"][0]["text_verification"]
         assert summary["created_at"] == persisted_run["created_at"]
         assert summary["finished_at"] == persisted_run["finished_at"]
