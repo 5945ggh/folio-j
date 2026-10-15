@@ -15,6 +15,7 @@ import {
 import { BookCard } from "./Books";
 import { useCatalogScroll } from "./hooks";
 import { ImportDialog } from "./ImportDialog";
+import { Icon } from "./LibraryTools";
 import { analysisDestination } from "./state";
 
 const analysesQuery: AnalysisQuery = {
@@ -143,14 +144,17 @@ export function SourceOverview({
 	return (
 		<>
 			{empty ? (
-				<div className="overview-sparse">
+				<div className="overview-empty">
 					<div className="source-welcome">
-						<h2>在这里放下第一段内容。</h2>
-						<p>可以直接录入日文，也可以先导入一本书。</p>
+						<div className="source-welcome-icon">
+							<Icon name="book" />
+						</div>
+						<h2>从第一段内容开始</h2>
+						<p>可以直接添加日文片段，也可以先导入一个素材。</p>
 						<div className="actions">
 							<button
 								type="button"
-								className="button secondary"
+								className="button primary"
 								onClick={(event) => {
 									event.currentTarget.focus();
 									onAddSegment();
@@ -160,13 +164,13 @@ export function SourceOverview({
 							</button>
 							<button
 								type="button"
-								className="source-text-button"
+								className="button secondary"
 								onClick={(event) => {
 									event.currentTarget.focus();
 									setAdding(true);
 								}}
 							>
-								导入书籍
+								导入素材
 							</button>
 						</div>
 					</div>

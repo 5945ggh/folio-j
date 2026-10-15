@@ -20,6 +20,7 @@ export function SourceDirectory({
 	const [searching, setSearching] = useState(Boolean(state.q));
 	const search = useRef<HTMLInputElement>(null);
 	const searchButton = useRef<HTMLButtonElement>(null);
+	const searchId = useId();
 	const sortId = useId();
 	const query: SourceQuery = {
 		q: state.q,
@@ -54,6 +55,7 @@ export function SourceDirectory({
 						title="搜索来源"
 						aria-label="搜索来源"
 						aria-expanded={searching}
+						aria-controls={searchId}
 						onClick={() => setSearching(!searching)}
 					>
 						<Icon name="search" />
@@ -113,28 +115,27 @@ export function SourceDirectory({
 				<div className="s2-source-search">
 					<input
 						ref={search}
+						id={searchId}
 						aria-label="搜索来源名称或描述"
 						type="search"
 						placeholder="搜索来源…"
 						value={state.q}
 						onChange={(e) => change({ q: e.target.value })}
-					/>
-					<button
-						className="library-clear"
-						type="button"
-						onClick={() => {
+						onKeyDown={(event) => {
+							if (event.key !== "Escape") return;
+							event.preventDefault();
+							event.stopPropagation();
 							setSearching(false);
 							searchButton.current?.focus();
 						}}
-					>
-						收起
-					</button>
+					/>
 				</div>
 			)}
-			{state.q && (
+			{state.q && !searching && (
 				<button
 					className="s2-search-chip"
 					type="button"
+					aria-label={`清除来源搜索：${state.q}`}
 					onClick={() => change({ q: "" })}
 				>
 					来源搜索：{state.q} ×

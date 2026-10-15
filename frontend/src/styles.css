@@ -2530,6 +2530,7 @@ td.model-actions {
 	--sidebar-width: 220px;
 	padding-left: var(--sidebar-width);
 	min-width: 0;
+	transition: padding-left 200ms ease;
 }
 .app-shell.sidebar-collapsed {
 	--sidebar-width: 56px;
@@ -2544,6 +2545,7 @@ td.model-actions {
 	background: var(--sidebar);
 	border-right: 1px solid var(--border);
 	z-index: 20;
+	transition: width 200ms ease;
 }
 .app-sidebar .brand {
 	min-height: 34px;
@@ -2615,6 +2617,31 @@ td.model-actions {
 .sidebar-collapsed .app-navigation a {
 	justify-content: center;
 	padding: 10px 5px;
+}
+.sidebar-collapsed .app-sidebar [data-tooltip] {
+	position: relative;
+}
+.sidebar-collapsed .app-sidebar [data-tooltip]::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	left: calc(100% + 10px);
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 1;
+	width: max-content;
+	padding: 5px 9px;
+	border-radius: 5px;
+	background: #2b3038;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 400;
+	line-height: 1.5;
+	pointer-events: none;
+	visibility: hidden;
+}
+.sidebar-collapsed .app-sidebar [data-tooltip]:hover::after,
+.sidebar-collapsed .app-sidebar [data-tooltip]:focus-visible::after {
+	visibility: visible;
 }
 .mobile-topbar {
 	display: none;
@@ -2696,6 +2723,17 @@ td.model-actions {
 .navigation-drawer .app-navigation {
 	min-height: 0;
 	overflow-y: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+	.app-shell,
+	.app-sidebar,
+	.sidebar-brand-row,
+	.app-shell.library-a1 .sidebar-brand-row .brand {
+		transition: none;
+	}
+	.app-shell.library-a1.sidebar-collapsed .sidebar-brand-row .brand {
+		transition: none;
+	}
 }
 .catalog-heading {
 	display: flex;

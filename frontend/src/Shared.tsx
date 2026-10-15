@@ -72,13 +72,25 @@ export function Shell({
 	}
 	const navigation = (
 		<nav className="app-navigation" aria-label="主导航">
-			<NavLink onClick={() => setDrawer(false)} to="/materials" title="素材库">
+			<NavLink
+				onClick={() => setDrawer(false)}
+				to="/materials"
+				aria-label="素材库"
+				title={collapsed ? undefined : "素材库"}
+				data-tooltip="素材库"
+			>
 				<span aria-hidden="true">
 					<NavigationIcon name="library" />
 				</span>
 				<span className="nav-label">素材库</span>
 			</NavLink>
-			<NavLink onClick={() => setDrawer(false)} to="/sources" title="来源目录">
+			<NavLink
+				onClick={() => setDrawer(false)}
+				to="/sources"
+				aria-label="来源目录"
+				title={collapsed ? undefined : "来源目录"}
+				data-tooltip="来源目录"
+			>
 				<span aria-hidden="true">
 					<NavigationIcon name="folder" />
 				</span>
@@ -88,7 +100,9 @@ export function Shell({
 				onClick={() => setDrawer(false)}
 				className="nav-settings"
 				to="/settings"
-				title="设置"
+				aria-label="设置"
+				title={collapsed ? undefined : "设置"}
+				data-tooltip="设置"
 			>
 				<span aria-hidden="true">
 					<NavigationIcon name="settings" />
@@ -119,7 +133,8 @@ export function Shell({
 						type="button"
 						onClick={toggle}
 						aria-label={collapsed ? "展开导航" : "收窄导航"}
-						title={collapsed ? "展开导航" : "收窄导航"}
+						title={collapsed ? undefined : "收窄导航"}
+						data-tooltip="展开导航"
 					>
 						<svg
 							viewBox="0 0 24 24"

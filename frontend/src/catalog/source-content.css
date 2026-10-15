@@ -197,16 +197,42 @@
 	font-size: 13px;
 	font-weight: 500;
 }
+.overview-empty .overview-note {
+	max-width: 720px;
+}
 .source-welcome {
-	padding: 25px 0;
+	max-width: 440px;
+	margin-inline: auto;
+	padding: clamp(40px, 10vh, 96px) 0 48px;
+	text-align: center;
+}
+.source-welcome-icon {
+	width: 32px;
+	height: 32px;
+	margin: 0 auto 24px;
+	color: var(--muted);
 }
 .source-welcome h2 {
-	font-size: 18px;
-	font-weight: 500;
+	margin: 0;
+	font-size: 20px;
+	font-weight: 600;
+	line-height: 1.5;
 }
 .source-welcome p {
+	margin: 12px 0 24px;
 	font-size: 13px;
+	line-height: 1.8;
 	color: var(--muted);
+}
+.source-welcome .actions {
+	justify-content: center;
+	flex-wrap: nowrap;
+}
+.source-welcome .button.primary {
+	background: #111;
+}
+.source-welcome .button.primary:hover:not(:disabled) {
+	background: #2b2b2b;
 }
 .source-list-tools {
 	display: flex;

@@ -6,6 +6,7 @@ import { catalogKeys, catalogSources, type SourceQuery } from "./catalog/api";
 import { readPreference, savePreference } from "./catalog/hooks";
 import { Icon } from "./catalog/LibraryTools";
 import { SourceDirectory } from "./catalog/SourceDirectory";
+import { SourceSpace } from "./catalog/SourceSpace";
 import { SourceContent } from "./catalog/SourceViews";
 import {
 	readCatalogState,
@@ -81,10 +82,7 @@ function SourceFrame({ children }: { children: ReactNode }) {
 	}
 	return (
 		<Shell className="library-a1 sources-s2" fullWidth>
-			<div className="s2-space">
-				<aside className="s2-source-panel">
-					<SourceDirectory onCreate={startCreate} />
-				</aside>
+			<SourceSpace directory={<SourceDirectory onCreate={startCreate} />}>
 				<div className="source-detail-content">
 					<button
 						id="source-drawer-trigger"
@@ -99,7 +97,7 @@ function SourceFrame({ children }: { children: ReactNode }) {
 					</button>
 					{children}
 				</div>
-			</div>
+			</SourceSpace>
 			{drawer && (
 				<ConfirmDialog
 					titleId="source-drawer-title"

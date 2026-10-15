@@ -1,12 +1,20 @@
 /* A.1 is a library composition; reader and source pages keep their own surfaces. */
 .sidebar-brand-row {
-	margin-bottom: 35px;
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: 6px;
+	transition: gap 200ms ease;
 }
 .app-sidebar .sidebar-brand-row .brand {
+	flex: 1 1 auto;
+	min-width: 0;
+	max-width: 180px;
 	margin-bottom: 0;
+	transition:
+		max-width 200ms ease,
+		opacity 140ms ease,
+		visibility 0s;
 }
 .sidebar-brand-row .sidebar-toggle {
 	margin: 0 0 0 auto;
@@ -14,12 +22,6 @@
 	height: 30px;
 	padding: 5px;
 	flex: none;
-}
-.sidebar-collapsed .sidebar-brand-row {
-	flex-direction: column;
-}
-.sidebar-collapsed .sidebar-brand-row .sidebar-toggle {
-	margin: 0 auto;
 }
 .app-shell.library-a1 {
 	--sidebar-width: 208px;
@@ -48,6 +50,25 @@
 	padding: 0 6px;
 	margin-bottom: 0;
 	font-size: 15px;
+}
+.app-shell.library-a1.sidebar-collapsed .sidebar-brand-row {
+	justify-content: center;
+	gap: 0;
+}
+.app-shell.library-a1.sidebar-collapsed .sidebar-brand-row .sidebar-toggle {
+	margin: 0;
+}
+.app-shell.library-a1.sidebar-collapsed .sidebar-brand-row .brand {
+	flex: 0 1 0;
+	max-width: 0;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	visibility: hidden;
+	transition:
+		max-width 200ms ease,
+		opacity 140ms ease,
+		visibility 0s linear 200ms;
 }
 .app-shell.library-a1 .brand-mark {
 	background: transparent;
