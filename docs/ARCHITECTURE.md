@@ -63,6 +63,8 @@ flowchart LR
 
 当前模型覆盖 Source／Segment、设置与模型验证、讨论与 Analysis，以及材料、阅读位置、使用状态和封面缓存。来源与片段字段见[第一阶段契约](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)，Analysis 执行见第 3.5 节，材料与目录见第 3.1 节。
 
+设置按界面分组保存：`PATCH /api/settings` 接收完整的可选 profile 分组和字段可选的 defaults，仅校验、更新明确提交的字段；同次 profile 与 defaults 在一个事务提交，失败不部分写入。省略字段保留存量值，模型及预设身份显式 null 表示清除。既有 PUT 接口保留完整替换契约。验证历史按 Run 中保存的 Provider／登记模型身份及状态过滤后分页，不依赖配置仍然存在；只返回未软删的 verification Run。
+
 Source、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。接受问答时在短写事务中保存输入快照、消息与 Job，并首次设置 `text_locked_at`；原文编辑、来源／片段删除共用事务校验边界。
 
 数据库生命周期由应用 lifespan 管理，迁移从空库建立 schema，`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。

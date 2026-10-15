@@ -48,7 +48,7 @@ EPUB 切片 1 使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义�
 | 样式与组件 | Tailwind CSS 已采用；shadcn/ui 预留 | 当前无已引入的 shadcn 组件；选用时将组件源码复制进仓库 |
 | 服务端状态 | TanStack Query | 所有 API 数据都经由它获取和缓存 |
 | 本地 UI 状态 | React 组件 state；Zustand 预留，未安装 | 能用组件 state 解决的就不引入 |
-| 路由 | React Router（声明式 / library 模式）`[TBD-13]` | 不使用其 framework 模式 |
+| 路由 | React Router（library 的 Data router）`[TBD-13]` | RouterProvider 承载现有组件路由，供设置草稿使用 useBlocker；不使用 framework 模式，服务端数据仍由 TanStack Query 管理 |
 | API 客户端 | openapi-typescript + openapi-fetch | 由后端 OpenAPI 生成，**禁止手写接口类型** |
 | Markdown 渲染 | react-markdown + remark-gfm | |
 | Lint 与格式化 | Biome `[TBD-13]` | 单一工具，配置简单 |

@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-13，已提交代码基准 `02ac5b0`。
+> 状态核对：2026-10-15，已提交代码基准 `0e1ddde`；设置顶部分类与来源界面调整已分批提交，工程复核通过。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
 
@@ -11,12 +11,12 @@
 | 能力 | 状态 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- | --- |
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务被接受后锁定 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md) |
-| 设置与模型接入 | 已提交 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md) |
+| 设置与模型接入 | 已提交、工程验收通过 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；顶部分类、统一编辑弹窗、分组原子保存、草稿保护与验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](settings-refresh/ACCEPTANCE.md) |
 | 片段讨论 | 已提交 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
 | 持久讲解 | 已提交 | 多份 Analysis、不可变 Revision、Section／Preamble、总体讲解快捷生成、块级编辑与具体方案审核；整份删除由用户操作 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
 | 片段阅读与导航 | 已提交 | 默认阅读、原文与讲解对照、确切修订／讨论定位、讲解总标题、本页讨论草稿保留；未提交草稿仅在当前挂载页面保留 | [阅读导航](archived/READING_NAVIGATION_ACCEPTANCE.md)、[架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md) |
 | 素材库与阅读管理 | 已提交 | 跨 Source 书籍目录、搜索／筛选／排序／分页、书卡大小与状态菜单、空库整区导入；阅读三态和最近打开持久化，封面按规则版本 2 回退与缓存 | [前端调整](frontend-refresh/ACCEPTANCE.md)、[素材库 A.1](library-a1/ACCEPTANCE.md) |
-| 来源空间 S2 | 已提交 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；工程验收完成，用户使用验收待进行 | [S2 工程验收](sources-s2/ACCEPTANCE.md) |
+| 来源空间 S2 | 已提交 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；来源栏可调宽并保存偏好，搜索与空态已打磨；工程验收完成，用户使用验收待进行 | [S2 工程验收](sources-s2/ACCEPTANCE.md) |
 | EPUB 导入与恢复 | 已提交 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读，托管字节暂保留 | [切片 1](epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](epub-reading/SLICE_0_ACCEPTANCE.md) |
 | 阅读器 R1.1 | 已提交 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级 | [R1.1 工程验收](reader-r1/ACCEPTANCE.md)、[交互优化](reader-r1/INTERACTION_POLISH.md) |
 | 章节位置记忆 | 已提交、工程验收通过 | 各章最后位置持久化、目录恢复、当前章不跳与回到章首；目录显示上次位置，文字章按正文码点派生比例，纯图片章保留锚点 | [章节位置验收](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md) |
@@ -43,6 +43,7 @@
 | 2026-10-07 来源空间 S2 提交前复核 | [审计与复测](sources-s2/ACCEPTANCE.md#2026-10-07-提交前复核) |
 | 2026-10-11 章节位置记忆 | [工程与浏览器验收](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md) |
 | 2026-10-13 章节位置记忆提交前复核 | [独立审查与章首边界复测](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-13-提交前复核) |
+| 2026-10-15 设置顶部分类 | [工程、独立审查与浏览器验收](settings-refresh/ACCEPTANCE.md) |
 
 测试数量、包体积与提交隔离检查范围在原记录中维护；离线、真实模型与扩展验证各自对应其方法和观察。
 
