@@ -1,7 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { dateLabel, InlineError } from "../Shared";
-import { getRun, getRuns, settingsKeys } from "./api";
+import {
+	getRun,
+	getRuns,
+	type Model,
+	type Provider,
+	type Run,
+	settingsKeys,
+} from "./api";
+import { historyFilters } from "./provider-presentation";
+import "./provider-settings.css";
 
 const labels: Record<string, string> = {
 	queued: "排队中",
@@ -12,12 +21,41 @@ const labels: Record<string, string> = {
 };
 const PAGE_SIZE = 10;
 
-export function RunHistory() {
+export function RunHistory({
+	providerId,
+	providers = [],
+	models,
+}: {
+	providerId?: string;
+	providers?: Provider[];
+	models?: Model[];
+}) {
 	const [selected, setSelected] = useState<string | null>(null);
 	const [page, setPage] = useState(0);
+	const [selectedProvider, setSelectedProvider] = useState("");
+	const [selectedModel, setSelectedModel] = useState("");
+	const [selectedStatus, setSelectedStatus] = useState<Run["status"] | "">("");
+	const filters = historyFilters(
+		providerId,
+		selectedProvider,
+		selectedModel,
+		selectedStatus,
+	);
+	const modelOptions = (
+		models ?? providers.flatMap((provider) => provider.models)
+	).filter(
+		(model) =>
+			!filters.provider_id || model.provider_id === filters.provider_id,
+	);
+	const headingId = `runs-heading-${providerId ?? "all"}`;
+	function changeFilter(update: () => void) {
+		update();
+		setPage(0);
+		setSelected(null);
+	}
 	const runs = useQuery({
-		queryKey: settingsKeys.runsPage(page),
-		queryFn: () => getRuns(PAGE_SIZE + 1, page * PAGE_SIZE),
+		queryKey: settingsKeys.runsPage(page, filters),
+		queryFn: () => getRuns(PAGE_SIZE + 1, page * PAGE_SIZE, filters),
 		refetchInterval: (query) =>
 			query.state.data?.some(
 				(run) => run.status === "queued" || run.status === "running",
@@ -32,11 +70,14 @@ export function RunHistory() {
 		setPage(nextPage);
 	};
 	return (
-		<section className="settings-section" aria-labelledby="runs-heading">
-			<div className="section-heading">
-				<h2 id="runs-heading">最近验证</h2>
+		<section
+			className="settings-section provider-run-history"
+			aria-labelledby={headingId}
+		>
+			<div className="provider-section-heading">
+				<h2 id={headingId}>验证记录</h2>
 				<button
-					className="button secondary"
+					className="settings-button secondary"
 					type="button"
 					onClick={() => void runs.refetch()}
 				>
@@ -44,15 +85,83 @@ export function RunHistory() {
 				</button>
 			</div>
 			<p className="settings-hint">
-				验证由本地后台执行。离开页面或刷新后，可以在这里继续查看状态和结果。
+				验证由本地后台执行，离开页面后仍可回来查看。已删除服务和模型的历史记录会保留。
 			</p>
+			<div className="provider-run-filters">
+				{!providerId && (
+					<label className="settings-field">
+						<span>服务</span>
+						<select
+							value={selectedProvider}
+							onChange={(event) =>
+								changeFilter(() => {
+									setSelectedProvider(event.target.value);
+									setSelectedModel("");
+								})
+							}
+						>
+							<option value="">全部服务（含已删除）</option>
+							{providers.map((provider) => (
+								<option key={provider.id} value={provider.id}>
+									{provider.name}
+								</option>
+							))}
+							{selectedProvider &&
+								!providers.some(
+									(provider) => provider.id === selectedProvider,
+								) && <option value={selectedProvider}>已删除服务</option>}
+						</select>
+					</label>
+				)}
+				<label className="settings-field">
+					<span>模型</span>
+					<select
+						value={selectedModel}
+						onChange={(event) =>
+							changeFilter(() => setSelectedModel(event.target.value))
+						}
+					>
+						<option value="">全部模型（含已删除）</option>
+						{modelOptions.map((model) => (
+							<option key={model.id} value={model.id}>
+								{!filters.provider_id
+									? `${providers.find((provider) => provider.id === model.provider_id)?.name ?? "服务"} / `
+									: ""}
+								{model.model_id}
+							</option>
+						))}
+						{selectedModel &&
+							!modelOptions.some((model) => model.id === selectedModel) && (
+								<option value={selectedModel}>已删除模型登记</option>
+							)}
+					</select>
+				</label>
+				<label className="settings-field">
+					<span>状态</span>
+					<select
+						value={selectedStatus}
+						onChange={(event) =>
+							changeFilter(() =>
+								setSelectedStatus(event.target.value as Run["status"] | ""),
+							)
+						}
+					>
+						<option value="">全部状态</option>
+						{Object.entries(labels).map(([value, label]) => (
+							<option key={value} value={value}>
+								{label}
+							</option>
+						))}
+					</select>
+				</label>
+			</div>
 			{runs.isPending ? (
 				<p className="loading">正在加载验证记录…</p>
 			) : runs.isError ? (
 				<>
 					<InlineError error={runs.error} />
 					<button
-						className="button secondary"
+						className="settings-button secondary"
 						type="button"
 						onClick={() => void runs.refetch()}
 					>
@@ -60,7 +169,7 @@ export function RunHistory() {
 					</button>
 					{page > 0 && (
 						<button
-							className="button secondary"
+							className="settings-button secondary"
 							type="button"
 							onClick={() => changePage(page - 1)}
 						>
@@ -70,7 +179,11 @@ export function RunHistory() {
 				</>
 			) : visibleRuns.length === 0 ? (
 				<div className="empty-state">
-					<p>还没有验证记录。</p>
+					<p>
+						{Object.keys(filters).length > 0
+							? "没有符合筛选条件的验证记录。"
+							: "还没有验证记录。"}
+					</p>
 				</div>
 			) : (
 				<div className="settings-list">
@@ -103,7 +216,7 @@ export function RunHistory() {
 			{runs.isSuccess && (page > 0 || hasNextPage) && (
 				<nav className="run-pagination" aria-label="验证记录分页">
 					<button
-						className="button secondary"
+						className="settings-button secondary"
 						type="button"
 						disabled={page === 0}
 						onClick={() => changePage(page - 1)}
@@ -112,7 +225,7 @@ export function RunHistory() {
 					</button>
 					<span aria-live="polite">第 {page + 1} 页</span>
 					<button
-						className="button secondary"
+						className="settings-button secondary"
 						type="button"
 						disabled={!hasNextPage}
 						onClick={() => changePage(page + 1)}
@@ -141,7 +254,7 @@ export function RunDetail({ id }: { id: string }) {
 			<div className="run-detail">
 				<InlineError error={run.error} />
 				<button
-					className="button secondary"
+					className="settings-button secondary"
 					type="button"
 					onClick={() => void run.refetch()}
 				>
@@ -165,7 +278,7 @@ export function RunDetail({ id }: { id: string }) {
 			)}
 			{item.error && (
 				<div>
-					<h4>失败原因</h4>
+					<h4>{item.status === "interrupted" ? "中断原因" : "失败原因"}</h4>
 					<p role="alert">{item.error}</p>
 				</div>
 			)}
