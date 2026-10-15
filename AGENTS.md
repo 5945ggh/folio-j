@@ -32,7 +32,10 @@ just test       # 后端 pytest + 前端纯逻辑测试（禁用真实网络；�
 just lint       # ruff + pyright + biome + tsc
 just gen-api    # 从后端 OpenAPI 重新生成前端客户端
 just migrate    # alembic upgrade head
+just snapshot   # Repomix 在 .snapshots/ 生成带时间戳的 XML 仓库快照；别名 just snap
 ```
+
+`just` 或 `just --list` 列出可用命令；快照工具依赖与输出说明见 [README](README.md#本地开发)。
 
 ## 硬性规则
 
@@ -49,7 +52,7 @@ just migrate    # alembic upgrade head
 
 ## 编码约定
 
-- **子代理模型**：调用 Codex 原生子代理时，显式指定 `gpt-6.1-sol`。
+- **子代理模型与思考强度**：调用 Codex 原生子代理时，必须显式指定 `model="gpt-6.1-sol"` 和 `reasoning_effort`，思考强度从 `medium`、`high`、`xhigh` 中选择。显式指定该模型但省略思考强度时，实际使用模型默认的 `low` 思考强度。
 - **PRD 版本**：审订期间不随每次编辑递增文档版本号，待最终收口时统一调整。
 - **视觉参考**：`prototypes/reading-native` 提供风格与布局思路；具体交互按真实功能设计，不照搬模拟行为，产品边界以 PRD 为准。
 - **分支与协作**：默认使用稳定 `main` 加短期 `codex/*` 功能分支，不额外维护长期 `develop`。主代理负责范围、契约、派遣和集成验收，开发与测试子代理分工；并行任务明确文件所有权，完成检查后再集成。

@@ -27,6 +27,10 @@ just check       # lint + test + build + 文档链接检查
 just check-assets # 验证保留的实验和静态原型
 ```
 
+`just` 或 `just --list` 列出可用命令。运行 `just snapshot`（别名 `just snap`）可为远端 agent 生成仓库快照；需要 PATH 中已有 Repomix，它是可选开发工具，不加入项目锁定依赖。
+
+快照自动保存在 `.snapshots/` 目录，目录不存在时会创建；文件名为 `folio-j_仓库快照_YYYYMMDDHHMMSS.xml`，使用 XML 格式并显示文件树的 token 数量。Repomix 默认遵循 `.gitignore` 并检查敏感内容；整个快照目录已被忽略，不提交到 Git，也不打包进后续快照。
+
 可将 [config/app.example.toml](config/app.example.toml) 复制为 `config/app.toml`，调整服务端口和数据库路径；不复制时使用同样的默认值。相对数据库路径以仓库根目录为基准，默认数据位于 `data/app.db`。`just dev` 的前端代理随后端配置端口变化。真实配置、数据库、缓存和密钥不提交。
 
 可用 `FOLIO_J_DATABASE_PATH` 覆盖数据库路径，供临时验收或独立数据集使用；迁移和应用读取同一覆盖值。第一版发布前且数据可丢弃时，允许重整初始迁移及重建开发库；应用不会自动删库。开始积累需要保留的日常数据或正式发布后，采用增量迁移，重建前应先保留所需数据。
