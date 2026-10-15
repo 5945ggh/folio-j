@@ -1,0 +1,51 @@
+backend/src/app/settings_schemas.py
+  s_e373edb5b64e7a::t_2d4c2d195cb4f7 12,63-67,69-74,76-79,179,235
+  s_e373edb5b64e7a::t_945ed09e43f6ec 75
+  s_e373edb5b64e7a::t_9617c40f557ec7 68
+backend/tests/test_settings_patch.py
+  s_e373edb5b64e7a::t_781d5c922031f2 1-2,4-5,7-11,15-20,24-40,46-47,50-53,56-58,79-97,101-138,142-152,163,169-173,179-181,185-195
+  s_e373edb5b64e7a::t_ae7c399c977552 12-14
+  s_e373edb5b64e7a::t_3359f1371ada66 3,59-78
+  s_e373edb5b64e7a::t_945ed09e43f6ec 21-23,48-49,98-100,139-141,153-162,164-168,174-178,182-184,196-201
+  s_e373edb5b64e7a::t_966a511b72293e 6,41-45,54-55
+backend/tests/test_settings_history.py
+  s_e373edb5b64e7a::t_945ed09e43f6ec 30-38
+  s_e373edb5b64e7a::t_ae7c399c977552 10-12
+  s_e373edb5b64e7a::t_781d5c922031f2 1-9,13-29,39-84
+frontend/src/api/schema.d.ts
+  s_e373edb5b64e7a::t_671cb78688c4d3 557-558,1013-1028,2025-2029,3308-3312,3620-3651
+  s_486604358cecf6::t_6eba8f4a350c27 3652
+backend/src/app/services/settings.py
+  s_e373edb5b64e7a::t_2d4c2d195cb4f7 24,35-36,67-69,109-110,152-171,211,227-231,636-642,644-650
+  s_e373edb5b64e7a::t_945ed09e43f6ec 138-140,653
+backend/src/app/api/settings.py
+  s_e373edb5b64e7a::t_2d4c2d195cb4f7 24-25,45-49,185,187,194
+  s_e373edb5b64e7a::t_1f37a3344a0f29 183-184
+  s_e373edb5b64e7a::t_945ed09e43f6ec 188-193
+backend/openapi.json
+  s_e373edb5b64e7a::t_945ed09e43f6ec 472-530,3267-3279,5501-5559,5981-6016
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "39ba5c5f25051ccb998ed9a21c4addf94b013e0a",
+  "prompts": {},
+  "sessions": {
+    "s_486604358cecf6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f04-65a7-79a3-b55b-f1412b14ba99",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_e373edb5b64e7a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e27-92de-7b92-a9c6-848d28a118a2",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
