@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 Protocol = Literal["chat_completions", "responses"]
 Capability = Literal["unknown", "succeeded", "failed"]
 Reasoning = Literal["none", "low", "medium", "high"]
+RunStatus = Literal["queued", "running", "succeeded", "failed", "interrupted"]
 
 # Storage guard only; the selected provider defines the model's real output limit.
 MAX_OUTPUT_TOKENS = 2_147_483_647
@@ -57,6 +58,23 @@ class DefaultsInput(Input):
 
 class DefaultsResponse(DefaultsInput):
     pass
+
+
+class DefaultsPatch(Input):
+    analysis_model_id: str | None = None
+    chat_model_id: str | None = None
+    extraction_model_id: str | None = None
+    style_id: str | None = None
+    permission_mode: Literal["review", "full_access"] = Field(default_factory=lambda: "review")
+
+
+class SettingsPatch(Input):
+    # Factories make groups optional without accepting explicit null. Only fields
+    # recorded in model_fields_set participate in a patch.
+    profile: ProfileInput = Field(
+        default_factory=lambda: ProfileInput(native_language="", explain_language="", level_note="")
+    )
+    defaults: DefaultsPatch = Field(default_factory=DefaultsPatch)
 
 
 class SettingsResponse(BaseModel):
@@ -158,7 +176,7 @@ class ModelPatch(Input):
 
 class VerificationSummary(BaseModel):
     id: str
-    status: Literal["queued", "running", "succeeded", "failed", "interrupted"]
+    status: RunStatus
     created_at: datetime
     finished_at: datetime | None
     error: str | None
@@ -214,7 +232,7 @@ class RunResponse(BaseModel):
     model_id: str
     protocol: Protocol
     stream: bool
-    status: Literal["queued", "running", "succeeded", "failed", "interrupted"]
+    status: RunStatus
     output_text: str
     error: str | None
     usage: UsageResponse | None

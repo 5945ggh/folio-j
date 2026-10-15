@@ -21,6 +21,7 @@ from app.models import Segment, Source
 from app.settings_models import Defaults, Profile, Provider, ProviderModel, Run, Style
 from app.settings_schemas import (
     DefaultsInput,
+    DefaultsPatch,
     DefaultsResponse,
     ModelInput,
     ModelPatch,
@@ -31,6 +32,8 @@ from app.settings_schemas import (
     ProviderPatch,
     ProviderResponse,
     RunResponse,
+    RunStatus,
+    SettingsPatch,
     SettingsResponse,
     StyleInput,
     StyleResponse,
@@ -61,7 +64,9 @@ def fail(status: int, detail: str) -> None:
     raise HTTPException(status_code=status, detail=detail)
 
 
-async def ensure_settings(session: AsyncSession) -> tuple[Profile, list[Style], Defaults]:
+async def ensure_settings(
+    session: AsyncSession, *, commit: bool = True
+) -> tuple[Profile, list[Style], Defaults]:
     # The first write serializes concurrent first requests; OR IGNORE makes the
     # singleton initialization safe when several browser queries arrive together.
     await session.execute(
@@ -101,7 +106,8 @@ async def ensure_settings(session: AsyncSession) -> tuple[Profile, list[Style], 
             )
             .prefix_with("OR IGNORE")
         )
-    await session.commit()
+    if commit:
+        await session.commit()
     profile = await session.get(Profile, 1)
     defaults = await session.get(Defaults, 1)
     assert profile is not None and defaults is not None
@@ -129,8 +135,9 @@ def defaults_response(value: Defaults) -> DefaultsResponse:
     )
 
 
-async def get_settings(session: AsyncSession) -> SettingsResponse:
-    profile, styles, defaults = await ensure_settings(session)
+def settings_response(
+    profile: Profile, styles: list[Style], defaults: Defaults
+) -> SettingsResponse:
     return SettingsResponse(
         profile=ProfileResponse(
             native_language=profile.native_language,
@@ -140,6 +147,26 @@ async def get_settings(session: AsyncSession) -> SettingsResponse:
         styles=[style_response(x) for x in styles],
         defaults=defaults_response(defaults),
     )
+
+
+async def get_settings(session: AsyncSession) -> SettingsResponse:
+    return settings_response(*await ensure_settings(session))
+
+
+async def patch_settings(session: AsyncSession, data: SettingsPatch) -> SettingsResponse:
+    # Initialization takes SQLite's write lock, but joins the same transaction:
+    # neither initialization nor a profile edit may survive failed validation.
+    profile, styles, defaults = await ensure_settings(session, commit=False)
+    if "defaults" in data.model_fields_set:
+        await validate_defaults(session, data.defaults)
+    if "profile" in data.model_fields_set:
+        for key, value in data.profile.model_dump().items():
+            setattr(profile, key, value)
+    if "defaults" in data.model_fields_set:
+        for key, value in data.defaults.model_dump(exclude_unset=True).items():
+            setattr(defaults, key, value)
+    await session.commit()
+    return settings_response(profile, styles, defaults)
 
 
 async def put_profile(session: AsyncSession, data: ProfileInput) -> ProfileResponse:
@@ -181,8 +208,7 @@ async def delete_style(session: AsyncSession, style_id: str) -> None:
     await session.commit()
 
 
-async def put_defaults(session: AsyncSession, data: DefaultsInput) -> DefaultsResponse:
-    _, _, defaults = await ensure_settings(session)
+async def validate_defaults(session: AsyncSession, data: DefaultsInput | DefaultsPatch) -> None:
     if data.style_id is not None and await session.get(Style, data.style_id) is None:
         fail(422, "讲解预设不存在")
     for model_id in (data.analysis_model_id, data.chat_model_id, data.extraction_model_id):
@@ -198,6 +224,11 @@ async def put_defaults(session: AsyncSession, data: DefaultsInput) -> DefaultsRe
             or not provider.enabled
         ):
             fail(422, "默认模型不可用")
+
+
+async def put_defaults(session: AsyncSession, data: DefaultsInput) -> DefaultsResponse:
+    _, _, defaults = await ensure_settings(session)
+    await validate_defaults(session, data)
     for key, value in data.model_dump().items():
         setattr(defaults, key, value)
     await session.commit()
@@ -602,15 +633,24 @@ def run_response(row: Run) -> RunResponse:
 
 
 async def list_runs(
-    session: AsyncSession, *, limit: int = 50, offset: int = 0
+    session: AsyncSession,
+    *,
+    limit: int = 50,
+    offset: int = 0,
+    provider_id: str | None = None,
+    model_id: str | None = None,
+    status: RunStatus | None = None,
 ) -> list[RunResponse]:
+    query = select(Run).where(Run.purpose == "verification", Run.deleted_at.is_(None))
+    if provider_id is not None:
+        query = query.where(Run.provider_id == provider_id)
+    if model_id is not None:
+        query = query.where(Run.provider_model_id == model_id)
+    if status is not None:
+        query = query.where(Run.status == status)
     rows = (
         await session.scalars(
-            select(Run)
-            .where(Run.purpose == "verification", Run.deleted_at.is_(None))
-            .order_by(Run.created_at.desc(), Run.id.desc())
-            .offset(offset)
-            .limit(limit)
+            query.order_by(Run.created_at.desc(), Run.id.desc()).offset(offset).limit(limit)
         )
     ).all()
     return [run_response(x) for x in rows]

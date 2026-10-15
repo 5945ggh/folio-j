@@ -554,7 +554,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Patch Settings */
+        patch: operations["patchSettings"];
         trace?: never;
     };
     "/api/settings/defaults": {
@@ -1008,6 +1009,22 @@ export interface components {
             permission_mode: "review" | "full_access";
             /** Style Id */
             style_id: string | null;
+        };
+        /** DefaultsPatch */
+        DefaultsPatch: {
+            /** Analysis Model Id */
+            analysis_model_id?: string | null;
+            /** Chat Model Id */
+            chat_model_id?: string | null;
+            /** Extraction Model Id */
+            extraction_model_id?: string | null;
+            /**
+             * Permission Mode
+             * @enum {string}
+             */
+            permission_mode?: "review" | "full_access";
+            /** Style Id */
+            style_id?: string | null;
         };
         /** DefaultsResponse */
         DefaultsResponse: {
@@ -2004,6 +2021,11 @@ export interface components {
             transcription?: string;
             /** Translation */
             translation?: string;
+        };
+        /** SettingsPatch */
+        SettingsPatch: {
+            defaults?: components["schemas"]["DefaultsPatch"];
+            profile?: components["schemas"]["ProfileInput"];
         };
         /** SettingsResponse */
         SettingsResponse: {
@@ -3283,6 +3305,11 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                /** @description Provider 登记身份 */
+                provider_id?: string | null;
+                /** @description ProviderModel 登记身份，非模型名称 */
+                model_id?: string | null;
+                status?: ("queued" | "running" | "succeeded" | "failed" | "interrupted") | null;
             };
             header?: never;
             path?: never;
@@ -3586,6 +3613,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsResponse"];
+                };
+            };
+        };
+    };
+    patchSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

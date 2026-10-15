@@ -469,6 +469,65 @@
         "title": "DefaultsInput",
         "type": "object"
       },
+      "DefaultsPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Model Id"
+          },
+          "chat_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Model Id"
+          },
+          "extraction_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extraction Model Id"
+          },
+          "permission_mode": {
+            "enum": [
+              "review",
+              "full_access"
+            ],
+            "title": "Permission Mode",
+            "type": "string"
+          },
+          "style_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style Id"
+          }
+        },
+        "title": "DefaultsPatch",
+        "type": "object"
+      },
       "DefaultsResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3205,6 +3264,19 @@
         "title": "SegmentUpdate",
         "type": "object"
       },
+      "SettingsPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "defaults": {
+            "$ref": "#/components/schemas/DefaultsPatch"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ProfileInput"
+          }
+        },
+        "title": "SettingsPatch",
+        "type": "object"
+      },
       "SettingsResponse": {
         "properties": {
           "defaults": {
@@ -5426,6 +5498,65 @@
               "title": "Offset",
               "type": "integer"
             }
+          },
+          {
+            "description": "Provider 登记身份",
+            "in": "query",
+            "name": "provider_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Provider 登记身份",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "description": "ProviderModel 登记身份，非模型名称",
+            "in": "query",
+            "name": "model_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ProviderModel 登记身份，非模型名称",
+              "title": "Model Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "queued",
+                    "running",
+                    "succeeded",
+                    "failed",
+                    "interrupted"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
           }
         ],
         "responses": {
@@ -5847,6 +5978,42 @@
           }
         },
         "summary": "Get Settings"
+      },
+      "patch": {
+        "operationId": "patchSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Settings"
       }
     },
     "/api/settings/defaults": {
