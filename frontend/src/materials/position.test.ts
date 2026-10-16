@@ -227,3 +227,20 @@ test("chapter progress uses part spans and canonical code points rather than scr
 		1,
 	);
 });
+
+test("an image midway through a text part shows surrounding content progress rather than zero", () => {
+	const parts = [{ resource_id: "r", start: 10, end: 110 }];
+	const resources = [{ id: "r", text: "あ".repeat(110) }];
+	const anchor = { part_index: 0, kind: "image" };
+	assert.equal(chapterProgress(parts, resources, anchor, 50), 0.5);
+	assert.equal(chapterProgress(parts, resources, anchor, 100), 1);
+	assert.equal(
+		chapterProgress(
+			[...parts, ...parts],
+			resources,
+			{ ...anchor, part_index: 1 },
+			50,
+		),
+		0.75,
+	);
+});

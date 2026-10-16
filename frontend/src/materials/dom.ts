@@ -1,6 +1,18 @@
 import { nearestLineBoundary, rawBoundary, rawOffset } from "./position.ts";
 export type Projection = ReturnType<typeof projectPart>;
 
+/** Image anchors keep their own local fraction; display progress counts canonical text before them. */
+export function imageTextOffset(
+	image: Pick<Element, "compareDocumentPosition">,
+	projection: Projection,
+): number {
+	let end = 0;
+	for (const entry of projection.entries) {
+		if ((image.compareDocumentPosition(entry.node) & 2) !== 0) end = entry.end;
+	}
+	return Array.from(projection.raw.slice(0, end).normalize("NFC")).length;
+}
+
 /** Collapsed whitespace before a leading image must not make its anchor skip to later text. */
 export function imagePrecedesText(
 	image: Pick<Element, "compareDocumentPosition">,

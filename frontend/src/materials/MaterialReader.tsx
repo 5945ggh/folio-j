@@ -36,6 +36,7 @@ import {
 import {
 	htmlEscape,
 	imagePrecedesText,
+	imageTextOffset,
 	nearestText,
 	type Projection,
 	projectPart,
@@ -102,6 +103,7 @@ type Frame = {
 	element: HTMLIFrameElement;
 	doc: Document;
 	projection: Projection;
+	imageOffsets: Map<number, number>;
 	resize: () => void;
 	cleanup: () => void;
 	presentationCleanup: () => void;
@@ -656,6 +658,9 @@ function Reader({
 				chapter.data.parts,
 				chapter.data.resources,
 				anchor,
+				frames.current
+					.get(anchor.part_index)
+					?.imageOffsets.get(anchor.image_id ?? -1),
 			);
 			setProgress(value);
 			setChapterPositions((previous) =>
@@ -930,6 +935,15 @@ function Reader({
 				element,
 				doc,
 				projection,
+				imageOffsets: new Map(
+					Array.from(
+						doc.querySelectorAll<HTMLElement>("[data-epub-image]"),
+						(image) => [
+							Number(image.dataset.epubImage),
+							imageTextOffset(image, projection),
+						],
+					),
+				),
 				resize,
 				cleanup,
 				presentationCleanup,

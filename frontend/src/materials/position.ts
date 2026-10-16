@@ -198,6 +198,7 @@ export function chapterProgress(
 	parts: readonly { start: number; end: number; resource_id: string }[],
 	resources: readonly { id: string; text: string }[],
 	anchor: { part_index: number; kind: string; offset?: number | null },
+	imageOffset = 0,
 ): number | null {
 	const hasText = parts.some((part) => {
 		const resource = resources.find((item) => item.id === part.resource_id);
@@ -222,6 +223,6 @@ export function chapterProgress(
 						(anchor.offset ?? part.start) - part.start,
 					),
 				)
-			: 0;
+			: Math.max(0, Math.min(part.end - part.start, imageOffset));
 	return scrollProgress(before + local, total);
 }
