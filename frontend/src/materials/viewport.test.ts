@@ -1,11 +1,70 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { textAnchorRect, textSamplingTarget } from "./dom.ts";
 import { anchorBeforeLayout, PositionQueue } from "./position.ts";
+import { fitReaderImage } from "./presentation.ts";
 import {
 	type LayoutPass,
+	readingViewport,
 	ViewportRecovery,
 	type ViewportSize,
 } from "./viewport.ts";
+
+test("overlay gutters keep restored text below the title and page steps inside readable content", () => {
+	const root = {
+		clientWidth: 760,
+		clientHeight: 800,
+		getBoundingClientRect: () => ({
+			top: 0,
+			bottom: 800,
+			left: 20,
+			right: 780,
+		}),
+	} as HTMLElement;
+	const view = readingViewport(root, {
+		paddingTop: "82px",
+		paddingBottom: "80px",
+	});
+	assert.equal(view.top, 82);
+	assert.equal(view.bottom, 720);
+	assert.ok(view.height * 0.85 < view.bottom - view.top);
+	// Restoring a line from a later page and sampling it again use the same safe edge.
+	const base = { top: 1200, bottom: 1224, left: 0, right: 24 };
+	const anchor = textAnchorRect(base, 20);
+	const scroll = anchor.top - view.top;
+	assert.equal(textSamplingTarget(view.top + scroll, 20, false), base.top);
+	assert.equal(base.top - scroll, 102);
+	// A full-page image must fit between the two overlays, not in the outer scroll box.
+	assert.deepEqual(
+		fitReaderImage(
+			{ width: 600, height: 1000 },
+			{ width: 600, height: 1000 },
+			view,
+		),
+		{ width: 382.8, height: 638 },
+	);
+});
+
+test("vertical viewport already reserves each column's toolbar clearance", () => {
+	const root = {
+		clientWidth: 760,
+		clientHeight: 638,
+		getBoundingClientRect: () => ({
+			top: 82,
+			bottom: 720,
+			left: 20,
+			right: 780,
+		}),
+	} as HTMLElement;
+	const view = readingViewport(root, {
+		paddingTop: "0px",
+		paddingBottom: "0px",
+	});
+	assert.equal(view.right, 780);
+	assert.equal(view.height, 638);
+	assert.equal(view.top, 82);
+	assert.equal(view.bottom, 720);
+});
 
 test("scroll before ResizeObserver preserves pending anchor and rejects premature restore after another viewport change", async () => {
 	const recovery = new ViewportRecovery();

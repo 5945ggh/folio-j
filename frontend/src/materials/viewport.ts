@@ -5,6 +5,26 @@ export function viewportSize(
 ): ViewportSize {
 	return { width: element.clientWidth, height: element.clientHeight };
 }
+/** Stable reading edges exclude overlay gutters; layout recovery still tracks the outer client size. */
+export function readingViewport(
+	element: Pick<
+		HTMLElement,
+		"clientWidth" | "clientHeight" | "getBoundingClientRect"
+	>,
+	style: Pick<CSSStyleDeclaration, "paddingTop" | "paddingBottom">,
+) {
+	const rect = element.getBoundingClientRect();
+	const top = Number.parseFloat(style.paddingTop) || 0;
+	const bottom = Number.parseFloat(style.paddingBottom) || 0;
+	return {
+		left: rect.left,
+		right: rect.right,
+		top: rect.top + top,
+		bottom: rect.bottom - bottom,
+		width: element.clientWidth,
+		height: Math.max(0, element.clientHeight - top - bottom),
+	};
+}
 function same(a: ViewportSize | null, b: ViewportSize): boolean {
 	return a !== null && a.width === b.width && a.height === b.height;
 }

@@ -113,6 +113,28 @@ export function ReaderSettings({
 				</div>
 			</fieldset>
 			<fieldset>
+				<legend>工具栏</legend>
+				<label>
+					背景透明度 <output>{ui.toolbarTransparency}%</output>
+					<input
+						aria-label="工具栏背景透明度"
+						aria-valuetext={`${ui.toolbarTransparency}%`}
+						aria-describedby="reader-toolbar-transparency-hint"
+						type="range"
+						min="0"
+						max="100"
+						step="5"
+						value={ui.toolbarTransparency}
+						onChange={(e) =>
+							onUi({ ...ui, toolbarTransparency: Number(e.target.value) })
+						}
+					/>
+				</label>
+				<p id="reader-toolbar-transparency-hint">
+					同时调整顶部标题栏与底部工具栏背景；0% 不透明，100% 完全透明。
+				</p>
+			</fieldset>
+			<fieldset>
 				<legend>排版</legend>
 				<label>
 					文字方向

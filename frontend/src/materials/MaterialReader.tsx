@@ -90,7 +90,7 @@ import {
 import { type PendingReturn, returnWasLocated } from "./return-recovery";
 import { applyAutomaticRuby } from "./ruby";
 import { freshestUsage, OpenAction } from "./usage";
-import { viewportSize } from "./viewport";
+import { readingViewport, viewportSize } from "./viewport";
 
 const defaults: Settings = {
 	font_size: 22,
@@ -528,7 +528,7 @@ function Reader({
 		if (!root || !chapter.data || !layout.current.canSample(viewportSize(root)))
 			return null;
 		const vertical = settings.writing_mode === "vertical-rl";
-		const viewport = root.getBoundingClientRect();
+		const viewport = readingViewport(root, getComputedStyle(root));
 		const edge = vertical ? viewport.right : viewport.top;
 		let best: { index: number; frame: Frame; distance: number } | undefined;
 		for (const [index, frame] of frames.current) {
@@ -663,7 +663,7 @@ function Reader({
 					if (rect && (rect.width > 0 || rect.height > 0)) {
 						located = true;
 						const outer = frame.element.getBoundingClientRect();
-						const view = root.getBoundingClientRect();
+						const view = readingViewport(root, getComputedStyle(root));
 						if (vertical)
 							root.scrollLeft +=
 								outer.left +
@@ -804,7 +804,11 @@ function Reader({
 				if (!valid()) return;
 				const vertical = latest.current.settings.writing_mode === "vertical-rl";
 				const root = container.current;
-				if (root) normalizeFrameImages(doc, viewportSize(root));
+				if (root)
+					normalizeFrameImages(
+						doc,
+						readingViewport(root, getComputedStyle(root)),
+					);
 				if (vertical) {
 					element.style.height = "100%";
 					doc.body.style.setProperty("height", "100%", "important");
@@ -1080,7 +1084,9 @@ function Reader({
 		const vertical = latest.current.settings.writing_mode === "vertical-rl";
 		const root = container.current;
 		if (!root) return;
-		const page = vertical ? root.clientWidth : root.clientHeight;
+		const page = vertical
+			? root.clientWidth
+			: readingViewport(root, getComputedStyle(root)).height;
 		let step = 0;
 		if (event.key === "PageDown" || event.key === " ")
 			step = page * 0.85 * (event.shiftKey ? -1 : 1);
@@ -1262,6 +1268,7 @@ function Reader({
 			style={
 				{
 					"--reader-width": `${bookUi.width}px`,
+					"--reader-toolbar-opacity": `${100 - ui.toolbarTransparency}%`,
 					"--reader-motion-duration": `${READER_EXIT_MS}ms`,
 				} as CSSProperties
 			}

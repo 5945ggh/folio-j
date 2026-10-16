@@ -1,7 +1,11 @@
 export type ReaderTheme = "system" | "white" | "black";
 export type ReaderFont = "mincho" | "gothic";
 export type ReaderRuby = "show" | "on-demand" | "hide";
-export type ReaderUiPreferences = { theme: ReaderTheme; focus: boolean };
+export type ReaderUiPreferences = {
+	theme: ReaderTheme;
+	focus: boolean;
+	toolbarTransparency: number;
+};
 export type BookUiPreferences = {
 	font: ReaderFont;
 	ruby: ReaderRuby;
@@ -11,6 +15,7 @@ export type BookUiPreferences = {
 export const DEFAULT_READER_UI: ReaderUiPreferences = {
 	theme: "system",
 	focus: true,
+	toolbarTransparency: 20,
 };
 export const DEFAULT_BOOK_UI: BookUiPreferences = {
 	font: "mincho",
@@ -53,6 +58,13 @@ export function normalizeReaderUi(
 					? "white"
 					: "system",
 		focus: typeof value.focus === "boolean" ? value.focus : true,
+		toolbarTransparency:
+			typeof value.toolbarTransparency === "number" &&
+			Number.isFinite(value.toolbarTransparency) &&
+			value.toolbarTransparency >= 0 &&
+			value.toolbarTransparency <= 100
+				? value.toolbarTransparency
+				: DEFAULT_READER_UI.toolbarTransparency,
 	};
 }
 export function normalizeBookUi(
