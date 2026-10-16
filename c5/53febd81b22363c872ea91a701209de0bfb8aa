@@ -1,0 +1,57 @@
+frontend/src/materials/return-origin.test.ts
+  s_b7aa29d121118d::t_a34d83b2634982 23-28
+  s_b7aa29d121118d::t_3ed304f1fcfcc0 118,122,124
+  s_b7aa29d121118d::t_6d559ef5a6151a 187,191,193,198,285,288
+  s_b7aa29d121118d::t_1649f2b0ad8403 21-22,29-46
+  s_b7aa29d121118d::t_077def63337246 3-8,107-117,119-121,123,125-186,188-190,192,194-197,199-284,286-287,289-298
+docs/handovers/reader-r1/INTERACTION_POLISH.md
+  s_b7aa29d121118d::t_2d210c4c76c226 201-207,209-217,219-220
+  s_b7aa29d121118d::t_bb99e53cb8c233 208,218
+  s_b7aa29d121118d::t_0824b7b935e81c 221-224
+  s_328de13518f603::t_58233e9e3b8741 225-230
+docs/INFORMATION_ARCHITECTURE.md
+  s_b7aa29d121118d::t_5d280146e4ff89 70
+frontend/src/materials/return-origin.ts
+  s_b7aa29d121118d::t_3ed304f1fcfcc0 11
+  s_b7aa29d121118d::t_6d559ef5a6151a 13
+  s_b7aa29d121118d::t_81f48b26ee035a 9-10,12,14-102
+frontend/src/materials/MaterialReader.tsx
+  s_b7aa29d121118d::t_6cb35a2ca0bc63 1041,1127-1133,1135-1168
+  s_b7aa29d121118d::t_9daf247a72b170 88,267,600-644,654,664-665,671,890-891,893-895,900-902,920,926,1043,1250,1422-1434
+  s_b7aa29d121118d::t_9b276db76b921f 316,325
+  s_b7aa29d121118d::t_52b5754840cdb5 1013,1035-1040
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_328de13518f603::t_58233e9e3b8741 3,19,22-23
+docs/ARCHITECTURE.md
+  s_b7aa29d121118d::t_226d2adacac929 159
+  s_b7aa29d121118d::t_e0e3679242351c 160
+docs/PRD.md
+  s_b7aa29d121118d::t_8a7443fc876453 201
+  s_b7aa29d121118d::t_226d2adacac929 205
+  s_b7aa29d121118d::t_5d280146e4ff89 199
+  s_b7aa29d121118d::t_c7e5e76934ad79 206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c553febd81b22363c872ea91a701209de0bfb8aa",
+  "prompts": {},
+  "sessions": {
+    "s_328de13518f603": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14425-428b-7982-9587-d2c1ca916af1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_b7aa29d121118d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14410-5db2-72b1-871a-f3d80e60aecc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
