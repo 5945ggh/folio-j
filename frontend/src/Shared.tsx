@@ -123,9 +123,7 @@ export function Shell({
 						aria-label="Folio-J 素材库"
 						title="Folio-J 素材库"
 					>
-						<span className="brand-mark" aria-hidden="true">
-							<NavigationIcon name="book" />
-						</span>
+						<img className="brand-mark" src="/folio-mark.svg" alt="" />
 						<span className="nav-label">Folio-J</span>
 					</Link>
 					<button
@@ -166,6 +164,7 @@ export function Shell({
 					☰
 				</button>
 				<Link className="brand" to="/materials">
+					<img className="brand-mark" src="/folio-mark.svg" alt="" />
 					Folio-J
 				</Link>
 			</header>

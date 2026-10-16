@@ -69,15 +69,11 @@ a {
 	letter-spacing: -0.03em;
 }
 .brand-mark {
-	display: grid;
-	place-items: center;
-	height: 28px;
-	width: 28px;
-	border-radius: 7px;
-	background: #496984;
-	color: white;
-	font-size: 14px;
-	font-weight: 500;
+	display: block;
+	height: 30px;
+	width: 30px;
+	object-fit: contain;
+	transform: translateY(-2px);
 }
 .topbar-label {
 	color: #92969a;
@@ -2556,7 +2552,6 @@ td.model-actions {
 }
 .brand-mark {
 	flex-shrink: 0;
-	background: var(--accent);
 }
 .app-navigation {
 	display: flex;

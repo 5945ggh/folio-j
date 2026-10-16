@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import type { Source } from "../content";
@@ -20,6 +20,8 @@ import {
 	useSourceContentLocation,
 } from "./hooks";
 import { ImportDialog } from "./ImportDialog";
+import { Icon } from "./LibraryTools";
+import { sourceListState } from "./presentation";
 import { SourceOverview } from "./SourceOverview";
 import { analysisDestination, lastCatalogPage } from "./state";
 
@@ -45,6 +47,7 @@ function SourceBooks({
 		queryKey: catalogKeys.books(query),
 		queryFn: () => catalogBooks(query),
 	});
+	const empty = books.isSuccess && books.data.total === 0;
 	useCatalogScroll(
 		books.isSuccess && !expanded,
 		`source-materials-${source.id}`,
@@ -57,36 +60,38 @@ function SourceBooks({
 	}
 	return (
 		<>
-			<div className="section-heading">
-				<h2>
-					{books.data?.total === 0 ? "尚未添加素材" : "书籍"}{" "}
-					{books.data && books.data.total > 0 && (
-						<span>· {books.data.total}</span>
-					)}
-				</h2>
-				<div className="actions">
-					<button
-						className="button secondary"
-						type="button"
-						onClick={(event) => {
-							event.currentTarget.focus();
-							setAdding(true);
-						}}
-					>
-						导入书籍
-					</button>
-					<button
-						className="button secondary"
-						type="button"
-						onClick={(event) => {
-							event.currentTarget.focus();
-							expand();
-						}}
-					>
-						查看全部
-					</button>
+			{!empty && !books.isPending && (
+				<div className="section-heading">
+					<h2>
+						书籍{" "}
+						{books.data && books.data.total > 0 && (
+							<span>· {books.data.total}</span>
+						)}
+					</h2>
+					<div className="actions">
+						<button
+							className="button secondary"
+							type="button"
+							onClick={(event) => {
+								event.currentTarget.focus();
+								setAdding(true);
+							}}
+						>
+							导入书籍
+						</button>
+						<button
+							className="button secondary"
+							type="button"
+							onClick={(event) => {
+								event.currentTarget.focus();
+								expand();
+							}}
+						>
+							查看全部
+						</button>
+					</div>
 				</div>
-			</div>
+			)}
 			{books.isPending ? (
 				<p role="status">正在加载素材…</p>
 			) : books.isError ? (
@@ -100,9 +105,25 @@ function SourceBooks({
 						重试
 					</button>
 				</>
-			) : books.data.total === 0 ? (
-				<div className="empty-state">
-					<p>此来源还没有书籍。可导入 EPUB，或切换到片段查看手动录入的内容。</p>
+			) : empty ? (
+				<div className="source-welcome">
+					<div className="source-welcome-icon">
+						<Icon name="book" />
+					</div>
+					<h2>从一本书开始</h2>
+					<p>导入一本 EPUB，开始阅读原文。</p>
+					<div className="actions">
+						<button
+							className="button primary"
+							type="button"
+							onClick={(event) => {
+								event.currentTarget.focus();
+								setAdding(true);
+							}}
+						>
+							导入书籍
+						</button>
+					</div>
 				</div>
 			) : (
 				<BookGrid books={books.data.items} returnLabel={source.title} />
@@ -159,11 +180,16 @@ function SourceSegments({
 	const segments = useQuery({
 		queryKey: catalogKeys.segments(source.id, query),
 		queryFn: () => catalogSegments(source.id, query),
+		placeholderData: keepPreviousData,
 	});
-	useCatalogScroll(segments.isSuccess, "segments");
-	const last = segments.data
-		? lastCatalogPage(segments.data.total, segments.data.page_size)
-		: null;
+	useCatalogScroll(
+		segments.isSuccess && !segments.isPlaceholderData,
+		"segments",
+	);
+	const last =
+		segments.data && !segments.isPlaceholderData
+			? lastCatalogPage(segments.data.total, segments.data.page_size)
+			: null;
 	useEffect(() => {
 		if (last !== null && state.page > last) change({ page: last });
 	}, [last, state.page, change]);
@@ -171,21 +197,37 @@ function SourceSegments({
 		to: `${location.pathname}${location.search}`,
 		label: source.title,
 	};
+	const view = sourceListState(
+		segments.isSuccess && !segments.isPlaceholderData
+			? segments.data.total
+			: undefined,
+		segments.data?.items.length ?? 0,
+		state.q,
+	);
+	const showToolbar =
+		Boolean(state.q) ||
+		segments.isPlaceholderData ||
+		view === "items" ||
+		view === "out-of-page";
+	const addButton = (
+		<button
+			type="button"
+			className={`button ${view === "empty" ? "primary" : "secondary"}`}
+			onClick={(event) => {
+				event.currentTarget.focus();
+				onAddSegment();
+			}}
+		>
+			添加片段
+		</button>
+	);
 	return (
 		<>
-			<div className="source-list-tools">
-				<CatalogToolbar kind="segments" state={state} change={change} />
-				<button
-					type="button"
-					className="button secondary"
-					onClick={(event) => {
-						event.currentTarget.focus();
-						onAddSegment();
-					}}
-				>
-					添加片段
-				</button>
-			</div>
+			{showToolbar && (
+				<CatalogToolbar kind="segments" state={state} change={change}>
+					{addButton}
+				</CatalogToolbar>
+			)}
 			{segments.isPending ? (
 				<p role="status">正在加载片段…</p>
 			) : segments.isError ? (
@@ -199,13 +241,27 @@ function SourceSegments({
 						重试
 					</button>
 				</>
-			) : segments.data.items.length === 0 ? (
-				<div className="empty-state">
-					<p>
-						{state.q
-							? "没有匹配的片段。"
-							: "还没有片段。手动添加日文即可学习，无需先导入材料。"}
-					</p>
+			) : view === "loading" || view === "out-of-page" ? (
+				<p role="status">正在加载片段…</p>
+			) : view === "empty" ? (
+				<div className="source-welcome">
+					<div className="source-welcome-icon">
+						<Icon name="book" />
+					</div>
+					<h2>从第一段内容开始</h2>
+					<p>添加一段日文，开始阅读和讨论。</p>
+					<div className="actions">{addButton}</div>
+				</div>
+			) : view === "no-results" ? (
+				<div className="source-list-no-results">
+					<p>没有找到匹配的片段。</p>
+					<button
+						className="source-text-button"
+						type="button"
+						onClick={() => change({ q: "" })}
+					>
+						清除搜索
+					</button>
 				</div>
 			) : (
 				<div className="segment-list">
@@ -235,7 +291,7 @@ function SourceSegments({
 					))}
 				</div>
 			)}
-			{segments.data && (
+			{segments.data && view === "items" && (
 				<Pagination
 					page={state.page}
 					total={segments.data.total}
@@ -246,7 +302,13 @@ function SourceSegments({
 		</>
 	);
 }
-function SourceAnalyses({ source }: { source: Source }) {
+function SourceAnalyses({
+	source,
+	onViewSegments,
+}: {
+	source: Source;
+	onViewSegments: () => void;
+}) {
 	const location = useLocation();
 	const { state, change } = useCatalogState(
 		"analyses",
@@ -262,17 +324,36 @@ function SourceAnalyses({ source }: { source: Source }) {
 	const analyses = useQuery({
 		queryKey: catalogKeys.analyses(source.id, query),
 		queryFn: () => catalogAnalyses(source.id, query),
+		placeholderData: keepPreviousData,
 	});
-	useCatalogScroll(analyses.isSuccess, "analyses");
-	const last = analyses.data
-		? lastCatalogPage(analyses.data.total, analyses.data.page_size)
-		: null;
+	useCatalogScroll(
+		analyses.isSuccess && !analyses.isPlaceholderData,
+		"analyses",
+	);
+	const last =
+		analyses.data && !analyses.isPlaceholderData
+			? lastCatalogPage(analyses.data.total, analyses.data.page_size)
+			: null;
 	useEffect(() => {
 		if (last !== null && state.page > last) change({ page: last });
 	}, [last, state.page, change]);
+	const view = sourceListState(
+		analyses.isSuccess && !analyses.isPlaceholderData
+			? analyses.data.total
+			: undefined,
+		analyses.data?.items.length ?? 0,
+		state.q,
+	);
+	const showToolbar =
+		Boolean(state.q) ||
+		analyses.isPlaceholderData ||
+		view === "items" ||
+		view === "out-of-page";
 	return (
 		<>
-			<CatalogToolbar kind="analyses" state={state} change={change} />
+			{showToolbar && (
+				<CatalogToolbar kind="analyses" state={state} change={change} />
+			)}
 			{analyses.isPending ? (
 				<p role="status">正在加载讲解…</p>
 			) : analyses.isError ? (
@@ -286,13 +367,35 @@ function SourceAnalyses({ source }: { source: Source }) {
 						重试
 					</button>
 				</>
-			) : analyses.data.items.length === 0 ? (
-				<div className="empty-state">
-					<p>
-						{state.q
-							? "没有匹配的讲解。"
-							: "此来源还没有已保存讲解。可进入片段阅读或讨论。"}
-					</p>
+			) : view === "loading" || view === "out-of-page" ? (
+				<p role="status">正在加载讲解…</p>
+			) : view === "empty" ? (
+				<div className="source-welcome">
+					<div className="source-welcome-icon">
+						<Icon name="book" />
+					</div>
+					<h2>还没有保存的讲解</h2>
+					<p>进入片段阅读或讨论，保存值得留用的讲解。</p>
+					<div className="actions">
+						<button
+							className="button secondary"
+							type="button"
+							onClick={onViewSegments}
+						>
+							查看片段
+						</button>
+					</div>
+				</div>
+			) : view === "no-results" ? (
+				<div className="source-list-no-results">
+					<p>没有找到匹配的讲解。</p>
+					<button
+						className="source-text-button"
+						type="button"
+						onClick={() => change({ q: "" })}
+					>
+						清除搜索
+					</button>
 				</div>
 			) : (
 				<div className="analysis-catalog">
@@ -316,7 +419,7 @@ function SourceAnalyses({ source }: { source: Source }) {
 					))}
 				</div>
 			)}
-			{analyses.data && (
+			{analyses.data && view === "items" && (
 				<Pagination
 					page={state.page}
 					total={analyses.data.total}
@@ -383,7 +486,10 @@ export function SourceContent({
 							) : panel === "segments" ? (
 								<SourceSegments source={source} onAddSegment={onAddSegment} />
 							) : (
-								<SourceAnalyses source={source} />
+								<SourceAnalyses
+									source={source}
+									onViewSegments={() => change("segments")}
+								/>
 							))}
 					</section>
 				),

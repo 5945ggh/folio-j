@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { bookListState, cardWidth } from "./presentation.ts";
+import { bookListState, cardWidth, sourceListState } from "./presentation.ts";
+
+test("source lists distinguish confirmed empty content, search results and unresolved queries", () => {
+	assert.equal(sourceListState(undefined, 0, ""), "loading");
+	assert.equal(sourceListState(undefined, 0, "日文"), "loading");
+	assert.equal(sourceListState(0, 0, ""), "empty");
+	assert.equal(sourceListState(0, 0, "日文"), "no-results");
+	assert.equal(sourceListState(2, 2, ""), "items");
+	assert.equal(sourceListState(1, 1, "日文"), "items");
+	assert.equal(sourceListState(51, 0, ""), "out-of-page");
+});
 
 test("empty library requires confirmed zero total and no active filters", () => {
 	assert.equal(bookListState(0, 0, false, 1), "empty");

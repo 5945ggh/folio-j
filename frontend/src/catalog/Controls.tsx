@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from "react";
+import { type KeyboardEvent, type ReactNode, useId, useRef } from "react";
 import { type CatalogKind, type CatalogState, sortFields } from "./state";
 
 const sortLabels = {
@@ -71,21 +71,101 @@ export function CatalogToolbar({
 	change,
 	kind,
 	sources,
+	children,
 }: {
 	state: CatalogState;
 	change: (patch: Partial<CatalogState>) => void;
 	kind: CatalogKind;
 	sources?: readonly { id: string; title: string }[];
+	children?: ReactNode;
 }) {
-	return (
-		<div className="catalog-toolbar">
-			<label className="catalog-search">
-				<span className="sr-only">
-					{kind === "books" ? "搜索书名或 Source" : "搜索当前列表"}
+	const sourceList = kind === "segments" || kind === "analyses";
+	const listLabel = kind === "segments" ? "片段" : "讲解";
+	const searchLabel = sourceList
+		? `搜索${listLabel}`
+		: kind === "books"
+			? "搜索书名或 Source"
+			: "搜索当前列表";
+	const sortId = useId();
+	const sortTrigger = useRef<HTMLButtonElement>(null);
+	const keyboardSort = useRef(false);
+	const sorting = (
+		<>
+			<label className={sourceList ? "source-sort-field" : undefined}>
+				<span className={sourceList ? undefined : "sr-only"}>
+					{sourceList ? "排序依据" : "排序字段"}
 				</span>
+				<select
+					value={state.sort}
+					onChange={(e) =>
+						change({ sort: e.target.value as CatalogState["sort"] })
+					}
+				>
+					{sortFields[kind].map((field) => (
+						<option key={field} value={field}>
+							{kind !== "books" && field === "created_at"
+								? "创建时间"
+								: sortLabels[field]}
+						</option>
+					))}
+				</select>
+			</label>
+			{sourceList ? (
+				<div className="source-sort-direction-field">
+					<span>排序方向</span>
+					<fieldset className="source-sort-direction" aria-label="排序方向">
+						{(["desc", "asc"] as const).map((order) => (
+							<button
+								key={order}
+								type="button"
+								aria-pressed={state.order === order}
+								onClick={() => change({ order })}
+							>
+								{order === "desc" ? "降序" : "升序"}
+							</button>
+						))}
+					</fieldset>
+				</div>
+			) : (
+				<label>
+					<span className="sr-only">排序方向</span>
+					<select
+						value={state.order}
+						onChange={(e) =>
+							change({ order: e.target.value as CatalogState["order"] })
+						}
+					>
+						<option value="asc">升序</option>
+						<option value="desc">降序</option>
+					</select>
+				</label>
+			)}
+		</>
+	);
+	return (
+		<div
+			className={`catalog-toolbar${sourceList ? " source-list-toolbar" : ""}`}
+		>
+			<label className="catalog-search">
+				<span className="sr-only">{searchLabel}</span>
+				{sourceList && (
+					<svg
+						className="source-list-search-icon"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="1.6"
+						strokeLinecap="round"
+						aria-hidden="true"
+					>
+						<path d="M21 21l-5-5M19 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0" />
+					</svg>
+				)}
 				<input
 					type="search"
-					placeholder={kind === "books" ? "搜索书名或 Source…" : "搜索…"}
+					placeholder={
+						sourceList || kind === "books" ? `${searchLabel}…` : "搜索…"
+					}
 					value={state.q}
 					onChange={(e) => change({ q: e.target.value })}
 				/>
@@ -124,36 +204,60 @@ export function CatalogToolbar({
 					</select>
 				</label>
 			)}
-			<label>
-				<span className="sr-only">排序字段</span>
-				<select
-					value={state.sort}
-					onChange={(e) =>
-						change({ sort: e.target.value as CatalogState["sort"] })
-					}
-				>
-					{sortFields[kind].map((field) => (
-						<option key={field} value={field}>
-							{kind !== "books" && field === "created_at"
-								? "创建时间"
-								: sortLabels[field]}
-						</option>
-					))}
-				</select>
-			</label>
-			<label>
-				<span className="sr-only">排序方向</span>
-				<select
-					value={state.order}
-					onChange={(e) =>
-						change({ order: e.target.value as CatalogState["order"] })
-					}
-				>
-					<option value="asc">升序</option>
-					<option value="desc">降序</option>
-				</select>
-			</label>
-			{(state.q || state.status || state.source_id) && (
+			{sourceList ? (
+				<div className="source-list-sort-control">
+					<button
+						ref={sortTrigger}
+						type="button"
+						className="source-list-sort-trigger"
+						aria-label={`${listLabel}排序`}
+						popoverTarget={sortId}
+						onPointerDown={() => {
+							keyboardSort.current = false;
+						}}
+						onKeyDown={(event) => {
+							if (event.key === "Enter" || event.key === " ")
+								keyboardSort.current = true;
+						}}
+					>
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="1.6"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M7 21V3m-4 4 4-4 4 4M17 3v18m-4-4 4 4 4-4" />
+						</svg>
+						排序
+					</button>
+					<div
+						id={sortId}
+						popover="auto"
+						className="library-popover source-list-sort"
+						role="dialog"
+						aria-label={`${listLabel}排序`}
+						onToggle={(event) => {
+							if (event.newState !== "open") return;
+							const box = sortTrigger.current?.getBoundingClientRect();
+							if (!box) return;
+							const panel = event.currentTarget;
+							panel.style.top = `${Math.max(12, Math.min(box.bottom + 8, window.innerHeight - panel.offsetHeight - 12))}px`;
+							panel.style.right = `${Math.max(12, Math.min(window.innerWidth - box.right, window.innerWidth - panel.offsetWidth - 12))}px`;
+							if (keyboardSort.current) panel.querySelector("select")?.focus();
+							keyboardSort.current = false;
+						}}
+					>
+						<strong>{listLabel}排序</strong>
+						{sorting}
+					</div>
+				</div>
+			) : (
+				sorting
+			)}
+			{!sourceList && (state.q || state.status || state.source_id) && (
 				<button
 					className="button secondary"
 					type="button"
@@ -162,6 +266,7 @@ export function CatalogToolbar({
 					清空筛选
 				</button>
 			)}
+			{sourceList && <div className="source-list-action">{children}</div>}
 		</div>
 	);
 }

@@ -14,3 +14,13 @@ export function bookListState(
 		return "out-of-page";
 	return "books";
 }
+
+export function sourceListState(
+	total: number | undefined,
+	count: number,
+	search: string,
+) {
+	if (total === undefined) return "loading";
+	if (total === 0) return search ? "no-results" : "empty";
+	return count === 0 ? "out-of-page" : "items";
+}
