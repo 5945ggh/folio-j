@@ -1,0 +1,37 @@
+docs/handovers/reader-r1/API.md
+  s_42de8872be18e5::t_74d2f842710bc2 54
+  s_42de8872be18e5::t_9883612a7b9f70 53
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_42de8872be18e5::t_5997532ce018ce 3,24
+docs/ARCHITECTURE.md
+  s_42de8872be18e5::t_74d2f842710bc2 107-108,110-113
+  s_42de8872be18e5::t_5997532ce018ce 109
+docs/handovers/README.md
+  s_42de8872be18e5::t_5997532ce018ce 11
+docs/handovers/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md
+  s_42de8872be18e5::t_bc46fa30b5622a 95,97
+  s_42de8872be18e5::t_4db2473e36a820 110-116,118-124
+  s_42de8872be18e5::t_a3d93b81bf8535 63-69,71-84
+  s_42de8872be18e5::t_6ed5783ada8c68 86-94,96,98-109
+  s_42de8872be18e5::t_8533fdb2f9825e 70,85
+  s_42de8872be18e5::t_af4d368e72ca2f 117
+docs/PRD.md
+  s_42de8872be18e5::t_293adaa85102c9 185
+  s_42de8872be18e5::t_74d2f842710bc2 203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e2c9d445c67b8b43a33f15e1e1dc31ba603b18a6",
+  "prompts": {},
+  "sessions": {
+    "s_42de8872be18e5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14434-d2b1-74f2-bf45-d5d881a49883",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
