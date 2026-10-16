@@ -1,0 +1,57 @@
+frontend/src/materials/ReaderControls.tsx
+  s_48134a78e10dd3::t_1ba9713c217056 121
+  s_48134a78e10dd3::t_bd90fa91918973 116-120,122-136
+  s_48134a78e10dd3::t_c4673a2a5a07dc 115
+docs/PRD.md
+  s_48134a78e10dd3::t_bc8583b0a3627f 183-184
+  s_48134a78e10dd3::t_3bf25d56276582 185-186
+frontend/src/materials/viewport.test.ts
+  s_48134a78e10dd3::t_ca41d8e1581f2e 3,5,17-22,24-27,38-45,52-57,59-62
+  s_48134a78e10dd3::t_d5ef58f51950ea 8,13-16,23,28-37,46-51,58,63-67
+  s_48134a78e10dd3::t_b3125632a50649 68
+frontend/src/materials/reader-r1.css
+  s_48134a78e10dd3::t_cafa7cbd3c5e07 8-9,94-95,128,135,145-147,344-346
+  s_48134a78e10dd3::t_bd90fa91918973 7,10-14,91-93,96
+frontend/src/materials/preferences.test.ts
+  s_48134a78e10dd3::t_bd90fa91918973 19,55-58,69-92,96-103
+  s_48134a78e10dd3::t_6711aef8f8c975 93-95
+frontend/src/materials/viewport.ts
+  s_48134a78e10dd3::t_ca41d8e1581f2e 10-13
+  s_48134a78e10dd3::t_cafa7cbd3c5e07 8-9,14-27
+frontend/src/materials/MaterialReader.tsx
+  s_48134a78e10dd3::t_cafa7cbd3c5e07 93,531
+  s_48134a78e10dd3::t_ca41d8e1581f2e 807-809
+  s_b7aa29d121118d::t_3774dd9e4e6e38 666,810-811,1087-1089,1271
+docs/ARCHITECTURE.md
+  s_48134a78e10dd3::t_bc8583b0a3627f 137-138
+  s_48134a78e10dd3::t_3bf25d56276582 139-140
+frontend/src/materials/preferences.ts
+  s_48134a78e10dd3::t_bd90fa91918973 4-8,18,61-67
+docs/handovers/reader-r1/INTERACTION_POLISH.md
+  s_48134a78e10dd3::t_3bf25d56276582 183-200
+  s_48134a78e10dd3::t_09999c16f4f2b3 172-182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "325883a44cf498d9470e409316d87e8205bb7a59",
+  "prompts": {},
+  "sessions": {
+    "s_48134a78e10dd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f9f-a243-7e42-a0cb-31683cb07ae9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_b7aa29d121118d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14410-5db2-72b1-871a-f3d80e60aecc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
