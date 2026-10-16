@@ -1,0 +1,44 @@
+frontend/src/materials/dom.ts
+  s_42de8872be18e5::t_a1d91e281ac1eb 4-15
+frontend/src/materials/dom.test.ts
+  s_42de8872be18e5::t_6db5b88d34f847 23
+  s_42de8872be18e5::t_b45d07f4b78f46 24
+  s_42de8872be18e5::t_9a379519b85afa 3
+  s_42de8872be18e5::t_b1834b0adbefc3 22
+  s_42de8872be18e5::t_cf590b53e40476 25-41
+backend/tests/test_chapter_positions.py
+  s_42de8872be18e5::t_812ead3a124eb0 4,110-121,154-155
+  s_42de8872be18e5::t_e1cebf555781dd 101-109,126-153,156-239
+  s_42de8872be18e5::t_955bcb57fd5ad3 100
+  s_42de8872be18e5::t_25a758118ee1b7 122-125
+  s_42de8872be18e5::t_ba69123a175caf 240-241
+backend/src/app/services/position_progress.py
+  s_42de8872be18e5::t_451c93e94e10e1 50
+  s_42de8872be18e5::t_812ead3a124eb0 3-6,11-18,20-21,23-30,32-37,39-45,64-69
+  s_42de8872be18e5::t_1e2b2813759a77 19,22,31,38,46
+  s_42de8872be18e5::t_8032e9eccfad4e 47-48
+frontend/src/materials/MaterialReader.tsx
+  s_42de8872be18e5::t_b5ea17ff102439 938
+  s_42de8872be18e5::t_a1d91e281ac1eb 39
+  s_42de8872be18e5::t_d70be54a965c33 106,661-663,939-946
+frontend/src/materials/position.test.ts
+  s_42de8872be18e5::t_34a2631d2354a3 230-246
+frontend/src/materials/position.ts
+  s_42de8872be18e5::t_acf4c46d1b57a8 201,226
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aa928677fa5421b04e543b290c1dc2fd9f5c966f",
+  "prompts": {},
+  "sessions": {
+    "s_42de8872be18e5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14434-d2b1-74f2-bf45-d5d881a49883",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
