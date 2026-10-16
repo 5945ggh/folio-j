@@ -112,7 +112,8 @@ export function samePosition(left: Position | null, right: Position): boolean {
 		left.chapter_id !== right.chapter_id ||
 		left.part_index !== right.part_index ||
 		left.resource_id !== right.resource_id ||
-		left.kind !== right.kind
+		left.kind !== right.kind ||
+		(left.at_chapter_end ?? false) !== (right.at_chapter_end ?? false)
 	)
 		return false;
 	return left.kind === "text"

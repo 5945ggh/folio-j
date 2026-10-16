@@ -10,6 +10,7 @@ const target: Position = {
 	resource_id: "r",
 	kind: "text",
 	offset: 42,
+	at_chapter_end: false,
 	settings: { font_size: 22, line_height: 2, writing_mode: "horizontal-tb" },
 };
 test("return origin is consumed only for a located target in the current surface generation", () => {

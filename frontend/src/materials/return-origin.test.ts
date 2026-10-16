@@ -14,6 +14,7 @@ const beginning = {
 	resource_id: "r",
 	kind: "text" as const,
 	offset: 0,
+	at_chapter_end: false,
 };
 const presented = { ...beginning, offset: 360 };
 const otherChapter = { ...beginning, chapter_id: "previous", offset: 80 };
@@ -75,6 +76,15 @@ test("an exact repeated chapter-start action preserves its undo point", () => {
 	};
 	assert.equal(samePosition({ ...image, image_progress: 0.001 }, image), false);
 	assert.equal(samePosition({ ...image, image_id: 5 }, image), false);
+	assert.equal(
+		samePosition({ ...beginning, at_chapter_end: false }, beginning),
+		true,
+	);
+	assert.equal(
+		samePosition({ ...beginning, at_chapter_end: true }, beginning),
+		false,
+	);
+	assert.equal(samePosition({ ...image, at_chapter_end: true }, image), false);
 });
 
 test("a presented chapter start preserves undo despite invisible leading whitespace", () => {

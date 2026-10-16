@@ -1703,6 +1703,11 @@ export interface components {
         };
         /** ReadingPositionResponse */
         ReadingPositionResponse: {
+            /**
+             * At Chapter End
+             * @default false
+             */
+            at_chapter_end: boolean;
             /** Chapter Id */
             chapter_id: string;
             /** Image Id */
@@ -1735,6 +1740,11 @@ export interface components {
         };
         /** ReadingPositionUpdate */
         ReadingPositionUpdate: {
+            /**
+             * At Chapter End
+             * @default false
+             */
+            at_chapter_end: boolean;
             /** Chapter Id */
             chapter_id: string;
             /** Expected Revision */

@@ -208,7 +208,7 @@ test("chapter progress uses part spans and canonical code points rather than scr
 			kind: "text",
 			offset: 99,
 		}),
-		1,
+		0.99,
 	);
 	assert.equal(
 		chapterProgress(
@@ -224,7 +224,27 @@ test("chapter progress uses part spans and canonical code points rather than scr
 			[{ id: "a", text: "𠮷語" }],
 			{ part_index: 0, kind: "text", offset: 2 },
 		),
+		0.99,
+	);
+});
+
+test("chapter end reaches 100% without moving the resume anchor and backtracking lowers it", () => {
+	const parts = [{ resource_id: "r", start: 0, end: 1000 }];
+	const resources = [{ id: "r", text: "あ".repeat(990) + " \n".repeat(5) }];
+	const anchor = { part_index: 0, kind: "text", offset: 800 };
+	assert.equal(chapterProgress(parts, resources, anchor), 0.8);
+	assert.equal(
+		chapterProgress(parts, resources, { ...anchor, at_chapter_end: true }),
 		1,
+	);
+	assert.equal(anchor.offset, 800);
+	assert.equal(
+		chapterProgress(parts, resources, { ...anchor, at_chapter_end: false }),
+		0.8,
+	);
+	assert.equal(
+		chapterProgress(parts, resources, { ...anchor, offset: 999 }),
+		0.99,
 	);
 });
 
@@ -233,7 +253,11 @@ test("an image midway through a text part shows surrounding content progress rat
 	const resources = [{ id: "r", text: "あ".repeat(110) }];
 	const anchor = { part_index: 0, kind: "image" };
 	assert.equal(chapterProgress(parts, resources, anchor, 50), 0.5);
-	assert.equal(chapterProgress(parts, resources, anchor, 100), 1);
+	assert.equal(chapterProgress(parts, resources, anchor, 100), 0.99);
+	assert.equal(
+		chapterProgress(parts, resources, { ...anchor, at_chapter_end: true }, 50),
+		1,
+	);
 	assert.equal(
 		chapterProgress(
 			[...parts, ...parts],
@@ -242,5 +266,44 @@ test("an image midway through a text part shows surrounding content progress rat
 			50,
 		),
 		0.75,
+	);
+});
+
+test("short chapters and image chapters reach 100% only when their current viewport reaches the end", () => {
+	const parts = [{ resource_id: "r", start: 0, end: 3 }];
+	const resources = [{ id: "r", text: "短い章" }];
+	assert.equal(
+		chapterProgress(parts, resources, {
+			part_index: 0,
+			kind: "text",
+			offset: 0,
+			at_chapter_end: true,
+		}),
+		1,
+	);
+	const imagePart = [{ resource_id: "r", start: 0, end: 0 }];
+	const imageAnchor = { part_index: 0, kind: "image" };
+	assert.equal(chapterProgress(imagePart, resources, imageAnchor), null);
+	assert.equal(
+		chapterProgress(imagePart, resources, {
+			...imageAnchor,
+			at_chapter_end: true,
+		}),
+		1,
+	);
+	assert.equal(
+		chapterProgress([...parts, ...imagePart], resources, {
+			...imageAnchor,
+			part_index: 1,
+		}),
+		0.99,
+	);
+	assert.equal(
+		chapterProgress(parts, resources, {
+			...imageAnchor,
+			part_index: 9,
+			at_chapter_end: true,
+		}),
+		null,
 	);
 });

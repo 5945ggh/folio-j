@@ -404,6 +404,7 @@ function ReaderSearchContent(props: PanelProps & { active: boolean }) {
 										resource_id: hit.resource_id,
 										kind: "text",
 										offset: hit.start,
+										at_chapter_end: false,
 										settings: props.settings,
 									},
 									{ start: hit.start, end: hit.end },
@@ -643,6 +644,7 @@ function ImageViewer({
 									kind: "image",
 									image_id: item.image_id,
 									image_progress: 0,
+									at_chapter_end: false,
 									settings: props.settings,
 								});
 						}}

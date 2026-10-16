@@ -40,6 +40,7 @@ import {
 	nearestText,
 	type Projection,
 	projectPart,
+	readingContentEnd,
 	textRect,
 	textSamplingTarget,
 } from "./dom";
@@ -92,7 +93,13 @@ import {
 import { type PendingReturn, returnWasLocated } from "./return-recovery";
 import { applyAutomaticRuby } from "./ruby";
 import { freshestUsage, OpenAction } from "./usage";
-import { readingViewport, viewportSize } from "./viewport";
+import {
+	atChapterEnd,
+	chapterEndAdjustment,
+	readingFrameDistance,
+	readingViewport,
+	viewportSize,
+} from "./viewport";
 
 const defaults: Settings = {
 	font_size: 22,
@@ -104,6 +111,7 @@ type Frame = {
 	doc: Document;
 	projection: Projection;
 	imageOffsets: Map<number, number>;
+	contentEnd: number | null;
 	resize: () => void;
 	cleanup: () => void;
 	presentationCleanup: () => void;
@@ -529,6 +537,21 @@ function Reader({
 		bookUi.width,
 		bookUi.rubyScope,
 	].join("|");
+	const chapterContentEnd = useCallback((vertical: boolean) => {
+		let end: number | null = null;
+		for (const frame of frames.current.values()) {
+			if (frame.contentEnd === null) continue;
+			const rect = frame.element.getBoundingClientRect();
+			const value = (vertical ? rect.left : rect.top) + frame.contentEnd;
+			end =
+				end === null
+					? value
+					: vertical
+						? Math.min(end, value)
+						: Math.max(end, value);
+		}
+		return end;
+	}, []);
 	const capture = useCallback((): Position | null => {
 		const root = container.current;
 		if (!root || !chapter.data || !layout.current.canSample(viewportSize(root)))
@@ -536,14 +559,22 @@ function Reader({
 		const vertical = settings.writing_mode === "vertical-rl";
 		const viewport = readingViewport(root, getComputedStyle(root));
 		const edge = vertical ? viewport.right : viewport.top;
+		const endReached = atChapterEnd(
+			chapterContentEnd(vertical),
+			viewport,
+			vertical,
+		);
 		let best: { index: number; frame: Frame; distance: number } | undefined;
 		for (const [index, frame] of frames.current) {
 			const rect = frame.element.getBoundingClientRect();
-			const intersects = vertical
-				? rect.left < viewport.right && rect.right > viewport.left
-				: rect.top < viewport.bottom && rect.bottom > viewport.top;
-			if (!intersects) continue;
-			const distance = Math.abs((vertical ? rect.right : rect.top) - edge);
+			const distance = readingFrameDistance(
+				rect,
+				viewport,
+				vertical,
+				frame.contentEnd,
+				endReached,
+			);
+			if (distance === null) continue;
 			if (!best || distance < best.distance) best = { index, frame, distance };
 		}
 		if (!best) return null;
@@ -556,6 +587,7 @@ function Reader({
 			chapter_id: chapterId,
 			part_index: best.index,
 			resource_id: part.resource_id,
+			at_chapter_end: endReached,
 			settings,
 		};
 		for (const image of best.frame.doc.querySelectorAll<HTMLElement>(
@@ -598,7 +630,7 @@ function Reader({
 				image_progress: 0,
 			};
 		return null;
-	}, [book.version_id, chapterId, chapter.data, settings]);
+	}, [book.version_id, chapterId, chapter.data, settings, chapterContentEnd]);
 	const sampleJumpReading = useCallback(() => {
 		const root = container.current;
 		if (
@@ -669,7 +701,7 @@ function Reader({
 		} else jumpReading.current.pause();
 	}, [capture, chapter.data, sampleJumpReading]);
 	const restore = useCallback(
-		(anchor: Position | null) => {
+		(anchor: Position | null, initialPresentation: boolean) => {
 			const root = container.current;
 			const data = chapter.data;
 			if (!root || !data) return false;
@@ -743,6 +775,16 @@ function Reader({
 					}
 				}
 			}
+			// A saved end is a navigation destination. Ordinary reflows keep the original text/image anchor.
+			if (initialPresentation && located && anchor?.at_chapter_end) {
+				const adjustment = chapterEndAdjustment(
+					chapterContentEnd(vertical),
+					readingViewport(root, getComputedStyle(root)),
+					vertical,
+				);
+				if (vertical) root.scrollLeft += adjustment;
+				else root.scrollTop += adjustment;
+			}
 			try {
 				const mark = highlight.current;
 				if (mark && mark.chapterId === chapterId) {
@@ -795,6 +837,7 @@ function Reader({
 			settings.writing_mode,
 			settings.font_size,
 			observe,
+			chapterContentEnd,
 		],
 	);
 	const reflowFrames = useCallback(() => layout.current.reflow(), []);
@@ -944,6 +987,7 @@ function Reader({
 						],
 					),
 				),
+				contentEnd: null,
 				resize,
 				cleanup,
 				presentationCleanup,
@@ -1113,6 +1157,7 @@ function Reader({
 					chapter_id: id,
 					part_index: 0,
 					resource_id: part.resource_id,
+					at_chapter_end: false,
 					settings,
 					...(part.end > part.start
 						? { kind: "text", offset: part.start }
@@ -1255,7 +1300,14 @@ function Reader({
 					size: () => (container.current === root ? viewportSize(root) : null),
 					capture,
 					measure: () => {
-						for (const frame of frames.current.values()) frame.resize();
+						for (const frame of frames.current.values()) {
+							frame.resize();
+							frame.contentEnd = readingContentEnd(
+								frame.doc,
+								frame.projection,
+								settings.writing_mode === "vertical-rl",
+							);
+						}
 					},
 					restore,
 				},

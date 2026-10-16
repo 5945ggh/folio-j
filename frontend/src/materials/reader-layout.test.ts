@@ -3,6 +3,58 @@ import test from "node:test";
 import { ReaderLayout } from "./reader-layout.ts";
 
 const size = { width: 760, height: 800 };
+test("saved chapter ends are navigation intents only on the first stable presentation of each generation", () => {
+	const anchor = { offset: 800, at_chapter_end: true };
+	const layout = new ReaderLayout(anchor);
+	const initial: boolean[] = [];
+	let canRestore = false;
+	const surface = {
+		generation: 0,
+		parts: 2,
+		geometry: "initial",
+		size: () => size,
+		capture: () => anchor,
+		measure: () => {},
+		restore: (saved: typeof anchor | null, first: boolean) => {
+			assert.deepEqual(saved, anchor);
+			initial.push(first);
+			return canRestore ? () => {} : (false as const);
+		},
+	};
+	layout.commit(
+		surface,
+		() => {},
+		() => {},
+	);
+	layout.resourcesReady(0, 0);
+	assert.deepEqual(initial, []);
+	layout.resourcesReady(0, 1);
+	assert.deepEqual(initial, [true]);
+	assert.equal(layout.canSample(size), false);
+	canRestore = true;
+	layout.reflow();
+	layout.reflow();
+	assert.deepEqual(initial, [true, true, false]);
+	layout.commit(
+		{ ...surface, geometry: "larger-font" },
+		() => {},
+		() => {},
+	);
+	assert.equal(initial.at(-1), false);
+	layout.setAnchor(anchor);
+	layout.invalidateSurface();
+	layout.commit(
+		{ ...surface, generation: 1 },
+		() => {},
+		() => {},
+	);
+	layout.resourcesReady(1, 0);
+	layout.resourcesReady(1, 1);
+	assert.deepEqual(initial, [true, true, false, false, true]);
+	layout.reflow();
+	assert.equal(initial.at(-1), false);
+});
+
 function fixture() {
 	const layout = new ReaderLayout<number>(600);
 	let scroll = 600;

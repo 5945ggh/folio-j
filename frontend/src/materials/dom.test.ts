@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { imagePrecedesText, imageTextOffset } from "./dom.ts";
+import {
+	imagePrecedesText,
+	imageTextOffset,
+	readingContentEnd,
+} from "./dom.ts";
 
 test("a leading image remains the first anchor across collapsed whitespace but not a preceding title", () => {
 	const whitespace = { data: "\n \t" } as Text;
@@ -38,4 +42,152 @@ test("image progress counts its preceding canonical text without modifying the i
 	assert.equal(imageTextOffset(image(3), projection), 4); // NFC after concatenating the two leaves.
 	assert.equal(imageTextOffset(image(2), projection), 4); // Prefix is valid for image progress even across composition.
 	assert.equal(imageTextOffset(image(4), projection), 5);
+});
+
+test("readable extent ignores empty tail parts and whitespace while including trailing pictures", () => {
+	const box = (left: number, bottom: number, width = 20, height = 20) =>
+		({ left, bottom, width, height }) as DOMRect;
+	const nodes = [
+		{ data: " 本文 \n", rect: box(100, 600) },
+		{ data: "隠れた文字", rect: box(0, 0, 0, 0) },
+		{ data: " \n\t", rect: box(-1000, 10000) },
+	];
+	let current = { data: "", rect: box(0, 0, 0, 0) };
+	const boundaries: number[] = [];
+	let images: { getBoundingClientRect: () => DOMRect }[] = [];
+	const doc = {
+		createRange: () => ({
+			setStart: (node: typeof current, start: number) => {
+				current = node;
+				boundaries.push(start);
+			},
+			setEnd: (_node: typeof current, end: number) => boundaries.push(end),
+			getBoundingClientRect: () => current.rect,
+		}),
+		querySelectorAll: () => images,
+	} as unknown as Document;
+	const projection = {
+		raw: "",
+		entries: nodes.map((node) => ({
+			node: node as unknown as Text,
+			start: 0,
+			end: 0,
+		})),
+	};
+	assert.equal(readingContentEnd(doc, projection, false), 600);
+	assert.deepEqual(boundaries.slice(0, 2), [1, 3]);
+	assert.equal(readingContentEnd(doc, projection, true), 100);
+	images = [{ getBoundingClientRect: () => box(40, 900) }];
+	assert.equal(readingContentEnd(doc, projection, false), 900);
+	assert.equal(readingContentEnd(doc, projection, true), 40);
+	assert.equal(readingContentEnd(doc, { raw: "", entries: [] }, false), 900);
+	images = [];
+	assert.equal(
+		readingContentEnd(
+			doc,
+			{ raw: "\n", entries: projection.entries.slice(2) },
+			false,
+		),
+		null,
+	);
+});
+
+test("author visibility-hidden text and pictures cannot extend the readable end", () => {
+	const hidden = { visibility: "hidden" };
+	const shown = { visibility: "visible" };
+	const node = { data: "隠れた文字", parentElement: hidden } as unknown as Text;
+	const image = {
+		...hidden,
+		getBoundingClientRect: () => ({
+			left: -100,
+			bottom: 1000,
+			width: 100,
+			height: 100,
+		}),
+	};
+	const doc = {
+		defaultView: { getComputedStyle: (element: typeof hidden) => element },
+		createRange: () => ({
+			setStart: () => {},
+			setEnd: () => {},
+			getBoundingClientRect: () => ({
+				left: 0,
+				bottom: 600,
+				width: 10,
+				height: 10,
+			}),
+		}),
+		querySelectorAll: () => [image],
+	} as unknown as Document;
+	const projection = {
+		raw: node.data,
+		entries: [{ node, start: 0, end: node.data.length }],
+	};
+	assert.equal(readingContentEnd(doc, projection, false), null);
+	const visibleNode = { data: "本文", parentElement: shown } as unknown as Text;
+	projection.entries.push({
+		node: visibleNode,
+		start: node.data.length,
+		end: node.data.length + 2,
+	});
+	assert.equal(readingContentEnd(doc, projection, false), 600);
+	assert.equal(readingContentEnd(doc, projection, true), 0);
+});
+
+test("author overflow clipping limits text and image ends in both reading directions", () => {
+	for (const vertical of [false, true]) {
+		for (const overflow of ["hidden", "clip"]) {
+			for (const image of [false, true]) {
+				const parent = {
+					parentElement: null,
+					clientLeft: 0,
+					clientTop: 0,
+					clientWidth: 100,
+					clientHeight: 100,
+					getBoundingClientRect: () => ({ left: 0, top: 0 }),
+				};
+				let bounds = {
+					left: vertical ? -1000 : 0,
+					bottom: vertical ? 20 : 1020,
+					width: 20,
+					height: 20,
+				};
+				const child = {
+					parentElement: parent,
+					getBoundingClientRect: () => bounds,
+				};
+				const node = { data: "本文", parentElement: child } as unknown as Text;
+				const doc = {
+					defaultView: {
+						getComputedStyle: (element: unknown) => ({
+							visibility: "visible",
+							overflowX: element === parent && vertical ? overflow : "visible",
+							overflowY: element === parent && !vertical ? overflow : "visible",
+						}),
+					},
+					createRange: () => ({
+						setStart: () => {},
+						setEnd: () => {},
+						getBoundingClientRect: () => bounds,
+					}),
+					querySelectorAll: () => (image ? [child] : []),
+				} as unknown as Document;
+				const projection = {
+					raw: "本文",
+					entries: image ? [] : [{ node, start: 0, end: 2 }],
+				};
+				assert.equal(readingContentEnd(doc, projection, vertical), null);
+				bounds = {
+					left: vertical ? -10 : 0,
+					bottom: vertical ? 20 : 110,
+					width: 20,
+					height: 20,
+				};
+				assert.equal(
+					readingContentEnd(doc, projection, vertical),
+					vertical ? 0 : 100,
+				);
+			}
+		}
+	}
 });

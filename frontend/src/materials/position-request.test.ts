@@ -13,7 +13,8 @@ test("saved response metadata is removed at the position update boundary", () =>
 		offset: 80,
 		revision: 5,
 		updated_at: "2026-10-11T00:00:00Z",
-		progress: 0.8,
+		progress: 1,
+		at_chapter_end: true,
 		settings: {
 			font_size: 20,
 			line_height: 1.7,
@@ -28,6 +29,7 @@ test("saved response metadata is removed at the position update boundary", () =>
 		resource_id: "r",
 		kind: "text",
 		offset: 80,
+		at_chapter_end: true,
 		settings: {
 			font_size: 20,
 			line_height: 1.7,
@@ -35,4 +37,8 @@ test("saved response metadata is removed at the position update boundary", () =>
 		},
 		expected_revision: 6,
 	});
+	assert.equal(
+		positionRequest({ ...saved, at_chapter_end: false }, 7).at_chapter_end,
+		false,
+	);
 });

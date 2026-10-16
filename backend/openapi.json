@@ -2441,6 +2441,11 @@
       "ReadingPositionResponse": {
         "additionalProperties": false,
         "properties": {
+          "at_chapter_end": {
+            "default": false,
+            "title": "At Chapter End",
+            "type": "boolean"
+          },
           "chapter_id": {
             "title": "Chapter Id",
             "type": "string"
@@ -2545,6 +2550,11 @@
       "ReadingPositionUpdate": {
         "additionalProperties": false,
         "properties": {
+          "at_chapter_end": {
+            "default": false,
+            "title": "At Chapter End",
+            "type": "boolean"
+          },
           "chapter_id": {
             "title": "Chapter Id",
             "type": "string"

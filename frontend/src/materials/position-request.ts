@@ -15,6 +15,7 @@ export function positionRequest(
 		offset: position.offset,
 		image_id: position.image_id,
 		image_progress: position.image_progress,
+		at_chapter_end: position.at_chapter_end ?? false,
 		settings: position.settings
 			? {
 					font_size: position.settings.font_size,

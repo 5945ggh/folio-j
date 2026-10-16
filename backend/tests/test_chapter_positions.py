@@ -2,6 +2,8 @@
 
 import asyncio
 import hashlib
+import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -92,11 +94,186 @@ def test_progress_codepoints_parts_images_and_whitespace() -> None:
     )
     assert chapter_progress(book, image) == 0.5
     assert chapter_progress(book, anchor.model_copy(update={"part_index": 0, "offset": 0})) == 0
-    assert chapter_progress(book, anchor.model_copy(update={"offset": 3})) == 1
+    assert chapter_progress(book, anchor.model_copy(update={"offset": 3})) == 0.99
     image_only = book.model_copy(
         update={"resources": [resource.model_copy(update={"text": " \n\t"})]}
     )
     assert chapter_progress(image_only, image) is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["text", "image"])
+async def test_chapter_end_round_trip_revisit_and_conflict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
+) -> None:
+    monkeypatch.setattr("app.services.materials.compile_epub_bytes", two_chapters)
+    database = tmp_path / "chapter-end.db"
+    async with api_client(database) as client:
+        source = (await client.post("/api/sources", json={"title": "本"})).json()["id"]
+        material = (
+            await client.post(
+                f"/api/sources/{source}/materials",
+                content=b"book",
+                headers={"content-type": "application/epub+zip"},
+            )
+        ).json()["material"]
+        url = f"/api/materials/{material['id']}"
+        location = {"offset": 1} if kind == "text" else {"image_id": 0, "image_progress": 0.25}
+        anchor = {
+            "version_id": material["version_id"],
+            "chapter_id": "c1",
+            "part_index": 0,
+            "resource_id": "r1",
+            "kind": kind,
+            **location,
+        }
+        ended = await client.put(
+            url + "/reading-position",
+            json={**anchor, "expected_revision": 0, "at_chapter_end": True},
+        )
+        assert ended.status_code == 200, ended.text
+        saved = ended.json()
+        assert saved["at_chapter_end"] is True
+        assert saved["progress"] == 1
+        assert all(saved[key] == value for key, value in location.items())
+        assert (await client.get(url)).json()["reading_position"] == saved
+
+        # A client without the new field still writes false and leaves c1's memory intact.
+        second = await client.put(
+            url + "/reading-position",
+            json={**anchor, "chapter_id": "c2", "expected_revision": 1},
+        )
+        assert second.status_code == 200, second.text
+        assert second.json()["at_chapter_end"] is False
+        before = (await client.get(url)).json()
+        assert before["chapter_positions"][0] == saved
+        assert before["chapter_positions"][1] == second.json()
+        stale = await client.put(
+            url + "/reading-position",
+            json={**anchor, "expected_revision": 1, "at_chapter_end": False},
+        )
+        assert stale.status_code == 409
+        assert (await client.get(url)).json() == before
+
+        revisited = await client.put(
+            url + "/reading-position",
+            json={**anchor, "expected_revision": 2, "at_chapter_end": False},
+        )
+        assert revisited.status_code == 200, revisited.text
+        assert revisited.json()["at_chapter_end"] is False
+        assert revisited.json()["progress"] == (pytest.approx(1 / 3) if kind == "text" else 0)
+        assert all(revisited.json()[key] == value for key, value in location.items())
+        after = (await client.get(url)).json()
+        assert after["reading_position"] == revisited.json()
+        assert after["chapter_positions"] == [revisited.json(), second.json()]
+    async with api_client(database) as client:
+        assert (await client.get(url)).json() == after
+    with sqlite3.connect(database) as connection:
+        assert (
+            connection.execute(
+                "SELECT status, revision FROM material_usage WHERE material_id=?",
+                (material["id"],),
+            ).fetchone()
+            is None
+        )
+
+
+@pytest.mark.asyncio
+async def test_legacy_position_payload_defaults_false_without_rewriting(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled)
+    database = tmp_path / "legacy-position.db"
+    async with api_client(database) as client:
+        source = (await client.post("/api/sources", json={"title": "本"})).json()["id"]
+        material = (
+            await client.post(
+                f"/api/sources/{source}/materials",
+                content=b"book",
+                headers={"content-type": "application/epub+zip"},
+            )
+        ).json()["material"]
+        url = f"/api/materials/{material['id']}"
+        legacy = {
+            "version_id": material["version_id"],
+            "chapter_id": "c1",
+            "part_index": 0,
+            "resource_id": "r1",
+            "kind": "text",
+            "offset": 3,
+        }
+        assert (
+            await client.put(url + "/reading-position", json={**legacy, "expected_revision": 0})
+        ).status_code == 200
+    payload = json.dumps(legacy)
+    with sqlite3.connect(database) as connection:
+        for table in ("reading_positions", "chapter_reading_positions"):
+            connection.execute(f"UPDATE {table} SET payload=?", (payload,))
+    async with api_client(database) as client:
+        response = (await client.get(url)).json()
+        position = response["reading_position"]
+        assert position["at_chapter_end"] is False
+        assert position["offset"] == 3
+        assert position["progress"] == 0.99
+        assert response["chapter_positions"] == [position]
+    with sqlite3.connect(database) as connection:
+        for table in ("reading_positions", "chapter_reading_positions"):
+            assert connection.execute(f"SELECT payload FROM {table}").fetchone() == (payload,)
+
+
+@pytest.mark.parametrize("text", ["", " \n\t"])
+def test_image_only_chapter_end_has_explicit_progress(text: str) -> None:
+    book = compiled(b"")
+    resource = book.resources[0].model_copy(update={"text": text})
+    part = book.chapters[0].parts[0].model_copy(update={"end": len(text)})
+    chapter = book.chapters[0].model_copy(update={"parts": [part]})
+    book = book.model_copy(update={"resources": [resource], "chapters": [chapter]})
+    anchor = PositionAnchor(
+        version_id="v",
+        chapter_id="c1",
+        part_index=0,
+        resource_id="r1",
+        kind="image",
+        image_id=0,
+        image_progress=1,
+    )
+    assert chapter_progress(book, anchor) is None
+    assert chapter_progress(book, anchor.model_copy(update={"at_chapter_end": True})) == 1
+
+
+def test_text_rounding_and_trailing_image_require_chapter_end() -> None:
+    book = compiled(b"")
+    resource = book.resources[0].model_copy(update={"text": "日" * 1000})
+    part = book.chapters[0].parts[0].model_copy(update={"end": 1000})
+    chapter = book.chapters[0].model_copy(
+        update={"parts": [part, part.model_copy(update={"start": 1000})]}
+    )
+    book = book.model_copy(update={"resources": [resource], "chapters": [chapter]})
+    anchor = PositionAnchor(
+        version_id="v", chapter_id="c1", part_index=0, resource_id="r1", kind="text", offset=999
+    )
+    assert chapter_progress(book, anchor) == 0.99
+    image = anchor.model_copy(
+        update={
+            "part_index": 1,
+            "kind": "image",
+            "offset": None,
+            "image_id": 0,
+            "image_progress": 1,
+        }
+    )
+    assert chapter_progress(book, image) == 0.99
+    assert chapter_progress(book, image.model_copy(update={"at_chapter_end": True})) == 1
+
+
+@pytest.mark.parametrize("changes", [{"chapter_id": "unknown"}, {"part_index": 1}])
+def test_chapter_end_does_not_make_missing_chapter_or_part_valid(
+    changes: dict[str, str | int],
+) -> None:
+    anchor = PositionAnchor(
+        version_id="v", chapter_id="c1", part_index=0, resource_id="r1", kind="text", offset=1
+    ).model_copy(update={"at_chapter_end": True, **changes})
+    assert chapter_progress(compiled(b""), anchor) is None
 
 
 def mixed_compiled(data: bytes) -> CompiledBook:
@@ -145,6 +322,10 @@ def test_image_progress_uses_preceding_locator_text(
     )
     assert chapter_progress(mixed_compiled(b""), anchor) == expected
     assert anchor.offset is None
+    assert (
+        chapter_progress(mixed_compiled(b""), anchor.model_copy(update={"at_chapter_end": True}))
+        == 1
+    )
 
 
 def test_image_progress_counts_each_part_and_its_own_image_identity() -> None:
@@ -175,7 +356,7 @@ def test_image_progress_counts_each_part_and_its_own_image_identity() -> None:
     assert chapter_progress(book, anchor.model_copy(update={"part_index": 1})) == 0.75
 
 
-@pytest.mark.parametrize("image_id, expected", [(2, 1 / 3), (9, 2 / 3), (12, 1.0)])
+@pytest.mark.parametrize("image_id, expected", [(2, 1 / 3), (9, 2 / 3), (12, 0.99)])
 def test_image_progress_normalizes_the_complete_raw_prefix(image_id: int, expected: float) -> None:
     book = compiled(b"")
     markup = (
@@ -234,6 +415,7 @@ async def test_image_progress_put_get_and_restart_preserve_the_image_anchor(
         assert saved["offset"] is None
         assert saved["image_id"] == 7
         assert saved["image_progress"] == 0.3
+        assert saved["at_chapter_end"] is False
         after = (await client.get(url)).json()
         assert after["reading_position"] == saved
         assert after["chapter_positions"] == [saved]

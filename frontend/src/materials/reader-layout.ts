@@ -9,7 +9,10 @@ type LayoutSurface<A> = {
 	capture: () => A | null;
 	measure: () => void;
 	// Return false if the DOM is unavailable; run completion only after the recovery ticket finishes.
-	restore: (anchor: A | null) => false | (() => void);
+	restore: (
+		anchor: A | null,
+		initialPresentation: boolean,
+	) => false | (() => void);
 };
 /** Coordinates stable sampling and synchronous DOM layout across resource callbacks. */
 export class ReaderLayout<A> {
@@ -19,6 +22,7 @@ export class ReaderLayout<A> {
 	private surface: LayoutSurface<A> | null = null;
 	private ready = new Set<number>();
 	private appliedGeometry: string | null = null;
+	private presentedGeneration: number | null = null;
 	private timer: ReturnType<typeof setTimeout> | null = null;
 	constructor(anchor: A | null) {
 		this.pending = anchor;
@@ -117,7 +121,10 @@ export class ReaderLayout<A> {
 			!this.recovery.canFinish(pass, surface.size() ?? size)
 		)
 			return;
-		const restored = surface.restore(this.pending);
+		const restored = surface.restore(
+			this.pending,
+			this.presentedGeneration !== surface.generation,
+		);
 		if (restored === false) return;
 		const currentSize = surface.size();
 		if (
@@ -126,6 +133,7 @@ export class ReaderLayout<A> {
 			!this.recovery.finish(pass, currentSize)
 		)
 			return;
+		this.presentedGeneration = surface.generation;
 		restored();
 	}
 }

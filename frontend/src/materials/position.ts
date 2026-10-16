@@ -193,13 +193,21 @@ export function anchorBeforeLayout<T>(
 	return restoring ? previous : (capture() ?? previous);
 }
 
-/** Stable chapter progress uses canonical text spans, independent of viewport geometry. */
+/** Canonical text position below 100%; an observed chapter end takes precedence. */
 export function chapterProgress(
 	parts: readonly { start: number; end: number; resource_id: string }[],
 	resources: readonly { id: string; text: string }[],
-	anchor: { part_index: number; kind: string; offset?: number | null },
+	anchor: {
+		part_index: number;
+		kind: string;
+		offset?: number | null;
+		at_chapter_end?: boolean;
+	},
 	imageOffset = 0,
 ): number | null {
+	const part = parts[anchor.part_index];
+	if (!part) return null;
+	if (anchor.at_chapter_end) return 1;
 	const hasText = parts.some((part) => {
 		const resource = resources.find((item) => item.id === part.resource_id);
 		return (
@@ -209,8 +217,7 @@ export function chapterProgress(
 		);
 	});
 	const total = parts.reduce((sum, part) => sum + part.end - part.start, 0);
-	const part = parts[anchor.part_index];
-	if (!hasText || !part || total <= 0) return null;
+	if (!hasText || total <= 0) return null;
 	const before = parts
 		.slice(0, anchor.part_index)
 		.reduce((sum, item) => sum + item.end - item.start, 0);
@@ -224,5 +231,6 @@ export function chapterProgress(
 					),
 				)
 			: Math.max(0, Math.min(part.end - part.start, imageOffset));
-	return scrollProgress(before + local, total);
+	// Reserve 100% for an observed chapter end, including chapters with trailing images.
+	return Math.min(0.99, scrollProgress(before + local, total));
 }

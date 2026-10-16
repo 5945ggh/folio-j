@@ -24,6 +24,7 @@ class PositionAnchor(StrictInput):
     offset: int | None = Field(default=None, ge=0)
     image_id: int | None = Field(default=None, ge=0)
     image_progress: float | None = Field(default=None, ge=0, le=1)
+    at_chapter_end: bool = False
     settings: ReadingSettings = Field(default_factory=ReadingSettings)
 
     @model_validator(mode="after")

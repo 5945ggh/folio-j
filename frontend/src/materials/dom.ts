@@ -13,6 +13,67 @@ export function imageTextOffset(
 	return Array.from(projection.raw.slice(0, end).normalize("NFC")).length;
 }
 
+/** Measure actual glyphs and images, excluding collapsed/hidden text and author/reader trailing whitespace. */
+export function readingContentEnd(
+	doc: Document,
+	projection: Projection,
+	vertical: boolean,
+): number | null {
+	let end: number | null = null;
+	const visible = (element: Element | null) =>
+		!element ||
+		!doc.defaultView ||
+		!/^(hidden|collapse)$/.test(
+			doc.defaultView.getComputedStyle(element).visibility,
+		);
+	const include = (rect: DOMRect, element: Element | null) => {
+		if (!(rect.width > 0 && rect.height > 0)) return;
+		let left = rect.left,
+			right = rect.left + rect.width;
+		let bottom = rect.bottom,
+			top = rect.bottom - rect.height;
+		if (doc.defaultView) {
+			for (let parent = element; parent; parent = parent.parentElement) {
+				const style = doc.defaultView.getComputedStyle(parent);
+				const clipX = /^(hidden|clip)$/.test(style.overflowX);
+				const clipY = /^(hidden|clip)$/.test(style.overflowY);
+				if (!clipX && !clipY) continue;
+				const bounds = parent.getBoundingClientRect();
+				if (clipX) {
+					const start = bounds.left + parent.clientLeft;
+					left = Math.max(left, start);
+					right = Math.min(right, start + parent.clientWidth);
+				}
+				if (clipY) {
+					const start = bounds.top + parent.clientTop;
+					top = Math.max(top, start);
+					bottom = Math.min(bottom, start + parent.clientHeight);
+				}
+				if (left >= right || top >= bottom) return;
+			}
+		}
+		const value = vertical ? left : bottom;
+		if (!Number.isFinite(value)) return;
+		end =
+			end === null
+				? value
+				: vertical
+					? Math.min(end, value)
+					: Math.max(end, value);
+	};
+	for (const { node } of projection.entries) {
+		const start = node.data.search(/\S/u);
+		if (start < 0 || !visible(node.parentElement)) continue;
+		const range = doc.createRange();
+		range.setStart(node, start);
+		range.setEnd(node, node.data.trimEnd().length);
+		include(range.getBoundingClientRect(), node.parentElement);
+	}
+	for (const image of doc.querySelectorAll<HTMLElement>("[data-epub-image]"))
+		if (visible(image)) include(image.getBoundingClientRect(), image);
+	return end;
+}
+
 /** Collapsed whitespace before a leading image must not make its anchor skip to later text. */
 export function imagePrecedesText(
 	image: Pick<Element, "compareDocumentPosition">,

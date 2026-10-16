@@ -47,10 +47,12 @@ def _image_offset(markup: str, image_id: int) -> int:
 
 
 def chapter_progress(book: CompiledBook, anchor: PositionAnchor) -> float | None:
-    """Count part spans and image prefixes; image-only chapters have no ratio."""
+    """Count codepoints below 100%; reserve 100% for an explicit chapter end."""
     chapter = next((chapter for chapter in book.chapters if chapter.id == anchor.chapter_id), None)
     if chapter is None or anchor.part_index >= len(chapter.parts):
         return None
+    if anchor.at_chapter_end:
+        return 1.0
     resources = {resource.id: resource.text for resource in book.resources}
     if not any(
         resources[part.resource_id][part.start : part.end].strip() for part in chapter.parts
@@ -67,4 +69,4 @@ def chapter_progress(book: CompiledBook, anchor: PositionAnchor) -> float | None
         local = min(part.end - part.start, _image_offset(part.html, anchor.image_id))
     else:
         local = 0
-    return max(0.0, min(1.0, (before + local) / total))
+    return max(0.0, min(0.99, (before + local) / total))
