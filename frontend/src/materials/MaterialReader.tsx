@@ -85,6 +85,7 @@ import {
 import {
 	atChapterStart,
 	type JumpOriginPolicy,
+	JumpReadingSession,
 	jumpOrigin,
 } from "./return-origin";
 import { type PendingReturn, returnWasLocated } from "./return-recovery";
@@ -263,6 +264,7 @@ function Reader({
 	const theme = resolveReaderTheme(ui.theme, systemDark);
 	const [storageFailed, setStorageFailed] = useState(false);
 	const [origin, setOrigin] = useState<Position | null>(null);
+	const jumpReading = useRef(new JumpReadingSession());
 	const [initialImage, setInitialImage] = useState<
 		| {
 				chapterId: string;
@@ -311,6 +313,7 @@ function Reader({
 		setStorageFailed(!writeReaderUiPreferences(next));
 	}, []);
 	const selectPanel = useCallback((next: ReaderPanelKind, toggle = false) => {
+		jumpReading.current.pause();
 		navigationTicket.current++;
 		setNavigationError(null);
 		setPanels((current) =>
@@ -319,6 +322,7 @@ function Reader({
 		controller.current?.show();
 	}, []);
 	const closePanel = useCallback((side?: ReaderPanelSide) => {
+		jumpReading.current.pause();
 		navigationTicket.current++;
 		setPanels((current) =>
 			side ? closeReaderPanel(current, side) : EMPTY_READER_PANELS,
@@ -593,6 +597,51 @@ function Reader({
 			};
 		return null;
 	}, [book.version_id, chapterId, chapter.data, settings]);
+	const sampleJumpReading = useCallback(() => {
+		const root = container.current;
+		if (
+			!root ||
+			document.hidden ||
+			!document.hasFocus() ||
+			pendingReturn.current ||
+			!layout.current.canSample(viewportSize(root))
+		) {
+			jumpReading.current.pause();
+			return false;
+		}
+		const vertical = latest.current.settings.writing_mode === "vertical-rl";
+		const view = readingViewport(root, getComputedStyle(root));
+		jumpReading.current.sample(
+			vertical ? -root.scrollLeft : root.scrollTop,
+			vertical ? view.width : view.height,
+			performance.now(),
+		);
+		return true;
+	}, []);
+	const recordReadingInput = useCallback(
+		(event: Event) => {
+			if (!event.isTrusted || event.defaultPrevented) return;
+			const target = event.target as Node | null;
+			if (
+				target?.ownerDocument &&
+				target.ownerDocument !== document &&
+				!isReaderFrameTarget(target.ownerDocument, target)
+			)
+				return;
+			// Sample before granting input so a prior programmatic move cannot count.
+			if (sampleJumpReading()) jumpReading.current.input(performance.now());
+		},
+		[sampleJumpReading],
+	);
+	useEffect(() => {
+		const pause = () => jumpReading.current.pause();
+		document.addEventListener("visibilitychange", pause);
+		window.addEventListener("blur", pause);
+		return () => {
+			document.removeEventListener("visibilitychange", pause);
+			window.removeEventListener("blur", pause);
+		};
+	}, []);
 	const observe = useCallback(() => {
 		const root = container.current;
 		if (!root) return;
@@ -602,6 +651,7 @@ function Reader({
 			(position) => queue.current?.enqueue(position),
 		);
 		if (anchor && chapter.data) {
+			sampleJumpReading();
 			const value = chapterProgress(
 				chapter.data.parts,
 				chapter.data.resources,
@@ -611,13 +661,14 @@ function Reader({
 			setChapterPositions((previous) =>
 				new Map(previous).set(anchor.chapter_id, { anchor, progress: value }),
 			);
-		}
-	}, [capture, chapter.data]);
+		} else jumpReading.current.pause();
+	}, [capture, chapter.data, sampleJumpReading]);
 	const restore = useCallback(
 		(anchor: Position | null) => {
 			const root = container.current;
 			const data = chapter.data;
 			if (!root || !data) return false;
+			jumpReading.current.pause();
 			let located = false;
 			const vertical = settings.writing_mode === "vertical-rl";
 			const beginningGeneration = pendingBeginning.current;
@@ -836,16 +887,18 @@ function Reader({
 			};
 			const wheel = (event: WheelEvent) => {
 				if (!valid()) return;
+				if (event.ctrlKey || event.defaultPrevented) return;
+				if (event.deltaX || event.deltaY) recordReadingInput(event);
 				if (
-					event.ctrlKey ||
-					event.defaultPrevented ||
-					latest.current.settings.writing_mode !== "vertical-rl"
-				)
-					return;
-				if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+					latest.current.settings.writing_mode === "vertical-rl" &&
+					Math.abs(event.deltaY) > Math.abs(event.deltaX)
+				) {
 					event.preventDefault();
 					container.current?.scrollBy({ left: -event.deltaY });
 				}
+			};
+			const touchmove = (event: TouchEvent) => {
+				if (valid()) recordReadingInput(event);
 			};
 			const click = (event: MouseEvent) => {
 				if (!valid()) return;
@@ -864,11 +917,13 @@ function Reader({
 			};
 			doc.addEventListener("keydown", keydown);
 			doc.addEventListener("wheel", wheel, { passive: false });
+			doc.addEventListener("touchmove", touchmove, { passive: true });
 			doc.addEventListener("click", click);
 			const cleanup = () => {
 				unbind?.();
 				doc.removeEventListener("keydown", keydown);
 				doc.removeEventListener("wheel", wheel);
+				doc.removeEventListener("touchmove", touchmove);
 				doc.removeEventListener("click", click);
 			};
 			frames.current.set(index, {
@@ -955,6 +1010,7 @@ function Reader({
 				throw new Error("无法定位到原文位置，请重新打开目录或重试。");
 			const last = layout.current.presentedAnchor(capture);
 			const policy = options?.origin ?? "preserve";
+			const replaceOrigin = jumpReading.current.shouldReplace && last !== null;
 			const root = container.current;
 			const beginningPresented = options?.beginning
 				? !!root &&
@@ -976,9 +1032,15 @@ function Reader({
 			if (!returning)
 				setOrigin(
 					(previous) =>
-						jumpOrigin(previous, last, target, policy, beginningPresented)
-							.origin,
+						jumpOrigin(
+							replaceOrigin ? null : previous,
+							last,
+							target,
+							policy,
+							beginningPresented,
+						).origin,
 				);
+			jumpReading.current.reset();
 			layout.current.cancelSave();
 			layout.current.setAnchor({
 				...target,
@@ -1062,44 +1124,48 @@ function Reader({
 			);
 		}
 	};
-	const readKey = useCallback((event: KeyboardEvent) => {
-		const target = event.target as Element | null;
-		if (
-			target?.ownerDocument &&
-			target.ownerDocument !== document &&
-			!isReaderFrameTarget(target.ownerDocument, target)
-		)
-			return;
-		if (
-			event.defaultPrevented ||
-			event.isComposing ||
-			event.ctrlKey ||
-			event.metaKey ||
-			event.altKey ||
-			target?.closest(
-				'input,textarea,select,button,a,[contenteditable="true"],[role="dialog"]',
+	const readKey = useCallback(
+		(event: KeyboardEvent) => {
+			const target = event.target as Element | null;
+			if (
+				target?.ownerDocument &&
+				target.ownerDocument !== document &&
+				!isReaderFrameTarget(target.ownerDocument, target)
 			)
-		)
-			return;
-		const vertical = latest.current.settings.writing_mode === "vertical-rl";
-		const root = container.current;
-		if (!root) return;
-		const page = vertical
-			? root.clientWidth
-			: readingViewport(root, getComputedStyle(root)).height;
-		let step = 0;
-		if (event.key === "PageDown" || event.key === " ")
-			step = page * 0.85 * (event.shiftKey ? -1 : 1);
-		else if (event.key === "PageUp") step = -page * 0.85;
-		else if (vertical && event.key === "ArrowLeft") step = 80;
-		else if (vertical && event.key === "ArrowRight") step = -80;
-		else if (!vertical && event.key === "ArrowDown") step = 80;
-		else if (!vertical && event.key === "ArrowUp") step = -80;
-		if (step) {
-			event.preventDefault();
-			root.scrollBy(vertical ? { left: -step } : { top: step });
-		}
-	}, []);
+				return;
+			if (
+				event.defaultPrevented ||
+				event.isComposing ||
+				event.ctrlKey ||
+				event.metaKey ||
+				event.altKey ||
+				target?.closest(
+					'input,textarea,select,button,a,[contenteditable="true"],[role="dialog"]',
+				)
+			)
+				return;
+			const vertical = latest.current.settings.writing_mode === "vertical-rl";
+			const root = container.current;
+			if (!root) return;
+			const page = vertical
+				? root.clientWidth
+				: readingViewport(root, getComputedStyle(root)).height;
+			let step = 0;
+			if (event.key === "PageDown" || event.key === " ")
+				step = page * 0.85 * (event.shiftKey ? -1 : 1);
+			else if (event.key === "PageUp") step = -page * 0.85;
+			else if (vertical && event.key === "ArrowLeft") step = 80;
+			else if (vertical && event.key === "ArrowRight") step = -80;
+			else if (!vertical && event.key === "ArrowDown") step = 80;
+			else if (!vertical && event.key === "ArrowUp") step = -80;
+			if (step) {
+				recordReadingInput(event);
+				event.preventDefault();
+				root.scrollBy(vertical ? { left: -step } : { top: step });
+			}
+		},
+		[recordReadingInput],
+	);
 	useEffect(() => {
 		document.addEventListener("keydown", readKey);
 		return () => document.removeEventListener("keydown", readKey);
@@ -1181,6 +1247,7 @@ function Reader({
 				},
 				presentation,
 				() => {
+					jumpReading.current.pause();
 					for (const [index, frame] of frames.current) {
 						frame.presentationCleanup();
 						frame.presentationCleanup = applyFramePresentation(
@@ -1352,6 +1419,19 @@ function Reader({
 					ref={container}
 					tabIndex={-1}
 					onScroll={observe}
+					onWheel={(event) => {
+						if (!event.ctrlKey && (event.deltaX || event.deltaY))
+							recordReadingInput(event.nativeEvent);
+					}}
+					onTouchMove={(event) => recordReadingInput(event.nativeEvent)}
+					onPointerDown={(event) => {
+						if (event.target === event.currentTarget && event.button === 0)
+							recordReadingInput(event.nativeEvent);
+					}}
+					onPointerMove={(event) => {
+						if (event.target === event.currentTarget && event.buttons === 1)
+							recordReadingInput(event.nativeEvent);
+					}}
 					className={`material-reading reader-viewport ${settings.writing_mode === "vertical-rl" ? "material-vertical" : ""}`}
 					aria-label={chapter.data.title}
 				>
