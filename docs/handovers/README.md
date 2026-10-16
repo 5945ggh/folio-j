@@ -8,7 +8,7 @@
 
 - 全量注音：导入全书分词、持久派生资产、重建与两维注音显示；见[计划](full-ruby/PLAN.md)和[验收](full-ruby/ACCEPTANCE.md)。
 - 设置顶部分类：学习偏好、模型与服务、对话与权限分组，统一弹窗、草稿保护与验证历史筛选；见[计划](settings-refresh/PLAN.md)和[验收](settings-refresh/ACCEPTANCE.md)。
-- 章节位置记忆：每章位置持久化、目录恢复与章首返回；见[工程与浏览器验收](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)。
+- 章节位置记忆：每章位置持久化、目录恢复与章首返回，内容末端可读时 100% 与回看下降；见[工程与浏览器验收](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)。
 - 阅读器 R1.1：独立阅读空间、阅读偏好、原书 ruby、书内搜索／插图库及面板交互；见[计划](reader-r1/PLAN.md)、[API 契约](reader-r1/API.md)、[工程验收](reader-r1/ACCEPTANCE.md)和[交互优化](reader-r1/INTERACTION_POLISH.md)。
 - 来源空间 S2：主导航／来源列表／来源内容三栏、四视图、有界概览与精确恢复；见[计划](sources-s2/PLAN.md)和[验收记录](sources-s2/ACCEPTANCE.md)。
 - 素材库 A.1：轻原生素材库、整区空库导入和封面回退／缓存；见[计划](library-a1/PLAN.md)、[封面工程契约](library-a1/API.md)和[验收记录](library-a1/ACCEPTANCE.md)。
