@@ -1,0 +1,92 @@
+frontend/src/materials/position-request.test.ts
+  s_42de8872be18e5::t_56745161ac279b 40-43
+  s_42de8872be18e5::t_b1188074dd3571 16-17,32
+frontend/src/materials/viewport.ts
+  s_42de8872be18e5::t_b5ea17ff102439 16,23-27,39-44,55-63
+  s_42de8872be18e5::t_0a9fc6457bdf55 33,36-37,64
+  s_42de8872be18e5::t_a1d91e281ac1eb 8-15,17-22,28-32,34-35,38,45-54
+backend/tests/test_chapter_positions.py
+  s_42de8872be18e5::t_3da8dda1fe1319 121,257-263,270-272
+  s_42de8872be18e5::t_678972e2000d52 172-178
+  s_42de8872be18e5::t_e1cebf555781dd 277-278,359,418
+  s_42de8872be18e5::t_955bcb57fd5ad3 5-6,97,104-120,122-171,179-256,264-269,273-276
+  s_42de8872be18e5::t_25a758118ee1b7 325-328
+backend/src/app/services/position_progress.py
+  s_42de8872be18e5::t_451c93e94e10e1 54-55,72
+  s_42de8872be18e5::t_c4d186550ee564 50
+frontend/src/materials/ReaderPanels.tsx
+  s_42de8872be18e5::t_5ee16977848083 407,647
+frontend/src/materials/dom.ts
+  s_42de8872be18e5::t_17868d8fca400a 29,31-53,68,71
+  s_42de8872be18e5::t_a1d91e281ac1eb 16-22,30,54,61-63,65-67,69-70,72-74
+  s_42de8872be18e5::t_b5ea17ff102439 23,55-60,64
+  s_42de8872be18e5::t_6db5b88d34f847 24-28
+  s_42de8872be18e5::t_a18ff679451c8f 75-76
+frontend/src/materials/reader-layout.test.ts
+  s_42de8872be18e5::t_e77ac219a8f112 6-45,50-51,53-54
+  s_42de8872be18e5::t_cd5084ec30225e 46-49,52,55-57
+frontend/src/materials/ruby-return.test.ts
+  s_42de8872be18e5::t_5ee16977848083 13
+frontend/src/materials/position.test.ts
+  s_42de8872be18e5::t_bf990361b29b25 256
+  s_42de8872be18e5::t_b1188074dd3571 211,227-237,240-248,259,272,276,282-283,288-290,297-298,306
+  s_42de8872be18e5::t_be25ed796d1143 257-258,260,271,273-275,277-281,284-287,291-296,299-305,307-309
+frontend/src/materials/MaterialReader.tsx
+  s_42de8872be18e5::t_b5ea17ff102439 96-102,546-551,570-576,590,781-783,1305-1309
+  s_42de8872be18e5::t_83a4172e9634d0 704,778-779
+  s_42de8872be18e5::t_6db5b88d34f847 562-566
+  s_42de8872be18e5::t_5ee16977848083 1160
+  s_42de8872be18e5::t_a1d91e281ac1eb 43,114,540-545,552-554,577,633,780,784-787,840,990,1303-1304,1310
+frontend/src/materials/return-origin.test.ts
+  s_42de8872be18e5::t_56745161ac279b 79-86
+  s_42de8872be18e5::t_5ee16977848083 17
+  s_42de8872be18e5::t_b1188074dd3571 87
+backend/openapi.json
+  s_42de8872be18e5::t_680c453cd5fd49 2444-2448,2553-2557
+frontend/src/materials/position.ts
+  s_42de8872be18e5::t_0a9fc6457bdf55 200-205,208-210,220,234-235
+  s_42de8872be18e5::t_293adaa85102c9 196
+frontend/src/materials/viewport.test.ts
+  s_42de8872be18e5::t_6db5b88d34f847 56-69
+  s_42de8872be18e5::t_18479eeffb9e19 8,16-33,36-42,47-51,70-71,75-76,79,88
+  s_42de8872be18e5::t_b5ea17ff102439 43-46,52-55
+  s_42de8872be18e5::t_b1188074dd3571 7,34-35,72-74,81-82,87,89-90,95
+  s_42de8872be18e5::t_56745161ac279b 77-78,80,83-86,91-94
+  s_42de8872be18e5::t_94348c6b58d78a 10
+  s_42de8872be18e5::t_fa3e29b4ac9857 96
+frontend/src/materials/reader-layout.ts
+  s_42de8872be18e5::t_83a4172e9634d0 12-15,25,124
+  s_42de8872be18e5::t_c8eeee5daafe35 125-127,136
+frontend/src/materials/dom.test.ts
+  s_42de8872be18e5::t_bf990361b29b25 46-47,50-54,56-59,64-68,77-79,81-82,84
+  s_42de8872be18e5::t_b45d07f4b78f46 136-142,154,160,174,179,190-192
+  s_42de8872be18e5::t_9a379519b85afa 4-7,48-49,55,60-63,69-76,80,83,85-91
+  s_42de8872be18e5::t_6db5b88d34f847 99-107,110-119,122-125,127-131
+  s_42de8872be18e5::t_b1834b0adbefc3 93,95-98,108-109,120-121,126,133-135,193
+  s_42de8872be18e5::t_bf5410853308d6 143-153,155-159,161-173,175-178,180-189
+  s_42de8872be18e5::t_e2153c5505f141 3,92,94,132
+frontend/src/api/schema.d.ts
+  s_42de8872be18e5::t_680c453cd5fd49 1706-1710,1743-1747
+frontend/src/materials/position-request.ts
+  s_42de8872be18e5::t_0a9fc6457bdf55 18
+backend/src/app/material_schemas.py
+  s_42de8872be18e5::t_451c93e94e10e1 27
+frontend/src/materials/return-origin.ts
+  s_42de8872be18e5::t_0a9fc6457bdf55 115-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf9ea367bc8d5ca4252b2dc0749a25e5f2c3b55c",
+  "prompts": {},
+  "sessions": {
+    "s_42de8872be18e5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14434-d2b1-74f2-bf45-d5d881a49883",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
