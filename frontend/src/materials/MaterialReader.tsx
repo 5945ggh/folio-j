@@ -92,6 +92,7 @@ import {
 } from "./return-origin";
 import { type PendingReturn, returnWasLocated } from "./return-recovery";
 import { applyAutomaticRuby } from "./ruby";
+import { readerWheelScroll } from "./scroll";
 import { freshestUsage, OpenAction } from "./usage";
 import {
 	atChapterEnd,
@@ -667,6 +668,38 @@ function Reader({
 		},
 		[sampleJumpReading],
 	);
+	const readWheel = useCallback(
+		(event: WheelEvent, outside = false) => {
+			const root = container.current;
+			if (!root || event.ctrlKey || event.defaultPrevented) return;
+			const current = latest.current.settings;
+			const vertical = current.writing_mode === "vertical-rl";
+			const view = readingViewport(root, getComputedStyle(root));
+			const scroll = readerWheelScroll(event, {
+				vertical,
+				outside,
+				lineHeight: current.font_size * current.line_height,
+				pageSize: vertical ? view.width : view.height,
+			});
+			if (event.deltaX || event.deltaY) recordReadingInput(event);
+			if (scroll) {
+				event.preventDefault();
+				root.scrollBy(scroll);
+			}
+		},
+		[recordReadingInput],
+	);
+	useEffect(() => {
+		const root = shell.current;
+		if (!root) return;
+		const wheel = (event: WheelEvent) => {
+			// Panels and toolbar controls keep their own scrolling; iframe events bind separately.
+			if (event.target === root || event.target === container.current)
+				readWheel(event, event.target === root);
+		};
+		root.addEventListener("wheel", wheel, { passive: false });
+		return () => root.removeEventListener("wheel", wheel);
+	}, [readWheel]);
 	useEffect(() => {
 		const pause = () => jumpReading.current.pause();
 		document.addEventListener("visibilitychange", pause);
@@ -934,16 +967,7 @@ function Reader({
 				if (valid()) readKey(event);
 			};
 			const wheel = (event: WheelEvent) => {
-				if (!valid()) return;
-				if (event.ctrlKey || event.defaultPrevented) return;
-				if (event.deltaX || event.deltaY) recordReadingInput(event);
-				if (
-					latest.current.settings.writing_mode === "vertical-rl" &&
-					Math.abs(event.deltaY) > Math.abs(event.deltaX)
-				) {
-					event.preventDefault();
-					container.current?.scrollBy({ left: -event.deltaY });
-				}
+				if (valid() && isReaderFrameTarget(doc, event.target)) readWheel(event);
 			};
 			const touchmove = (event: TouchEvent) => {
 				if (valid()) recordReadingInput(event);
@@ -1220,7 +1244,12 @@ function Reader({
 			if (step) {
 				recordReadingInput(event);
 				event.preventDefault();
-				root.scrollBy(vertical ? { left: -step } : { top: step });
+				root.scrollBy({
+					...(vertical ? { left: -step } : { top: step }),
+					behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+						? "instant"
+						: "smooth",
+				});
 			}
 		},
 		[recordReadingInput],
@@ -1485,10 +1514,6 @@ function Reader({
 					ref={container}
 					tabIndex={-1}
 					onScroll={observe}
-					onWheel={(event) => {
-						if (!event.ctrlKey && (event.deltaX || event.deltaY))
-							recordReadingInput(event.nativeEvent);
-					}}
 					onTouchMove={(event) => recordReadingInput(event.nativeEvent)}
 					onPointerDown={(event) => {
 						if (event.target === event.currentTarget && event.button === 0)
