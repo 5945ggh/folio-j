@@ -1,0 +1,27 @@
+frontend/src/materials/scroll.test.ts
+  s_63919985d9bf0e::t_eff3e9a3320e10 16,66-72
+  s_63919985d9bf0e::t_da262da1037caa 1-15,17-47,49-65,73-83
+  s_63919985d9bf0e::t_fafbc9009c6b7f 48
+frontend/src/materials/MaterialReader.tsx
+  s_63919985d9bf0e::t_2b1f3365f3828c 95,671-674
+  s_63919985d9bf0e::t_7e9002a90c5b8c 675-702,970,1247-1252
+frontend/src/materials/scroll.ts
+  s_63919985d9bf0e::t_eff3e9a3320e10 13,25
+  s_63919985d9bf0e::t_da262da1037caa 1-12,14-24,26-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8c9494507f48126dd0f7c312bed5bdd1c32b2f9b",
+  "prompts": {},
+  "sessions": {
+    "s_63919985d9bf0e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14541-da3d-7652-b1bc-09903cd3aecc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
