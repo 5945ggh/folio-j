@@ -1,0 +1,39 @@
+frontend/src/materials/chapter-navigation.ts
+  s_63919985d9bf0e::t_34f0721aa639d7 17,27-30
+  s_63919985d9bf0e::t_f5a3cad287f557 1-2,37-79
+  s_63919985d9bf0e::t_7d9ca2ad2920bb 3-16,18-26,31-36
+frontend/src/materials/chapter-navigation.test.ts
+  s_63919985d9bf0e::t_45aebe49a463ef 4-6,8,186-248
+  s_63919985d9bf0e::t_5717db60bd78e2 148-149,152
+  s_63919985d9bf0e::t_11cc4dfc49957d 1-3,9-93,98-134,141-147,150-151,153,169,171-175,183-185,249
+  s_63919985d9bf0e::t_c5cf9d6d7bb7b6 94-97,135-140,154-168,170,176-182
+  s_63919985d9bf0e::t_34f0721aa639d7 7
+frontend/src/materials/ReaderControls.tsx
+  s_63919985d9bf0e::t_883c5c46bb7ef1 280-281
+  s_63919985d9bf0e::t_84c4c22b54efac 273-279,282-284
+frontend/src/materials/reader-r1.css
+  s_63919985d9bf0e::t_84c4c22b54efac 126-128,192,199-204,376-393,438-449
+frontend/src/materials/MaterialReader.tsx
+  s_63919985d9bf0e::t_54058bcdd65820 39
+  s_63919985d9bf0e::t_9948e9adcf6f0f 479,553,556,1529
+  s_63919985d9bf0e::t_406f7682ba41b8 37-38,40,296-302,505,511-513,893-895,1100,1103,1113,1142-1143,1172,1186-1187,1193,1196-1201,1203-1205,1207,1214-1223,1227,1230,1234,1238,1241-1253,1498-1502,1506,1670,1766,1789
+  s_63919985d9bf0e::t_b5b79491ec8897 1521-1527
+  s_63919985d9bf0e::t_883c5c46bb7ef1 338-360,506-510,1503-1505,1629-1631,1633-1669
+  s_63919985d9bf0e::t_e713902c21f387 36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5c1646b41274a64e895f69e47b7d5c2c73e31248",
+  "prompts": {},
+  "sessions": {
+    "s_63919985d9bf0e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14541-da3d-7652-b1bc-09903cd3aecc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
