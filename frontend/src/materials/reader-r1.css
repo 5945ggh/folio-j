@@ -123,6 +123,9 @@
 	white-space: nowrap;
 	text-overflow: ellipsis;
 }
+.reader-heading-progress {
+	display: none;
+}
 .reader-r1 .reader-viewport {
 	position: absolute;
 	top: 0;
@@ -186,11 +189,18 @@
 	pointer-events: auto;
 }
 .reader-bottom nav button {
+	flex: none;
 	font-size: 20px;
 	width: 40px;
 	height: 38px;
 	padding: 2px;
 	color: var(--reader-muted);
+}
+.reader-chapter-navigation {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 3px;
 }
 .reader-alerts {
 	position: absolute;
@@ -363,6 +373,24 @@
 	.reader-bottom nav button {
 		width: 38px;
 	}
+	.reader-bottom .reader-progress {
+		display: none;
+	}
+	.reader-heading p {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+	}
+	.reader-heading-chapter {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.reader-heading-progress {
+		display: inline;
+		flex: none;
+	}
 	.reader-panel-body {
 		padding: 18px 18px calc(80px + env(safe-area-inset-bottom, 0px));
 	}
@@ -406,6 +434,18 @@
 .reader-r1 [data-tooltip]:focus-visible::after {
 	opacity: 1;
 	visibility: visible;
+}
+.reader-r1 .reader-chapter-step {
+	position: static;
+}
+.reader-r1 .reader-chapter-step::after {
+	left: 0;
+	transform: none;
+	width: max-content;
+	max-width: min(240px, calc(100vw - 96px));
+	white-space: normal;
+	overflow-wrap: anywhere;
+	text-align: left;
 }
 .reader-top [data-tooltip]::after {
 	top: calc(100% + 8px);

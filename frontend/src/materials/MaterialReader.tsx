@@ -34,6 +34,11 @@ import {
 	usageKey,
 } from "./api";
 import {
+	adjacentChapters,
+	ChapterSwitch,
+	chapterDestination,
+} from "./chapter-navigation";
+import {
 	htmlEscape,
 	imagePrecedesText,
 	imageTextOffset,
@@ -288,6 +293,13 @@ function Reader({
 	const galleryTicket = useRef(0);
 	const [navigationError, setNavigationError] = useState<Error | null>(null);
 	const navigationTicket = useRef(0);
+	const chapterSwitch = useRef(new ChapterSwitch());
+	const [chapterSwitchBusy, setChapterSwitchBusy] = useState(false);
+	const [readyGeneration, setReadyGeneration] = useState<number | null>(null);
+	const beginNavigation = useCallback(() => {
+		if (chapterSwitch.current.cancel()) setChapterSwitchBusy(false);
+		return ++navigationTicket.current;
+	}, []);
 	const viewerEscape = useRef<(() => void) | null>(null);
 	const registerViewerEscape = useCallback((close: (() => void) | null) => {
 		viewerEscape.current = close;
@@ -323,23 +335,29 @@ function Reader({
 		setUi(next);
 		setStorageFailed(!writeReaderUiPreferences(next));
 	}, []);
-	const selectPanel = useCallback((next: ReaderPanelKind, toggle = false) => {
-		jumpReading.current.pause();
-		navigationTicket.current++;
-		setNavigationError(null);
-		setPanels((current) =>
-			selectReaderPanel(current, next, toggle, latest.current.compactPanels),
-		);
-		controller.current?.show();
-	}, []);
-	const closePanel = useCallback((side?: ReaderPanelSide) => {
-		jumpReading.current.pause();
-		navigationTicket.current++;
-		setPanels((current) =>
-			side ? closeReaderPanel(current, side) : EMPTY_READER_PANELS,
-		);
-		controller.current?.show();
-	}, []);
+	const selectPanel = useCallback(
+		(next: ReaderPanelKind, toggle = false) => {
+			jumpReading.current.pause();
+			beginNavigation();
+			setNavigationError(null);
+			setPanels((current) =>
+				selectReaderPanel(current, next, toggle, latest.current.compactPanels),
+			);
+			controller.current?.show();
+		},
+		[beginNavigation],
+	);
+	const closePanel = useCallback(
+		(side?: ReaderPanelSide, invalidate = true) => {
+			jumpReading.current.pause();
+			if (invalidate) beginNavigation();
+			setPanels((current) =>
+				side ? closeReaderPanel(current, side) : EMPTY_READER_PANELS,
+			);
+			controller.current?.show();
+		},
+		[beginNavigation],
+	);
 	useEffect(() => {
 		const escapeViewer = (event: KeyboardEvent) => {
 			if (
@@ -458,6 +476,7 @@ function Reader({
 	);
 	const [status, setStatus] = useState("已保存");
 	const [error, setError] = useState<Error | null>(null);
+	const [positionError, setPositionError] = useState<Error | null>(null);
 	const chapter = useQuery({
 		queryKey: materialKeys.chapter(book.id, chapterId),
 		queryFn: () => getChapter(book.id, chapterId),
@@ -483,6 +502,15 @@ function Reader({
 	});
 	const viewportReady =
 		chapter.isSuccess && (bookUi.rubyScope !== "all" || readings.isSuccess);
+	useEffect(() => {
+		if (
+			error ||
+			chapter.isError ||
+			(bookUi.rubyScope === "all" && readings.isError)
+		) {
+			if (chapterSwitch.current.cancel()) setChapterSwitchBusy(false);
+		}
+	}, [error, chapter.isError, bookUi.rubyScope, readings.isError]);
 	const container = useRef<HTMLElement>(null);
 	const frames = useRef(new Map<number, Frame>());
 	const elements = useRef(new Map<number, HTMLIFrameElement>());
@@ -522,9 +550,10 @@ function Reader({
 							: "保存失败",
 				);
 				if (failure)
-					setError(
+					setPositionError(
 						failure instanceof Error ? failure : new Error(String(failure)),
 					);
+				else if (state === "saved") setPositionError(null);
 			},
 			(value) => value.chapter_id,
 		);
@@ -861,6 +890,9 @@ function Reader({
 						);
 				}
 				setPresented(true);
+				setReadyGeneration(generation.current);
+				if (chapterSwitch.current.finish(generation.current))
+					setChapterSwitchBusy(false);
 				observe();
 			};
 		},
@@ -1065,10 +1097,10 @@ function Reader({
 		mark?: { start: number; end: number },
 		returning = false,
 		requestTicket?: number,
-		side?: ReaderPanelSide,
+		side?: ReaderPanelSide | null,
 		options?: { origin: JumpOriginPolicy; beginning: boolean },
 	) => {
-		const ticket = requestTicket ?? ++navigationTicket.current;
+		const ticket = requestTicket ?? beginNavigation();
 		pendingReturn.current = null;
 		setNavigationError(null);
 		try {
@@ -1078,7 +1110,7 @@ function Reader({
 				queryKey: materialKeys.chapter(book.id, target.chapter_id),
 				queryFn: () => getChapter(book.id, target.chapter_id),
 			});
-			if (ticket !== navigationTicket.current || !alive.current) return;
+			if (ticket !== navigationTicket.current || !alive.current) return false;
 			const part = data.parts[target.part_index];
 			if (
 				!part ||
@@ -1107,8 +1139,8 @@ function Reader({
 				!returning &&
 				!jumpOrigin(origin, last, target, policy, beginningPresented).jump
 			) {
-				closePanel(side);
-				return;
+				if (side !== null) closePanel(side, false);
+				return false;
 			}
 			if (last) queue.current?.enqueue(last);
 			if (!returning)
@@ -1137,6 +1169,7 @@ function Reader({
 					}
 				: null;
 			generation.current++;
+			chapterSwitch.current.accept(ticket, generation.current);
 			pendingBeginning.current = options?.beginning ? generation.current : null;
 			pendingReturn.current = returning
 				? { generation: generation.current, target }
@@ -1150,62 +1183,73 @@ function Reader({
 			setChapterId(target.chapter_id);
 			setSurfaceRevision((value) => value + 1);
 			setProgress(null);
-			closePanel(side);
+			if (side !== null) closePanel(side, false);
+			return true;
 		} catch (failure) {
 			if (ticket === navigationTicket.current && alive.current)
 				setNavigationError(
 					failure instanceof Error ? failure : new Error(String(failure)),
 				);
+			return false;
 		}
 	};
-	const choose = async (id: string, beginning = false) => {
+	const choose = async (
+		id: string,
+		beginning = false,
+		side: ReaderPanelSide | null = "left",
+		requestTicket?: number,
+	) => {
 		if (id === chapterId && !beginning) {
-			navigationTicket.current++;
-			closePanel("left");
-			return;
+			beginNavigation();
+			if (side !== null) closePanel(side, false);
+			return false;
 		}
-		const ticket = ++navigationTicket.current;
+		const ticket = requestTicket ?? beginNavigation();
 		setNavigationError(null);
 		try {
 			const data = await client.fetchQuery({
 				queryKey: materialKeys.chapter(book.id, id),
 				queryFn: () => getChapter(book.id, id),
 			});
-			if (ticket !== navigationTicket.current || !alive.current) return;
-			const part = data.parts[0];
-			if (!part) throw new Error("章节没有可阅读内容");
-			const image = part.html.match(/data-epub-image="(\d+)"/);
-			await navigateTo(
-				(!beginning && chapterPositions.get(id)?.anchor) || {
-					version_id: book.version_id,
-					chapter_id: id,
-					part_index: 0,
-					resource_id: part.resource_id,
-					at_chapter_end: false,
-					settings,
-					...(part.end > part.start
-						? { kind: "text", offset: part.start }
-						: {
-								kind: "image",
-								image_id: Number(image?.[1] ?? 0),
-								image_progress: 0,
-							}),
-				},
+			if (ticket !== navigationTicket.current || !alive.current) return false;
+			const destination = chapterDestination(
+				data,
+				chapterPositions.get(id)?.anchor,
+				book.version_id,
+				latest.current.settings,
+				beginning,
+			);
+			return await navigateTo(
+				destination.target,
 				undefined,
 				false,
 				ticket,
-				"left",
+				side,
 				{
 					origin: beginning ? "replace" : "preserve",
-					beginning: beginning || !chapterPositions.has(id),
+					beginning: destination.beginning,
 				},
 			);
 		} catch (failure) {
-			if (ticket !== navigationTicket.current || !alive.current) return;
+			if (ticket !== navigationTicket.current || !alive.current) return false;
 			setNavigationError(
 				failure instanceof Error ? failure : new Error(String(failure)),
 			);
+			return false;
 		}
+	};
+	const adjacent = adjacentChapters(book.chapters, chapterId);
+	const chapterSwitchDisabled =
+		chapterSwitchBusy || readyGeneration !== generation.current || !!error;
+	const stepChapter = async (direction: "previous" | "next") => {
+		const target = adjacent[direction];
+		if (!target || chapterSwitchDisabled || chapterSwitch.current.busy) return;
+		const ticket = beginNavigation();
+		chapterSwitch.current.begin(ticket);
+		setChapterSwitchBusy(true);
+		const accepted = await choose(target.id, false, null, ticket);
+		if (!accepted && chapterSwitch.current.cancel(ticket))
+			setChapterSwitchBusy(false);
 	};
 	const readKey = useCallback(
 		(event: KeyboardEvent) => {
@@ -1451,8 +1495,15 @@ function Reader({
 				<div className="reader-heading">
 					<h1 title={book.title}>{book.title}</h1>
 					<p>
-						{chapter.data?.title ??
-							(chapter.isError ? "章节暂不可用" : "正在打开章节…")}
+						<span className="reader-heading-chapter">
+							{chapter.data?.title ??
+								(chapter.isError ? "章节暂不可用" : "正在打开章节…")}
+						</span>
+						<span className="reader-heading-progress">
+							{progress === null
+								? "章内 —"
+								: `章内 ${Math.round(progress * 100)}%`}
+						</span>
 					</p>
 				</div>
 				<button
@@ -1467,9 +1518,15 @@ function Reader({
 			</header>
 			<div className="reader-alerts" aria-live="polite">
 				<InlineError
-					error={error ?? navigationError ?? usageError ?? usage.error}
+					error={
+						error ??
+						positionError ??
+						navigationError ??
+						usageError ??
+						usage.error
+					}
 				/>
-				{error && (
+				{(error || positionError) && (
 					<button type="button" onClick={() => window.location.reload()}>
 						重新打开
 					</button>
@@ -1569,15 +1626,48 @@ function Reader({
 							↶
 						</button>
 					)}
-					<button
-						type="button"
-						aria-label="目录"
-						data-tooltip="目录与搜索"
-						aria-expanded={panels.left !== null}
-						onClick={() => selectPanel("toc", true)}
+					<div
+						className="reader-chapter-navigation"
+						aria-busy={chapterSwitchBusy}
 					>
-						<ReaderIcon name="toc" />
-					</button>
+						<button
+							type="button"
+							className="reader-chapter-step"
+							aria-label="上一章"
+							data-tooltip={
+								adjacent.previous
+									? `上一章：${adjacent.previous.title}`
+									: "已是第一章"
+							}
+							disabled={!adjacent.previous || chapterSwitchDisabled}
+							onClick={() => void stepChapter("previous")}
+						>
+							<ReaderIcon name="previous" />
+						</button>
+						<button
+							type="button"
+							aria-label="目录"
+							data-tooltip="目录与搜索"
+							aria-expanded={panels.left !== null}
+							onClick={() => selectPanel("toc", true)}
+						>
+							<ReaderIcon name="toc" />
+						</button>
+						<button
+							type="button"
+							className="reader-chapter-step"
+							aria-label="下一章"
+							data-tooltip={
+								adjacent.next
+									? `下一章：${adjacent.next.title}`
+									: "已是最后一章"
+							}
+							disabled={!adjacent.next || chapterSwitchDisabled}
+							onClick={() => void stepChapter("next")}
+						>
+							<ReaderIcon name="next" />
+						</button>
+					</div>
 					<button
 						type="button"
 						aria-label="插图库"
@@ -1673,7 +1763,7 @@ function Reader({
 					settings={settings}
 					navigationError={navigationError}
 					onCancelNavigation={() => {
-						navigationTicket.current++;
+						beginNavigation();
 					}}
 					onClose={() => closePanel("left")}
 					onNavigate={(target, mark) =>
@@ -1696,7 +1786,7 @@ function Reader({
 					onViewerEscape={registerViewerEscape}
 					navigationError={navigationError}
 					onCancelNavigation={() => {
-						navigationTicket.current++;
+						beginNavigation();
 					}}
 					onClose={() => closePanel("right")}
 					onNavigate={(target) =>

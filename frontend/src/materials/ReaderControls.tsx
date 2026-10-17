@@ -270,11 +270,18 @@ export function ReaderSettings({
 	);
 }
 
-export function ReaderIcon({ name }: { name: "toc" | "image" }) {
-	const path =
-		name === "toc"
-			? "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
-			: "M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM3 16l5-5 5 5 3-3 5 5M15 8h.01";
+export function ReaderIcon({
+	name,
+}: {
+	name: "toc" | "image" | "previous" | "next";
+}) {
+	const path = {
+		toc: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
+		image:
+			"M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM3 16l5-5 5 5 3-3 5 5M15 8h.01",
+		previous: "M7 5v14M18 5l-7 7 7 7",
+		next: "M17 5v14M6 5l7 7-7 7",
+	}[name];
 	return (
 		<svg
 			viewBox="0 0 24 24"
