@@ -1,0 +1,33 @@
+docs/INFORMATION_ARCHITECTURE.md
+  s_63919985d9bf0e::t_022db1bdcceda1 66
+  s_63919985d9bf0e::t_b577752f4e50f9 68,70
+docs/handovers/reader-r1/INTERACTION_POLISH.md
+  s_63919985d9bf0e::t_b3679f0299c42e 254
+  s_63919985d9bf0e::t_a4531bda21d77b 231-253,255-256
+  s_63919985d9bf0e::t_0af1e436fc9ab3 257-274
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_63919985d9bf0e::t_0af1e436fc9ab3 3,23,26,51
+docs/PRD.md
+  s_63919985d9bf0e::t_022db1bdcceda1 203-205
+  s_63919985d9bf0e::t_0af1e436fc9ab3 6,187
+  s_63919985d9bf0e::t_0d668a92a78c80 188
+docs/ARCHITECTURE.md
+  s_63919985d9bf0e::t_c8e4baf994493f 119-120
+  s_63919985d9bf0e::t_0af1e436fc9ab3 149-150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8268c610ec8d29edfc3fe1a60e38bf302546fb28",
+  "prompts": {},
+  "sessions": {
+    "s_63919985d9bf0e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14541-da3d-7652-b1bc-09903cd3aecc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
