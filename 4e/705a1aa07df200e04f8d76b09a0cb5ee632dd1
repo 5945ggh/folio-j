@@ -1,0 +1,55 @@
+docs/PRD.md
+  s_aba4122fab4b53::t_9c733044cfe67f 274-275,284-285,457,463-465,492,496-499
+  s_aba4122fab4b53::t_5be3dfb450bef9 6,79,119-127,129-134,157-158,167,181,203-212,229
+  s_aba4122fab4b53::t_175bb5e99f068e 128,466,501
+docs/handovers/text-study/PLAN.md
+  s_aba4122fab4b53::t_16c33cc5c80d0a 74,165,182-183,191,195,205,207
+  s_aba4122fab4b53::t_d37cbaa234b81c 110,171,179
+  s_aba4122fab4b53::t_4dec3f06f85ca0 187,217
+  s_aba4122fab4b53::t_ad95abf42f9148 1-2,4-63,65,67-73,75-109,111-144,146-164,166-170,172-178,180-181,184-186,188-190,192-194,196-204,206,208-216,218-241
+  s_aba4122fab4b53::t_49273b62575714 3,64,66,145
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_aba4122fab4b53::t_49273b62575714 71,75-76
+docs/handovers/README.md
+  s_aba4122fab4b53::t_4f9830c720cdc6 9
+docs/handovers/epub-reading/README.md
+  s_aba4122fab4b53::t_49273b62575714 99,101
+  s_aba4122fab4b53::t_8c40a72a90e16e 102-103,105
+docs/TECH_STACK.md
+  s_aba4122fab4b53::t_8c7ca90692b2e3 44-45
+docs/handovers/text-study/TEST_MATRIX.md
+  s_aba4122fab4b53::t_5983c53c5d28a5 1-46
+AGENTS.md
+  s_aba4122fab4b53::t_8c7ca90692b2e3 7,9
+docs/README.md
+  s_aba4122fab4b53::t_49273b62575714 8
+docs/ARCHITECTURE.md
+  s_aba4122fab4b53::t_5983c53c5d28a5 174-185,368-379,409
+  s_aba4122fab4b53::t_b092458b82bce7 410
+docs/handovers/text-study/S0_ACCEPTANCE.md
+  s_aba4122fab4b53::t_4f9830c720cdc6 1-9
+docs/INFORMATION_ARCHITECTURE.md
+  s_aba4122fab4b53::t_deae5699ef74c7 5,79,104-128
+  s_aba4122fab4b53::t_3a6382ee09d96e 129
+docs/GLOSSARY.md
+  s_aba4122fab4b53::t_9c733044cfe67f 3,8,15,29,41-59,64,73,78,98,104
+docs/handovers/epub-reading/MATERIAL_BASELINE.md
+  s_aba4122fab4b53::t_a9d2463a615caa 89
+  s_aba4122fab4b53::t_deae5699ef74c7 5,66,81-88,90,113-116,127-128,132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4e705a1aa07df200e04f8d76b09a0cb5ee632dd1",
+  "prompts": {},
+  "sessions": {
+    "s_aba4122fab4b53": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a154f6-8117-7053-b605-484b57ea3fe0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
