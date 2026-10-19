@@ -14,7 +14,7 @@
 | `just check-docs`、`git diff --check` | 本地文档链接及差异空白检查通过 |
 | 独立代码审查 | 未发现阻塞缺陷；检查事务、Source 门禁、自定义封面竞争、存量迁移、草稿与返回链 |
 
-后端新增回归验证详情不写阅读／注音状态，书名 NFC 与原子编辑、同字节重导及重启保留用户信息、并发仅一个成功、删除 Source 竞争与门禁、图片格式／大小／静态约束、自动封面重建中上传自定义覆盖、封面恢复，以及原始字节、不可变编译包、位置、usage、注音代次保持。元信息与迁移回归见[编辑测试](../../../backend/tests/test_material_metadata.py)和[迁移测试](../../../backend/tests/test_material_metadata_migration.py)。
+后端新增回归验证详情不写阅读／注音状态，书名 NFC 与原子编辑、同字节重导及重启保留用户信息、并发仅一个成功、删除 Source 竞争与门禁、图片格式／大小／静态约束、自动封面重建中上传自定义覆盖、封面恢复，以及原始字节、不可变编译包、位置、usage、注音代次保持。元信息回归见[编辑测试](../../../backend/tests/test_material_metadata.py)。当时通过的增量迁移测试已随 2026-10-20 初始基线合并清理，当前建库回归见[迁移测试](../../../backend/tests/test_migrations.py)。
 
 前端新增纯逻辑验证书名码点长度、图片选择边界、草稿与封面保存意图，以及详情返回路径和只携带一层有效父来处的限制。见[表单逻辑测试](../../../frontend/src/catalog/book-metadata.test.ts)和[目录返回测试](../../../frontend/src/catalog/state.test.ts)。
 

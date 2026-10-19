@@ -67,7 +67,7 @@ flowchart LR
 
 Source、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。接受问答时在短写事务中保存输入快照、消息与 Job，并首次设置 `text_locked_at`；原文编辑、来源／片段删除共用事务校验边界。
 
-数据库生命周期由应用 lifespan 管理，迁移从空库建立 schema，`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。
+数据库生命周期由应用 lifespan 管理，`0001_initial` 以固定 Alembic DDL 从空库建立当前 22 张业务表及其索引、约束和默认值，不依赖运行时 ORM 自动建表。`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。旧开发期中间 revision 不再支持自动升级；已有完整旧 head 库须备份并验证 schema 等价后一次性对齐版本，操作边界见 [README](../README.md#本地开发)。历史阶段文档保留当时的迁移编号与回填事实。
 
 ### 3.1 实体
 
@@ -97,7 +97,7 @@ Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profi
 
 Occurrence整理行为见[PRD F5](PRD.md#f5-学习条目创建与整理)。存储契约保留pending／learning／reference及独立的软删除编码（待定），不得用dismissed混合忽略与删除。出处引用具体不可变修订，整理或再次调用不能迁移历史引用。创建来源、引用约束及删除保留策略仍须在实现前落实。
 
-预留、不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`。EPUB 切片 1 新增 `materials` 与 `reading_positions`，增量迁移为 `0007_materials`；原始字节、不可变编译包和版本身份由 Material 承载，资源与逻辑章节在版本包内表达，不为每个逻辑层单建表。接口与发布／恢复约束见[切片 1 契约](handovers/epub-reading/SLICE_1_DRAFT.md)，验收状态见[阶段入口](handovers/epub-reading/README.md)。
+预留、不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`。`materials` 与 `reading_positions` 保存 EPUB 材料与全书阅读位置；原始字节、不可变编译包和版本身份由 Material 承载，资源与逻辑章节在版本包内表达，不为每个逻辑层单建表。接口与发布／恢复约束见[切片 1 契约](handovers/epub-reading/SLICE_1_DRAFT.md)，验收状态见[阶段入口](handovers/epub-reading/README.md)。
 
 EPUB 已确定的不变式：原始素材字节不可变，材料归属 Source；处理版本保存规则、实际产物与摘要，版本内资源保留原始 spine 身份。引用绑定具体版本、资源、Unicode 码点半开范围及原文快照；正文全局 NFC，ruby 的 `rt`／`rp` 不参与偏移，布局与分词不影响身份。DOM 使用 UTF-16，适配器必须转换并核对正文，不能逐节点规范化后直接相加；不能校验的引用明确失败。材料文本投影与第 4.3 节 Analysis 规范化器分别执行各自契约，不改变后者的可复原保证。具体隔离试验、范围限制和证据见 [EPUB 阶段入口](handovers/epub-reading/README.md)；持久化、删除及权限不由试验自动定案。
 
@@ -105,7 +105,7 @@ EPUB 已确定的不变式：原始素材字节不可变，材料归属 Source�
 
 材料导入用受限原始 EPUB 请求体，编译与包的编解码移出事件循环；原始字节及压缩产物同事务发布。来源内相同摘要复用身份，跨来源独立；发布前再次校验 Source 存活。来源删除确认计入材料，读书／保存位置均检查 Source，托管字节暂不物理清理。阅读位置用 `expected_revision` 条件写入，陈旧请求返回 409；版本、章节、part 与资源范围必须吻合。
 
-章节记忆由 `chapter_reading_positions` 保存；增量迁移从有效的旧全书位置回填对应一章，保留旧位置和 revision。位置 PUT 沿用材料级 CAS，同一事务更新全书最后位置和当前章；GET 材料按章序返回 `chapter_positions`，查询无写入副作用。
+章节记忆由 `chapter_reading_positions` 保存；初始基线直接创建该表，早期从全书位置回填章节记忆的迁移事实见[历史验收](handovers/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)。位置 PUT 沿用材料级 CAS，同一事务更新全书最后位置和当前章；GET 材料按章序返回 `chapter_positions`，查询无写入副作用。
 
 位置 JSON 中的 `at_chapter_end` 表示实际内容末端已进入当前稳定视口的可读区域，旧记录缺字段时默认为 false，无须数据库迁移。前端在全部 part 就绪、重排恢复完成后测量并缓存各 frame 非空白正文与图片的末端；排除零尺寸及 `visibility:hidden/collapse` 内容，并取文字／图片与祖先 `overflow:hidden/clip` 裁剪范围的可见交集；忽略作者／阅读器尾部留白和空白 part。滚动采样沿阅读轴比较全章内容末端和 `readingViewport` 的底边／左边（容差 1 CSS px），不要求到达物理滚动极限。一屏完整呈现的短章视为已到章末。锚点优先取包含阅读起始边缘的非空 frame；直接进入超长空白尾部时，从已滚过的非空 frame 获取可恢复锚点。
 
@@ -129,11 +129,11 @@ GET、PUT 与前端即时显示采用相同进度口径：章末标志为 true �
 
 封面规则版本 `2` 优先采用有效的 EPUB3 cover-image／EPUB2 meta name=cover 声明，再按 spine 中 XHTML `img`／SVG `image` 包内引用、manifest 图像顺序回退首张可用静态 PNG／JPEG。坏候选继续，全局归档安全失败整体拒绝。图片限制为 4 MiB、1600 万像素；APNG、GIF、WebP、SVG 不作为有效封面候选，无可用候选时使用占位。标准库执行有界头部／结构校验，浏览器加载失败仍占位。
 
-书籍信息编辑使用独立 `metadata_revision` 条件写入，书名和自定义封面在短写事务内原子保存，陈旧提交返回 409。`material_custom_covers` 保存用户覆盖，封面读取优先覆盖，恢复原书封面只清除覆盖；自动缓存升级不覆盖用户图片。目录与详情封面 URL 包含信息修订，避免沿用旧图片或失败状态。原书标题和章节数量从不可变编译包读取，查看详情不记录阅读打开，也不触发注音准备；信息编辑保留原始字节、材料版本、位置、使用状态与注音代次。增量迁移和具体接口见[书籍管理契约](handovers/book-management/PLAN.md#接口与存储契约)。移动与删除当前只有禁用入口。
+书籍信息编辑使用独立 `metadata_revision` 条件写入，书名和自定义封面在短写事务内原子保存，陈旧提交返回 409。`material_custom_covers` 保存用户覆盖，封面读取优先覆盖，恢复原书封面只清除覆盖；自动缓存升级不覆盖用户图片。目录与详情封面 URL 包含信息修订，避免沿用旧图片或失败状态。原书标题和章节数量从不可变编译包读取，查看详情不记录阅读打开，也不触发注音准备；信息编辑保留原始字节、材料版本、位置、使用状态与注音代次。具体接口见[书籍管理契约](handovers/book-management/PLAN.md#接口与存储契约)。移动与删除当前只有禁用入口。
 
 首次封面读取在线程中提取并缓存成功／失败，资源 URL 带 `?v=2`；旧成功／失败缓存均懒重建，当前失败的目录 URL 为空。缓存保持原始字节、编译包和版本不变，目录不逐书解压。候选和缓存规则见[封面工程契约](handovers/library-a1/API.md)。
 
-迁移 `0008_material_usage` 接续 `0007_materials`，新增 material_usage 与 material_covers；`0009_cover_rules` 增加缓存规则版本和诊断，保留旧数据。旧有效位置初始化进行中，其余未开始，历史打开时间为空、不推断完成。空库／旧库测试核对 ID、原书字节、修订与位置，使用独立测试库。Query key 包含全部条件；导入、状态、Source 和 Analysis 变更刷新受影响目录及计数，旧请求不污染新条件，失效页码回有效页。API 见[目录契约](handovers/frontend-refresh/API.md)，DTO 由 OpenAPI 生成，业务位于 services。
+`material_usage` 与 `material_covers` 分别保存使用状态与封面缓存，缓存含规则版本和诊断。早期使用状态回填与缓存升级事实见[历史验收](handovers/frontend-refresh/ACCEPTANCE.md)。Query key 包含全部条件；导入、状态、Source 和 Analysis 变更刷新受影响目录及计数，旧请求不污染新条件，失效页码回有效页。API 见[目录契约](handovers/frontend-refresh/API.md)，DTO 由 OpenAPI 生成，业务位于 services。
 
 ### 3.1.2 阅读器 R1.1 呈现与只读派生查询
 
@@ -155,7 +155,7 @@ TanStack Query key 包含材料／版本／查询／分页，输入法组合期�
 
 `nlp/tokenization.py` 使用 SudachiPy、core 词典和 A 粒度，按句处理并对长输入设 UTF-8 字节预算，一个完整生成操作复用分词器。分块与结果位置严格核对资源原文；输出保存表层、资源码点范围、整词读音、词典形、规范形、六项词性及未登录词标记。兼容字符改写可能产生零宽 token，其元数据保留，显示层跳过。Sentence 不作为持久内容实体。
 
-迁移 `0010_material_readings` 增加 `material_readings_generations` 与 `material_readings_current`。每个不可变代次保存材料／版本、配置、结果摘要、token 数与压缩 JSON；当前表保存材料到代次的指针。配置包含分析器、词典、模式、分句／分块及结果格式版本，资源结果包含正文摘要。新书完整生成后才将材料与资产同事务发布；已有材料经显式 POST 准备或重建。生成在工作线程中完成，不持有写事务，不产生 Run。
+`material_readings_generations` 与 `material_readings_current` 保存分词资产。每个不可变代次保存材料／版本、配置、结果摘要、token 数与压缩 JSON；当前表保存材料到代次的指针。配置包含分析器、词典、模式、分句／分块及结果格式版本，资源结果包含正文摘要。新书完整生成后才将材料与资产同事务发布；已有材料经显式 POST 准备或重建。生成在工作线程中完成，不持有写事务，不产生 Run。
 
 `services/readings.py` 在发布事务内重验 Source 可见性和材料版本，以观察到的当前代次阻止迟到生成覆盖新结果，按完整结果与配置摘要复用相同代次。失败保留旧资产与指针。GET 按章节／part 过滤资源 token，可指定 `generation_id` 读取本阅读会话的确切代次；代次必须属于所请求材料与版本。普通准备复用当前结果，词典升级不在打开时静默重算；后端保留显式重建 API，阅读设置不提供重建入口，当前会话固定使用准备时返回的代次。
 
@@ -200,7 +200,7 @@ erDiagram
 
 ### 3.4 2B 问答历史基线
 
-[2B实施契约](handovers/archived/STAGE_2B_ASYNC_QA.md)固定本阶段的实体字段、API、状态机和验收矩阵；实现位于`chat_models.py`、`chat_schemas.py`、`services/chat.py`、`services/context.py`及`jobs/runtime.py`；API类型已从OpenAPI生成，增量迁移为`0004_chat_jobs`。以上实体表仍是完整MVP草图，2B已落实下列边界：
+[2B实施契约](handovers/archived/STAGE_2B_ASYNC_QA.md)固定本阶段的实体字段、API、状态机和验收矩阵；实现位于`chat_models.py`、`chat_schemas.py`、`services/chat.py`、`services/context.py`及`jobs/runtime.py`；API类型已从OpenAPI生成，相关表纳入当前初始基线。以上实体表仍是完整MVP草图，2B已落实下列边界：
 
 - ChatThread归属Segment，ChatMessage归属线程和Job；同线程只有一个活动Job，数据库唯一约束与active_job_id共同维护。创建线程不锁原文，接受问答在同一短写事务内保存不可变输入／模型快照、用户消息、助手占位及Job，并首次设置text_locked_at。
 - 接受请求以线程内request_id幂等，原样重放返回原身份，异payload或并发新轮冲突；Segment用户编辑revision和Thread.revision用于拒绝陈旧提交。片段编辑、来源／片段删除必须同步参与事务保护，不能只修改新入口。
@@ -210,7 +210,7 @@ erDiagram
 
 ### 3.5 2C Analysis 与工具执行实现
 
-`analysis_models.py`、`analysis_schemas.py`、`services/analyses.py`和`services/normalizer.py`实现持久Analysis、不可变Revision和派生Section；增量迁移`0005_analyses`、`0006_analysis_execution`保留已有数据。Analysis.current_revision_id指向最新版本，编辑以基础修订校验并创建新版本；未修改块保留uid和原文。创建／编辑的操作身份与payload共同保证幂等，不能跨Segment重用操作身份。
+`analysis_models.py`、`analysis_schemas.py`、`services/analyses.py`和`services/normalizer.py`实现持久Analysis、不可变Revision和派生Section，相关表纳入当前初始基线。Analysis.current_revision_id指向最新版本，编辑以基础修订校验并创建新版本；未修改块保留uid和原文。创建／编辑的操作身份与payload共同保证幂等，不能跨Segment重用操作身份。
 
 `jobs/agent.py`执行主对话工具循环与内部写作分支。Job.execution_state持久保存实际协议历史、预算、成果和具体待审方案，一个Job可关联多个Run；Run结束、成果保存和Job完成分别判断。`waiting_review`仍占用线程活动任务身份，批准或拒绝须绑定方案版本；拒绝可附加指令，批准不把附加指令悄悄写进已展示方案。重启中断执行中的任务，待审核方案可重新打开；已保存的成果始终保留。
 
@@ -256,7 +256,7 @@ erDiagram
 
 2A 已确定配置持久化与凭据更新规则：每次接入配置或模型参数变更提升版本，旧能力验证失效；运行结果仅在版本仍一致时更新能力状态。停用Provider阻止新验证，不改已接受快照；存在未完成验证时拒绝删除，否则逻辑删除并保留Run。凭据不回显，旧引用暂保留；物理清理策略及未来多步骤Job的凭据生命周期随后续执行契约细化。
 
-模型登记以 `(provider_id, model_id)` 唯一索引约束；重复登记返回 409。单独删除模型只移除登记，拒绝存在 queued/running 验证的删除；历史 Run 保留原内部身份与快照，默认值保留旧 ID 并显示失效，重新登记获得新身份。配置修改、模型登记／删除、接受验证及验证终态更新使用 SQLite 短写事务串行核对与写入；发现请求不持有写锁，返回时检查 Provider 修订，过期结果不覆盖新配置。接入配置变化清除旧发现状态，普通刷新失败仍保留当前配置的缓存。增量迁移遇存量重复登记明确拒绝，不自动合并或删除记录。
+模型登记以 `(provider_id, model_id)` 唯一索引约束；重复登记返回 409。单独删除模型只移除登记，拒绝存在 queued/running 验证的删除；历史 Run 保留原内部身份与快照，默认值保留旧 ID 并显示失效，重新登记获得新身份。配置修改、模型登记／删除、接受验证及验证终态更新使用 SQLite 短写事务串行核对与写入；发现请求不持有写锁，返回时检查 Provider 修订，过期结果不覆盖新配置。接入配置变化清除旧发现状态，普通刷新失败仍保留当前配置的缓存。数据库拒绝重复登记，不自动合并或删除记录。
 
 ### 4.3 规范化器（`services/normalizer.py`）
 
@@ -464,7 +464,7 @@ S2 路由适用范围与提交状态见 [MVP 实施基线](handovers/MVP_IMPLEME
 - **工具审核（候选部分为未来）**：覆盖审核模式分类与 Full access、具体方案同意／拒绝、附加指令不改变已批准内容、离开／重启后待审核可找回、旧版本不覆盖新版本、重复决定不重复写入，以及审批通过后写入失败。验证两种模式均只能创建 pending、修改 pending 后仍保持状态，且审核期间已被用户收录／设为参考／删除的候选不能继续修改。使用离线数据与模拟调用验证，不调用真实模型。
 - **LLM相关流程**：**测试中禁止发起真实网络请求。** 当前由`conftest.py`自动禁用socket连接，使用假适配器、内存流及`httpx.MockTransport`验证真实协议字段和运行状态。尚无`RECORD=1`录制／回放入口；未来需要真实LLM响应时由人类录制并保存至`tests/cassettes/`，默认测试只回放，缺录制应失败，不在测试中绕过网络禁令。
 - **回归语料（未来）**：`tests/corpus/` 中放 5 到 10 条代表性片段（包括口语缩略、不连续语法、长句），用于检查提取结果的校验通过率。
-- **API**：当前使用`httpx.AsyncClient`与`ASGITransport`，配合临时SQLite数据库及应用lifespan；覆盖接受幂等、并发／停止／删除、审核恢复及空库／增量迁移。
+- **API**：当前使用`httpx.AsyncClient`与`ASGITransport`，配合临时SQLite数据库及应用lifespan；覆盖接受幂等、并发／停止／删除、审核恢复及空库迁移与 schema 一致性。
 - **前端**：TypeScript类型检查加Node.js测试，覆盖导航、确切成果链接、恢复显示、审核及布局状态；讨论测试使用真实QueryClient和假API，覆盖受理／核实的组合推进、条件清草稿、版本合并、终态通知和重复观察的缓存事件。页面挂载、收起／返回列表及实际阅读仍由浏览器验证，证据见[阅读导航记录](handovers/archived/READING_NAVIGATION_ACCEPTANCE.md)和[架构重构验收](handovers/archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)。离线验收不证明真实模型教学质量或第三方工具兼容性。
 
 ## 9. 演进预留

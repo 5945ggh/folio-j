@@ -21,7 +21,7 @@ just dev         # 初始化／升级数据库，FastAPI + Vite 热重载，Ctrl
 just lint        # Ruff、pyright strict、Biome、TypeScript
 just test        # 后端与前端纯逻辑测试，禁止真实网络和模型调用
 just gen-api     # 本地导出 OpenAPI 并生成前端类型，不需启动服务
-just migrate     # 从空库建立当前 schema，或执行已有迁移
+just migrate     # 从空库建立当前 schema，或执行基线之后的增量迁移
 just start       # 初始化／升级数据库并构建前端，由 FastAPI 在 8000 端口托管
 just check       # lint + test + build + 文档链接检查
 just check-assets # 验证保留的实验和静态原型
@@ -33,7 +33,11 @@ just check-assets # 验证保留的实验和静态原型
 
 可将 [config/app.example.toml](config/app.example.toml) 复制为 `config/app.toml`，调整服务端口和数据库路径；不复制时使用同样的默认值。相对数据库路径以仓库根目录为基准，默认数据位于 `data/app.db`。`just dev` 的前端代理随后端配置端口变化。真实配置、数据库、缓存和密钥不提交。
 
-可用 `FOLIO_J_DATABASE_PATH` 覆盖数据库路径，供临时验收或独立数据集使用；迁移和应用读取同一覆盖值。第一版发布前且数据可丢弃时，允许重整初始迁移及重建开发库；应用不会自动删库。开始积累需要保留的日常数据或正式发布后，采用增量迁移，重建前应先保留所需数据。
+可用 `FOLIO_J_DATABASE_PATH` 覆盖数据库路径，供临时验收或独立数据集使用；迁移和应用读取同一覆盖值。当前初始基线为 `0001_initial`，空库运行 `just migrate` 即可建立完整 schema。第一版发布前且数据可丢弃时，允许重整初始迁移；开始保存需保留的日常数据或发布第一版后，采用严格增量迁移。应用不会自动删库。
+
+此次基线合并移除了原有 12 个开发期 revision，新迁移链不再支持从旧中间 revision 自动升级。保留旧库时，先停止使用该库的服务并制作一致性备份，同时保留对应凭据目录。
+
+仅对已经到达旧完整 head `0012_material_metadata`、且与新基线的表、字段、索引、约束和默认值核验等价的库，可在确认目标路径后从仓库根目录执行一次 `uv run --directory backend alembic stamp --purge head`，将版本记录对齐到新基线。该命令只修改迁移版本记录，不补表、不修复结构；结构不等价的库不能直接 stamp，应先用旧版本代码升级到完整旧 head 并重新核验，或在保留所需数据后另建新库。恢复旧备份也遵循相同步骤，不能把恢复后的旧版本记录直接视为新基线。
 
 `just dev` 和 `just start` 使用同一后端端口，应选择一种运行方式。OpenAPI 与前端生成类型一并提交，修改后端 schema 后运行 `just gen-api`；不要手改生成类型。
 

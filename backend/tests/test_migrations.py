@@ -5,10 +5,17 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from alembic.autogenerate import compare_metadata
 from alembic.config import Config
+from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
+from sqlalchemy import URL, create_engine
 
 from alembic import command
+from app import analysis_models, chat_models, material_models, models, settings_models
+from app.db import Base
+
+_ = (analysis_models, chat_models, material_models, models, settings_models)
 
 
 def test_empty_database_rebuilds_current_schema(
@@ -18,7 +25,12 @@ def test_empty_database_rebuilds_current_schema(
     monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
     config = Config()
     config.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
-    heads = set(ScriptDirectory.from_config(config).get_heads())
+    scripts = ScriptDirectory.from_config(config)
+    revisions = list(scripts.walk_revisions())
+    assert len(revisions) == 1
+    assert revisions[0].down_revision is None
+    assert scripts.get_bases() == scripts.get_heads() == [revisions[0].revision]
+    heads = set(scripts.get_heads())
     command.upgrade(config, "head")
     with sqlite3.connect(database) as connection:
         assert {
@@ -30,63 +42,27 @@ def test_empty_database_rebuilds_current_schema(
             row[0]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
+        assert len(Base.metadata.tables) == 22
+        assert tables == {"alembic_version", *Base.metadata.tables}
+
+    # Compare every column, type, nullable flag, foreign key, index and uniqueness
+    # rule. Historical SQL defaults intentionally differ from ORM insert defaults.
+    engine = create_engine(URL.create("sqlite", database=str(database)))
+    try:
+        with engine.connect() as connection:
+            context = MigrationContext.configure(
+                connection, opts={"compare_type": True, "compare_server_default": False}
+            )
+            assert compare_metadata(context, Base.metadata) == []
+    finally:
+        engine.dispose()
+
+    command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
         assert {
-            "alembic_version",
-            "sources",
-            "segments",
-            "learner_profile",
-            "explanation_styles",
-            "settings_defaults",
-            "providers",
-            "provider_models",
-            "runs",
-            "chat_threads",
-            "chat_messages",
-            "chat_jobs",
-            "analyses",
-            "analysis_revisions",
-            "analysis_sections",
-            "materials",
-            "reading_positions",
-            "chapter_reading_positions",
-            "material_usage",
-            "material_covers",
-            "material_custom_covers",
-        } <= tables
-        for table, expected_columns in {
-            "materials": {"metadata_revision"},
-            "sources": {
-                "id",
-                "title",
-                "description",
-                "note",
-                "created_at",
-                "updated_at",
-                "deleted_at",
-            },
-            "segments": {
-                "id",
-                "source_id",
-                "text",
-                "translation",
-                "context_before",
-                "context_after",
-                "transcription",
-                "note",
-                "source_ref",
-                "created_at",
-                "updated_at",
-                "text_locked_at",
-                "deleted_at",
-            },
-        }.items():
-            columns = {row[1] for row in connection.execute(f"PRAGMA table_info({table})")}
-            assert expected_columns <= columns, table
-        index = connection.execute(
-            "SELECT sql FROM sqlite_master WHERE type='index' AND name='uq_chat_job_active'"
-        ).fetchone()
-        assert index is not None
-        assert "waiting_review" in index[0]
+            row[0] for row in connection.execute("SELECT version_num FROM alembic_version")
+        } == heads
 
 
 def test_revision_generation_and_upgrade_in_temporary_directory(
