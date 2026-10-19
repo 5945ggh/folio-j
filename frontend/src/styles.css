@@ -2803,21 +2803,6 @@ td.model-actions {
 .pagination-count {
 	margin-right: auto;
 }
-.import-dialog {
-	width: min(620px, calc(100vw - 32px));
-	max-height: 90dvh;
-	overflow-y: auto;
-}
-.import-dialog .section-heading {
-	align-items: center;
-	margin-bottom: 20px;
-}
-.import-dialog .field {
-	margin: 18px 0;
-}
-.import-dialog .actions {
-	margin-top: 24px;
-}
 .scoped-material-dialog {
 	width: min(1100px, calc(100vw - 64px));
 	max-width: none;

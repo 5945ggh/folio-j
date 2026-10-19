@@ -9,6 +9,8 @@ export function SourceForm({
 	pending,
 	error,
 	submitLabel,
+	cancelLabel = "取消",
+	className = "",
 }: {
 	initial?: Source;
 	onSave: (fields: SourceFields) => void;
@@ -16,6 +18,8 @@ export function SourceForm({
 	pending: boolean;
 	error: Error | null;
 	submitLabel: string;
+	cancelLabel?: string;
+	className?: string;
 }) {
 	const [fields, setFields] = useState<SourceFields>({
 		title: initial?.title ?? "",
@@ -24,10 +28,11 @@ export function SourceForm({
 	});
 	function submit(event: FormEvent) {
 		event.preventDefault();
+		if (pending) return;
 		onSave(fields);
 	}
 	return (
-		<form className="editor-card" onSubmit={submit}>
+		<form className={`editor-card ${className}`} onSubmit={submit}>
 			<div className="form-grid">
 				<label className="field full">
 					<span>
@@ -35,6 +40,7 @@ export function SourceForm({
 					</span>
 					<input
 						required
+						disabled={pending}
 						maxLength={200}
 						value={fields.title}
 						onChange={(event) =>
@@ -47,6 +53,7 @@ export function SourceForm({
 					<span>来源描述</span>
 					<textarea
 						rows={2}
+						disabled={pending}
 						value={fields.description}
 						onChange={(event) =>
 							setFields({ ...fields, description: event.target.value })
@@ -58,6 +65,7 @@ export function SourceForm({
 					<span>管理备注</span>
 					<textarea
 						rows={2}
+						disabled={pending}
 						value={fields.note}
 						onChange={(event) =>
 							setFields({ ...fields, note: event.target.value })
@@ -77,7 +85,7 @@ export function SourceForm({
 					type="button"
 					onClick={onCancel}
 				>
-					取消
+					{cancelLabel}
 				</button>
 			</div>
 		</form>

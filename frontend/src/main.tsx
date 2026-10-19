@@ -5,6 +5,7 @@ import { App } from "./App";
 import "./styles.css";
 import "./catalog/source-content.css";
 import "./catalog/sources-s2.css";
+import "./catalog/import-dialog.css";
 
 const queryClient = new QueryClient({
 	defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },

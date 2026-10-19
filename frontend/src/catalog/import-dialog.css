@@ -1,0 +1,248 @@
+.confirm-card.import-dialog {
+	--accent: #111;
+	width: min(560px, calc(100vw - 32px));
+	max-height: calc(100dvh - 32px);
+	padding: 0;
+	overflow: hidden;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: white;
+	color: #292d35;
+	box-shadow: 0 12px 45px #20293820;
+}
+.confirm-card.import-dialog[open],
+.import-view:not([hidden]),
+.import-source-view,
+.import-dialog .import-source-form {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+.import-view[hidden] {
+	display: none;
+}
+.import-dialog::backdrop {
+	background: #20273538;
+}
+.import-dialog-heading {
+	flex: none;
+	padding: 24px 24px 0;
+}
+.import-dialog .import-dialog-heading h2 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+}
+.confirm-card.import-dialog .import-dialog-heading p {
+	margin: 8px 0 0;
+	color: var(--muted);
+	font-size: 13px;
+	line-height: 1.6;
+}
+.import-dialog-body,
+.import-source-form > .form-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 22px;
+	padding: 24px;
+	min-height: 0;
+	overflow-y: auto;
+}
+.import-dialog .import-source-form {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+.import-dialog .field {
+	min-width: 0;
+	gap: 9px;
+	color: #464c56;
+	font-size: 13px;
+	font-weight: 500;
+}
+.import-dialog .field input,
+.import-dialog .field textarea,
+.import-dialog .field select {
+	border-color: var(--border);
+	border-radius: 7px;
+	font-size: 13px;
+}
+.import-dialog .field select {
+	appearance: none;
+	padding-right: 40px;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2352565e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 14px center;
+	background-size: 14px 14px;
+}
+.confirm-card.import-dialog :is(button, input, select, textarea):focus-visible {
+	outline: 2px solid #8a8f98;
+	outline-offset: 3px;
+}
+.import-field-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.import-text-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 0;
+	border: 0;
+	background: transparent;
+	color: var(--accent);
+	font-size: 12px;
+}
+.import-text-button svg {
+	width: 14px;
+	height: 14px;
+}
+.import-text-button:hover:not(:disabled) {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.import-file-picker {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 18px 16px;
+	border: 1px solid var(--border);
+	border-radius: 9px;
+	background: #f8f9fb;
+	cursor: pointer;
+}
+.import-file-picker:hover:not(:has(:disabled)) {
+	border-color: var(--accent);
+}
+.import-file-picker:focus-within {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+}
+.import-file-picker:has(:disabled) {
+	opacity: 0.65;
+	cursor: wait;
+}
+.import-file-icon {
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 46px;
+	flex: none;
+	border: 1px solid var(--border);
+	border-radius: 7px;
+	background: white;
+	color: var(--muted);
+}
+.import-file-icon svg {
+	width: 22px;
+	height: 22px;
+}
+.import-file-copy {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+.import-file-copy strong {
+	color: #303641;
+	font-weight: 500;
+	line-height: 1.6;
+	overflow-wrap: anywhere;
+}
+.import-file-copy > span {
+	color: var(--muted);
+	font-size: 12px;
+	font-weight: 400;
+}
+.import-file-action {
+	flex: none;
+	color: var(--accent);
+	font-size: 12px;
+}
+.import-dialog .actions {
+	flex: none;
+	justify-content: flex-end;
+	gap: 10px;
+	margin: 0;
+	padding: 18px 24px;
+	border-top: 1px solid var(--border);
+}
+.import-dialog .button {
+	min-height: 36px;
+	padding: 8px 16px;
+	border-radius: 7px;
+	font-size: 13px;
+}
+.import-dialog .button.primary:hover:not(:disabled) {
+	background: #2b2b2b;
+}
+.import-dialog .button.secondary {
+	color: #52565e;
+}
+.import-dialog .import-source-form > .inline-error {
+	margin: 0 24px 20px;
+}
+.import-progress {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 14px;
+	border-radius: 8px;
+	background: #f5f6f7;
+}
+.import-progress .import-preparation-indicator {
+	flex: none;
+	margin-top: 5px;
+	width: 12px;
+	height: 12px;
+	border: 2px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 50%;
+	animation: import-preparing 1s linear infinite;
+}
+.confirm-card.import-dialog .import-progress p {
+	margin: 0;
+	color: #464c56;
+	font-size: 13px;
+}
+.import-progress small {
+	display: block;
+	margin-top: 3px;
+	color: var(--muted);
+	font-size: 12px;
+}
+@keyframes import-preparing {
+	to {
+		transform: rotate(360deg);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.import-progress .import-preparation-indicator {
+		animation: none;
+	}
+}
+@media (max-width: 480px) {
+	.import-dialog-heading {
+		padding: 20px 20px 0;
+	}
+	.import-dialog-body,
+	.import-source-form > .form-grid {
+		padding: 20px;
+		gap: 18px;
+	}
+	.import-dialog .actions {
+		padding: 16px 20px;
+	}
+	.import-file-picker {
+		flex-wrap: wrap;
+		padding: 14px;
+		gap: 10px;
+	}
+	.import-file-action {
+		margin-left: auto;
+	}
+}

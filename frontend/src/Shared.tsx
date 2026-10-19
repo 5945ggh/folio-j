@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router";
 import { RequestError } from "./content";
+import { handleDialogCancel } from "./dialog-events";
 
 function displayError(error: Error): string {
 	if (
@@ -288,10 +289,7 @@ export function ConfirmDialog({
 					first?.focus();
 				}
 			}}
-			onCancel={(event) => {
-				event.preventDefault();
-				onClose();
-			}}
+			onCancel={(event) => handleDialogCancel(event, onClose)}
 		>
 			{children}
 		</dialog>
