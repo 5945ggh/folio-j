@@ -39,7 +39,9 @@ def test_cover_rule_upgrade_preserves_existing_cache(
         covers = connection.execute("SELECT * FROM material_covers ORDER BY material_id").fetchall()
     command.upgrade(config, "head")
     with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT * FROM materials ORDER BY id").fetchall() == before
+        materials = connection.execute("SELECT * FROM materials ORDER BY id").fetchall()
+        assert [row[:-1] for row in materials] == before
+        assert [row[-1] for row in materials] == [0, 0]
         rows = connection.execute("SELECT * FROM material_covers ORDER BY material_id").fetchall()
         assert [row[:3] for row in rows] == covers
         assert [row[3:] for row in rows] == [(1, "legacy_cache")] * 2

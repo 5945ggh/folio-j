@@ -16,13 +16,14 @@ from app.material_schemas import (
     ReadingPositionResponse,
     ReadingPositionUpdate,
 )
+from app.metadata_schemas import MaterialDetailsResponse, MaterialMetadataUpdate
 from app.readings_schemas import (
     MaterialReadingsPrepare,
     MaterialReadingsResponse,
     MaterialReadingsSummary,
 )
+from app.services import material_metadata, reader_queries, readings
 from app.services import materials as service
-from app.services import reader_queries, readings
 
 router = APIRouter(prefix="/api")
 Session = Annotated[AsyncSession, Depends(get_session)]
@@ -57,6 +58,26 @@ async def import_material(
 @router.get("/materials/{material_id}", response_model=MaterialResponse, operation_id="getMaterial")
 async def get_material(material_id: str, session: Session) -> MaterialResponse:
     return await service.get_material(session, material_id)
+
+
+@router.get(
+    "/materials/{material_id}/details",
+    response_model=MaterialDetailsResponse,
+    operation_id="getMaterialDetails",
+)
+async def get_details(material_id: str, session: Session) -> MaterialDetailsResponse:
+    return await material_metadata.get_details(session, material_id)
+
+
+@router.patch(
+    "/materials/{material_id}/metadata",
+    response_model=MaterialDetailsResponse,
+    operation_id="updateMaterialMetadata",
+)
+async def update_metadata(
+    material_id: str, data: MaterialMetadataUpdate, session: Session
+) -> MaterialDetailsResponse:
+    return await material_metadata.update_metadata(session, material_id, data)
 
 
 @router.get(

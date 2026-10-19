@@ -192,6 +192,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Details */
+        get: operations["getMaterialDetails"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/materials/{material_id}/illustrations": {
         parameters: {
             query?: never;
@@ -224,6 +241,23 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Metadata */
+        patch: operations["updateMaterialMetadata"];
         trace?: never;
     };
     "/api/materials/{material_id}/opened": {
@@ -1231,6 +1265,67 @@ export interface components {
             /** Version Id */
             version_id: string;
         };
+        /** MaterialCoverInput */
+        MaterialCoverInput: {
+            /** Data Base64 */
+            data_base64: string;
+            /**
+             * Media Type
+             * @enum {string}
+             */
+            media_type: "image/png" | "image/jpeg";
+        };
+        /** MaterialDetailsResponse */
+        MaterialDetailsResponse: {
+            /** Chapter Count */
+            chapter_count: number;
+            /** Contract Version */
+            contract_version: string;
+            /** Cover Url */
+            cover_url: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Custom Cover */
+            custom_cover: boolean;
+            /** Id */
+            id: string;
+            /** Last Opened At */
+            last_opened_at: string | null;
+            /** Metadata Revision */
+            metadata_revision: number;
+            /** Original Title */
+            original_title: string;
+            /** Product Sha256 */
+            product_sha256: string;
+            /** Source Id */
+            source_id: string;
+            /** Source Sha256 */
+            source_sha256: string;
+            /** Source Title */
+            source_title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "not_started" | "in_progress" | "completed";
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @default book
+             * @constant
+             */
+            type: "book";
+            /** Usage Revision */
+            usage_revision: number;
+            /** Version Id */
+            version_id: string;
+            /** Warnings */
+            warnings: string[];
+        };
         /** MaterialIllustrationItem */
         MaterialIllustrationItem: {
             /** Alt */
@@ -1272,6 +1367,20 @@ export interface components {
             material: components["schemas"]["MaterialResponse"];
             /** Reused */
             reused: boolean;
+        };
+        /** MaterialMetadataUpdate */
+        MaterialMetadataUpdate: {
+            cover?: components["schemas"]["MaterialCoverInput"] | null;
+            /**
+             * Cover Action
+             * @default keep
+             * @enum {string}
+             */
+            cover_action: "keep" | "replace" | "reset";
+            /** Expected Revision */
+            expected_revision: number;
+            /** Title */
+            title: string;
         };
         /** MaterialOpenedInput */
         MaterialOpenedInput: {
@@ -2683,6 +2792,37 @@ export interface operations {
             };
         };
     };
+    getMaterialDetails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialDetailsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     getMaterialIllustrations: {
         parameters: {
             query: {
@@ -2742,6 +2882,41 @@ export interface operations {
                     "image/jpeg": unknown;
                     "image/png": unknown;
                     "image/webp": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    updateMaterialMetadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialMetadataUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialDetailsResponse"];
                 };
             };
             /** @description Validation Error */

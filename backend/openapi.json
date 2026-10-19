@@ -1109,6 +1109,158 @@
         "title": "MaterialChapterResponse",
         "type": "object"
       },
+      "MaterialCoverInput": {
+        "additionalProperties": false,
+        "properties": {
+          "data_base64": {
+            "maxLength": 5592408,
+            "title": "Data Base64",
+            "type": "string"
+          },
+          "media_type": {
+            "enum": [
+              "image/png",
+              "image/jpeg"
+            ],
+            "title": "Media Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "media_type",
+          "data_base64"
+        ],
+        "title": "MaterialCoverInput",
+        "type": "object"
+      },
+      "MaterialDetailsResponse": {
+        "properties": {
+          "chapter_count": {
+            "title": "Chapter Count",
+            "type": "integer"
+          },
+          "contract_version": {
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "custom_cover": {
+            "title": "Custom Cover",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "last_opened_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Opened At"
+          },
+          "metadata_revision": {
+            "title": "Metadata Revision",
+            "type": "integer"
+          },
+          "original_title": {
+            "title": "Original Title",
+            "type": "string"
+          },
+          "product_sha256": {
+            "title": "Product Sha256",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_sha256": {
+            "title": "Source Sha256",
+            "type": "string"
+          },
+          "source_title": {
+            "title": "Source Title",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "not_started",
+              "in_progress",
+              "completed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "book",
+            "default": "book",
+            "title": "Type",
+            "type": "string"
+          },
+          "usage_revision": {
+            "title": "Usage Revision",
+            "type": "integer"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "source_id",
+          "title",
+          "source_sha256",
+          "version_id",
+          "product_sha256",
+          "contract_version",
+          "created_at",
+          "warnings",
+          "source_title",
+          "cover_url",
+          "status",
+          "usage_revision",
+          "last_opened_at",
+          "original_title",
+          "chapter_count",
+          "metadata_revision",
+          "custom_cover"
+        ],
+        "title": "MaterialDetailsResponse",
+        "type": "object"
+      },
       "MaterialIllustrationItem": {
         "properties": {
           "alt": {
@@ -1218,6 +1370,46 @@
           "reused"
         ],
         "title": "MaterialImportResponse",
+        "type": "object"
+      },
+      "MaterialMetadataUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MaterialCoverInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cover_action": {
+            "default": "keep",
+            "enum": [
+              "keep",
+              "replace",
+              "reset"
+            ],
+            "title": "Cover Action",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "expected_revision"
+        ],
+        "title": "MaterialMetadataUpdate",
         "type": "object"
       },
       "MaterialOpenedInput": {
@@ -4576,6 +4768,45 @@
         "summary": "Cover"
       }
     },
+    "/api/materials/{material_id}/details": {
+      "get": {
+        "operationId": "getMaterialDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialDetailsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Details"
+      }
+    },
     "/api/materials/{material_id}/illustrations": {
       "get": {
         "operationId": "getMaterialIllustrations",
@@ -4702,6 +4933,55 @@
           }
         },
         "summary": "Get Illustration Content"
+      }
+    },
+    "/api/materials/{material_id}/metadata": {
+      "patch": {
+        "operationId": "updateMaterialMetadata",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialMetadataUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialDetailsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Metadata"
       }
     },
     "/api/materials/{material_id}/opened": {

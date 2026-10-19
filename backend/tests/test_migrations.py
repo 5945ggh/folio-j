@@ -51,8 +51,10 @@ def test_empty_database_rebuilds_current_schema(
             "chapter_reading_positions",
             "material_usage",
             "material_covers",
+            "material_custom_covers",
         } <= tables
         for table, expected_columns in {
+            "materials": {"metadata_revision"},
             "sources": {
                 "id",
                 "title",

@@ -109,7 +109,9 @@ def test_usage_upgrade_validates_positions_and_preserves_bytes(
         ).fetchall()
     command.upgrade(config, "head")
     with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT * FROM materials ORDER BY id").fetchall() == before
+        upgraded = connection.execute("SELECT * FROM materials ORDER BY id").fetchall()
+        assert [row[:-1] for row in upgraded] == before
+        assert [row[-1] for row in upgraded] == [0] * len(before)
         assert (
             connection.execute("SELECT * FROM reading_positions ORDER BY material_id").fetchall()
             == positions
@@ -173,7 +175,9 @@ def test_chapter_position_upgrade_backfills_only_valid_last_anchor(
         ).fetchall()
     command.upgrade(config, "head")
     with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT * FROM materials ORDER BY id").fetchall() == materials
+        upgraded = connection.execute("SELECT * FROM materials ORDER BY id").fetchall()
+        assert [row[:-1] for row in upgraded] == materials
+        assert [row[-1] for row in upgraded] == [0] * len(materials)
         assert (
             connection.execute("SELECT * FROM reading_positions ORDER BY material_id").fetchall()
             == positions

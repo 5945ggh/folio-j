@@ -17,9 +17,9 @@ from app.catalog_schemas import (
     SourceCatalogItem,
     SourceCatalogPage,
 )
-from app.material_models import Material, MaterialCover, MaterialUsage
+from app.material_models import Material, MaterialCover, MaterialCustomCover, MaterialUsage
 from app.models import Segment, Source
-from app.services.covers import COVER_RULE_VERSION
+from app.services.covers import cover_url
 from app.services.materials import summary
 from app.services.sources import as_utc, require_source, segment_response
 
@@ -52,10 +52,12 @@ async def material_catalog(
             MaterialCover.material_id,
             MaterialCover.media_type,
             MaterialCover.rule_version,
+            MaterialCustomCover.material_id,
         )
         .join(Source, Material.source_id == Source.id)
         .outerjoin(MaterialUsage, MaterialUsage.material_id == Material.id)
         .outerjoin(MaterialCover, MaterialCover.material_id == Material.id)
+        .outerjoin(MaterialCustomCover, MaterialCustomCover.material_id == Material.id)
         .options(defer(Material.compiled_bundle))
         .where(Source.deleted_at.is_(None))
     )
@@ -91,16 +93,19 @@ async def material_catalog(
         cover_id,
         media_type,
         cover_version,
+        custom_id,
     ) in (await session.execute(statement)).all():
         items.append(
             MaterialCatalogItem(
                 **summary(material).model_dump(),
                 source_title=source_title,
-                cover_url=f"/api/materials/{material.id}/cover?v={COVER_RULE_VERSION}"
-                if cast(str | None, cover_id) is None
-                or media_type
-                or cover_version != COVER_RULE_VERSION
-                else None,
+                cover_url=cover_url(
+                    material,
+                    custom=cast(str | None, custom_id) is not None,
+                    cache_id=cover_id,
+                    media_type=media_type,
+                    rule_version=cover_version,
+                ),
                 status=cast(ReadingStatus, usage_status or "not_started"),
                 usage_revision=revision or 0,
                 last_opened_at=as_utc(opened) if opened else None,

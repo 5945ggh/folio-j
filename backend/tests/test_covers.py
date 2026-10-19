@@ -244,7 +244,7 @@ async def test_old_cache_rebuilds_without_touching_book(
                 ),
             )
         item = (await client.get("/api/materials")).json()["items"][0]
-        assert item["cover_url"].endswith("?v=2")
+        assert item["cover_url"].endswith("?v=2&revision=0")
         response = await client.get(item["cover_url"])
         assert response.status_code == 200 and response.content == PNG
         with sqlite3.connect(database) as connection:

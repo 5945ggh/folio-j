@@ -25,6 +25,9 @@ class Material(Base):
     id: Mapped[str] = mapped_column(String(26), primary_key=True)
     source_id: Mapped[str] = mapped_column(ForeignKey("sources.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
+    metadata_revision: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     source_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     version_id: Mapped[str] = mapped_column(String(26), nullable=False, unique=True)
     product_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -75,6 +78,15 @@ class MaterialCover(Base):
     data: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
     rule_version: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     diagnostic_reason: Mapped[str] = mapped_column(Text, nullable=False, default="unexamined")
+
+
+class MaterialCustomCover(Base):
+    """User-owned cover override, independent of rebuildable extraction caches."""
+
+    __tablename__ = "material_custom_covers"
+    material_id: Mapped[str] = mapped_column(ForeignKey("materials.id"), primary_key=True)
+    media_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False, deferred=True)
 
 
 class MaterialReadingsGeneration(Base):

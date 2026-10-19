@@ -11,7 +11,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.material_models import Material, MaterialCover
+from app.material_models import Material, MaterialCover, MaterialCustomCover
 from app.services.epub import EpubError, package_tag, parse_package_xml, resolve_package_path
 from app.services.materials import require_material
 from app.services.sources import begin_write
@@ -19,6 +19,33 @@ from app.services.sources import begin_write
 COVER_RULE_VERSION = 2
 MAX_COVER_BYTES = 4 * 1024 * 1024
 MAX_METADATA_BYTES = 1024 * 1024
+
+
+def cover_url(
+    material: Material,
+    *,
+    custom: bool,
+    cache_id: str | None,
+    media_type: str | None,
+    rule_version: int | None,
+) -> str | None:
+    if custom or cache_id is None or media_type or rule_version != COVER_RULE_VERSION:
+        return (
+            f"/api/materials/{material.id}/cover?v={COVER_RULE_VERSION}"
+            f"&revision={material.metadata_revision}"
+        )
+    return None
+
+
+async def custom_cover_content(session: AsyncSession, material_id: str) -> tuple[bytes, str] | None:
+    row = (
+        await session.execute(
+            select(MaterialCustomCover.data, MaterialCustomCover.media_type).where(
+                MaterialCustomCover.material_id == material_id
+            )
+        )
+    ).first()
+    return (row[0], row[1]) if row else None
 
 
 def valid_static_raster(data: bytes, media_type: str) -> bool:
@@ -284,6 +311,9 @@ def extract_cover(raw: bytes) -> tuple[bytes, str] | None:
 
 async def get_cover(session: AsyncSession, material_id: str) -> tuple[bytes, str]:
     await require_material(session, material_id, with_bundle=False)
+    custom = await custom_cover_content(session, material_id)
+    if custom is not None:
+        return custom
     cached = await session.get(MaterialCover, material_id)
     if cached is None or cached.rule_version != COVER_RULE_VERSION:
         raw = await session.scalar(
@@ -295,6 +325,10 @@ async def get_cover(session: AsyncSession, material_id: str) -> tuple[bytes, str
         try:
             await begin_write(session)
             await require_material(session, material_id, with_bundle=False)
+            custom = await custom_cover_content(session, material_id)
+            if custom is not None:
+                await session.commit()
+                return custom
             cached = await session.get(MaterialCover, material_id)
             if cached is None or cached.rule_version != COVER_RULE_VERSION:
                 if cached is None:
