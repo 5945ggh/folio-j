@@ -6,6 +6,8 @@
 
 当前交付、提交状态与验收结论汇总见 [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)。以下按阶段职责组织实施安排、接口契约和原始证据。
 
+- 书籍管理：详情页、共享信息编辑和卡片菜单，移动／删除保留禁用入口；见[计划与契约](book-management/PLAN.md)和[验收记录](book-management/ACCEPTANCE.md)。
+
 - 全量注音：导入全书分词、持久派生资产、重建与两维注音显示；见[计划](full-ruby/PLAN.md)和[验收](full-ruby/ACCEPTANCE.md)。
 - 设置顶部分类：学习偏好、模型与服务、对话与权限分组，统一弹窗、草稿保护与验证历史筛选；见[计划](settings-refresh/PLAN.md)和[验收](settings-refresh/ACCEPTANCE.md)。
 - 章节位置记忆：每章位置持久化、目录恢复与章首返回，内容末端可读时 100% 与回看下降；见[工程与浏览器验收](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)。

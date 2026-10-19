@@ -81,6 +81,7 @@ Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profi
 | `Source` | `title`、`note`、来源描述 | 用户声明的来源范围；未来可容纳不同形式的输入，不等于文件或 Collection |
 | `Segment` | `source_id`、`text`、译文、语境、备注、听写、`source_ref`、`text_locked_at` | 学习目标原文入库做 NFC；`source_ref` 为自由文本出处，材料外键与分词数据待后续接入 |
 | `Material` | `source_id`、标题、源字节摘要、`version_id`、产物摘要、契约版本、原 EPUB 字节、压缩编译包 | 同 Source 同源字节复用身份；版本、正文与资源不可变，章节及 spine 资源在包内表达 |
+| `MaterialCustomCover` | `material_id`、媒体类型、用户上传图片字节 | 持久展示覆盖，独立于可重建封面缓存；信息修订由 Material 的 `metadata_revision` 管理 |
 | `ReadingPosition` | `material_id`、`revision`、位置与三项阅读设置的 `payload`、`updated_at` | 每材料最多一条，按条件版本更新；位置绑定具体版本、章、part 和资源 |
 | `ChapterReadingPosition` | `material_id` + `chapter_id` 复合主键、位置 `payload`、`revision`、`updated_at` | 各章最后位置；revision 为该次材料位置写入的版本，与全书最后位置原子更新 |
 | `MaterialUsage` | `material_id`、状态、独立 `revision`、`last_opened_at`、`last_action_id` | 每材料最多一条；未开始／进行中／已完成与最近打开独立于位置保存 |
@@ -127,6 +128,8 @@ GET、PUT 与前端即时显示采用相同进度口径：章末标志为 true �
 目录由服务端先完整筛选、排序再分页，返回真实总数；字段白名单，普通文字搜索，标题比较集中测试，ID 破同值，最近打开空值双向置后，分页 50／上限 100。Source 概览有限样本与真实计数；讲解关联未删除 Segment，携带确切修订及原文短摘，避免前端 N+1。查询、封面和写入检查完整 Source 可见性链。
 
 封面规则版本 `2` 优先采用有效的 EPUB3 cover-image／EPUB2 meta name=cover 声明，再按 spine 中 XHTML `img`／SVG `image` 包内引用、manifest 图像顺序回退首张可用静态 PNG／JPEG。坏候选继续，全局归档安全失败整体拒绝。图片限制为 4 MiB、1600 万像素；APNG、GIF、WebP、SVG 不作为有效封面候选，无可用候选时使用占位。标准库执行有界头部／结构校验，浏览器加载失败仍占位。
+
+书籍信息编辑使用独立 `metadata_revision` 条件写入，书名和自定义封面在短写事务内原子保存，陈旧提交返回 409。`material_custom_covers` 保存用户覆盖，封面读取优先覆盖，恢复原书封面只清除覆盖；自动缓存升级不覆盖用户图片。目录与详情封面 URL 包含信息修订，避免沿用旧图片或失败状态。原书标题和章节数量从不可变编译包读取，查看详情不记录阅读打开，也不触发注音准备；信息编辑保留原始字节、材料版本、位置、使用状态与注音代次。增量迁移和具体接口见[书籍管理契约](handovers/book-management/PLAN.md#接口与存储契约)。移动与删除当前只有禁用入口。
 
 首次封面读取在线程中提取并缓存成功／失败，资源 URL 带 `?v=2`；旧成功／失败缓存均懒重建，当前失败的目录 URL 为空。缓存保持原始字节、编译包和版本不变，目录不逐书解压。候选和缓存规则见[封面工程契约](handovers/library-a1/API.md)。
 
@@ -381,6 +384,8 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 
 片段页沿用[A.3工作台基线](../prototypes/reading-native/VISUAL_BASELINE.md)的安静阅读气质和独立滚动区域。2C后的界面打磨改为普通入口默认阅读、讨论按需展开；原文与讲解同时参照，讲解列表不自动选择第一份文档。讲解、确切修订和讨论目标通过查询参数定位，指定对象须核对当前Segment归属。返回来处与查看所属Source分开。具体导航与当前/未来边界见[阅读与导航](INFORMATION_ARCHITECTURE.md)。
 
+公共 `Shell` 的中性导航、背景与操作色由 `styles.css` 统一维护，颜色变量限定在 `.app-shell`；`library-a1.css` 仅负责目录内容布局与控件，不再叠加另一套外壳主题。无额外组合类名的片段、加载和错误页使用同一默认外壳。旧暖色全局主题与无引用设置选择器已移除，Reader 的独立主题变量保持隔离。
+
 收起讨论与返回讨论列表不卸载当前挂载的ThreadPanel，不等同于停止任务；保留本页草稿、待核实提交与审核补充要求。Segment按身份切换时重新挂载以隔离局部状态，同一Segment的查询参数变化不重新挂载。生成与审核继续使用已有Job／Run和确切成果引用，不新增后台协议或自动模型调用。视觉验收覆盖长原文与讲解对照、桌面独立滚动、窄屏和返回路径。
 
 `chat/discussion.ts` 集中讨论受理、按同一 `request_id` 核实、Job 版本合并与终态刷新／成果通知。直接受理和核实受理进入同一处理函数，以函数式更新只清除尚未改写的提交草稿；轮询、停止和审核返回的 Job 共用版本合并规则。页面保留本地草稿、显示状态和 URL 导航适配，阅读保护绑定首次提交时的确切讲解／Revision，不因响应丢失后的重试覆盖该快照。终态通知在当前讨论实例内按 Job 身份去重，不新增状态库、队列或刷新恢复契约。
@@ -398,6 +403,7 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 | `/sources/:id` | S2 为概览／素材／片段／讲解四视图，默认概览；素材视图保留 `expanded=book` 窗口 |
 | `/materials` | 跨 Source 书籍目录 |
 | `/materials/:id` | 独立 EPUB Reader；目录／搜索、图库、设置、专注及既有位置／状态 |
+| `/materials/:id/details` | 书籍详情及共享信息编辑入口；保留原目录来处，不计阅读打开 |
 | `/segments/:id` | 片段阅读与按需展开的讨论；`analysis`／`revision`／`thread`／`chat`定位已有内容。Occurrence仍未实现 |
 | `/library`（未来，尚未注册） | 知识库：筛选、搜索、按 anchor 分组，每条都能跳转回来源 |
 | `/settings` | 学习背景、讲解预设、Provider／模型／用途默认值的维护，以及模型列表刷新与按需验证 |
