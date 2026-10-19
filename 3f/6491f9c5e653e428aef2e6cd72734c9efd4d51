@@ -1,0 +1,83 @@
+frontend/src/catalog/statistics.css
+  s_aba4122fab4b53::t_bb9dfc3101be67 98-103,161-163
+  s_aba4122fab4b53::t_9ae305ac643dc1 1-43,47-97,104-160,164-165
+  s_aba4122fab4b53::t_775012bc8277de 44-46
+frontend/src/catalog/BookDetailsPage.tsx
+  s_aba4122fab4b53::t_49850bb776f34b 9,144-145
+  s_aba4122fab4b53::t_02383a19e80208 146
+backend/src/app/main.py
+  s_aba4122fab4b53::t_028f3cad873e03 25,44-45
+  s_aba4122fab4b53::t_925b38c565d1cc 73-78
+backend/openapi.json
+  s_aba4122fab4b53::t_6059ed22a46be9 406-454,973-1033,1891-1953,3964-4005,5504-5565
+  s_aba4122fab4b53::t_879ef429e9bbe3 5566-5567
+backend/tests/test_statistics.py
+  s_aba4122fab4b53::t_8723e2378b9f85 1-89,93-229,231-238,242-313,317-338
+  s_aba4122fab4b53::t_87cbfadc381cb5 90-92,230,239-241,314,316,339-341
+  s_aba4122fab4b53::t_0fd51c43cc1e3f 315
+frontend/src/api/schema.d.ts
+  s_aba4122fab4b53::t_6059ed22a46be9 348-364,1048-1061,1228-1247,1572-1590,2362-2379,3197-3219,3222-3225,3227-3230
+  s_aba4122fab4b53::t_4a170b31f2eeb6 3220-3221,3226
+backend/src/app/statistics_schemas.py
+  s_aba4122fab4b53::t_1400473a05d013 1-19
+backend/src/app/services/statistics_runtime.py
+  s_aba4122fab4b53::t_028f3cad873e03 1-80
+  s_aba4122fab4b53::t_925b38c565d1cc 81-91
+frontend/src/catalog/api.ts
+  s_aba4122fab4b53::t_49850bb776f34b 4,77-99
+docs/ARCHITECTURE.md
+  s_aba4122fab4b53::t_fc71ef140b2736 176,188-191,391
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_aba4122fab4b53::t_fc71ef140b2736 3,31,72
+docs/handovers/text-study/B1_ACCEPTANCE.md
+  s_aba4122fab4b53::t_fc71ef140b2736 19
+docs/handovers/README.md
+  s_aba4122fab4b53::t_fc71ef140b2736 9
+docs/handovers/text-study/B2_ACCEPTANCE.md
+  s_aba4122fab4b53::t_fc71ef140b2736 1-41
+backend/src/app/services/statistics.py
+  s_aba4122fab4b53::t_74bc22d4578d07 42-47,55-62,100-102
+  s_aba4122fab4b53::t_028f3cad873e03 1-41,48-54,63-99,103-194
+backend/src/app/nlp/statistics.py
+  s_aba4122fab4b53::t_3d85b934eacec8 1-2,6-9,11-13,19-54,72-73
+  s_aba4122fab4b53::t_d9127d1f1d9e20 3-5,10,14-18,55-71,75-80,82-102,108-190
+  s_aba4122fab4b53::t_0fd51c43cc1e3f 74,81
+  s_aba4122fab4b53::t_87cbfadc381cb5 103-107
+backend/tests/test_material_statistics.py
+  s_aba4122fab4b53::t_925b38c565d1cc 90-95
+  s_aba4122fab4b53::t_74bc22d4578d07 36-39,208,220
+  s_aba4122fab4b53::t_91a19aaba9e160 1-35,40-89,96-200,204-207,209-219,221-283
+  s_aba4122fab4b53::t_cfa2b9bd1c7e7e 201-203
+frontend/src/catalog/statistics.ts
+  s_aba4122fab4b53::t_49850bb776f34b 1-9,17-58,60-78,82-103
+  s_aba4122fab4b53::t_dde6be69ac38f8 10-16,59,79-81
+backend/tests/test_statistics_runtime.py
+  s_aba4122fab4b53::t_0720511ba1e035 1-133
+  s_aba4122fab4b53::t_925b38c565d1cc 134-162
+frontend/src/catalog/BookStatistics.tsx
+  s_aba4122fab4b53::t_49850bb776f34b 1-42,56-62,69-71,75,83-99,103-105,110-120,125-132,137-138,144-146,175-179,185-190,193-197,203,214-216,236-238
+  s_aba4122fab4b53::t_112d6fbc36bd86 63-68,148-150
+  s_aba4122fab4b53::t_dde6be69ac38f8 43-55,72-74,76-82,100-102,106-109,121-124,133-136,139-143,147,151-174,180-184,191-192,198-202,204-213,217-235
+backend/src/app/api/materials.py
+  s_aba4122fab4b53::t_028f3cad873e03 25,27,73-90
+  s_aba4122fab4b53::t_bfd7899ccec937 91-92
+frontend/src/catalog/statistics.test.ts
+  s_aba4122fab4b53::t_bb9dfc3101be67 1-32,37,50-52,78-80,89-90,99-103,116-124,145-147
+  s_aba4122fab4b53::t_775012bc8277de 33-36,38-49,53-77,81-88,91-98,104-115,125-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3f6491f9c5e653e428aef2e6cd72734c9efd4d51",
+  "prompts": {},
+  "sessions": {
+    "s_aba4122fab4b53": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a154f6-8117-7053-b605-484b57ea3fe0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
