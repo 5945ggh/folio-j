@@ -1,0 +1,29 @@
+docs/INFORMATION_ARCHITECTURE.md
+  s_2b110c5c0c37c5::t_ffef4bef0e76c5 30
+  s_2b110c5c0c37c5::t_af06a575b3a846 31
+docs/handovers/library-a1/ACCEPTANCE.md
+  s_2b110c5c0c37c5::t_af06a575b3a846 43-59
+  s_2b110c5c0c37c5::t_7e948bfc7a7d4e 69
+  s_2b110c5c0c37c5::t_ffef4bef0e76c5 60-68
+  s_2b110c5c0c37c5::t_339ccff88058f7 70-79
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_2b110c5c0c37c5::t_339ccff88058f7 3,19
+docs/PRD.md
+  s_2b110c5c0c37c5::t_af06a575b3a846 95-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9518cfb2afb55f52a15d55898aded4983db04c02",
+  "prompts": {},
+  "sessions": {
+    "s_2b110c5c0c37c5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15480-3858-76d0-bd9a-00cb02b3b536",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
