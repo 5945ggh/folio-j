@@ -4,14 +4,14 @@ import hashlib
 import json
 import re
 import zlib
+from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib.metadata import version
 from typing import Protocol, cast
 
 from sudachipy import dictionary, errors, tokenizer
 
-from app.epub_schemas import CompiledBook
-from app.readings_schemas import MaterialReadingToken, MaterialResourceReadings
+from app.nlp.contracts import MaterialReadingToken, MaterialResourceReadings, TextResource
 
 # SudachiPy 0.6.11: original input limit 49149 UTF-8 bytes, rewritten input 65535.
 # Smaller chunks leave headroom for input plugins; only length errors are retried.
@@ -107,7 +107,7 @@ def tokenize_chunk(analyzer: Analyzer, text: str, offset: int) -> list[MaterialR
     return result
 
 
-def generate(book: CompiledBook) -> GeneratedReadings:
+def generate(inputs: Sequence[TextResource]) -> GeneratedReadings:
     """One tokenizer per complete generation, reused across every resource/chunk."""
     configuration = json.dumps(
         {
@@ -127,7 +127,7 @@ def generate(book: CompiledBook) -> GeneratedReadings:
     lexicon = dictionary.Dictionary(dict="core")
     try:
         analyzer = cast(Analyzer, lexicon.create())
-        for resource in book.resources:
+        for resource in inputs:
             digest = hashlib.sha256(resource.text.encode()).hexdigest()
             if digest != resource.text_sha256:
                 raise ValueError("材料正文摘要不一致")
@@ -136,7 +136,7 @@ def generate(book: CompiledBook) -> GeneratedReadings:
                 tokens.extend(tokenize_chunk(analyzer, text, offset))
             resources.append(
                 MaterialResourceReadings(
-                    resource_id=resource.id,
+                    resource_id=resource.resource_id,
                     text_sha256=digest,
                     tokens=tokens,
                 )

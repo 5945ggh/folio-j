@@ -153,7 +153,7 @@ TanStack Query key 包含材料／版本／查询／分页，输入法组合期�
 
 ### 3.1.3 全量注音与分词资产
 
-`nlp/tokenization.py` 使用 SudachiPy、core 词典和 A 粒度，按句处理并对长输入设 UTF-8 字节预算，一个完整生成操作复用分词器。分块与结果位置严格核对资源原文；输出保存表层、资源码点范围、整词读音、词典形、规范形、六项词性及未登录词标记。兼容字符改写可能产生零宽 token，其元数据保留，显示层跳过。Sentence 不作为持久内容实体。
+`nlp/tokenization.py` 使用 SudachiPy、core 词典和 A 粒度，按标点／换行起始分块并对长输入设 UTF-8 字节预算，一个完整生成操作复用分词器。generate 接收 `nlp/contracts.py` 的有序 TextResource，不依赖 EPUB 或 API DTO。分块与结果位置严格核对资源原文；输出保存表层、资源码点范围、整词读音、词典形、规范形、六项词性及未登录词标记。兼容字符改写可能产生零宽 token，其元数据保留，显示层跳过。Sentence 不作为持久内容实体。
 
 `material_readings_generations` 与 `material_readings_current` 保存分词资产。每个不可变代次保存材料／版本、配置、结果摘要、token 数与压缩 JSON；当前表保存材料到代次的指针。配置包含分析器、词典、模式、分句／分块及结果格式版本，资源结果包含正文摘要。新书完整生成后才将材料与资产同事务发布；已有材料经显式 POST 准备或重建。生成在工作线程中完成，不持有写事务，不产生 Run。
 
@@ -172,6 +172,8 @@ TanStack Query key 包含材料／版本／查询／分页，输入法组合期�
 `return-origin.ts` 的 `JumpReadingSession` 管理连续查阅与继续阅读的边界，阈值集中在 `JUMP_READING_POLICY`。页面将正文 wheel／阅读键／触摸移动及滚动条操作关联到稳定视口采样，横竖排统一为正向阅读轴；每次输入仅允许后续 800ms 内的位移计入，净前进至少一视口且首末移动跨越 5 秒后确认继续阅读。移动间隔超过两分钟重建候选，页面失焦／隐藏、工具开关及几何恢复丢弃未确认信号与旧几何基准。确认不清空原返回点，下一次通过目标校验的导航才替换为当时的稳定位置并重置检测；失败请求保留信号。章首显式撤销与返回定位成功后消费原点的规则沿用原逻辑。
 
 ### 3.1.4 文本分析与统计契约
+
+B1 已建立 `nlp/contracts.py` 的词法契约、`nlp/assets.py` 的完整资产解码与 `services/epub_readings.py` 的格式适配。解码预算按输入正文规模集中计算，检查压缩流完整性、资源顺序／身份／摘要、原文范围和六项词性，保留合法零跨度。旧阅读 DTO 以原类名重导出，API wire format 未变；完整资产解码无需 chapter。下述统计规则按 B2 接入。
 
 2026-10-20 在 S0 确认，按 B1／B2 实施；交付状态见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。词法分析接收有序文本资源，每项仅含 `resource_id`、NFC `text` 与 `text_sha256`，不依赖 EPUB 呈现类型。EPUB adapter 负责转换；原始资源顺序与重复 spine 条目、token 字段、配置和资产摘要语义保持兼容。内部词法契约与阅读 API DTO 分开，完整资产解码独立于 chapter；章节投影留在 EPUB 适配。现有构建／发布与代次门禁继续生效。
 

@@ -1,23 +1,23 @@
 """Atomic publication of complete local readings; generation runs outside transactions."""
 
 import asyncio
-import json
-import zlib
+from collections.abc import Sequence
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.epub_schemas import CompiledBook
 from app.ids import new_ulid
 from app.material_models import Material, MaterialReadingsCurrent, MaterialReadingsGeneration
+from app.nlp.contracts import TextResource
 from app.nlp.tokenization import GeneratedReadings, generate
 from app.readings_schemas import (
     MaterialReadingsPrepare,
     MaterialReadingsResponse,
     MaterialReadingsSummary,
-    MaterialResourceReadings,
 )
+from app.services.epub_readings import chapter_resources as chapter_resources
+from app.services.epub_readings import text_resources
 from app.services.sources import begin_write, utc_now
 
 
@@ -45,9 +45,9 @@ async def current(session: AsyncSession, material: Material) -> MaterialReadings
     return asset
 
 
-async def build(book: CompiledBook) -> GeneratedReadings:
+async def build(resources: Sequence[TextResource]) -> GeneratedReadings:
     try:
-        return await asyncio.to_thread(generate, book)
+        return await asyncio.to_thread(generate, resources)
     except Exception as exc:
         raise HTTPException(503, "本地注音生成失败，请重试。") from exc
 
@@ -106,7 +106,7 @@ async def prepare(
     observed_id = active.id if active else None
     book = await asyncio.to_thread(bundle, material)
     await session.rollback()
-    generated = await build(book)
+    generated = await build(text_resources(book))
     try:
         await begin_write(session)
         material = await require_material(session, material_id)
@@ -119,35 +119,6 @@ async def prepare(
     except BaseException:
         await session.rollback()
         raise
-
-
-def chapter_resources(
-    payload: bytes,
-    book: CompiledBook,
-    chapter_id: str,
-) -> list[MaterialResourceReadings]:
-    chapter = next((c for c in book.chapters if c.id == chapter_id), None)
-    if chapter is None:
-        raise HTTPException(404, "章节不存在")
-    decoded = json.loads(zlib.decompress(payload))
-    resources = [MaterialResourceReadings.model_validate(r) for r in decoded["resources"]]
-    result: list[MaterialResourceReadings] = []
-    for resource in resources:
-        parts = [p for p in chapter.parts if p.resource_id == resource.resource_id]
-        if not parts:
-            continue
-        result.append(
-            resource.model_copy(
-                update={
-                    "tokens": [
-                        token
-                        for token in resource.tokens
-                        if any(token.start < p.end and token.end > p.start for p in parts)
-                    ]
-                }
-            )
-        )
-    return result
 
 
 async def get_readings(

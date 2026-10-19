@@ -28,6 +28,7 @@ from app.models import Source
 from app.readings_schemas import MaterialReadingsPrepare
 from app.services import readings
 from app.services.epub import EpubError, compile_epub_bytes
+from app.services.epub_readings import text_resources
 from app.services.position_progress import chapter_progress
 from app.services.sources import as_utc, begin_write, require_source, utc_now
 
@@ -162,7 +163,7 @@ async def import_material(
         book = await asyncio.to_thread(compile_epub_bytes, raw)
     except EpubError as exc:
         raise HTTPException(422, str(exc)) from exc
-    generated = await readings.build(book)
+    generated = await readings.build(text_resources(book))
     compiled = await asyncio.to_thread(lambda: zlib.compress(book.model_dump_json().encode()))
     try:
         await begin_write(session)

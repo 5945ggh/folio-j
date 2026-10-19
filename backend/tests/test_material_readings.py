@@ -2,13 +2,16 @@
 
 import asyncio
 import sqlite3
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
 from test_materials import compiled
 from test_source_segment import api_client
 
+from app.nlp.contracts import TextResource
 from app.nlp.tokenization import GeneratedReadings
+from app.services.epub_readings import text_resources
 
 
 @pytest.mark.asyncio
@@ -129,9 +132,9 @@ async def test_old_generation_reads_and_late_force_cannot_replace_newer(
         body = {"version_id": material["version_id"]}
         initial = (await client.post(url + "/prepare", json=body)).json()
         monkeypatch.setattr(tokenization, "FORMAT_VERSION", "test-second")
-        second = tokenization.generate(compiled(b""))
+        second = tokenization.generate(text_resources(compiled(b"")))
         monkeypatch.setattr(tokenization, "FORMAT_VERSION", "test-third")
-        third = tokenization.generate(compiled(b""))
+        third = tokenization.generate(text_resources(compiled(b"")))
         waiting, release = asyncio.Event(), asyncio.Event()
         calls = 0
 
@@ -169,7 +172,7 @@ def test_chapter_response_filters_resource_ranges_without_changing_token_offsets
     from app.services.readings import chapter_resources
 
     book = compiled(b"")
-    asset = generate(book)
+    asset = generate(text_resources(book))
     part = book.chapters[0].parts[0].model_copy(update={"start": 2, "end": 3})
     chapter = book.chapters[0].model_copy(update={"parts": [part]})
     resource = chapter_resources(
@@ -177,3 +180,80 @@ def test_chapter_response_filters_resource_ranges_without_changing_token_offsets
     )
     assert [token.surface for token in resource[0].tokens] == ["語"]
     assert resource[0].tokens[0].start == 2
+
+
+def test_repeated_spine_keeps_legacy_duplicate_chapter_readings() -> None:
+    from app.nlp.tokenization import generate
+    from app.services.readings import chapter_resources
+
+    book = compiled(b"")
+    repeated_part = book.chapters[0].parts[0].model_copy(update={"spine_index": 1})
+    chapter = book.chapters[0].model_copy(update={"id": "c2", "parts": [repeated_part]})
+    book = book.model_copy(
+        update={
+            "resources": [book.resources[0], book.resources[0]],
+            "chapters": [*book.chapters, chapter],
+        }
+    )
+    asset = generate(text_resources(book))
+    assert asset.token_count == 4
+    for chapter_id in ("c1", "c2"):
+        projected = chapter_resources(asset.payload, book, chapter_id)
+        # B1 records this existing duplication; a later fix must be explicit.
+        assert len(projected) == 2
+        assert projected[0] == projected[1]
+        assert [token.surface for token in projected[0].tokens] == ["日本", "語"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("operation", ["import", "rebuild"])
+async def test_source_deletion_blocks_publication_after_generation(
+    operation: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.nlp.tokenization import generate
+
+    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled)
+    database = tmp_path / "deleted-while-generating.db"
+    async with api_client(database) as client:
+        source = (await client.post("/api/sources", json={"title": "棚"})).json()["id"]
+        imported = await client.post(
+            f"/api/sources/{source}/materials",
+            content=b"book",
+            headers={"content-type": "application/epub+zip"},
+        )
+        material = imported.json()["material"]
+        started, release = asyncio.Event(), asyncio.Event()
+
+        async def delayed(resources: Sequence[TextResource]) -> GeneratedReadings:
+            started.set()
+            await release.wait()
+            return generate(resources)
+
+        monkeypatch.setattr("app.services.readings.build", delayed)
+        request = (
+            client.post(
+                f"/api/sources/{source}/materials",
+                content=b"new-book",
+                headers={"content-type": "application/epub+zip"},
+            )
+            if operation == "import"
+            else client.post(
+                f"/api/materials/{material['id']}/readings/prepare",
+                json={"version_id": material["version_id"], "force": True},
+            )
+        )
+        pending = asyncio.create_task(request)
+        await asyncio.wait_for(started.wait(), timeout=5)
+        try:
+            deleted = await client.request(
+                "DELETE", f"/api/sources/{source}", json={"confirmation_title": "棚"}
+            )
+            assert deleted.status_code == 204
+        finally:
+            release.set()
+        assert (await pending).status_code == 404
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("SELECT count(*) FROM materials").fetchone() == (1,)
+        assert connection.execute(
+            "SELECT count(*) FROM material_readings_generations"
+        ).fetchone() == (1,)

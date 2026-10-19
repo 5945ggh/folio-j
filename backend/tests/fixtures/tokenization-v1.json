@@ -1,0 +1,23 @@
+{
+  "input_resources": [
+    {
+      "resource_id": "main",
+      "text": "𠮷野家㍿飲みます。\n",
+      "text_sha256": "f1e7365ce0b54af7c98dc062147ff0e6a1d6d2dee9ae5a6c4a1969658bd6f11c"
+    },
+    {
+      "resource_id": "empty",
+      "text": "",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "resource_id": "main",
+      "text": "𠮷野家㍿飲みます。\n",
+      "text_sha256": "f1e7365ce0b54af7c98dc062147ff0e6a1d6d2dee9ae5a6c4a1969658bd6f11c"
+    }
+  ],
+  "configuration": "{\"analyzer\": \"SudachiPy\", \"analyzer_version\": \"0.6.11\", \"dictionary\": \"core\", \"dictionary_version\": \"20260723\", \"format\": \"resource-readings-v1\", \"max_chunk_bytes\": 12000, \"mode\": \"A\", \"split\": \"sentence-utf8-v1\"}",
+  "payload": "{\"configuration\":\"{\\\"analyzer\\\": \\\"SudachiPy\\\", \\\"analyzer_version\\\": \\\"0.6.11\\\", \\\"dictionary\\\": \\\"core\\\", \\\"dictionary_version\\\": \\\"20260723\\\", \\\"format\\\": \\\"resource-readings-v1\\\", \\\"max_chunk_bytes\\\": 12000, \\\"mode\\\": \\\"A\\\", \\\"split\\\": \\\"sentence-utf8-v1\\\"}\",\"resources\":[{\"resource_id\":\"main\",\"text_sha256\":\"f1e7365ce0b54af7c98dc062147ff0e6a1d6d2dee9ae5a6c4a1969658bd6f11c\",\"tokens\":[{\"dictionary_form\":\"𠮷\",\"end\":1,\"is_oov\":true,\"normalized_form\":\"𠮷\",\"pos\":[\"補助記号\",\"一般\",\"*\",\"*\",\"*\",\"*\"],\"reading\":\"𠮷\",\"start\":0,\"surface\":\"𠮷\"},{\"dictionary_form\":\"野家\",\"end\":3,\"is_oov\":false,\"normalized_form\":\"野家\",\"pos\":[\"名詞\",\"固有名詞\",\"人名\",\"姓\",\"*\",\"*\"],\"reading\":\"ノエ\",\"start\":1,\"surface\":\"野家\"},{\"dictionary_form\":\"株式\",\"end\":4,\"is_oov\":false,\"normalized_form\":\"株式\",\"pos\":[\"名詞\",\"普通名詞\",\"一般\",\"*\",\"*\",\"*\"],\"reading\":\"カブシキ\",\"start\":3,\"surface\":\"㍿\"},{\"dictionary_form\":\"会社\",\"end\":4,\"is_oov\":false,\"normalized_form\":\"会社\",\"pos\":[\"名詞\",\"普通名詞\",\"一般\",\"*\",\"*\",\"*\"],\"reading\":\"ガイシャ\",\"start\":4,\"surface\":\"\"},{\"dictionary_form\":\"飲む\",\"end\":6,\"is_oov\":false,\"normalized_form\":\"飲む\",\"pos\":[\"動詞\",\"一般\",\"*\",\"*\",\"五段-マ行\",\"連用形-一般\"],\"reading\":\"ノミ\",\"start\":4,\"surface\":\"飲み\"},{\"dictionary_form\":\"ます\",\"end\":8,\"is_oov\":false,\"normalized_form\":\"ます\",\"pos\":[\"助動詞\",\"*\",\"*\",\"*\",\"助動詞-マス\",\"終止形-一般\"],\"reading\":\"マス\",\"start\":6,\"surface\":\"ます\"},{\"dictionary_form\":\"。\",\"end\":9,\"is_oov\":false,\"normalized_form\":\"。\",\"pos\":[\"補助記号\",\"句点\",\"*\",\"*\",\"*\",\"*\"],\"reading\":\"。\",\"start\":8,\"surface\":\"。\"},{\"dictionary_form\":\"\\n\",\"end\":10,\"is_oov\":true,\"normalized_form\":\"\\n\",\"pos\":[\"空白\",\"*\",\"*\",\"*\",\"*\",\"*\"],\"reading\":\"\\n\",\"start\":9,\"surface\":\"\\n\"}]},{\"resource_id\":\"empty\",\"text_sha256\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"tokens\":[]},{\"resource_id\":\"main\",\"text_sha256\":\"f1e7365ce0b54af7c98dc062147ff0e6a1d6d2dee9ae5a6c4a1969658bd6f11c\",\"tokens\":[{\"dictionary_form\":\"𠮷\",\"end\":1,\"is_oov\":true,\"normalized_form\":\"𠮷\",\"pos\":[\"補助記号\",\"一般\",\"*\",\"*\",\"*\",\"*\"],\"reading\":\"𠮷\",\"start\":0,\"surface\":\"𠮷\"},{\"dictionary_form\":\"野家\",\"end\":3,\"is_oov\":false,\"normalized_form\":\"野家\",\"pos\":[\"名詞\",\"固有名詞\",\"人名\",\"姓\",\"*\",\"*\"],\"reading\":\"ノエ\",\"start\":1,\"surface\":\"野家\"},{\"dictionary_form\":\"株式\",\"end\":4,\"is_oov\":false,\"normalized_form\":\"株式\",\"pos\":[\"名詞\",\"普通名詞\",\"一般\",\"*\",\"*\",\"*\"],\"reading\":\"カブシキ\",\"start\":3,\"surface\":\"㍿\"},{\"dictionary_form\":\"会社\",\"end\":4,\"is_oov\":false,\"normalized_form\":\"会社\",\"pos\":[\"名詞\",\"普通名詞\",\"一般\",\"*\",\"*\",\"*\"],\"reading\":\"ガイシャ\",\"start\":4,\"surface\":\"\"},{\"dictionary_form\":\"飲む\",\"end\":6,\"is_oov\":false,\"normalized_form\":\"飲む\",\"pos\":[\"動詞\",\"一般\",\"*\",\"*\",\"五段-マ行\",\"連用形-一般\"],\"reading\":\"ノミ\",\"start\":4,\"surface\":\"飲み\"},{\"dictionary_form\":\"ます\",\"end\":8,\"is_oov\":false,\"normalized_form\":\"ます\",\"pos\":[\"助動詞\",\"*\",\"*\",\"*\",\"助動詞-マス\",\"終止形-一般\"],\"reading\":\"マス\",\"start\":6,\"surface\":\"ます\"},{\"dictionary_form\":\"。\",\"end\":9,\"is_oov\":false,\"normalized_form\":\"。\",\"pos\":[\"補助記号\",\"句点\",\"*\",\"*\",\"*\",\"*\"],\"reading\":\"。\",\"start\":8,\"surface\":\"。\"},{\"dictionary_form\":\"\\n\",\"end\":10,\"is_oov\":true,\"normalized_form\":\"\\n\",\"pos\":[\"空白\",\"*\",\"*\",\"*\",\"*\",\"*\"],\"reading\":\"\\n\",\"start\":9,\"surface\":\"\\n\"}]}]}",
+  "asset_sha256": "2b4e6b19385fa959536c265848e30f21ae6fec175a59c162a7b8e6d112dfb0ff",
+  "token_count": 16
+}

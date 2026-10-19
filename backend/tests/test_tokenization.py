@@ -5,8 +5,8 @@ import json
 import zlib
 
 import pytest
-from test_materials import compiled
 
+from app.nlp.contracts import TextResource
 from app.nlp.tokenization import chunks, generate
 
 
@@ -19,30 +19,21 @@ def test_sentence_chunks_reconstruct_and_bound_utf8(text: str) -> None:
 
 
 def test_real_a_tokens_preserve_surface_even_for_rewritten_compatibility_characters() -> None:
-    book = compiled(b"")
     text = "𠮷野家へ行った。ＡＢＣ ㍿ 飲みます。\n日本語"
-    resource = book.resources[0].model_copy(
-        update={
-            "text": text,
-            "text_sha256": hashlib.sha256(text.encode()).hexdigest(),
-        }
-    )
-    book = book.model_copy(update={"resources": [resource]})
-    result = generate(book)
+    resources = [TextResource("r1", text, hashlib.sha256(text.encode()).hexdigest())]
+    result = generate(resources)
     tokens = json.loads(zlib.decompress(result.payload))["resources"][0]["tokens"]
     assert "".join(t["surface"] for t in tokens) == text
     assert all(text[t["start"] : t["end"]] == t["surface"] for t in tokens)
     assert all(len(t["pos"]) == 6 for t in tokens)
     assert any(t["normalized_form"] != t["surface"] for t in tokens)
     assert any(t["start"] == t["end"] for t in tokens)  # ㍿ expands inside Sudachi.
-    assert generate(book).asset_sha256 == result.asset_sha256
+    assert generate(resources).asset_sha256 == result.asset_sha256
 
 
 def test_corrupt_resource_digest_is_rejected() -> None:
-    book = compiled(b"")
-    resource = book.resources[0].model_copy(update={"text_sha256": "broken"})
     with pytest.raises(ValueError, match="摘要"):
-        generate(book.model_copy(update={"resources": [resource]}))
+        generate([TextResource("r1", "日本語", "broken")])
 
 
 def test_only_length_failures_are_retried() -> None:
