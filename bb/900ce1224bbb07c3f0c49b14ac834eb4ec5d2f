@@ -1,0 +1,55 @@
+backend/src/app/readings_schemas.py
+  s_aba4122fab4b53::t_2a42ffdfd36738 3,5-6
+backend/tests/test_tokenization_baseline.py
+  s_aba4122fab4b53::t_a0737e1979ca37 7-8,16-17,22
+  s_aba4122fab4b53::t_2948ff3d769679 1-6,9-15,18-21,23-27
+backend/src/app/nlp/tokenization.py
+  s_aba4122fab4b53::t_2a42ffdfd36738 7,14,110,130,139
+docs/ARCHITECTURE.md
+  s_aba4122fab4b53::t_cdc3de18184a04 156,176
+  s_aba4122fab4b53::t_d99dbb2e35460c 177
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_aba4122fab4b53::t_cdc3de18184a04 76
+backend/tests/test_material_readings.py
+  s_aba4122fab4b53::t_a0737e1979ca37 14,135,137,175,198
+  s_aba4122fab4b53::t_2948ff3d769679 183-197,199-205
+  s_aba4122fab4b53::t_704db30692593c 5,12,206-259
+backend/src/app/services/epub_readings.py
+  s_aba4122fab4b53::t_2a42ffdfd36738 1-40
+backend/src/app/services/materials.py
+  s_aba4122fab4b53::t_2a42ffdfd36738 31,166
+docs/handovers/README.md
+  s_aba4122fab4b53::t_cdc3de18184a04 9
+backend/tests/test_tokenization.py
+  s_aba4122fab4b53::t_a0737e1979ca37 9,23-24,31,36
+backend/src/app/nlp/contracts.py
+  s_aba4122fab4b53::t_2a42ffdfd36738 1-34
+backend/tests/fixtures/tokenization-v1.json
+  s_aba4122fab4b53::t_1ed560fcdb3758 1-23
+backend/src/app/nlp/assets.py
+  s_aba4122fab4b53::t_a0737e1979ca37 1-62
+docs/handovers/text-study/B1_ACCEPTANCE.md
+  s_aba4122fab4b53::t_cdc3de18184a04 1-21
+backend/tests/test_readings_assets.py
+  s_aba4122fab4b53::t_6710f05f1be02d 1-142,145-147
+  s_aba4122fab4b53::t_704db30692593c 148-157
+  s_aba4122fab4b53::t_5c2e08a45985d9 143-144
+backend/src/app/services/readings.py
+  s_aba4122fab4b53::t_2a42ffdfd36738 4,12,19-20,48,50,109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bb900ce1224bbb07c3f0c49b14ac834eb4ec5d2f",
+  "prompts": {},
+  "sessions": {
+    "s_aba4122fab4b53": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a154f6-8117-7053-b605-484b57ea3fe0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
