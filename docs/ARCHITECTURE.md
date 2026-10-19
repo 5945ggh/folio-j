@@ -173,7 +173,7 @@ TanStack Query key 包含材料／版本／查询／分页，输入法组合期�
 
 ### 3.1.4 文本分析与统计契约
 
-B1 已建立 `nlp/contracts.py` 的词法契约、`nlp/assets.py` 的完整资产解码与 `services/epub_readings.py` 的格式适配。解码预算按输入正文规模集中计算，检查压缩流完整性、资源顺序／身份／摘要、原文范围和六项词性，保留合法零跨度。旧阅读 DTO 以原类名重导出，API wire format 未变；完整资产解码无需 chapter。下述统计规则按 B2 接入。
+B1 已建立 `nlp/contracts.py` 的词法契约、`nlp/assets.py` 的完整资产解码与 `services/epub_readings.py` 的格式适配。解码预算按输入正文规模集中计算，检查压缩流完整性、资源顺序／身份／摘要、原文范围和六项词性，保留合法零跨度。旧阅读 DTO 以原类名重导出，API wire format 未变；完整资产解码无需 chapter。B2 的纯计算位于 `nlp/statistics.py`，资源读取位于 `services/statistics.py`，API 包装在 `statistics_schemas.py`。
 
 2026-10-20 在 S0 确认，按 B1／B2 实施；交付状态见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。词法分析接收有序文本资源，每项仅含 `resource_id`、NFC `text` 与 `text_sha256`，不依赖 EPUB 呈现类型。EPUB adapter 负责转换；原始资源顺序与重复 spine 条目、token 字段、配置和资产摘要语义保持兼容。内部词法契约与阅读 API DTO 分开，完整资产解码独立于 chapter；章节投影留在 EPUB 适配。现有构建／发布与代次门禁继续生效。
 
@@ -184,6 +184,10 @@ B1 已建立 `nlp/contracts.py` 的词法契约、`nlp/assets.py` 的完整资�
 GET `/api/materials/{material_id}/statistics` 接受明确的 version_id 和可选 generation_id。返回正文统计、可空词法统计、范围／规则版本和确切代次；无当前代次时正文统计可用，不隐式准备分词。显式代次必须属于材料与版本，缺失为 404；材料版本冲突为 409。正文缓存依赖版本、正文摘要、范围和字符规则；词法缓存另依赖代次及词法规则。标题、封面、usage、阅读位置不参与键。
 
 统计按需在线程中计算，解压／扫描不阻塞事件循环、不占写事务或聊天 Job 名额。缓存和并发均有集中上限，相同键合并计算，重启可重建；不新增数据库表。缓存读取和耗时计算返回前检查 Source／Material 可见性，响应始终保留实际输入身份，代次切换不得混合两批结果。统计错误或等待不阻断详情与阅读，GET 不写 Run、usage 或位置。前端经独立 TanStack Query 读取汇总，用现有 SVG 展示，不下载全书 token。
+
+`StatisticsRuntime` 由每次应用 lifespan 创建，保存冻结结果的 JSON bytes，LRU 默认上限 128 条／8 MiB，计算并发 2、在途含等待任务最多 16；超大单结果返回但不缓存，失败不缓存。请求取消不取消同键共享计算；关闭时排空实际线程再释放数据库。每次读取及完成后使用新短会话核验可见性，缓存不能绕过 Source 删除。缺省代次在请求开始固定，途中切换仍返回原代次身份，下次读取采用新指针。
+
+前端 `catalog/BookStatistics.tsx` 在详情信息后独立加载；查询键包含材料、版本和可选代次，与目录／元信息查询分离。重新进入或显式刷新读取当前结果，普通信息编辑不重新请求统计。加载、失败、无代次与零词次分别显示，错误不继续展示缓存中的旧正文；说明区呈现实际分词配置和规则版本。纯逻辑测试、缓存竞争和浏览器证据见[B2 验收](handovers/text-study/B2_ACCEPTANCE.md)。
 
 ### 3.2 关系
 
@@ -384,6 +388,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 ```text
 /sources/{source_id}/materials
 /materials, /materials/{material_id}
+/materials/{material_id}/statistics
 /materials/{material_id}/chapters/{chapter_id}
 /materials/{material_id}/reading-position
 /materials/{material_id}/search, /materials/{material_id}/illustrations

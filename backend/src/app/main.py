@@ -22,6 +22,7 @@ from app.db import create_engine
 from app.jobs.runtime import recover_chat_jobs, start_chat_worker
 from app.services.chat import ChatError
 from app.services.settings import interrupt_unfinished
+from app.services.statistics_runtime import StatisticsRuntime
 
 
 def create_app(frontend_dir: Path | None = None, database_path: Path | None = None) -> FastAPI:
@@ -40,6 +41,8 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
             raise RuntimeError(f"数据库已有后台执行进程：{path}") from exc
         engine = create_engine(path)
         application.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
+        statistics_runtime = StatisticsRuntime()
+        application.state.statistics_runtime = statistics_runtime
         application.state.database_path = path
         application.state.verification_semaphore = asyncio.Semaphore(2)
         application.state.chat_dispatch_lock = asyncio.Lock()
@@ -67,9 +70,12 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
                 task.cancel()
             if application.state.verification_tasks:
                 await asyncio.gather(*application.state.verification_tasks, return_exceptions=True)
-            await engine.dispose()
-            fcntl.flock(lock_fd, fcntl.LOCK_UN)
-            os.close(lock_fd)
+            try:
+                await statistics_runtime.close()
+            finally:
+                await engine.dispose()
+                fcntl.flock(lock_fd, fcntl.LOCK_UN)
+                os.close(lock_fd)
 
     application = FastAPI(
         title="Folio-J API",

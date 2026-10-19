@@ -403,6 +403,55 @@
         "title": "ChapterSummary",
         "type": "object"
       },
+      "CoveragePoint": {
+        "properties": {
+          "coverage": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Coverage",
+            "type": "number"
+          },
+          "vocabulary_size": {
+            "minimum": 0.0,
+            "title": "Vocabulary Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "vocabulary_size",
+          "coverage"
+        ],
+        "title": "CoveragePoint",
+        "type": "object"
+      },
+      "CoverageThreshold": {
+        "properties": {
+          "target": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Target",
+            "type": "number"
+          },
+          "vocabulary_size": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vocabulary Size"
+          }
+        },
+        "required": [
+          "target",
+          "vocabulary_size"
+        ],
+        "title": "CoverageThreshold",
+        "type": "object"
+      },
       "DefaultsInput": {
         "additionalProperties": false,
         "properties": {
@@ -919,6 +968,67 @@
           "stop_requested_at"
         ],
         "title": "JobResponse",
+        "type": "object"
+      },
+      "LexicalStatistics": {
+        "properties": {
+          "counted_token_count": {
+            "minimum": 0.0,
+            "title": "Counted Token Count",
+            "type": "integer"
+          },
+          "coverage": {
+            "items": {
+              "$ref": "#/components/schemas/CoveragePoint"
+            },
+            "title": "Coverage",
+            "type": "array"
+          },
+          "distinct_word_count": {
+            "minimum": 0.0,
+            "title": "Distinct Word Count",
+            "type": "integer"
+          },
+          "rule_version": {
+            "default": "lexical-statistics-v1",
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "singleton_word_count": {
+            "minimum": 0.0,
+            "title": "Singleton Word Count",
+            "type": "integer"
+          },
+          "singleton_word_ratio": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Singleton Word Ratio"
+          },
+          "thresholds": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageThreshold"
+            },
+            "title": "Thresholds",
+            "type": "array"
+          }
+        },
+        "required": [
+          "counted_token_count",
+          "distinct_word_count",
+          "singleton_word_count",
+          "singleton_word_ratio",
+          "coverage",
+          "thresholds"
+        ],
+        "title": "LexicalStatistics",
         "type": "object"
       },
       "MaterialCatalogItem": {
@@ -1776,6 +1886,69 @@
           "items"
         ],
         "title": "MaterialSearchResponse",
+        "type": "object"
+      },
+      "MaterialStatisticsResponse": {
+        "properties": {
+          "analysis_configuration": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Configuration"
+          },
+          "generation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Id"
+          },
+          "lexical": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LexicalStatistics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "scope": {
+            "const": "unique_resources",
+            "default": "unique_resources",
+            "title": "Scope",
+            "type": "string"
+          },
+          "text": {
+            "$ref": "#/components/schemas/TextStatistics"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "version_id",
+          "generation_id",
+          "text",
+          "lexical",
+          "analysis_configuration"
+        ],
+        "title": "MaterialStatisticsResponse",
         "type": "object"
       },
       "MaterialSummary": {
@@ -3788,6 +3961,48 @@
         "title": "StyleResponse",
         "type": "object"
       },
+      "TextStatistics": {
+        "properties": {
+          "character_count": {
+            "minimum": 0.0,
+            "title": "Character Count",
+            "type": "integer"
+          },
+          "resource_count": {
+            "minimum": 0.0,
+            "title": "Resource Count",
+            "type": "integer"
+          },
+          "rule_version": {
+            "default": "text-statistics-v1",
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "singleton_kanji_count": {
+            "minimum": 0.0,
+            "title": "Singleton Kanji Count",
+            "type": "integer"
+          },
+          "unicode_version": {
+            "title": "Unicode Version",
+            "type": "string"
+          },
+          "unique_kanji_count": {
+            "minimum": 0.0,
+            "title": "Unique Kanji Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "unicode_version",
+          "resource_count",
+          "character_count",
+          "unique_kanji_count",
+          "singleton_kanji_count"
+        ],
+        "title": "TextStatistics",
+        "type": "object"
+      },
       "ThreadCreate": {
         "additionalProperties": false,
         "properties": {
@@ -5284,6 +5499,70 @@
           }
         },
         "summary": "Search Material"
+      }
+    },
+    "/api/materials/{material_id}/statistics": {
+      "get": {
+        "operationId": "getMaterialStatistics",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "generation_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Generation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialStatisticsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Statistics"
       }
     },
     "/api/materials/{material_id}/usage": {

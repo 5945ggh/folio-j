@@ -16,6 +16,7 @@
 - `just test`：后端 315 项、前端 206 项通过。
 - `just lint`：Ruff、Pyright、Biome、TypeScript 及原型语法检查通过。
 - `just gen-api`：OpenAPI 和生成客户端无差异。
+- 最终目标复核 33 项通过，包含导入／强制重建计算期间删除 Source 的提交拒绝；后续 B2 全量验收再次覆盖 B1 最终代码。
 - `just build`、`just check-docs`、`git diff --check` 通过。构建仍有既有单 bundle 超过 500 kB 的体积提示，不阻止构建。
 
 没有 UI 改动，本切片未做浏览器操作。现有重复 spine 的章节响应会返回重复资源条目，新增回归明确保留该语义；B2 统计按资源身份独立去重，不借 B1 改显示行为。没有新增依赖、数据库变更或 TBD。

@@ -6,6 +6,7 @@ import { dateLabel, InlineError, Shell } from "../Shared";
 import { bookDetailsKey, getBookDetails } from "./api";
 import { BookCoverPlaceholder } from "./BookCoverPlaceholder";
 import { BookEditDialog } from "./BookEditDialog";
+import { BookStatistics } from "./BookStatistics";
 import { statusLabels } from "./Controls";
 import "./book-management.css";
 
@@ -139,6 +140,9 @@ function BookDetails({ id }: { id: string }) {
 						</dl>
 					</section>
 				)
+			)}
+			{details.isSuccess && book && (
+				<BookStatistics materialId={book.id} versionId={book.version_id} />
 			)}
 			{editing && <BookEditDialog id={id} close={() => setEditing(false)} />}
 		</Shell>

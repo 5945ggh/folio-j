@@ -1,6 +1,7 @@
 import { api } from "../api/client";
 import type { components, paths } from "../api/schema";
 import { requireData } from "../content";
+import { matchesStatistics } from "./statistics";
 export type Book = components["schemas"]["MaterialCatalogItem"];
 export type Usage = components["schemas"]["MaterialUsageResponse"];
 export type BookQuery = NonNullable<
@@ -73,6 +74,29 @@ export async function updateUsage(
 }
 
 export type BookDetails = components["schemas"]["MaterialDetailsResponse"];
+export type BookStatisticsData =
+	components["schemas"]["MaterialStatisticsResponse"];
+export async function getBookStatistics(
+	id: string,
+	versionId: string,
+	generationId?: string,
+	signal?: AbortSignal,
+): Promise<BookStatisticsData> {
+	const { data, error, response } = await api.GET(
+		"/api/materials/{material_id}/statistics",
+		{
+			params: {
+				path: { material_id: id },
+				query: { version_id: versionId, generation_id: generationId },
+			},
+			signal,
+		},
+	);
+	const result = requireData(data, error, response.status);
+	if (!matchesStatistics(result, id, versionId, generationId))
+		throw new Error("统计结果与当前书籍版本不一致，请重新加载。");
+	return result;
+}
 export type BookMetadataUpdate =
 	components["schemas"]["MaterialMetadataUpdate"];
 export const bookDetailsKey = (id: string) => ["book-details", id] as const;

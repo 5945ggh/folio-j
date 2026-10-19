@@ -22,8 +22,9 @@ from app.readings_schemas import (
     MaterialReadingsResponse,
     MaterialReadingsSummary,
 )
-from app.services import material_metadata, reader_queries, readings
+from app.services import material_metadata, reader_queries, readings, statistics
 from app.services import materials as service
+from app.statistics_schemas import MaterialStatisticsResponse
 
 router = APIRouter(prefix="/api")
 Session = Annotated[AsyncSession, Depends(get_session)]
@@ -67,6 +68,26 @@ async def get_material(material_id: str, session: Session) -> MaterialResponse:
 )
 async def get_details(material_id: str, session: Session) -> MaterialDetailsResponse:
     return await material_metadata.get_details(session, material_id)
+
+
+@router.get(
+    "/materials/{material_id}/statistics",
+    response_model=MaterialStatisticsResponse,
+    operation_id="getMaterialStatistics",
+)
+async def get_statistics(
+    material_id: str,
+    version_id: str,
+    request: Request,
+    generation_id: str | None = None,
+) -> MaterialStatisticsResponse:
+    return await statistics.get_statistics(
+        request.app.state.session_factory,
+        request.app.state.statistics_runtime,
+        material_id,
+        version_id,
+        generation_id,
+    )
 
 
 @router.patch(

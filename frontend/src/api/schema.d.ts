@@ -345,6 +345,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/statistics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Statistics */
+        get: operations["getMaterialStatistics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/materials/{material_id}/usage": {
         parameters: {
             query?: never;
@@ -1028,6 +1045,20 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** CoveragePoint */
+        CoveragePoint: {
+            /** Coverage */
+            coverage: number;
+            /** Vocabulary Size */
+            vocabulary_size: number;
+        };
+        /** CoverageThreshold */
+        CoverageThreshold: {
+            /** Target */
+            target: number;
+            /** Vocabulary Size */
+            vocabulary_size: number | null;
+        };
         /** DefaultsInput */
         DefaultsInput: {
             /** Analysis Model Id */
@@ -1193,6 +1224,26 @@ export interface components {
             user_message_id: string;
             /** Version */
             version: number;
+        };
+        /** LexicalStatistics */
+        LexicalStatistics: {
+            /** Counted Token Count */
+            counted_token_count: number;
+            /** Coverage */
+            coverage: components["schemas"]["CoveragePoint"][];
+            /** Distinct Word Count */
+            distinct_word_count: number;
+            /**
+             * Rule Version
+             * @default lexical-statistics-v1
+             */
+            rule_version: string;
+            /** Singleton Word Count */
+            singleton_word_count: number;
+            /** Singleton Word Ratio */
+            singleton_word_ratio: number | null;
+            /** Thresholds */
+            thresholds: components["schemas"]["CoverageThreshold"][];
         };
         /** MaterialCatalogItem */
         MaterialCatalogItem: {
@@ -1515,6 +1566,25 @@ export interface components {
             query: string;
             /** Total */
             total: number;
+            /** Version Id */
+            version_id: string;
+        };
+        /** MaterialStatisticsResponse */
+        MaterialStatisticsResponse: {
+            /** Analysis Configuration */
+            analysis_configuration: string | null;
+            /** Generation Id */
+            generation_id: string | null;
+            lexical: components["schemas"]["LexicalStatistics"] | null;
+            /** Material Id */
+            material_id: string;
+            /**
+             * Scope
+             * @default unique_resources
+             * @constant
+             */
+            scope: "unique_resources";
+            text: components["schemas"]["TextStatistics"];
             /** Version Id */
             version_id: string;
         };
@@ -2288,6 +2358,24 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** TextStatistics */
+        TextStatistics: {
+            /** Character Count */
+            character_count: number;
+            /** Resource Count */
+            resource_count: number;
+            /**
+             * Rule Version
+             * @default text-statistics-v1
+             */
+            rule_version: string;
+            /** Singleton Kanji Count */
+            singleton_kanji_count: number;
+            /** Unicode Version */
+            unicode_version: string;
+            /** Unique Kanji Count */
+            unique_kanji_count: number;
         };
         /** ThreadCreate */
         ThreadCreate: {
@@ -3093,6 +3181,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MaterialSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialStatistics: {
+        parameters: {
+            query: {
+                version_id: string;
+                generation_id?: string | null;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialStatisticsResponse"];
                 };
             };
             /** @description Validation Error */
