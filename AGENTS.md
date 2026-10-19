@@ -4,9 +4,9 @@
 
 ## 项目是什么
 
-一个 Agent 原生的日语学习辅助系统，面向原版阅读与片段学习。当前交付状态、实现缺口与验收依据集中见 [MVP 实施基线](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)。
+一个围绕日语原版内容的个人学习辅助系统，支持阅读、独立学习资料与按需讨论。当前交付状态、实现缺口与验收依据集中见 [MVP 实施基线](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
-用户围绕 Source 下的 Segment 阅读与讨论，按需留下可独立阅读的讲解和 Occurrence；工作台是活动界面，不拥有学习内容。不要求先有完整解析才能讨论，也不强制所有内容经过独立 AI 提取阶段。讨论成果先整理为持久讲解，Occurrence 再关联原文与具体讲解版本。具体首轮入口、共享资料读取与成果写入契约以 PRD 中已确认和待定的边界为准，不按旧的线 A／线 B 流水线直接实现。
+用户围绕 Source 下的 Material 阅读原文，围绕 Segment 保存和回看独立讲解，并按需要讨论；人工资料保存与 AI 生成共用内容保护规则，工作台不拥有学习内容。人工入口与材料出处按[文本与资料计划](docs/handovers/text-study/PLAN.md)实施，当前是否可用以实施基线为准。不要求先有完整解析才能讨论，也不强制经过独立 AI 提取阶段。后续 Occurrence 关联原文与具体讲解版本；具体入口、读取权限与成果写入以 PRD 为准。
 
 文档入口见 [`docs/README.md`](docs/README.md)。开发任务先读以下长期规范，并按当前阶段查阅 [`docs/handovers/README.md`](docs/handovers/README.md)：
 
