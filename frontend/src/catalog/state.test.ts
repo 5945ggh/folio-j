@@ -143,3 +143,59 @@ test("显式清空来源栏条件优先于旧总表条件", () => {
 		"",
 	);
 });
+
+test("详情往返阅读保留原目录条件且只携带一个经过校验的父来处", () => {
+	for (const to of [
+		"/materials?type=book&q=%E9%9B%A8&sort=title&page=2",
+		"/sources/s?view=overview&sq=x",
+		"/sources/s?view=materials&expanded=book&q=x&page=2",
+	]) {
+		const back = returnDestination({
+			returnTo: {
+				to: "/materials/book-1/details",
+				label: "书籍详情",
+				parent: { to, label: "目录", arbitrary: "discard" },
+			},
+		});
+		assert.deepEqual(back, {
+			to: "/materials/book-1/details",
+			label: "书籍详情",
+			state: { returnTo: { to, label: "目录" } },
+		});
+		assert.deepEqual(returnDestination(back.state), { to, label: "目录" });
+	}
+});
+
+test("详情来处拒绝未知子路由、外站父来处与递归状态", () => {
+	const fallback = { to: "/materials", label: "素材库" };
+	for (const to of [
+		"/materials/x/details/unknown",
+		"/materials/x/metadata",
+		"/materials/x/details/../../api",
+		"/materials/%2e%2e/details",
+	])
+		assert.deepEqual(
+			returnDestination({ returnTo: { to, label: "详情" } }, fallback),
+			fallback,
+		);
+	for (const to of ["//evil.test", "https://evil.test", "/api/settings"])
+		assert.deepEqual(
+			returnDestination({
+				returnTo: {
+					to: "/materials/b/details",
+					label: "详情",
+					parent: { to, label: "来处" },
+				},
+			}).state,
+			{ returnTo: fallback },
+		);
+	const recursive: { to: string; label: string; parent?: unknown } = {
+		to: "/materials/b/details",
+		label: "详情",
+	};
+	recursive.parent = recursive;
+	assert.deepEqual(returnDestination({ returnTo: recursive }), {
+		to: recursive.to,
+		label: recursive.label,
+	});
+});

@@ -71,3 +71,22 @@ export async function updateUsage(
 	);
 	return requireData(data, error, response.status);
 }
+
+export type BookDetails = components["schemas"]["MaterialDetailsResponse"];
+export type BookMetadataUpdate =
+	components["schemas"]["MaterialMetadataUpdate"];
+export const bookDetailsKey = (id: string) => ["book-details", id] as const;
+export async function getBookDetails(id: string) {
+	const { data, error, response } = await api.GET(
+		"/api/materials/{material_id}/details",
+		{ params: { path: { material_id: id } } },
+	);
+	return requireData(data, error, response.status);
+}
+export async function updateBookMetadata(id: string, body: BookMetadataUpdate) {
+	const { data, error, response } = await api.PATCH(
+		"/api/materials/{material_id}/metadata",
+		{ params: { path: { material_id: id } }, body },
+	);
+	return requireData(data, error, response.status);
+}

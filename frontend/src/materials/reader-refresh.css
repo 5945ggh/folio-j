@@ -1,4 +1,4 @@
-/* Segment and settings styles retained after Reader moved to its own shell. */
+/* Segment workspace retained after Reader moved to its own shell. */
 .shell-full-width .page-content:has(.segment-shell) {
 	padding: 0;
 	max-width: none;
@@ -32,13 +32,6 @@
 }
 .app-shell .segment-conversation {
 	background: #f8f7f3;
-}
-.settings-page-heading {
-	border-bottom: 1px solid var(--line, #e5e3dd);
-	padding-bottom: 18px;
-}
-.settings-page-heading h1 {
-	font-size: 24px;
 }
 @media (max-width: 720px) {
 	.app-shell .segment-shell {

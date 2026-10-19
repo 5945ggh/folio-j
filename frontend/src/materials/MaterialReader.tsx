@@ -1487,6 +1487,7 @@ function Reader({
 			>
 				<Link
 					to={returnTo.to}
+					state={returnTo.state}
 					onClick={leave}
 					aria-label={`返回${returnTo.label}`}
 				>
@@ -1939,7 +1940,9 @@ function MaterialOpening({ id }: { id: string }) {
 				matchMedia("(prefers-color-scheme: dark)").matches,
 			)}
 		>
-			<Link to={back.to}>← {back.label}</Link>
+			<Link to={back.to} state={back.state}>
+				← {back.label}
+			</Link>
 			<div className="reader-loading">
 				{book.isError || preparation.isError ? (
 					<>

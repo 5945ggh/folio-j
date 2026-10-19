@@ -1,4 +1,5 @@
 import { Link, Navigate, Route, Routes, useParams } from "react-router";
+import { BookDetailsPage } from "./catalog/BookDetailsPage";
 import { MaterialsPage } from "./catalog/MaterialsPage";
 import { MaterialReader } from "./materials/MaterialReader";
 import { SegmentDetail } from "./SegmentPage";
@@ -26,6 +27,7 @@ export function App() {
 			<Route path="/materials" element={<MaterialsPage />} />
 			<Route path="/sources" element={<SourceIndex />} />
 			<Route path="/sources/:id" element={<SourceRoute />} />
+			<Route path="/materials/:id/details" element={<BookDetailsPage />} />
 			<Route path="/materials/:id" element={<MaterialReader />} />
 			<Route path="/segments/:id" element={<SegmentRoute />} />
 			<Route path="/settings" element={<SettingsPage />} />

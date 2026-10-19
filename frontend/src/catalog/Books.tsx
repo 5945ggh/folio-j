@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type CSSProperties, useEffect, useId, useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
+import {
+	type CSSProperties,
+	useCallback,
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
+import { Link, useLocation, useNavigate } from "react-router";
 import { RequestError } from "../content";
 import { InlineError } from "../Shared";
 import {
@@ -11,6 +19,13 @@ import {
 	updateUsage,
 } from "./api";
 import { BookCoverPlaceholder } from "./BookCoverPlaceholder";
+import { BookEditDialog } from "./BookEditDialog";
+import {
+	type BookMenuPage,
+	bookMenuPageForKey,
+	nextBookMenuIndex,
+} from "./book-menu";
+import "./book-menu.css";
 import { CatalogToolbar, Pagination, statusLabels } from "./Controls";
 import {
 	readPreference,
@@ -24,11 +39,15 @@ import { lastCatalogPage } from "./state";
 export function BookCard({
 	book,
 	returnLabel,
+	onEdit,
 }: {
 	book: Book;
 	returnLabel: string;
+	onEdit: (id: string) => void;
 }) {
 	const location = useLocation();
+	const navigate = useNavigate();
+	const trigger = useRef<HTMLButtonElement>(null);
 	const client = useQueryClient();
 	const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null);
 	const failedCover = Boolean(
@@ -37,6 +56,37 @@ export function BookCard({
 	const [coverAttempt, setCoverAttempt] = useState(0);
 	const menuId = useId();
 	const menu = useRef<HTMLDivElement>(null);
+	const [menuOpen, setMenuOpen] = useState(false);
+	const [menuPage, setMenuPage] = useState<BookMenuPage>("main");
+	const returnToStatus = useRef(false);
+	const positionMenu = useCallback(() => {
+		const element = menu.current;
+		const box = trigger.current?.getBoundingClientRect();
+		if (!element || !box) return;
+		const bounds = element.getBoundingClientRect();
+		element.style.top = `${Math.max(12, Math.min(box.bottom + 6, window.innerHeight - bounds.height - 12))}px`;
+		element.style.right = `${Math.max(12, Math.min(window.innerWidth - bounds.width - 12, window.innerWidth - box.right))}px`;
+	}, []);
+	useLayoutEffect(() => {
+		if (!menuOpen) return;
+		positionMenu();
+		const element = menu.current;
+		const selector =
+			menuPage === "status"
+				? '[aria-checked="true"]:not(:disabled)'
+				: returnToStatus.current
+					? "[data-status-trigger]"
+					: "button:not(:disabled)";
+		(
+			element?.querySelector<HTMLButtonElement>(selector) ??
+			element?.querySelector<HTMLButtonElement>("button:not(:disabled)")
+		)?.focus();
+	}, [menuOpen, menuPage, positionMenu]);
+	useEffect(() => {
+		if (!menuOpen) return;
+		window.addEventListener("resize", positionMenu);
+		return () => window.removeEventListener("resize", positionMenu);
+	}, [menuOpen, positionMenu]);
 
 	const usage = useMutation({
 		mutationFn: (status: Book["status"]) =>
@@ -85,18 +135,12 @@ export function BookCard({
 			<div className="book-actions">
 				<button
 					type="button"
+					ref={trigger}
 					className="library-icon book-menu-trigger"
 					aria-label={`「${book.title}」的更多操作`}
 					title="更多操作"
 					aria-haspopup="menu"
 					popoverTarget={menuId}
-					onClick={(event) => {
-						const box = event.currentTarget.getBoundingClientRect();
-						if (menu.current) {
-							menu.current.style.top = `${Math.min(box.bottom + 6, Math.max(16, window.innerHeight - 240))}px`;
-							menu.current.style.right = `${Math.max(16, window.innerWidth - box.right)}px`;
-						}
-					}}
 				>
 					<Icon name="more" />
 				</button>
@@ -106,74 +150,155 @@ export function BookCard({
 				id={menuId}
 				popover="auto"
 				onToggle={(event) => {
+					setMenuOpen(event.newState === "open");
 					if (event.newState === "open") {
-						const selected =
-							event.currentTarget.querySelector<HTMLButtonElement>(
-								"button[aria-checked=true]:not(:disabled)",
-							);
-						(
-							selected ??
-							event.currentTarget.querySelector<HTMLButtonElement>(
-								"button:not(:disabled)",
-							)
-						)?.focus();
+						returnToStatus.current = false;
+						setMenuPage("main");
 					}
 				}}
 				className="library-popover book-menu"
 				role="menu"
-				aria-label={`「${book.title}」阅读状态`}
+				aria-label={
+					menuPage === "status" ? "阅读状态" : `「${book.title}」的更多操作`
+				}
 				onKeyDown={(event) => {
+					const page = bookMenuPageForKey(
+						menuPage,
+						event.key,
+						document.activeElement?.hasAttribute("data-status-trigger") ??
+							false,
+					);
+					if (page !== menuPage) {
+						event.preventDefault();
+						event.stopPropagation();
+						returnToStatus.current = page === "main";
+						setMenuPage(page);
+						return;
+					}
+					if (event.key === "Escape" || event.key === "Tab") {
+						if (event.key === "Escape") event.preventDefault();
+						menu.current?.hidePopover();
+						trigger.current?.focus();
+						return;
+					}
 					const controls = Array.from(
 						event.currentTarget.querySelectorAll<HTMLButtonElement>("button"),
 					);
 					const current = controls.indexOf(
 						document.activeElement as HTMLButtonElement,
 					);
-					const next =
-						event.key === "ArrowDown"
-							? (current + 1) % controls.length
-							: event.key === "ArrowUp"
-								? (current - 1 + controls.length) % controls.length
-								: event.key === "Home"
-									? 0
-									: event.key === "End"
-										? controls.length - 1
-										: null;
+					const next = nextBookMenuIndex(
+						controls.map((control) => control.disabled),
+						current,
+						event.key,
+					);
 					if (next !== null) {
 						event.preventDefault();
 						controls[next]?.focus();
 					}
 				}}
 			>
-				<strong>阅读状态</strong>
-				{Object.entries(statusLabels).map(([value, label]) => (
-					<button
-						key={value}
-						type="button"
-						role="menuitemradio"
-						aria-checked={book.status === value}
-						disabled={usage.isPending}
-						onClick={() => {
-							usage.mutate(value as Book["status"]);
-							menu.current?.hidePopover();
-						}}
-					>
-						{label}
-						{book.status === value ? " ✓" : ""}
-					</button>
-				))}
-				{failedCover && (
-					<button
-						type="button"
-						role="menuitem"
-						onClick={() => {
-							setFailedCoverUrl(null);
-							setCoverAttempt((v) => v + 1);
-							menu.current?.hidePopover();
-						}}
-					>
-						重试封面
-					</button>
+				{menuPage === "main" ? (
+					<>
+						<button
+							type="button"
+							role="menuitem"
+							tabIndex={-1}
+							onClick={() => {
+								menu.current?.hidePopover();
+								navigate(`/materials/${book.id}/details`, {
+									state: { returnTo },
+								});
+							}}
+						>
+							书籍详情
+						</button>
+						<button
+							type="button"
+							role="menuitem"
+							tabIndex={-1}
+							onClick={() => {
+								menu.current?.hidePopover();
+								trigger.current?.focus();
+								onEdit(book.id);
+							}}
+						>
+							编辑书籍信息
+						</button>
+						<button type="button" role="menuitem" tabIndex={-1} disabled>
+							移动到其他来源… <small>暂未开放</small>
+						</button>
+						<button
+							type="button"
+							role="menuitem"
+							tabIndex={-1}
+							aria-haspopup="menu"
+							data-status-trigger
+							onClick={() => setMenuPage("status")}
+						>
+							阅读状态
+							<span className="book-menu-meta">
+								<small>{statusLabels[book.status]}</small>
+								<span className="book-menu-arrow" aria-hidden="true">
+									›
+								</span>
+							</span>
+						</button>
+						{failedCover && (
+							<button
+								type="button"
+								role="menuitem"
+								tabIndex={-1}
+								onClick={() => {
+									setFailedCoverUrl(null);
+									setCoverAttempt((v) => v + 1);
+									menu.current?.hidePopover();
+								}}
+							>
+								重试封面
+							</button>
+						)}
+						<hr />
+						<button type="button" role="menuitem" tabIndex={-1} disabled>
+							删除书籍… <small>暂未开放</small>
+						</button>
+					</>
+				) : (
+					<>
+						<button
+							type="button"
+							role="menuitem"
+							tabIndex={-1}
+							aria-label="返回更多操作"
+							onClick={() => {
+								returnToStatus.current = true;
+								setMenuPage("main");
+							}}
+						>
+							<span className="book-menu-arrow" aria-hidden="true">
+								‹
+							</span>
+							阅读状态
+						</button>
+						<hr />
+						{Object.entries(statusLabels).map(([value, label]) => (
+							<button
+								key={value}
+								type="button"
+								role="menuitemradio"
+								tabIndex={-1}
+								aria-checked={book.status === value}
+								disabled={usage.isPending}
+								onClick={() => {
+									usage.mutate(value as Book["status"]);
+									menu.current?.hidePopover();
+								}}
+							>
+								{label}
+								{book.status === value && <span aria-hidden="true">✓</span>}
+							</button>
+						))}
+					</>
 				)}
 			</div>
 			<InlineError error={usage.error} />
@@ -183,14 +308,21 @@ export function BookCard({
 export function BookGrid({
 	books,
 	returnLabel,
+	onEdit,
 }: {
 	books: readonly Book[];
 	returnLabel: string;
+	onEdit: (id: string) => void;
 }) {
 	return (
 		<div className="book-grid">
 			{books.map((book) => (
-				<BookCard key={book.id} book={book} returnLabel={returnLabel} />
+				<BookCard
+					key={book.id}
+					book={book}
+					returnLabel={returnLabel}
+					onEdit={onEdit}
+				/>
 			))}
 		</div>
 	);
@@ -206,6 +338,10 @@ export function BookCatalog({
 	internal?: boolean;
 	add?: () => void;
 }) {
+	const catalogId = useId();
+	const [editing, setEditing] = useState<string | null>(null);
+	const focusAfterEdit = useRef(false);
+	const client = useQueryClient();
 	const { state, change } = useCatalogState(
 		"books",
 		sourceId ? `source-books-${sourceId}` : "books",
@@ -224,6 +360,19 @@ export function BookCatalog({
 		queryKey: catalogKeys.books(query),
 		queryFn: () => catalogBooks(query),
 	});
+	useEffect(() => {
+		if (
+			editing !== null ||
+			!focusAfterEdit.current ||
+			books.isFetching ||
+			books.data !== client.getQueryData(catalogKeys.books(query))
+		)
+			return;
+		focusAfterEdit.current = false;
+		const active = document.activeElement;
+		if (!active || active === document.body || !active.isConnected)
+			document.getElementById(catalogId)?.focus();
+	});
 	const scroll = useCatalogScroll(
 		books.isSuccess,
 		sourceId ?? "books",
@@ -233,8 +382,9 @@ export function BookCatalog({
 		? lastCatalogPage(books.data.total, books.data.page_size)
 		: null;
 	useEffect(() => {
-		if (lastPage !== null && state.page > lastPage) change({ page: lastPage });
-	}, [lastPage, state.page, change]);
+		if (editing === null && lastPage !== null && state.page > lastPage)
+			change({ page: lastPage });
+	}, [editing, lastPage, state.page, change]);
 	const [size, setSize] = useState(() =>
 		cardWidth(readPreference("card-width")),
 	);
@@ -272,6 +422,8 @@ export function BookCatalog({
 				/>
 			)}
 			<div
+				id={catalogId}
+				tabIndex={-1}
 				style={
 					add ? ({ "--card-width": `${size}px` } as CSSProperties) : undefined
 				}
@@ -328,7 +480,8 @@ export function BookCatalog({
 				) : (
 					<BookGrid
 						books={books.data.items}
-						returnLabel={sourceId ? "Source 书籍窗口" : "素材库"}
+						returnLabel={sourceId ? "来源书籍窗口" : "素材库"}
+						onEdit={setEditing}
 					/>
 				)}
 				{books.data && (
@@ -340,6 +493,16 @@ export function BookCatalog({
 					/>
 				)}
 			</div>
+			{editing !== null && (
+				<BookEditDialog
+					id={editing}
+					close={() => {
+						focusAfterEdit.current = true;
+						setEditing(null);
+					}}
+					restoreFocusId={catalogId}
+				/>
+			)}
 		</>
 	);
 }

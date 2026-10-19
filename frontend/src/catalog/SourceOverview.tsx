@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import type { Source } from "../content";
 import { dateLabel, InlineError } from "../Shared";
@@ -12,6 +12,7 @@ import {
 	catalogSegments,
 	type SegmentQuery,
 } from "./api";
+import { BookEditDialog } from "./BookEditDialog";
 import { BookCard } from "./Books";
 import { useCatalogScroll } from "./hooks";
 import { ImportDialog } from "./ImportDialog";
@@ -53,6 +54,9 @@ export function SourceOverview({
 }) {
 	const location = useLocation();
 	const [adding, setAdding] = useState(false);
+	const [editing, setEditing] = useState<string | null>(null);
+	const focusAfterEdit = useRef(false);
+	const client = useQueryClient();
 	const bookQuery: BookQuery = {
 		source_id: source.id,
 		type: "book",
@@ -72,6 +76,19 @@ export function SourceOverview({
 	const books = useQuery({
 		queryKey: catalogKeys.books(bookQuery),
 		queryFn: () => catalogBooks(bookQuery),
+	});
+	useEffect(() => {
+		if (
+			editing !== null ||
+			!focusAfterEdit.current ||
+			books.isFetching ||
+			books.data !== client.getQueryData(catalogKeys.books(bookQuery))
+		)
+			return;
+		focusAfterEdit.current = false;
+		const active = document.activeElement;
+		if (!active || active === document.body || !active.isConnected)
+			document.getElementById("source-content-panel-overview")?.focus();
 	});
 	const settled =
 		!analyses.isPending && !segments.isPending && !books.isPending;
@@ -125,7 +142,12 @@ export function SourceOverview({
 			) : (
 				<div className="overview-books">
 					{books.data.items.map((book) => (
-						<BookCard key={book.id} book={book} returnLabel={source.title} />
+						<BookCard
+							key={book.id}
+							book={book}
+							returnLabel={source.title}
+							onEdit={setEditing}
+						/>
 					))}
 				</div>
 			)}
@@ -304,6 +326,16 @@ export function SourceOverview({
 			)}
 			{adding && (
 				<ImportDialog sourceId={source.id} close={() => setAdding(false)} />
+			)}
+			{editing !== null && (
+				<BookEditDialog
+					id={editing}
+					close={() => {
+						focusAfterEdit.current = true;
+						setEditing(null);
+					}}
+					restoreFocusId="source-content-panel-overview"
+				/>
 			)}
 		</>
 	);

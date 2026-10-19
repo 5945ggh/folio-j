@@ -1,5 +1,9 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import {
+	keepPreviousData,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import type { Source } from "../content";
 import { ConfirmDialog, dateLabel, InlineError } from "../Shared";
@@ -12,6 +16,7 @@ import {
 	catalogSegments,
 	type SegmentQuery,
 } from "./api";
+import { BookEditDialog } from "./BookEditDialog";
 import { BookCatalog, BookGrid } from "./Books";
 import { CatalogToolbar, Pagination, Tabs } from "./Controls";
 import {
@@ -35,6 +40,9 @@ function SourceBooks({
 	onExpandedChange: (expanded: boolean) => void;
 }) {
 	const [adding, setAdding] = useState(false);
+	const [editing, setEditing] = useState<string | null>(null);
+	const focusAfterEdit = useRef(false);
+	const client = useQueryClient();
 	const { state } = useCatalogState("books", `source-books-${source.id}`);
 	const query: BookQuery = {
 		source_id: source.id,
@@ -46,6 +54,19 @@ function SourceBooks({
 	const books = useQuery({
 		queryKey: catalogKeys.books(query),
 		queryFn: () => catalogBooks(query),
+	});
+	useEffect(() => {
+		if (
+			editing !== null ||
+			!focusAfterEdit.current ||
+			books.isFetching ||
+			books.data !== client.getQueryData(catalogKeys.books(query))
+		)
+			return;
+		focusAfterEdit.current = false;
+		const active = document.activeElement;
+		if (!active || active === document.body || !active.isConnected)
+			document.getElementById("source-content-panel-materials")?.focus();
 	});
 	const empty = books.isSuccess && books.data.total === 0;
 	useCatalogScroll(
@@ -126,7 +147,11 @@ function SourceBooks({
 					</div>
 				</div>
 			) : (
-				<BookGrid books={books.data.items} returnLabel={source.title} />
+				<BookGrid
+					books={books.data.items}
+					returnLabel={source.title}
+					onEdit={setEditing}
+				/>
 			)}
 			{expanded && (
 				<ConfirmDialog
@@ -154,6 +179,16 @@ function SourceBooks({
 			)}
 			{adding && (
 				<ImportDialog sourceId={source.id} close={() => setAdding(false)} />
+			)}
+			{editing !== null && (
+				<BookEditDialog
+					id={editing}
+					close={() => {
+						focusAfterEdit.current = true;
+						setEditing(null);
+					}}
+					restoreFocusId="source-content-panel-materials"
+				/>
 			)}
 		</>
 	);
@@ -463,6 +498,7 @@ export function SourceContent({
 						className="source-view-panel"
 						role="tabpanel"
 						id={`source-content-panel-${panel}`}
+						tabIndex={-1}
 						aria-labelledby={`source-content-tab-${panel}`}
 						key={`${source.id}-${panel}`}
 						hidden={panel !== view}

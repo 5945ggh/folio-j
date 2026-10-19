@@ -1,92 +1,4 @@
-/* A.1 is a library composition; reader and source pages keep their own surfaces. */
-.sidebar-brand-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 6px;
-	transition: gap 200ms ease;
-}
-.app-sidebar .sidebar-brand-row .brand {
-	flex: 1 1 auto;
-	min-width: 0;
-	max-width: 180px;
-	margin-bottom: 0;
-	transition:
-		max-width 200ms ease,
-		opacity 140ms ease,
-		visibility 0s;
-}
-.sidebar-brand-row .sidebar-toggle {
-	margin: 0 0 0 auto;
-	width: 30px;
-	height: 30px;
-	padding: 5px;
-	flex: none;
-}
-.app-shell.library-a1 {
-	--sidebar-width: 208px;
-	--sidebar: #f3f4f6;
-	--accent: #2168d4;
-	--border: #e6e8eb;
-	--muted: #747982;
-	background: white;
-	color: #26282d;
-	font-family:
-		-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
-}
-.app-shell.library-a1.sidebar-collapsed {
-	--sidebar-width: 60px;
-}
-.app-shell.library-a1 .app-sidebar {
-	padding: 0 12px 18px;
-	background: var(--sidebar);
-	border-color: #e7e8ec;
-}
-.app-shell.library-a1 .sidebar-brand-row {
-	margin-bottom: 0;
-	min-height: 64px;
-}
-.app-shell.library-a1 .app-sidebar .brand {
-	padding: 0 6px;
-	margin-bottom: 0;
-	font-size: 15px;
-}
-.app-shell.library-a1.sidebar-collapsed .sidebar-brand-row {
-	justify-content: center;
-	gap: 0;
-}
-.app-shell.library-a1.sidebar-collapsed .sidebar-brand-row .sidebar-toggle {
-	margin: 0;
-}
-.app-shell.library-a1.sidebar-collapsed .sidebar-brand-row .brand {
-	flex: 0 1 0;
-	max-width: 0;
-	margin: 0;
-	padding: 0;
-	opacity: 0;
-	visibility: hidden;
-	transition:
-		max-width 200ms ease,
-		opacity 140ms ease,
-		visibility 0s linear 200ms;
-}
-.app-shell.library-a1 .brand-mark {
-	background: transparent;
-	color: #4c596c;
-}
-.app-shell.library-a1 .app-navigation {
-	padding-top: 14px;
-	gap: 5px;
-}
-.app-shell.library-a1 .app-navigation a {
-	min-height: 40px;
-	font-size: 13px;
-	color: #606771;
-}
-.app-shell.library-a1 .app-navigation a.active {
-	background: #e3e7ed;
-	color: #2b3546;
-}
+/* Library content composition inside the shared application shell. */
 .app-shell.library-a1 > .page-content {
 	width: auto;
 	max-width: none;
@@ -318,24 +230,6 @@
 	height: 28px;
 	color: #7d8490;
 }
-.book-menu button {
-	display: block;
-	width: 100%;
-	text-align: left;
-	padding: 8px 10px;
-	border: 0;
-	border-radius: 6px;
-	background: white;
-	color: #424954;
-	cursor: pointer;
-}
-.book-menu button:hover,
-.book-menu button:focus-visible {
-	background: #eaf1fc;
-}
-.book-menu button[aria-checked="true"] {
-	color: #2168d4;
-}
 .catalog-count {
 	color: #8a8f98;
 	font-size: 11px;
@@ -396,10 +290,6 @@
 	box-shadow: 0 1px 3px #1820331c;
 }
 @media (max-width: 720px) {
-	.app-shell.library-a1,
-	.app-shell.library-a1.sidebar-collapsed {
-		padding-left: 0;
-	}
 	.app-shell.library-a1 > .page-content {
 		padding: 0 16px 48px;
 	}
