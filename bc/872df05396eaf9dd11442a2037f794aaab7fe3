@@ -1,0 +1,62 @@
+docs/ARCHITECTURE.md
+  s_1f31f7c567573b::t_4cad308217f2fa 387
+  s_1f31f7c567573b::t_b536be39918e6b 84,132-133,406
+  s_1f31f7c567573b::t_5362f3325123cb 388
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e6b4b0b7f28ebe::t_92cc9acffcf1c6 3,20
+  s_1f31f7c567573b::t_763b8675b03a8f 54
+docs/handovers/book-management/PLAN.md
+  s_1f31f7c567573b::t_2b2b7808aa4ebe 9
+  s_1f31f7c567573b::t_abb54150e2e760 1-8,10-25
+  s_1f31f7c567573b::t_73fbdb99af96f7 31
+  s_1f31f7c567573b::t_ad854411d7ddc8 26-30
+docs/README.md
+  s_1f31f7c567573b::t_b536be39918e6b 11
+docs/PRD.md
+  s_1f31f7c567573b::t_2b2b7808aa4ebe 91
+  s_e6b4b0b7f28ebe::t_92cc9acffcf1c6 6
+  s_1f31f7c567573b::t_abb54150e2e760 97-101,424
+docs/INFORMATION_ARCHITECTURE.md
+  s_1f31f7c567573b::t_2b2b7808aa4ebe 37
+  s_1f31f7c567573b::t_abb54150e2e760 16,35,38-39
+  s_1f31f7c567573b::t_4cad308217f2fa 45
+  s_1f31f7c567573b::t_92f0595808884c 36
+docs/handovers/book-management/ACCEPTANCE.md
+  s_1f31f7c567573b::t_763b8675b03a8f 7-15,17-20,22-31,45,63-64
+  s_e6b4b0b7f28ebe::t_1ee43da9b140c1 52,55-58
+  s_e6b4b0b7f28ebe::t_6e760ebb7a4320 51
+  s_e6b4b0b7f28ebe::t_db7e1fef261b04 46-50,53-54,59
+  s_1f31f7c567573b::t_533cd019302a0b 44
+  s_e6b4b0b7f28ebe::t_92cc9acffcf1c6 3
+  s_1f31f7c567573b::t_4cad308217f2fa 5,21,32-43
+  s_1f31f7c567573b::t_abb54150e2e760 1-2,4,6,16,60-62
+docs/handovers/README.md
+  s_1f31f7c567573b::t_abb54150e2e760 9-10
+docs/GLOSSARY.md
+  s_1f31f7c567573b::t_abb54150e2e760 39
+  s_e6b4b0b7f28ebe::t_466f4582220486 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bc872df05396eaf9dd11442a2037f794aaab7fe3",
+  "prompts": {},
+  "sessions": {
+    "s_1f31f7c567573b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1549e-58b4-7130-b80d-82a0a1c7daa3",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_e6b4b0b7f28ebe": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a154c7-3be4-7053-a282-ed4448a4d421",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
