@@ -1,0 +1,46 @@
+backend/tests/test_source_deletion.py
+  s_6cd6707491a2a5::t_d8872407d5f436 1-57
+docs/TECH_STACK.md
+  s_6cd6707491a2a5::t_3b902155d80607 25
+backend/tests/test_database_contract.py
+  s_6cd6707491a2a5::t_d8872407d5f436 1-187
+  s_6cd6707491a2a5::t_01a8bfccb9d629 188-197
+docs/handovers/README.md
+  s_6cd6707491a2a5::t_f2bcc145198f01 22-23
+backend/alembic/versions/0001_initial.py
+  s_6cd6707491a2a5::t_22f6be03d5e424 1-364
+  s_6cd6707491a2a5::t_2ef10226178078 365-369,371-372,378-418,422-424,426-427,431-440,442-444,452-453,455-460,462-472
+README.md
+  s_6cd6707491a2a5::t_fc5d7df979acac 38-40
+  s_6cd6707491a2a5::t_b2a13ef22e7cae 24,36-37
+docs/handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md
+  s_6cd6707491a2a5::t_9ddcf10cf41257 3
+  s_6cd6707491a2a5::t_f2bcc145198f01 1-2,4-30
+backend/tests/test_migrations.py
+  s_6cd6707491a2a5::t_600765ca4a3937 8,10,12,15-18,28-33,45-62,64-65
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_6cd6707491a2a5::t_f2bcc145198f01 55,65,67
+  s_6cd6707491a2a5::t_3b902155d80607 64,66
+  s_6cd6707491a2a5::t_9ddcf10cf41257 3,63
+  s_6cd6707491a2a5::t_3b68c59d0136b5 68
+docs/handovers/book-management/ACCEPTANCE.md
+  s_6cd6707491a2a5::t_9ec18a3ce5d611 17
+docs/ARCHITECTURE.md
+  s_6cd6707491a2a5::t_3b902155d80607 70,100,108,132,136,158,203,213,259,467
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "85d8725283e51073438126f4fca87309202df507",
+  "prompts": {},
+  "sessions": {
+    "s_6cd6707491a2a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a154e4-4b8d-73f0-a881-ddf2cae4c8e6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
