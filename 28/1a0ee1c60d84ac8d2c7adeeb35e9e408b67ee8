@@ -1,0 +1,84 @@
+backend/src/app/services/covers.py
+  s_1f31f7c567573b::t_c7bcab49dc3e4a 14,24,30-40,48-50,314-316,328-331
+  s_1f31f7c567573b::t_756ef96e158782 25-29,41-47
+frontend/src/api/schema.d.ts
+  s_1f31f7c567573b::t_756ef96e158782 195-211,246-262,1268-1328,1371-1384,2795-2825,2898-2921,2924-2927,2929-2932
+  s_e6b4b0b7f28ebe::t_76b53f60fcc43e 2922-2923,2928
+backend/src/app/material_models.py
+  s_1f31f7c567573b::t_756ef96e158782 28-30
+  s_1f31f7c567573b::t_af1fe481761c80 83-89
+  s_1f31f7c567573b::t_d256179bec39ea 90-91
+backend/openapi.json
+  s_1f31f7c567573b::t_756ef96e158782 1112-1263,1375-1414,4771-4809,4938-4984
+  s_e6b4b0b7f28ebe::t_e1c73bc62bea9e 4985-4986
+backend/tests/test_material_migration.py
+  s_1f31f7c567573b::t_1b1b19dfa30eeb 112-114,178-180
+backend/tests/test_cover_migration.py
+  s_1f31f7c567573b::t_9940c8b939e754 42-44
+backend/tests/test_covers.py
+  s_1f31f7c567573b::t_9940c8b939e754 247
+backend/src/app/metadata_schemas.py
+  s_1f31f7c567573b::t_af1fe481761c80 1-42
+backend/src/app/api/materials.py
+  s_1f31f7c567573b::t_756ef96e158782 19
+  s_1f31f7c567573b::t_af1fe481761c80 25,63-80
+  s_1f31f7c567573b::t_5ee945126b09fa 81-82
+backend/src/app/services/material_metadata.py
+  s_1f31f7c567573b::t_756ef96e158782 30-32
+  s_e6b4b0b7f28ebe::t_260941b5d0a1da 82,87
+  s_1f31f7c567573b::t_c7bcab49dc3e4a 1-29,33-81,83-86
+backend/tests/test_material_metadata.py
+  s_1f31f7c567573b::t_e25773fe53e35e 329-331,387-388,400-408,411-415
+  s_1f31f7c567573b::t_9940c8b939e754 1-12,14-18,20-76,78-143,145-147,149-165,167-178,180-183,231-262,264-267,269-289,291-297,299-302,304-321,323-327,332-338,340-375,377-382
+  s_1f31f7c567573b::t_b9071bcb339872 13,19,298,303,328,383-386,389-399,409-410,416-417
+  s_e6b4b0b7f28ebe::t_986b7e4289fdd9 184-230
+  s_1f31f7c567573b::t_1ac6a517c0ca6c 77
+  s_1f31f7c567573b::t_23d2d6a48fec63 144
+  s_1f31f7c567573b::t_69f53898d7f8ef 148
+  s_1f31f7c567573b::t_8e204cbad21941 166
+  s_1f31f7c567573b::t_7c9d4a64790641 179
+  s_1f31f7c567573b::t_06f8ddc11e1933 263
+  s_1f31f7c567573b::t_d7d513db406f17 268
+  s_1f31f7c567573b::t_9596fa06e91210 290
+  s_1f31f7c567573b::t_b7af7fc1ba0900 322
+  s_1f31f7c567573b::t_52310d7d52af00 339
+  s_1f31f7c567573b::t_fb340cb9fe04c7 376
+backend/tests/test_material_metadata_migration.py
+  s_1f31f7c567573b::t_e25773fe53e35e 13-14,30-77,79-88,95-97,100-102,106-108
+  s_1f31f7c567573b::t_b9071bcb339872 1-12,15-23,26-29,78,89-94,98-99,103-105,109-110
+  s_1f31f7c567573b::t_eeb920142575f1 24-25
+backend/src/app/services/catalog.py
+  s_1f31f7c567573b::t_c7bcab49dc3e4a 20,22,55,60,96,102,108
+  s_1f31f7c567573b::t_756ef96e158782 103,105-107
+  s_1f31f7c567573b::t_9940c8b939e754 104
+backend/alembic/versions/0012_material_metadata.py
+  s_1f31f7c567573b::t_f1cffdcec451e0 30-31
+  s_1f31f7c567573b::t_756ef96e158782 17-18
+  s_1f31f7c567573b::t_af1fe481761c80 1-16,19-29
+backend/tests/test_migrations.py
+  s_1f31f7c567573b::t_9940c8b939e754 54,57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "281a0ee1c60d84ac8d2c7adeeb35e9e408b67ee8",
+  "prompts": {},
+  "sessions": {
+    "s_1f31f7c567573b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1549e-58b4-7130-b80d-82a0a1c7daa3",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_e6b4b0b7f28ebe": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a154c7-3be4-7053-a282-ed4448a4d421",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
