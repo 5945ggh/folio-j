@@ -1,0 +1,114 @@
+backend/tests/test_manual_analyses.py
+  s_aba4122fab4b53::t_a1bc7db79c4bec 112-116,121-123,184-186,205,222-227
+  s_aba4122fab4b53::t_979e3189995623 436-489
+  s_aba4122fab4b53::t_fef7d5f183ad2d 5,19,511-525,530-536,539,550-555,567-606
+  s_aba4122fab4b53::t_49177fea4d83cf 1-4,6-18,20-111,117-120,124-183,187-204,206-221,228-435,490-510
+  s_aba4122fab4b53::t_4f9cc9e11635fc 526-529,537-538,540-549,556-566
+backend/tests/test_migrations.py
+  s_aba4122fab4b53::t_8f56690bd54755 135-142,203-205,210-215
+  s_aba4122fab4b53::t_d4147abdfacd76 3,6,32-39,96-134,143-202,206-209,216-268
+backend/src/app/services/analyses.py
+  s_aba4122fab4b53::t_a1bc7db79c4bec 403-405
+  s_aba4122fab4b53::t_f69f197e08c9b2 3-4,20-22,29-55,278,283,291-292,295,297-298,314-315,317,346-402,406-427
+  s_aba4122fab4b53::t_72e8c341e83285 428-429
+frontend/src/Forms.tsx
+  s_aba4122fab4b53::t_5f7d96f8621d37 147
+docs/GLOSSARY.md
+  s_aba4122fab4b53::t_65022e85d7c84b 104
+  s_aba4122fab4b53::t_af711ed8b3905d 29
+frontend/src/analysis/AnalysisEditor.tsx
+  s_aba4122fab4b53::t_0d6826865b0623 1-16,18-28,30-35,37-49,59-75,80-82,100-106,121,125-126,132,138,153-173,180,187,294,319,351-353
+  s_aba4122fab4b53::t_0e4faf96f0356f 107-120
+  s_aba4122fab4b53::t_eada6f66432d9e 188-192
+  s_aba4122fab4b53::t_d9daafa732bc9a 29,36
+  s_aba4122fab4b53::t_93b938764a5148 17,50-58,76-79,84-99,122-124,127-131,133-137,139-152,174-179,181-186,193-254,256-293,295-318,320-350
+  s_aba4122fab4b53::t_bee9a4bbb41a26 83,255
+frontend/src/api/schema.d.ts
+  s_aba4122fab4b53::t_e4756ec941d79b 42-58,569-570,1010-1033,1290-1323,2263-2264,2668-2720,3938-3990
+frontend/src/analysis/editor.test.ts
+  s_aba4122fab4b53::t_f21b94e2709e3a 70-75
+  s_aba4122fab4b53::t_044060ea938085 119-120,127
+  s_aba4122fab4b53::t_bd1688124de818 1-3,6,8-17,31-32,40-46,54-57,67,83,90-93,98,112-118,134-137,146-148,161-163,172-177,186
+  s_aba4122fab4b53::t_93b938764a5148 4-5,7,18-30,33-39,47-53,58-66,77-82,84,86-89,94-97,99-111,121-126,128-133,138-145,149-160,164-171,178-185
+  s_aba4122fab4b53::t_e9be669093921b 68-69,76,85
+docs/handovers/epub-reading/README.md
+  s_aba4122fab4b53::t_a51f7d1e581f61 99,101
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_aba4122fab4b53::t_a51f7d1e581f61 3,13,16,56,73
+backend/src/app/api/analyses.py
+  s_aba4122fab4b53::t_cbbee92da385ff 8-11,13-16,24-30,32-46,48-53
+  s_aba4122fab4b53::t_ee8e79687fc9ca 12,31,47
+  s_aba4122fab4b53::t_979e3189995623 1
+  s_aba4122fab4b53::t_a7f5d8fd34e434 54-55
+docs/handovers/text-study/A2_ACCEPTANCE.md
+  s_aba4122fab4b53::t_a51f7d1e581f61 1-42
+frontend/src/analysis/api.ts
+  s_aba4122fab4b53::t_0d6826865b0623 4,11-22,24-38
+  s_aba4122fab4b53::t_93b938764a5148 9-10,23
+README.md
+  s_aba4122fab4b53::t_f8876f75d1d334 36
+docs/handovers/README.md
+  s_aba4122fab4b53::t_a51f7d1e581f61 9
+docs/README.md
+  s_aba4122fab4b53::t_a51f7d1e581f61 8
+docs/handovers/text-study/PLAN.md
+  s_aba4122fab4b53::t_a51f7d1e581f61 3,64
+docs/PRD.md
+  s_aba4122fab4b53::t_af711ed8b3905d 274,466,496
+docs/ARCHITECTURE.md
+  s_aba4122fab4b53::t_65022e85d7c84b 68,70,374,376,380-381,404,411-415
+docs/TECH_STACK.md
+  s_aba4122fab4b53::t_65022e85d7c84b 25
+backend/src/app/services/sources.py
+  s_aba4122fab4b53::t_ee8e79687fc9ca 4-5,38-47,132
+docs/INFORMATION_ARCHITECTURE.md
+  s_aba4122fab4b53::t_a51f7d1e581f61 112
+  s_aba4122fab4b53::t_af711ed8b3905d 106,114
+frontend/src/analysis/editor.css
+  s_aba4122fab4b53::t_0d6826865b0623 1-45
+frontend/src/analysis/AnalysisPanel.tsx
+  s_aba4122fab4b53::t_5f7d96f8621d37 10,28,37,236
+  s_aba4122fab4b53::t_8035c5fd9b14f0 125
+  s_aba4122fab4b53::t_93b938764a5148 118-124,126-130
+backend/alembic/versions/0002_lock_analysis_segments.py
+  s_aba4122fab4b53::t_d4147abdfacd76 1-41
+docs/handovers/text-study/TEST_MATRIX.md
+  s_aba4122fab4b53::t_af711ed8b3905d 3,37
+frontend/src/SegmentPage.tsx
+  s_aba4122fab4b53::t_5f7d96f8621d37 11,17-18,42,232-236
+  s_aba4122fab4b53::t_0e4faf96f0356f 433-439,870,886-887
+  s_aba4122fab4b53::t_cab9737c177836 440-441,443-452,455-458,460,462-510,512-514,516-517,520,522,524-667,669-671,674-678,680-688,690-710,712-803,805-808,810-827,829-869,871-885
+frontend/src/analysis/editor.ts
+  s_aba4122fab4b53::t_044060ea938085 108-109,112-113
+  s_aba4122fab4b53::t_bd1688124de818 1-6,9-11,16-41,46,51-53,62-71,74-90,95-107,111,114-116,121,135,144-148,162,166-174,178-179
+  s_aba4122fab4b53::t_e9be669093921b 110,141-143
+  s_aba4122fab4b53::t_93b938764a5148 7-8,12-15,42-45,47-50,54-61,72-73,91-94,117-120,122-134,136-140,149-161,163-165,175-177
+backend/src/app/analysis_schemas.py
+  s_aba4122fab4b53::t_cbbee92da385ff 1,3,6,8-19,30-62
+  s_aba4122fab4b53::t_ee8e79687fc9ca 20-29,63
+backend/src/app/main.py
+  s_aba4122fab4b53::t_f69f197e08c9b2 23,117-118
+  s_aba4122fab4b53::t_9737a4ebf7f253 119-123
+backend/src/app/services/chat.py
+  s_aba4122fab4b53::t_ee8e79687fc9ca 31,529
+backend/src/app/schemas.py
+  s_aba4122fab4b53::t_cbbee92da385ff 145
+backend/openapi.json
+  s_aba4122fab4b53::t_41990407e4a708 268-341,1108-1190,3732-3735,3754,4642-4718,6618-6692
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "367f4f4d58fe04146c0a52deca0d2c144fdafb29",
+  "prompts": {},
+  "sessions": {
+    "s_aba4122fab4b53": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a154f6-8117-7053-b605-484b57ea3fe0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
