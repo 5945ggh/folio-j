@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { generationResult, readingAnalysis } from "./state.ts";
+import { generationResult } from "../chat/discussion.ts";
+import { readingAnalysis } from "./state.ts";
 
 test("主对话失败但已经保存成果时，不把讲解误报为未保存", () => {
 	assert.equal(

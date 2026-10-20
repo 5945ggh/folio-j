@@ -413,7 +413,7 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 
 ## 6. 前端结构
 
-已确认的 A1／A2 目标为讲解阅读与人工编辑不启动 Workbench，显式展开、线程直达或快捷生成才启动；启动后在当前 Segment 页面内保活。C2 将收拢 iframe 生命周期与选区／定位接口，支持原生单 iframe 选择及同章多范围回读。A／C 当前未实施，下面保留现行生命周期事实，不能据目标推定已解除挂载。
+A1 中，`analysis/AnalysisPanel.tsx` 只承担持久讲解读取与删除，`AnalysisGeneration.tsx` 承担生成和停止控制，由片段页组合。`chat/lifecycle.ts` 的激活规则让纯回看不挂载 Workbench；显式展开、未显式收起的线程直达或快捷生成才启动。URL 中 `chat=0` 优先于 thread；启动后在当前 Segment 页面内保活。A2 人工编辑沿用此边界。C2 的 iframe 生命周期、选区与定位接口尚未实施。
 
 片段页沿用[A.3工作台基线](../prototypes/reading-native/VISUAL_BASELINE.md)的安静阅读气质和独立滚动区域。2C后的界面打磨改为普通入口默认阅读、讨论按需展开；原文与讲解同时参照，讲解列表不自动选择第一份文档。讲解、确切修订和讨论目标通过查询参数定位，指定对象须核对当前Segment归属。返回来处与查看所属Source分开。具体导航与当前/未来边界见[阅读与导航](INFORMATION_ARCHITECTURE.md)。
 

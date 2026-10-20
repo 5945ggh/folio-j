@@ -5,7 +5,7 @@
 | 想确认的问题 | 负责文档 | 维护边界 |
 |---|---|---|
 | 为什么做、长期怎样演进 | [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) | 动机、取舍与待验证设想；方向不自动成为实施要求 |
-| 文本处理与学习资料如何解耦 | [文本与资料实施计划](handovers/text-study/PLAN.md) | 文本接口、人工讲解、独立回看、统计与精确出处的切片和依赖；本批先 S0 再 B 线 |
+| 文本处理与学习资料如何解耦 | [文本与资料实施计划](handovers/text-study/PLAN.md) | 文本接口、人工讲解、独立回看、统计与精确出处的切片和依赖；S0、B 线之后推进 A 线 |
 | EPUB 阅读与学习衔接如何继续推进 | [EPUB 原生阅读阶段](handovers/epub-reading/README.md) | 切片顺序、准备条件，以及注音、选区学习、材料对话和讲解形成的边界 |
 | 初次前端调整做过什么 | [前端调整](handovers/frontend-refresh/PLAN.md) | 目录、Source 三视图、使用状态与统一导航的实施范围和历史证据 |
 | 素材库 A.1 如何实施与回归 | [素材库 A.1 计划](handovers/library-a1/PLAN.md) | 空库导入、工具与书卡、封面回退及缓存的实施与回归安排 |

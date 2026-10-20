@@ -1,5 +1,3 @@
-export { generationResult } from "../chat/discussion.ts";
-
 export function readingAnalysis<T extends { id: string; segment_id: string }>(
 	detail: T | undefined,
 	segmentId: string,

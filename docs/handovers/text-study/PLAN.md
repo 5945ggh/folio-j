@@ -1,6 +1,6 @@
 # 文本处理与学习资料独立入口实施计划
 
-> 2026-10-20。用户已批准计划，实施顺序为 S0 → B1 → B2，A／C 暂不实施。当前交付状态由 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)维护。产品规则已由 S0 同步至 [PRD](../../PRD.md)、[GLOSSARY](../../GLOSSARY.md)及其他负责规范；计划保留整体范围，不能据此推定 A／C 已交付。
+> 2026-10-20。用户已批准计划，S0 → B1 → B2 已完成，现按 A1 → A2 推进 A 线，C 暂不实施。当前交付状态由 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)维护。产品规则已由 S0 同步至 [PRD](../../PRD.md)、[GLOSSARY](../../GLOSSARY.md)及其他负责规范；计划保留整体范围，不能据此推定后续切片已交付。
 
 本轮让文本分析脱离 EPUB 呈现，让讲解保存与回看脱离 AI 对话，并接通阅读选区与持久资料的准确出处。沿用模块化单体、现有材料正文、分词代次、Analysis 修订和阅读恢复机制，以功能切片验证架构调整的效果。
 
@@ -61,14 +61,14 @@ A 线与 B 线可并行。C1 的 schema 和样例可提前设计，涉及 source
 
 ## 4. S0 产品规则同步与施工默认
 
-以下范围已随本计划获批，由 S0 写入负责规范；后续切片据此实现，当前仅推进 B 线。规则确认与代码交付分开记录。已有 TBD 不在本轮自动关闭，PRD 版本号遵守审订期间统一收口的约定。具体样例见[验收矩阵](TEST_MATRIX.md)。
+以下范围已随本计划获批，由 S0 写入负责规范；后续切片据此实现，当前推进 A 线。规则确认与代码交付分开记录。已有 TBD 不在本轮自动关闭，PRD 版本号遵守审订期间统一收口的约定。具体样例见[验收矩阵](TEST_MATRIX.md)。
 
 | 事项 | 已确认范围摘要 | 负责规范与关联切片 |
 | --- | --- | --- |
 | 人工入口 | Segment 下直接输入或粘贴 Markdown，区分手写与外部导入来源；保存不要求模型配置。首版不做批量文件导入、URL 抓取或富文本编辑 | PRD F3、6.3；GLOSSARY 3；A2 |
 | 原文固定 | AI 任务首次受理、持久讲解首次保存、精确材料出处首次建立，任一成功即固定原文。打开编辑器、取消或失败保存不锁定；删除讲解和任务失败不解锁 | PRD F2、GLOSSARY 1、ARCHITECTURE 写入契约；A2、C1 |
 | 全文修订 | 编辑当前修订，提交携带基础修订；冲突保留草稿。旧修订只读。无显式块映射的全文替换产生新块身份，沿用既有规则 | PRD F3、GLOSSARY 3.2、INFORMATION_ARCHITECTURE；A2 |
-| 讨论生命周期 | 普通回看和人工编辑不启动 Workbench；显式展开、线程直达或快捷生成才启动。启动后在当前 Segment 页面内保活，离页后的草稿持久化不扩张 | PRD 4.4／4.5、ARCHITECTURE 6、INFORMATION_ARCHITECTURE；A1 |
+| 讨论生命周期 | 普通回看和人工编辑不启动 Workbench；显式展开、未显式收起的线程直达或快捷生成才启动。启动后在当前 Segment 页面内保活，离页后的草稿持久化不扩张 | PRD 4.4／4.5、ARCHITECTURE 6、INFORMATION_ARCHITECTURE；A1 |
 | 统计范围 | 当前材料版本的全部可提取正文，按 resource_id 去重；同一资源重复 spine 只计一次，不按文字摘要合并不同资源。包括目录、后记，不标作小说正文 | PRD 4.2.1、GLOSSARY 统计术语；B2 |
 | 统计含义 | 按固定分词配置和词典形统计词次／词种；保留助词助动词，排除空白、标点及零跨度等指定记录。累计覆盖是本材料高频词的词次占比 | PRD 4.2.1；ARCHITECTURE 统计规则；B2 |
 | 阅读选区与范围 | 首版在单个 chapter part 的 iframe 内使用原生选择；支持跨 DOM 节点，不承诺跨 iframe 拖选。底层出处及回读支持同一逻辑章内的有序多资源范围，跨章目标留待后续 | PRD 4.7、材料定位契约、INFORMATION_ARCHITECTURE；C1／C2 |
@@ -83,7 +83,7 @@ S0 同时建立可复用验收样例清单：空正文、纯标点、兼容字�
 
 **架构改动。** 从 AnalysisPanel 提取持久讲解列表／详情／确切修订呈现，生成状态、停止操作和快捷生成由页面或讨论组合层提供。沿用现有查询、Markdown 渲染、链接安全与归属校验，不新增讲解读取系统或独立路由体系。
 
-SegmentPage 区分“尚未启动讨论”与“启动后隐藏”。启动状态以 Segment 身份隔离；同一 Segment 的查询参数变化不重挂整个页面。显式线程直达、展开讨论和快捷生成均能正确激活；普通讲解直达不查询 settings、providers、threads 或 jobs。已激活的 Workbench／ThreadPanel 保留草稿、待核实提交、审核说明及协调器状态。
+SegmentPage 区分“尚未启动讨论”与“启动后隐藏”。启动状态以 Segment 身份隔离；同一 Segment 的查询参数变化不重挂整个页面。未显式收起的线程直达、展开讨论和快捷生成均能正确激活；URL 中 chat=0 优先于 thread，首次进入时保持纯回看；普通讲解直达不查询 settings、providers、threads 或 jobs。已激活的 Workbench／ThreadPanel 保留草稿、待核实提交、审核说明及协调器状态。
 
 **改动范围。** frontend/src/analysis/AnalysisPanel.tsx、SegmentPage.tsx、chat/Workbench.tsx 及其查询组合和测试。保留 DiscussionCoordinator、首次提交阅读快照、Job 版本合并与迟到成果保护；不重写讨论推进协议。
 

@@ -4,9 +4,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { type Job, stopJob } from "../chat/api";
-import { generationResult, isTerminalJob, mergeJob } from "../chat/discussion";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { ConfirmDialog, InlineError } from "../Shared";
 import {
 	analysisKeys,
@@ -25,17 +23,17 @@ export function AnalysisPanel({
 	selectedId,
 	revisionId,
 	onSelect,
-	onGenerate,
 	onDiscuss,
-	job,
+	toolbarActions,
+	children,
 }: {
 	segmentId: string;
 	selectedId: string | null;
 	revisionId: string | null;
 	onSelect: (analysisId: string | null, revisionId: string | null) => void;
-	onGenerate: () => void;
 	onDiscuss?: () => void;
-	job?: Job;
+	toolbarActions?: ReactNode;
+	children?: ReactNode;
 }) {
 	const client = useQueryClient();
 	const [deleting, setDeleting] = useState(false);
@@ -94,11 +92,6 @@ export function AnalysisPanel({
 			void client.invalidateQueries({ queryKey: ["catalog"] });
 		},
 	});
-	const stop = useMutation({
-		mutationFn: (jobId: string) => stopJob(jobId),
-		onSuccess: (updated) => mergeJob(client, updated),
-	});
-
 	return (
 		<div className="analysis-panel">
 			<div className="analysis-toolbar">
@@ -140,14 +133,7 @@ export function AnalysisPanel({
 							展开讨论
 						</button>
 					)}
-					<button
-						type="button"
-						className="button primary"
-						disabled={Boolean(job && !isTerminalJob(job))}
-						onClick={onGenerate}
-					>
-						生成总体讲解
-					</button>
+					{toolbarActions}
 				</div>
 			</div>
 			{!effectiveId && items.length > 0 && (
@@ -194,60 +180,16 @@ export function AnalysisPanel({
 					{analyses.isFetchingNextPage ? "加载中…" : "加载更多讲解"}
 				</button>
 			)}
-			{job && !isTerminalJob(job) && (
-				<section className="analysis-draft" aria-label="尚未保存的讲解">
-					<div className="analysis-draft-header">
-						<span>
-							{job.status === "stopping" ? "正在停止" : "生成中"} · 尚未保存
-						</span>
-						<button
-							type="button"
-							className="analysis-quiet-button"
-							disabled={stop.isPending || job.status === "stopping"}
-							onClick={() => stop.mutate(job.id)}
-						>
-							停止
-						</button>
+			{children}
+			{!effectiveId &&
+				items.length === 0 &&
+				analyses.isSuccess &&
+				!children && (
+					<div className="analysis-empty">
+						<h2>还没有已保存讲解</h2>
+						<p>保存的讲解会显示在这里。</p>
 					</div>
-					<InlineError error={stop.error} />
-					{job.assistant_message.content && (
-						<pre>{job.assistant_message.content}</pre>
-					)}
-					{!job.assistant_message.content && (
-						<p>正在准备讲解内容，完成后会自动保存并打开。</p>
-					)}
-				</section>
-			)}
-			{job && generationResult(job) === "saved_with_unfinished_reply" && (
-				<div className="analysis-generation-result" role="status">
-					讲解已保存，后续回答未完成。
-					{job.artifacts?.map((artifact) => (
-						<button
-							key={`${artifact.analysis_id}-${artifact.revision_id}`}
-							type="button"
-							className="analysis-quiet-button"
-							title={`讲解 ${artifact.analysis_id} · 修订 ${artifact.revision_id}`}
-							onClick={() =>
-								onSelect(artifact.analysis_id, artifact.revision_id)
-							}
-						>
-							打开已保存讲解 · 修订 {artifact.revision_id.slice(-6)}
-						</button>
-					))}
-				</div>
-			)}
-			{job && generationResult(job) === "not_saved" && (
-				<p className="analysis-generation-result" role="status">
-					{job.status === "failed" ? "讲解生成失败" : "讲解生成已停止"}
-					；尚未保存新讲解。{job.error || "可重新发起。"}
-				</p>
-			)}
-			{!effectiveId && items.length === 0 && analyses.isSuccess && !job && (
-				<div className="analysis-empty">
-					<h2>从这段原文开始</h2>
-					<p>生成一份可独立阅读的总体讲解，也可以在对话中提出专题问题。</p>
-				</div>
-			)}
+				)}
 			{detail.isPending && effectiveId && (
 				<p className="loading">正在打开讲解…</p>
 			)}

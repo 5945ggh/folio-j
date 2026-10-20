@@ -8,6 +8,10 @@ import {
 	useState,
 } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
+import {
+	AnalysisGenerationButton,
+	AnalysisGenerationStatus,
+} from "./analysis/AnalysisGeneration";
 import { AnalysisPanel } from "./analysis/AnalysisPanel";
 import { analysisKeys } from "./analysis/api";
 import { api } from "./api/client";
@@ -24,6 +28,7 @@ import {
 	MAX_CONVERSATION_WIDTH,
 	MIN_CONVERSATION_WIDTH,
 } from "./chat/layout";
+import { shouldMountWorkbench } from "./chat/lifecycle";
 import { Workbench } from "./chat/Workbench";
 import {
 	errorMessage,
@@ -205,6 +210,14 @@ export function SegmentDetail() {
 			});
 		});
 	};
+	const selectAnalysis = (
+		analysisId: string | null,
+		revisionId: string | null,
+	) => {
+		updateLocation({ analysisId, revisionId });
+		setOriginalExpanded(false);
+		scrollReading("analysis");
+	};
 	const client = useQueryClient();
 	useEffect(() => {
 		activeId.current = id;
@@ -228,6 +241,15 @@ export function SegmentDetail() {
 	} | null>(null);
 	const widthRange = conversationWidthRange(workspaceWidth);
 	const [generateToken, setGenerateToken] = useState<string | null>(null);
+	const [discussionActivated, setDiscussionActivated] = useState(false);
+	const workbenchMounted = shouldMountWorkbench(
+		discussionActivated,
+		chatOpen,
+		generateToken,
+	);
+	useEffect(() => {
+		if (workbenchMounted) setDiscussionActivated(true);
+	}, [workbenchMounted]);
 	const [generationJobId, setGenerationJobId] = useState<string | null>(null);
 	const openedGenerationArtifact = useRef<string | null>(null);
 	const jobReading = useRef<
@@ -585,23 +607,27 @@ export function SegmentDetail() {
 									segmentId={current.id}
 									selectedId={selectedAnalysis}
 									revisionId={selectedRevision}
-									onSelect={(analysisId, revisionId) => {
-										updateLocation({
-											analysisId: analysisId || null,
-											revisionId,
-										});
-										setOriginalExpanded(false);
-										scrollReading("analysis");
-									}}
-									onGenerate={() => {
-										setChatOpen(true);
-										setGenerateToken(crypto.randomUUID());
-									}}
+									onSelect={selectAnalysis}
+									toolbarActions={
+										<AnalysisGenerationButton
+											job={generation.data}
+											onGenerate={() => {
+												setChatOpen(true);
+												setGenerateToken(crypto.randomUUID());
+											}}
+										/>
+									}
 									onDiscuss={() =>
 										updateLocation({ chatOpen: true, threadId: null })
 									}
-									job={generation.data}
-								/>
+								>
+									{generation.data && (
+										<AnalysisGenerationStatus
+											job={generation.data}
+											onSelect={selectAnalysis}
+										/>
+									)}
+								</AnalysisPanel>
 							</section>
 						</div>
 					</section>
@@ -681,56 +707,58 @@ export function SegmentDetail() {
 								saveConversationWidth(width);
 							}}
 						/>
-						<Workbench
-							key={current.id}
-							segment={current}
-							selectedThreadId={selectedThread}
-							onSelectThread={(threadId) =>
-								updateLocation({ threadId, chatOpen: true })
-							}
-							generateToken={generateToken}
-							onGenerationAccepted={(job: Job) => {
-								if (activeId.current !== id) return;
-								setGenerationJobId(job.id);
-								updateLocation({ threadId: job.thread_id });
-								setGenerateToken(null);
-							}}
-							onSubmissionStarted={(requestId) => {
-								const latest = readSegmentLocation(
-									locationRef.current.latest.search,
-								);
-								requestReading.current = captureReadingPosition(
-									requestReading.current,
-									requestId,
-									latest,
-								);
-							}}
-							onJobAccepted={(job: Job) => {
-								jobReading.current[job.id] = requestReading.current[
-									job.request_id
-								] ?? { analysisId: null, revisionId: null };
-							}}
-							onOpenArtifact={(analysisId, revisionId, job) => {
-								const latest = readSegmentLocation(
-									locationRef.current.latest.search,
-								);
-								if (
-									job &&
-									!shouldOpenArtifact(
-										readingPositionForJob(
-											jobReading.current,
-											requestReading.current,
-											job,
-										),
+						{workbenchMounted && (
+							<Workbench
+								key={current.id}
+								segment={current}
+								selectedThreadId={selectedThread}
+								onSelectThread={(threadId) =>
+									updateLocation({ threadId, chatOpen: true })
+								}
+								generateToken={generateToken}
+								onGenerationAccepted={(job: Job) => {
+									if (activeId.current !== id) return;
+									setGenerationJobId(job.id);
+									updateLocation({ threadId: job.thread_id });
+									setGenerateToken(null);
+								}}
+								onSubmissionStarted={(requestId) => {
+									const latest = readSegmentLocation(
+										locationRef.current.latest.search,
+									);
+									requestReading.current = captureReadingPosition(
+										requestReading.current,
+										requestId,
 										latest,
+									);
+								}}
+								onJobAccepted={(job: Job) => {
+									jobReading.current[job.id] = requestReading.current[
+										job.request_id
+									] ?? { analysisId: null, revisionId: null };
+								}}
+								onOpenArtifact={(analysisId, revisionId, job) => {
+									const latest = readSegmentLocation(
+										locationRef.current.latest.search,
+									);
+									if (
+										job &&
+										!shouldOpenArtifact(
+											readingPositionForJob(
+												jobReading.current,
+												requestReading.current,
+												job,
+											),
+											latest,
+										)
 									)
-								)
-									return;
-								updateLocation({ analysisId, revisionId });
-								setOriginalExpanded(false);
-								scrollReading("analysis");
-							}}
-						/>
+										return;
+									updateLocation({ analysisId, revisionId });
+									setOriginalExpanded(false);
+									scrollReading("analysis");
+								}}
+							/>
+						)}
 					</aside>
 				</div>
 				{editing && (
