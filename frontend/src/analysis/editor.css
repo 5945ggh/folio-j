@@ -6,11 +6,6 @@
 	display: grid;
 	gap: 16px;
 }
-.analysis-editor-fields {
-	display: grid;
-	grid-template-columns: 170px minmax(0, 1fr);
-	gap: 16px;
-}
 .analysis-editor-source textarea {
 	min-height: 280px;
 	resize: vertical;
@@ -35,9 +30,6 @@
 @media (max-width: 640px) {
 	.confirm-card.analysis-editor-dialog {
 		padding: 20px;
-	}
-	.analysis-editor-fields {
-		grid-template-columns: 1fr;
 	}
 	.analysis-editor-source textarea {
 		min-height: 240px;

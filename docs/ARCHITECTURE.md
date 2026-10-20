@@ -410,7 +410,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 指定历史讲解通过`GET /analyses/{analysis_id}?revision_id=...`读取；当前没有独立`/revisions/{id}`路由。人工创建与全文修订分别使用 `POST /segments/{segment_id}/analyses` 和 `POST /analyses/{analysis_id}/revisions`，不要求 Provider、线程或 Run。AI 生成／保存和 Section 编辑继续走 Job 执行及工具审核；整份Analysis删除提供影响预览及用户DELETE接口。线程权限与新对话默认模式、具体审核决定、停止及保存核实接口已实现。普通读取不返回密钥，公开业务接口不等于全部注册为Agent工具。
 
-人工请求统一携带 UUID `request_id`、`expected_text_sha256`、`source_md`，修订另带 `base_revision_id`；创建允许 `manual`／`import` 来源及可选标题。Segment 响应的摘要按 NFC 原文 UTF-8 计算，不存独立正文版本。服务为请求添加操作类型前缀，使用既有 Analysis／Revision 操作凭据；同事务先检查存活和已完成同请求，再检查新写入的正文摘要与基础修订，最后固定原文并保存。成功和重放均返回 200，客户端打开返回的 `revision_id`；重放时 `current_revision_id` 可以已经更新。
+人工请求统一携带 UUID `request_id`、`expected_text_sha256`、`source_md`，修订另带 `base_revision_id`；新建界面统一提交 `manual`（用户保存），不要求声明原创；全文修改仍记录 `manual_edit`。API 的 `import` 值及既有修订保留兼容，不改写历史来源；创建可带标题。Segment 响应的摘要按 NFC 原文 UTF-8 计算，不存独立正文版本。服务为请求添加操作类型前缀，使用既有 Analysis／Revision 操作凭据；同事务先检查存活和已完成同请求，再检查新写入的正文摘要与基础修订，最后固定原文并保存。成功和重放均返回 200，客户端打开返回的 `revision_id`；重放时 `current_revision_id` 可以已经更新。
 
 `stale_text`、`stale_revision`、`idempotency_conflict` 返回 409，目标不可见返回 404 `not_found`，新请求无正文变化返回 422 `no_changes`；格式校验继续使用既有安全 422 响应。人工编辑不保留新旧块身份映射，旧 Revision／Section 不改写。响应不确定时重复提交冻结的同一请求即可核实，不新增任务或查询协议。
 

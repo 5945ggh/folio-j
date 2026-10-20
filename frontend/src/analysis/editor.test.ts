@@ -26,7 +26,6 @@ const base: AnalysisEditorBase = {
 const draft: AnalysisDraft = {
 	sourceMd: "## は\u3099な\n説明\n",
 	title: " 外部講解 ",
-	origin: "import",
 };
 const editing: AnalysisEditorBase = {
 	...base,
@@ -48,7 +47,7 @@ test("manual requests capture original text and exact revision, while retry free
 		request_id: "request-1",
 		expected_text_sha256: "original-hash",
 		source_md: "## ばな\n説明\n",
-		origin: "import",
+		origin: "manual",
 		title: "外部講解",
 	});
 	assert.equal(Object.isFrozen(request), true);
@@ -59,7 +58,7 @@ test("manual requests capture original text and exact revision, while retry free
 		prepareAnalysisRequest(
 			retained,
 			{ ...base, segment: { ...base.segment, text_sha256: "new-hash" } },
-			{ ...draft, sourceMd: "新草稿", origin: "manual", title: "新标题" },
+			{ ...draft, sourceMd: "新草稿", title: "新标题" },
 			createId,
 		),
 		request,

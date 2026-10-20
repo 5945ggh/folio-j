@@ -60,7 +60,6 @@ export function AnalysisEditor({
 	const [draft, setDraft] = useState<AnalysisDraft>(() => ({
 		sourceMd: initial?.source_md ?? "",
 		title: "",
-		origin: "manual",
 	}));
 	const [uncertain, setUncertain] = useState(false);
 	const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -213,34 +212,16 @@ export function AnalysisEditor({
 				}}
 			>
 				{!base.analysis && (
-					<div className="analysis-editor-fields">
-						<label className="field">
-							讲解来源
-							<select
-								value={draft.origin}
-								disabled={locked}
-								onChange={(event) =>
-									updateDraft({
-										origin:
-											event.target.value === "import" ? "import" : "manual",
-									})
-								}
-							>
-								<option value="manual">手写讲解</option>
-								<option value="import">外部 Markdown</option>
-							</select>
-						</label>
-						<label className="field">
-							标题（可选）
-							<input
-								value={draft.title}
-								disabled={locked}
-								onChange={(event) => updateDraft({ title: event.target.value })}
-								aria-invalid={Boolean(invalidTitle)}
-								placeholder="留空时根据正文生成标题"
-							/>
-						</label>
-					</div>
+					<label className="field">
+						标题（可选）
+						<input
+							value={draft.title}
+							disabled={locked}
+							onChange={(event) => updateDraft({ title: event.target.value })}
+							aria-invalid={Boolean(invalidTitle)}
+							placeholder="留空时根据正文生成标题"
+						/>
+					</label>
 				)}
 				{invalidTitle && (
 					<p className="inline-error" role="alert">
@@ -256,7 +237,7 @@ export function AnalysisEditor({
 						onChange={(event) => updateDraft({ sourceMd: event.target.value })}
 						aria-invalid={Boolean(invalidSource && draft.sourceMd)}
 						spellCheck={false}
-						placeholder="输入讲解或粘贴外部 Markdown，不要求二级标题。"
+						placeholder="输入讲解或粘贴外部 Markdown。"
 					/>
 				</label>
 				{invalidSource && draft.sourceMd && (

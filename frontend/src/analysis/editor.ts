@@ -17,7 +17,6 @@ export type AnalysisEditorBase = {
 export type AnalysisDraft = {
 	sourceMd: string;
 	title: string;
-	origin: CreateInput["origin"];
 };
 export type ManualAnalysisRequest =
 	| { kind: "create"; segmentId: string; body: Readonly<CreateInput> }
@@ -46,8 +45,7 @@ export function analysisDraftChanged(
 	return (
 		draft.sourceMd.normalize("NFC") !==
 			(base.analysis?.source_md ?? "").normalize("NFC") ||
-		(!base.analysis &&
-			(Boolean(draft.title.trim()) || draft.origin !== "manual"))
+		(!base.analysis && Boolean(draft.title.trim()))
 	);
 }
 
@@ -98,7 +96,7 @@ export function prepareAnalysisRequest(
 				segmentId: base.segment.id,
 				body: Object.freeze({
 					...common,
-					origin: draft.origin,
+					origin: "manual",
 					title: draft.title.normalize("NFC").trim() || null,
 				}),
 			});

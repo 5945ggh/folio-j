@@ -13,7 +13,7 @@
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理或讲解成功保存后锁定；旧资料由增量迁移补齐保护 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
 | 设置与模型接入 | 已提交、工程验收通过 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；顶部分类、统一编辑弹窗、分组原子保存、草稿保护与验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](settings-refresh/ACCEPTANCE.md) |
 | 片段讨论 | 已提交 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
-| 持久讲解 | 工程与浏览器验收通过 | 手写／外部 Markdown 保存、当前全文修订、冲突保稿与同请求核实；多份 Analysis、不可变 Revision／Section；AI 快捷生成、块编辑与审核沿用原流程 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
+| 持久讲解 | 工程与浏览器验收通过；表单与配色收口在工作区 | 直接编写／粘贴 Markdown 保存，统一记录用户保存；当前全文修订、冲突保稿与同请求核实；多份 Analysis、不可变 Revision／Section；AI 快捷生成、块编辑与审核沿用原流程 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
 | 片段阅读与导航 | 工程与浏览器验收通过 | 纯回看不挂载讨论，激活后保活；默认阅读、原文与讲解对照、确切修订／讨论定位、讲解总标题、本页讨论草稿保留；未提交草稿仅在当前挂载页面保留 | [阅读导航](archived/READING_NAVIGATION_ACCEPTANCE.md)、[架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[A1 验收](text-study/A1_ACCEPTANCE.md) |
 | 素材库与阅读管理 | 已提交 | 跨 Source 书籍目录、搜索／筛选／排序／分页、书卡大小与状态菜单、空库整区导入；阅读三态和最近打开持久化，封面按规则版本 2 回退与缓存 | [前端调整](frontend-refresh/ACCEPTANCE.md)、[素材库 A.1](library-a1/ACCEPTANCE.md) |
 | 导入来源表单 | 已提交，工程检查通过；用户反馈无阻塞问题 | 添加书籍与新建来源完整视图切换，创建后自动选择来源并保留文件；单组操作、中文文案与表单提交保护 | [导入来源表单调整](library-a1/ACCEPTANCE.md#2026-10-19-导入来源表单调整) |

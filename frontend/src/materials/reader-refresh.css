@@ -1,4 +1,4 @@
-/* Segment workspace retained after Reader moved to its own shell. */
+/* Segment reading uses the shared app palette; EPUB keeps its own theme. */
 .shell-full-width .page-content:has(.segment-shell) {
 	padding: 0;
 	max-width: none;
@@ -11,15 +11,16 @@
 	height: 100dvh;
 	width: 100%;
 	grid-template-columns: minmax(0, 1fr);
-	background: #fffefa;
+	color: inherit;
+	background: var(--surface);
 }
 .app-shell .segment-toolbar,
 .app-shell .segment-workspace {
 	grid-column: 1;
 }
 .app-shell .segment-toolbar {
-	background: #fffefa;
-	border-color: var(--line, #e5e3dd);
+	background: var(--surface);
+	border-color: var(--border);
 }
 .app-shell .segment-toolbar-title {
 	min-width: 0;
@@ -28,10 +29,10 @@
 	flex-shrink: 0;
 }
 .app-shell .segment-reader {
-	background: #fffefa;
+	background: var(--surface);
 }
 .app-shell .segment-conversation {
-	background: #f8f7f3;
+	background: var(--sidebar);
 }
 @media (max-width: 720px) {
 	.app-shell .segment-shell {
