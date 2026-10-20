@@ -28,6 +28,7 @@ from app.ids import new_ulid
 from app.models import Segment, Source
 from app.services.context import MAX_MESSAGE_CHARS, make_input_snapshot
 from app.services.settings import ensure_settings, read_credential, redact_credential
+from app.services.sources import lock_segment_text
 from app.settings_models import Defaults, Profile, Provider, ProviderModel, Run, Style
 
 
@@ -525,8 +526,7 @@ async def accept_job(
         session.add(job)
         await session.flush()
         session.add_all([user, assistant])
-        if segment.text_locked_at is None:
-            segment.text_locked_at = created
+        lock_segment_text(segment, created)
         thread.active_job_id = job.id
         thread.selected_model_id = model_id
         thread.revision += 1

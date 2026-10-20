@@ -6,7 +6,7 @@
 
 当前交付、提交状态与验收结论汇总见 [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)。以下按阶段职责组织实施安排、接口契约和原始证据。
 
-- 文本处理与学习资料调整：架构解耦、人工保存与独立回看、统计和精确出处；见[实施计划](text-study/PLAN.md)、[验收样例](text-study/TEST_MATRIX.md)、[S0 收口](text-study/S0_ACCEPTANCE.md)、[B1 验收](text-study/B1_ACCEPTANCE.md)及[B2 验收](text-study/B2_ACCEPTANCE.md)。S0 和 B 线已完成，现按 A1 → A2 推进；C 暂不实施。A1 证据见[独立回看验收](text-study/A1_ACCEPTANCE.md)。
+- 文本处理与学习资料调整：架构解耦、人工保存与独立回看、统计和精确出处；见[实施计划](text-study/PLAN.md)、[验收样例](text-study/TEST_MATRIX.md)、[S0 收口](text-study/S0_ACCEPTANCE.md)、[B1 验收](text-study/B1_ACCEPTANCE.md)及[B2 验收](text-study/B2_ACCEPTANCE.md)。S0 与 A／B 线已完成工程验收；C 暂不实施。A 线证据见[独立回看](text-study/A1_ACCEPTANCE.md)与[人工资料](text-study/A2_ACCEPTANCE.md)。
 - 书籍管理：详情页、共享信息编辑和卡片菜单，移动／删除保留禁用入口；见[计划与契约](book-management/PLAN.md)和[验收记录](book-management/ACCEPTANCE.md)。
 
 - 全量注音：导入全书分词、持久派生资产、重建与两维注音显示；见[计划](full-ruby/PLAN.md)和[验收](full-ruby/ACCEPTANCE.md)。

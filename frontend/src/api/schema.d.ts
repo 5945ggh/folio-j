@@ -39,6 +39,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analyses/{analysis_id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Manual Analysis Revision */
+        post: operations["createManualAnalysisRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/catalog/sources": {
         parameters: {
             query?: never;
@@ -549,7 +566,8 @@ export interface paths {
         /** List Analyses */
         get: operations["listAnalyses"];
         put?: never;
-        post?: never;
+        /** Create Manual Analysis */
+        post: operations["createManualAnalysis"];
         delete?: never;
         options?: never;
         head?: never;
@@ -989,6 +1007,30 @@ export interface components {
              */
             updated_at: string;
         };
+        /** AnalysisValidationErrorResponse */
+        AnalysisValidationErrorResponse: {
+            /** Detail */
+            detail: components["schemas"]["AnalysisValidationIssue"][];
+        };
+        /** AnalysisValidationIssue */
+        AnalysisValidationIssue: {
+            /** Loc */
+            loc: (string | number)[];
+            /** Msg */
+            msg: string;
+            /** Type */
+            type: string;
+        };
+        /** AnalysisWriteErrorResponse */
+        AnalysisWriteErrorResponse: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "not_found" | "stale_text" | "stale_revision" | "idempotency_conflict" | "no_changes";
+            /** Detail */
+            detail: string;
+        };
         /** ArtifactResponse */
         ArtifactResponse: {
             /** Analysis Id */
@@ -1244,6 +1286,40 @@ export interface components {
             singleton_word_ratio: number | null;
             /** Thresholds */
             thresholds: components["schemas"]["CoverageThreshold"][];
+        };
+        /** ManualAnalysisCreate */
+        ManualAnalysisCreate: {
+            /** Expected Text Sha256 */
+            expected_text_sha256: string;
+            /**
+             * Origin
+             * @default manual
+             * @enum {string}
+             */
+            origin: "manual" | "import";
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /** Source Md */
+            source_md: string;
+            /** Title */
+            title?: string | null;
+        };
+        /** ManualAnalysisRevisionCreate */
+        ManualAnalysisRevisionCreate: {
+            /** Base Revision Id */
+            base_revision_id: string;
+            /** Expected Text Sha256 */
+            expected_text_sha256: string;
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /** Source Md */
+            source_md: string;
         };
         /** MaterialCatalogItem */
         MaterialCatalogItem: {
@@ -2184,6 +2260,8 @@ export interface components {
             text: string;
             /** Text Locked At */
             text_locked_at: string | null;
+            /** Text Sha256 */
+            text_sha256: string;
             /** Transcription */
             transcription: string;
             /** Translation */
@@ -2583,6 +2661,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    createManualAnalysisRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualAnalysisRevisionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisWriteErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisWriteErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisWriteErrorResponse"] | components["schemas"]["AnalysisValidationErrorResponse"];
                 };
             };
         };
@@ -3800,6 +3931,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    createManualAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualAnalysisCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisWriteErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisWriteErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisWriteErrorResponse"] | components["schemas"]["AnalysisValidationErrorResponse"];
                 };
             };
         };

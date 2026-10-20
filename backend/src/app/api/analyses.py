@@ -1,16 +1,56 @@
-"""Read Analysis documents and user-managed whole-document deletion."""
+"""Analysis reads, transactional manual writes and user-managed deletion."""
 
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.analysis_schemas import AnalysisDeleteImpact, AnalysisDetail, AnalysisListItem
+from app.analysis_schemas import (
+    AnalysisDeleteImpact,
+    AnalysisDetail,
+    AnalysisListItem,
+    AnalysisValidationErrorResponse,
+    AnalysisWriteErrorResponse,
+    ManualAnalysisCreate,
+    ManualAnalysisRevisionCreate,
+)
 from app.db import get_session
 from app.services import analyses as service
 
 router = APIRouter(prefix="/api")
 Session = Annotated[AsyncSession, Depends(get_session)]
+
+
+@router.post(
+    "/segments/{segment_id}/analyses",
+    response_model=AnalysisDetail,
+    operation_id="createManualAnalysis",
+    responses={
+        404: {"model": AnalysisWriteErrorResponse},
+        409: {"model": AnalysisWriteErrorResponse},
+        422: {"model": AnalysisWriteErrorResponse | AnalysisValidationErrorResponse},
+    },
+)
+async def create_manual_analysis(
+    segment_id: str, data: ManualAnalysisCreate, session: Session
+) -> AnalysisDetail:
+    return await service.create_manual_analysis(session, segment_id, data)
+
+
+@router.post(
+    "/analyses/{analysis_id}/revisions",
+    response_model=AnalysisDetail,
+    operation_id="createManualAnalysisRevision",
+    responses={
+        404: {"model": AnalysisWriteErrorResponse},
+        409: {"model": AnalysisWriteErrorResponse},
+        422: {"model": AnalysisWriteErrorResponse | AnalysisValidationErrorResponse},
+    },
+)
+async def create_manual_analysis_revision(
+    analysis_id: str, data: ManualAnalysisRevisionCreate, session: Session
+) -> AnalysisDetail:
+    return await service.create_manual_analysis_revision(session, analysis_id, data)
 
 
 @router.get(

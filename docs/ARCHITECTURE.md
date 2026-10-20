@@ -65,9 +65,9 @@ flowchart LR
 
 设置按界面分组保存：`PATCH /api/settings` 接收完整的可选 profile 分组和字段可选的 defaults，仅校验、更新明确提交的字段；同次 profile 与 defaults 在一个事务提交，失败不部分写入。省略字段保留存量值，模型及预设身份显式 null 表示清除。既有 PUT 接口保留完整替换契约。验证历史按 Run 中保存的 Provider／登记模型身份及状态过滤后分页，不依赖配置仍然存在；只返回未软删的 verification Run。
 
-Source、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。接受问答时在短写事务中保存输入快照、消息与 Job，并首次设置 `text_locked_at`；原文编辑、来源／片段删除共用事务校验边界。
+Source、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。接受问答或成功保存持久讲解时，在对应短写事务中首次设置 `text_locked_at`；共同保护函数不提交事务、不递增片段记录 revision，也不重写已有锁定时间。原文编辑、来源／片段删除共用事务校验边界。
 
-数据库生命周期由应用 lifespan 管理，`0001_initial` 以固定 Alembic DDL 从空库建立当前 22 张业务表及其索引、约束和默认值，不依赖运行时 ORM 自动建表。`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。旧开发期中间 revision 不再支持自动升级；已有完整旧 head 库须备份并验证 schema 等价后一次性对齐版本，操作边界见 [README](../README.md#本地开发)。历史阶段文档保留当时的迁移编号与回填事实。
+数据库生命周期由应用 lifespan 管理，`0001_initial` 以固定 Alembic DDL 从空库建立当前 22 张业务表及其索引、约束和默认值，不依赖运行时 ORM 自动建表。A2 在其后增加 `0002_lock_analysis_segments` 数据迁移，为存在任意历史讲解且尚未锁定的片段补本次保护时间，包含软删讲解与片段；已有锁、正文、记录 revision、更新时间与历史资料不变。降级不解锁，避免解除迁移之后产生的依赖。`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。旧开发期中间 revision 不再支持自动升级；已有完整旧 head 库须备份并验证 schema 等价后一次性对齐版本，操作边界见 [README](../README.md#本地开发)。历史阶段文档保留当时的迁移编号与回填事实。
 
 ### 3.1 实体
 
@@ -371,14 +371,14 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 ## 5. 当前API与未来草图
 
-### 已确认待实施的资料写入与出处契约
+### 资料写入与后续出处契约
 
-2026-10-20 的 S0 将 A／C 目标收口如下，本批只实施 B 线，以下尚无对应生产入口。
+人工资料写入已按 A2 建立生产入口；材料出处由后续 C1／C2 实施。约定如下：
 
 - 人工创建／全文修订通过独立用例保存，不创建聊天任务；客户端携带 request_id、预期 NFC 原文摘要及基础修订。记录 revision 不能充当原文版本。服务端限制来源为人工／导入／人工修订且 run_id 为空；沿用 Markdown 规范化，不要求二级标题。
 - 人工写入在同一短事务内校验祖先可见性、原文依据、基础修订及幂等操作，原子固定原文并保存成果。成功重放先于陈旧版本判断，同键不同内容冲突。新请求无变化时返回 no_changes，不产生修订或成功凭据。AI 仍保留任务授权及审核，并复用内容约束。
-- 原文固定触发包括首次 AI 受理、首次讲解保存和首次精确出处创建；失败人工保存不固定，删除成果不解锁。实施 A2 时处理存量未锁但有历史讲解的片段，记录本次保护时间，不补造原文历史。全文无显式块映射时新分配 Section 身份，旧修订及引用保留。
-- Segment 可选材料出处与 Material 属于同一活跃 Source，保存版本及有序局部范围、exact 和独立的 spine 出现定位。首版限制同章连续目标；验证后合并同资源／同出现的相邻范围，身份比较不包含 prefix／suffix 或章节。按范围拼接后整体 NFC 生成 Segment 原文，出处与片段创建及原文固定原子完成并可幂等核实。
+- 原文固定触发包括首次 AI 受理、首次讲解保存和首次精确出处创建；失败人工保存不固定，删除成果不解锁。A2 通过增量数据迁移保护存量未锁但有历史讲解的片段，记录本次保护时间，不补造原文历史。全文无显式块映射时新分配 Section 身份，旧修订及引用保留。
+- 后续 C1 中，Segment 可选材料出处与 Material 属于同一活跃 Source，保存版本及有序局部范围、exact 和独立的 spine 出现定位。首版限制同章连续目标；验证后合并同资源／同出现的相邻范围，身份比较不包含 prefix／suffix 或章节。按范围拼接后整体 NFC 生成 Segment 原文，出处与片段创建及原文固定原子完成并可幂等核实。
 - 资料读取及定位解析执行严格版本、范围和快照校验；不以阅读恢复容错替代精确引用，不按同文静默换绑。解析不依赖分词，实际阅读仍经过现有准备门禁。完整接口和验证案例见[实施计划](handovers/text-study/PLAN.md)及[样例矩阵](handovers/text-study/TEST_MATRIX.md)。
 
 ### 已实现接口
@@ -401,13 +401,18 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 /provider-models/{model_id}, /provider-models/{model_id}/verifications
 /sources, /sources/{source_id}, /sources/{source_id}/segments, /segments/{segment_id}
 /segments/{segment_id}/analyses, /analyses/{analysis_id}, /analyses/{analysis_id}/delete-impact
+/analyses/{analysis_id}/revisions
 /segments/{segment_id}/threads, /threads/{thread_id}, /threads/{thread_id}/messages
 /threads/{thread_id}/jobs, /threads/{thread_id}/jobs/by-request/{request_id}
 /jobs/{job_id}, /jobs/{job_id}/stop, /jobs/{job_id}/decision
 /runs, /runs/{run_id}
 ```
 
-指定历史讲解通过`GET /analyses/{analysis_id}?revision_id=...`读取；当前没有独立`/revisions/{id}`路由。Analysis生成／保存和Section编辑走Job执行及工具审核，没有绕过审核的公开编辑端点；整份Analysis删除提供影响预览及用户DELETE接口。线程权限与新对话默认模式、具体审核决定、停止及保存核实接口已实现。普通读取不返回密钥，公开业务接口不等于全部注册为Agent工具。
+指定历史讲解通过`GET /analyses/{analysis_id}?revision_id=...`读取；当前没有独立`/revisions/{id}`路由。人工创建与全文修订分别使用 `POST /segments/{segment_id}/analyses` 和 `POST /analyses/{analysis_id}/revisions`，不要求 Provider、线程或 Run。AI 生成／保存和 Section 编辑继续走 Job 执行及工具审核；整份Analysis删除提供影响预览及用户DELETE接口。线程权限与新对话默认模式、具体审核决定、停止及保存核实接口已实现。普通读取不返回密钥，公开业务接口不等于全部注册为Agent工具。
+
+人工请求统一携带 UUID `request_id`、`expected_text_sha256`、`source_md`，修订另带 `base_revision_id`；创建允许 `manual`／`import` 来源及可选标题。Segment 响应的摘要按 NFC 原文 UTF-8 计算，不存独立正文版本。服务为请求添加操作类型前缀，使用既有 Analysis／Revision 操作凭据；同事务先检查存活和已完成同请求，再检查新写入的正文摘要与基础修订，最后固定原文并保存。成功和重放均返回 200，客户端打开返回的 `revision_id`；重放时 `current_revision_id` 可以已经更新。
+
+`stale_text`、`stale_revision`、`idempotency_conflict` 返回 409，目标不可见返回 404 `not_found`，新请求无正文变化返回 422 `no_changes`；格式校验继续使用既有安全 422 响应。人工编辑不保留新旧块身份映射，旧 Revision／Section 不改写。响应不确定时重复提交冻结的同一请求即可核实，不新增任务或查询协议。
 
 Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未来资源方向；尚无`/occurrences`或`/runs/{id}/events`路由。其字段、组合操作和恢复机制须在对应切片确定，不从本节草图推定交付。
 

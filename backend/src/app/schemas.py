@@ -142,6 +142,7 @@ class SegmentResponse(BaseModel):
     id: str
     source_id: str
     text: str
+    text_sha256: str
     translation: str
     context_before: str
     context_after: str

@@ -22,7 +22,7 @@
 | Web 框架 | FastAPI | 自动生成 OpenAPI，作为前端类型的唯一来源 |
 | 数据校验 | Pydantic v2 | 同时用于 API schema、LLM 结构化输出 schema 和配置模型 |
 | ORM | SQLAlchemy 2.0（`Mapped` 类型化风格） | 不使用 SQLModel；ORM 模型与 API schema 分开定义 |
-| 迁移 | Alembic | 当前以固定 DDL 的 `0001_initial` 从空库建立完整 schema，保留迁移环境、模板与 `just migrate`；发布前且数据可丢弃时可重整初始迁移，需保留日常数据或发布第一版后采用严格增量迁移；应用启动不自动删库 |
+| 迁移 | Alembic | 当前以固定 DDL 的 `0001_initial` 从空库建立完整 schema，A2 追加 `0002_lock_analysis_segments` 数据保护迁移；保留迁移环境、模板与 `just migrate`；发布前且数据可丢弃时可重整初始迁移，需保留日常数据或发布第一版后采用严格增量迁移；应用启动不自动删库 |
 | 数据库 | SQLite（WAL 模式） | 已采用；积累库检索尚未实现，选型保留 MVP 用 `LIKE`、P1 用 FTS5、远期用 sqlite-vec。运行中的 WAL 数据库备份须保证一致性，不能仅复制主文件 |
 | SSE | sse-starlette（预留，未安装） | 当前页面轮询持久 Run／Job；模型侧流式响应不等于浏览器已采用 SSE |
 | LLM 客户端 | `openai` 官方 Python SDK，通过 `base_url` 对接 | BYOK、多 Provider；适配 OpenAI 兼容的 Chat Completions 与 Responses 文本调用 |

@@ -144,7 +144,7 @@ export function SegmentForm({
 				</label>
 				{locked && (
 					<p className="field-help full">
-						原文已用于学习任务，不能修改。可继续维护附带资料。
+						目标原文已固定，不能修改。可继续维护附带资料。
 					</p>
 				)}
 				<label className="field full">

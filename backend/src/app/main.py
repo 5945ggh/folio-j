@@ -20,6 +20,7 @@ from app.api.sources import router as sources_router
 from app.config import REPO_ROOT, load_settings
 from app.db import create_engine
 from app.jobs.runtime import recover_chat_jobs, start_chat_worker
+from app.services.analyses import AnalysisWriteError
 from app.services.chat import ChatError
 from app.services.settings import interrupt_unfinished
 from app.services.statistics_runtime import StatisticsRuntime
@@ -108,6 +109,13 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
 
     @application.exception_handler(ChatError)
     async def chat_error(_request: Request, exc: ChatError) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail, "code": exc.code},
+        )
+
+    @application.exception_handler(AnalysisWriteError)
+    async def analysis_write_error(_request: Request, exc: AnalysisWriteError) -> JSONResponse:
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail, "code": exc.code},

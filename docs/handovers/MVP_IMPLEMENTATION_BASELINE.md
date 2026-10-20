@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-20。文本与资料调整以 `85d8725` 为代码起点，S0／B1 分别提交为 `4e705a1`／`bb900ce`，B2 提交为 `3f6491f`，A1 实现与本次验收记录一并提交；下一步 A2，C 暂不实施。开发期单初始迁移基线及已有能力的证据见下表和历史记录。
+> 状态核对：2026-10-20。文本与资料调整以 `85d8725` 为代码起点，S0／B1 分别提交为 `4e705a1`／`bb900ce`，B2 提交为 `3f6491f`，A1 提交为 `13de4e9`，A2 实现与本次验收记录一并提交；A 线完成，C 暂不实施。当前增量迁移及已有能力的证据见下表和历史记录。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
 
@@ -10,10 +10,10 @@
 
 | 能力 | 状态 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- | --- |
-| 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务被接受后锁定 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md) |
+| 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理或讲解成功保存后锁定；旧资料由增量迁移补齐保护 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
 | 设置与模型接入 | 已提交、工程验收通过 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；顶部分类、统一编辑弹窗、分组原子保存、草稿保护与验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](settings-refresh/ACCEPTANCE.md) |
 | 片段讨论 | 已提交 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
-| 持久讲解 | 已提交 | 多份 Analysis、不可变 Revision、Section／Preamble、总体讲解快捷生成、块级编辑与具体方案审核；整份删除由用户操作 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
+| 持久讲解 | 工程与浏览器验收通过 | 手写／外部 Markdown 保存、当前全文修订、冲突保稿与同请求核实；多份 Analysis、不可变 Revision／Section；AI 快捷生成、块编辑与审核沿用原流程 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
 | 片段阅读与导航 | 工程与浏览器验收通过 | 纯回看不挂载讨论，激活后保活；默认阅读、原文与讲解对照、确切修订／讨论定位、讲解总标题、本页讨论草稿保留；未提交草稿仅在当前挂载页面保留 | [阅读导航](archived/READING_NAVIGATION_ACCEPTANCE.md)、[架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[A1 验收](text-study/A1_ACCEPTANCE.md) |
 | 素材库与阅读管理 | 已提交 | 跨 Source 书籍目录、搜索／筛选／排序／分页、书卡大小与状态菜单、空库整区导入；阅读三态和最近打开持久化，封面按规则版本 2 回退与缓存 | [前端调整](frontend-refresh/ACCEPTANCE.md)、[素材库 A.1](library-a1/ACCEPTANCE.md) |
 | 导入来源表单 | 已提交，工程检查通过；用户反馈无阻塞问题 | 添加书籍与新建来源完整视图切换，创建后自动选择来源并保留文件；单组操作、中文文案与表单提交保护 | [导入来源表单调整](library-a1/ACCEPTANCE.md#2026-10-19-导入来源表单调整) |
@@ -53,6 +53,7 @@
 | 2026-10-15 设置顶部分类 | [工程、独立审查与浏览器验收](settings-refresh/ACCEPTANCE.md) |
 | 2026-10-17 阅读滚动与相邻切章 | [提交前复核](reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
 | 2026-10-19 书籍管理 | [工程、审查与浏览器验收](book-management/ACCEPTANCE.md) |
+| 2026-10-20 独立讲解回看与人工保存 | [A1 独立回看](text-study/A1_ACCEPTANCE.md)、[A2 人工资料与增量保护](text-study/A2_ACCEPTANCE.md) |
 | 2026-10-20 开发期迁移基线整理 | [建库、业务回归与测试库数据保留验收](archived/DATABASE_BASELINE_ACCEPTANCE.md) |
 
 测试数量、包体积与提交隔离检查范围在原记录中维护；离线、真实模型与扩展验证各自对应其方法和观察。
@@ -69,11 +70,10 @@
 
 ## 2. 尚未落实的契约与目标差额
 
-以下汇总尚未落实的契约。2026-10-20 已批准[文本处理与学习资料实施计划](text-study/PLAN.md)，S0、B1 与 B2 已完成本批验收；A1 独立回看已通过验收；A2 随后推进，C 暂不推进。当前原文锁定仍只由聊天受理触发。EPUB 学习衔接按更新后的阶段安排推进，Occurrence 与积累库保留首轮目标。
+以下汇总尚未落实的契约。2026-10-20 已批准[文本处理与学习资料实施计划](text-study/PLAN.md)，S0 与 A／B 线已完成对应验收，A 线工程与浏览器验收均通过；C 暂不推进。人工资料入口与共同原文保护已实现。EPUB 学习衔接按更新后的阶段安排推进，Occurrence 与积累库保留首轮目标。
 
 | 缺口 | 负责规范 | 实施前需要明确或补齐的内容 |
 | --- | --- | --- |
-| 人工讲解与独立回看 | [实施计划 A1／A2](text-study/PLAN.md)、PRD F2／F3 与架构写入契约 | A1 纯回看不启动工作台已交付，见[A1 验收](text-study/A1_ACCEPTANCE.md)；A2 人工保存／全文修订、并发与幂等随后实施 |
 | EPUB 学习衔接 | [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)、[阶段安排](epub-reading/README.md) | 选区目标、语境和返回路径；材料线程、引用、权限与费用；从讨论整理讲解的目标及部分成功反馈 |
 | Occurrence 生产契约 | [术语与知识表示](../GLOSSARY.md#4-知识表示与提取边界已对齐)、[PRD F5](../PRD.md#f5-学习条目创建与整理)、`TBD-02/03` | 带版本的字段与语义、类型边界、不连续 Surface／重复文字定位、anchor 规则和多个 Section 的确切引用；A0 不作为生产定案 |
 | 条目读取与候选写入 | [PRD F5](../PRD.md#f5-学习条目创建与整理)、[F9](../PRD.md#f9-agent-工具权限与审核)、[架构 4.4–4.5](../ARCHITECTURE.md#44-可选批量提取未来模块servicesextractionpy尚不存在) | 将已确认读取、候选创建／修改及用户整理边界落实为 API、工具和执行校验；不能从 Analysis 工具签名推断候选协议 |

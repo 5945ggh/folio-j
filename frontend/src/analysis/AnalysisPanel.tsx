@@ -7,6 +7,7 @@ import {
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { ConfirmDialog, InlineError } from "../Shared";
 import {
+	type AnalysisDetail,
 	analysisKeys,
 	deleteAnalysis,
 	getAnalysis,
@@ -24,6 +25,7 @@ export function AnalysisPanel({
 	revisionId,
 	onSelect,
 	onDiscuss,
+	onEdit,
 	toolbarActions,
 	children,
 }: {
@@ -32,6 +34,7 @@ export function AnalysisPanel({
 	revisionId: string | null;
 	onSelect: (analysisId: string | null, revisionId: string | null) => void;
 	onDiscuss?: () => void;
+	onEdit?: (document: AnalysisDetail) => void;
 	toolbarActions?: ReactNode;
 	children?: ReactNode;
 }) {
@@ -112,6 +115,19 @@ export function AnalysisPanel({
 					)}
 				</div>
 				<div className="analysis-toolbar-actions">
+					{document &&
+						document.revision_id === document.current_revision_id &&
+						onEdit && (
+							<button
+								type="button"
+								id={`manual-analysis-edit-${document.id}`}
+								className="analysis-quiet-button"
+								disabled={detail.isFetching}
+								onClick={() => onEdit(document)}
+							>
+								编辑全文
+							</button>
+						)}
 					{document && (
 						<button
 							type="button"
@@ -217,7 +233,7 @@ export function AnalysisPanel({
 						<span title={document.revision_id}>
 							{document.revision_id === document.current_revision_id
 								? "当前版本"
-								: "历史版本"}{" "}
+								: "历史版本（只读）"}{" "}
 							· 修订 {document.revision_id.slice(-6)}
 						</span>
 					</div>

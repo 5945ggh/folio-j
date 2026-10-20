@@ -1,0 +1,45 @@
+.confirm-card.analysis-editor-dialog {
+	width: min(860px, calc(100vw - 32px));
+	max-height: calc(100dvh - 32px);
+}
+.analysis-editor-dialog form {
+	display: grid;
+	gap: 16px;
+}
+.analysis-editor-fields {
+	display: grid;
+	grid-template-columns: 170px minmax(0, 1fr);
+	gap: 16px;
+}
+.analysis-editor-source textarea {
+	min-height: 280px;
+	resize: vertical;
+	font-family: ui-monospace, monospace;
+	font-size: 13px;
+	line-height: 1.8;
+}
+.analysis-editor-dialog p.analysis-editor-note {
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.8;
+}
+.analysis-editor-notice {
+	padding: 12px 14px;
+	border: 1px solid #dce4ef;
+	border-radius: 6px;
+	background: #f6f8fb;
+	color: #46576b;
+	font-size: 13px;
+	line-height: 1.8;
+}
+@media (max-width: 640px) {
+	.confirm-card.analysis-editor-dialog {
+		padding: 20px;
+	}
+	.analysis-editor-fields {
+		grid-template-columns: 1fr;
+	}
+	.analysis-editor-source textarea {
+		min-height: 240px;
+	}
+}

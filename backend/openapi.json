@@ -265,6 +265,80 @@
         "title": "AnalysisListItem",
         "type": "object"
       },
+      "AnalysisValidationErrorResponse": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisValidationIssue"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "AnalysisValidationErrorResponse",
+        "type": "object"
+      },
+      "AnalysisValidationIssue": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Loc",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Msg",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "AnalysisValidationIssue",
+        "type": "object"
+      },
+      "AnalysisWriteErrorResponse": {
+        "properties": {
+          "code": {
+            "enum": [
+              "not_found",
+              "stale_text",
+              "stale_revision",
+              "idempotency_conflict",
+              "no_changes"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "detail"
+        ],
+        "title": "AnalysisWriteErrorResponse",
+        "type": "object"
+      },
       "ArtifactResponse": {
         "properties": {
           "analysis_id": {
@@ -1029,6 +1103,89 @@
           "thresholds"
         ],
         "title": "LexicalStatistics",
+        "type": "object"
+      },
+      "ManualAnalysisCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_text_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Expected Text Sha256",
+            "type": "string"
+          },
+          "origin": {
+            "default": "manual",
+            "enum": [
+              "manual",
+              "import"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "source_md": {
+            "maxLength": 500000,
+            "minLength": 1,
+            "title": "Source Md",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_text_sha256",
+          "source_md"
+        ],
+        "title": "ManualAnalysisCreate",
+        "type": "object"
+      },
+      "ManualAnalysisRevisionCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "base_revision_id": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "title": "Base Revision Id",
+            "type": "string"
+          },
+          "expected_text_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Expected Text Sha256",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "source_md": {
+            "maxLength": 500000,
+            "minLength": 1,
+            "title": "Source Md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_text_sha256",
+          "source_md",
+          "base_revision_id"
+        ],
+        "title": "ManualAnalysisRevisionCreate",
         "type": "object"
       },
       "MaterialCatalogItem": {
@@ -3572,6 +3729,10 @@
             ],
             "title": "Text Locked At"
           },
+          "text_sha256": {
+            "title": "Text Sha256",
+            "type": "string"
+          },
           "transcription": {
             "title": "Transcription",
             "type": "string"
@@ -3590,6 +3751,7 @@
           "id",
           "source_id",
           "text",
+          "text_sha256",
           "translation",
           "context_before",
           "context_after",
@@ -4475,6 +4637,83 @@
           }
         },
         "summary": "Get Delete Impact"
+      }
+    },
+    "/api/analyses/{analysis_id}/revisions": {
+      "post": {
+        "operationId": "createManualAnalysisRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualAnalysisRevisionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisWriteErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisWriteErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AnalysisWriteErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AnalysisValidationErrorResponse"
+                    }
+                  ],
+                  "title": "Response 422 Createmanualanalysisrevision"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Create Manual Analysis Revision"
       }
     },
     "/api/catalog/sources": {
@@ -6376,6 +6615,81 @@
           }
         },
         "summary": "List Analyses"
+      },
+      "post": {
+        "operationId": "createManualAnalysis",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "segment_id",
+            "required": true,
+            "schema": {
+              "title": "Segment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualAnalysisCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisWriteErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisWriteErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AnalysisWriteErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AnalysisValidationErrorResponse"
+                    }
+                  ],
+                  "title": "Response 422 Createmanualanalysis"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Create Manual Analysis"
       }
     },
     "/api/segments/{segment_id}/delete-impact": {

@@ -1,6 +1,8 @@
 """Source and Segment business operations."""
 
 import asyncio
+import hashlib
+import unicodedata
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
@@ -31,6 +33,16 @@ def utc_now() -> datetime:
 
 def as_utc(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def segment_text_sha256(text: str) -> str:
+    return hashlib.sha256(unicodedata.normalize("NFC", text).encode()).hexdigest()
+
+
+def lock_segment_text(segment: Segment, locked_at: datetime) -> None:
+    """Protect text under the caller's transaction without changing the edit revision."""
+    if segment.text_locked_at is None:
+        segment.text_locked_at = locked_at
 
 
 async def begin_write(session: AsyncSession) -> None:
@@ -117,6 +129,7 @@ def segment_response(segment: Segment) -> SegmentResponse:
         id=segment.id,
         source_id=segment.source_id,
         text=segment.text,
+        text_sha256=segment_text_sha256(segment.text),
         translation=segment.translation,
         context_before=segment.context_before,
         context_after=segment.context_after,

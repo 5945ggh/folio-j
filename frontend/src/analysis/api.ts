@@ -1,10 +1,41 @@
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 import { errorMessage, requireData } from "../content";
+import { analysisWriteError } from "./editor";
 
 export type AnalysisItem = components["schemas"]["AnalysisListItem"];
 export type AnalysisDetail = components["schemas"]["AnalysisDetail"];
 export type AnalysisImpact = components["schemas"]["AnalysisDeleteImpact"];
+export type ManualAnalysisCreate =
+	components["schemas"]["ManualAnalysisCreate"];
+export type ManualAnalysisRevisionCreate =
+	components["schemas"]["ManualAnalysisRevisionCreate"];
+
+export async function createManualAnalysis(
+	segmentId: string,
+	body: ManualAnalysisCreate,
+): Promise<AnalysisDetail> {
+	const { data, error, response } = await api.POST(
+		"/api/segments/{segment_id}/analyses",
+		{ params: { path: { segment_id: segmentId } }, body },
+	);
+	if (!data) throw analysisWriteError(error, response.status);
+	if (data.segment_id !== segmentId) throw analysisWriteError(undefined, 200);
+	return data;
+}
+
+export async function createManualAnalysisRevision(
+	analysisId: string,
+	body: ManualAnalysisRevisionCreate,
+): Promise<AnalysisDetail> {
+	const { data, error, response } = await api.POST(
+		"/api/analyses/{analysis_id}/revisions",
+		{ params: { path: { analysis_id: analysisId } }, body },
+	);
+	if (!data) throw analysisWriteError(error, response.status);
+	if (data.id !== analysisId) throw analysisWriteError(undefined, 200);
+	return data;
+}
 
 export const analysisKeys = {
 	list: (segmentId: string) => ["analyses", segmentId] as const,

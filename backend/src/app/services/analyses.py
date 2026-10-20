@@ -1,6 +1,7 @@
 """Analysis persistence and revision-safe editing.
 
-Write functions only flush. Their caller owns BEGIN IMMEDIATE, job checks and commit.
+Low-level writes only flush; manual use cases own their short write transaction.
+Job callers retain their own acceptance, execution-token and commit checks.
 """
 
 import unicodedata
@@ -16,13 +17,42 @@ from app.analysis_schemas import (
     AnalysisDeleteImpact,
     AnalysisDetail,
     AnalysisListItem,
+    AnalysisWriteErrorCode,
+    ManualAnalysisCreate,
+    ManualAnalysisRevisionCreate,
     SectionOperation,
     SectionRead,
 )
 from app.ids import new_ulid
 from app.models import Segment, Source
 from app.services.normalizer import NORMALIZER_VERSION, Block, normalize, split_source_lines
-from app.services.sources import require_segment
+from app.services.sources import (
+    begin_write,
+    lock_segment_text,
+    require_segment,
+    segment_text_sha256,
+)
+
+
+class AnalysisWriteError(Exception):
+    def __init__(self, status_code: int, detail: str, code: AnalysisWriteErrorCode) -> None:
+        self.status_code = status_code
+        self.detail = detail
+        self.code = code
+        super().__init__(detail)
+
+
+def _check_text(segment: Segment, expected_text_sha256: str) -> None:
+    if segment_text_sha256(segment.text) != expected_text_sha256:
+        raise AnalysisWriteError(409, "原文已变化，请重新读取后保存", "stale_text")
+
+
+def _manual_http_error(exc: HTTPException) -> AnalysisWriteError | None:
+    if exc.status_code == 404:
+        return AnalysisWriteError(404, str(exc.detail), "not_found")
+    if exc.status_code == 409:
+        return AnalysisWriteError(409, str(exc.detail), "idempotency_conflict")
+    return None
 
 
 @dataclass(frozen=True)
@@ -245,10 +275,12 @@ async def create_analysis(
     origin: str,
     run_id: str | None = None,
     title: str | None = None,
+    expected_text_sha256: str | None = None,
 ) -> AnalysisDetail:
     """Create once under the caller's write transaction; no implicit commit."""
     if not operation_key or len(operation_key) > 100:
         raise HTTPException(status_code=422, detail="无效操作身份")
+    segment = await require_segment(session, segment_id)
     source_md = unicodedata.normalize("NFC", source_md)
     create_payload: dict[str, object] = {
         "segment_id": segment_id,
@@ -256,10 +288,14 @@ async def create_analysis(
         "run_id": run_id,
         "title": title,
     }
+    if expected_text_sha256 is not None:
+        create_payload["expected_text_sha256"] = expected_text_sha256
     existing = await session.scalar(select(Analysis).where(Analysis.operation_key == operation_key))
     if existing is not None:
-        if existing.segment_id != segment_id or existing.deleted_at is not None:
+        if existing.segment_id != segment_id:
             raise HTTPException(status_code=409, detail="操作身份已用于其他讲解")
+        if existing.deleted_at is not None:
+            raise HTTPException(status_code=404, detail="讲解不存在")
         original = await session.scalar(
             select(AnalysisRevision).where(
                 AnalysisRevision.analysis_id == existing.id,
@@ -273,10 +309,12 @@ async def create_analysis(
         ):
             raise HTTPException(status_code=409, detail="操作身份对应的请求不同")
         return await _detail(session, existing, original.id)
-    await require_segment(session, segment_id)
     if not source_md.strip() or len(source_md) > 500_000:
         raise HTTPException(status_code=422, detail="讲解正文须非空且不超过 500000 字符")
+    if expected_text_sha256 is not None:
+        _check_text(segment, expected_text_sha256)
     created = _now()
+    lock_segment_text(segment, created)
     analysis = Analysis(
         id=new_ulid(),
         segment_id=segment_id,
@@ -303,6 +341,90 @@ async def create_analysis(
         analysis.title = title.strip()[:200]
         result.title = analysis.title
     return result
+
+
+async def create_manual_analysis(
+    session: AsyncSession, segment_id: str, data: ManualAnalysisCreate
+) -> AnalysisDetail:
+    try:
+        await begin_write(session)
+        result = await create_analysis(
+            session,
+            segment_id=segment_id,
+            source_md=data.source_md,
+            operation_key=f"manual:create:{data.request_id}",
+            origin=data.origin,
+            title=data.title,
+            expected_text_sha256=data.expected_text_sha256,
+        )
+        await session.commit()
+        return result
+    except BaseException as exc:
+        await session.rollback()
+        if isinstance(exc, HTTPException):
+            error = _manual_http_error(exc)
+            if error is not None:
+                raise error from exc
+        raise
+
+
+async def create_manual_analysis_revision(
+    session: AsyncSession, analysis_id: str, data: ManualAnalysisRevisionCreate
+) -> AnalysisDetail:
+    try:
+        await begin_write(session)
+        analysis = await _active_analysis(session, analysis_id)
+        segment = await require_segment(session, analysis.segment_id)
+        key = f"manual:replace:{data.request_id}"
+        payload: dict[str, object] = {
+            "kind": "manual_replace",
+            "analysis_id": analysis_id,
+            "segment_id": segment.id,
+            "base_revision_id": data.base_revision_id,
+            "expected_text_sha256": data.expected_text_sha256,
+            "run_id": None,
+        }
+        prior = await session.scalar(
+            select(AnalysisRevision).where(AnalysisRevision.operation_key == key)
+        )
+        if prior is not None:
+            if (
+                prior.analysis_id != analysis_id
+                or prior.parent_revision_id != data.base_revision_id
+                or prior.operation_payload != payload
+                or prior.source_md != data.source_md
+            ):
+                raise AnalysisWriteError(409, "操作身份对应的请求不同", "idempotency_conflict")
+            result = await _detail(session, analysis, prior.id)
+        else:
+            _check_text(segment, data.expected_text_sha256)
+            current = await _detail(session, analysis, data.base_revision_id)
+            if analysis.current_revision_id != data.base_revision_id:
+                raise AnalysisWriteError(
+                    409, "讲解版本已变化，请基于最新修订编辑", "stale_revision"
+                )
+            if current.source_md == data.source_md:
+                raise AnalysisWriteError(422, "讲解正文没有变化", "no_changes")
+            lock_segment_text(segment, _now())
+            result = await _save_revision(
+                session,
+                analysis,
+                source_md=data.source_md,
+                parent_revision_id=data.base_revision_id,
+                operation_key=key,
+                operation_payload=payload,
+                origin="manual_edit",
+                run_id=None,
+            )
+        await session.commit()
+        return result
+    except BaseException as exc:
+        await session.rollback()
+        if isinstance(exc, HTTPException):
+            error = _manual_http_error(exc)
+            if error is not None:
+                raise error from exc
+        raise
 
 
 def _section_raw(title: str, body: str) -> str:
