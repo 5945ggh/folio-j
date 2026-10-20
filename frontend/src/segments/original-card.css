@@ -1,0 +1,173 @@
+.app-shell.segment-study-shell .segment-original-card {
+	display: block;
+	width: 100%;
+	padding: 20px 24px;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	background: var(--sidebar);
+	color: var(--text);
+	text-align: left;
+	cursor: pointer;
+}
+.app-shell.segment-study-shell .segment-original-card:hover {
+	border-color: #d9dadd;
+	background: #f0f1f3;
+}
+.app-shell.segment-study-shell .segment-original-label,
+.app-shell.segment-study-shell .segment-original-footer {
+	color: var(--muted);
+	font-size: 12px;
+	font-weight: 400;
+}
+.app-shell.segment-study-shell .segment-context-preview {
+	display: grid;
+	gap: 12px;
+	margin: 18px 0;
+	font-weight: 400;
+	text-align: left;
+}
+.app-shell.segment-study-shell .segment-original-focus {
+	display: -webkit-box;
+	-webkit-line-clamp: 4;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	font-size: 20px;
+	line-height: 1.9;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.app-shell.segment-study-shell .segment-context-line {
+	display: flex;
+	flex-direction: column;
+	max-height: 3.6em;
+	padding-inline: 8px;
+	overflow: hidden;
+	color: #858992;
+	font-size: 15px;
+	line-height: 1.8;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.app-shell.segment-study-shell .segment-context-line > span {
+	flex-shrink: 0;
+}
+.app-shell.segment-study-shell .segment-context-before {
+	justify-content: flex-end;
+	mask-image: linear-gradient(to bottom, #0002, #000c);
+}
+.app-shell.segment-study-shell .segment-context-after {
+	mask-image: linear-gradient(to bottom, #000c, #0002);
+}
+.app-shell.segment-study-shell .segment-original-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.app-shell.segment-study-shell .segment-material-dialog {
+	width: min(720px, calc(100vw - 32px));
+	max-width: none;
+	max-height: min(82dvh, 900px);
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	background: var(--surface);
+	color: var(--text);
+	overflow: hidden;
+}
+.app-shell.segment-study-shell .segment-material-dialog[open] {
+	display: flex;
+	flex-direction: column;
+}
+.app-shell.segment-study-shell .segment-material-header,
+.app-shell.segment-study-shell .segment-material-actions {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 18px 24px;
+}
+.app-shell.segment-study-shell .segment-material-header {
+	border-bottom: 1px solid var(--border);
+}
+.app-shell.segment-study-shell .segment-material-header h2 {
+	margin: 0;
+	font-size: 18px;
+}
+.app-shell.segment-study-shell .segment-material-close {
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border: 0;
+	border-radius: 7px;
+	background: transparent;
+	color: var(--muted);
+	font-size: 25px;
+}
+.app-shell.segment-study-shell .segment-material-close:hover {
+	background: var(--sidebar);
+	color: var(--text);
+}
+.app-shell.segment-study-shell .segment-material-body {
+	min-height: 0;
+	padding: 4px 24px 24px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+.app-shell.segment-study-shell .segment-material-field {
+	margin-top: 24px;
+}
+.app-shell.segment-study-shell .segment-material-field h3 {
+	margin: 0 0 8px;
+	color: var(--muted);
+	font-size: 12px;
+	font-weight: 500;
+}
+.app-shell.segment-study-shell
+	.segment-material-dialog
+	.segment-material-field
+	p {
+	margin: 0;
+	font-size: 15px;
+	line-height: 1.9;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.app-shell.segment-study-shell
+	.segment-material-dialog
+	.segment-material-field
+	p[lang="ja"] {
+	font-size: 17px;
+}
+.app-shell.segment-study-shell .segment-material-dialog .segment-material-date {
+	margin: 24px 0 0;
+	color: var(--muted);
+	font-size: 12px;
+}
+.app-shell.segment-study-shell .segment-material-actions {
+	justify-content: flex-end;
+	border-top: 1px solid var(--border);
+}
+@media (max-width: 720px) {
+	.app-shell.segment-study-shell .segment-original-card {
+		padding: 16px;
+	}
+	.app-shell.segment-study-shell .segment-original-focus {
+		font-size: 18px;
+	}
+	.app-shell.segment-study-shell .segment-context-line {
+		padding-inline: 4px;
+		font-size: 14px;
+	}
+	.app-shell.segment-study-shell .segment-material-dialog {
+		max-height: calc(100dvh - 32px);
+	}
+	.app-shell.segment-study-shell .segment-material-header,
+	.app-shell.segment-study-shell .segment-material-actions {
+		padding: 14px 18px;
+	}
+	.app-shell.segment-study-shell .segment-material-body {
+		padding-inline: 18px;
+	}
+}

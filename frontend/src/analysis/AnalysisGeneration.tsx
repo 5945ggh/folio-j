@@ -3,25 +3,6 @@ import { type Job, stopJob } from "../chat/api";
 import { generationResult, isTerminalJob, mergeJob } from "../chat/discussion";
 import { InlineError } from "../Shared";
 
-export function AnalysisGenerationButton({
-	job,
-	onGenerate,
-}: {
-	job?: Job;
-	onGenerate: () => void;
-}) {
-	return (
-		<button
-			type="button"
-			className="button primary"
-			disabled={Boolean(job && !isTerminalJob(job))}
-			onClick={onGenerate}
-		>
-			生成总体讲解
-		</button>
-	);
-}
-
 export function AnalysisGenerationStatus({
 	job,
 	onSelect,

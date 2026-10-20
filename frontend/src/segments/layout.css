@@ -1,0 +1,338 @@
+.app-shell.segment-study-shell {
+	--sidebar-width: 0px;
+	--accent: #111;
+	--text: #26282d;
+	display: grid;
+	grid-template-columns: 56px minmax(0, 1fr);
+	height: 100dvh;
+	min-height: 0;
+	padding: 0;
+	overflow: hidden;
+	transition: none;
+}
+.app-shell.segment-study-shell .segment-tools {
+	z-index: 8;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+	padding: 14px 5px;
+	border-right: 1px solid var(--border);
+	background: var(--sidebar);
+}
+.app-shell.segment-study-shell .segment-tool {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border: 0;
+	border-radius: 7px;
+	background: transparent;
+	color: var(--muted);
+	text-decoration: none;
+}
+.app-shell.segment-study-shell .segment-tool:hover,
+.app-shell.segment-study-shell .segment-tool[aria-expanded="true"] {
+	background: var(--surface);
+	color: var(--accent);
+}
+.app-shell.segment-study-shell .segment-tool:disabled {
+	opacity: 0.45;
+}
+.app-shell.segment-study-shell .segment-tool-group {
+	margin-top: 28px;
+}
+.app-shell.segment-study-shell .segment-tool-more {
+	position: relative;
+	margin-top: auto;
+}
+.app-shell.segment-study-shell .segment-tool-label {
+	position: absolute;
+	left: calc(100% + 12px);
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 12;
+	width: max-content;
+	max-width: min(260px, calc(100vw - 86px));
+	padding: 6px 10px;
+	border: 1px solid var(--border);
+	border-radius: 5px;
+	background: var(--surface);
+	color: inherit;
+	font-size: 12px;
+	pointer-events: none;
+	visibility: hidden;
+}
+.app-shell.segment-study-shell .segment-tool:focus-visible .segment-tool-label {
+	visibility: visible;
+}
+@media (hover: hover) {
+	.app-shell.segment-study-shell .segment-tool:hover .segment-tool-label {
+		visibility: visible;
+	}
+}
+.app-shell.segment-study-shell
+	.segment-tool-more
+	.segment-tool[aria-expanded="true"]
+	.segment-tool-label {
+	visibility: hidden;
+}
+.app-shell.segment-study-shell .segment-tool-mobile-label {
+	display: none;
+}
+.app-shell.segment-study-shell .segment-tools-menu {
+	position: absolute;
+	left: calc(100% + 10px);
+	bottom: 0;
+	width: 176px;
+	padding: 5px;
+	border: 1px solid var(--border);
+	border-radius: 7px;
+	background: var(--surface);
+	box-shadow: 0 8px 24px #20252c14;
+}
+.app-shell.segment-study-shell .segment-tools-menu button {
+	display: block;
+	width: 100%;
+	padding: 10px 12px;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	text-align: left;
+	font-size: 13px;
+}
+.app-shell.segment-study-shell .segment-tools-menu button:hover {
+	background: var(--sidebar);
+}
+.app-shell.segment-study-shell .segment-study-main {
+	min-width: 0;
+	min-height: 0;
+}
+.app-shell.segment-study-shell .segment-shell {
+	position: relative;
+	height: 100%;
+	min-height: 0;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr);
+	color: inherit;
+}
+.app-shell.segment-study-shell .segment-workspace {
+	grid-column: 1;
+	grid-row: 1;
+	position: relative;
+}
+.app-shell.segment-study-shell .segment-reader {
+	scroll-padding-top: 16px;
+	padding: 24px clamp(24px, 3vw, 48px) 56px;
+}
+.app-shell.segment-study-shell .segment-reader-inner {
+	max-width: 860px;
+}
+.app-shell.segment-study-shell .segment-identity {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	margin-bottom: 25px;
+	color: var(--muted);
+	font-size: 12px;
+}
+.app-shell.segment-study-shell .segment-identity a {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: inherit;
+	font-size: 14px;
+	text-decoration: none;
+}
+.app-shell.segment-study-shell .segment-identity a:hover {
+	color: var(--accent);
+	text-decoration: underline;
+}
+.app-shell.segment-study-shell .segment-analyses {
+	margin-top: 28px;
+	padding-top: 0;
+	border: 0;
+}
+.app-shell.segment-study-shell .segment-conversation {
+	display: flex;
+	flex-direction: column;
+	border-color: var(--border);
+}
+.app-shell.segment-study-shell .segment-conversation[hidden] {
+	display: none;
+}
+.app-shell.segment-study-shell .segment-discussion-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 14px 18px;
+	border-bottom: 1px solid var(--border);
+}
+.app-shell.segment-study-shell .segment-discussion-heading strong {
+	font-size: 14px;
+	font-weight: 550;
+}
+.app-shell.segment-study-shell .segment-discussion-heading button {
+	border: 0;
+	background: transparent;
+	color: var(--muted);
+	padding: 7px;
+	font-size: 12px;
+}
+.app-shell.segment-study-shell .segment-conversation .workbench {
+	flex: 1;
+	height: auto;
+	min-height: 0;
+}
+.app-shell.segment-study-shell .segment-new-analysis {
+	display: flex;
+	align-items: center;
+}
+.app-shell.segment-study-shell .segment-new-analysis > button {
+	color: var(--accent);
+}
+.app-shell.segment-study-shell .segment-create-menu {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	width: 200px;
+	padding: 6px;
+	border: 1px solid var(--border);
+	border-radius: 7px;
+	background: var(--surface);
+	color: inherit;
+	box-shadow: 0 8px 24px #20252c14;
+}
+.app-shell.segment-study-shell .segment-create-menu .button {
+	width: 100%;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	text-align: left;
+	box-shadow: none;
+	font-size: 13px;
+	padding: 10px;
+}
+.app-shell.segment-study-shell .segment-create-menu .button:hover {
+	background: var(--sidebar);
+}
+.app-shell.segment-study-shell .segment-page-state {
+	max-width: 640px;
+	padding: 40px 28px;
+	margin: 0 auto;
+}
+@media (max-width: 999px) {
+	.app-shell.segment-study-shell .segment-workspace,
+	.app-shell.segment-study-shell
+		.segment-shell.conversation-closed
+		.segment-workspace {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr);
+	}
+	.app-shell.segment-study-shell .segment-reader {
+		grid-area: 1 / 1;
+	}
+	.app-shell.segment-study-shell
+		.segment-shell:not(.conversation-closed)
+		.segment-reader {
+		visibility: hidden;
+		pointer-events: none;
+	}
+	.app-shell.segment-study-shell .segment-conversation {
+		position: absolute;
+		inset: 0;
+		border: 0;
+	}
+	.app-shell.segment-study-shell .conversation-resizer {
+		display: none;
+	}
+}
+@media (max-width: 720px) {
+	.app-shell.segment-study-shell {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: 56px minmax(0, 1fr);
+	}
+	.app-shell.segment-study-shell .segment-tools {
+		flex-direction: row;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 6px 12px;
+		border-right: 0;
+		border-bottom: 1px solid var(--border);
+	}
+	.app-shell.segment-study-shell .segment-tool {
+		width: auto;
+		padding: 0 8px;
+		gap: 6px;
+	}
+	.app-shell.segment-study-shell .segment-tool-mobile-label {
+		display: inline;
+		font-size: 12px;
+	}
+	.app-shell.segment-study-shell .segment-tool-group,
+	.app-shell.segment-study-shell .segment-tool-more {
+		margin: 0;
+	}
+	.app-shell.segment-study-shell .segment-tools-menu {
+		left: auto;
+		right: 0;
+		bottom: auto;
+		top: calc(100% + 8px);
+	}
+	.app-shell.segment-study-shell .segment-tool-label {
+		top: calc(100% + 10px);
+		left: 0;
+		transform: none;
+		max-width: 230px;
+	}
+	.app-shell.segment-study-shell .segment-tool-more .segment-tool-label {
+		left: auto;
+		right: 0;
+	}
+	.app-shell.segment-study-shell .segment-reader {
+		padding: 20px 18px 36px;
+	}
+	.app-shell.segment-study-shell .segment-identity {
+		margin-bottom: 20px;
+	}
+}
+
+/* Match the neutral Source controls throughout this focused workspace. */
+.app-shell.segment-study-shell .button.primary:hover:not(:disabled) {
+	background: #2b2b2b;
+}
+.app-shell.segment-study-shell .button.secondary {
+	color: #535963;
+}
+.app-shell.segment-study-shell .button.secondary:hover:not(:disabled),
+.app-shell.segment-study-shell .chat-new-button:hover {
+	background: var(--sidebar);
+	border-color: #d4d6da;
+}
+.app-shell.segment-study-shell .chat-new-button,
+.app-shell.segment-study-shell .chat-config summary span:last-child,
+.app-shell.segment-study-shell .chat-additional summary span {
+	color: #535963;
+}
+.app-shell.segment-study-shell :focus-visible {
+	outline-color: #747982;
+}
+.app-shell.segment-study-shell .conversation-resizer:hover::before,
+.app-shell.segment-study-shell .conversation-resizer:focus-visible::before {
+	background: #d4d6da;
+}
+.app-shell.segment-study-shell .conversation-resizer:hover::after,
+.app-shell.segment-study-shell .conversation-resizer:focus-visible::after {
+	background: #747982;
+}
+.app-shell.segment-study-shell .chat-artifact-button {
+	border-color: var(--border);
+	background: var(--sidebar);
+	color: #535963;
+}

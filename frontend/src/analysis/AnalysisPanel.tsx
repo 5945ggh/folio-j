@@ -4,7 +4,15 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import { ConfirmDialog, InlineError } from "../Shared";
 import {
 	type AnalysisDetail,
@@ -15,7 +23,9 @@ import {
 	listAnalyses,
 } from "./api";
 import { Markdown } from "./Markdown";
+import { analysisPresentation } from "./presentation";
 import { readingAnalysis } from "./state";
+import "./reading.css";
 
 const pageSize = 100;
 
@@ -24,7 +34,6 @@ export function AnalysisPanel({
 	selectedId,
 	revisionId,
 	onSelect,
-	onDiscuss,
 	onEdit,
 	toolbarActions,
 	children,
@@ -33,7 +42,6 @@ export function AnalysisPanel({
 	selectedId: string | null;
 	revisionId: string | null;
 	onSelect: (analysisId: string | null, revisionId: string | null) => void;
-	onDiscuss?: () => void;
 	onEdit?: (document: AnalysisDetail) => void;
 	toolbarActions?: ReactNode;
 	children?: ReactNode;
@@ -65,6 +73,7 @@ export function AnalysisPanel({
 		selectedId,
 		detail.isError,
 	);
+	const presentation = document ? analysisPresentation(document) : null;
 	const impact = useQuery({
 		queryKey: analysisKeys.impact(effectiveId ?? ""),
 		queryFn: () => getAnalysisImpact(effectiveId ?? ""),
@@ -108,52 +117,16 @@ export function AnalysisPanel({
 								onSelect(null, null);
 							}}
 						>
-							← 返回讲解列表
+							← 全部讲解
 						</button>
 					) : (
-						<h2>讲解列表</h2>
+						<h2>讲解</h2>
 					)}
 				</div>
-				<div className="analysis-toolbar-actions">
-					{document &&
-						document.revision_id === document.current_revision_id &&
-						onEdit && (
-							<button
-								type="button"
-								id={`manual-analysis-edit-${document.id}`}
-								className="analysis-quiet-button"
-								disabled={detail.isFetching}
-								onClick={() => onEdit(document)}
-							>
-								编辑全文
-							</button>
-						)}
-					{document && (
-						<button
-							type="button"
-							className="analysis-quiet-button"
-							onClick={() => {
-								remove.reset();
-								setDeleting(true);
-							}}
-						>
-							删除讲解
-						</button>
-					)}
-					{document && onDiscuss && (
-						<button
-							type="button"
-							className="analysis-quiet-button"
-							onClick={onDiscuss}
-						>
-							展开讨论
-						</button>
-					)}
-					{toolbarActions}
-				</div>
+				<div className="analysis-toolbar-actions">{toolbarActions}</div>
 			</div>
 			{!effectiveId && items.length > 0 && (
-				<section className="analysis-list" aria-label="讲解列表">
+				<section className="analysis-list" aria-label="讲解">
 					{items.map((item) => (
 						<button
 							key={item.id}
@@ -226,29 +199,46 @@ export function AnalysisPanel({
 					这份讲解不属于当前片段，请返回讲解列表选择。
 				</p>
 			)}
-			{document && (
+			{document && presentation && (
 				<article className="analysis-document">
-					<div className="analysis-document-meta">
-						<span>已保存讲解</span>
-						<span title={document.revision_id}>
-							{document.revision_id === document.current_revision_id
-								? "当前版本"
-								: "历史版本（只读）"}{" "}
-							· 修订 {document.revision_id.slice(-6)}
-						</span>
-					</div>
 					{document.revision_id !== document.current_revision_id && (
-						<button
-							type="button"
-							className="analysis-quiet-button"
-							onClick={() => onSelect(document.id, null)}
-						>
-							查看当前版本
-						</button>
+						<div className="analysis-historical-notice">
+							<span>历史版本（只读）</span>
+							<button
+								type="button"
+								className="analysis-quiet-button"
+								onClick={() => onSelect(document.id, null)}
+							>
+								查看当前版本
+							</button>
+						</div>
 					)}
-					{!/^\s*#\s+\S/m.test(document.source_md.split("\n", 2)[0] ?? "") && (
-						<h2>{document.title}</h2>
-					)}
+					<header
+						className="analysis-document-header"
+						id={
+							presentation.title?.sectionId
+								? `analysis-section-${presentation.title.sectionId}`
+								: undefined
+						}
+					>
+						<div className="analysis-document-heading">
+							{presentation.title ? (
+								<Markdown text={presentation.title.markdown} />
+							) : (
+								<h2>{document.title}</h2>
+							)}
+						</div>
+						<DocumentActions
+							key={`${document.id}-${document.revision_id}`}
+							document={document}
+							fetching={detail.isFetching}
+							onEdit={onEdit}
+							onDelete={() => {
+								remove.reset();
+								setDeleting(true);
+							}}
+						/>
+					</header>
 					{document.warnings.length > 0 && (
 						<details className="analysis-warnings">
 							<summary>格式提醒（{document.warnings.length}）</summary>
@@ -259,30 +249,40 @@ export function AnalysisPanel({
 							</ul>
 						</details>
 					)}
-					{document.sections.length > 0 && (
-						<nav className="analysis-toc" aria-label="讲解目录">
-							{document.sections
-								.filter((section) => section.kind === "section")
-								.map((section) => (
-									<a key={section.id} href={`#analysis-section-${section.id}`}>
-										{section.display_no && `${section.display_no} · `}
-										{section.title ?? "未命名段落"}
-									</a>
-								))}
-						</nav>
+					{document.sections.some((section) => section.kind === "section") && (
+						<details className="analysis-toc-disclosure">
+							<summary>目录</summary>
+							<nav className="analysis-toc" aria-label="讲解目录">
+								{document.sections
+									.filter((section) => section.kind === "section")
+									.map((section) => (
+										<a
+											key={section.id}
+											href={`#analysis-section-${section.id}`}
+										>
+											{section.title ?? "未命名段落"}
+										</a>
+									))}
+							</nav>
+						</details>
 					)}
-					{document.sections.map((section) => (
-						<section
-							key={section.id}
-							id={`analysis-section-${section.id}`}
-							className="analysis-section"
-						>
-							<Markdown text={section.raw} />
-						</section>
-					))}
-					{document.sections.length === 0 && (
-						<Markdown text={document.source_md} />
-					)}
+					{presentation.blocks.map((block, index) => {
+						const anchor =
+							block.id && block.id !== presentation.title?.sectionId
+								? `analysis-section-${block.id}`
+								: undefined;
+						return block.raw.trim() ? (
+							<section
+								key={block.id ?? index}
+								id={anchor}
+								className="analysis-section"
+							>
+								<Markdown text={block.raw} />
+							</section>
+						) : (
+							<span key={block.id ?? index} id={anchor} />
+						);
+					})}
 				</article>
 			)}
 			{deleting && document && (
@@ -332,6 +332,186 @@ export function AnalysisPanel({
 							取消
 						</button>
 					</div>
+				</ConfirmDialog>
+			)}
+		</div>
+	);
+}
+
+function DocumentActions({
+	document,
+	fetching,
+	onEdit,
+	onDelete,
+}: {
+	document: AnalysisDetail;
+	fetching: boolean;
+	onEdit?: (document: AnalysisDetail) => void;
+	onDelete: () => void;
+}) {
+	const menuId = useId();
+	const versionTitleId = useId();
+	const trigger = useRef<HTMLButtonElement>(null);
+	const menu = useRef<HTMLDivElement>(null);
+	const lastItemFirst = useRef(false);
+	const [menuOpen, setMenuOpen] = useState(false);
+	const [versionOpen, setVersionOpen] = useState(false);
+	const positionMenu = useCallback(() => {
+		const element = menu.current;
+		const box = trigger.current?.getBoundingClientRect();
+		if (!element || !box) return;
+		const bounds = element.getBoundingClientRect();
+		element.style.top = `${Math.max(8, Math.min(box.bottom + 6, window.innerHeight - bounds.height - 8))}px`;
+		element.style.right = `${Math.max(8, Math.min(window.innerWidth - bounds.width - 8, window.innerWidth - box.right))}px`;
+	}, []);
+	useLayoutEffect(() => {
+		if (!menuOpen) return;
+		positionMenu();
+		const controls =
+			menu.current?.querySelectorAll<HTMLButtonElement>("button");
+		(lastItemFirst.current ? controls?.item(1) : controls?.item(0))?.focus();
+		lastItemFirst.current = false;
+	}, [menuOpen, positionMenu]);
+	useEffect(() => {
+		if (!menuOpen) return;
+		window.addEventListener("resize", positionMenu);
+		window.addEventListener("scroll", positionMenu, true);
+		return () => {
+			window.removeEventListener("resize", positionMenu);
+			window.removeEventListener("scroll", positionMenu, true);
+		};
+	}, [menuOpen, positionMenu]);
+	const closeMenu = () => {
+		menu.current?.hidePopover();
+		trigger.current?.focus();
+	};
+	return (
+		<div className="analysis-document-actions">
+			{document.revision_id === document.current_revision_id && onEdit && (
+				<button
+					type="button"
+					id={`manual-analysis-edit-${document.id}`}
+					className="analysis-quiet-button"
+					disabled={fetching}
+					onClick={() => onEdit(document)}
+				>
+					编辑
+				</button>
+			)}
+			<button
+				type="button"
+				ref={trigger}
+				className="analysis-menu-trigger"
+				aria-label={`「${document.title}」的更多操作`}
+				title="更多操作"
+				aria-haspopup="menu"
+				aria-expanded={menuOpen}
+				popoverTarget={menuId}
+				onKeyDown={(event) => {
+					if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+					event.preventDefault();
+					lastItemFirst.current = event.key === "ArrowUp";
+					menu.current?.showPopover();
+				}}
+			>
+				<span aria-hidden="true">···</span>
+			</button>
+			<div
+				ref={menu}
+				id={menuId}
+				popover="auto"
+				className="analysis-document-menu"
+				role="menu"
+				aria-label={`「${document.title}」的更多操作`}
+				onToggle={(event) => {
+					setMenuOpen(event.newState === "open");
+					if (
+						event.newState === "closed" &&
+						(menu.current?.contains(globalThis.document.activeElement) ||
+							globalThis.document.activeElement === globalThis.document.body)
+					)
+						trigger.current?.focus();
+				}}
+				onKeyDown={(event) => {
+					if (event.key === "Escape" || event.key === "Tab") {
+						if (event.key === "Escape") {
+							event.preventDefault();
+							event.stopPropagation();
+						}
+						closeMenu();
+						return;
+					}
+					const controls = Array.from(
+						event.currentTarget.querySelectorAll<HTMLButtonElement>("button"),
+					);
+					const index = controls.indexOf(
+						globalThis.document.activeElement as HTMLButtonElement,
+					);
+					const next =
+						event.key === "Home"
+							? 0
+							: event.key === "End"
+								? controls.length - 1
+								: event.key === "ArrowDown"
+									? (index + 1) % controls.length
+									: event.key === "ArrowUp"
+										? (index - 1 + controls.length) % controls.length
+										: null;
+					if (next !== null) {
+						event.preventDefault();
+						controls[next]?.focus();
+					}
+				}}
+			>
+				<button
+					type="button"
+					role="menuitem"
+					tabIndex={-1}
+					onClick={() => {
+						closeMenu();
+						setVersionOpen(true);
+					}}
+				>
+					版本信息
+				</button>
+				<button
+					type="button"
+					role="menuitem"
+					tabIndex={-1}
+					onClick={() => {
+						closeMenu();
+						onDelete();
+					}}
+				>
+					删除此讲解
+				</button>
+			</div>
+			{versionOpen && (
+				<ConfirmDialog
+					titleId={versionTitleId}
+					className="analysis-version-dialog"
+					onClose={() => setVersionOpen(false)}
+				>
+					<h2 id={versionTitleId}>版本信息</h2>
+					<p>
+						{document.revision_id === document.current_revision_id
+							? "正在阅读当前版本。"
+							: "正在阅读历史版本，此版本只读。"}
+					</p>
+					<dl>
+						<dt>所读修订</dt>
+						<dd>{document.revision_id}</dd>
+						<dt>当前修订</dt>
+						<dd>{document.current_revision_id}</dd>
+					</dl>
+					<button
+						type="button"
+						className="button secondary"
+						data-dialog-cancel
+						onClick={() => setVersionOpen(false)}
+					>
+						关闭
+					</button>
 				</ConfirmDialog>
 			)}
 		</div>

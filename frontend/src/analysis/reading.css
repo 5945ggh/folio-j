@@ -1,0 +1,309 @@
+.app-shell.segment-study-shell .analysis-panel {
+	min-width: 0;
+}
+
+.app-shell.segment-study-shell .analysis-toolbar {
+	align-items: center;
+	margin-bottom: 24px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--border);
+}
+
+.app-shell.segment-study-shell .analysis-picker-wrap {
+	width: auto;
+	min-width: 0;
+}
+
+.app-shell.segment-study-shell .analysis-picker-wrap h2 {
+	color: var(--text, inherit);
+	font-size: 15px;
+}
+
+.app-shell.segment-study-shell .analysis-quiet-button {
+	min-height: 36px;
+	padding: 7px 3px;
+	color: var(--muted);
+	font-size: 12px;
+	text-decoration: none;
+}
+
+.app-shell.segment-study-shell .analysis-quiet-button:hover {
+	color: var(--accent);
+	text-decoration: underline;
+}
+
+.app-shell.segment-study-shell .analysis-list {
+	gap: 0;
+	margin: 0 0 24px;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: var(--surface);
+}
+
+.app-shell.segment-study-shell .analysis-list button {
+	gap: 8px;
+	padding: 18px 10px;
+	border-bottom: 1px solid var(--border);
+	border-radius: 0;
+	color: var(--text, inherit);
+}
+
+.app-shell.segment-study-shell .analysis-list button:hover {
+	background: var(--sidebar);
+}
+
+.app-shell.segment-study-shell .analysis-list strong {
+	font-size: 16px;
+}
+
+.app-shell.segment-study-shell .analysis-list small {
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1.7;
+}
+
+.app-shell.segment-study-shell .analysis-document-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 14px;
+	scroll-margin-top: 24px;
+}
+
+.app-shell.segment-study-shell .analysis-document-heading {
+	flex: 1;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.app-shell.segment-study-shell .analysis-document-heading h2,
+.app-shell.segment-study-shell
+	.analysis-document-heading
+	.analysis-markdown
+	:is(h1, h2) {
+	margin: 0;
+	color: var(--text, inherit);
+	font-size: clamp(22px, 2.4vw, 27px);
+	font-weight: 650;
+	line-height: 1.55;
+}
+
+.app-shell.segment-study-shell .analysis-document-actions {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	gap: 9px;
+}
+
+.app-shell.segment-study-shell .analysis-menu-trigger {
+	display: grid;
+	width: 36px;
+	min-height: 36px;
+	place-items: center;
+	padding: 0;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--muted);
+	font-size: 24px;
+	line-height: 1;
+}
+
+.app-shell.segment-study-shell .analysis-menu-trigger:hover,
+.app-shell.segment-study-shell .analysis-menu-trigger[aria-expanded="true"] {
+	background: var(--sidebar);
+	color: var(--text, inherit);
+}
+
+.app-shell.segment-study-shell .analysis-document-menu {
+	position: fixed;
+	inset: auto;
+	width: 176px;
+	max-width: calc(100vw - 16px);
+	margin: 0;
+	padding: 5px;
+	border: 1px solid var(--border);
+	border-radius: 9px;
+	background: var(--surface);
+	color: var(--text, inherit);
+	box-shadow: 0 8px 24px
+		color-mix(in srgb, var(--text, #26282d) 12%, transparent);
+}
+
+.app-shell.segment-study-shell .analysis-document-menu button {
+	display: block;
+	width: 100%;
+	min-height: 40px;
+	padding: 9px 12px;
+	border: 0;
+	border-radius: 5px;
+	background: transparent;
+	color: inherit;
+	font-size: 13px;
+	text-align: left;
+}
+
+.app-shell.segment-study-shell .analysis-document-menu button:hover,
+.app-shell.segment-study-shell .analysis-document-menu button:focus-visible {
+	background: var(--sidebar);
+}
+
+.app-shell.segment-study-shell .analysis-version-dialog {
+	color: var(--text, inherit);
+	background: var(--surface);
+}
+
+.app-shell.segment-study-shell .analysis-version-dialog dl {
+	margin-block: 24px;
+	font-size: 13px;
+}
+
+.app-shell.segment-study-shell .analysis-version-dialog dt {
+	margin-top: 14px;
+	color: var(--muted);
+}
+
+.app-shell.segment-study-shell .analysis-version-dialog dd {
+	margin: 5px 0 0;
+	overflow-wrap: anywhere;
+}
+
+.app-shell.segment-study-shell .analysis-historical-notice {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 18px;
+	margin-bottom: 18px;
+	padding: 8px 14px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: var(--sidebar);
+	color: var(--text, inherit);
+	font-size: 12px;
+}
+
+.app-shell.segment-study-shell .analysis-toc-disclosure {
+	margin: 20px 0 4px;
+	padding: 10px 0;
+	border-block: 1px solid var(--border);
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.app-shell.segment-study-shell .analysis-toc-disclosure summary {
+	width: fit-content;
+	padding: 4px 3px;
+	cursor: pointer;
+}
+
+.app-shell.segment-study-shell .analysis-toc {
+	display: grid;
+	gap: 9px;
+	padding: 14px 3px 5px;
+	border: 0;
+}
+
+.app-shell.segment-study-shell .analysis-toc a {
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1.6;
+}
+
+.app-shell.segment-study-shell .analysis-toc a:hover {
+	color: var(--accent);
+}
+
+.app-shell.segment-study-shell .analysis-section {
+	padding: 18px 0;
+	border-bottom: 0;
+	scroll-margin-top: 24px;
+}
+
+.app-shell.segment-study-shell .analysis-markdown {
+	color: var(--text, inherit);
+	font-size: 15px;
+	line-height: 1.95;
+}
+
+.app-shell.segment-study-shell .analysis-markdown :is(h1, h2, h3, h4) {
+	color: var(--text, inherit);
+}
+
+.app-shell.segment-study-shell .analysis-markdown h2 {
+	font-size: 20px;
+}
+
+.app-shell.segment-study-shell .analysis-markdown h3 {
+	font-size: 17px;
+}
+
+.app-shell.segment-study-shell .analysis-markdown > :first-child {
+	margin-top: 0;
+}
+
+.app-shell.segment-study-shell .analysis-markdown > :last-child {
+	margin-bottom: 0;
+}
+
+.app-shell.segment-study-shell .analysis-markdown :is(pre, code) {
+	background: var(--sidebar);
+}
+
+.app-shell.segment-study-shell .analysis-markdown pre code {
+	background: transparent;
+}
+
+.app-shell.segment-study-shell .analysis-markdown blockquote {
+	border-left-color: var(--border);
+	background: var(--sidebar);
+	color: var(--muted);
+}
+
+.app-shell.segment-study-shell .analysis-markdown table :is(th, td) {
+	border-color: var(--border);
+}
+
+.app-shell.segment-study-shell .analysis-markdown a {
+	color: var(--accent);
+}
+
+.app-shell.segment-study-shell .analysis-warnings {
+	color: var(--muted);
+}
+
+.app-shell.segment-study-shell .analysis-empty,
+.app-shell.segment-study-shell .analysis-empty h2,
+.app-shell.segment-study-shell .analysis-draft p,
+.app-shell.segment-study-shell .analysis-draft-header span {
+	color: var(--muted);
+}
+
+.app-shell.segment-study-shell .analysis-draft,
+.app-shell.segment-study-shell .analysis-generation-result {
+	border: 1px solid var(--border);
+	background: var(--sidebar);
+	color: var(--text, inherit);
+}
+
+.app-shell.segment-study-shell .analysis-draft pre {
+	color: var(--text, inherit);
+}
+
+@media (max-width: 560px) {
+	.app-shell.segment-study-shell .analysis-document-header {
+		gap: 8px;
+	}
+
+	.app-shell.segment-study-shell .analysis-document-actions {
+		gap: 4px;
+	}
+
+	.app-shell.segment-study-shell .analysis-document-heading h2,
+	.app-shell.segment-study-shell
+		.analysis-document-heading
+		.analysis-markdown
+		:is(h1, h2) {
+		font-size: 21px;
+	}
+}
