@@ -1,0 +1,56 @@
+frontend/src/analysis/AnalysisPanel.tsx
+  s_aba4122fab4b53::t_f364b3543b30ab 184-190,192
+  s_aba4122fab4b53::t_8b8d4133d9c07f 7,27-28,35-36,136,183
+docs/INFORMATION_ARCHITECTURE.md
+  s_aba4122fab4b53::t_2960e97c2d6f19 106,110
+frontend/src/analysis/generation.test.ts
+  s_aba4122fab4b53::t_5d4ec2f61114c7 1-5,12-19,23,28-29,33
+  s_aba4122fab4b53::t_f364b3543b30ab 6-11,20-22,24-27,30-32
+frontend/src/chat/lifecycle.ts
+  s_aba4122fab4b53::t_8b8d4133d9c07f 1-8
+frontend/src/SegmentPage.tsx
+  s_aba4122fab4b53::t_39aa5f94198d17 11-14,31,213-220,244-252,610-619,623-630,710,761
+  s_aba4122fab4b53::t_f364b3543b30ab 711-731,733-753,755-760
+frontend/src/chat/lifecycle.test.ts
+  s_aba4122fab4b53::t_14afc9af3bf3cb 1-6,17-21,26-30,43-45
+  s_aba4122fab4b53::t_f364b3543b30ab 7-16,22-25,31-42
+frontend/src/analysis/state.test.ts
+  s_aba4122fab4b53::t_8b8d4133d9c07f 3-4
+docs/handovers/README.md
+  s_aba4122fab4b53::t_2960e97c2d6f19 9
+frontend/src/analysis/AnalysisGeneration.tsx
+  s_aba4122fab4b53::t_8b8d4133d9c07f 1-70,74-88
+  s_aba4122fab4b53::t_f364b3543b30ab 71-73
+docs/ARCHITECTURE.md
+  s_aba4122fab4b53::t_2960e97c2d6f19 416
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_aba4122fab4b53::t_2960e97c2d6f19 3,17,44,72,76
+docs/handovers/text-study/PLAN.md
+  s_aba4122fab4b53::t_2960e97c2d6f19 3,64,71,86
+docs/PRD.md
+  s_aba4122fab4b53::t_20c789bf8820c9 157
+docs/README.md
+  s_aba4122fab4b53::t_1f25aaeb9885a9 8
+docs/TECH_STACK.md
+  s_aba4122fab4b53::t_72631fb16fd914 44
+docs/handovers/epub-reading/README.md
+  s_aba4122fab4b53::t_36c3672a4e9f2f 99,101
+docs/handovers/text-study/A1_ACCEPTANCE.md
+  s_aba4122fab4b53::t_f567d55dab6c55 1-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "13de4e9d10416a056b9157f2e49a716cdc05cedc",
+  "prompts": {},
+  "sessions": {
+    "s_aba4122fab4b53": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a154f6-8117-7053-b605-484b57ea3fe0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
