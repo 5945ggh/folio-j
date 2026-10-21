@@ -1,0 +1,111 @@
+docs/handovers/archived/segment-layout/ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-65
+docs/handovers/archived/full-ruby/PLAN.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-35
+docs/handovers/archived/segment-layout/PLAN.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-38
+docs/handovers/archived/sources-s2/PLAN.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-21
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_e141b2cb3afc21::t_448a0ef14f8d95 3,7
+docs/handovers/epub-reading/MATERIAL_BASELINE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 134
+  s_e141b2cb3afc21::t_448a0ef14f8d95 4-5,41,58,138
+docs/handovers/archived/library-a1/PLAN.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-21
+docs/handovers/archived/reader-r1/API.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-56
+docs/handovers/archived/frontend-refresh/PLAN.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-31
+docs/README.md
+  s_e141b2cb3afc21::t_6ed8c2324f166b 10,17
+docs/handovers/archived/library-a1/ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-81
+docs/GLOSSARY.md
+  s_e141b2cb3afc21::t_448a0ef14f8d95 39
+docs/handovers/archived/frontend-refresh/API.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-25
+docs/handovers/archived/reader-r1/ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-75
+docs/handovers/archived/epub-reading/SLICE_1_ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-70
+docs/handovers/archived/settings-refresh/PLAN.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-30
+docs/handovers/archived/book-management/PLAN.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-33
+docs/handovers/archived/full-ruby/ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-128
+docs/handovers/epub-reading/README.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 18-20,32,48,52,76,88
+  s_e141b2cb3afc21::t_448a0ef14f8d95 5,12,15-16,33-35,56
+docs/PRD.md
+  s_e141b2cb3afc21::t_ed3a1cc4a643e1 73,97,99,105,113,117,119,157,193,200,215,217,231,274,496
+docs/handovers/archived/frontend-refresh/ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-73
+docs/TECH_STACK.md
+  s_e141b2cb3afc21::t_d1b2e2b9b47fad 38
+  s_e141b2cb3afc21::t_ed3a1cc4a643e1 12,25,31,40-44,48,65-66
+docs/INFORMATION_ARCHITECTURE.md
+  s_e141b2cb3afc21::t_834da4d266524b 14,31,41,59-64,67,77,83-88,90-95,97-103,105,126,128,132
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 79
+  s_e141b2cb3afc21::t_d1b2e2b9b47fad 89
+docs/handovers/text-study/PLAN.md
+  s_e141b2cb3afc21::t_448a0ef14f8d95 9,19,23-24,106
+docs/handovers/archived/epub-reading/SLICE_0_ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-72
+docs/handovers/archived/sources-s2/ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-118
+docs/handovers/README.md
+  s_e141b2cb3afc21::t_6ed8c2324f166b 7,14-17
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 18-26
+  s_e141b2cb3afc21::t_1c28d506ffeaaf 27
+docs/handovers/archived/book-management/ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-66
+docs/handovers/archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-126
+docs/handovers/archived/reader-r1/INTERACTION_POLISH.md
+  s_e141b2cb3afc21::t_b31bf98e5e8dba 177
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-176,178-276
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 14,17-29,34,45-50,52-56
+  s_e141b2cb3afc21::t_f8ddd219d3669d 3,44,51,62
+README.md
+  s_e141b2cb3afc21::t_ed3a1cc4a643e1 40
+docs/handovers/archived/epub-reading/CHAPTER_RESEARCH.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-49
+docs/handovers/archived/library-a1/API.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-27
+docs/ARCHITECTURE.md
+  s_e141b2cb3afc21::t_dee74db7c8d524 100,104,106,109-113,132,134,138-143,145,147,149,152,154,161,163,167,412,416,458
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 114,151,153,155,159,191
+  s_e141b2cb3afc21::t_acdf845d20ed2d 108
+  s_e141b2cb3afc21::t_881d3d114bce54 136
+  s_e141b2cb3afc21::t_727d96035620b8 137
+  s_e141b2cb3afc21::t_646fd080bf855f 150
+  s_e141b2cb3afc21::t_b7e65feb9a7cff 160
+docs/handovers/epub-reading/SLICE_1_DRAFT.md
+  s_e141b2cb3afc21::t_448a0ef14f8d95 3-4
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 58
+docs/PRODUCT_DIRECTION.md
+  s_e141b2cb3afc21::t_d17ed310135b44 4,12,29,31,33,60,65-66,71,73,81,89,106,110,120,134,140,147,150,161
+docs/handovers/archived/reader-r1/PLAN.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-31
+docs/handovers/archived/settings-refresh/ACCEPTANCE.md
+  s_e141b2cb3afc21::t_f3b879ae4ae3f3 1-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "67f1af9991e81a078584e86658aaa191eb27e596",
+  "prompts": {},
+  "sessions": {
+    "s_e141b2cb3afc21": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a159b6-1411-7f33-a47d-0ebbbaaee004",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
