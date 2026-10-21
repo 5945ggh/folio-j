@@ -9,7 +9,7 @@
 >
 > 版本策略：项目初始化时取各依赖的最新稳定版，由 lockfile（`uv.lock`、`pnpm-lock.yaml`）锁定；升级需显式进行。
 
-当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.11、Node.js 24，Python 包最低支持 3.11；实际依赖以锁文件为准。已采用 `openai` 官方 SDK、Jinja2、markdown-it-py、hypothesis、react-markdown 与 remark-gfm，覆盖模型协议、提示词模板、规范化与性质测试、讲解渲染；全量注音切片新增 SudachiPy 与 SudachiDict-core。SSE、shadcn/ui 与 Zustand 尚未引入。
+当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.11、Node.js 24，Python 包最低支持 3.11；实际依赖以锁文件为准。已采用 `openai` 官方 SDK、Jinja2、markdown-it-py、hypothesis、react-markdown 与 remark-gfm，覆盖模型协议、提示词模板、规范化与性质测试、讲解渲染；SudachiPy 与 SudachiDict-core 用于分词与全量注音。SSE、shadcn/ui 与 Zustand 尚未引入。
 
 基础运行补充依赖：Uvicorn 承载 ASGI 服务，httpx 通过本地 ASGI transport 测试 API，Hatchling 构建 Python 的 src 布局包。前端 TypeScript 暂锁 5.9.3，以满足所选 openapi-typescript 7.x 的 peer 范围；Node 类型锁在 24 系列，与运行时一致。Tailwind 使用官方 Vite 插件，不提前引入未使用的 shadcn 组件或 Zustand。
 
@@ -22,26 +22,30 @@
 | Web 框架 | FastAPI | 自动生成 OpenAPI，作为前端类型的唯一来源 |
 | 数据校验 | Pydantic v2 | 同时用于 API schema、LLM 结构化输出 schema 和配置模型 |
 | ORM | SQLAlchemy 2.0（`Mapped` 类型化风格） | 不使用 SQLModel；ORM 模型与 API schema 分开定义 |
-| 迁移 | Alembic | 当前以固定 DDL 的 `0001_initial` 从空库建立完整 schema，A2 追加 `0002_lock_analysis_segments` 数据保护迁移；保留迁移环境、模板与 `just migrate`；发布前且数据可丢弃时可重整初始迁移，需保留日常数据或发布第一版后采用严格增量迁移；应用启动不自动删库 |
+| 迁移 | Alembic | 当前以固定 DDL 的 `0001_initial` 从空库建立完整 schema，`0002_lock_analysis_segments` 为已有历史讲解补齐原文保护；保留迁移环境、模板与 `just migrate`；发布前且数据可丢弃时可重整初始迁移，需保留日常数据或发布第一版后采用严格增量迁移；应用启动不自动删库 |
 | 数据库 | SQLite（WAL 模式） | 已采用；积累库检索尚未实现，选型保留 MVP 用 `LIKE`、P1 用 FTS5、远期用 sqlite-vec。运行中的 WAL 数据库备份须保证一致性，不能仅复制主文件 |
 | SSE | sse-starlette（预留，未安装） | 当前页面轮询持久 Run／Job；模型侧流式响应不等于浏览器已采用 SSE |
 | LLM 客户端 | `openai` 官方 Python SDK，通过 `base_url` 对接 | BYOK、多 Provider；适配 OpenAI 兼容的 Chat Completions 与 Responses 文本调用 |
 | Prompt 模板 | Jinja2 | 模板以文件形式放在 `backend/prompts/`，文件头部标注版本号 |
 | Markdown 解析 | markdown-it-py | 规范化器用它获取标题 token 及其行号映射 |
-| 日语分词 | SudachiPy + SudachiDict-core，A 粒度切分 | 全量注音切片接入；新书导入完整生成后可读，旧书可补算，结果独立版本化；不使用 UniDic |
+| 日语分词 | SudachiPy + SudachiDict-core，A 粒度切分 | 已采用；新书导入完整生成后可读，旧书可补算，结果独立版本化；不使用 UniDic |
 | 配置 | 应用运行配置使用 TOML + Pydantic；模型接入设置通过 UI 维护 | 已采用；Provider／模型／用途默认值保存在 SQLite，凭据保存在数据库旁私有目录，不将 providers.toml 设为唯一入口 |
 | ID | ULID（当前由 `app/ids.py` 实现） | 已用于主键和 Section uid；未安装 `python-ulid` |
 | 后台任务 | SQLite `chat_jobs` 表（领域 Job）+ 进程内 asyncio worker | 问答与讲解共用执行机制；模型调用记录存于 `runs` |
 | 测试 | pytest、pytest-asyncio、hypothesis | 用 hypothesis 对规范化器做"可复原"的性质测试 |
 | 静态检查 | ruff（lint + format）、pyright（strict） | |
 
-分词采用固定材料正文之上的可重建派生数据，输入版本、分析器、词典和配置与结果一起记录；不改写定位正文，不用 token 身份替代原文位置。生成使用本地词典，不调用模型；结果以 SQLite 中的压缩 JSON 保存，复用已有标准库能力。具体边界见[EPUB 材料基线](handovers/epub-reading/MATERIAL_BASELINE.md#8-分词与派生数据的后续接入)。此处的数据 sidecar 与分发阶段的后端 sidecar 进程是不同含义。
+分词采用固定材料正文之上的可重建派生数据，输入版本、分析器、词典和配置与结果一起记录；不改写定位正文，不用 token 身份替代原文位置。生成使用本地词典，不调用模型；结果以 SQLite 中的压缩 JSON 保存，复用已有标准库能力。具体边界见[架构](ARCHITECTURE.md)。此处的数据 sidecar 与分发阶段的后端 sidecar 进程是不同含义。
 
-EPUB 切片 1 使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义编译产物；包内资源清洗和有界编译不引入阅读器引擎或新依赖。不可变原 EPUB 与压缩编译包保存为 SQLite BLOB，材料发布和副本保存共用事务；首轮接受数据库体积增长，避免外置文件的双提交及无主文件清理。阅读使用按章节排列的无脚本 sandbox iframe，隔离各原始资源的作者样式。导航、版本与阅读恢复边界见[切片 1 契约](handovers/epub-reading/SLICE_1_DRAFT.md)。
+EPUB 编译使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义编译产物；包内资源清洗和有界编译不引入阅读器引擎或新依赖。不可变原 EPUB 与压缩编译包保存为 SQLite BLOB，材料发布和副本保存共用事务；接受数据库体积增长，避免外置文件的双提交及无主文件清理。阅读使用按章节排列的无脚本 sandbox iframe，隔离各原始资源的作者样式。模型、版本与阅读恢复边界见[架构](ARCHITECTURE.md)。
+
+封面缓存只支持有界静态 PNG／JPEG（4 MiB、1600 万像素），使用标准库校验头部与结构，不引入图像解码库；APNG、GIF、WebP、SVG 与异常文件占位。优先提取有效声明封面，不可用时按有序包内图片候选回退，旧书可按规则版本重建缓存；不改不可变书籍产物，不下载远程图片。SVG `image` 只可作为包内静态图片引用来源，不表示支持 SVG 封面。正文图库沿用编译包的图片安全预算，不直接套用封面的 4 MiB／PNG-JPEG 限制。
+
+搜索与图库使用服务层只读派生接口，不增加数据库索引实体；扫描与解压离开事件循环，响应有界分页，图片由受控 content endpoint 按需加载。具体实现见[架构](ARCHITECTURE.md)。
 
 ## 2. 前端
 
-2026-10-20 已确认文本处理与资料调整，按[实施计划](handovers/text-study/PLAN.md)完成 S0 和 B1／B2 后继续 A1／A2；C 暂不实施。B 线使用现有 Sudachi、Pydantic、SQLite、asyncio 和前端 SVG 能力，不新增依赖。文本分析接口不依赖 EPUB 呈现；统计采用后端纯计算、有界进程内缓存与独立并发限制，重启后按需重算，不新增 token 数据表、统计数据库、聊天任务或外部队列。实现与验收状态由实施基线维护。
+文本分析与书籍统计沿用 Sudachi、Pydantic、SQLite、asyncio 和前端 SVG 能力。文本分析接口不依赖 EPUB 呈现；统计采用后端纯计算、有界进程内缓存与独立并发限制，重启后按需重算，不新增 token 数据表、统计数据库、聊天任务或外部队列。交付状态见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
 | 用途 | 选择 | 说明 |
 |---|---|---|
@@ -57,6 +61,8 @@ EPUB 切片 1 使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义�
 | 单元测试 | Node.js 内置测试；Vitest 按需 | 当前用 Node.js 24 直接运行 TypeScript 纯逻辑测试，不引入前端测试依赖；组件测试框架按需添加 |
 | E2E | 暂不引入 | 由 coding agent 自带的浏览器能力做界面验证；以后需要再加 Playwright |
 | 包管理 | pnpm | Node 使用当前 LTS 版本 |
+
+Reader 继续使用无脚本、同源隔离 iframe，保留 CSP／sandbox；工具事件由父应用适配。搜索高亮采用 DOM Range／CSS Highlight，不改正文定位叶子；图库与大图使用非模态局部面板，保留正文交互、Escape 层级和关闭焦点恢复。展示层轻量动画支持减少动态效果偏好，不改变正文布局与位置保存。主题与阅读偏好在 Reader 作用域及浏览器 Storage 内校验，失败退回内存；浏览器及扩展兼容性的实际验证范围见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
 ## 3. 模型接入（BYOK）
 
@@ -101,20 +107,3 @@ EPUB 切片 1 使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义�
 | Celery / Redis | 单用户本地应用不需要 |
 | UniDic / MeCab 系 | 体积大，更偏 NLP；分词采用 Sudachi |
 | Electron | 体积大；Tauri 优先 |
-
-## 7. 2C 已安装依赖
-
-2026-09-27经用户授权安装并锁定既定选型：后端`markdown-it-py 4.2.0`负责CommonMark标题行映射，开发依赖`hypothesis 6.168.2`验证规范化性质；前端`react-markdown 10.1.0`与`remark-gfm 4.0.1`渲染持久讲解。沿用uv／pnpm锁文件，不新增Agent框架或浏览器测试依赖。
-
-
-## 8. 2026-10-04 前端调整采用情况
-
-本轮目录、状态及统一外壳沿用 React Router、TanStack Query、现有 CSS、SQLite 与标准库，未新增依赖；shadcn/ui、Zustand 仍为预留，不能视为已安装。封面缓存只支持有界静态 PNG／JPEG（4 MiB、1600 万像素），标准库校验头部／结构，不引入图像解码库；为保持静态约束，APNG、GIF、WebP、SVG 与异常文件占位。可验证 EPUB 声明封面按需提取，不改不可变书籍产物，不下载远程图片。详细接口与支持范围见[前端调整契约](handovers/frontend-refresh/API.md)。
-
-素材库 A.1 沿用上述依赖与安全边界；声明不可用时按有序包内图片候选回退，并用版本缓存恢复旧书封面。SVG `image` 只作为包内静态图片引用来源，不代表支持 SVG 封面。共享控件不强制统一路由外壳；具体规则见[封面契约](handovers/library-a1/API.md)，验证结果见[记录](handovers/library-a1/ACCEPTANCE.md)。
-
-## 9. 阅读器 R1.1 技术边界
-
-本轮沿用 React、TanStack Query、生成的 OpenAPI 客户端、FastAPI／Pydantic 与现有 EPUB 编译包，不新增依赖或数据库索引实体。搜索及图库为服务层只读派生接口，扫描与解压离开事件循环；响应分页有界，图片由受控 content endpoint 按需加载。详见[实施计划](handovers/reader-r1/PLAN.md)与[API 契约](handovers/reader-r1/API.md)。图库原图规则依现有编译安全预算，不将上轮封面的 4 MiB／PNG-JPEG 限制直接套用到全部正文图片。
-
-呈现继续使用无脚本、同源隔离 iframe；工具事件由父应用适配，保留 CSP／sandbox。搜索高亮采用 DOM Range／CSS Highlight 保持正文定位叶子不变；图库与大图使用非模态局部面板，保留正文交互并处理 Escape 层级和关闭焦点恢复。轻量动画仅作用于展示层，退出保留时长集中配置，支持减少动态效果偏好，不改变正文布局与位置保存。主题与新增 UI 偏好在 Reader 作用域及浏览器 Storage 内校验，失败退回内存；不引入通用媒体框架、图像处理服务、分词或自动注音依赖。浏览器支持及真实扩展兼容性的验证结果另记，不因采用这些技术就视为通过。

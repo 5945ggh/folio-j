@@ -1,10 +1,10 @@
 # EPUB 阶段开发主代理交接提示词
 
-> 2026-10-07 更新。供接手当前 EPUB 阶段使用；实现状态与验收依据见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)，开发顺序见[阶段入口](README.md#下一阶段接力顺序)。
+> 2026-10-20 更新。供接手当前 EPUB 阶段使用；实现状态与验收依据见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)，开发顺序见[阶段入口](README.md#下一阶段接力顺序)。C1／C2 当前暂不实施。
 
 请接手 `/Users/ningcc/Products/folio-j` 的 EPUB 原生阅读阶段，作为主代理负责范围、契约、任务派遣与集成验收。
 
-先读仓库 AGENTS 和[文档导航](../../README.md)，再读 MVP 实施基线、本目录的[阶段安排](README.md)、[材料定位基线](MATERIAL_BASELINE.md)与[切片 1 契约](SLICE_1_DRAFT.md)。开始工作时核对当前分支及未提交改动，沿用已有实现并保留其他任务的修改。
+先读仓库 AGENTS 和[文档导航](../../README.md)，再读 MVP 实施基线、本目录的[阶段安排](README.md)、[材料定位基线](MATERIAL_BASELINE.md)、[架构](../../ARCHITECTURE.md)与[文本和资料计划](../text-study/PLAN.md)。开始工作时核对当前分支及未提交改动，沿用已有实现并保留其他任务的修改。
 
 ## 接手动作
 

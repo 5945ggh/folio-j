@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-20。文本与资料调整以 `85d8725` 为代码起点，S0／B1 分别提交为 `4e705a1`／`bb900ce`，B2 提交为 `3f6491f`，A1 提交为 `13de4e9`，A2 提交为 `367f4f4`；A 线完成，C 暂不实施。当前增量迁移及已有能力的证据见下表和历史记录。
+> 状态核对：2026-10-20，代码基准 `7a4c8ff`。文本与资料调整以 `85d8725` 为代码起点，S0／B1 分别提交为 `4e705a1`／`bb900ce`，B2 提交为 `3f6491f`，A1 提交为 `13de4e9`，A2 提交为 `367f4f4`；A 线完成，C 暂不实施。当前增量迁移及已有能力的证据见下表和历史记录。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
 
@@ -11,27 +11,27 @@
 | 能力 | 状态 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- | --- |
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理或讲解成功保存后锁定；旧资料由增量迁移补齐保护 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
-| 设置与模型接入 | 已提交、工程验收通过 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；顶部分类、统一编辑弹窗、分组原子保存、草稿保护与验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](settings-refresh/ACCEPTANCE.md) |
+| 设置与模型接入 | 已提交、工程验收通过 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；顶部分类、统一编辑弹窗、分组原子保存、草稿保护与验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](archived/settings-refresh/ACCEPTANCE.md) |
 | 片段讨论 | 已提交 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
 | 持久讲解 | 已提交，工程与浏览器验收通过 | 直接编写／粘贴 Markdown 保存，统一记录用户保存；当前全文修订、冲突保稿与同请求核实；多份 Analysis、不可变 Revision／Section；AI 快捷生成、块编辑与审核沿用原流程 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
-| 片段阅读与导航 | 已提交，工程与浏览器验收通过；用户认可视觉效果 | 窄工具栏／中央阅读／右侧讨论，进入隐藏全局导航；讲解集合与单篇操作分层，前后文渐淡预览、完整资料浮层与折叠目录；纯回看不挂载讨论，激活后保活，窄屏切换保留草稿与阅读位置；确切修订、来处返回和人工编辑保护沿用原规则 | [阅读导航](archived/READING_NAVIGATION_ACCEPTANCE.md)、[架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[A1 验收](text-study/A1_ACCEPTANCE.md)、[专注布局](segment-layout/ACCEPTANCE.md) |
-| 素材库与阅读管理 | 已提交 | 跨 Source 书籍目录、搜索／筛选／排序／分页、书卡大小与状态菜单、空库整区导入；阅读三态和最近打开持久化，封面按规则版本 2 回退与缓存 | [前端调整](frontend-refresh/ACCEPTANCE.md)、[素材库 A.1](library-a1/ACCEPTANCE.md) |
-| 导入来源表单 | 已提交，工程检查通过；用户反馈无阻塞问题 | 添加书籍与新建来源完整视图切换，创建后自动选择来源并保留文件；单组操作、中文文案与表单提交保护 | [导入来源表单调整](library-a1/ACCEPTANCE.md#2026-10-19-导入来源表单调整) |
-| 书籍管理 | 已提交，提交前工程、独立审查与浏览器复核通过；用户使用验收待进行 | 紧凑菜单与阅读状态二级入口、真实详情、书名与封面原子编辑／恢复、草稿／冲突保护及安全返回；公共默认外壳已统一并清理旧样式；移动／删除仅禁用入口，不替换 EPUB | [计划与契约](book-management/PLAN.md)、[验收记录](book-management/ACCEPTANCE.md) |
-| 来源空间 S2 | 已提交 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；来源栏可调宽并保存偏好，片段／讲解列表搜索、排序与空态已打磨；工程验收完成，用户使用验收待进行 | [S2 工程验收](sources-s2/ACCEPTANCE.md) |
-| EPUB 导入与恢复 | 已提交 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读，托管字节暂保留 | [切片 1](epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](epub-reading/SLICE_0_ACCEPTANCE.md) |
-| 阅读器 R1.1 | 已提交 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级 | [R1.1 工程验收](reader-r1/ACCEPTANCE.md)、[交互优化](reader-r1/INTERACTION_POLISH.md) |
-| 阅读工具栏透明度 | 已提交、工程验收通过 | 上下栏统一透明度、轻微模糊、跨书偏好与恢复默认；横排顶部透文及章末滚动留白、竖排每列避让底栏 | [透明度与遮挡修复验收](reader-r1/INTERACTION_POLISH.md#2026-10-15-工具栏背景透明度) |
-| 阅读滚动交互 | 已提交、工程与浏览器验收通过 | 正文外留白可滚动、竖排手势轴统一；阅读键平滑滚动并遵循减少动态效果偏好，位置恢复保持即时 | [滚动与切章提交复核](reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
-| 跳转链与继续阅读 | 已提交、工程验收通过 | 连续查阅保留首次原点，持续阅读后下一次跳转更新原点；旧返回入口保留，失败请求不消耗阅读信号 | [跳转链验收](reader-r1/INTERACTION_POLISH.md#2026-10-16-跳转链与继续阅读) |
-| 章节位置记忆 | 已提交、工程与浏览器验收通过 | 各章最后位置持久化、目录恢复、当前章不跳与回到章首；保留恢复锚点，内容末端进入可读区域即 100%、回看可下降；图文混排按图片前正文显示进度，空白尾片段不阻断采样 | [章节位置验收](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)、[章末进度与真实书复核](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-真实书复核与口径调整)、[提交前复核](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-提交前复核) |
-| 底部相邻章节导航 | 已提交、工程与浏览器验收通过 | 上一章／目录／下一章、首末边界与加载锁；复用章节记忆和返回链，保留工具面板与查询；窄屏进度移到顶部；章末入口未增加 | [相邻切章验收](reader-r1/INTERACTION_POLISH.md#2026-10-16-底部相邻章节导航)、[提交复核](reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
-| 全量注音 | 已提交、工程验收通过 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](full-ruby/ACCEPTANCE.md) |
+| 片段阅读与导航 | 已提交，工程与浏览器验收通过；用户认可视觉效果 | 窄工具栏／中央阅读／右侧讨论，进入隐藏全局导航；讲解集合与单篇操作分层，前后文渐淡预览、完整资料浮层与折叠目录；纯回看不挂载讨论，激活后保活，窄屏切换保留草稿与阅读位置；确切修订、来处返回和人工编辑保护沿用原规则 | [阅读导航](archived/READING_NAVIGATION_ACCEPTANCE.md)、[架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[A1 验收](text-study/A1_ACCEPTANCE.md)、[专注布局](archived/segment-layout/ACCEPTANCE.md) |
+| 素材库与阅读管理 | 已提交 | 跨 Source 书籍目录、搜索／筛选／排序／分页、书卡大小与状态菜单、空库整区导入；阅读三态和最近打开持久化，封面按规则版本 2 回退与缓存 | [前端调整](archived/frontend-refresh/ACCEPTANCE.md)、[素材库 A.1](archived/library-a1/ACCEPTANCE.md) |
+| 导入来源表单 | 已提交，工程检查通过；用户反馈无阻塞问题 | 添加书籍与新建来源完整视图切换，创建后自动选择来源并保留文件；单组操作、中文文案与表单提交保护 | [导入来源表单调整](archived/library-a1/ACCEPTANCE.md#2026-10-19-导入来源表单调整) |
+| 书籍管理 | 已提交，提交前工程、独立审查与浏览器复核通过；用户使用验收待进行 | 紧凑菜单与阅读状态二级入口、真实详情、书名与封面原子编辑／恢复、草稿／冲突保护及安全返回；公共默认外壳已统一并清理旧样式；移动／删除仅禁用入口，不替换 EPUB | [现行契约](../ARCHITECTURE.md#311-目录与材料使用状态)、[验收记录](archived/book-management/ACCEPTANCE.md) |
+| 来源空间 S2 | 已提交 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；来源栏可调宽并保存偏好，片段／讲解列表搜索、排序与空态已打磨；工程验收完成，用户使用验收待进行 | [S2 工程验收](archived/sources-s2/ACCEPTANCE.md) |
+| EPUB 导入与恢复 | 已提交 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读，托管字节暂保留 | [切片 1](archived/epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](archived/epub-reading/SLICE_0_ACCEPTANCE.md) |
+| 阅读器 R1.1 | 已提交 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级 | [R1.1 工程验收](archived/reader-r1/ACCEPTANCE.md)、[交互优化](archived/reader-r1/INTERACTION_POLISH.md) |
+| 阅读工具栏透明度 | 已提交、工程验收通过 | 上下栏统一透明度、轻微模糊、跨书偏好与恢复默认；横排顶部透文及章末滚动留白、竖排每列避让底栏 | [透明度与遮挡修复验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-15-工具栏背景透明度) |
+| 阅读滚动交互 | 已提交、工程与浏览器验收通过 | 正文外留白可滚动、竖排手势轴统一；阅读键平滑滚动并遵循减少动态效果偏好，位置恢复保持即时 | [滚动与切章提交复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
+| 跳转链与继续阅读 | 已提交、工程验收通过 | 连续查阅保留首次原点，持续阅读后下一次跳转更新原点；旧返回入口保留，失败请求不消耗阅读信号 | [跳转链验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-跳转链与继续阅读) |
+| 章节位置记忆 | 已提交、工程与浏览器验收通过 | 各章最后位置持久化、目录恢复、当前章不跳与回到章首；保留恢复锚点，内容末端进入可读区域即 100%、回看可下降；图文混排按图片前正文显示进度，空白尾片段不阻断采样 | [章节位置验收](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)、[章末进度与真实书复核](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-真实书复核与口径调整)、[提交前复核](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-提交前复核) |
+| 底部相邻章节导航 | 已提交、工程与浏览器验收通过 | 上一章／目录／下一章、首末边界与加载锁；复用章节记忆和返回链，保留工具面板与查询；窄屏进度移到顶部；章末入口未增加 | [相邻切章验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-底部相邻章节导航)、[提交复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
+| 全量注音 | 已提交、工程验收通过 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](archived/full-ruby/ACCEPTANCE.md) |
 | EPUB 学习衔接 | 未实现 | 选区创建或选用 Segment、材料对话与消息引用、从材料讨论形成讲解按后续切片推进 | [EPUB 阶段安排](epub-reading/README.md) |
 | 文本分析与书籍统计 | 工程与浏览器验收通过 | 普通文本输入、完整分析资产读取与 EPUB 章节适配分开；详情独立展示词次／词种／汉字及覆盖曲线，有界缓存且不触发阅读打开或分词准备 | [B1 验收](text-study/B1_ACCEPTANCE.md)、[B2 验收](text-study/B2_ACCEPTANCE.md) |
 | 学习条目与积累库 | 未实现 | 尚无 Occurrence 持久化、候选工具、整理操作或积累库页面；生产字段、定位、anchor 与恢复契约待落实 | [PRD F5／F6](../PRD.md#f5-学习条目创建与整理)、[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md) |
 
-**当前限制：** 接入类型为普通可重排 EPUB；封面缓存支持有界静态 PNG／JPEG。原书 ruby 控制使用书中已有注音。2026-10-04 切片 1 用户试读确认 Yomitan 配合正常；R1.1 的扩展、实体触屏、Safari／Firefox 等验证缺口见[工程验收](reader-r1/ACCEPTANCE.md#明确未验证与限制)。
+**当前限制：** 接入类型为普通可重排 EPUB；封面缓存支持有界静态 PNG／JPEG。原书 ruby 控制使用书中已有注音。2026-10-04 切片 1 用户试读确认 Yomitan 配合正常；R1.1 的扩展、实体触屏、Safari／Firefox 等验证缺口见[工程验收](archived/reader-r1/ACCEPTANCE.md#明确未验证与限制)。
 
 **实现占位：** Analysis 删除影响响应的 `occurrence_count` 默认为 `0`，服务尚未查询条目引用。字段与实现见[响应模型](../../backend/src/app/analysis_schemas.py)和[讲解服务](../../backend/src/app/services/analyses.py)。
 
@@ -41,32 +41,25 @@
 
 | 日期与阶段 | 验收记录 |
 | --- | --- |
-| 2026-10-03 架构重构 | [架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[A1 验收](text-study/A1_ACCEPTANCE.md) |
-| 2026-10-04 前端调整 | [前端调整](frontend-refresh/ACCEPTANCE.md) |
-| 2026-10-05 素材库 A.1 | [素材库 A.1](library-a1/ACCEPTANCE.md) |
-| 2026-10-05 来源空间 S2 | [S2 工程验收](sources-s2/ACCEPTANCE.md) |
-| 2026-10-05 阅读器 R1.1 | [R1.1 工程验收](reader-r1/ACCEPTANCE.md) |
-| 2026-10-06 阅读交互优化与提交隔离检查 | [交互优化](reader-r1/INTERACTION_POLISH.md) |
-| 2026-10-07 来源空间 S2 提交前复核 | [审计与复测](sources-s2/ACCEPTANCE.md#2026-10-07-提交前复核) |
-| 2026-10-11 章节位置记忆 | [工程与浏览器验收](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md) |
-| 2026-10-13 章节位置记忆提交前复核 | [独立审查与章首边界复测](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-13-提交前复核) |
-| 2026-10-15 设置顶部分类 | [工程、独立审查与浏览器验收](settings-refresh/ACCEPTANCE.md) |
-| 2026-10-17 阅读滚动与相邻切章 | [提交前复核](reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
-| 2026-10-19 书籍管理 | [工程、审查与浏览器验收](book-management/ACCEPTANCE.md) |
+| 2026-10-03 架构重构 | [架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md) |
+| 2026-10-04 前端调整 | [前端调整](archived/frontend-refresh/ACCEPTANCE.md) |
+| 2026-10-05 素材库 A.1 | [素材库 A.1](archived/library-a1/ACCEPTANCE.md) |
+| 2026-10-05 来源空间 S2 | [S2 工程验收](archived/sources-s2/ACCEPTANCE.md) |
+| 2026-10-05 阅读器 R1.1 | [R1.1 工程验收](archived/reader-r1/ACCEPTANCE.md) |
+| 2026-10-06 阅读交互优化与提交隔离检查 | [交互优化](archived/reader-r1/INTERACTION_POLISH.md) |
+| 2026-10-07 来源空间 S2 提交前复核 | [审计与复测](archived/sources-s2/ACCEPTANCE.md#2026-10-07-提交前复核) |
+| 2026-10-10 阅读恢复、注音偏好与来源导航重构 | [工程、浏览器与用户复测](archived/READER_STATE_REFACTOR_ACCEPTANCE.md) |
+| 2026-10-11 章节位置记忆 | [工程与浏览器验收](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md) |
+| 2026-10-13 章节位置记忆提交前复核 | [独立审查与章首边界复测](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-13-提交前复核) |
+| 2026-10-15 设置顶部分类 | [工程、独立审查与浏览器验收](archived/settings-refresh/ACCEPTANCE.md) |
+| 2026-10-17 阅读滚动与相邻切章 | [提交前复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
+| 2026-10-19 书籍管理 | [工程、审查与浏览器验收](archived/book-management/ACCEPTANCE.md) |
 | 2026-10-20 独立讲解回看与人工保存 | [A1 独立回看](text-study/A1_ACCEPTANCE.md)、[A2 人工资料与增量保护](text-study/A2_ACCEPTANCE.md) |
 | 2026-10-20 开发期迁移基线整理 | [建库、业务回归与测试库数据保留验收](archived/DATABASE_BASELINE_ACCEPTANCE.md) |
 
 测试数量、包体积与提交隔离检查范围在原记录中维护；离线、真实模型与扩展验证各自对应其方法和观察。
 
-本次状态整理核对代码与已有验收记录。当前界面约定见[阅读与导航](../INFORMATION_ARCHITECTURE.md)，执行机制见[架构](../ARCHITECTURE.md)。
-
-2026-10-10 架构重构已提交：阅读重排、注音偏好提交与 Source 导航状态已集中到生产 module，完成工程及浏览器验证，用户复测未发现问题；产品能力与未决项保持不变。见[重构验收](archived/READER_STATE_REFACTOR_ACCEPTANCE.md)。
-
-### 2026-10-20 开发期迁移基线整理
-
-本轮将 12 个开发期迁移合并为 `0001_initial`，显式建立当前 22 张业务表及索引、约束和默认值，保留 Alembic 环境、模板和 `just migrate`。旧中间 revision 的升级测试随旧链移除，保留空库重建、模型 schema 一致性与当前业务约束回归。现用测试库已先备份并核验结构等价，再仅对齐版本记录，业务数据与凭据保持不变；旧库与旧备份的操作边界见 [README](../../README.md#本地开发)。本轮不改变产品行为、API 或 TBD。
-
-`just check` 与独立审查已通过，API 重新生成无差异；方法、结果与恢复边界见[验收记录](archived/DATABASE_BASELINE_ACCEPTANCE.md)。上述阶段验收中的旧迁移编号、回填和数据保留结论继续作为历史记录。
+当前界面约定见[阅读与导航](../INFORMATION_ARCHITECTURE.md)，执行机制与迁移链见[架构](../ARCHITECTURE.md)，旧库及旧备份的处理边界见 [README](../../README.md#本地开发)。阶段记录中的旧迁移编号、回填和数据保留结论继续作为历史事实保留。
 
 ## 2. 尚未落实的契约与目标差额
 

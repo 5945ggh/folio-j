@@ -97,15 +97,21 @@ Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profi
 
 Occurrence整理行为见[PRD F5](PRD.md#f5-学习条目创建与整理)。存储契约保留pending／learning／reference及独立的软删除编码（待定），不得用dismissed混合忽略与删除。出处引用具体不可变修订，整理或再次调用不能迁移历史引用。创建来源、引用约束及删除保留策略仍须在实现前落实。
 
-预留、不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`。`materials` 与 `reading_positions` 保存 EPUB 材料与全书阅读位置；原始字节、不可变编译包和版本身份由 Material 承载，资源与逻辑章节在版本包内表达，不为每个逻辑层单建表。接口与发布／恢复约束见[切片 1 契约](handovers/epub-reading/SLICE_1_DRAFT.md)，验收状态见[阶段入口](handovers/epub-reading/README.md)。
+预留、不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`。`materials` 与 `reading_positions` 保存 EPUB 材料与全书阅读位置；原始字节、不可变编译包和版本身份由 Material 承载，资源与逻辑章节在版本包内表达，不为每个逻辑层单建表。发布、删除与恢复约束见本节；初次导入切片的设计及验收证据见[历史契约](handovers/epub-reading/SLICE_1_DRAFT.md)与[EPUB 阶段入口](handovers/epub-reading/README.md)。
 
 EPUB 已确定的不变式：原始素材字节不可变，材料归属 Source；处理版本保存规则、实际产物与摘要，版本内资源保留原始 spine 身份。引用绑定具体版本、资源、Unicode 码点半开范围及原文快照；正文全局 NFC，ruby 的 `rt`／`rp` 不参与偏移，布局与分词不影响身份。DOM 使用 UTF-16，适配器必须转换并核对正文，不能逐节点规范化后直接相加；不能校验的引用明确失败。材料文本投影与第 4.3 节 Analysis 规范化器分别执行各自契约，不改变后者的可复原保证。具体隔离试验、范围限制和证据见 [EPUB 阶段入口](handovers/epub-reading/README.md)；持久化、删除及权限不由试验自动定案。
 
-阅读章是版本内资源范围的呈现组织：优先采用书内目录标题与入口、按 spine 顺序连续呈现图文，不改变资源局部引用身份。阅读位置保存逻辑章和资源内锚点，百分比派生展示；布局变化允许近似恢复，精确引用仍须严格校验。原书 ruby 优先于分词生成注音，自动注音属于可重建显示层，不改核心正文。具体样书调查及切片 1 细化继续见上述阶段文档。
+阅读章是版本内资源范围的呈现组织：优先采用书内目录标题与入口、按 spine 顺序连续呈现图文，不改变资源局部引用身份。阅读位置保存逻辑章和资源内锚点，百分比派生展示；布局变化允许近似恢复，精确引用仍须严格校验。原书 ruby 优先于分词生成注音，自动注音属于可重建显示层，不改核心正文。样书调查与早期分章设计保留在上述阶段文档，作为历史证据。
 
-材料导入用受限原始 EPUB 请求体，编译与包的编解码移出事件循环；原始字节及压缩产物同事务发布。来源内相同摘要复用身份，跨来源独立；发布前再次校验 Source 存活。来源删除确认计入材料，读书／保存位置均检查 Source，托管字节暂不物理清理。阅读位置用 `expected_revision` 条件写入，陈旧请求返回 409；版本、章节、part 与资源范围必须吻合。
+`POST /api/sources/{source_id}/materials` 接受 `application/epub+zip` 原始请求体，流式读入内存，上限 32 MiB；类型不符返回 415，超限返回 413，无效／不支持的 EPUB 返回 422。编译、压缩及完整分词生成移出事件循环，不占写事务。短写事务重新核对 Source 存活、按源字节 SHA-256 判重，将原始字节、压缩编译包、材料身份和首个分词资产原子发布；未提交的失败／取消由事务回滚，响应丢失后同字节重导可核实已有材料。并发重复只发布一个对象，响应的 `reused` 表达实际复用事实；同 Source 同字节保留用户已编辑信息，跨 Source 保留独立材料与版本身份，不按标题／文件名判重。
 
-章节记忆由 `chapter_reading_positions` 保存；初始基线直接创建该表，早期从全书位置回填章节记忆的迁移事实见[历史验收](handovers/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)。位置 PUT 沿用材料级 CAS，同一事务更新全书最后位置和当前章；GET 材料按章序返回 `chapter_positions`，查询无写入副作用。
+原 EPUB 与编译包均存 SQLite BLOB，避免文件和数据库的双提交；备份须遵循 WAL 一致性规则。编译不解包到磁盘，不读取远程资源或开放任意包成员路径；拒绝路径穿越、重复成员、加密／DRM 及不支持的固定版式。归档上限为 5000 项、总展开 128 MiB、单成员 16 MiB、展开比例 200，编译产物上限 64 MiB；安全预算失败不能降为可选资源警告。受支持的固定图片 spine 页仅保留图像并给出不恢复固定几何的警告。作者 HTML 经白名单清洗，脚本及活动节点不进入呈现包；CSS 仅展开包内 import，深度上限 8、展开预算 4 MiB。每个 part 使用无脚本同源 sandbox iframe，CSP 禁止脚本、连接和外部资源，仅允许受控 data 图片／字体与内联样式。
+
+Source 删除确认计入材料及原书不可再打开的影响；材料读取、派生查询、封面及写入均核对完整 Source 存活链，发布前拒绝删除后的迟到结果。材料随来源不可见，托管字节暂不物理清理；独立材料移除尚无生产入口，材料对话的删除影响留待其切片。未来外置资源须另建可恢复发布协议，不改变既有内容保留语义。
+
+阅读位置通过 `PUT /api/materials/{material_id}/reading-position` 使用材料级 `expected_revision` 条件写入，陈旧请求返回 409；版本、章节、part、资源及文字／图片范围不符返回 422，不可见材料返回 404。文字 offset 为资源局部码点，图片以 `image_id` 和 0–1 的局部比例恢复；spine 出现身份由 part 核验，不将图库 ordinal 当作位置身份。字号默认 20、范围 12–40，行距默认 1.8、范围 1–3，排版默认 `horizontal-tb`，另支持 `vertical-rl`，随位置保存。阅读恢复允许在同版本、同章尽力回到附近并明确降级；精确引用仍须严格核对范围与快照。布局和图片尺寸稳定前隔离中间滚动，避免恢复过程覆盖已有位置。
+
+章节记忆由 `chapter_reading_positions` 保存；初始基线直接创建该表，早期从全书位置回填章节记忆的迁移事实见[历史验收](handovers/archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)。位置 PUT 沿用材料级 CAS，同一事务更新全书最后位置和当前章；GET 材料按章序返回 `chapter_positions`，查询无写入副作用。
 
 位置 JSON 中的 `at_chapter_end` 表示实际内容末端已进入当前稳定视口的可读区域，旧记录缺字段时默认为 false，无须数据库迁移。前端在全部 part 就绪、重排恢复完成后测量并缓存各 frame 非空白正文与图片的末端；排除零尺寸及 `visibility:hidden/collapse` 内容，并取文字／图片与祖先 `overflow:hidden/clip` 裁剪范围的可见交集；忽略作者／阅读器尾部留白和空白 part。滚动采样沿阅读轴比较全章内容末端和 `readingViewport` 的底边／左边（容差 1 CSS px），不要求到达物理滚动极限。一屏完整呈现的短章视为已到章末。锚点优先取包含阅读起始边缘的非空 frame；直接进入超长空白尾部时，从已滚过的非空 frame 获取可恢复锚点。
 
@@ -123,27 +129,42 @@ GET、PUT 与前端即时显示采用相同进度口径：章末标志为 true �
 
 ### 3.1.1 目录与材料使用状态
 
-材料使用状态以 material_id 关联，保存可空 last_opened_at、not_started／in_progress／completed 及独立 revision，不变更 Material 版本或 ReadingPosition revision。显式打开 mutation 仅在新进入成功呈现目标章后执行；GET、预取与 refetch 无写入副作用。重复动作去重、条件版本校验拒绝迟到打开覆盖新手工状态；409 后读真实状态，不循环盲重试。状态失败不破坏位置队列，缓存更新不重挂载阅读器。
+材料使用状态以 material_id 关联，保存可空 last_opened_at、not_started／in_progress／completed 及独立 revision，不变更 Material 版本或 ReadingPosition revision。`GET /api/materials/{material_id}/usage` 无记录时返回未开始、revision=0、打开时间为空，不创建记录。`POST .../opened` 仅在新进入成功呈现目标章后执行，更新真实打开时间，未开始转进行中，已完成保持完成；`PUT .../usage` 只改用户指定状态，保留位置与打开时间。GET、预取、refetch、换章和设置变化不记新打开。
 
-目录由服务端先完整筛选、排序再分页，返回真实总数；字段白名单，普通文字搜索，标题比较集中测试，ID 破同值，最近打开空值双向置后，分页 50／上限 100。Source 概览有限样本与真实计数；讲解关联未删除 Segment，携带确切修订及原文短摘，避免前端 N+1。查询、封面和写入检查完整 Source 可见性链。
+两类状态写入均在短事务内核对 `expected_revision`；opened 的 `action_id` 为 1–100 字符，以 `last_action_id` 对最近一次动作有限去重，同动作重试先于版本检查返回真实当前状态，其余陈旧请求返回 409。客户端冲突后读取真实状态，不循环盲重试；状态失败不破坏位置队列，缓存更新不重挂载阅读器。
 
-封面规则版本 `2` 优先采用有效的 EPUB3 cover-image／EPUB2 meta name=cover 声明，再按 spine 中 XHTML `img`／SVG `image` 包内引用、manifest 图像顺序回退首张可用静态 PNG／JPEG。坏候选继续，全局归档安全失败整体拒绝。图片限制为 4 MiB、1600 万像素；APNG、GIF、WebP、SVG 不作为有效封面候选，无可用候选时使用占位。标准库执行有界头部／结构校验，浏览器加载失败仍占位。
+目录由服务端先完整筛选、排序再分页，返回 items、真实 total 和分页参数；page 默认 1，page_size 默认 50、范围 1–100，非法参数返回 422。`q` 默认空，按普通文字匹配并转义 LIKE 通配符；标题比较使用 SQLite BINARY 码点序，不承诺自然卷序或拼音序。同值按 ID 升序排列，最近打开的空值在两个方向均置后。
 
-书籍信息编辑使用独立 `metadata_revision` 条件写入，书名和自定义封面在短写事务内原子保存，陈旧提交返回 409。`material_custom_covers` 保存用户覆盖，封面读取优先覆盖，恢复原书封面只清除覆盖；自动缓存升级不覆盖用户图片。目录与详情封面 URL 包含信息修订，避免沿用旧图片或失败状态。原书标题和章节数量从不可变编译包读取，查看详情不记录阅读打开，也不触发注音准备；信息编辑保留原始字节、材料版本、位置、使用状态与注音代次。具体接口见[书籍管理契约](handovers/book-management/PLAN.md#接口与存储契约)。移动与删除当前只有禁用入口。
+| GET 路径（省略 `/api`） | 筛选与搜索范围 | 排序白名单与默认值 |
+|---|---|---|
+| `/materials` | type 固定 book，可选 source_id、status；q 匹配材料／Source 标题 | title／created_at／last_opened_at；默认 title 升序 |
+| `/catalog/sources` | q 匹配 Source 标题 | title／created_at／updated_at；默认 title 升序 |
+| `/sources/{source_id}/catalog/segments` | q 匹配原文／自由文本出处 | created_at／updated_at；默认 created_at 降序 |
+| `/sources/{source_id}/catalog/analyses` | q 匹配讲解标题／摘录 | title／created_at／updated_at；默认 title 升序 |
 
-首次封面读取在线程中提取并缓存成功／失败，资源 URL 带 `?v=2`；旧成功／失败缓存均懒重建，当前失败的目录 URL 为空。缓存保持原始字节、编译包和版本不变，目录不逐书解压。候选和缓存规则见[封面工程契约](handovers/library-a1/API.md)。
+Source 目录提供材料、未删除片段与讲解的真实计数，概览仅取有界预览。讲解聚合仅关联未删除 Segment，携带所属片段、确切当前修订和最多 160 码点原文短摘，避免前端 N+1；书籍目录平铺 usage 字段。旧列表接口保留原响应形状。查询、封面和写入检查完整 Source 可见性链，不可见来源或材料返回 404。
 
-`material_usage` 与 `material_covers` 分别保存使用状态与封面缓存，缓存含规则版本和诊断。早期使用状态回填与缓存升级事实见[历史验收](handovers/frontend-refresh/ACCEPTANCE.md)。Query key 包含全部条件；导入、状态、Source 和 Analysis 变更刷新受影响目录及计数，旧请求不污染新条件，失效页码回有效页。API 见[目录契约](handovers/frontend-refresh/API.md)，DTO 由 OpenAPI 生成，业务位于 services。
+封面规则版本 `2` 优先采用有效的 EPUB3 cover-image／EPUB2 meta name=cover 声明，再按 spine 中 XHTML `img`／SVG `image` 的包内引用、manifest 图像顺序回退首张可用静态 PNG／JPEG；重复候选只尝试一次，不依赖 ZIP 物理排列。引用必须属于 manifest，SVG image 仅提供静态图片引用。坏候选继续，全局归档安全失败整体拒绝，不请求远程图片。图片限制为 4 MiB、1600 万像素；APNG、GIF、WebP、SVG 不作为有效封面候选，无可用候选时使用占位。标准库校验 PNG 结构／CRC 和 JPEG marker、有效帧／扫描组件及非空熵数据，要求 EOI，允许 EOI 后最多 1024 字节；这不是完整像素解码，浏览器加载失败仍占位。
+
+`GET /api/materials/{material_id}/details` 从不可变编译包读取原书标题与章节数，并返回当前展示信息，不记录阅读打开或触发注音准备。`PATCH .../metadata` 使用独立 `metadata_revision`（初值 0）与非负整数 `expected_revision` 条件写入，书名去两端空白并 NFC 后须为 1–300 字符；`cover_action` 为 keep／replace／reset，默认 keep，仅 replace 要求且允许图片。图片须为严格 base64 的静态 PNG／JPEG，解码后不超过 4 MiB、1600 万像素，格式与大小错误返回 422。
+
+每次合法保存均在短写事务内原子更新书名、自定义封面和信息修订，陈旧提交返回 409，不可见材料返回 404。`material_custom_covers` 保存用户覆盖，封面读取优先覆盖，reset 只清除覆盖并回到自动提取／占位规则；自动缓存升级不覆盖用户图片。目录与详情封面 URL 包含信息修订，避免沿用旧图片或失败状态。编辑保留 source_id、原始字节、摘要、材料与版本身份、编译包、位置、使用状态、历史注音代次及 Source 标题；同字节重导保留用户信息。移动与删除当前只有禁用入口，实施及验证事实见[书籍管理验收](handovers/archived/book-management/ACCEPTANCE.md)。
+
+首次封面读取在线程中提取并缓存成功／失败，资源 URL 带 `?v=2&revision=<metadata_revision>`；服务端按自身规则判断缓存版本，客户端不能切换提取规则。旧成功／失败缓存均懒重建，仅已确认的当前规则失败使目录 URL 为空；发布缓存前重验 Source 存活及缓存版本，并保持自定义覆盖优先。缓存保存候选来源 declared／spine／manifest、去重的跳过原因，全部失败保留 no_images、资源／路径／格式、unsafe_archive 或 invalid_package 诊断。封面无可用内容返回 404，响应使用 no-store 与 nosniff。前端失败状态绑定材料及具体 URL，URL 更新或用户重试可重新加载。缓存保持原始字节、编译包和版本不变，目录不逐书解压；回退与旧缓存恢复证据见[素材库验收](handovers/archived/library-a1/ACCEPTANCE.md)。
+
+`material_usage` 与 `material_covers` 分别保存使用状态与封面缓存，缓存含规则版本和诊断。早期使用状态回填与缓存升级事实见[历史验收](handovers/archived/frontend-refresh/ACCEPTANCE.md)。Query key 包含全部条件；导入、状态、Source 和 Analysis 变更刷新受影响目录及计数，旧请求不污染新条件，失效页码回有效页。DTO 由 [OpenAPI](../backend/openapi.json)生成，业务位于 services，本节维护长期查询与写入约束。
 
 ### 3.1.2 阅读器 R1.1 呈现与只读派生查询
 
-实施边界见[阅读器计划](handovers/reader-r1/PLAN.md)，真实 DTO 与参数／错误契约见[API](handovers/reader-r1/API.md)，浏览器与综合验证状态以阶段验收记录为准。R1.1 不新增领域实体、数据库表或位置字段；按原不可变编译包派生搜索与插图清单。服务层在线程中执行有界解压及扫描，每个请求核验 Material、所属 Source 和 version_id；缺失／不可见 404、查询版本不符 409、参数错误 422，不改变原位置验证契约。
+搜索与图库按不可变编译包派生，不新增领域实体、持久索引或数据库表，不改变原字节、正文、版本及产物摘要。DTO 见 [OpenAPI](../backend/openapi.json)；浏览器兼容与历史成本观测见[阅读器验收](handovers/archived/reader-r1/ACCEPTANCE.md)和[历史 API 记录](handovers/archived/reader-r1/API.md#本机只读查询成本记录)。服务层在线程中执行解压、扫描、HTML 解析与图片解码；当前无派生缓存，每次非空搜索／图库请求仍解析有界全书包。每个请求核验 Material、所属 Source 和必填 version_id；缺失／不可见返回 404、查询版本不符返回 409、参数错误返回 422，不改变位置写入的版本／范围错误 422 契约。
 
-搜索按章节／part／spine 顺序扫描资源局部 NFC 正文，排除 rt／rp；字面重叠命中保留原资源码点半开范围，同资源同 spine 的连续 part 可衔接，不跨章或资源拼接。分页响应只保留请求页及真实计数。图库保留版本内每个有效图片出现项，ordinal 是本版本清单序号，导航身份仍是 chapter／part／resource／image_id；受控 content endpoint 不接受任意路径或远程 URL。清单不携带全图 base64，图片逐项按需读取；封面的专用预算不充当正文图片的新规则。GET 均不写 Run、usage 或 reading_positions。
+`GET /api/materials/{material_id}/search` 的 q 默认空、输入至多 160 码点，服务去两端空白并 NFC；空白查询返回空页且不解压扫描。搜索与 `GET .../illustrations` 共用 offset 默认 0 且非负、limit 默认 40 且范围 1–100。搜索按章节／part／spine 顺序扫描资源局部正文，排除 rt／rp 与 UI 标题；重复和重叠字面命中均保留。同资源同 spine 的连续 part 可衔接，不跨章、资源或 spine 出现拼接；命中归 start 所在 part，保留资源码点半开范围与前后各至多 40 码点摘录，不能把 start 当作摘录偏移或 UTF-16 索引。分页只保留请求页并统计完整范围，不构造全量命中数组。
+
+图库按已清洗 part HTML 顺序保留每个有效图片出现项，包括重复图与纯图片章。ordinal 为版本内从零开始的清单序号，不能跨版本引用；导航仍核对 chapter／part／resource／image_id。清单保留原始 alt、不虚构宽高、不携带全图 base64；`GET .../illustrations/{ordinal}/content` 仅按需读取包内带 data-epub-image 的 PNG／JPEG／GIF／WebP，不接受任意路径、ZIP 成员或远程 URL，不提供 SVG。编码与字节受 64 MiB 编译预算约束；编码超限返回 413，解码、MIME 签名或字节校验失败返回 422，出现项不存在返回 404。签名核对不保证浏览器完整解码成功。响应 MIME 与识别类型一致，带 nosniff 和 private, no-store；封面的 4 MiB 专用预算不套用正文图片。GET 均不写 Run、usage 或 reading_positions。
 
 Reader 使用独立外壳与专属 token，保留每 part 的无脚本同源 sandbox iframe 和正文投影。父应用绑定并注销有效 frame 事件；跨 frame 指针坐标转换到阅读视口。工具临时可见性与专注偏好独立，面板与大图阻止静置隐藏；阅读工具面板非模态，不设置正文 inert 或圈定焦点。工具切换递增导航票据，旧定位不能覆盖新意图；目录／搜索同一面板保留查询状态，工具栏只留一个导航入口，两种页签状态均按同一工具开关。左右面板分别持有状态；同侧切换及各侧关闭互不清除另一侧的查询／图库状态，导航完成仅关闭发起侧。正文视口延伸至底部，侧栏底部留12px并采用完整圆角；导航书名／阅读信息／页签为固定区域，内容有独立滚动容器。窄屏保留两侧状态，将被覆盖的一侧暂时移出交互与可访问树；浮动工具栏按内容宽度覆盖，章内进度在工具栏内部，工具栏外区域不阻断正文／面板交互。大图作为图库兄弟层呈现，跨 iframe Escape 优先关闭大图；用户主动选图、翻页或关闭时隔离初始插图定位的迟到结果。主题／ruby 原地呈现；几何设置沿用稳定锚点、有效代次恢复与串行 revision 写队列。搜索高亮使用 DOM Range 与 CSS Highlight，不改定位叶子；重复 spine 按实际出现位置核验，跨 part 范围按其资源局部映射处理。
 
-TanStack Query key 包含材料／版本／查询／分页，输入法组合期间不发中间查询；新输入立即隔离旧结果，约 200ms 后请求。面板卸载和材料切换取消可取消请求，迟到响应仅归属原查询缓存，不重新打开面板。图库仅显示当前有界页，正文图点击按需检索轻量清单后打开大图；浏览不写正文位置，明确前往才进入共享原点及正常保存链路。新增 UI 偏好经枚举／范围校验后保存在浏览器：theme／focus 跨书，font／ruby／width 逐材料版本；Storage 失败保留内存默认，不混入严格位置 DTO。
+TanStack Query key 包含材料／版本／查询／分页，输入法组合期间不发中间查询；新输入立即隔离旧结果，约 200ms 后请求。面板卸载和材料切换取消可取消请求，迟到响应仅归属原查询缓存，不重新打开面板。图库仅显示当前有界页，正文图点击按需检索轻量清单后打开大图；浏览不写正文位置，明确前往才进入共享原点及正常保存链路。新增 UI 偏好经枚举／范围校验后保存在浏览器，不混入严格位置 DTO。跨书键 `folio-reader-ui-v1` 保存 theme（system／white／black，默认 system）、focus（默认 true）及工具栏透明度；旧 soft 主题映射 white。逐材料版本键 `folio-reader-book-ui-v1:<编码 material_id>:<编码 version_id>` 保存 font（mincho／gothic，默认 mincho）、ruby（show／on-demand／hide，默认 show）、rubyScope（original／all，默认 original）与 width（有限数值 560–1040，默认 760）。损坏值逐字段回默认，Storage 不可用或写失败时内存继续可读，不承诺跨设备同步。
 
 `toolbarTransparency` 同样为跨书浏览器偏好，读取缺失、非数值或超出 0–100 的旧值时回退默认 20。Reader 通过 CSS 变量将透明度转换为背景 alpha，标题栏与工具栏共用随主题变化的背景色及 backdrop blur；文字和图标不使用整体 opacity。该偏好只更新外壳呈现，不触发正文重排或位置写入。
 
@@ -167,7 +188,7 @@ TanStack Query key 包含材料／版本／查询／分页，输入法组合期�
 
 纯显示方式、主题与原书范围下迟到的读音数据只更新呈现，不触发 iframe 尺寸探测。`reader-layout.ts` 的 `ReaderLayout` 集中稳定锚点、延迟保存、布局票据、几何判定与资源就绪集合；页面提供 DOM 测量和定位适配。几何提交仍在 `useLayoutEffect` 内同步执行：保留锚点、取消延迟保存并进入恢复状态，再更新排版／尺寸，DOM 恢复流程完成并通过票据校验后才执行返回点处理并开放采样。新 surface 即使几何参数相同也使旧采样许可失效。首次字体与图片全部就绪后只执行一次受当前 surface 校验的恢复，重复或过期就绪通知不重测。这样避免临时 1px 测量把滚动压回章首后，再被误保存为新的阅读位置。
 
-临时返回点只在目标 surface 实际定位成功后消费；`return-recovery.ts` 核对代次及目标内容身份，失败保留原点并提示重试。文字矩形在增加正文留白前检查原始几何，零尺寸或非有限矩形不冒充定位成功。验收及兼容限制见[全量注音计划](handovers/full-ruby/PLAN.md)与[验收](handovers/full-ruby/ACCEPTANCE.md)。
+临时返回点只在目标 surface 实际定位成功后消费；`return-recovery.ts` 核对代次及目标内容身份，失败保留原点并提示重试。文字矩形在增加正文留白前检查原始几何，零尺寸或非有限矩形不冒充定位成功。验收及兼容限制见[全量注音计划](handovers/archived/full-ruby/PLAN.md)与[验收](handovers/archived/full-ruby/ACCEPTANCE.md)。
 
 `return-origin.ts` 的 `JumpReadingSession` 管理连续查阅与继续阅读的边界，阈值集中在 `JUMP_READING_POLICY`。页面将正文 wheel／阅读键／触摸移动及滚动条操作关联到稳定视口采样，横竖排统一为正向阅读轴；每次输入仅允许后续 800ms 内的位移计入，净前进至少一视口且首末移动跨越 5 秒后确认继续阅读。移动间隔超过两分钟重建候选，页面失焦／隐藏、工具开关及几何恢复丢弃未确认信号与旧几何基准。确认不清空原返回点，下一次通过目标校验的导航才替换为当时的稳定位置并重置检测；失败请求保留信号。章首显式撤销与返回定位成功后消费原点的规则沿用原逻辑。
 
@@ -388,9 +409,11 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 ```text
 /sources/{source_id}/materials
 /materials, /materials/{material_id}
+/materials/{material_id}/details, /materials/{material_id}/metadata
 /materials/{material_id}/statistics
 /materials/{material_id}/chapters/{chapter_id}
 /materials/{material_id}/reading-position
+/materials/{material_id}/readings, /materials/{material_id}/readings/prepare
 /materials/{material_id}/search, /materials/{material_id}/illustrations
 /materials/{material_id}/illustrations/{ordinal}/content
 /materials/{material_id}/usage, /materials/{material_id}/opened
@@ -432,21 +455,7 @@ A1 中，`analysis/AnalysisPanel.tsx` 只承担持久讲解读取与删除，`An
 
 `catalog/state.ts` 集中 Source 内容视图的默认排序解析、窗口展开／关闭及参数清理，并返回对应的 push／replace 选择。`useSourceContentLocation` 只负责 Router 与偏好读取适配；页面不再各自维护清理字段。来源栏查询保持独立，窗口返回保留内容筛选，显式 URL 排序优先于存储偏好；旧入口和 `expanded=book` 链接继续兼容。
 
-以下标明已注册路由与未来入口，实际定义见[`App.tsx`](../frontend/src/App.tsx)：
-
-| 路由 | 内容 |
-|---|---|
-| `/` | 替换式跳转 `/materials?type=book` |
-| `/sources` | 来源目录；S2 普通进入上次有效来源，否则选择当前排序首项 |
-| `/sources/:id` | S2 为概览／素材／片段／讲解四视图，默认概览；素材视图保留 `expanded=book` 窗口 |
-| `/materials` | 跨 Source 书籍目录 |
-| `/materials/:id` | 独立 EPUB Reader；目录／搜索、图库、设置、专注及既有位置／状态 |
-| `/materials/:id/details` | 书籍详情及共享信息编辑入口；保留原目录来处，不计阅读打开 |
-| `/segments/:id` | 片段阅读与按需展开的讨论；`analysis`／`revision`／`thread`／`chat`定位已有内容。Occurrence仍未实现 |
-| `/library`（未来，尚未注册） | 知识库：筛选、搜索、按 anchor 分组，每条都能跳转回来源 |
-| `/settings` | 学习背景、讲解预设、Provider／模型／用途默认值的维护，以及模型列表刷新与按需验证 |
-
-S2 路由适用范围与提交状态见 [MVP 实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md#1-当前实现差额与验收依据)。诊断入口按 PRD F8 确定，不预设独立完整调试页面为首轮前提。
+页面、路由、返回路径及 URL 状态由[阅读与导航](INFORMATION_ARCHITECTURE.md)维护，实际路由注册见[`App.tsx`](../frontend/src/App.tsx)。Occurrence 积累库与材料对话入口仍待各自切片；诊断入口按 PRD F8 确定。
 
 当前前端按页面及 `catalog`／`materials`／`chat`／`analysis`／`settings` 模块组织。API 类型在 `api/schema.d.ts` 生成，各模块 `api.ts` 封装调用，TanStack Query 维护查询与 mutation；讨论推进见 `chat/discussion.ts`，阅读位置队列见 `materials/persistence.ts`。后台状态由轮询读取。
 

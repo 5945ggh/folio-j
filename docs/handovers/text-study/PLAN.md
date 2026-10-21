@@ -6,7 +6,7 @@
 
 ## 1. 交付范围与停止条件
 
-本轮交付三条路径：
+原计划覆盖三条路径，当前交付前两条；第三条对应 C1／C2，保留为后续目标：
 
 1. 无需配置模型，用户能在 Segment 下直接保存手写或外部 Markdown、编辑全文产生新修订，并从来源重新打开。
 2. 普通文本资源能直接进行词法分析和统计；书籍详情读取后端汇总，不挂载阅读器、不下载全书 token。
@@ -16,9 +16,11 @@
 
 本轮不实现翻译服务、TTS、OCR／ASR、第二种媒体导入、材料对话、Occurrence、Lexeme、SRS、通用任务引擎或完整正文版本管理。统计不包含难度评分、逐汉字读音、平均自然句长、卷数或学习者掌握率。既有聊天执行继续使用 chat_jobs；新增能力不伪造线程、Job 或 Run。不新增依赖，不做全仓 schema 搬迁。
 
-本轮结束时，三条路径可以独立使用；现有导入、注音、讨论审核、迟到响应保护、历史修订和阅读恢复没有回归。翻译／TTS 的持久化承诺、上下文范围和任务恢复留在后续具体切片中收口，不作为本轮阻塞项。
+C1／C2 完成后，三条路径应可独立使用；现有导入、注音、讨论审核、迟到响应保护、历史修订和阅读恢复均须保持。翻译／TTS 的持久化承诺、上下文范围和任务恢复留在后续具体切片中收口，不作为本计划阻塞项。
 
 ## 2. 当前代码起点与复用范围
+
+下表记录 `85d8725` 时的实施起点，供理解各切片的改动范围；交付后的当前实现见[架构](../../ARCHITECTURE.md)与实施基线。
 
 | 位置 | 当前事实 | 本轮处理 |
 | --- | --- | --- |
@@ -101,7 +103,7 @@ SegmentPage 区分“尚未启动讨论”与“启动后隐藏”。启动状�
 
 **架构改动与接口建议。**
 
-- POST /api/segments/{segment_id}/analyses 创建讲解；POST /api/analyses/{analysis_id}/revisions 提交人工全文修订。请求带 request_id、expected_text_sha256、source_md；修订额外带 base_revision_id。创建可带标题和受限的手写／导入选项。最终字段在 S0／A2 契约中统一，由 OpenAPI 生成前端类型。
+- POST /api/segments/{segment_id}/analyses 创建讲解；POST /api/analyses/{analysis_id}/revisions 提交人工全文修订。请求带 request_id、expected_text_sha256、source_md；修订额外带 base_revision_id。创建可带可选标题，界面统一记录用户保存；API 保留 import 值的兼容，见下项。最终字段以 OpenAPI 及其生成前端类型为准。
 - Segment 读取返回服务端计算的 NFC 原文摘要；人工保存比较该摘要，避免备注变化造成无关冲突。现有 Segment.revision 继续表示整条记录修订，不新增正文版本表。
 - 新建界面统一写入 manual；API 的 import 和已有历史记录保留兼容；全文修订写入 manual_edit，run_id 为空。客户端不能声明 agent 或附加虚构 Run。外部出处可随 Markdown 保留，首版不做来源自动抓取。
 - 在 services 中设置明确的写入用例入口，统一祖先存活、原文保护、基础修订、幂等和提交规则。底层 create_analysis／修订保存仍可 flush；聊天路径继续保留自身 Job token、停止和审核校验，并复用内容约束。避免嵌套事务或把任务授权移给人工入口。

@@ -4,22 +4,26 @@
 
 ## 阶段资料
 
-当前交付、提交状态与验收结论汇总见 [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)。以下按阶段职责组织实施安排、接口契约和原始证据。
+当前交付、提交状态与验收结论汇总见 [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)。本节保留未完成阶段的安排与配套验收；目录、封面、书籍编辑及阅读器的现行接口由[架构](../ARCHITECTURE.md)维护。
 
 - 文本处理与学习资料调整：架构解耦、人工保存与独立回看、统计和精确出处；见[实施计划](text-study/PLAN.md)、[验收样例](text-study/TEST_MATRIX.md)、[S0 收口](text-study/S0_ACCEPTANCE.md)、[B1 验收](text-study/B1_ACCEPTANCE.md)及[B2 验收](text-study/B2_ACCEPTANCE.md)。S0 与 A／B 线已完成工程验收；C 暂不实施。A 线证据见[独立回看](text-study/A1_ACCEPTANCE.md)与[人工资料](text-study/A2_ACCEPTANCE.md)。
-- 片段专注布局：窄工具栏、中央阅读与右侧讨论，见[实施范围](segment-layout/PLAN.md)和[验收记录](segment-layout/ACCEPTANCE.md)。
-- 书籍管理：详情页、共享信息编辑和卡片菜单，移动／删除保留禁用入口；见[计划与契约](book-management/PLAN.md)和[验收记录](book-management/ACCEPTANCE.md)。
-
-- 全量注音：导入全书分词、持久派生资产、重建与两维注音显示；见[计划](full-ruby/PLAN.md)和[验收](full-ruby/ACCEPTANCE.md)。
-- 设置顶部分类：学习偏好、模型与服务、对话与权限分组，统一弹窗、草稿保护与验证历史筛选；见[计划](settings-refresh/PLAN.md)和[验收](settings-refresh/ACCEPTANCE.md)。
-- 章节位置记忆：每章位置持久化、目录恢复与章首返回，内容末端可读时 100% 与回看下降；见[工程与浏览器验收](epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)。
-- 阅读器 R1.1：独立阅读空间、阅读偏好、原书 ruby、书内搜索／插图库及面板交互；见[计划](reader-r1/PLAN.md)、[API 契约](reader-r1/API.md)、[工程验收](reader-r1/ACCEPTANCE.md)和[交互优化](reader-r1/INTERACTION_POLISH.md)。
-- 来源空间 S2：主导航／来源列表／来源内容三栏、四视图、有界概览与精确恢复；见[计划](sources-s2/PLAN.md)和[验收记录](sources-s2/ACCEPTANCE.md)。
-- 素材库 A.1：轻原生素材库、整区空库导入和封面回退／缓存；见[计划](library-a1/PLAN.md)、[封面工程契约](library-a1/API.md)和[验收记录](library-a1/ACCEPTANCE.md)。
-- 前端调整：目录、Source 三视图、使用状态与统一导航；见[计划](frontend-refresh/PLAN.md)、[API 契约](frontend-refresh/API.md)和[验收记录](frontend-refresh/ACCEPTANCE.md)。
 - [EPUB 原生阅读阶段](epub-reading/README.md)：组织导入、基础阅读、注音、选区学习、材料对话和讲解形成的切片顺序与准备条件。
 
 ## Archived
+
+2026-10-20 将以下已完成阶段移入归档，保留当时的计划、接口快照、验收数字、用户反馈与未验证项。书籍管理、S2 的用户使用验收待项继续由[实施基线](MVP_IMPLEMENTATION_BASELINE.md)维护。归档接口中的旧默认值、旧迁移编号和当时的能力限制仅用于理解历史。
+
+| 阶段 | 计划与接口快照 | 验收证据 |
+| --- | --- | --- |
+| 片段专注布局 | [范围](archived/segment-layout/PLAN.md) | [工程、浏览器及用户反馈](archived/segment-layout/ACCEPTANCE.md) |
+| 书籍管理 | [计划与接口](archived/book-management/PLAN.md) | [工程与浏览器验收](archived/book-management/ACCEPTANCE.md) |
+| 全量注音 | [计划](archived/full-ruby/PLAN.md) | [生成、恢复与提交复核](archived/full-ruby/ACCEPTANCE.md) |
+| 设置顶部分类 | [计划](archived/settings-refresh/PLAN.md) | [分组保存、草稿与验证历史](archived/settings-refresh/ACCEPTANCE.md) |
+| 阅读器 R1.1 | [计划](archived/reader-r1/PLAN.md)、[API 快照](archived/reader-r1/API.md) | [工程验收](archived/reader-r1/ACCEPTANCE.md)、[后续交互优化](archived/reader-r1/INTERACTION_POLISH.md) |
+| 来源空间 S2 | [计划](archived/sources-s2/PLAN.md) | [工程与浏览器验收](archived/sources-s2/ACCEPTANCE.md) |
+| 素材库 A.1 | [计划](archived/library-a1/PLAN.md)、[封面 API 快照](archived/library-a1/API.md) | [素材库与后续导入表单](archived/library-a1/ACCEPTANCE.md) |
+| 前端调整 | [计划](archived/frontend-refresh/PLAN.md)、[API 快照](archived/frontend-refresh/API.md) | [目录、状态与导航](archived/frontend-refresh/ACCEPTANCE.md) |
+| EPUB 基础阅读 | [章节与阅读调查](archived/epub-reading/CHAPTER_RESEARCH.md) | [切片 0](archived/epub-reading/SLICE_0_ACCEPTANCE.md)、[切片 1](archived/epub-reading/SLICE_1_ACCEPTANCE.md)、[章节位置记忆与章末进度](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md) |
 
 - [开发期迁移基线整理验收](archived/DATABASE_BASELINE_ACCEPTANCE.md)：单初始基线、历史升级测试清理、业务回归与现用测试库数据保留证据。
 

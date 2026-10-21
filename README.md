@@ -37,7 +37,7 @@ just check-assets # 验证保留的实验和静态原型
 
 此次基线合并移除了原有 12 个开发期 revision，新迁移链不再支持从旧中间 revision 自动升级。保留旧库时，先停止使用该库的服务并制作一致性备份，同时保留对应凭据目录。
 
-仅对已经到达旧完整 head `0012_material_metadata`、且与新基线的表、字段、索引、约束和默认值核验等价的库，可在确认目标路径后从仓库根目录执行一次 `uv run --directory backend alembic stamp --purge head`，将版本记录对齐到新基线。该命令只修改迁移版本记录，不补表、不修复结构；结构不等价的库不能直接 stamp，应先用旧版本代码升级到完整旧 head 并重新核验，或在保留所需数据后另建新库。恢复旧备份也遵循相同步骤，不能把恢复后的旧版本记录直接视为新基线。
+仅对已经到达旧完整 head `0012_material_metadata`、且与新基线的表、字段、索引、约束和默认值核验等价的库，可在确认目标路径后从仓库根目录执行一次 `uv run --directory backend alembic stamp --purge 0001_initial`，再运行 `just migrate` 应用 `0002_lock_analysis_segments` 等后续迁移。stamp 只将版本记录对齐到初始基线，不补表、不修复结构；不要直接 stamp 到 head，否则会跳过后续迁移的数据保护。结构不等价的库不能直接 stamp，应先用旧版本代码升级到完整旧 head 并重新核验，或在保留所需数据后另建新库。恢复旧备份也遵循相同步骤，不能把恢复后的旧版本记录直接视为新基线。
 
 `just dev` 和 `just start` 使用同一后端端口，应选择一种运行方式。OpenAPI 与前端生成类型一并提交，修改后端 schema 后运行 `just gen-api`；不要手改生成类型。
 
