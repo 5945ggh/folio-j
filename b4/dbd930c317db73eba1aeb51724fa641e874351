@@ -1,0 +1,20 @@
+docs/handovers/text-study/READING_EXPERIENCE_ACCEPTANCE.md
+  s_289cb711126841::t_6a939bbe47d0b9 1-44
+  s_289cb711126841::t_5dedf38c2a8bc6 45-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b4dbd930c317db73eba1aeb51724fa641e874351",
+  "prompts": {},
+  "sessions": {
+    "s_289cb711126841": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a162c4-fd84-78d2-b2fb-dd9286a12010",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
