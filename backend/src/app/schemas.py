@@ -2,8 +2,11 @@
 
 import unicodedata
 from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.provenance_schemas import MaterialProvenance
 
 
 class StrictInput(BaseModel):
@@ -94,7 +97,9 @@ class SegmentDeleteImpact(BaseModel):
 
 
 class SegmentCreate(StrictInput):
-    text: str
+    text: str | None = None
+    request_id: UUID | None = None
+    material_provenance: MaterialProvenance | None = None
     translation: str = ""
     context_before: str = ""
     context_after: str = ""
@@ -104,8 +109,8 @@ class SegmentCreate(StrictInput):
 
     @field_validator("text")
     @classmethod
-    def normalize_text(cls, value: str) -> str:
-        return _text(value)
+    def normalize_text(cls, value: str | None) -> str | None:
+        return _text(value) if value is not None else None
 
     @field_validator(
         "translation", "context_before", "context_after", "transcription", "note", "source_ref"
@@ -113,6 +118,15 @@ class SegmentCreate(StrictInput):
     @classmethod
     def normalize_optional(cls, value: str) -> str:
         return _optional(value)
+
+    @model_validator(mode="after")
+    def require_creation_target(self) -> "SegmentCreate":
+        if self.material_provenance is not None:
+            if self.request_id is None:
+                raise ValueError("材料出处创建须携带 request_id")
+        elif self.text is None:
+            raise ValueError("手动片段须提供目标原文")
+        return self
 
 
 class SegmentUpdate(StrictInput):
@@ -139,6 +153,7 @@ class SegmentUpdate(StrictInput):
 
 
 class SegmentResponse(BaseModel):
+    material_provenance: MaterialProvenance | None = None
     id: str
     source_id: str
     text: str
@@ -153,3 +168,8 @@ class SegmentResponse(BaseModel):
     updated_at: datetime
     text_locked_at: datetime | None
     revision: int
+
+
+class SegmentProvenanceMatches(BaseModel):
+    segments: list[SegmentResponse]
+    truncated: bool

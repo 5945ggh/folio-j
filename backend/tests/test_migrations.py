@@ -49,7 +49,7 @@ def test_empty_database_rebuilds_current_schema(
             row[0]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
-        assert len(Base.metadata.tables) == 22
+        assert len(Base.metadata.tables) == 23
         assert tables == {"alembic_version", *Base.metadata.tables}
 
     # Compare every column, type, nullable flag, foreign key, index and uniqueness
@@ -324,8 +324,10 @@ def test_material_migration_retains_referenced_rows_and_refuses_lossy_downgrade(
         original = connection.execute("SELECT * FROM materials").fetchall()
         dependencies = {
             table: connection.execute(f"SELECT * FROM {table}").fetchall()
-            for table in Base.metadata.tables
-            if table != "materials"
+            for (table,) in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN "
+                "('materials', 'alembic_version')"
+            )
         }
     command.upgrade(config, "head")
     with sqlite3.connect(database) as connection:
@@ -353,7 +355,7 @@ def test_material_migration_retains_referenced_rows_and_refuses_lossy_downgrade(
         command.downgrade(config, "0002_lock_analysis_segments")
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0003_material_soft_delete",
+            ScriptDirectory.from_config(config).get_current_head(),
         )
         assert connection.execute("SELECT count(*) FROM materials").fetchone() == (2,)
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
@@ -397,3 +399,90 @@ def test_failed_material_rebuild_rolls_back_schema_and_data(
             ).fetchall()
             == []
         )
+
+
+def test_provenance_upgrade_preserves_learning_history_and_positions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "provenance-upgrade.db"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
+    config = Config()
+    config.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
+    command.upgrade(config, "0003_material_soft_delete")
+    with sqlite3.connect(database) as connection:
+        connection.execute("PRAGMA foreign_keys=ON")
+        connection.execute(
+            "INSERT INTO sources (id,title,description,note,created_at,updated_at) "
+            "VALUES ('source','旧資料','説明','備考','2020-01-01','2020-01-02')"
+        )
+        connection.execute(
+            "INSERT INTO segments (id,source_id,text,translation,context_before,context_after,"
+            "transcription,note,source_ref,created_at,updated_at,revision,text_locked_at) "
+            "VALUES ('segment','source','が𠮷','訳','前','後','聴取','メモ','自由出典',"
+            "'2020-01-01','2020-01-02',7,'2020-01-03')"
+        )
+        connection.execute(
+            "INSERT INTO analyses (id,segment_id,operation_key,title,excerpt,current_revision_id,"
+            "created_at,updated_at) VALUES ('analysis','segment','old-operation','講解','抜粋',"
+            "'revision','2020-01-01','2020-01-02')"
+        )
+        connection.execute(
+            "INSERT INTO analysis_revisions (id,analysis_id,operation_key,operation_payload,"
+            "origin,source_md,normalizer_version,warnings,created_at) VALUES "
+            "('revision','analysis','old-revision','{}','manual','過去の講解',1,'[]','2020-01-01')"
+        )
+        connection.execute(
+            "INSERT INTO materials (id,source_id,title,source_sha256,version_id,product_sha256,"
+            "contract_version,original_bytes,warnings,compiled_bundle,created_at) "
+            "VALUES ('material','source','本','digest','old-version','product','v1',X'1234',"
+            "'[]',X'5678','2020-01-01')"
+        )
+        connection.execute(
+            "INSERT INTO reading_positions (material_id,revision,payload,updated_at) "
+            "VALUES ('material',9,'{\"offset\":7,\"version_id\":\"old-version\"}','2020-01-04')"
+        )
+        connection.execute(
+            "INSERT INTO chapter_reading_positions "
+            "(material_id,chapter_id,revision,payload,updated_at) "
+            "VALUES ('material','chapter',3,'{\"offset\":2}','2020-01-05')"
+        )
+        connection.commit()
+        before = {
+            table: connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall()
+            for (table,) in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name != 'alembic_version'"
+            )
+        }
+    command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        for table, rows in before.items():
+            assert connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall() == rows
+        assert connection.execute("SELECT * FROM segment_material_provenance").fetchall() == []
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+        assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
+    # Without new provenance, rolling back this additive migration remains lossless.
+    command.downgrade(config, "0003_material_soft_delete")
+    command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        for table, rows in before.items():
+            assert connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall() == rows
+        connection.execute(
+            "INSERT INTO segment_material_provenance "
+            "(segment_id,source_id,material_id,version_id,payload,identity_sha256,request_id,"
+            "request_payload,assembly_rule,created_at) VALUES "
+            "('segment','source','material','old-version','{}',?,'request','{}',"
+            "'concat-nfc-v1','2020-01-06')",
+            ("a" * 64,),
+        )
+        connection.commit()
+    with pytest.raises(RuntimeError, match="无法无损回退"):
+        command.downgrade(config, "0003_material_soft_delete")
+    with sqlite3.connect(database) as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM segment_material_provenance"
+        ).fetchone() == (1,)
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
+            "0004_segment_material_provenance",
+        )
+        for table, rows in before.items():
+            assert connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall() == rows

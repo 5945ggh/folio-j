@@ -6,9 +6,11 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
+from app.provenance_schemas import MaterialProvenance, SegmentProvenanceResponse
 from app.schemas import (
     SegmentCreate,
     SegmentDeleteImpact,
+    SegmentProvenanceMatches,
     SegmentResponse,
     SegmentUpdate,
     SourceCreate,
@@ -16,6 +18,7 @@ from app.schemas import (
     SourceResponse,
     SourceUpdate,
 )
+from app.services import material_provenance
 from app.services import sources as service
 
 router = APIRouter(prefix="/api")
@@ -124,3 +127,41 @@ async def delete_segment(segment_id: str, session: Session, request: Request) ->
 
     for job_id in cancelled:
         request_chat_cancel(request.app, job_id)
+
+
+@router.get(
+    "/segments/{segment_id}/material-provenance",
+    response_model=SegmentProvenanceResponse,
+    operation_id="getSegmentMaterialProvenance",
+)
+async def get_segment_material_provenance(
+    segment_id: str,
+    session: Session,
+) -> SegmentProvenanceResponse:
+    return await material_provenance.resolve(session, segment_id)
+
+
+@router.post(
+    "/sources/{source_id}/segments/material-provenance/matches",
+    response_model=SegmentProvenanceMatches,
+    operation_id="matchSegmentMaterialProvenance",
+)
+async def match_segment_material_provenance(
+    source_id: str,
+    data: MaterialProvenance,
+    session: Session,
+) -> SegmentProvenanceMatches:
+    return await material_provenance.matches(session, source_id, data)
+
+
+@router.post(
+    "/segments/{segment_id}/material-provenance/select",
+    response_model=SegmentResponse,
+    operation_id="selectSegmentMaterialProvenance",
+)
+async def select_segment_material_provenance(
+    segment_id: str,
+    data: MaterialProvenance,
+    session: Session,
+) -> SegmentResponse:
+    return await material_provenance.select_existing(session, segment_id, data)

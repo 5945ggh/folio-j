@@ -1701,6 +1701,104 @@
         "title": "MaterialOpenedInput",
         "type": "object"
       },
+      "MaterialProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "contract_version": {
+            "const": "1",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "material_id": {
+            "maxLength": 26,
+            "minLength": 1,
+            "title": "Material Id",
+            "type": "string"
+          },
+          "ranges": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialProvenanceRange"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Ranges",
+            "type": "array"
+          },
+          "version_id": {
+            "maxLength": 26,
+            "minLength": 1,
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract_version",
+          "material_id",
+          "version_id",
+          "ranges"
+        ],
+        "title": "MaterialProvenance",
+        "type": "object"
+      },
+      "MaterialProvenanceRange": {
+        "additionalProperties": false,
+        "properties": {
+          "end": {
+            "exclusiveMinimum": 0.0,
+            "title": "End",
+            "type": "integer"
+          },
+          "exact": {
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Exact",
+            "type": "string"
+          },
+          "prefix": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Prefix",
+            "type": "string"
+          },
+          "resource_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "spine_index": {
+            "minimum": 0.0,
+            "title": "Spine Index",
+            "type": "integer"
+          },
+          "start": {
+            "minimum": 0.0,
+            "title": "Start",
+            "type": "integer"
+          },
+          "suffix": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Suffix",
+            "type": "string"
+          },
+          "text_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Text Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_id",
+          "spine_index",
+          "start",
+          "end",
+          "exact",
+          "text_sha256"
+        ],
+        "title": "MaterialProvenanceRange",
+        "type": "object"
+      },
       "MaterialReadingToken": {
         "properties": {
           "dictionary_form": {
@@ -2767,6 +2865,44 @@
         "title": "ProfileResponse",
         "type": "object"
       },
+      "ProvenancePart": {
+        "properties": {
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "part_index": {
+            "title": "Part Index",
+            "type": "integer"
+          },
+          "range_index": {
+            "title": "Range Index",
+            "type": "integer"
+          },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "spine_index": {
+            "title": "Spine Index",
+            "type": "integer"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "range_index",
+          "part_index",
+          "resource_id",
+          "spine_index",
+          "start",
+          "end"
+        ],
+        "title": "ProvenancePart",
+        "type": "object"
+      },
       "ProviderInput": {
         "additionalProperties": false,
         "properties": {
@@ -3614,10 +3750,32 @@
             "title": "Context Before",
             "type": "string"
           },
+          "material_provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MaterialProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "note": {
             "default": "",
             "title": "Note",
             "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
           },
           "source_ref": {
             "default": "",
@@ -3625,8 +3783,15 @@
             "type": "string"
           },
           "text": {
-            "title": "Text",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
           },
           "transcription": {
             "default": "",
@@ -3639,9 +3804,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "text"
-        ],
         "title": "SegmentCreate",
         "type": "object"
       },
@@ -3678,6 +3840,87 @@
         "title": "SegmentDeleteImpact",
         "type": "object"
       },
+      "SegmentProvenanceMatches": {
+        "properties": {
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/SegmentResponse"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "segments",
+          "truncated"
+        ],
+        "title": "SegmentProvenanceMatches",
+        "type": "object"
+      },
+      "SegmentProvenanceResponse": {
+        "properties": {
+          "assembly_rule": {
+            "default": "concat-nfc-v1",
+            "title": "Assembly Rule",
+            "type": "string"
+          },
+          "chapter_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Id"
+          },
+          "material_provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MaterialProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/ProvenancePart"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "segment_id": {
+            "title": "Segment Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "resolved",
+              "material_deleted",
+              "version_unavailable",
+              "snapshot_mismatch",
+              "invalid_reference",
+              "none"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "segment_id",
+          "material_provenance",
+          "status"
+        ],
+        "title": "SegmentProvenanceResponse",
+        "type": "object"
+      },
       "SegmentResponse": {
         "properties": {
           "context_after": {
@@ -3696,6 +3939,16 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "material_provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MaterialProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "note": {
             "title": "Note",
@@ -6761,6 +7014,94 @@
         "summary": "Segment Delete Impact"
       }
     },
+    "/api/segments/{segment_id}/material-provenance": {
+      "get": {
+        "operationId": "getSegmentMaterialProvenance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "segment_id",
+            "required": true,
+            "schema": {
+              "title": "Segment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentProvenanceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Segment Material Provenance"
+      }
+    },
+    "/api/segments/{segment_id}/material-provenance/select": {
+      "post": {
+        "operationId": "selectSegmentMaterialProvenance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "segment_id",
+            "required": true,
+            "schema": {
+              "title": "Segment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialProvenance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Select Segment Material Provenance"
+      }
+    },
     "/api/segments/{segment_id}/threads": {
       "get": {
         "operationId": "listThreads",
@@ -7731,6 +8072,55 @@
           }
         },
         "summary": "Create Segment"
+      }
+    },
+    "/api/sources/{source_id}/segments/material-provenance/matches": {
+      "post": {
+        "operationId": "matchSegmentMaterialProvenance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialProvenance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentProvenanceMatches"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Match Segment Material Provenance"
       }
     },
     "/api/threads/{thread_id}": {

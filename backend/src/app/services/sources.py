@@ -6,6 +6,7 @@ import unicodedata
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
+from pydantic import ValidationError
 from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +15,7 @@ from app.chat_models import ChatMessage, ChatThread, Job
 from app.ids import new_ulid
 from app.material_models import Material
 from app.models import Segment, Source
+from app.provenance_schemas import MaterialProvenance
 from app.schemas import (
     SegmentCreate,
     SegmentDeleteImpact,
@@ -125,7 +127,15 @@ async def source_response(session: AsyncSession, source: Source) -> SourceRespon
 
 
 def segment_response(segment: Segment) -> SegmentResponse:
+    origin = segment.material_provenance
+    reference: MaterialProvenance | None = None
+    if origin is not None:
+        try:
+            reference = MaterialProvenance.model_validate_json(origin.payload)
+        except ValidationError:
+            pass  # Historical text remains readable; the dedicated resolver reports failure.
     return SegmentResponse(
+        material_provenance=reference,
         id=segment.id,
         source_id=segment.source_id,
         text=segment.text,
@@ -374,6 +384,10 @@ async def list_segments(session: AsyncSession, source_id: str) -> list[SegmentRe
 async def create_segment(
     session: AsyncSession, source_id: str, data: SegmentCreate
 ) -> SegmentResponse:
+    if data.material_provenance is not None:
+        from app.services.material_provenance import create_material_segment
+
+        return await create_material_segment(session, source_id, data)
     try:
         await begin_write(session)
         await require_source(session, source_id)
@@ -384,7 +398,8 @@ async def create_segment(
             created_at=created,
             updated_at=created,
             revision=1,
-            **data.model_dump(),
+            material_provenance=None,
+            **data.model_dump(exclude={"request_id", "material_provenance"}),
         )
         session.add(segment)
         await session.commit()

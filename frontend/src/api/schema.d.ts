@@ -592,6 +592,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/segments/{segment_id}/material-provenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Segment Material Provenance */
+        get: operations["getSegmentMaterialProvenance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/segments/{segment_id}/material-provenance/select": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Select Segment Material Provenance */
+        post: operations["selectSegmentMaterialProvenance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/segments/{segment_id}/threads": {
         parameters: {
             query?: never;
@@ -815,6 +849,23 @@ export interface paths {
         put?: never;
         /** Create Segment */
         post: operations["createSegment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sources/{source_id}/segments/material-provenance/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Match Segment Material Provenance */
+        post: operations["matchSegmentMaterialProvenance"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1517,6 +1568,45 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
         };
+        /** MaterialProvenance */
+        MaterialProvenance: {
+            /**
+             * Contract Version
+             * @constant
+             */
+            contract_version: "1";
+            /** Material Id */
+            material_id: string;
+            /** Ranges */
+            ranges: components["schemas"]["MaterialProvenanceRange"][];
+            /** Version Id */
+            version_id: string;
+        };
+        /** MaterialProvenanceRange */
+        MaterialProvenanceRange: {
+            /** End */
+            end: number;
+            /** Exact */
+            exact: string;
+            /**
+             * Prefix
+             * @default
+             */
+            prefix: string;
+            /** Resource Id */
+            resource_id: string;
+            /** Spine Index */
+            spine_index: number;
+            /** Start */
+            start: number;
+            /**
+             * Suffix
+             * @default
+             */
+            suffix: string;
+            /** Text Sha256 */
+            text_sha256: string;
+        };
         /** MaterialReadingToken */
         MaterialReadingToken: {
             /** Dictionary Form */
@@ -1879,6 +1969,21 @@ export interface components {
             /** Native Language */
             native_language: string;
         };
+        /** ProvenancePart */
+        ProvenancePart: {
+            /** End */
+            end: number;
+            /** Part Index */
+            part_index: number;
+            /** Range Index */
+            range_index: number;
+            /** Resource Id */
+            resource_id: string;
+            /** Spine Index */
+            spine_index: number;
+            /** Start */
+            start: number;
+        };
         /** ProviderInput */
         ProviderInput: {
             /** Api Key */
@@ -2197,18 +2302,21 @@ export interface components {
              * @default
              */
             context_before: string;
+            material_provenance?: components["schemas"]["MaterialProvenance"] | null;
             /**
              * Note
              * @default
              */
             note: string;
+            /** Request Id */
+            request_id?: string | null;
             /**
              * Source Ref
              * @default
              */
             source_ref: string;
             /** Text */
-            text: string;
+            text?: string | null;
             /**
              * Transcription
              * @default
@@ -2236,6 +2344,33 @@ export interface components {
             /** Thread Count */
             thread_count: number;
         };
+        /** SegmentProvenanceMatches */
+        SegmentProvenanceMatches: {
+            /** Segments */
+            segments: components["schemas"]["SegmentResponse"][];
+            /** Truncated */
+            truncated: boolean;
+        };
+        /** SegmentProvenanceResponse */
+        SegmentProvenanceResponse: {
+            /**
+             * Assembly Rule
+             * @default concat-nfc-v1
+             */
+            assembly_rule: string;
+            /** Chapter Id */
+            chapter_id?: string | null;
+            material_provenance: components["schemas"]["MaterialProvenance"] | null;
+            /** Parts */
+            parts?: components["schemas"]["ProvenancePart"][];
+            /** Segment Id */
+            segment_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "resolved" | "material_deleted" | "version_unavailable" | "snapshot_mismatch" | "invalid_reference" | "none";
+        };
         /** SegmentResponse */
         SegmentResponse: {
             /** Context After */
@@ -2249,6 +2384,7 @@ export interface components {
             created_at: string;
             /** Id */
             id: string;
+            material_provenance?: components["schemas"]["MaterialProvenance"] | null;
             /** Note */
             note: string;
             /** Revision */
@@ -4049,6 +4185,72 @@ export interface operations {
             };
         };
     };
+    getSegmentMaterialProvenance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentProvenanceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    selectSegmentMaterialProvenance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialProvenance"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     listThreads: {
         parameters: {
             query?: {
@@ -4708,6 +4910,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SegmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    matchSegmentMaterialProvenance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialProvenance"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentProvenanceMatches"];
                 };
             };
             /** @description Validation Error */
