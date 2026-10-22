@@ -1,0 +1,345 @@
+.reader-r1 .reader-study-preview {
+	position: fixed;
+	z-index: 48;
+	display: flex;
+	flex-direction: column;
+	width: min(370px, calc(100vw - 24px));
+	max-height: min(420px, calc(100dvh - 100px));
+	box-sizing: border-box;
+	border: 1px solid var(--reader-line);
+	border-radius: 12px;
+	background: var(--reader-bg);
+	color: var(--reader-fg);
+	box-shadow: 0 8px 32px #0002;
+	font:
+		13px / 1.65 system-ui,
+		sans-serif;
+	writing-mode: horizontal-tb;
+	text-align: left;
+	overflow: hidden;
+}
+.reader-r1 .reader-study-preview.fixed {
+	top: 82px;
+	right: 24px;
+}
+.reader-r1 .reader-study-preview.expanded {
+	top: 76px;
+	right: 12px;
+	bottom: 12px;
+	width: min(460px, calc(100vw - 24px));
+	max-height: none;
+}
+.reader-r1 .reader-study-preview-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 9px 9px 9px 16px;
+	border-bottom: 1px solid var(--reader-line);
+	flex-shrink: 0;
+}
+.reader-r1 .reader-study-preview-header > div:first-child {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+.reader-r1 .reader-study-preview-header strong {
+	font-size: 12px;
+	font-weight: 600;
+}
+.reader-r1 .reader-study-preview-back {
+	align-self: flex-start;
+	padding: 0 0 4px;
+	color: var(--reader-muted);
+	font-size: 11px;
+}
+.reader-r1 .reader-study-preview-actions {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+	gap: 2px;
+}
+.reader-r1 .reader-study-preview button {
+	line-height: 1.5;
+}
+.reader-r1 .reader-study-preview-actions button {
+	padding: 7px;
+	font-size: 12px;
+}
+.reader-r1 .reader-study-preview-actions button:last-child {
+	font-size: 21px;
+	width: 32px;
+	padding: 0;
+}
+.reader-r1 .reader-study-preview-content {
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 15px 18px;
+}
+.reader-r1 .reader-study-preview-content > :first-child {
+	margin-top: 0;
+}
+.reader-r1 .reader-study-preview-content > :last-child {
+	margin-bottom: 0;
+}
+.reader-r1 .reader-study-preview h3 {
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--reader-muted);
+	margin: 0 0 7px;
+}
+.reader-r1 .reader-study-preview p {
+	margin: 0 0 12px;
+	overflow-wrap: anywhere;
+}
+.reader-r1 .reader-study-preview-hint {
+	color: var(--reader-muted);
+	font-size: 12px;
+}
+.reader-r1 .reader-study-preview-candidates {
+	display: grid;
+}
+.reader-r1 .reader-study-preview-candidates button {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	text-align: left;
+	padding: 12px 4px;
+	border-bottom: 1px solid var(--reader-line);
+	border-radius: 0;
+}
+.reader-r1 .reader-study-preview-candidates span {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	overflow: hidden;
+	line-height: 1.8;
+	overflow-wrap: anywhere;
+}
+.reader-r1 .reader-study-preview-candidates small {
+	font-size: 10px;
+	color: var(--reader-muted);
+}
+.reader-r1 .reader-study-preview-original {
+	border: 0;
+	border-left: 2px solid
+		color-mix(in srgb, var(--reader-muted) 45%, var(--reader-line));
+	border-radius: 0 5px 5px 0;
+	background: var(--reader-soft);
+	margin: 0 0 12px;
+	padding: 9px 12px;
+	overflow-wrap: anywhere;
+}
+.reader-r1 .reader-study-preview-original p {
+	white-space: pre-wrap;
+	font-size: 12px;
+	line-height: 1.8;
+	margin: 0;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	overflow: hidden;
+}
+.reader-r1 .reader-study-preview-original button {
+	font-size: 10px;
+	color: var(--reader-muted);
+	padding: 4px 0 0;
+}
+.reader-r1 .reader-study-preview-translation {
+	margin-bottom: 12px;
+}
+.reader-r1 .reader-study-preview-translation p {
+	white-space: pre-wrap;
+	font-size: 15px;
+	line-height: 1.85;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 4;
+	overflow: hidden;
+}
+.reader-r1 .reader-study-preview-analysis {
+	margin: 0 0 16px;
+}
+.reader-r1 .reader-study-preview-analysis-heading {
+	margin-bottom: 10px;
+}
+.reader-r1 .reader-study-preview-analysis-heading h3 {
+	margin-bottom: 5px;
+}
+.reader-r1 .reader-study-preview-analysis-heading strong {
+	font-size: 13px;
+	font-weight: 600;
+}
+.reader-r1 .reader-study-preview-analysis-heading select {
+	width: 100%;
+	min-width: 0;
+	font-size: 12px;
+	padding: 7px;
+	border: 1px solid var(--reader-line);
+	border-radius: 6px;
+	background: var(--reader-bg);
+	text-overflow: ellipsis;
+}
+.reader-r1 .reader-study-preview-markdown {
+	max-height: 190px;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+}
+.reader-r1
+	.reader-study-preview.has-translation
+	.reader-study-preview-markdown {
+	max-height: 120px;
+}
+.reader-r1 .reader-study-preview-markdown .analysis-markdown {
+	font-size: 13px;
+	line-height: 1.9;
+	color: inherit;
+}
+.reader-r1 .reader-study-preview-markdown :is(h1, h2, h3, h4) {
+	color: inherit;
+	font-size: 14px;
+	margin: 15px 0 6px;
+	font-weight: 600;
+}
+.reader-r1 .reader-study-preview-markdown .analysis-markdown > :first-child {
+	margin-top: 0;
+}
+.reader-r1 .reader-study-preview-markdown :is(ul, ol) {
+	padding-left: 22px;
+	margin: 6px 0 12px;
+}
+.reader-r1 .reader-study-preview-markdown pre {
+	white-space: pre-wrap;
+	background: var(--reader-soft);
+	padding: 10px;
+	overflow-wrap: anywhere;
+}
+.reader-r1 .reader-study-preview-markdown blockquote {
+	margin: 10px 0;
+	padding-left: 12px;
+	border-left: 2px solid var(--reader-line);
+}
+.reader-r1 .reader-study-preview-markdown a {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.reader-r1 .reader-study-preview-markdown table {
+	display: block;
+	overflow-x: auto;
+	border-collapse: collapse;
+	max-width: 100%;
+}
+.reader-r1 .reader-study-preview-markdown :is(td, th) {
+	border: 1px solid var(--reader-line);
+	padding: 6px;
+}
+.reader-r1 .reader-study-preview-note {
+	color: var(--reader-muted);
+	font-size: 12px;
+	white-space: pre-wrap;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+}
+.reader-r1 .reader-study-preview-note span {
+	display: block;
+	font-size: 10px;
+	margin-bottom: 3px;
+}
+.reader-r1 .reader-study-preview-metadata {
+	border-top: 1px solid var(--reader-line);
+	padding: 10px 0;
+	color: var(--reader-muted);
+	font-size: 11px;
+}
+.reader-r1 .reader-study-preview summary {
+	cursor: pointer;
+	overflow-wrap: anywhere;
+}
+.reader-r1 .reader-study-preview-metadata dl {
+	margin: 10px 0 0;
+	overflow-wrap: anywhere;
+}
+.reader-r1 .reader-study-preview-metadata dt {
+	margin-top: 7px;
+}
+.reader-r1 .reader-study-preview-metadata dd {
+	margin: 1px 0 0;
+	color: var(--reader-fg);
+}
+.reader-r1 .reader-study-preview-footer {
+	display: flex;
+	flex-shrink: 0;
+	justify-content: space-between;
+	gap: 5px;
+	padding: 7px 10px;
+	border-top: 1px solid var(--reader-line);
+}
+.reader-r1 .reader-study-preview-footer button {
+	font-size: 11px;
+}
+.reader-r1 .reader-study-preview-footer button:last-child {
+	margin-left: auto;
+	color: var(--reader-muted);
+}
+.reader-r1 .reader-study-preview-error {
+	margin: 8px 0;
+	padding: 9px;
+	border: 1px solid var(--reader-line);
+	border-radius: 6px;
+}
+.reader-r1 .reader-study-preview-error p {
+	margin: 0;
+}
+.reader-r1 .reader-study-preview-error button,
+.reader-r1 .reader-study-preview-more {
+	font-size: 11px;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.reader-r1 .reader-study-preview-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+.reader-r1 .reader-study-preview-original.original-expanded p {
+	display: block;
+}
+.reader-r1 .reader-study-preview.expanded .reader-study-preview-content {
+	flex: 1;
+	padding: 22px;
+}
+.reader-r1 .reader-study-preview.expanded .reader-study-preview-markdown {
+	max-height: none;
+	overflow: visible;
+}
+.reader-r1
+	.reader-study-preview.expanded
+	:is(
+		.reader-study-preview-original p,
+		.reader-study-preview-translation p,
+		.reader-study-preview-note
+	) {
+	display: block;
+}
+.reader-r1
+	.reader-study-preview.expanded
+	.reader-study-preview-markdown
+	.analysis-markdown {
+	font-size: 14px;
+}
+@media (max-width: 500px) {
+	.reader-r1 .reader-study-preview.fixed {
+		right: 12px;
+	}
+	.reader-r1 .reader-study-preview.expanded {
+		top: 76px;
+		bottom: 12px;
+	}
+}

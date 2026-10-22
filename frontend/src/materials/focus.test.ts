@@ -354,3 +354,126 @@ test("extension frame pointer and keyboard events run naturally without revealin
 	assert.equal(controller.visible, true);
 	controller.dispose();
 });
+
+test("a later reader pointerup consumer cancels the focus toggle already queued for that event", (t) => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const makeDoc = () =>
+		Object.assign(new EventTarget(), {
+			querySelectorAll: () => [],
+			getSelection: () => null,
+			activeElement: null,
+			body: null,
+			defaultView: null,
+			hidden: false,
+		});
+	const doc = makeDoc();
+	const root = Object.assign(new EventTarget(), {
+		ownerDocument: doc,
+		getBoundingClientRect: () => ({ left: 0, top: 0 }),
+	});
+	const controller = createFocusController({
+		root: root as unknown as HTMLElement,
+		onVisibilityChange: () => {},
+	});
+	const frameDoc = makeDoc();
+	controller.bindFrame(
+		frameDoc as unknown as Document,
+		{
+			getBoundingClientRect: () => ({ left: 0, top: 0 }),
+		} as HTMLIFrameElement,
+	);
+	let consume = true;
+	frameDoc.addEventListener("pointerup", (event) => {
+		if (consume) event.preventDefault();
+	});
+	const tap = () => {
+		for (const type of ["pointerdown", "pointerup"]) {
+			const event = new Event(type, { cancelable: true });
+			Object.assign(event, {
+				clientX: 5,
+				clientY: 5,
+				pointerId: 1,
+				button: 0,
+				isPrimary: true,
+			});
+			frameDoc.dispatchEvent(event);
+		}
+		t.mock.timers.tick(FOCUS_TIMING.clickDelay);
+	};
+	tap();
+	assert.equal(controller.visible, true);
+	consume = false;
+	tap();
+	assert.equal(controller.visible, false);
+	consume = true;
+	tap();
+	assert.equal(controller.visible, false);
+	controller.dispose();
+});
+
+test("root background callback consumes only ordinary root taps and prevents a simultaneous toggle", (t) => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const makeDoc = () =>
+		Object.assign(new EventTarget(), {
+			querySelectorAll: () => [],
+			getSelection: () => null,
+			activeElement: null,
+			body: null,
+			defaultView: null,
+			hidden: false,
+		});
+	const doc = makeDoc();
+	const root = Object.assign(new EventTarget(), {
+		ownerDocument: doc,
+		getBoundingClientRect: () => ({ left: 0, top: 0 }),
+	});
+	let compact = true,
+		calls = 0;
+	const controller = createFocusController({
+		root: root as unknown as HTMLElement,
+		onVisibilityChange: () => {},
+		onBackgroundTap: () => {
+			calls++;
+			const consumed = compact;
+			compact = false;
+			return consumed;
+		},
+	});
+	const event = (target: EventTarget, type: string, props = {}) => {
+		const event = new Event(type, { cancelable: true });
+		Object.assign(event, {
+			clientX: 5,
+			clientY: 5,
+			pointerId: 1,
+			button: 0,
+			isPrimary: true,
+			...props,
+		});
+		target.dispatchEvent(event);
+		return event;
+	};
+	assert.equal(event(root, "pointerdown").defaultPrevented, false);
+	assert.equal(event(root, "pointerup").defaultPrevented, true);
+	t.mock.timers.tick(FOCUS_TIMING.clickDelay);
+	assert.equal(calls, 1);
+	assert.equal(controller.visible, true);
+	event(root, "pointerdown");
+	assert.equal(event(root, "pointerup").defaultPrevented, false);
+	t.mock.timers.tick(FOCUS_TIMING.clickDelay);
+	assert.equal(controller.visible, false);
+	const count = calls;
+	event(root, "pointerdown", { shiftKey: true });
+	event(root, "pointerup");
+	event(root, "pointerdown");
+	event(root, "pointermove", { clientX: 20 });
+	event(root, "pointerup");
+	const frameDoc = makeDoc();
+	controller.bindFrame(
+		frameDoc as unknown as Document,
+		{ getBoundingClientRect: () => ({ left: 0, top: 0 }) } as HTMLIFrameElement,
+	);
+	event(frameDoc, "pointerdown");
+	event(frameDoc, "pointerup");
+	assert.equal(calls, count);
+	controller.dispose();
+});

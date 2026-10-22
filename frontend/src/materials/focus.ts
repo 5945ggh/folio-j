@@ -65,6 +65,7 @@ export type FocusOptions = {
 	onTabReveal?: (event: KeyboardEvent, wasHidden: boolean) => void;
 	hasOverlay?: () => boolean;
 	onEscapeOverlay?: () => boolean;
+	onBackgroundTap?: () => boolean;
 };
 /** Bind every loaded same-origin frame; dispose its binding before replacing the document. */
 export function createFocusController(options: FocusOptions) {
@@ -207,6 +208,8 @@ export function createFocusController(options: FocusOptions) {
 			if (
 				candidate &&
 				candidate.id === e.pointerId &&
+				e.button === 0 &&
+				e.isPrimary !== false &&
 				!candidate.moved &&
 				!e.defaultPrevented &&
 				!e.altKey &&
@@ -217,9 +220,20 @@ export function createFocusController(options: FocusOptions) {
 				!selected() &&
 				!element(e)?.closest(CONTROL)
 			) {
+				if (!frame && options.onBackgroundTap?.()) {
+					e.preventDefault();
+					refresh();
+					return;
+				}
 				clearTimeout(click);
 				click = setTimeout(() => {
-					if (!disposed && enabled && !selected() && !blocked()) {
+					if (
+						!e.defaultPrevented &&
+						!disposed &&
+						enabled &&
+						!selected() &&
+						!blocked()
+					) {
 						setVisible(!visible);
 						refresh();
 					}

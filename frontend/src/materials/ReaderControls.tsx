@@ -303,7 +303,7 @@ export function ReaderSettings({
 				/>
 			</label>
 			<p>
-				单击正文收起，再次单击、移动鼠标或按 Tab
+				单击未标记正文收起，再次单击、移动鼠标或按 Tab
 				唤出。方向键、空格和滚动不会唤出工具。
 			</p>
 			<button type="button" onClick={onReset}>

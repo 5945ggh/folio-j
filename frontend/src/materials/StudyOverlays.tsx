@@ -6,7 +6,6 @@ import {
 	useState,
 } from "react";
 import type { ScreenAnchor } from "./reader-study";
-import type { ChapterSegment } from "./study-api";
 import { studyOverlayPosition } from "./study-overlays";
 import "./study-overlays.css";
 
@@ -109,90 +108,6 @@ export function SelectionToolbar({
 			>
 				×
 			</button>
-		</AnchoredStudyTool>
-	);
-}
-
-export function StudyMarkPopover({
-	anchor,
-	items,
-	onOpen,
-	onClose,
-	onEmphasize,
-	fixed = false,
-	loading = false,
-}: {
-	fixed?: boolean;
-	loading?: boolean;
-	anchor: ScreenAnchor;
-	items: readonly ChapterSegment[];
-	onOpen: (id: string) => void;
-	onClose: () => void;
-	onEmphasize: (id: string | null) => void;
-}) {
-	const closeButton = useRef<HTMLButtonElement>(null);
-	useEffect(() => {
-		if (anchor) closeButton.current?.focus({ preventScroll: true });
-	}, [anchor]);
-	return (
-		<AnchoredStudyTool
-			anchor={anchor}
-			fixed={fixed}
-			label={fixed ? "本章片段" : "此处的学习片段"}
-			role="dialog"
-			onClose={onClose}
-		>
-			<div>
-				<header>
-					<strong>
-						{fixed
-							? `本章片段 · ${items.length}`
-							: items.length === 1
-								? "学习片段"
-								: `此处有 ${items.length} 个学习片段`}
-					</strong>
-					<button
-						type="button"
-						ref={closeButton}
-						aria-label="关闭片段浮层"
-						onClick={onClose}
-					>
-						×
-					</button>
-				</header>
-				<p className="reader-study-list-hint">
-					{fixed
-						? "固定本章列表 · 指向或聚焦条目查看原文范围"
-						: "指向或聚焦条目查看全部原文范围"}
-				</p>
-				{loading ? (
-					<p role="status">正在读取本章全部片段…</p>
-				) : items.length === 0 ? (
-					<p>本章暂无可定位片段。</p>
-				) : null}
-				<div className="reader-study-records">
-					{items.map((item) => (
-						<article
-							key={item.segment_id}
-							onMouseEnter={() => onEmphasize(item.segment_id)}
-							onMouseLeave={() => onEmphasize(null)}
-							onFocus={() => onEmphasize(item.segment_id)}
-							onBlur={(event) => {
-								if (!event.currentTarget.contains(event.relatedTarget))
-									onEmphasize(null);
-							}}
-						>
-							<p lang="ja">{item.excerpt}</p>
-							<small>
-								{new Date(item.created_at).toLocaleString()} · {item.segment_id}
-							</small>
-							<button type="button" onClick={() => onOpen(item.segment_id)}>
-								打开片段
-							</button>
-						</article>
-					))}
-				</div>
-			</div>
 		</AnchoredStudyTool>
 	);
 }

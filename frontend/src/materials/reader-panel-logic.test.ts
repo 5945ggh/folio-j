@@ -61,6 +61,22 @@ test("compact tools reveal a covered panel without clearing its selected tab", (
 	});
 });
 
+test("expanded study replaces the right tool, coexists with navigation and closes independently", () => {
+	const navigation = selectReaderPanel(EMPTY_READER_PANELS, "toc");
+	const settings = selectReaderPanel(navigation, "settings");
+	const study = selectReaderPanel(settings, "study");
+	assert.deepEqual(study, { left: "toc", right: "study", activeSide: "right" });
+	assert.deepEqual(closeReaderPanel(study, "right"), navigation);
+	const covered = selectReaderPanel(study, "toc", true, true);
+	assert.equal(covered.right, "study");
+	assert.equal(covered.activeSide, "left");
+	assert.equal(
+		selectReaderPanel(covered, "study", true, true).activeSide,
+		"right",
+	);
+	assert.equal(selectReaderPanel(study, "gallery").right, "gallery");
+});
+
 test("reader query uses NFC, counts Unicode code points and preserves literal fullwidth text", () => {
 	assert.equal(normalizeReaderQuery(" か\u3099Ａ.* "), "がＡ.*");
 	assert.equal(readerQueryTooLong("𠮷".repeat(160)), false);

@@ -136,3 +136,81 @@ test("image resize restores author declarations and measures viewport rather tha
 	assert.deepEqual(originalWidths, ["50%", "50%"]);
 	assert.deepEqual(frame.style, { width: "1px", height: "1px" });
 });
+
+function rubyTapHarness() {
+	const marks = new Set<string>();
+	const changes: string[] = [];
+	const ruby = {
+		nodeType: 1,
+		closest: (selector: string): object | null =>
+			selector === "ruby" ? ruby : null,
+		toggleAttribute: (name: string, on?: boolean) => {
+			if (on ?? !marks.has(name)) marks.add(name);
+			else marks.delete(name);
+			changes.push(name);
+		},
+		removeAttribute: (name: string) => marks.delete(name),
+	};
+	const doc = Object.assign(new EventTarget(), {
+		getElementById: () => ({ textContent: "" }),
+		documentElement: { dataset: {} },
+		querySelectorAll: (query: string) =>
+			query === "ruby[data-reader-ruby-open]"
+				? marks.has("data-reader-ruby-open")
+					? [ruby]
+					: []
+				: [ruby],
+		getSelection: () => null,
+	});
+	const cleanup = applyFramePresentation(doc as unknown as Document, "white", {
+		...DEFAULT_BOOK_UI,
+		ruby: "on-demand",
+	});
+	const tap = () => {
+		let up: Event | undefined;
+		for (const type of ["pointerdown", "pointerup"]) {
+			const event = new Event(type, { cancelable: true });
+			Object.defineProperty(event, "target", { value: ruby });
+			Object.assign(event, {
+				clientX: 5,
+				clientY: 5,
+				pointerId: 1,
+				button: 0,
+				isPrimary: true,
+				pointerType: "touch",
+			});
+			doc.dispatchEvent(event);
+			if (type === "pointerup") up = event;
+		}
+		return up;
+	};
+	return { doc, marks, changes, cleanup, tap };
+}
+
+test("a later pointerup consumer preserves existing ruby state without any transient toggle", (t) => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const h = rubyTapHarness();
+	h.marks.add("data-reader-ruby-open");
+	h.changes.length = 0;
+	h.doc.addEventListener("pointerup", (event) => event.preventDefault());
+	assert.equal(h.tap()?.defaultPrevented, true);
+	t.mock.timers.tick(1);
+	assert.equal(h.marks.has("data-reader-ruby-open"), true);
+	assert.deepEqual(h.changes, []);
+	h.cleanup();
+});
+
+test("unconsumed ruby taps toggle once and teardown cancels a pending reveal", (t) => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const h = rubyTapHarness();
+	h.tap();
+	t.mock.timers.tick(1);
+	assert.equal(h.marks.has("data-reader-ruby-open"), true);
+	h.tap();
+	t.mock.timers.tick(1);
+	assert.equal(h.marks.has("data-reader-ruby-open"), false);
+	h.tap();
+	h.cleanup();
+	t.mock.timers.tick(1);
+	assert.equal(h.marks.has("data-reader-ruby-open"), false);
+});

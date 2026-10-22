@@ -12,7 +12,11 @@ import { flushSync } from "react-dom";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { Icon as CatalogIcon } from "../catalog/LibraryTools";
 import { getSource, queries, RequestError, type Segment } from "../content";
-import { returnDestination, returnState } from "../navigation";
+import {
+	returnDestination,
+	returnState,
+	updateSegmentLocation,
+} from "../navigation";
 import { InlineError } from "../Shared";
 import {
 	type Chapter,
@@ -88,11 +92,8 @@ import {
 import type { ReaderHighlightRange } from "./reader-selection";
 import type { StudyMarkHit, StudySelection } from "./reader-study";
 import { JumpReadingSession, returnOriginLabel } from "./return-origin";
-import {
-	SavedSegmentNotice,
-	SelectionToolbar,
-	StudyMarkPopover,
-} from "./StudyOverlays";
+import { SavedSegmentNotice, SelectionToolbar } from "./StudyOverlays";
+import { StudyPreview } from "./StudyPreview";
 import { StudySegmentPanel } from "./StudySegmentPanel";
 import { readerWheelScroll } from "./scroll";
 import {
@@ -142,6 +143,8 @@ function Reader({
 	const [marginEntries, setMarginEntries] = useState<StudyMarginEntry[]>([]);
 	const markTrigger = useRef<HTMLButtonElement | null>(null);
 	const [markHit, setMarkHit] = useState<StudyMarkHit | null>(null);
+	const [previewSerial, setPreviewSerial] = useState(0);
+	const previewEmphasis = useRef<string | null>(null);
 	const [markError, setMarkError] = useState<Error | null>(null);
 	const [savedNotice, setSavedNotice] = useState<{
 		id: string;
@@ -314,6 +317,8 @@ function Reader({
 		ui,
 		selectionActive: selection !== null,
 		markActive: markHit !== null,
+		markHit,
+		studyTargetActive: studyTarget !== null,
 		studyActive: studyTarget !== null || selection !== null || markHit !== null,
 	});
 	latest.current = {
@@ -327,8 +332,22 @@ function Reader({
 		ui,
 		selectionActive: selection !== null,
 		markActive: markHit !== null,
+		markHit,
+		studyTargetActive: studyTarget !== null,
 		studyActive: studyTarget !== null || selection !== null || markHit !== null,
 	};
+	const closeCompactPreview = useCallback(() => {
+		if (
+			!latest.current.markHit ||
+			latest.current.markHit.fixed ||
+			latest.current.panels.right === "study"
+		)
+			return false;
+		setMarkHit(null);
+		previewEmphasis.current = null;
+		frames.current.emphasizeStudyMark(null);
+		return true;
+	}, []);
 	const setUiPreference = useCallback((next: ReaderUiPreferences) => {
 		setUi(next);
 		setStorageFailed(!writeReaderUiPreferences(next));
@@ -344,7 +363,16 @@ function Reader({
 	const selectPanel = useCallback(
 		(next: ReaderPanelKind, toggle = false) => {
 			setSelection(null);
-			setMarkHit(null);
+			if (
+				!(
+					latest.current.panels.right === "study" &&
+					(next === "toc" || next === "search")
+				)
+			) {
+				setMarkHit(null);
+				previewEmphasis.current = null;
+				frames.current.emphasizeStudyMark(null);
+			}
 			jumpReading.current.pause();
 			invalidateNavigation();
 			navigation.current.dismissError();
@@ -357,6 +385,14 @@ function Reader({
 	);
 	const closePanel = useCallback(
 		(side?: ReaderPanelSide, invalidate = true) => {
+			if (
+				(!side || side === "right") &&
+				latest.current.panels.right === "study"
+			) {
+				setMarkHit(null);
+				previewEmphasis.current = null;
+				frames.current.emphasizeStudyMark(null);
+			}
 			jumpReading.current.pause();
 			if (invalidate) invalidateNavigation();
 			setPanels((current) =>
@@ -411,6 +447,7 @@ function Reader({
 			root: shell.current,
 			focus: readReaderUiPreferences().focus,
 			onVisibilityChange: setToolsVisible,
+			onBackgroundTap: closeCompactPreview,
 			onTabReveal: (event, wasHidden) => {
 				flushSync(() => setToolsVisible(true));
 				const selectionButton = document.getElementById(
@@ -419,7 +456,7 @@ function Reader({
 				if (
 					selectionButton &&
 					!event.shiftKey &&
-					!(event.target as Element | null)?.closest?.(".reader-study-tool")
+					!(event.target as Element | null)?.closest?.("[data-reader-tool]")
 				) {
 					event.preventDefault();
 					selectionButton.focus({ preventScroll: true });
@@ -454,9 +491,23 @@ function Reader({
 					setSelection(null);
 					return true;
 				}
-				if (latest.current.markActive) {
+				if (
+					latest.current.markActive &&
+					!(
+						latest.current.panels.right === "study" &&
+						latest.current.compactPanels &&
+						latest.current.panels.activeSide === "left"
+					)
+				) {
 					setMarkHit(null);
+					previewEmphasis.current = null;
 					frames.current.emphasizeStudyMark(null);
+					setPanels((current) =>
+						current.right === "study"
+							? closeReaderPanel(current, "right")
+							: current,
+					);
+					markTrigger.current?.focus({ preventScroll: true });
 					return true;
 				}
 				if (
@@ -481,7 +532,7 @@ function Reader({
 			focus.dispose();
 			controller.current = null;
 		};
-	}, [closePanel, setUiPreference]);
+	}, [closePanel, closeCompactPreview, setUiPreference]);
 	useEffect(() => {
 		controller.current?.setFocus(ui.focus);
 	}, [ui.focus]);
@@ -541,6 +592,22 @@ function Reader({
 	const layout = useRef(new ReaderLayout<Position>(initialAnchor));
 	const generation = useRef(0);
 	const alive = useRef(true);
+	const openMarkHit = useCallback(
+		(value: StudyMarkHit, trigger: HTMLButtonElement | null = null) => {
+			markTrigger.current = trigger;
+			previewEmphasis.current = null;
+			frames.current.emphasizeStudyMark(null);
+			setSelection(null);
+			setPanels((current) =>
+				current.right === "study"
+					? closeReaderPanel(current, "right")
+					: current,
+			);
+			setPreviewSerial((serial) => serial + 1);
+			setMarkHit(value);
+		},
+		[],
+	);
 	useLayoutEffect(() => {
 		frames.current.bindStudy({
 			materialId: book.id,
@@ -550,18 +617,33 @@ function Reader({
 				if (!alive.current) return;
 				setSelection(value);
 				if (value) {
+					if (
+						!latest.current.markHit?.fixed &&
+						latest.current.panels.right !== "study"
+					) {
+						setMarkHit(null);
+						previewEmphasis.current = null;
+						frames.current.emphasizeStudyMark(null);
+					}
 					controller.current?.show();
 				}
 			},
 			onEntries: setMarginEntries,
 			onMarks: (value) => {
 				if (!alive.current) return;
-				setMarkHit((current) => value ?? (current?.fixed ? current : null));
 				if (value) {
-					setSelection(null);
-					controller.current?.show();
+					if (!latest.current.studyTargetActive) openMarkHit(value);
+				} else if (
+					latest.current.panels.right === "study" ||
+					latest.current.markHit?.fixed
+				) {
+					frames.current.emphasizeStudyMark(previewEmphasis.current);
+				} else {
+					setMarkHit(null);
+					previewEmphasis.current = null;
 				}
 			},
+			onBackgroundTap: closeCompactPreview,
 		});
 	});
 	const visibleHitItems = markHit
@@ -571,7 +653,11 @@ function Reader({
 		: [];
 	const closeMarkHit = useCallback(() => {
 		setMarkHit(null);
+		previewEmphasis.current = null;
 		frames.current.emphasizeStudyMark(null);
+		setPanels((current) =>
+			current.right === "study" ? closeReaderPanel(current, "right") : current,
+		);
 		markTrigger.current?.focus({ preventScroll: true });
 	}, []);
 	useEffect(() => {
@@ -596,6 +682,10 @@ function Reader({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: a chapter switch invalidates the fixed list even when its old frame has already gone.
 	useEffect(() => {
 		setMarkHit(null);
+		previewEmphasis.current = null;
+		setPanels((current) =>
+			current.right === "study" ? closeReaderPanel(current, "right") : current,
+		);
 	}, [chapterId]);
 	const queue = useRef<PositionQueue<Position> | null>(null);
 	if (!queue.current)
@@ -1301,15 +1391,22 @@ function Reader({
 			queue.current?.enqueue(anchor);
 		}
 	};
-	const openStudySegment = (id: string) => {
+	const openStudySegment = (
+		id: string,
+		analysisId?: string,
+		revisionId?: string,
+	) => {
 		leave();
-		navigate(`/segments/${id}?chat=0`, {
-			state: returnState(
-				{ to: `/materials/${book.id}?segment=${id}`, label: book.title },
-				returnTo,
-				`/segments/${id}`,
-			),
-		});
+		navigate(
+			`/segments/${id}${updateSegmentLocation("", { analysisId, revisionId, chatOpen: false })}`,
+			{
+				state: returnState(
+					{ to: `/materials/${book.id}?segment=${id}`, label: book.title },
+					returnTo,
+					`/segments/${id}`,
+				),
+			},
+		);
 	};
 	// biome-ignore lint/correctness/useExhaustiveDependencies: panel visibility changes measured free space outside the text viewport.
 	useLayoutEffect(() => {
@@ -1410,13 +1507,14 @@ function Reader({
 								closeMarkHit();
 								return;
 							}
-							markTrigger.current = event.currentTarget;
-							setMarkHit({
-								segmentIds: [],
-								anchor: { left: 0, right: 0, top: 80, bottom: 80 },
-								fixed: true,
-							});
-							frames.current.emphasizeStudyMark(null);
+							openMarkHit(
+								{
+									segmentIds: [],
+									anchor: { left: 0, right: 0, top: 80, bottom: 80 },
+									fixed: true,
+								},
+								event.currentTarget,
+							);
 							controller.current?.show();
 						}}
 					>
@@ -1722,26 +1820,56 @@ function Reader({
 						style={{ left: entry.left, top: entry.top }}
 						aria-label={`查看此处 ${entry.segmentIds.length} 个学习片段`}
 						onClick={(event) => {
-							markTrigger.current = event.currentTarget;
-							setMarkHit({ ...entry, fixed: false });
-							frames.current.emphasizeStudyMark(null);
+							openMarkHit({ ...entry, fixed: false }, event.currentTarget);
 							controller.current?.show();
 						}}
 					>
-						{entry.segmentIds.length > 1 ? entry.segmentIds.length : "片"}
+						{entry.segmentIds.length > 1 ? (
+							entry.segmentIds.length
+						) : (
+							<svg
+								aria-hidden="true"
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.5"
+							>
+								<path d="M6 4h12v16l-6-4-6 4z" />
+							</svg>
+						)}
 					</button>
 				))}
 			{markHit &&
 				!studyTarget &&
 				(markHit.fixed || visibleHitItems.length > 0) && (
-					<StudyMarkPopover
+					<StudyPreview
+						key={previewSerial}
 						anchor={markHit.anchor}
 						fixed={markHit.fixed}
 						loading={marks.loading}
 						items={visibleHitItems}
 						onOpen={openStudySegment}
 						onClose={closeMarkHit}
-						onEmphasize={(id) => frames.current.emphasizeStudyMark(id)}
+						expanded={panels.right === "study"}
+						inactive={
+							panels.right === "study" &&
+							compactPanels &&
+							panels.activeSide !== "right"
+						}
+						onExpand={() => {
+							jumpReading.current.pause();
+							invalidateNavigation();
+							navigation.current.dismissError();
+							setPanels((current) => selectReaderPanel(current, "study"));
+							controller.current?.show();
+						}}
+						onCollapse={closeMarkHit}
+						onEmphasize={(id) => {
+							previewEmphasis.current = id;
+							frames.current.emphasizeStudyMark(id);
+						}}
 					/>
 				)}
 			{savedNotice && (

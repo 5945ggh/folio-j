@@ -5,11 +5,12 @@ export type ReaderPanelKind =
 	| "search"
 	| "gallery"
 	| "settings"
+	| "study"
 	| "info";
 export type ReaderPanelSide = "left" | "right";
 export type ReaderPanelsState = {
 	left: "toc" | "search" | null;
-	right: "gallery" | "settings" | "info" | null;
+	right: "gallery" | "settings" | "info" | "study" | null;
 	activeSide: ReaderPanelSide | null;
 };
 export const EMPTY_READER_PANELS: ReaderPanelsState = {

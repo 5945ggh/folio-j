@@ -1,6 +1,12 @@
 import type { Chapter } from "./api.ts";
 import { type Projection, visibleContentRect } from "./dom.ts";
-import { isReaderFrameTarget } from "./focus.ts";
+import {
+	distance,
+	FOCUS_TIMING,
+	isReaderFrameTarget,
+	ordinaryTap,
+	type Point,
+} from "./focus.ts";
 import {
 	clearStudyHighlights,
 	prepareStudyUnderlines,
@@ -34,6 +40,7 @@ export type StudyBinding = {
 	onSelection: (value: StudySelection | null) => void;
 	onMarks: (value: StudyMarkHit | null) => void;
 	onEntries?: (entries: StudyMarginEntry[]) => void;
+	onBackgroundTap?: () => boolean;
 };
 type StudyFrame = {
 	index: number;
@@ -83,13 +90,70 @@ function bounds(ranges: readonly Range[]): ScreenAnchor | null {
 	return result;
 }
 
+/** Protect every visible line/column of a hit mark without broadening its character hit test. */
+function visibleMarkAnchor(
+	frame: StudyFrame,
+	ranges: readonly Range[],
+): ScreenAnchor | null {
+	const viewport = frame.viewport?.getBoundingClientRect();
+	const view = frame.element.ownerDocument?.defaultView;
+	let result: ScreenAnchor | null = null;
+	for (const range of ranges) {
+		for (const rect of Array.from(range.getClientRects())) {
+			const visible = visibleContentRect(
+				frame.doc,
+				rect,
+				range.startContainer.parentElement,
+			);
+			if (!visible) continue;
+			const screen = screenAnchor(frame.element, {
+				left: Math.max(0, visible.left),
+				right: Math.min(frame.element.clientWidth, visible.right),
+				top: Math.max(0, visible.top),
+				bottom: Math.min(frame.element.clientHeight, visible.bottom),
+			});
+			const clipped = {
+				left: Math.max(0, screen.left, viewport?.left ?? 0),
+				right: Math.min(
+					screen.right,
+					viewport?.right ?? Infinity,
+					view?.innerWidth ?? Infinity,
+				),
+				top: Math.max(0, screen.top, viewport?.top ?? 0),
+				bottom: Math.min(
+					screen.bottom,
+					viewport?.bottom ?? Infinity,
+					view?.innerHeight ?? Infinity,
+				),
+			};
+			if (clipped.left >= clipped.right || clipped.top >= clipped.bottom)
+				continue;
+			result = result
+				? {
+						left: Math.min(result.left, clipped.left),
+						right: Math.max(result.right, clipped.right),
+						top: Math.min(result.top, clipped.top),
+						bottom: Math.max(result.bottom, clipped.bottom),
+					}
+				: clipped;
+		}
+	}
+	return result;
+}
+
 function originalTarget(event: Event): boolean {
 	const node = event.target as Node | null;
 	const element =
 		node?.nodeType === 1 ? (node as Element) : node?.parentElement;
 	return !element?.closest?.(
-		"rt,rp,button,a,input,textarea,select,[contenteditable],[role=dialog],[data-reader-control]",
+		"rt,rp,button,a,input,textarea,select,summary,img,[contenteditable],[role=button],[role=dialog],[data-reader-control]",
 	);
+}
+function modified(event: PointerEvent): boolean {
+	return event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
+}
+function point(event: PointerEvent): Point {
+	return { x: event.clientX, y: event.clientY };
 }
 function selected(doc: Document): boolean {
 	const selection = doc.getSelection();
@@ -115,6 +179,7 @@ export class ReaderStudy {
 		theme: "white" | "black";
 	} | null = null;
 	private emphasized: string | null = null;
+	private readonly hits = new Map<number, { id: string; ranges: Range[] }[]>();
 	bind(binding: StudyBinding | null): void {
 		const changed =
 			binding?.materialId !== this.binding?.materialId ||
@@ -122,6 +187,7 @@ export class ReaderStudy {
 			binding?.chapterId !== this.binding?.chapterId;
 		this.binding = binding;
 		if (changed) {
+			this.hits.clear();
 			this.emphasized = null;
 			for (const frame of this.frames.values()) {
 				frame.cancel();
@@ -147,6 +213,11 @@ export class ReaderStudy {
 	private current(frame: StudyFrame): boolean {
 		return this.frames.get(frame.index) === frame && this.active(frame);
 	}
+	private hasSelection(): boolean {
+		return [...this.frames.values()].some(
+			(frame) => this.current(frame) && selected(frame.doc),
+		);
+	}
 	private dismissMarks(): void {
 		if (this.emphasized !== null) {
 			this.emphasized = null;
@@ -155,6 +226,7 @@ export class ReaderStudy {
 		this.binding?.onMarks(null);
 	}
 	clear(): void {
+		this.hits.clear();
 		this.emphasized = null;
 		for (const frame of this.frames.values()) frame.dispose();
 		this.frames.clear();
@@ -170,6 +242,7 @@ export class ReaderStudy {
 		this.binding?.onSelection(null);
 	}
 	geometryChanged(refresh = true): void {
+		this.hits.clear();
 		this.emphasized = null;
 		for (const frame of this.frames.values()) frame.cancel();
 		this.binding?.onSelection(null);
@@ -196,6 +269,7 @@ export class ReaderStudy {
 		this.refresh();
 	}
 	refresh(): void {
+		this.hits.clear();
 		const config = this.config;
 		const activeFrames = [...this.frames.values()].filter(
 			(frame) =>
@@ -209,6 +283,7 @@ export class ReaderStudy {
 			return;
 		}
 		const geometry: { id: string; rects: ScreenAnchor[] }[] = [];
+		const hitRanges = new Map<number, { id: string; ranges: Range[] }[]>();
 		const ranges = new Map<number, Range[]>(),
 			emphasis = new Map<number, Range[]>();
 		const projections = new Map<number, Projection>();
@@ -240,6 +315,11 @@ export class ReaderStudy {
 					planned.push([index, projected]);
 				}
 				for (const [index, projected] of planned) {
+					if (config.visible || mark.segment_id === this.emphasized)
+						hitRanges.set(index, [
+							...(hitRanges.get(index) ?? []),
+							{ id: mark.segment_id, ranges: projected },
+						]);
 					ranges.set(index, [...(ranges.get(index) ?? []), ...projected]);
 					if (mark.segment_id === this.emphasized)
 						emphasis.set(index, [...(emphasis.get(index) ?? []), ...projected]);
@@ -287,6 +367,7 @@ export class ReaderStudy {
 					emphasis.get(frame.index) ?? [],
 					config.theme,
 				)();
+				this.hits.set(frame.index, hitRanges.get(frame.index) ?? []);
 			} catch {
 				clearStudyHighlights(frame.doc);
 			}
@@ -310,6 +391,75 @@ export class ReaderStudy {
 				),
 			);
 		} else this.binding?.onEntries?.([]);
+	}
+	/** A caret is only a candidate: require the pointer to be inside a real base-character rect. */
+	private markAt(frame: StudyFrame, event: PointerEvent): StudyMarkHit | null {
+		const marks = this.hits.get(frame.index);
+		if (!marks?.length) return null;
+		const doc = frame.doc as Document & {
+			caretRangeFromPoint?: (x: number, y: number) => Range | null;
+		};
+		const caret = doc.caretPositionFromPoint?.(event.clientX, event.clientY);
+		const fallback = !caret
+			? doc.caretRangeFromPoint?.(event.clientX, event.clientY)
+			: null;
+		const node = caret?.offsetNode ?? fallback?.startContainer;
+		const offset = caret?.offset ?? fallback?.startOffset;
+		if (
+			!node ||
+			offset === undefined ||
+			!isReaderFrameTarget(doc, node) ||
+			(node.parentElement?.closest("rt,rp") ?? false) ||
+			!frame.projection().entries.some((entry) => entry.node === node)
+		)
+			return null;
+		const text = node as Text;
+		let start = 0;
+		for (const character of text.data) {
+			const end = start + character.length;
+			if (start <= offset && end >= offset && !/\s/u.test(character)) {
+				const ids = marks.filter((mark) =>
+					mark.ranges.some(
+						(range) =>
+							range.startContainer === node &&
+							range.endContainer === node &&
+							range.startOffset <= start &&
+							range.endOffset >= end,
+					),
+				);
+				if (ids.length) {
+					const range = doc.createRange();
+					range.setStart(node, start);
+					range.setEnd(node, end);
+					for (const rect of Array.from(range.getClientRects())) {
+						const visible = visibleContentRect(doc, rect, node.parentElement);
+						if (
+							visible &&
+							event.clientX >= Math.max(0, visible.left) &&
+							event.clientX <
+								Math.min(frame.element.clientWidth, visible.right) &&
+							event.clientY >= Math.max(0, visible.top) &&
+							event.clientY <
+								Math.min(frame.element.clientHeight, visible.bottom)
+						) {
+							const anchor = visibleMarkAnchor(
+								frame,
+								ids.flatMap((mark) => mark.ranges),
+							);
+							return anchor
+								? {
+										segmentIds: [...new Set(ids.map((mark) => mark.id))],
+										anchor,
+									}
+								: null;
+						}
+					}
+				}
+			}
+			start = end;
+			if (start > offset) break;
+		}
+		return null;
 	}
 	private capture(frame: StudyFrame): StudySelection | null {
 		const binding = this.binding;
@@ -355,8 +505,11 @@ export class ReaderStudy {
 	mount(input: StudyFrame): () => void {
 		this.frames.get(input.index)?.dispose();
 		let selectionTimer: ReturnType<typeof setTimeout> | null = null;
+		let disposed = false;
 		let pointer = false,
 			keyActive = false;
+		let tap: { point: Point; time: number; id: number; moved: boolean } | null =
+			null;
 		const cancelSelection = () => {
 			if (selectionTimer !== null) clearTimeout(selectionTimer);
 			selectionTimer = null;
@@ -364,16 +517,20 @@ export class ReaderStudy {
 		const cancel = () => {
 			cancelSelection();
 			pointer = false;
+			tap = null;
 			keyActive = false;
 		};
 		const frame: MountedFrame = {
 			...input,
 			cancel,
 			dispose: () => {
+				if (disposed) return;
+				disposed = true;
 				cancel();
 				for (const [type, listener] of listeners)
 					input.doc.removeEventListener(type, listener);
 				input.viewport?.removeEventListener("scroll", scroll);
+				this.hits.delete(input.index);
 				clearStudyHighlights(input.doc, true);
 				if (this.frames.get(input.index) === frame) {
 					this.frames.delete(input.index);
@@ -403,6 +560,7 @@ export class ReaderStudy {
 		};
 		const down = (raw: Event) => {
 			const event = raw as PointerEvent;
+			tap = null;
 			if (
 				!this.current(frame) ||
 				!originalTarget(event) ||
@@ -414,13 +572,61 @@ export class ReaderStudy {
 				return;
 			cancelSelection();
 			pointer = true;
+			if (!modified(event) && !this.hasSelection())
+				tap = {
+					point: point(event),
+					time: event.timeStamp,
+					id: event.pointerId,
+					moved: false,
+				};
 			this.binding?.onSelection(null);
 		};
-		const up = () => {
+		const move = (raw: Event) => {
+			if (
+				tap &&
+				distance(tap.point, point(raw as PointerEvent)) >= FOCUS_TIMING.drag
+			)
+				tap.moved = true;
+		};
+		const up = (raw: Event) => {
+			const event = raw as PointerEvent;
+			const candidate = tap;
+			tap = null;
 			pointer = false;
-			if (this.current(frame)) schedule();
+			if (!this.current(frame)) return;
+			schedule();
+			if (
+				!candidate ||
+				candidate.moved ||
+				candidate.id !== event.pointerId ||
+				event.defaultPrevented ||
+				event.button !== 0 ||
+				event.isPrimary === false ||
+				modified(event) ||
+				this.hasSelection() ||
+				keyActive ||
+				!originalTarget(event) ||
+				!isReaderFrameTarget(input.doc, event.target) ||
+				!ordinaryTap(
+					candidate.point,
+					point(event),
+					event.timeStamp - candidate.time,
+				)
+			)
+				return;
+			let hit: StudyMarkHit | null = null;
+			try {
+				hit = this.markAt(frame, event);
+			} catch {
+				/* Stale projection is never guessed. */
+			}
+			if (hit) {
+				event.preventDefault();
+				this.binding?.onMarks(hit);
+			} else if (this.binding?.onBackgroundTap?.()) event.preventDefault();
 		};
 		const selectionChanged = () => {
+			if (selected(input.doc)) tap = null;
 			if (this.current(frame)) schedule();
 		};
 		const keydown = (raw: Event) => {
@@ -454,6 +660,7 @@ export class ReaderStudy {
 		const listeners: [string, EventListener][] = [
 			["pointerdown", down],
 			["pointerup", up],
+			["pointermove", move],
 			["pointercancel", cancel],
 			["selectionchange", selectionChanged],
 			["keydown", keydown],
@@ -463,7 +670,9 @@ export class ReaderStudy {
 		];
 		this.frames.set(input.index, frame);
 		for (const [type, listener] of listeners)
-			input.doc.addEventListener(type, listener, { passive: true });
+			input.doc.addEventListener(type, listener, {
+				passive: type !== "pointerup",
+			});
 		input.viewport?.addEventListener("scroll", scroll, { passive: true });
 		this.refresh();
 		return frame.dispose;

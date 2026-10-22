@@ -30,12 +30,14 @@ export function applyFramePresentation(
 		preferences.rubyScope ?? "original";
 	style.textContent = `html,body { background: ${theme === "black" ? "#191919" : "#fff"} !important; color: ${theme === "black" ? "#e5e5e5" : "#282828"} !important; } body { font-family: ${READER_FONT_FAMILIES[preferences.font]} !important; } body :not(img):not(svg):not(svg *) { color: inherit !important; background-color: transparent !important; font-family: inherit !important; } rt { opacity: ${preferences.ruby === "hide" || preferences.ruby === "on-demand" ? 0 : 1} !important; } @media (hover:hover) { html[data-reader-ruby="on-demand"] ruby:hover rt { opacity: 1 !important; } } html[data-reader-ruby="on-demand"][data-reader-ruby-keyboard] rt, html[data-reader-ruby="on-demand"] ruby[data-reader-ruby-selected] rt, html[data-reader-ruby="on-demand"] ruby[data-reader-ruby-open] rt { opacity: 1 !important; }`;
 	let tap: { point: Point; time: number; id: number } | null = null;
+	let revealTimer: ReturnType<typeof setTimeout> | undefined;
 	const selected = () => {
 		const selection = doc.getSelection();
 		return Boolean(selection && !selection.isCollapsed && selection.toString());
 	};
 	const down = (raw: Event) => {
 		const e = raw as PointerEvent;
+		clearTimeout(revealTimer);
 		tap =
 			isReaderFrameTarget(doc, e.target) &&
 			e.pointerType === "touch" &&
@@ -52,6 +54,8 @@ export function applyFramePresentation(
 	};
 	const cancel = () => {
 		tap = null;
+		clearTimeout(revealTimer);
+		revealTimer = undefined;
 	};
 	const reveal = (raw: Event) => {
 		const e = raw as PointerEvent;
@@ -73,10 +77,21 @@ export function applyFramePresentation(
 			return;
 		const target = e.target as Element | null;
 		const ruby = target?.closest?.("ruby");
-		for (const open of doc.querySelectorAll("ruby[data-reader-ruby-open]")) {
-			if (open !== ruby) open.removeAttribute("data-reader-ruby-open");
-		}
-		if (ruby) ruby.toggleAttribute("data-reader-ruby-open");
+		// Study taps may consume pointerup after this listener. Wait for the whole native dispatch.
+		clearTimeout(revealTimer);
+		revealTimer = setTimeout(() => {
+			revealTimer = undefined;
+			if (
+				e.defaultPrevented ||
+				selected() ||
+				doc.documentElement.dataset.readerRuby !== "on-demand"
+			)
+				return;
+			for (const open of doc.querySelectorAll("ruby[data-reader-ruby-open]")) {
+				if (open !== ruby) open.removeAttribute("data-reader-ruby-open");
+			}
+			if (ruby) ruby.toggleAttribute("data-reader-ruby-open");
+		}, 0);
 	};
 	const selectionChanged = () => {
 		const selection = doc.getSelection();
@@ -90,7 +105,7 @@ export function applyFramePresentation(
 							selection.containsNode(ruby, true),
 					),
 				);
-		if (selected()) tap = null;
+		if (selected()) cancel();
 	};
 	const keyboard = (event: KeyboardEvent) => {
 		if (
@@ -130,6 +145,7 @@ export function applyFramePresentation(
 	doc.addEventListener("selectionchange", selectionChanged);
 	selectionChanged();
 	return () => {
+		cancel();
 		doc.removeEventListener("keydown", keyboard);
 		doc.removeEventListener("copy", copy);
 		doc.removeEventListener("pointerdown", down);

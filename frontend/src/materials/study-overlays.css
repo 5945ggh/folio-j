@@ -106,11 +106,15 @@
 	width: 44px;
 	height: 44px;
 	padding: 0;
-	border: 1px solid var(--reader-line);
-	background: var(--reader-bg);
-	color: #c73535;
-	font-size: 13px;
-	box-shadow: 0 2px 8px #0001;
+	display: grid;
+	place-items: center;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--reader-muted);
+	font-size: 12px;
+	box-shadow: none;
+	cursor: pointer;
 }
 .reader-study-tool.fixed {
 	top: 82px;
@@ -143,4 +147,14 @@
 		padding: 6px;
 		font-size: 11px;
 	}
+}
+
+.reader-r1 .reader-study-margin:hover,
+.reader-r1 .reader-study-margin:focus-visible {
+	color: var(--reader-fg);
+	background: var(--reader-soft);
+}
+.reader-r1 .reader-study-margin:focus-visible {
+	outline: 2px solid #ae4a51;
+	outline-offset: -3px;
 }
