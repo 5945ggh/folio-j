@@ -1,0 +1,280 @@
+<div id="folio-reading-aids">
+  <style>
+    #folio-reading-aids{--fj-paper:light-dark(#fffefa,#151615);--fj-chrome:light-dark(#faf9f6,#1b1d1c);--fj-ink:light-dark(#292c2a,#e0e3df);--fj-secondary:light-dark(#737872,#a0a79f);--fj-line:light-dark(#e4e6df,#353a36);--fj-blue:light-dark(#4f7795,#8fb7d7);--fj-selection:light-dark(#e7f0f7,#243c4b);--fj-mark:light-dark(#becfd9,#516777);--fj-shadow:light-dark(#293e5012,#00000035);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;font-size:14px;line-height:1.6;color:var(--fj-ink);background:var(--fj-paper);width:100%;max-width:1024px;min-width:0;margin:0 auto;isolation:isolate;position:relative;overflow:hidden;color-scheme:light dark}
+    #folio-reading-aids *{box-sizing:border-box}
+    #folio-reading-aids button,#folio-reading-aids input,#folio-reading-aids textarea{font:inherit;color:inherit}
+    #folio-reading-aids button{border:1px solid transparent;background:transparent;padding:7px 10px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;gap:6px;max-width:100%;white-space:normal;text-align:left;vertical-align:middle}
+    #folio-reading-aids button:hover{background:var(--fj-chrome);border-color:var(--fj-line)}
+    #folio-reading-aids button:disabled{opacity:.55}
+    #folio-reading-aids button.primary{background:var(--fj-ink);color:var(--fj-paper);border-color:var(--fj-ink)}
+    #folio-reading-aids button.soft{background:var(--fj-selection);color:var(--fj-blue)}
+    #folio-reading-aids button.outline{border-color:var(--fj-line)}
+    #folio-reading-aids button.icon{padding:7px;min-width:32px}
+    #folio-reading-aids svg{width:16px;height:16px;flex-shrink:0}
+    #folio-reading-aids .topbar{min-height:64px;border-bottom:1px solid var(--fj-line);display:flex;align-items:center;gap:12px;padding:12px 22px;background:var(--fj-paper)}
+    #folio-reading-aids .brand{font-family:Georgia,serif;font-size:18px;letter-spacing:.02em;white-space:nowrap}
+    #folio-reading-aids .topbar .sep{width:1px;height:18px;background:var(--fj-line)}
+    #folio-reading-aids .book-label{color:var(--fj-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+    #folio-reading-aids .top-actions{display:flex;align-items:center;gap:5px;flex-shrink:0}
+    #folio-reading-aids .muted{color:var(--fj-secondary)}
+    #folio-reading-aids .small{font-size:12px}
+    #folio-reading-aids .eyebrow{font-size:12px;letter-spacing:.08em;color:var(--fj-secondary)}
+    #folio-reading-aids h1,#folio-reading-aids h2,#folio-reading-aids h3,#folio-reading-aids p{margin:0}
+    #folio-reading-aids h1{font-size:25px;line-height:1.5;font-weight:500}
+    #folio-reading-aids h2{font-size:19px;line-height:1.6;font-weight:500}
+    #folio-reading-aids h3{font-size:16px;line-height:1.7;font-weight:500}
+    #folio-reading-aids .reader-toolbar{padding:9px 22px;display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--fj-line)}
+    #folio-reading-aids .reader-controls{display:flex;gap:3px;align-items:center;flex-wrap:wrap}
+    #folio-reading-aids .reader-stage{position:relative;height:610px;background:var(--fj-paper)}
+    #folio-reading-aids .page-viewport{height:100%;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:40px 48px 100px 64px}
+    #folio-reading-aids .page-text{max-width:480px;font-family:"Noto Serif JP","Yu Mincho","Hiragino Mincho ProN",serif;font-size:18px;line-height:2.55;letter-spacing:.035em;position:relative}
+    #folio-reading-aids .chapter-title{font-family:inherit;font-size:24px;line-height:1.8;font-weight:400;margin:6px 0 36px}
+    #folio-reading-aids .page-text p{margin:0 0 28px;text-indent:1em}
+    #folio-reading-aids .sentence{padding-bottom:3px}
+    #folio-reading-aids ::highlight(folio-demo-focus){background:var(--fj-selection);color:var(--fj-ink)}
+    #folio-reading-aids ::selection{background:var(--fj-selection);color:var(--fj-ink)}
+    #folio-reading-aids .page-viewport.vertical{padding:38px 48px 32px;overflow:auto;direction:rtl}
+    #folio-reading-aids .vertical .page-text{writing-mode:vertical-rl;direction:ltr;max-width:none;height:470px;width:max-content;min-width:100%;font-size:18px}
+    #folio-reading-aids .vertical .chapter-title{margin:0 0 0 36px;font-size:23px}
+    #folio-reading-aids .vertical .page-text p{margin:0 0 0 30px;text-indent:1em}
+    #folio-reading-aids .vertical .sentence{padding-bottom:0;padding-left:3px}
+    #folio-reading-aids .marker-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+    #folio-reading-aids .range-line{position:absolute;background:var(--fj-mark);pointer-events:none}
+    #folio-reading-aids .range-line.active{background:var(--fj-blue)}
+    #folio-reading-aids .margin-marker{position:absolute;pointer-events:auto;min-width:29px;min-height:30px;padding:4px 6px;border-left:2px solid var(--fj-mark);border-radius:0 5px 5px 0;font-size:12px;color:var(--fj-secondary);background:var(--fj-paper)}
+    #folio-reading-aids .margin-marker.active{color:var(--fj-blue);border-left-color:var(--fj-blue);background:var(--fj-selection)}
+    #folio-reading-aids .focus-link{position:absolute;height:1px;background:var(--fj-blue);pointer-events:none;transform-origin:left center;z-index:2}
+    #folio-reading-aids .selection-menu{position:absolute;z-index:7;display:flex;gap:1px;padding:4px;background:var(--fj-paper);border:1px solid var(--fj-line);box-shadow:0 5px 20px var(--fj-shadow);border-radius:9px}
+    #folio-reading-aids .selection-menu button{padding:7px 9px;font-size:13px;white-space:nowrap}
+    #folio-reading-aids .result-card{position:absolute;z-index:6;width:280px;max-width:calc(100% - 24px);background:var(--fj-paper);border:1px solid var(--fj-line);border-radius:10px;box-shadow:0 6px 26px var(--fj-shadow);max-height:440px;overflow:auto;scrollbar-width:thin}
+    #folio-reading-aids .result-card.overlay{box-shadow:0 10px 38px var(--fj-shadow)}
+    #folio-reading-aids .result-card.bottom{left:12px!important;right:12px;bottom:12px;top:auto!important;width:auto;max-width:none;max-height:340px}
+    #folio-reading-aids .card-head{padding:12px 13px 5px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    #folio-reading-aids .card-head .icon{padding:4px}
+    #folio-reading-aids .result-body{padding:6px 16px 16px}
+    #folio-reading-aids .result-target{font-family:"Noto Serif JP","Yu Mincho",serif;color:var(--fj-secondary);font-size:12px;line-height:1.85;margin-bottom:12px;overflow-wrap:anywhere}
+    #folio-reading-aids .group-choice{display:block;width:100%;padding:10px;text-align:left;border-bottom:1px solid var(--fj-line);border-radius:0}
+    #folio-reading-aids .translation{font-size:15px;line-height:1.9;overflow-wrap:anywhere}
+    #folio-reading-aids .result-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:14px;flex-wrap:wrap}
+    #folio-reading-aids .result-rule{border:0;border-top:1px solid var(--fj-line);margin:16px 0 10px}
+    #folio-reading-aids .result-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    #folio-reading-aids .result-foot button{padding:6px 0;color:var(--fj-blue)}
+    #folio-reading-aids .reader-footer{padding:11px 22px;border-top:1px solid var(--fj-line);display:flex;justify-content:space-between;color:var(--fj-secondary);font-size:12px}
+    #folio-reading-aids .library-head{padding:28px 30px 0}
+    #folio-reading-aids .library-head h1{margin:12px 0 5px;font-family:"Noto Serif JP","Yu Mincho",serif}
+    #folio-reading-aids .tabs{display:flex;gap:18px;margin-top:22px;border-bottom:1px solid var(--fj-line)}
+    #folio-reading-aids .tabs button{border-radius:0;padding:10px 0;border-bottom:2px solid transparent;color:var(--fj-secondary)}
+    #folio-reading-aids .tabs button.current{border-bottom-color:var(--fj-ink);color:var(--fj-ink)}
+    #folio-reading-aids .records-layout{display:grid;grid-template-columns:310px minmax(0,1fr);min-height:560px}
+    #folio-reading-aids .records-list{padding:20px;border-right:1px solid var(--fj-line)}
+    #folio-reading-aids .search-wrap{display:flex;align-items:center;gap:8px;border:1px solid var(--fj-line);border-radius:6px;padding:8px 10px;margin-bottom:16px;background:var(--fj-paper)}
+    #folio-reading-aids input,#folio-reading-aids textarea{background:var(--fj-paper);border:1px solid var(--fj-line);border-radius:6px;padding:10px 12px;max-width:100%;width:100%;min-width:0;outline-offset:2px}
+    #folio-reading-aids .search-wrap input{border:0;padding:0;font-size:14px;background:transparent}
+    #folio-reading-aids .record-row{display:block;width:100%;padding:13px 12px;margin-bottom:6px;border:1px solid transparent;text-align:left;border-radius:7px}
+    #folio-reading-aids .record-row.selected{background:var(--fj-chrome);border-color:var(--fj-line)}
+    #folio-reading-aids .record-source{font-family:"Noto Serif JP","Yu Mincho",serif;line-height:1.85;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    #folio-reading-aids .row-translation{font-size:12px;color:var(--fj-secondary);margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+    #folio-reading-aids .row-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--fj-secondary)}
+    #folio-reading-aids .content-status{display:inline-flex;gap:7px;white-space:nowrap;color:var(--fj-blue)}
+    #folio-reading-aids .record-detail{padding:26px 30px;min-width:0}
+    #folio-reading-aids .detail-quote{font-family:"Noto Serif JP","Yu Mincho",serif;font-size:19px;line-height:2.1;margin:18px 0 22px;overflow-wrap:anywhere}
+    #folio-reading-aids .detail-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    #folio-reading-aids .detail-section{padding:18px 0;border-top:1px solid var(--fj-line)}
+    #folio-reading-aids .detail-section .result-row{margin-top:0}
+    #folio-reading-aids .detail-section h3{margin-bottom:8px}
+    #folio-reading-aids .analysis-link{display:block;text-align:left;width:100%;border:1px solid var(--fj-line);padding:14px;margin-top:12px;border-radius:7px}
+    #folio-reading-aids .analysis-list{padding:24px 30px;min-height:480px;max-width:800px}
+    #folio-reading-aids .analysis-list .analysis-link{margin:0 0 12px}
+    #folio-reading-aids .analysis-page{max-width:780px;margin:0 auto;padding:25px 38px 50px;min-height:650px}
+    #folio-reading-aids .analysis-nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:26px}
+    #folio-reading-aids .analysis-reference{margin:22px 0 28px;padding:16px 19px;border-left:2px solid var(--fj-mark);background:var(--fj-chrome)}
+    #folio-reading-aids .analysis-reference .jp{font-family:"Noto Serif JP","Yu Mincho",serif;line-height:2;font-size:17px}
+    #folio-reading-aids .analysis-reference .translation{font-size:14px;margin-top:8px}
+    #folio-reading-aids .markdown{font-size:15px;line-height:1.95;overflow-wrap:anywhere}
+    #folio-reading-aids .markdown h1{font-size:25px;margin:25px 0 12px}
+    #folio-reading-aids .markdown h2{font-size:20px;margin:26px 0 12px}
+    #folio-reading-aids .markdown h3{font-size:17px;margin:21px 0 10px}
+    #folio-reading-aids .markdown p{margin:0 0 15px}
+    #folio-reading-aids .markdown ul,#folio-reading-aids .markdown ol{padding-left:23px;margin:8px 0 18px}
+    #folio-reading-aids .markdown strong{font-weight:500}
+    #folio-reading-aids .markdown blockquote{border-left:2px solid var(--fj-line);margin:16px 0;padding:0 16px;color:var(--fj-secondary)}
+    #folio-reading-aids .editor-label{display:block;margin:20px 0 7px;font-size:13px;color:var(--fj-secondary)}
+    #folio-reading-aids .editor-area{min-height:310px;line-height:1.9;resize:vertical;font-family:ui-monospace,SFMono-Regular,monospace;font-size:14px}
+    #folio-reading-aids .editor-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap}
+    #folio-reading-aids .inline-edit{margin-top:10px}
+    #folio-reading-aids .inline-edit textarea{min-height:100px;line-height:1.8;resize:vertical}
+    #folio-reading-aids .inline-actions{display:flex;gap:5px;justify-content:flex-end;margin-top:7px}
+    #folio-reading-aids .empty{padding:28px 8px;color:var(--fj-secondary)}
+    #folio-reading-aids .toast{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);padding:9px 15px;background:var(--fj-ink);color:var(--fj-paper);border-radius:7px;font-size:13px;z-index:20;max-width:calc(100% - 24px);pointer-events:none}
+    #folio-reading-aids .mobile-back{display:none}
+    #folio-reading-aids [hidden]{display:none!important}
+    @media(max-width:760px){#folio-reading-aids .topbar{padding:11px 14px;gap:9px}#folio-reading-aids .brand{font-size:16px}#folio-reading-aids .topbar .sep{display:none}#folio-reading-aids .top-actions button{padding:7px}#folio-reading-aids .page-viewport{padding-left:36px;padding-right:44px}#folio-reading-aids .records-layout{grid-template-columns:260px minmax(0,1fr)}#folio-reading-aids .record-detail{padding:22px}#folio-reading-aids .library-head{padding:22px 22px 0}#folio-reading-aids .reader-toolbar{padding:8px 14px}#folio-reading-aids .page-text{font-size:17px}#folio-reading-aids .analysis-page{padding:22px 25px 40px}}
+    @media(max-width:540px){#folio-reading-aids .book-label{font-size:12px}#folio-reading-aids .topbar{gap:6px}#folio-reading-aids .top-actions .records-label{display:none}#folio-reading-aids .reader-stage{height:570px}#folio-reading-aids .reader-toolbar{padding:7px 10px;align-items:flex-start}#folio-reading-aids .reader-toolbar button{font-size:12px;padding:7px 6px}#folio-reading-aids .chapter-name{max-width:120px;font-size:12px;padding-top:8px}#folio-reading-aids .page-viewport{padding:26px 38px 110px 24px}#folio-reading-aids .page-text{font-size:17px;line-height:2.5}#folio-reading-aids .chapter-title{font-size:22px;margin-bottom:25px}#folio-reading-aids .records-layout{display:block;min-height:560px}#folio-reading-aids .records-list{border-right:0;padding:18px 14px}#folio-reading-aids .record-detail{padding:18px 22px;min-height:540px}#folio-reading-aids .records-layout.has-detail .records-list{display:none}#folio-reading-aids .records-layout:not(.has-detail) .record-detail{display:none}#folio-reading-aids .mobile-back{display:inline-flex}#folio-reading-aids .library-head{padding:17px 20px 0}#folio-reading-aids .library-head h1{font-size:23px}#folio-reading-aids .analysis-list{padding:20px}#folio-reading-aids .analysis-page{padding:18px 20px 36px}#folio-reading-aids .analysis-reference{padding:13px}#folio-reading-aids .analysis-nav{margin-bottom:20px}#folio-reading-aids .selection-menu button{padding:8px 6px;font-size:12px}#folio-reading-aids .selection-menu{gap:0}#folio-reading-aids .reader-footer{padding:10px 15px}#folio-reading-aids .editor-area{font-size:16px}#folio-reading-aids input,#folio-reading-aids textarea{font-size:16px}}
+    @media(pointer:coarse){#folio-reading-aids button{min-height:44px}#folio-reading-aids .margin-marker{min-height:44px;min-width:36px}#folio-reading-aids .result-card{max-height:400px}}
+  </style>
+  <header class="topbar"><span class="brand">Folio-J</span><span class="sep"></span><span class="book-label">雨上がりの切符</span><div class="top-actions"><button type="button" class="cursor-interaction" data-act="book"><i data-lucide="arrow-left" aria-hidden="true"></i>书籍</button><button type="button" class="cursor-interaction" data-act="records" aria-label="阅读记录"><i data-lucide="notebook-text" aria-hidden="true"></i><span class="records-label">阅读记录</span></button></div></header>
+  <main class="main"></main>
+  <div class="toast" role="status" aria-live="polite" hidden></div>
+  <script>
+  (()=>{
+    const root=document.getElementById('folio-reading-aids');
+    if(!root)return;
+    const main=root.querySelector('.main');
+    const sentences=[
+      '雨がやんだばかりの駅前には、まだ傘を閉じるのをためらっている人がいた。',
+      '美緒はポケットの切符を指で確かめ、古い時計の下で足を止めた。',
+      'もう来ないとわかっているのに、誰かを待つふりをするのは、思ったほど難しくなかった。',
+      '売店のおばあさんが、今朝は少し冷えるね、と湯気の向こうから声をかけてきた。',
+      'その何でもないひと言に、美緒はようやく、自分がどこへ行きたいのかを考え始めた。',
+      'ホームに電車が入ってきても、彼女は急いで歩こうとはしなかった。',
+      '水たまりに映った空が、さっきより少しだけ明るくなっていた。'
+    ];
+    const translations=[
+      '雨刚停的车站前，还有人迟疑着，没有把伞收起来。',
+      '美绪用指尖确认了一下口袋里的车票，在那座老钟下面停下脚步。',
+      '明知道对方已经不会来了，装作还在等谁，却并没有想象中那么难。',
+      '小卖部的老奶奶隔着升起的热气招呼她：“今天早上有点凉呢。”',
+      '正是这句平常的话，让美绪终于开始思考，自己究竟想去哪里。',
+      '即使列车驶入站台，她也没有打算加快脚步。',
+      '映在水洼里的天空，比刚才稍稍明亮了一点。'
+    ];
+    const seedMarkdown='这句话的重心不是“等待”，而是她发现自己仍然能够维持等待的姿态。前半句说明现实，后半句写她对自己的意外发现。\n\n## 「とわかっているのに」\n\n「もう来ない」是「わかっている」所理解的内容。「と」把这个判断接到「わかる」上；「ている」在这里表示她已经知道并持续明白这一事实。\n\n「のに」把这个认知和后面的行为放在一起，形成一种不合常理的对照：既然知道不会来了，似乎就没有继续等的理由，然而她仍留在那里。\n\n## 「誰かを待つふりをする」\n\n「ふりをする」表示做出某种样子。这里说的是**装作在等人**，并没有直接说她在欺骗具体的某个人。\n\n- 「待つ」：实际等待。\n- 「待つふりをする」：呈现出等待的样子。\n\n「誰か」没有把等待对象说清楚，与前面的“已经不会来了”放在一起，让她停留在车站的动作显得更含混。\n\n## 「思ったほど難しくなかった」\n\n「ほど」在否定句中给出一个没有达到的程度：“并没有达到原先以为的那么难。”不是说这件事完全容易，而是实际感受与预期不同。\n\n> 她原以为自己很难再站在那里，可当她真正停下时，发现等待的姿态仍然如此自然。\n\n原文没有明确交代她在等谁，也没有直接说出她的情绪。理解句法之后，可以保留这份不确定，不必替小说补全答案。';
+    const records=new Map();
+    const learning=new Map();
+    const full=i=>({sid:i,start:0,end:sentences[i].length,text:sentences[i]});
+    const key=t=>`${t.sid}:${t.start}:${t.end}`;
+    [0,2,4].forEach(i=>{const t=full(i);records.set(key(t),{...t,key:key(t),translation:i===4?'':translations[i],audio:i!==0,analysis:i===2?{id:'analysis-1',title:'明知道不会来了，为什么还在等？',body:seedMarkdown,revision:1}:null,segment:i===2?'segment-1':null});});
+    records.forEach((r,k)=>{if(r.analysis)learning.set(k,r);});
+    let view='reader',tab='records',activeKey=key(full(0)),activeTarget=full(0),cardOpen=true,vertical=false,marks=true,readerScroll={top:0,left:0},search='',detailOpen=true,selectionTarget=null,selectionRect=null,editingTranslation=null,translationDraft='',editingAnalysis=null,analysisPreview=false,analysisOrigin='reader',readerObserver=null,playingKey=null,toastTimer=null,groupKeys=null;
+    const pending=new Map();
+    const translationDrafts=new Map(),analysisDrafts=new Map();
+    const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const icon=n=>`<i data-lucide="${n}" aria-hidden="true"></i>`;
+    const button=(act,label,cls='',extra='')=>`<button type="button" class="${cls} cursor-interaction" data-act="${act}" ${extra}>${label}</button>`;
+    const icons=()=>{if(window.lucide)window.lucide.createIcons({attrs:{width:16,height:16}});};
+    const status=r=>`<span class="content-status">${r.translation?'<span>译</span>':''}${r.audio?'<span>音</span>':''}${r.analysis?'<span>解</span>':''}</span>`;
+    const current=()=>records.get(activeKey)||learning.get(activeKey);
+    function notify(message){const el=root.querySelector('.toast');el.textContent=message;el.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,2200);}
+    function markdown(source){
+      const inline=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>');
+      let out='',list=false,para=[];
+      const flush=()=>{if(para.length){out+=`<p>${para.map(inline).join('<br>')}</p>`;para=[];}};
+      const close=()=>{if(list){out+='</ul>';list=false;}};
+      source.split('\n').forEach(line=>{const heading=line.match(/^(#{1,3})\s+(.+)$/);const item=line.match(/^[-*]\s+(.+)$/);if(!line.trim()){flush();close();}else if(heading){flush();close();out+=`<h${heading[1].length}>${inline(heading[2])}</h${heading[1].length}>`;}else if(item){flush();if(!list){out+='<ul>';list=true;}out+=`<li>${inline(item[1])}</li>`;}else if(line.startsWith('> ')){flush();close();out+=`<blockquote>${inline(line.slice(2))}</blockquote>`;}else{close();para.push(line);}});flush();close();return out;
+    }
+    function saveReaderPosition(){const vp=main.querySelector('.page-viewport');if(vp)readerScroll={top:vp.scrollTop,left:vp.scrollLeft};}
+    function navigate(next){if(view==='reader')saveReaderPosition();if(readerObserver){readerObserver.disconnect();readerObserver=null;}if(next!=='reader'&&CSS.highlights)CSS.highlights.delete('folio-demo-focus');view=next;selectionTarget=null;selectionRect=null;editingTranslation=null;groupKeys=null;render();}
+    function chooseRecord(k,fromMarker=false){const r=records.get(k)||learning.get(k);if(!r)return;const was=activeKey===k&&cardOpen&&!groupKeys;activeKey=k;activeTarget={sid:r.sid,start:r.start,end:r.end,text:r.text};editingTranslation=null;selectionTarget=null;groupKeys=null;detailOpen=true;if(view==='reader'){cardOpen=fromMarker?!was:true;updateReader();}else render();}
+    function resultHTML(r,compact=false){
+      const k=r?r.key:key(activeTarget);const target=r||activeTarget;const translating=pending.get('translate:'+k),audioBusy=pending.get('audio:'+k);const isEditing=editingTranslation===k;
+      return `<div class="${compact?'result-body':''}" data-result-key="${esc(k)}">
+        ${compact?`<p class="result-target" lang="ja">${esc(target.text)}</p>`:''}
+        ${isEditing?`<div class="inline-edit"><label class="small muted" for="fj-translation-edit">译文</label><textarea id="fj-translation-edit">${esc(translationDraft)}</textarea><div class="inline-actions">${button('cancel-translation','取消')}${button('save-translation','保存','primary')}</div></div>`:r&&r.translation?`<div class="translation">${esc(r.translation)}</div><div class="result-row">${button('edit-translation',icon('pencil')+'编辑译文','','data-key="'+esc(k)+'"')}</div>`:`<div class="muted">${translating?'正在翻译…':'还没有译文'}</div><div class="result-row">${button('translate',icon('languages')+(translating?'翻译中…':'翻译'),'outline',`data-key="${esc(k)}" ${translating?'disabled':''}`)}</div>`}
+        <div class="result-row">${button('audio',icon(playingKey===k?'pause':'volume-2')+(audioBusy?'生成中…':r&&r.audio?(playingKey===k?'暂停':'播放音频'):'生成音频'),'outline',`data-key="${esc(k)}" ${audioBusy?'disabled':''}`)}<span class="small muted">${r&&r.audio?'00:08':''}</span></div>
+        <hr class="result-rule"><div class="result-foot"><span class="small muted">第一章 · 雨のあと</span>${button(r&&r.analysis?'analysis':'new-analysis',(r&&r.analysis?'查看解析':'新建解析')+icon('arrow-up-right'),'',`data-key="${esc(k)}"`)}</div>
+      </div>`;
+    }
+    function renderReader(){
+      if(readerObserver){readerObserver.disconnect();readerObserver=null;}
+      main.innerHTML=`<div class="reader-toolbar"><span class="muted chapter-name">第一章　雨のあと</span><div class="reader-controls">${button('toggle-marks',icon(marks?'highlighter':'eye-off')+(marks?'标记':'标记已隐藏'),'',`aria-pressed="${marks}"`)}${button('horizontal','横排',!vertical?'soft':'',`aria-pressed="${!vertical}"`)}${button('vertical','竖排',vertical?'soft':'',`aria-pressed="${vertical}"`)}</div></div>
+      <section class="reader-stage" aria-label="小说阅读"><div class="page-viewport ${vertical?'vertical':''}"><article class="page-text" lang="ja"><h1 class="chapter-title">雨のあと</h1>${sentences.map((s,i)=>`<p><span class="sentence" data-sid="${i}">${esc(s)}</span></p>`).join('')}</article></div><div class="marker-layer"></div><div class="focus-link" hidden></div><div class="selection-menu" hidden aria-label="选区操作"></div><aside class="result-card" aria-label="阅读辅助结果" hidden></aside></section><div class="reader-footer"><span>雨上がりの切符</span><span>第一章 / 全三章</span></div>`;
+      const vp=main.querySelector('.page-viewport');vp.scrollTop=readerScroll.top;vp.scrollLeft=readerScroll.left;
+      vp.addEventListener('scroll',()=>{positionReader(true);hideSelectionMenu();},{passive:true});
+      vp.addEventListener('mouseup',()=>setTimeout(readSelection,0));vp.addEventListener('touchend',()=>setTimeout(readSelection,100),{passive:true});
+      readerObserver=new ResizeObserver(()=>positionReader(false));readerObserver.observe(main.querySelector('.reader-stage'));readerObserver.observe(main.querySelector('.page-text'));
+      updateReader();requestAnimationFrame(()=>positionReader(false));
+    }
+    function updateReader(){
+      if(view!=='reader')return;
+      if(CSS.highlights&&window.Highlight){const range=cardOpen&&!groupKeys?targetRange(activeTarget):null;CSS.highlights.delete('folio-demo-focus');if(range)CSS.highlights.set('folio-demo-focus',new Highlight(range));}
+      const card=main.querySelector('.result-card');card.hidden=!cardOpen;if(cardOpen)card.innerHTML=`<div class="card-head"><span class="eyebrow">${groupKeys?'选择阅读记录':records.has(activeKey)?'阅读记录':'阅读辅助'}</span>${button('close-card',icon('x'),'icon','aria-label="关闭结果"')}</div>${groupKeys?`<div class="result-body">${groupKeys.map(k=>{const r=records.get(k);return button('marker',esc(r.text),'group-choice',`data-key="${esc(k)}"`);}).join('')}</div>`:resultHTML(current(),true)}`;
+      icons();positionReader(false);
+    }
+    function targetRange(target){
+      if(!target)return null;const el=main.querySelector(`.sentence[data-sid="${target.sid}"]`);if(!el||!el.firstChild)return null;
+      const range=document.createRange(),len=el.firstChild.textContent.length;range.setStart(el.firstChild,Math.min(target.start,len));range.setEnd(el.firstChild,Math.min(target.end,len));return range;
+    }
+    function rangeRect(target){
+      const range=targetRange(target);if(!range)return null;
+      const boxes=[...range.getClientRects()].filter(b=>b.width>0&&b.height>0);const vp=main.querySelector('.page-viewport').getBoundingClientRect();const visible=boxes.filter(b=>b.bottom>vp.top+4&&b.top<vp.bottom-4&&b.right>vp.left+4&&b.left<vp.right-4);return visible.length?{first:visible[0],last:visible[visible.length-1],all:boxes}:null;
+    }
+    function positionReader(onScroll){
+      if(view!=='reader')return;
+      const stage=main.querySelector('.reader-stage');if(!stage)return;const sr=stage.getBoundingClientRect();const layer=main.querySelector('.marker-layer');const card=main.querySelector('.result-card');const link=main.querySelector('.focus-link');const article=main.querySelector('.page-text').getBoundingClientRect();
+      layer.innerHTML='';
+      if(marks){const groups=[];[...records.values()].forEach(r=>{const rr=rangeRect(r);if(!rr)return;rr.all.forEach(rect=>{const line=document.createElement('div');line.className='range-line'+(cardOpen&&r.key===activeKey?' active':'');line.style.left=(vertical?rect.left-sr.left-3:rect.left-sr.left)+'px';line.style.top=(vertical?rect.top-sr.top:rect.bottom-sr.top+2)+'px';line.style.width=(vertical?1:rect.width)+'px';line.style.height=(vertical?rect.height:1)+'px';layer.appendChild(line);});const y=Math.max(4,Math.min(sr.height-44,rr.first.top-sr.top+1));const x=Math.max(4,vertical?Math.min(sr.width-37,rr.first.right-sr.left+5):Math.min(sr.width-37,article.right-sr.left+16));const group=groups.find(g=>Math.abs(g.y-y)<44&&Math.abs(g.x-x)<36);if(group)group.records.push(r);else groups.push({records:[r],x,y});});groups.forEach(g=>{const r=g.records[0];const b=document.createElement('button');b.type='button';b.className='margin-marker cursor-interaction'+(cardOpen&&g.records.some(x=>x.key===activeKey)?' active':'');b.dataset.act=g.records.length>1?'marker-group':'marker';b.dataset.key=r.key;b.dataset.keys=g.records.map(x=>x.key).join('|');b.setAttribute('aria-label',g.records.length>1?`打开 ${g.records.length} 条阅读记录`:`打开阅读记录：${r.text}`);b.textContent=g.records.length>1?String(g.records.length):r.analysis?'解':r.translation?'译':'音';b.style.top=g.y+'px';b.style.left=g.x+'px';layer.appendChild(b);});}
+      link.hidden=true;
+      if(!cardOpen){card.hidden=true;return;}
+      const rr=rangeRect(activeTarget);if(!rr){if(onScroll){cardOpen=false;card.hidden=true;if(CSS.highlights)CSS.highlights.delete('folio-demo-focus');}return;}
+      card.hidden=false;card.classList.remove('bottom','overlay');
+      const width=Math.min(280,sr.width-24);const rightSpace=sr.right-article.right;const useMargin=!vertical&&rightSpace>=width+74;const narrow=sr.width<560;
+      if(narrow){card.classList.add('bottom');return;}
+      card.style.width=width+'px';let left=useMargin?article.right-sr.left+56:vertical&&rr.first.left>sr.left+sr.width/2?18:sr.width-width-18;
+      card.style.left=left+'px';card.style.top=Math.max(16,Math.min(sr.height-card.offsetHeight-18,rr.first.top-sr.top-8))+'px';
+      if(!useMargin){card.classList.add('overlay');return;}
+      const x1=article.right-sr.left+46,y1=rr.first.top-sr.top+rr.first.height/2,x2=left,y2=Math.max(12,Math.min(sr.height-12,y1));link.style.left=x1+'px';link.style.top=y1+'px';link.style.width=Math.max(0,x2-x1)+'px';link.style.transform=`rotate(${Math.atan2(y2-y1,x2-x1)}rad)`;link.hidden=false;
+    }
+    function hideSelectionMenu(){const menu=main.querySelector('.selection-menu');if(menu)menu.hidden=true;selectionTarget=null;selectionRect=null;}
+    function readSelection(){
+      if(view!=='reader')return;const sel=window.getSelection();if(!sel||sel.isCollapsed||!sel.rangeCount){hideSelectionMenu();return;}const range=sel.getRangeAt(0);
+      const parent=node=>(node.nodeType===1?node:node.parentElement)?.closest('.sentence');const start=parent(range.startContainer),end=parent(range.endContainer);if(!start||start!==end||!root.contains(start)){hideSelectionMenu();return;}
+      const pre=document.createRange();pre.selectNodeContents(start);pre.setEnd(range.startContainer,range.startOffset);const from=pre.toString().length,text=range.toString();if(!text.trim()){hideSelectionMenu();return;}
+      cardOpen=false;groupKeys=null;updateReader();selectionTarget={sid:Number(start.dataset.sid),start:from,end:from+text.length,text};selectionRect=range.getBoundingClientRect();const menu=main.querySelector('.selection-menu');menu.innerHTML=button('selection-translate',icon('languages')+'翻译')+button('selection-audio',icon('volume-2')+'朗读')+button('selection-analysis',icon('file-pen-line')+'新建解析');menu.hidden=false;icons();const sr=main.querySelector('.reader-stage').getBoundingClientRect();menu.style.left=Math.max(8,Math.min(sr.width-menu.offsetWidth-8,selectionRect.left-sr.left))+'px';menu.style.top=Math.max(8,Math.min(sr.height-menu.offsetHeight-8,selectionRect.top-sr.top-menu.offsetHeight-8))+'px';
+    }
+    function renderBook(){
+      const all=[...new Map([...records,...learning]).values()].reverse(),filtered=all.filter(r=>records.has(r.key)).filter(r=>(r.text+' '+r.translation).toLowerCase().includes(search.toLowerCase()));
+      main.innerHTML=`<div class="library-head"><span class="eyebrow">书籍</span><h1>雨上がりの切符</h1><div class="muted small">第一章　雨のあと</div><nav class="tabs" aria-label="书籍内容">${button('tab-records','阅读记录',tab==='records'?'current':'')}${button('tab-analyses','片段与解析',tab==='analyses'?'current':'')}</nav></div>${tab==='records'?`<div class="records-layout ${detailOpen?'has-detail':''}"><div class="records-list"><label class="search-wrap">${icon('search')}<input type="search" aria-label="搜索原文或译文" placeholder="搜索原文或译文" value="${esc(search)}"></label><div class="small muted" style="margin:0 10px 10px">${records.size} 条阅读记录</div><div class="record-items">${filtered.map(r=>rowHTML(r)).join('')||'<div class="empty">没有找到相关记录</div>'}</div></div><section class="record-detail" aria-label="阅读记录详情">${detailHTML(records.get(activeKey))}</section></div>`:`<div class="analysis-list">${all.filter(r=>r.analysis).map(r=>`<button type="button" class="analysis-link cursor-interaction" data-act="analysis" data-key="${esc(r.key)}"><span class="eyebrow">学习片段 · 解析</span><h3>${esc(r.analysis.title||'未命名解析')}</h3><p class="muted small">${esc(r.text)}</p><div class="row-meta"><span>修订 ${r.analysis.revision}</span><span>打开解析 →</span></div></button>`).join('')||'<div class="empty">还没有解析</div>'}</div>`}`;
+      icons();
+    }
+    function rowHTML(r){return `<button type="button" class="record-row cursor-interaction ${r.key===activeKey?'selected':''}" data-act="record" data-key="${esc(r.key)}"><div class="record-source" lang="ja">${esc(r.text)}</div>${r.translation?`<div class="row-translation">${esc(r.translation)}</div>`:''}<div class="row-meta"><span>第一章 · 雨のあと</span>${status(r)}</div></button>`;}
+    function detailHTML(r){if(!r)return '<div class="empty">选择一条记录</div>';return `${button('back-list',icon('arrow-left')+'全部记录','mobile-back')}<div class="detail-title"><span class="eyebrow">阅读记录</span>${button('back-source',icon('locate-fixed')+'回原文','','data-key="'+esc(r.key)+'"')}</div><div class="detail-quote" lang="ja">${esc(r.text)}</div><div class="detail-section">${resultHTML(r)}</div>${r.analysis?`<div class="detail-section"><span class="eyebrow">关联解析</span><button type="button" class="analysis-link cursor-interaction" data-act="analysis" data-key="${esc(r.key)}"><h3>${esc(r.analysis.title||'未命名解析')}</h3><span class="small muted">修订 ${r.analysis.revision}　${icon('arrow-up-right')}</span></button></div>`:''}`;}
+    function renderAnalysis(){
+      const r=current(),a=r&&r.analysis;const editing=Boolean(editingAnalysis);
+      main.innerHTML=`<section class="analysis-page"><div class="analysis-nav">${button('analysis-back',icon('arrow-left')+'返回'+(analysisOrigin==='reader'?'阅读':'阅读记录'))}${!editing?button('edit-analysis',icon('pencil')+'编辑解析','outline'):''}</div><span class="eyebrow">${editing?'编辑解析':'学习片段 / 解析'}${a?' · 修订 '+a.revision:''}</span>${editing?`<label class="editor-label" for="fj-analysis-title">标题（可选）</label><input id="fj-analysis-title" placeholder="给这份解析起个名字" value="${esc(editingAnalysis.title)}">`:`<h1 style="margin-top:9px">${esc(a?a.title||'未命名解析':'解析')}</h1>`}<div class="analysis-reference"><p class="jp" lang="ja">${esc((r||activeTarget).text)}</p>${r&&r.translation?`<p class="translation muted">${esc(r.translation)}</p>`:''}<div class="result-row"><span class="small muted">雨上がりの切符 · 第一章</span>${button('audio',icon('volume-2')+(pending.get('audio:'+activeKey)?'生成中…':r&&r.audio?'播放音频':'生成音频'),'',`data-key="${esc(activeKey)}"`)}</div></div>${editing?`<div class="detail-title"><label class="editor-label" for="fj-analysis-body" style="margin:0 0 8px">正文 · Markdown</label>${button('preview-analysis',analysisPreview?'继续编辑':'预览','',`aria-pressed="${analysisPreview}"`)}</div><textarea class="editor-area" id="fj-analysis-body" ${analysisPreview?'hidden':''} placeholder="粘贴已经满意的讲解，或写下自己的理解。可以直接写段落，不必添加标题。">${esc(editingAnalysis.body)}</textarea><div class="markdown" ${analysisPreview?'':'hidden'}>${markdown(editingAnalysis.body)||'<p class="muted">正文尚为空</p>'}</div><div class="editor-actions"><span class="small muted">${a?'保存为新的修订':'保存后建立学习片段'}</span><div>${button('cancel-analysis','取消')}${button('save-analysis','保存解析','primary')}</div></div>`:`<div class="markdown">${markdown(a?a.body:'')}</div>`}</section>`;icons();
+    }
+    function render(){if(view==='reader')renderReader();else if(view==='book')renderBook();else renderAnalysis();}
+    function syncEditor(){if(!editingAnalysis)return;const title=main.querySelector('#fj-analysis-title'),body=main.querySelector('#fj-analysis-body');if(title)editingAnalysis.title=title.value;if(body)editingAnalysis.body=body.value;analysisDrafts.set(activeKey,{...editingAnalysis});}
+    function startAnalysis(k,forceEdit=false){const r=records.get(k)||learning.get(k);if(r){activeKey=k;activeTarget={sid:r.sid,start:r.start,end:r.end,text:r.text};}if(view!=='analysis')analysisOrigin=view;const a=r&&r.analysis;editingAnalysis=!a||forceEdit?analysisDrafts.get(k)||{title:a?a.title:'',body:a?a.body:''}:null;analysisPreview=false;navigate('analysis');}
+    function getOrCreate(target){const k=key(target);if(!records.has(k))records.set(k,learning.get(k)||{...target,key:k,translation:'',audio:false,analysis:null,segment:null});return records.get(k);}
+    function scrollToTarget(target){const range=targetRange(target),vp=main.querySelector('.page-viewport');if(!range||!vp)return;const rect=range.getBoundingClientRect(),box=vp.getBoundingClientRect();vp.scrollBy({top:vertical?0:rect.top-box.top+(rect.height-box.height)/2,left:vertical?rect.left-box.left+(rect.width-box.width)/2:0,behavior:'instant'});positionReader(false);}
+    function perform(type,target){
+      const k=key(target),existing=records.get(k);if(type==='audio'&&existing&&existing.audio){playingKey=playingKey===k?null:k;refreshResult();if(playingKey)setTimeout(()=>{if(playingKey===k){playingKey=null;refreshResult();}},2200);return;}
+      if(type==='translate'&&existing&&existing.translation){refreshResult();return;}const task=type+':'+k;if(pending.has(task))return;pending.set(task,true);refreshResult();
+      setTimeout(()=>{const r=getOrCreate(target);if(type==='translate')r.translation=target.start===0&&target.end===sentences[target.sid].length?translations[target.sid]:'此处会呈现所选文字的译文。';else r.audio=true;pending.delete(task);refreshResult();notify(type==='translate'?'译文已保存':'音频已保存');},850);
+    }
+    function refreshResult(){if(view==='reader')updateReader();else if(view==='book'){const input=main.querySelector('input[type="search"]'),focused=document.activeElement===input,pos=input&&input.selectionStart;renderBook();if(focused){const newInput=main.querySelector('input[type="search"]');newInput.focus();if(newInput.type!=='search')newInput.setSelectionRange(pos,pos);}}else{syncEditor();renderAnalysis();}}
+    root.addEventListener('mousedown',e=>{if(e.target.closest('.selection-menu'))e.preventDefault();});
+    root.addEventListener('click',e=>{
+      const b=e.target.closest('[data-act]');if(!b||!root.contains(b)){if(view==='reader'&&!e.target.closest('.result-card')&&!e.target.closest('.selection-menu')&&!window.getSelection()?.toString()){cardOpen=false;updateReader();}return;}
+      const act=b.dataset.act,k=b.dataset.key||activeKey;
+      if(act==='book'||act==='records'){tab='records';detailOpen=false;if(!records.has(activeKey))activeKey=records.keys().next().value;navigate('book');}
+      else if(act==='tab-records'||act==='tab-analyses'){tab=act==='tab-records'?'records':'analyses';renderBook();}
+      else if(act==='horizontal'||act==='vertical'){saveReaderPosition();vertical=act==='vertical';readerScroll={top:0,left:0};renderReader();}
+      else if(act==='toggle-marks'){saveReaderPosition();marks=!marks;renderReader();}
+      else if(act==='close-card'){cardOpen=false;groupKeys=null;updateReader();}
+      else if(act==='marker'){chooseRecord(k,true);}
+      else if(act==='marker-group'){groupKeys=b.dataset.keys.split('|');const r=records.get(groupKeys[0]);activeTarget={sid:r.sid,start:r.start,end:r.end,text:r.text};cardOpen=true;updateReader();}
+      else if(act==='record'){chooseRecord(k);}
+      else if(act==='back-list'){detailOpen=false;renderBook();}
+      else if(act==='back-source'){const r=records.get(k);activeKey=k;activeTarget={sid:r.sid,start:r.start,end:r.end,text:r.text};cardOpen=true;navigate('reader');requestAnimationFrame(()=>scrollToTarget(activeTarget));}
+      else if(act.startsWith('selection-')){const t=selectionTarget;if(!t)return;activeTarget={...t};activeKey=key(t);cardOpen=true;hideSelectionMenu();window.getSelection()?.removeAllRanges();if(act==='selection-analysis')startAnalysis(activeKey,true);else{updateReader();perform(act==='selection-audio'?'audio':'translate',{...t});}}
+      else if(act==='translate'||act==='audio'){const r=records.get(k);perform(act,r?{sid:r.sid,start:r.start,end:r.end,text:r.text}:{...activeTarget});}
+      else if(act==='edit-translation'){editingTranslation=k;translationDraft=translationDrafts.get(k)??records.get(k)?.translation??'';refreshResult();}
+      else if(act==='cancel-translation'){translationDrafts.delete(editingTranslation);editingTranslation=null;refreshResult();}
+      else if(act==='save-translation'){const el=main.querySelector('#fj-translation-edit'),r=records.get(editingTranslation);if(r&&el){if(!el.value.trim()){notify('译文不能为空');return;}r.translation=el.value.trim();translationDrafts.delete(editingTranslation);editingTranslation=null;refreshResult();notify('译文已更新');}}
+      else if(act==='analysis'||act==='new-analysis'){startAnalysis(k,act==='new-analysis');}
+      else if(act==='analysis-back'){editingAnalysis=null;navigate(analysisOrigin);}
+      else if(act==='edit-analysis'){startAnalysis(activeKey,true);}
+      else if(act==='preview-analysis'){syncEditor();analysisPreview=!analysisPreview;renderAnalysis();}
+      else if(act==='cancel-analysis'){const hadAnalysis=Boolean(current()?.analysis);analysisDrafts.delete(activeKey);editingAnalysis=null;if(hadAnalysis)renderAnalysis();else navigate(analysisOrigin);}
+      else if(act==='save-analysis'){syncEditor();if(!editingAnalysis.body.trim()){notify('请先写下解析正文');return;}const targetKey=key(activeTarget);const r=getOrCreate(activeTarget);learning.set(targetKey,r);r.segment=r.segment||'segment-'+r.key;r.analysis={id:r.analysis?r.analysis.id:'analysis-'+r.key,title:editingAnalysis.title.trim(),body:editingAnalysis.body.trim(),revision:r.analysis?r.analysis.revision+1:1};activeKey=r.key;analysisDrafts.delete(activeKey);editingAnalysis=null;renderAnalysis();notify('解析已保存');}
+    });
+    root.addEventListener('input',e=>{if(e.target.matches('input[type="search"]')){search=e.target.value;const items=main.querySelector('.record-items');items.innerHTML=[...records.values()].reverse().filter(r=>(r.text+' '+r.translation).toLowerCase().includes(search.toLowerCase())).map(rowHTML).join('')||'<div class="empty">没有找到相关记录</div>';icons();}else if(e.target.id==='fj-translation-edit'){translationDraft=e.target.value;translationDrafts.set(editingTranslation,translationDraft);}else if(e.target.id==='fj-analysis-title'||e.target.id==='fj-analysis-body')syncEditor();});
+    root.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(view==='reader'){const menu=main.querySelector('.selection-menu');if(menu&&!menu.hidden){hideSelectionMenu();return;}if(editingTranslation){editingTranslation=null;updateReader();return;}cardOpen=false;updateReader();}else if(editingTranslation){editingTranslation=null;refreshResult();}});
+    const focusStyle=document.createElement('style');root.appendChild(focusStyle);
+    function updateFocusColors(){const probe=document.createElement('span');probe.hidden=true;probe.style.backgroundColor='var(--fj-selection)';probe.style.color='var(--fj-ink)';root.appendChild(probe);const colors=getComputedStyle(probe);focusStyle.textContent='#folio-reading-aids ::highlight(folio-demo-focus){background:'+colors.backgroundColor+';color:'+colors.color+'}';probe.remove();}
+    updateFocusColors();matchMedia('(prefers-color-scheme: dark)').addEventListener('change',updateFocusColors);
+    render();icons();
+  })();
+  </script>
+</div>
