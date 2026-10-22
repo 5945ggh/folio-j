@@ -3,6 +3,7 @@
 > 状态核对：2026-10-22，材料独立删除以 `67f1af9` 为代码起点，随本次提交交付。文本与资料调整以 `85d8725` 为代码起点，S0／B1 分别提交为 `4e705a1`／`bb900ce`，B2 提交为 `3f6491f`，A1 提交为 `13de4e9`，A2 提交为 `367f4f4`；A 线完成，C 暂不实施。当前增量迁移及已有能力的证据见下表和历史记录。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
+> 阅读跳转深化以 `efdcf61` 为起点，工程及浏览器验收已通过，随本次提交交付；证据见[本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)。
 
 当前能力与缺口见下表，产品边界见 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护。
 
@@ -27,6 +28,7 @@
 | 跳转链与继续阅读 | 已提交、工程验收通过 | 连续查阅保留首次原点，持续阅读后下一次跳转更新原点；旧返回入口保留，失败请求不消耗阅读信号 | [跳转链验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-跳转链与继续阅读) |
 | 章节位置记忆 | 已提交、工程与浏览器验收通过 | 各章最后位置持久化、目录恢复、当前章不跳与回到章首；保留恢复锚点，内容末端进入可读区域即 100%、回看可下降；图文混排按图片前正文显示进度，空白尾片段不阻断采样 | [章节位置验收](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)、[章末进度与真实书复核](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-真实书复核与口径调整)、[提交前复核](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-提交前复核) |
 | 底部相邻章节导航 | 已提交、工程与浏览器验收通过 | 上一章／目录／下一章、首末边界与加载锁；复用章节记忆和返回链，保留工具面板与查询；窄屏进度移到顶部；章末入口未增加 | [相邻切章验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-底部相邻章节导航)、[提交复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
+| 阅读跳转协调 | 已提交，工程与浏览器验收通过 | 导航意图、目标校验、原点与相邻锁集中到同一 module；请求与正文呈现分别隔离迟到结果，返回提示显示原点章节与章内进度 | [本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md) |
 | 全量注音 | 已提交、工程验收通过 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](archived/full-ruby/ACCEPTANCE.md) |
 | EPUB 学习衔接 | 未实现 | 选区创建或选用 Segment、材料对话与消息引用、从材料讨论形成讲解按后续切片推进 | [EPUB 阶段安排](epub-reading/README.md) |
 | 文本分析与书籍统计 | 工程与浏览器验收通过 | 普通文本输入、完整分析资产读取与 EPUB 章节适配分开；详情独立展示词次／词种／汉字及覆盖曲线，有界缓存且不触发阅读打开或分词准备 | [B1 验收](text-study/B1_ACCEPTANCE.md)、[B2 验收](text-study/B2_ACCEPTANCE.md) |

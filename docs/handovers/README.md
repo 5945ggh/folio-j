@@ -29,6 +29,7 @@
 - [开发期迁移基线整理验收](archived/DATABASE_BASELINE_ACCEPTANCE.md)：单初始基线、历史升级测试清理、业务回归与现用测试库数据保留证据。
 
 - [阅读恢复、注音偏好与来源导航重构验收](archived/READER_STATE_REFACTOR_ACCEPTANCE.md)：集中三个生产协调入口，记录行为基线、独立审查、离线测试与浏览器验收。
+- [阅读跳转深化验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)：集中导航意图、原点与相邻锁，记录表征、interface 回归、独立审查及隔离浏览器验证；提交状态见实施基线。
 
 - [编辑规则与讨论状态重构验收](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)：统一审核与保存、集中讨论推进、删除不可达 Job 代码；记录回归、CR 与离线浏览器验收。
 

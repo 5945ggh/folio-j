@@ -34,11 +34,6 @@ import {
 	usageKey,
 } from "./api";
 import {
-	adjacentChapters,
-	ChapterSwitch,
-	chapterDestination,
-} from "./chapter-navigation";
-import {
 	htmlEscape,
 	imagePrecedesText,
 	imageTextOffset,
@@ -82,6 +77,10 @@ import { ReaderIcon, ReaderPanel, ReaderSettings } from "./ReaderControls";
 import { ReaderGalleryPanel, ReaderNavigationPanel } from "./ReaderPanels";
 import { ReaderLayout } from "./reader-layout";
 import {
+	ReaderNavigation,
+	type ReaderNavigationCompletion,
+} from "./reader-navigation";
+import {
 	closeReaderPanel,
 	EMPTY_READER_PANELS,
 	type ReaderPanelKind,
@@ -89,13 +88,7 @@ import {
 	type ReaderPanelsState,
 	selectReaderPanel,
 } from "./reader-panel-logic";
-import {
-	atChapterStart,
-	type JumpOriginPolicy,
-	JumpReadingSession,
-	jumpOrigin,
-} from "./return-origin";
-import { type PendingReturn, returnWasLocated } from "./return-recovery";
+import { JumpReadingSession, returnOriginLabel } from "./return-origin";
 import { applyAutomaticRuby } from "./ruby";
 import { readerWheelScroll } from "./scroll";
 import { freshestUsage, OpenAction } from "./usage";
@@ -279,7 +272,6 @@ function Reader({
 	);
 	const theme = resolveReaderTheme(ui.theme, systemDark);
 	const [storageFailed, setStorageFailed] = useState(false);
-	const [origin, setOrigin] = useState<Position | null>(null);
 	const jumpReading = useRef(new JumpReadingSession());
 	const [initialImage, setInitialImage] = useState<
 		| {
@@ -291,15 +283,19 @@ function Reader({
 		| undefined
 	>();
 	const galleryTicket = useRef(0);
-	const [navigationError, setNavigationError] = useState<Error | null>(null);
-	const navigationTicket = useRef(0);
-	const chapterSwitch = useRef(new ChapterSwitch());
-	const [chapterSwitchBusy, setChapterSwitchBusy] = useState(false);
-	const [readyGeneration, setReadyGeneration] = useState<number | null>(null);
-	const beginNavigation = useCallback(() => {
-		if (chapterSwitch.current.cancel()) setChapterSwitchBusy(false);
-		return ++navigationTicket.current;
-	}, []);
+	const navigation = useRef(new ReaderNavigation(jumpReading.current));
+	const [navigationState, setNavigationState] = useState(
+		navigation.current.state,
+	);
+	const {
+		origin,
+		error: navigationError,
+		busy: chapterSwitchBusy,
+	} = navigationState;
+	const invalidateNavigation = useCallback(
+		() => navigation.current.invalidate(),
+		[],
+	);
 	const viewerEscape = useRef<(() => void) | null>(null);
 	const registerViewerEscape = useCallback((close: (() => void) | null) => {
 		viewerEscape.current = close;
@@ -338,25 +334,25 @@ function Reader({
 	const selectPanel = useCallback(
 		(next: ReaderPanelKind, toggle = false) => {
 			jumpReading.current.pause();
-			beginNavigation();
-			setNavigationError(null);
+			invalidateNavigation();
+			navigation.current.dismissError();
 			setPanels((current) =>
 				selectReaderPanel(current, next, toggle, latest.current.compactPanels),
 			);
 			controller.current?.show();
 		},
-		[beginNavigation],
+		[invalidateNavigation],
 	);
 	const closePanel = useCallback(
 		(side?: ReaderPanelSide, invalidate = true) => {
 			jumpReading.current.pause();
-			if (invalidate) beginNavigation();
+			if (invalidate) invalidateNavigation();
 			setPanels((current) =>
 				side ? closeReaderPanel(current, side) : EMPTY_READER_PANELS,
 			);
 			controller.current?.show();
 		},
-		[beginNavigation],
+		[invalidateNavigation],
 	);
 	useEffect(() => {
 		const escapeViewer = (event: KeyboardEvent) => {
@@ -460,7 +456,10 @@ function Reader({
 		controller.current?.refresh();
 	}, [panels, presented]);
 	const [surfaceRevision, setSurfaceRevision] = useState(0);
-	const pendingBeginning = useRef<number | null>(null);
+	const presentation = useRef<{
+		beginning: boolean;
+		complete: (result: ReaderNavigationCompletion) => void;
+	} | null>(null);
 	const [layoutRevision, setLayoutRevision] = useState(0);
 	const [progress, setProgress] = useState<number | null>(
 		book.reading_position?.progress ?? null,
@@ -502,21 +501,11 @@ function Reader({
 	});
 	const viewportReady =
 		chapter.isSuccess && (bookUi.rubyScope !== "all" || readings.isSuccess);
-	useEffect(() => {
-		if (
-			error ||
-			chapter.isError ||
-			(bookUi.rubyScope === "all" && readings.isError)
-		) {
-			if (chapterSwitch.current.cancel()) setChapterSwitchBusy(false);
-		}
-	}, [error, chapter.isError, bookUi.rubyScope, readings.isError]);
 	const container = useRef<HTMLElement>(null);
 	const frames = useRef(new Map<number, Frame>());
 	const elements = useRef(new Map<number, HTMLIFrameElement>());
 	const layout = useRef(new ReaderLayout<Position>(book.reading_position));
 	const generation = useRef(0);
-	const pendingReturn = useRef<PendingReturn | null>(null);
 	const alive = useRef(true);
 	const queue = useRef<PositionQueue<Position> | null>(null);
 	if (!queue.current)
@@ -667,7 +656,7 @@ function Reader({
 			!root ||
 			document.hidden ||
 			!document.hasFocus() ||
-			pendingReturn.current ||
+			navigation.current.state.returning ||
 			!layout.current.canSample(viewportSize(root))
 		) {
 			jumpReading.current.pause();
@@ -770,8 +759,9 @@ function Reader({
 			jumpReading.current.pause();
 			let located = false;
 			const vertical = settings.writing_mode === "vertical-rl";
-			const beginningGeneration = pendingBeginning.current;
-			if (beginningGeneration === generation.current) {
+			const receipt = presentation.current;
+			let navigationFailure: Error | undefined;
+			if (receipt?.beginning) {
 				// A chapter may start with images or invisible whitespace before its first text.
 				root.scrollLeft = 0;
 				root.scrollTop = 0;
@@ -806,8 +796,8 @@ function Reader({
 					} catch {
 						setStatus("已恢复到附近位置");
 						if (highlight.current)
-							setNavigationError(
-								new Error("无法精确定位搜索命中，已保留附近正文。"),
+							navigationFailure = new Error(
+								"无法精确定位搜索命中，已保留附近正文。",
 							);
 					}
 					if (rect && (rect.width > 0 || rect.height > 0)) {
@@ -868,31 +858,16 @@ function Reader({
 					}
 				}
 			} catch (failure) {
-				setNavigationError(
-					failure instanceof Error ? failure : new Error(String(failure)),
-				);
+				navigationFailure =
+					failure instanceof Error ? failure : new Error(String(failure));
 			}
 
 			return () => {
-				if (
-					beginningGeneration === generation.current &&
-					pendingBeginning.current === beginningGeneration
-				)
-					pendingBeginning.current = null;
-				const returning = pendingReturn.current;
-				if (returning?.generation === generation.current) {
-					pendingReturn.current = null;
-					if (returnWasLocated(returning, generation.current, anchor, located))
-						setOrigin(null);
-					else
-						setNavigationError(
-							new Error("无法返回跳转前的位置，已保留返回点，请重试。"),
-						);
+				if (receipt) {
+					receipt.beginning = false;
+					receipt.complete({ anchor, located, error: navigationFailure });
 				}
 				setPresented(true);
-				setReadyGeneration(generation.current);
-				if (chapterSwitch.current.finish(generation.current))
-					setChapterSwitchBusy(false);
 				observe();
 			};
 		},
@@ -913,7 +888,6 @@ function Reader({
 			: () => {};
 		return () => {
 			alive.current = false;
-			navigationTicket.current++;
 			for (const frame of frames.current.values()) {
 				frame.cleanup();
 				frame.presentationCleanup();
@@ -1092,165 +1066,96 @@ function Reader({
 			window.removeEventListener("resize", resize);
 		};
 	}, [reflowFrames, surfaceRevision, viewportReady]);
-	const navigateTo = async (
-		target: Position,
-		mark?: { start: number; end: number },
-		returning = false,
-		requestTicket?: number,
-		side?: ReaderPanelSide | null,
-		options?: { origin: JumpOriginPolicy; beginning: boolean },
-	) => {
-		const ticket = requestTicket ?? beginNavigation();
-		pendingReturn.current = null;
-		setNavigationError(null);
-		try {
-			if (target.version_id !== book.version_id)
-				throw new Error("原位置版本已不可用。");
-			const data = await client.fetchQuery({
-				queryKey: materialKeys.chapter(book.id, target.chapter_id),
-				queryFn: () => getChapter(book.id, target.chapter_id),
-			});
-			if (ticket !== navigationTicket.current || !alive.current) return false;
-			const part = data.parts[target.part_index];
-			if (
-				!part ||
-				part.resource_id !== target.resource_id ||
-				(target.kind === "text" &&
-					((target.offset ?? -1) < part.start ||
-						(target.offset ?? -1) > part.end)) ||
-				(target.kind === "image" &&
-					!part.html.includes(`data-epub-image="${target.image_id}"`))
+	useLayoutEffect(() => {
+		navigation.current.bind({
+			versionId: book.version_id,
+			chapterId,
+			chapters: book.chapters,
+			settings,
+			unavailable:
+				!!error ||
+				chapter.isError ||
+				(bookUi.rubyScope === "all" && readings.isError),
+			remembered: (id) => chapterPositions.get(id)?.anchor,
+			presentedAnchor: () => layout.current.presentedAnchor(capture),
+			progressFor: (anchor) => {
+				const data = chapter.data;
+				if (data?.id !== anchor.chapter_id)
+					return chapterPositions.get(anchor.chapter_id)?.progress ?? null;
+				return chapterProgress(
+					data.parts,
+					data.resources,
+					anchor,
+					frames.current
+						.get(anchor.part_index)
+						?.imageOffsets.get(anchor.image_id ?? -1),
+				);
+			},
+			atBeginning: () => {
+				const root = container.current;
+				if (!root || !layout.current.canSample(viewportSize(root)))
+					return false;
+				const offset =
+					latest.current.settings.writing_mode === "vertical-rl"
+						? root.scrollLeft
+						: root.scrollTop;
+				return Number.isFinite(offset) && Math.abs(offset) <= 1;
+			},
+			loadChapter: (id) =>
+				client.fetchQuery({
+					queryKey: materialKeys.chapter(book.id, id),
+					queryFn: () => getChapter(book.id, id),
+				}),
+			saveDeparture: (anchor) => {
+				queue.current?.enqueue(anchor);
+			},
+			present: (destination, complete) => {
+				presentation.current = {
+					beginning: destination?.beginning ?? false,
+					complete,
+				};
+				if (!destination) {
+					layout.current.setAnchor(layout.current.anchor(capture));
+					return;
+				}
+				const { target, mark } = destination;
+				layout.current.setAnchor(target);
+				highlight.current = mark
+					? {
+							chapterId: target.chapter_id,
+							resourceId: target.resource_id,
+							partIndex: target.part_index,
+							...mark,
+						}
+					: null;
+				generation.current++;
+				layout.current.invalidateSurface();
+				for (const frame of frames.current.values()) {
+					frame.cleanup();
+					frame.presentationCleanup();
+				}
+				frames.current.clear();
+				setChapterId(target.chapter_id);
+				setSurfaceRevision((value) => value + 1);
+				setProgress(null);
+			},
+			closePanels: (side) => closePanel(side, false),
+			changed: setNavigationState,
+		});
+	});
+	useLayoutEffect(() => () => navigation.current.suspend(), []);
+	const adjacent = {
+		previous: navigationState.previous,
+		next: navigationState.next,
+	};
+	const chapterSwitchDisabled = navigationState.adjacentDisabled;
+	const returnLabel = origin
+		? returnOriginLabel(
+				book.chapters.find((item) => item.id === origin.chapter_id)?.title ??
+					"原章节",
+				navigationState.originProgress,
 			)
-				throw new Error("无法定位到原文位置，请重新打开目录或重试。");
-			const last = layout.current.presentedAnchor(capture);
-			const policy = options?.origin ?? "preserve";
-			const replaceOrigin = jumpReading.current.shouldReplace && last !== null;
-			const root = container.current;
-			const beginningPresented = options?.beginning
-				? !!root &&
-					atChapterStart(
-						settings.writing_mode === "vertical-rl"
-							? root.scrollLeft
-							: root.scrollTop,
-						layout.current.canSample(viewportSize(root)),
-					)
-				: undefined;
-			if (
-				!returning &&
-				!jumpOrigin(origin, last, target, policy, beginningPresented).jump
-			) {
-				if (side !== null) closePanel(side, false);
-				return false;
-			}
-			if (last) queue.current?.enqueue(last);
-			if (!returning)
-				setOrigin(
-					(previous) =>
-						jumpOrigin(
-							replaceOrigin ? null : previous,
-							last,
-							target,
-							policy,
-							beginningPresented,
-						).origin,
-				);
-			jumpReading.current.reset();
-			layout.current.cancelSave();
-			layout.current.setAnchor({
-				...target,
-				settings: latest.current.settings,
-			});
-			highlight.current = mark
-				? {
-						chapterId: target.chapter_id,
-						resourceId: target.resource_id,
-						partIndex: target.part_index,
-						...mark,
-					}
-				: null;
-			generation.current++;
-			chapterSwitch.current.accept(ticket, generation.current);
-			pendingBeginning.current = options?.beginning ? generation.current : null;
-			pendingReturn.current = returning
-				? { generation: generation.current, target }
-				: null;
-			layout.current.invalidateSurface();
-			for (const frame of frames.current.values()) {
-				frame.cleanup();
-				frame.presentationCleanup();
-			}
-			frames.current.clear();
-			setChapterId(target.chapter_id);
-			setSurfaceRevision((value) => value + 1);
-			setProgress(null);
-			if (side !== null) closePanel(side, false);
-			return true;
-		} catch (failure) {
-			if (ticket === navigationTicket.current && alive.current)
-				setNavigationError(
-					failure instanceof Error ? failure : new Error(String(failure)),
-				);
-			return false;
-		}
-	};
-	const choose = async (
-		id: string,
-		beginning = false,
-		side: ReaderPanelSide | null = "left",
-		requestTicket?: number,
-	) => {
-		if (id === chapterId && !beginning) {
-			beginNavigation();
-			if (side !== null) closePanel(side, false);
-			return false;
-		}
-		const ticket = requestTicket ?? beginNavigation();
-		setNavigationError(null);
-		try {
-			const data = await client.fetchQuery({
-				queryKey: materialKeys.chapter(book.id, id),
-				queryFn: () => getChapter(book.id, id),
-			});
-			if (ticket !== navigationTicket.current || !alive.current) return false;
-			const destination = chapterDestination(
-				data,
-				chapterPositions.get(id)?.anchor,
-				book.version_id,
-				latest.current.settings,
-				beginning,
-			);
-			return await navigateTo(
-				destination.target,
-				undefined,
-				false,
-				ticket,
-				side,
-				{
-					origin: beginning ? "replace" : "preserve",
-					beginning: destination.beginning,
-				},
-			);
-		} catch (failure) {
-			if (ticket !== navigationTicket.current || !alive.current) return false;
-			setNavigationError(
-				failure instanceof Error ? failure : new Error(String(failure)),
-			);
-			return false;
-		}
-	};
-	const adjacent = adjacentChapters(book.chapters, chapterId);
-	const chapterSwitchDisabled =
-		chapterSwitchBusy || readyGeneration !== generation.current || !!error;
-	const stepChapter = async (direction: "previous" | "next") => {
-		const target = adjacent[direction];
-		if (!target || chapterSwitchDisabled || chapterSwitch.current.busy) return;
-		const ticket = beginNavigation();
-		chapterSwitch.current.begin(ticket);
-		setChapterSwitchBusy(true);
-		const accepted = await choose(target.id, false, null, ticket);
-		if (!accepted && chapterSwitch.current.cancel(ticket))
-			setChapterSwitchBusy(false);
-	};
+		: undefined;
 	const readKey = useCallback(
 		(event: KeyboardEvent) => {
 			const target = event.target as Element | null;
@@ -1533,7 +1438,10 @@ function Reader({
 					</button>
 				)}
 				{navigationError && (
-					<button type="button" onClick={() => setNavigationError(null)}>
+					<button
+						type="button"
+						onClick={() => navigation.current.dismissError()}
+					>
 						关闭定位提示
 					</button>
 				)}
@@ -1620,9 +1528,12 @@ function Reader({
 					{origin && (
 						<button
 							type="button"
-							aria-label="返回跳转前"
-							data-tooltip="返回跳转前"
-							onClick={() => void navigateTo(origin, undefined, true)}
+							className="reader-return-origin"
+							aria-label={returnLabel}
+							data-tooltip={returnLabel}
+							onClick={() =>
+								void navigation.current.navigate({ type: "return" })
+							}
 						>
 							↶
 						</button>
@@ -1641,7 +1552,12 @@ function Reader({
 									: "已是第一章"
 							}
 							disabled={!adjacent.previous || chapterSwitchDisabled}
-							onClick={() => void stepChapter("previous")}
+							onClick={() =>
+								void navigation.current.navigate({
+									type: "adjacent",
+									direction: "previous",
+								})
+							}
 						>
 							<ReaderIcon name="previous" />
 						</button>
@@ -1664,7 +1580,12 @@ function Reader({
 									: "已是最后一章"
 							}
 							disabled={!adjacent.next || chapterSwitchDisabled}
-							onClick={() => void stepChapter("next")}
+							onClick={() =>
+								void navigation.current.navigate({
+									type: "adjacent",
+									direction: "next",
+								})
+							}
 						>
 							<ReaderIcon name="next" />
 						</button>
@@ -1753,22 +1674,29 @@ function Reader({
 							]),
 						)
 					}
-					onBeginning={() => void choose(chapterId, true)}
+					onBeginning={() =>
+						void navigation.current.navigate({ type: "beginning" }, "left")
+					}
 					closing={leftView.exiting}
 					inactive={
 						compactPanels && !!panels.right && panels.activeSide === "right"
 					}
 					tab={leftView.value}
 					onTab={(tab) => selectPanel(tab)}
-					onChoose={(id) => void choose(id)}
+					onChoose={(id) =>
+						void navigation.current.navigate({ type: "chapter", id }, "left")
+					}
 					settings={settings}
 					navigationError={navigationError}
 					onCancelNavigation={() => {
-						beginNavigation();
+						invalidateNavigation();
 					}}
 					onClose={() => closePanel("left")}
 					onNavigate={(target, mark) =>
-						void navigateTo(target, mark, false, undefined, "left")
+						void navigation.current.navigate(
+							{ type: "position", target, mark },
+							"left",
+						)
 					}
 				/>
 			)}
@@ -1787,11 +1715,14 @@ function Reader({
 					onViewerEscape={registerViewerEscape}
 					navigationError={navigationError}
 					onCancelNavigation={() => {
-						beginNavigation();
+						invalidateNavigation();
 					}}
 					onClose={() => closePanel("right")}
 					onNavigate={(target) =>
-						void navigateTo(target, undefined, false, undefined, "right")
+						void navigation.current.navigate(
+							{ type: "position", target },
+							"right",
+						)
 					}
 				/>
 			)}

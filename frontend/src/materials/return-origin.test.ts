@@ -1,118 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-	atChapterStart,
-	JumpReadingSession,
-	jumpOrigin,
-	samePosition,
-} from "./return-origin.ts";
+import { JumpReadingSession, returnOriginLabel } from "./return-origin.ts";
 
-const beginning = {
-	version_id: "v",
-	chapter_id: "current",
-	part_index: 0,
-	resource_id: "r",
-	kind: "text" as const,
-	offset: 0,
-	at_chapter_end: false,
-};
-const presented = { ...beginning, offset: 360 };
-const otherChapter = { ...beginning, chapter_id: "previous", offset: 80 };
-
-test("a chain of directory, search and image jumps keeps its first origin", () => {
-	const directory = jumpOrigin(null, presented, otherChapter, "preserve");
-	const search = jumpOrigin(
-		directory.origin,
-		otherChapter,
-		beginning,
-		"preserve",
-	);
-	const image = jumpOrigin(search.origin, beginning, otherChapter, "preserve");
-	assert.equal(directory.jump, true);
-	assert.deepEqual(image.origin, presented);
-	// Returning consumes the point only after successful restoration in the caller.
-	assert.equal(samePosition(image.origin, presented), true);
-	assert.deepEqual(
-		jumpOrigin(null, otherChapter, beginning, "preserve").origin,
-		otherChapter,
-	);
-});
-
-test("missing presented positions keep an existing return point", () => {
-	assert.deepEqual(jumpOrigin(presented, null, beginning, "preserve"), {
-		jump: true,
-		origin: presented,
-	});
-});
-
-test("chapter-start undo replaces a previous cross-chapter origin with the current presented position", () => {
-	const decision = jumpOrigin(otherChapter, presented, beginning, "replace");
-	assert.equal(decision.jump, true);
-	assert.deepEqual(decision.origin, presented);
-	assert.equal(decision.origin?.chapter_id, "current");
-	assert.equal(decision.origin?.offset, 360);
-	assert.deepEqual(
-		jumpOrigin(otherChapter, presented, beginning, "preserve").origin,
-		otherChapter,
-	);
-});
-test("an exact repeated chapter-start action preserves its undo point", () => {
-	assert.deepEqual(jumpOrigin(presented, beginning, beginning, "replace"), {
-		jump: false,
-		origin: presented,
-	});
-	// Positions that round to 0% still represent distinct anchors.
-	assert.equal(
-		jumpOrigin(presented, { ...beginning, offset: 1 }, beginning, "replace")
-			.jump,
-		true,
-	);
-	assert.equal(samePosition({ ...beginning, part_index: 1 }, beginning), false);
-	const image = {
-		...beginning,
-		kind: "image" as const,
-		image_id: 4,
-		image_progress: 0,
-	};
-	assert.equal(samePosition({ ...image, image_progress: 0.001 }, image), false);
-	assert.equal(samePosition({ ...image, image_id: 5 }, image), false);
-	assert.equal(
-		samePosition({ ...beginning, at_chapter_end: false }, beginning),
-		true,
-	);
-	assert.equal(
-		samePosition({ ...beginning, at_chapter_end: true }, beginning),
-		false,
-	);
-	assert.equal(samePosition({ ...image, at_chapter_end: true }, image), false);
-});
-
-test("a presented chapter start preserves undo despite invisible leading whitespace", () => {
-	assert.deepEqual(
-		jumpOrigin(
-			presented,
-			{ ...beginning, offset: 1 },
-			beginning,
-			"replace",
-			true,
-		),
-		{ jump: false, origin: presented },
-	);
-	assert.equal(atChapterStart(0, true), true);
-	assert.equal(atChapterStart(-0.5, true), true);
-	assert.equal(atChapterStart(0, false), false);
-	assert.equal(atChapterStart(29.5, true), false);
-	assert.equal(atChapterStart(Number.NaN, true), false);
-	// Text offset zero can be below an introductory image rather than at the physical start.
-	assert.equal(
-		jumpOrigin(presented, beginning, beginning, "replace", false).jump,
-		true,
-	);
-	// Being at another chapter's start does not suppress a cross-chapter jump.
-	assert.equal(
-		jumpOrigin(presented, otherChapter, beginning, "replace", true).jump,
-		true,
-	);
+test("return label names the destination and rounds its chapter progress", () => {
+	assert.equal(returnOriginLabel("第一章", 0.424), "返回“第一章 42%”");
+	assert.equal(returnOriginLabel("第一章", 0.426), "返回“第一章 43%”");
+	assert.equal(returnOriginLabel("第一章", 0), "返回“第一章 0%”");
+	assert.equal(returnOriginLabel("第一章", 1), "返回“第一章 100%”");
+	assert.equal(returnOriginLabel("挿絵", null), "返回“挿絵”");
 });
 
 function move(
@@ -284,25 +179,4 @@ test("normalized vertical and horizontal reading axes follow the same policy", (
 		move(session, readingOffset(1_000), 10_100);
 		assert.equal(session.shouldReplace, true);
 	}
-});
-
-test("confirmed reading replaces only the next accepted jump's origin", () => {
-	const session = new JumpReadingSession();
-	session.sample(0, 1_000, 0);
-	move(session, 500, 100);
-	move(session, 1_000, 10_100);
-	const next = jumpOrigin(
-		session.shouldReplace ? null : otherChapter,
-		presented,
-		beginning,
-		"preserve",
-	);
-	assert.deepEqual(next.origin, presented);
-	assert.equal(session.shouldReplace, true);
-	if (next.jump) session.reset();
-	assert.equal(session.shouldReplace, false);
-	assert.deepEqual(
-		jumpOrigin(next.origin, beginning, otherChapter, "preserve").origin,
-		presented,
-	);
 });
