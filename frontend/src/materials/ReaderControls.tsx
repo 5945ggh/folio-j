@@ -26,7 +26,8 @@ export function ReaderPanel({
 		const previous = document.activeElement;
 		const node = root.current;
 		const keydown = (event: KeyboardEvent) => {
-			if (event.key !== "Escape" || event.isComposing) return;
+			if (event.key !== "Escape" || event.isComposing || event.defaultPrevented)
+				return;
 			event.preventDefault();
 			event.stopPropagation();
 			closeRef.current();
@@ -257,16 +258,38 @@ export function ReaderSettings({
 					<input
 						type="checkbox"
 						aria-label="显示学习片段下划线"
-						checked={ui.marks.studySegments}
+						checked={ui.marks.studySegmentUnderlines}
 						onChange={(event) =>
 							onUi({
 								...ui,
-								marks: { ...ui.marks, studySegments: event.target.checked },
+								marks: {
+									...ui.marks,
+									studySegmentUnderlines: event.target.checked,
+								},
 							})
 						}
 					/>
 				</label>
-				<p>关闭后隐藏下划线及正文点击入口，已保存片段保持不变。</p>
+				<label className="reader-focus-label">
+					<span>
+						学习片段页边入口<small>在所有书籍中生效</small>
+					</span>
+					<input
+						type="checkbox"
+						aria-label="显示学习片段页边入口"
+						checked={ui.marks.studySegmentMargins}
+						onChange={(event) =>
+							onUi({
+								...ui,
+								marks: {
+									...ui.marks,
+									studySegmentMargins: event.target.checked,
+								},
+							})
+						}
+					/>
+				</label>
+				<p>页边空间不足时使用“本章片段”。两项独立生效，已有片段保持不变。</p>
 			</fieldset>
 			<label className="reader-focus-label">
 				<span>

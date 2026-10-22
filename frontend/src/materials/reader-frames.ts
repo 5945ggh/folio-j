@@ -102,11 +102,18 @@ export class ReaderFrames {
 		marks: readonly StudyMark[],
 		visible: boolean,
 		theme: "white" | "black",
+		margins = false,
 	): void {
-		this.study.setMarks(chapter, marks, visible, theme);
+		this.study.setMarks(chapter, marks, visible, theme, margins);
 	}
 	emphasizeStudyMark(segmentId: string | null): void {
 		this.study.emphasize(segmentId);
+	}
+	invalidateStudyGeometry(): void {
+		this.study.geometryChanged(false);
+	}
+	refreshStudyGeometry(): void {
+		this.study.refresh();
 	}
 	clearStudySelection(): void {
 		this.study.clearSelection();
@@ -425,6 +432,7 @@ export class ReaderFrames {
 				presentationCleanup,
 				rubyApplied: context.current().bookUi.rubyScope === "all",
 			});
+			resize();
 			studyCleanup = this.study.mount({
 				index,
 				doc,
@@ -434,7 +442,6 @@ export class ReaderFrames {
 				projection: () => this.freshProjection(index, data),
 				viewport: context.root(),
 			});
-			resize();
 			void Promise.all([
 				doc.fonts.ready,
 				...Array.from(doc.images).map((image) =>

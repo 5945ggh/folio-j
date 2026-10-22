@@ -111,7 +111,10 @@ export function OriginalCard({
 							<Field label="后文" value={segment.context_after} lang="ja" />
 							<Field label="译文" value={segment.translation} />
 							<Field label="听写" value={segment.transcription} lang="ja" />
-							<Field label="具体出处" value={segment.source_ref} />
+							<Field
+								label={segment.material_provenance ? "出处补充" : "出处说明"}
+								value={segment.source_ref}
+							/>
 							<Field label="个人管理备注" value={segment.note} />
 							<p className="segment-material-date">
 								{dateLabel(segment.created_at)} 保存

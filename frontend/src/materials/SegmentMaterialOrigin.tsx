@@ -23,6 +23,9 @@ export function SegmentMaterialOrigin({ segment }: { segment: Segment }) {
 	const failure = origin.isSuccess ? originFailure(origin.data) : null;
 	return (
 		<div className="segment-material-origin" aria-live="polite">
+			{origin.isSuccess && !origin.isFetching && origin.data.display && (
+				<p>材料出处：{origin.data.display}</p>
+			)}
 			{origin.isPending || origin.isFetching ? (
 				<p>正在核对材料出处…</p>
 			) : origin.isError ? (

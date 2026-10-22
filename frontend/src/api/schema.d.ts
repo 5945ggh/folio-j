@@ -2447,6 +2447,8 @@ export interface components {
             assembly_rule: string;
             /** Chapter Id */
             chapter_id?: string | null;
+            /** Display */
+            display?: string | null;
             material_provenance: components["schemas"]["MaterialProvenance"] | null;
             /** Parts */
             parts?: components["schemas"]["ProvenancePart"][];

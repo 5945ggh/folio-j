@@ -150,6 +150,7 @@ async def test_create_canonical_match_lock_and_restart(
         resolved = await client.get(url + "/material-provenance")
         assert resolved.status_code == 200, resolved.text
         assert resolved.json()["status"] == "resolved"
+        assert resolved.json()["display"] == "引用検証 · 同じ章 · 章内约 16%"
         assert resolved.json()["chapter_id"] == "c1"
         assert resolved.json()["assembly_rule"] == "concat-nfc-v1"
         assert [
@@ -398,6 +399,7 @@ async def test_deleted_material_history_is_retained_and_reimport_never_rebinds(
         resolution = await client.get(url + "/material-provenance")
         assert resolution.status_code == 200 and resolution.json()["status"] == "material_deleted"
         assert resolution.json()["parts"] == []
+        assert resolution.json()["display"] == "引用検証"
         assert (
             await client.post(url + "/material-provenance/select", json=reference)
         ).status_code in {404, 409}
@@ -475,6 +477,7 @@ async def test_unavailable_material_returns_explicit_status_and_preserves_text(
             "version_unavailable" if corruption == "version" else "snapshot_mismatch"
         )
         assert resolved.json()["parts"] == []
+        assert resolved.json()["display"] == "引用検証"
         assert reread.json()["material_provenance"] == saved["material_provenance"]
 
 
@@ -666,3 +669,191 @@ async def test_persisted_snapshot_is_checked_before_matching_or_selecting(
         assert matched.status_code == 200 and matched.json()["segments"] == []
         selected = await client.post(url + "/material-provenance/select", json=reference)
         assert selected.status_code == 409, selected.text
+
+
+@pytest.mark.parametrize(
+    ("texts", "spines", "target_part", "start", "expected"),
+    [
+        (["0123456789"], [0], 0, 0, "章 · 章内约 0%"),
+        (["0123456789"], [0], 0, 3, "章 · 章内约 30%"),
+        (["0123456789"], [0], 0, 9, "章 · 章内约 90%"),
+        (["𠮷甲乙"], [0], 0, 1, "章 · 章内约 33%"),
+        (["甲" * 101], [0], 0, 100, "章 · 章内约 99%"),
+        (["0123456789"], [0, 0], 1, 3, "章 · 章内约 65%"),
+        (["前か", "\u3099𠮷後"], [0, 1], 1, 1, "章 · 章内约 50%"),
+        (["前か", "\u3099𠮷後"], [0, 1], 1, 0, "章"),
+        (["前", "か\u0315", "\u3099後"], [0, 1, 2], 2, 0, "章"),
+        ([""], [0], 0, 0, "章"),
+    ],
+)
+def test_chapter_location_uses_whole_nfc_codepoints_and_occurrences(
+    texts: list[str], spines: list[int], target_part: int, start: int, expected: str
+) -> None:
+    base = compiled_provenance(b"")
+    resources = [
+        base.resources[0].model_copy(
+            update={
+                "id": f"r{index}",
+                "text": text,
+                "text_sha256": hashlib.sha256(text.encode()).hexdigest(),
+            }
+        )
+        for index, text in enumerate(texts)
+    ]
+    occurrences = [resources[index] for index in spines]
+    parts = [
+        base.chapters[0]
+        .parts[0]
+        .model_copy(
+            update={
+                "resource_id": resource.id,
+                "spine_index": index,
+                "start": 0,
+                "end": len(resource.text),
+            }
+        )
+        for index, resource in enumerate(occurrences)
+    ]
+    chapter = base.chapters[0].model_copy(update={"title": "章", "parts": parts})
+    book = base.model_copy(update={"resources": occurrences, "chapters": [chapter]})
+    target = parts[target_part]
+    projections = [
+        ProvenancePart(
+            range_index=0,
+            part_index=target_part,
+            resource_id=target.resource_id,
+            spine_index=target.spine_index,
+            start=start,
+            end=min(start + 1, target.end),
+        )
+    ]
+    original = book.model_dump()
+    assert provenance_service.chapter_location(book, chapter.id, projections) == expected
+    assert book.model_dump() == original
+
+
+def test_chapter_location_uses_part_slices_and_only_first_projection_start() -> None:
+    base = compiled_provenance(b"")
+    text = "0123456789"
+    resource = base.resources[0].model_copy(
+        update={"text": text, "text_sha256": hashlib.sha256(text.encode()).hexdigest()}
+    )
+    original = base.chapters[0].parts[0]
+    parts = [
+        original.model_copy(update={"start": 2, "end": 5}),
+        original.model_copy(update={"start": 5, "end": 8}),
+    ]
+    chapter = base.chapters[0].model_copy(update={"parts": parts})
+    book = base.model_copy(update={"resources": [resource], "chapters": [chapter]})
+    projected = [
+        ProvenancePart(
+            range_index=0,
+            part_index=index,
+            resource_id=resource.id,
+            spine_index=0,
+            start=start,
+            end=end,
+        )
+        for index, (start, end) in enumerate([(3, 5), (5, 7)])
+    ]
+    assert provenance_service.chapter_location(book, chapter.id, projected) == "同じ章 · 章内约 16%"
+
+
+@pytest.mark.asyncio
+async def test_resolved_nfc_seam_keeps_exact_location_but_omits_unrepresentable_percentage(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
+    async with api_client(tmp_path / "nfc-display.db") as client:
+        source_id, material = await setup_material(client)
+        created = await create_segment(client, source_id, provenance(material, span("r2", 1, 0, 1)))
+        assert created.status_code == 201, created.text
+        saved = created.json()
+        resolved = (await client.get(f"/api/segments/{saved['id']}/material-provenance")).json()
+        assert resolved["status"] == "resolved"
+        assert resolved["display"] == "引用検証 · 同じ章"
+        assert resolved["material_provenance"] == saved["material_provenance"]
+        assert resolved["parts"][0]["start"] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("material_title", "chapter_title", "expected"),
+    [
+        ("", "同じ章", "同じ章 · 章内约 16%"),
+        ("引用検証", "", "引用検証 · 章内约 16%"),
+        (" \t", " \t", "章内约 16%"),
+    ],
+)
+async def test_display_omits_empty_title_items(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    material_title: str,
+    chapter_title: str,
+    expected: str,
+) -> None:
+    def compile_titles(_data: bytes) -> CompiledBook:
+        book = compiled_provenance(b"")
+        return book.model_copy(
+            update={
+                "chapters": [
+                    book.chapters[0].model_copy(update={"title": chapter_title}),
+                    *book.chapters[1:],
+                ]
+            }
+        )
+
+    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compile_titles)
+    database = tmp_path / "empty-titles.db"
+    async with api_client(database) as client:
+        source_id, material = await setup_material(client)
+        created = await create_segment(client, source_id, provenance(material))
+        assert created.status_code == 201, created.text
+        saved = created.json()
+        with sqlite3.connect(database) as connection:
+            connection.execute(
+                "UPDATE materials SET title=? WHERE id=?", (material_title, material["id"])
+            )
+            connection.commit()
+        resolved = (await client.get(f"/api/segments/{saved['id']}/material-provenance")).json()
+        assert resolved["status"] == "resolved"
+        assert resolved["display"] == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mutation", ["rename", "material_source", "origin_source"])
+async def test_display_uses_current_name_and_never_exposes_foreign_material_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
+) -> None:
+    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
+    database = tmp_path / "display.db"
+    async with api_client(database) as client:
+        source_id, material = await setup_material(client)
+        created = await create_segment(client, source_id, provenance(material), source_ref="追記")
+        saved = created.json()
+        other = (await client.post("/api/sources", json={"title": "別の出典"})).json()["id"]
+    with sqlite3.connect(database) as connection:
+        if mutation == "rename":
+            connection.execute(
+                "UPDATE materials SET title='現在の題名' WHERE id=?", (material["id"],)
+            )
+        elif mutation == "material_source":
+            connection.execute(
+                "UPDATE materials SET source_id=? WHERE id=?", (other, material["id"])
+            )
+        else:
+            connection.execute(
+                "UPDATE segment_material_provenance SET source_id=? WHERE segment_id=?",
+                (other, saved["id"]),
+            )
+        connection.commit()
+    async with api_client(database) as client:
+        url = f"/api/segments/{saved['id']}"
+        resolved = (await client.get(url + "/material-provenance")).json()
+        assert resolved["status"] == ("resolved" if mutation == "rename" else "invalid_reference")
+        assert resolved["display"] == (
+            "現在の題名 · 同じ章 · 章内约 16%" if mutation == "rename" else None
+        )
+        reread = (await client.get(url)).json()
+        assert reread["material_provenance"] == saved["material_provenance"]
+        assert reread["source_ref"] == "追記"

@@ -276,6 +276,7 @@ export function StudySegmentPanel({
 					保存为学习片段
 				</h2>
 				<button
+					className="study-collapse"
 					type="button"
 					onClick={() => setCollapsed(!collapsed)}
 					aria-expanded={!collapsed}
@@ -284,13 +285,10 @@ export function StudySegmentPanel({
 				</button>
 			</header>
 			<div hidden={collapsed} className="study-segment-content">
-				<p className="study-source">所属来源：{sourceTitle}</p>
+				<p className="study-source">{sourceTitle}</p>
 				<blockquote lang="ja" className="study-target">
 					{targetText}
 				</blockquote>
-				<p className="study-hint">
-					目标已固定为此次选区。保存后可添加讲解或按需讨论。
-				</p>
 				{candidates.isPending && <p role="status">正在查找同一出处的片段…</p>}
 				{candidates.isError && (
 					<div>
@@ -303,7 +301,6 @@ export function StudySegmentPanel({
 				{!!candidates.data?.segments.length && (
 					<section className="study-matches">
 						<h3>同一出处的已有片段</h3>
-						<p className="study-hint">选用后保留该片段的已存语境。</p>
 						{candidates.data.segments.map((segment) => (
 							<button
 								key={segment.id}
@@ -318,23 +315,50 @@ export function StudySegmentPanel({
 					</section>
 				)}
 				<fieldset disabled={locked} className="study-context-fields">
-					<legend>新建片段的语境</legend>
-					<p className="study-hint">
-						自动摘录会整理边缘空白和连续空行，并按整理后的字数取文。
-					</p>
+					<legend>
+						<span>前后文</span>
+						<span className="study-optional">可选</span>
+						{prefilling && <span role="status">正在摘录…</span>}
+						<button
+							className="study-clear-all"
+							type="button"
+							disabled={locked || (!draft.before.value && !draft.after.value)}
+							onClick={() => {
+								edit("before", "");
+								edit("after", "");
+							}}
+						>
+							清空前后文
+						</button>
+					</legend>
 					{(["before", "after"] as const).map((side) => (
-						<details key={side}>
-							<summary>
-								{side === "before" ? "前文" : "后文"} ·{" "}
-								{draft[side].edited
-									? "用户已编辑"
-									: draft[side].automatic
-										? "自动摘录"
-										: "尚未填写"}
-								{draft[side].truncated ? " · 已截断" : ""}
-								<span className="study-context-preview" lang="ja">
-									{Array.from(draft[side].value).slice(0, 70).join("") ||
-										"（空）"}
+						<details key={side} className="study-context-side">
+							<summary
+								aria-labelledby={`${titleId}-${side}-label ${titleId}-${side}-status`}
+							>
+								<span className="study-context-label">
+									<span id={`${titleId}-${side}-label`}>
+										{side === "before" ? "前文" : "后文"}
+									</span>
+									<span
+										id={`${titleId}-${side}-status`}
+										className="study-context-status"
+									>
+										{draft[side].edited
+											? "已编辑"
+											: draft[side].automatic
+												? "自动摘录"
+												: "未添加"}
+										{draft[side].truncated ? " · 已截断" : ""}
+									</span>
+									<span className="study-disclosure-icon" aria-hidden="true" />
+								</span>
+								<span
+									className="study-context-preview"
+									lang="ja"
+									aria-hidden="true"
+								>
+									{draft[side].value || "（空）"}
 								</span>
 							</summary>
 							<label>
@@ -345,25 +369,22 @@ export function StudySegmentPanel({
 									onChange={(event) => edit(side, event.target.value)}
 								/>
 							</label>
-							<button type="button" onClick={() => edit(side, "")}>
+							<button
+								className="study-clear"
+								type="button"
+								onClick={() => edit(side, "")}
+							>
 								清空{side === "before" ? "前文" : "后文"}
 							</button>
 						</details>
 					))}
 					<details className="study-budget">
-						<summary>本次语境预算</summary>
+						<summary>
+							本次摘录设置
+							<span className="study-disclosure-icon" aria-hidden="true" />
+						</summary>
 						{budget ? (
 							<>
-								<label className="study-toggle">
-									<input
-										type="checkbox"
-										checked={budget.enabled}
-										onChange={(event) =>
-											setBudget({ ...budget, enabled: event.target.checked })
-										}
-									/>
-									自动预装语境
-								</label>
 								<div className="study-budget-grid">
 									{budgetFields.map(([key, label]) => (
 										<label key={key}>
@@ -384,15 +405,18 @@ export function StudySegmentPanel({
 										</label>
 									))}
 								</div>
-								<p className="study-hint">
-									每项 0–100,000。调整仅用于本草稿；点击重新取文后生效。
-								</p>
+								<button
+									className="study-refill"
+									type="button"
+									disabled={prefilling}
+									onClick={() => fill({ ...budget, enabled: true }, true)}
+								>
+									{prefilling ? "正在摘录…" : "按此范围重新摘录"}
+								</button>
 							</>
 						) : (
 							<p>
-								{defaults.isPending
-									? "正在读取默认预算…"
-									: "默认预算读取失败，仍可手动填写或保存目标。"}
+								{defaults.isPending ? "正在读取摘录设置…" : "摘录设置读取失败"}
 							</p>
 						)}
 					</details>
@@ -400,17 +424,10 @@ export function StudySegmentPanel({
 						<div>
 							<InlineError error={defaults.error} />
 							<button type="button" onClick={() => void defaults.refetch()}>
-								重试读取默认预算
+								重试读取摘录设置
 							</button>
 						</div>
 					)}
-					<button
-						type="button"
-						disabled={!budget || prefilling}
-						onClick={() => budget && fill(budget, true)}
-					>
-						{prefilling ? "正在取文…" : "重新按预算取文"}
-					</button>
 				</fieldset>
 				{prefillError && (
 					<div>
@@ -462,50 +479,46 @@ export function StudySegmentPanel({
 						保存结果尚未确认，内容已保留。再次核实使用同一个请求，不会重复创建。
 					</p>
 				)}
-				<footer>
-					<button
-						type="button"
-						disabled={save.isPending || select.isPending}
-						onClick={dismiss}
-					>
-						取消
-					</button>
-					<button
-						className="primary"
-						type="button"
-						disabled={
-							save.isPending ||
-							select.isPending ||
-							(!uncertain && Boolean(invalid))
-						}
-						onClick={() => {
-							if (submitting.current) return;
-							try {
-								const body = prepareStudyRequest(
-									pendingRequest.current,
-									snapshot.reference,
-									draftRef.current,
-									() => crypto.randomUUID(),
-								);
-								pendingRequest.current = body;
-								submitting.current = true;
-								setLocalError(null);
-								save.mutate(body);
-							} catch (error) {
-								setLocalError(
-									error instanceof Error ? error : new Error("无法保存片段。"),
-								);
-							}
-						}}
-					>
-						{save.isPending
-							? "保存中…"
-							: uncertain
-								? "核实本次保存"
-								: "新建学习片段"}
-					</button>
-				</footer>
 			</div>
+			<footer hidden={collapsed}>
+				<button
+					type="button"
+					disabled={save.isPending || select.isPending}
+					onClick={dismiss}
+				>
+					取消
+				</button>
+				<button
+					className="primary"
+					type="button"
+					disabled={
+						save.isPending ||
+						select.isPending ||
+						(!uncertain && Boolean(invalid))
+					}
+					onClick={() => {
+						if (submitting.current) return;
+						try {
+							const body = prepareStudyRequest(
+								pendingRequest.current,
+								snapshot.reference,
+								draftRef.current,
+								() => crypto.randomUUID(),
+							);
+							pendingRequest.current = body;
+							submitting.current = true;
+							setLocalError(null);
+							save.mutate(body);
+						} catch (error) {
+							setLocalError(
+								error instanceof Error ? error : new Error("无法保存片段。"),
+							);
+						}
+					}}
+				>
+					{save.isPending ? "保存中…" : uncertain ? "核实本次保存" : "保存片段"}
+				</button>
+			</footer>
 			{(confirmDiscard || blocker.state === "blocked") && (
 				<ConfirmDialog
 					titleId={`${titleId}-discard`}

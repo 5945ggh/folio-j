@@ -205,6 +205,8 @@ test("study underlines and emphasis leave search highlights and locator text int
 	assert.ok(h.highlights.has("folio-study-active"));
 	h.study.setMarks(h.chapter, [h.mark("a", 0, 3)], false, "black");
 	assert.equal(h.highlights.has("folio-study"), false);
+	assert.equal(h.highlights.has("folio-study-active"), true);
+	h.study.emphasize(null);
 	assert.equal(h.highlights.has("folio-study-active"), false);
 	assert.equal(h.highlights.has("folio-search"), true);
 	assert.equal(h.node.data, "甲乙丙丁");
@@ -215,28 +217,22 @@ test("study underlines and emphasis leave search highlights and locator text int
 	assert.equal(h.callbacks.marks.filter(Boolean).length, 0);
 });
 
-test("one exact click reports every overlapping segment with top-level screen anchor", (t) => {
+test("body clicks never open a study popup or clear active emphasis", (t) => {
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const h = harness();
 	h.study.setMarks(
 		h.chapter,
-		[h.mark("a", 0, 3), h.mark("b", 1, 4), h.mark("c", 2, 4)],
+		[h.mark("a", 0, 3), h.mark("b", 1, 4)],
 		true,
 		"white",
 	);
+	h.study.emphasize("a");
 	h.event("pointerdown");
 	h.event("pointerup");
 	h.event("click");
-	assert.equal(
-		h.callbacks.marks.filter(Boolean).length,
-		0,
-		"wait to disambiguate double click",
-	);
 	t.mock.timers.tick(300);
-	assert.deepEqual(h.callbacks.marks.filter(Boolean).at(-1), {
-		segmentIds: ["a", "b"],
-		anchor: { left: 110, right: 120, top: 200, bottom: 220 },
-	});
+	assert.equal(h.callbacks.marks.filter(Boolean).length, 0);
+	assert.ok(h.highlights.has("folio-study-active"));
 });
 
 for (const mode of [
@@ -312,18 +308,6 @@ test("chapter/frame invalidation cancels queued selection and click notification
 	assert.equal(h.callbacks.selection.filter(Boolean).length, 0);
 	h.detach();
 	assert.equal(h.highlights.has("folio-study"), false);
-});
-
-test("a collapsed caret selectionchange after a click does not swallow exact marker clicks", (t) => {
-	t.mock.timers.enable({ apis: ["setTimeout"] });
-	const h = harness();
-	h.study.setMarks(h.chapter, [h.mark("a", 0, 3)], true, "white");
-	h.event("pointerdown");
-	h.event("pointerup");
-	h.event("click");
-	h.event("selectionchange");
-	t.mock.timers.tick(300);
-	assert.equal(h.callbacks.marks.filter(Boolean).length, 1);
 });
 
 test("old chapter keyboard and scroll events cannot clear the new chapter toolbar", (t) => {
@@ -403,7 +387,7 @@ test("same chapter id in a different material/version never paints stale records
 	assert.equal(h.highlights.has("folio-study"), false);
 });
 
-test("dismissing a mark popover through scrolling or selection removes temporary emphasis", (t) => {
+test("scrolling and layout invalidate temporary emphasis; native body interaction preserves it", (t) => {
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const h = harness();
 	h.study.setMarks(h.chapter, [h.mark("a", 0, 4)], true, "white");
@@ -413,8 +397,31 @@ test("dismissing a mark popover through scrolling or selection removes temporary
 	assert.equal(h.highlights.has("folio-study-active"), false);
 	h.study.emphasize("a");
 	h.event("pointerdown");
-	assert.equal(h.highlights.has("folio-study-active"), false);
+	assert.equal(h.highlights.has("folio-study-active"), true);
 	h.study.emphasize("a");
 	h.study.geometryChanged();
+	assert.equal(h.highlights.has("folio-study-active"), false);
+});
+
+test("chapter candidates can emphasize exact ranges while persistent underlines are hidden", () => {
+	const h = harness();
+	h.study.setMarks(h.chapter, [h.mark("a", 0, 3)], false, "white");
+	h.study.emphasize("a");
+	assert.equal(h.highlights.has("folio-study"), false);
+	assert.ok(h.highlights.has("folio-study-active"));
+});
+
+test("layout invalidation removes old entry geometry and emphasis before a no-scroll refresh", () => {
+	const h = harness();
+	const entries: unknown[] = [];
+	h.study.bind({ ...h.binding, onEntries: (value) => entries.push(value) });
+	h.study.setMarks(h.chapter, [h.mark("a", 0, 4)], true, "white");
+	h.study.emphasize("a");
+	h.study.geometryChanged(false);
+	assert.deepEqual(entries.at(-1), []);
+	assert.equal(h.highlights.has("folio-study-active"), false);
+	assert.equal(h.highlights.has("folio-study"), false);
+	h.study.refresh();
+	assert.equal(h.highlights.has("folio-study"), true);
 	assert.equal(h.highlights.has("folio-study-active"), false);
 });

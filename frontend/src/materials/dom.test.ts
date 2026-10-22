@@ -4,6 +4,7 @@ import {
 	imagePrecedesText,
 	imageTextOffset,
 	readingContentEnd,
+	visibleContentRect,
 } from "./dom.ts";
 
 test("a leading image remains the first anchor across collapsed whitespace but not a preceding title", () => {
@@ -190,4 +191,36 @@ test("author overflow clipping limits text and image ends in both reading direct
 			}
 		}
 	}
+});
+
+test("study entry geometry rejects hidden and author-clipped ranges before screen placement", () => {
+	const rect = { left: 0, width: 50, bottom: 30, height: 20 } as DOMRect;
+	const parent = {
+		parentElement: null,
+		clientLeft: 0,
+		clientTop: 0,
+		clientWidth: 20,
+		clientHeight: 20,
+		getBoundingClientRect: () => ({ left: 0, top: 0 }),
+	} as unknown as Element;
+	let style = {
+		visibility: "hidden",
+		overflowX: "visible",
+		overflowY: "visible",
+	};
+	const doc = {
+		defaultView: { getComputedStyle: () => style },
+	} as unknown as Document;
+	assert.equal(visibleContentRect(doc, rect, parent), null);
+	style = { visibility: "visible", overflowX: "hidden", overflowY: "hidden" };
+	assert.deepEqual(visibleContentRect(doc, rect, parent), {
+		left: 0,
+		right: 20,
+		top: 10,
+		bottom: 20,
+	});
+	assert.equal(
+		visibleContentRect(doc, { ...rect, left: 30 } as DOMRect, parent),
+		null,
+	);
 });

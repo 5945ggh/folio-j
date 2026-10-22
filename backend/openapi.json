@@ -4038,6 +4038,17 @@
             ],
             "title": "Chapter Id"
           },
+          "display": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display"
+          },
           "material_provenance": {
             "anyOf": [
               {

@@ -1,9 +1,9 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-22，材料独立删除以 `67f1af9` 为代码起点，随本次提交交付。文本与资料调整以 `85d8725` 为代码起点，S0／B1 分别提交为 `4e705a1`／`bb900ce`，B2 提交为 `3f6491f`，A1 提交为 `13de4e9`，A2 提交为 `367f4f4`；A 线完成，C 暂不实施。当前增量迁移及已有能力的证据见下表和历史记录。
+> 状态核对：2026-10-22，材料独立删除已提交。文本与资料调整以 `85d8725` 为代码起点，S0／B1 分别提交为 `4e705a1`／`bb900ce`，B2 提交为 `3f6491f`，A1 提交为 `13de4e9`，A2 提交为 `367f4f4`；A 线完成；C1 已提交 `290a6a0`，C2 已提交 `7eaedbe` 并完成工程与浏览器验收；阅读标记交互已提交 `c389ca3`。后续阅读体验调整及验收已提交，结果和限制见[阅读体验记录](text-study/READING_EXPERIENCE_ACCEPTANCE.md)；保存表单优化见[独立验收](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md)。当前增量迁移及已有能力的证据见下表和历史记录。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
-> 阅读跳转深化以 `efdcf61` 为起点，工程及浏览器验收已通过，随本次提交交付；证据见[本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)。
+> 阅读跳转深化已提交，工程及浏览器验收已通过；证据见[本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)。
 
 当前能力与缺口见下表，产品边界见 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护。
 
@@ -11,7 +11,7 @@
 
 | 能力 | 状态 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- | --- |
-| 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理或讲解成功保存后锁定；旧资料由增量迁移补齐保护 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
+| 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定；旧资料由增量迁移补齐保护 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
 | 设置与模型接入 | 已提交、工程验收通过 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；顶部分类、统一编辑弹窗、分组原子保存、草稿保护与验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](archived/settings-refresh/ACCEPTANCE.md) |
 | 片段讨论 | 已提交 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
 | 持久讲解 | 已提交，工程与浏览器验收通过 | 直接编写／粘贴 Markdown 保存，统一记录用户保存；当前全文修订、冲突保稿与同请求核实；多份 Analysis、不可变 Revision／Section；AI 快捷生成、块编辑与审核沿用原流程 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
@@ -30,7 +30,7 @@
 | 底部相邻章节导航 | 已提交、工程与浏览器验收通过 | 上一章／目录／下一章、首末边界与加载锁；复用章节记忆和返回链，保留工具面板与查询；窄屏进度移到顶部；章末入口未增加 | [相邻切章验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-底部相邻章节导航)、[提交复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
 | 阅读跳转协调 | 已提交，工程与浏览器验收通过 | 导航意图、目标校验、原点与相邻锁集中到同一 module；请求与正文呈现分别隔离迟到结果，返回提示显示原点章节与章内进度 | [本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md) |
 | 全量注音 | 已提交、工程验收通过 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](archived/full-ruby/ACCEPTANCE.md) |
-| EPUB 学习衔接 | 未实现 | 选区创建或选用 Segment、材料对话与消息引用、从材料讨论形成讲解按后续切片推进 | [EPUB 阶段安排](epub-reading/README.md) |
+| EPUB 学习衔接 | C1／C2、阅读体验调整及保存表单优化已提交，工程与浏览器验收通过 | 原生选区保存与完整回读；自动语境保守整理后计预算，只读出处显示当前材料及逻辑章位置；被动细线、真实留白页边入口与固定完整本章列表，两项显示偏好独立；保存表单支持双侧清空与显式重新摘录；材料对话和 Occurrence 继续后置 | [C1 验收](text-study/C1_ACCEPTANCE.md)、[C2 验收](text-study/C2_ACCEPTANCE.md)、[原阅读标记验收](text-study/READER_MARKS_ACCEPTANCE.md)、[阅读体验记录](text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单验收](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
 | 文本分析与书籍统计 | 工程与浏览器验收通过 | 普通文本输入、完整分析资产读取与 EPUB 章节适配分开；详情独立展示词次／词种／汉字及覆盖曲线，有界缓存且不触发阅读打开或分词准备 | [B1 验收](text-study/B1_ACCEPTANCE.md)、[B2 验收](text-study/B2_ACCEPTANCE.md) |
 | 学习条目与积累库 | 未实现 | 尚无 Occurrence 持久化、候选工具、整理操作或积累库页面；生产字段、定位、anchor 与恢复契约待落实 | [PRD F5／F6](../PRD.md#f5-学习条目创建与整理)、[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md) |
 
@@ -59,6 +59,8 @@
 | 2026-10-19 书籍管理 | [工程、审查与浏览器验收](archived/book-management/ACCEPTANCE.md) |
 | 2026-10-20 独立讲解回看与人工保存 | [A1 独立回看](text-study/A1_ACCEPTANCE.md)、[A2 人工资料与增量保护](text-study/A2_ACCEPTANCE.md) |
 | 2026-10-20 开发期迁移基线整理 | [建库、业务回归与测试库数据保留验收](archived/DATABASE_BASELINE_ACCEPTANCE.md) |
+| 2026-10-22 阅读体验调整 | [自动语境、只读出处与正文外片段入口](text-study/READING_EXPERIENCE_ACCEPTANCE.md) |
+| 2026-10-22 保存表单优化 | [语境预览、主题、清空与显式摘录](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
 
 测试数量、包体积与提交隔离检查范围在原记录中维护；离线、真实模型与扩展验证各自对应其方法和观察。
 
@@ -66,11 +68,11 @@
 
 ## 2. 尚未落实的契约与目标差额
 
-以下汇总尚未落实的契约。2026-10-20 已批准[文本处理与学习资料实施计划](text-study/PLAN.md)，S0 与 A／B 线已完成对应验收，A 线工程与浏览器验收均通过；C 暂不推进。人工资料入口与共同原文保护已实现。EPUB 学习衔接按更新后的阶段安排推进，Occurrence 与积累库保留首轮目标。
+以下汇总尚未落实的契约。2026-10-20 已批准[文本处理与学习资料实施计划](text-study/PLAN.md)，S0 与 A／B 线已完成对应验收，A 线工程与浏览器验收均通过。2026-10-22 用户启动 C1 → C2，已先验收 C1，并在 C2 精确样例独立审查后完成实现与验收。人工资料入口与共同原文保护已实现。EPUB 学习衔接按更新后的阶段安排推进，Occurrence 与积累库保留首轮目标。
 
 | 缺口 | 负责规范 | 实施前需要明确或补齐的内容 |
 | --- | --- | --- |
-| EPUB 学习衔接 | [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)、[阶段安排](epub-reading/README.md) | 选区目标、语境和返回路径；材料线程、引用、权限与费用；从讨论整理讲解的目标及部分成功反馈 |
+| EPUB 学习衔接 | [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)、[阶段安排](epub-reading/README.md) | C1／C2 已落实选区目标、可配置语境预装与精确返回；材料线程、引用、权限与费用，以及从讨论整理讲解的目标及部分成功反馈继续在对应切片收口 |
 | Occurrence 生产契约 | [术语与知识表示](../GLOSSARY.md#4-知识表示与提取边界已对齐)、[PRD F5](../PRD.md#f5-学习条目创建与整理)、`TBD-02/03` | 带版本的字段与语义、类型边界、不连续 Surface／重复文字定位、anchor 规则和多个 Section 的确切引用；A0 不作为生产定案 |
 | 条目读取与候选写入 | [PRD F5](../PRD.md#f5-学习条目创建与整理)、[F9](../PRD.md#f9-agent-工具权限与审核)、[架构 4.4–4.5](../ARCHITECTURE.md#44-可选批量提取未来模块servicesextractionpy尚不存在) | 将已确认读取、候选创建／修改及用户整理边界落实为 API、工具和执行校验；不能从 Analysis 工具签名推断候选协议 |
 | 组合操作与恢复 | [PRD F8](../PRD.md#f8-状态与诊断)、`TBD-16/17`、[架构执行契约](../ARCHITECTURE.md#45-讨论与成果保存analysis已实现occurrence待设计) | Occurrence 的逐项结果、幂等身份、保存核实、局部修复与统一预算协调，以及混合方案的审核呈现；Analysis 已落实部分沿用现有机制 |

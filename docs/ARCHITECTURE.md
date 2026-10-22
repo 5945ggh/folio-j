@@ -65,21 +65,23 @@ flowchart LR
 
 设置按界面分组保存：`PATCH /api/settings` 接收完整的可选 profile 分组和字段可选的 defaults，仅校验、更新明确提交的字段；同次 profile 与 defaults 在一个事务提交，失败不部分写入。省略字段保留存量值，模型及预设身份显式 null 表示清除。既有 PUT 接口保留完整替换契约。验证历史按 Run 中保存的 Provider／登记模型身份及状态过滤后分页，不依赖配置仍然存在；只返回未软删的 verification Run。
 
-Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。独立材料删除保留 Material 身份墓碑并清理其托管副本及派生阅读数据，不改 Source、片段、讲解、讨论或任务。接受问答或成功保存持久讲解时，在对应短写事务中首次设置 `text_locked_at`；共同保护函数不提交事务、不递增片段记录 revision，也不重写已有锁定时间。原文编辑、来源／片段删除共用事务校验边界。
+Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。独立材料删除保留 Material 身份墓碑并清理其托管副本及派生阅读数据，不改 Source、片段、讲解、讨论或任务。接受问答、成功保存持久讲解或建立精确材料出处时，在对应短写事务中首次设置 `text_locked_at`；共同保护函数不提交事务、不递增片段记录 revision，也不重写已有锁定时间。原文编辑、来源／片段删除共用事务校验边界。
 
-数据库生命周期由应用 lifespan 管理，`0001_initial` 以固定 Alembic DDL 从空库建立当前 22 张业务表及其索引、约束和默认值，不依赖运行时 ORM 自动建表。A2 在其后增加 `0002_lock_analysis_segments` 数据迁移，为存在任意历史讲解且尚未锁定的片段补本次保护时间，包含软删讲解与片段；已有锁、正文、记录 revision、更新时间与历史资料不变。降级不解锁，避免解除迁移之后产生的依赖。`0003_material_soft_delete` 增加材料 deleted_at，将同 Source 同字节的唯一约束改为仅覆盖活跃材料的部分唯一索引；升级保留原材料与所有依赖记录。SQLite 表重建在专用迁移连接上、写事务开始前暂关外键检查，提交前检查全部外键，异常回滚后恢复检查；应用连接继续启用外键。存在已删除材料时拒绝降级，避免恢复其可见性或丢失重导记录。`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。旧开发期中间 revision 不再支持自动升级；已有完整旧 head 库须备份并验证 schema 等价后一次性对齐版本，操作边界见 [README](../README.md#本地开发)。历史阶段文档保留当时的迁移编号与回填事实。
+数据库生命周期由应用 lifespan 管理，`0001_initial` 以固定 Alembic DDL 从空库建立初始 22 张业务表及其索引、约束和默认值，不依赖运行时 ORM 自动建表。A2 在其后增加 `0002_lock_analysis_segments` 数据迁移，为存在任意历史讲解且尚未锁定的片段补本次保护时间，包含软删讲解与片段；已有锁、正文、记录 revision、更新时间与历史资料不变。降级不解锁，避免解除迁移之后产生的依赖。`0003_material_soft_delete` 增加材料 deleted_at，将同 Source 同字节的唯一约束改为仅覆盖活跃材料的部分唯一索引；升级保留原材料与所有依赖记录。SQLite 表重建在专用迁移连接上、写事务开始前暂关外键检查，提交前检查全部外键，异常回滚后恢复检查；应用连接继续启用外键。存在已删除材料时拒绝降级，避免恢复其可见性或丢失重导记录。`0004_segment_material_provenance` 只增加出处及创建凭据表，`0005_segment_context_settings` 增加独立语境设置表，现行共 24 张业务表；有新增资料时拒绝有损降级。两次迁移均不重写旧内容。`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。旧开发期中间 revision 不再支持自动升级；已有完整旧 head 库须备份并验证 schema 等价后一次性对齐版本，操作边界见 [README](../README.md#本地开发)。历史阶段文档保留当时的迁移编号与回填事实。
 
 ### 3.1 实体
 
-Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profile／Defaults 为单例整数主键，全书阅读位置、使用状态与封面以 `material_id` 为主键，各章位置以 `material_id` + `chapter_id` 为主键。下表概述已实现实体及 Occurrence 的未来草图，字段以 ORM 和生成 DTO 为准。模型位于 `models.py`、`settings_models.py`、`chat_models.py`、`analysis_models.py` 与 `material_models.py`。
+Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profile／Defaults 为单例整数主键，全书阅读位置、使用状态与封面以 `material_id` 为主键，各章位置以 `material_id` + `chapter_id` 为主键。下表概述已实现实体及 Occurrence 的未来草图，字段以 ORM 和生成 DTO 为准。模型位于 `models.py`、`settings_models.py`、`chat_models.py`、`analysis_models.py` 、`material_models.py` 与 `segment_context_models.py`。
 
 | 实体 | 关键字段／关系 | 说明 |
 |---|---|---|
 | 学习背景（`Profile`） | `native_language`、`explain_language`、`level_note` | 单用户学习背景 |
 | 讲解预设（`Style`） | `name`、`body_md` | 命名预设，默认选择由 `Defaults.style_id` 维护 |
 | `Defaults` | 三种用途的模型 ID、`style_id`、`permission_mode` | 新操作与新线程采用的默认设置 |
+| `SegmentContextSettings` | enabled、两侧句数／字符上限、revision | 独立单例，版本条件保存；读取缺省不写库 |
+| `SegmentMaterialProvenance` | segment_id、material_id、version_id、范围 payload、请求身份及请求依据 | 一对一精确出处与创建凭据，材料删除后保留 |
 | `Source` | `title`、`note`、来源描述 | 用户声明的来源范围；未来可容纳不同形式的输入，不等于文件或 Collection |
-| `Segment` | `source_id`、`text`、译文、语境、备注、听写、`source_ref`、`text_locked_at` | 学习目标原文入库做 NFC；`source_ref` 为自由文本出处，材料外键与分词数据待后续接入 |
+| `Segment` | `source_id`、`text`、译文、语境、备注、听写、`source_ref`、`text_locked_at` | 学习目标原文入库做 NFC；`source_ref` 为自由文本出处，精确材料出处经独立关系保存；片段分词数据待后续接入 |
 | `Material` | `source_id`、标题、源字节摘要、`version_id`、产物摘要、契约版本、原 EPUB 字节、压缩编译包 | 同 Source 同源字节复用身份；版本、正文与资源不可变，章节及 spine 资源在包内表达 |
 | `MaterialCustomCover` | `material_id`、媒体类型、用户上传图片字节 | 持久展示覆盖，独立于可重建封面缓存；信息修订由 Material 的 `metadata_revision` 管理 |
 | `ReadingPosition` | `material_id`、`revision`、位置与三项阅读设置的 `payload`、`updated_at` | 每材料最多一条，按条件版本更新；位置绑定具体版本、章、part 和资源 |
@@ -398,15 +400,26 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 ## 5. 当前API与未来草图
 
-### 资料写入与后续出处契约
+### 资料写入与材料出处契约
 
-人工资料写入已按 A2 建立生产入口；材料出处由后续 C1／C2 实施。约定如下：
+人工资料写入已按 A2 建立生产入口；材料出处与阅读往返已按 C1／C2 接入。约定如下：
 
 - 人工创建／全文修订通过独立用例保存，不创建聊天任务；客户端携带 request_id、预期 NFC 原文摘要及基础修订。记录 revision 不能充当原文版本。服务端限制来源为人工／导入／人工修订且 run_id 为空；沿用 Markdown 规范化，不要求二级标题。
 - 人工写入在同一短事务内校验祖先可见性、原文依据、基础修订及幂等操作，原子固定原文并保存成果。成功重放先于陈旧版本判断，同键不同内容冲突。新请求无变化时返回 no_changes，不产生修订或成功凭据。AI 仍保留任务授权及审核，并复用内容约束。
 - 原文固定触发包括首次 AI 受理、首次讲解保存和首次精确出处创建；失败人工保存不固定，删除成果不解锁。A2 通过增量数据迁移保护存量未锁但有历史讲解的片段，记录本次保护时间，不补造原文历史。全文无显式块映射时新分配 Section 身份，旧修订及引用保留。
-- 后续 C1 中，Segment 可选材料出处与 Material 属于同一活跃 Source，保存版本及有序局部范围、exact 和独立的 spine 出现定位。首版限制同章连续目标；验证后合并同资源／同出现的相邻范围，身份比较不包含 prefix／suffix 或章节。按范围拼接后整体 NFC 生成 Segment 原文，出处与片段创建及原文固定原子完成并可幂等核实。
+- C1 中，Segment 可选材料出处与 Material 属于同一活跃 Source，保存版本及有序局部范围、exact 和独立的 spine 出现定位。首版限制同章连续目标；验证后合并同资源／同出现的相邻范围，身份比较不包含 prefix／suffix 或章节。按范围拼接后整体 NFC 生成 Segment 原文，出处与片段创建及原文固定原子完成并可幂等核实。
+- C2 预装语境沿用 Segment 的可编辑前后文字段，不纳入目标范围或出处身份；用户可修改、清空，输入快照继续记录任务受理时的实际内容。前端在不可变章节正文、part 范围及 spine 出现位置上验证目标并建立原句界，再整理两侧副本；不依赖 iframe 显示文字或分词代次，不调用模型。副本按 Unicode White_Space 整理边缘及纯空白行，CRLF 转 LF，内部最多保留一个空行，保留句内空格与非空白字符；合并整理后的整体 NFC 码点数参与近端优先的双预算，只有切开有内容的句／残部才标截断。精确坐标、exact、摘要、已存内容及历史输入不变。预算纯逻辑与注音技术分块分别维护，默认值和用户行为集中见 [PRD 4.7](PRD.md#47-当前-epub-阶段安排)；学习偏好通过独立的 `segment_context_settings` 单例、GET／PUT `/api/settings/segment-context` 保存；PUT 携带 expected_revision，冲突为 409，保留草稿。五项配置独立于模型参数，预算为 0–100000 的严格整数，默认值由 PRD 维护。
 - 资料读取及定位解析执行严格版本、范围和快照校验；不以阅读恢复容错替代精确引用，不按同文静默换绑。解析不依赖分词，实际阅读仍经过现有准备门禁。完整接口和验证案例见[实施计划](handovers/text-study/PLAN.md)及[样例矩阵](handovers/text-study/TEST_MATRIX.md)。
+
+C1 出处契约版本为 `1`，组装规则为 `concat-nfc-v1`；最多 64 段、100000 码点快照，识别用 prefix／suffix 各 64 码点，候选最多 20 条。POST 创建带 UUID request_id，响应丢失以完整原请求核实；同键异文 409。GET 出处返回 resolved、none、material_deleted、version_unavailable、snapshot_mismatch 或 invalid_reference；历史目标仍由可见 Segment 保留。校验在写锁外进行，短事务内复查祖先、材料及完整不可变产物身份后提交。
+
+`SegmentProvenanceResponse.display` 由出处解析服务集中派生，不持久化；全部出处验证成功后使用当前材料名、章名及“章内约 N%”。逻辑章按 part 顺序连接资源正文片段，重复 spine 每次计入，整体 NFC 后以 Unicode 码点为分母；分子为第一段起点前正文的整体 NFC 码点数，取 `floor(100 * prefix / total)`，有效非空目标为 0–99%。跨 part 目标仅取第一段起点；空章或起点切开跨 part NFC 组合边界时省略百分比。布局和当前阅读位置不参与。材料已删、版本不可用或快照失配时只保留可靠材料名与原状态；无可靠名称则 display 为 null。source_ref 独立保留。
+
+阅读器标记通过 GET `/materials/{material_id}/chapters/{chapter_id}/segments` 按版本读取；按 Segment ID 游标每页扫描最多 100 条，响应包含有效条目、next_cursor 与 unavailable_count。无本章匹配条目的空页仍可有后续游标；前端扫描到末页才开放标记和完整本章列表。服务逐项验证出处并复查材料、来源及片段可见性，不受创建草稿的 20 条候选上限影响。该读取不新增标记实体或迁移。
+
+`ReaderFrames` 内的 `ReaderStudy` 负责原生选择通知、被动基字细线、完整范围强调与页边候选几何；页面取得稳定引用、片段 ID 和屏幕锚点。CSS Highlight 按 locator 文本节点拆 Range，排除 rt／rp，不包装正文或改变行盒；搜索保留独立黄色 Highlight。正文不绑定片段点击处理器或 click delay。页边候选只在正文真实留白放置 44px 点击区域，空间重叠时聚合；竖排优先下侧，无足够空间则仅用固定本章列表，不调整正文宽度。页边入口和横排本章列表共用候选面板，以创建时间和完整 Segment ID 区分同文，hover／focus 强调全部范围，明确打开才导航。
+
+普通正文点击和选区变化保留固定列表及草稿；贴句面板滚动时关闭，固定本章列表可保留。重排清除临时强调与旧页边入口，再测量真实留白；切章、旧 frame 销毁、查询失败或删除清除失效候选。全局显示偏好保存在 `folio-reader-ui-v1` 的 `marks.studySegmentUnderlines`／`marks.studySegmentMargins`，两项独立默认 true。读取每个新项时优先采用有效新值，缺省分别从旧 `marks.studySegments` 回退：false→false，true／缺省→true；通过 storage 事件跨标签页同步。两项都关闭时本章列表仍可用，不删除资料。
 
 ### 已实现接口
 
@@ -418,6 +431,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 /materials/{material_id}/details, /materials/{material_id}/metadata
 /materials/{material_id}/statistics
 /materials/{material_id}/chapters/{chapter_id}
+/materials/{material_id}/chapters/{chapter_id}/segments
 /materials/{material_id}/reading-position
 /materials/{material_id}/readings, /materials/{material_id}/readings/prepare
 /materials/{material_id}/search, /materials/{material_id}/illustrations
@@ -426,9 +440,12 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 /materials/{material_id}/cover, /catalog/sources
 /sources/{source_id}/catalog/segments, /sources/{source_id}/catalog/analyses
 /settings, /settings/profile, /settings/styles, /settings/defaults
+/settings/segment-context
 /providers, /providers/{provider_id}/refresh-models, /providers/{provider_id}/models
 /provider-models/{model_id}, /provider-models/{model_id}/verifications
 /sources, /sources/{source_id}, /sources/{source_id}/segments, /segments/{segment_id}
+/sources/{source_id}/segments/material-provenance/matches
+/segments/{segment_id}/material-provenance, /segments/{segment_id}/material-provenance/select
 /segments/{segment_id}/analyses, /analyses/{analysis_id}, /analyses/{analysis_id}/delete-impact
 /analyses/{analysis_id}/revisions
 /segments/{segment_id}/threads, /threads/{thread_id}, /threads/{thread_id}/messages
@@ -447,7 +464,9 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 
 ## 6. 前端结构
 
-A1 中，`analysis/AnalysisPanel.tsx` 只承担持久讲解读取与删除，`AnalysisGeneration.tsx` 承担生成和停止控制，由片段页组合。`chat/lifecycle.ts` 的激活规则让纯回看不挂载 Workbench；显式展开、未显式收起的线程直达或快捷生成才启动。URL 中 `chat=0` 优先于 thread；启动后在当前 Segment 页面内保活。A2 人工编辑沿用此边界。C2 的 iframe 生命周期、选区与定位接口尚未实施。
+A1 中，`analysis/AnalysisPanel.tsx` 只承担持久讲解读取与删除，`AnalysisGeneration.tsx` 承担生成和停止控制，由片段页组合。`chat/lifecycle.ts` 的激活规则让纯回看不挂载 Workbench；显式展开、未显式收起的线程直达或快捷生成才启动。URL 中 `chat=0` 优先于 thread；启动后在当前 Segment 页面内保活。A2 人工编辑沿用此边界。C2 的 `reader-frames.ts` 集中 iframe 装载、事件、资源就绪与销毁，`reader-selection.ts` 捕获原生选区并校验全部范围；学习界面只取得稳定引用与章数据。原有 ReaderLayout、位置队列和导航协调继续控制成功呈现及保存时机。
+
+C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑协调集中在保存流程中。首次结果按字段编辑状态合并，清空视作修改；更换目标、取消或离页使旧结果失效。默认配置变化不覆盖当前草稿，重新取文须由用户明确发起，并保留已改内容供选择替换；重开或选用已有片段不触发资料覆盖。语境取文失败保留可保存的目标，精确出处校验失败仍阻止创建。详见[切片计划](handovers/text-study/PLAN.md#10-c2-阅读选区与资料往返)。
 
 片段页沿用[A.3工作台基线](../prototypes/reading-native/VISUAL_BASELINE.md)的安静阅读气质和独立滚动区域。2C后的界面打磨改为普通入口默认阅读、讨论按需展开；原文与讲解同时参照，讲解列表不自动选择第一份文档。讲解、确切修订和讨论目标通过查询参数定位，指定对象须核对当前Segment归属。返回来处与查看所属Source分开。具体导航与当前/未来边界见[阅读与导航](INFORMATION_ARCHITECTURE.md)。
 

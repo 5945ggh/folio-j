@@ -13,6 +13,46 @@ export function imageTextOffset(
 	return Array.from(projection.raw.slice(0, end).normalize("NFC")).length;
 }
 
+/** Visible content geometry shared by resume anchors and passive study entrances. */
+export function visibleContentRect(
+	doc: Document,
+	rect: DOMRect,
+	element: Element | null,
+) {
+	if (!(rect.width > 0 && rect.height > 0)) return null;
+	let left = rect.left,
+		right = rect.left + rect.width,
+		top = rect.bottom - rect.height,
+		bottom = rect.bottom;
+	const view = doc.defaultView;
+	if (view?.getComputedStyle) {
+		if (
+			element &&
+			/^(hidden|collapse)$/.test(view.getComputedStyle(element).visibility)
+		)
+			return null;
+		for (let parent = element; parent; parent = parent.parentElement) {
+			const style = view.getComputedStyle(parent);
+			const clipX = /^(hidden|clip|auto|scroll)$/.test(style.overflowX),
+				clipY = /^(hidden|clip|auto|scroll)$/.test(style.overflowY);
+			if (!clipX && !clipY) continue;
+			const bounds = parent.getBoundingClientRect();
+			if (clipX) {
+				const start = bounds.left + parent.clientLeft;
+				left = Math.max(left, start);
+				right = Math.min(right, start + parent.clientWidth);
+			}
+			if (clipY) {
+				const start = bounds.top + parent.clientTop;
+				top = Math.max(top, start);
+				bottom = Math.min(bottom, start + parent.clientHeight);
+			}
+			if (left >= right || top >= bottom) return null;
+		}
+	}
+	return { left, right, top, bottom };
+}
+
 /** Measure actual glyphs and images, excluding collapsed/hidden text and author/reader trailing whitespace. */
 export function readingContentEnd(
 	doc: Document,
@@ -27,32 +67,9 @@ export function readingContentEnd(
 			doc.defaultView.getComputedStyle(element).visibility,
 		);
 	const include = (rect: DOMRect, element: Element | null) => {
-		if (!(rect.width > 0 && rect.height > 0)) return;
-		let left = rect.left,
-			right = rect.left + rect.width;
-		let bottom = rect.bottom,
-			top = rect.bottom - rect.height;
-		if (doc.defaultView) {
-			for (let parent = element; parent; parent = parent.parentElement) {
-				const style = doc.defaultView.getComputedStyle(parent);
-				const clipX = /^(hidden|clip)$/.test(style.overflowX);
-				const clipY = /^(hidden|clip)$/.test(style.overflowY);
-				if (!clipX && !clipY) continue;
-				const bounds = parent.getBoundingClientRect();
-				if (clipX) {
-					const start = bounds.left + parent.clientLeft;
-					left = Math.max(left, start);
-					right = Math.min(right, start + parent.clientWidth);
-				}
-				if (clipY) {
-					const start = bounds.top + parent.clientTop;
-					top = Math.max(top, start);
-					bottom = Math.min(bottom, start + parent.clientHeight);
-				}
-				if (left >= right || top >= bottom) return;
-			}
-		}
-		const value = vertical ? left : bottom;
+		const bounds = visibleContentRect(doc, rect, element);
+		if (!bounds) return;
+		const value = vertical ? bounds.left : bounds.bottom;
 		if (!Number.isFinite(value)) return;
 		end =
 			end === null

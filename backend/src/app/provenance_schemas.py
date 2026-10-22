@@ -59,6 +59,7 @@ def _empty_parts() -> list[ProvenancePart]:
 class SegmentProvenanceResponse(BaseModel):
     segment_id: str
     material_provenance: MaterialProvenance | None
+    display: str | None = None
     status: Literal[
         "resolved",
         "material_deleted",

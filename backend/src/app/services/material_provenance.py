@@ -446,6 +446,79 @@ async def select_existing(
         raise
 
 
+def chapter_location(
+    book: CompiledBook, chapter_id: str, parts: list[ProvenancePart]
+) -> str | None:
+    """Derive chapter display from immutable part order, never reader layout or position."""
+    chapter = next((item for item in book.chapters if item.id == chapter_id), None)
+    if chapter is None:
+        return None
+    label = chapter.title if chapter.title.strip() else ""
+    if not parts:
+        return label
+    target = parts[0]
+    pieces: list[str] = []
+    start: int | None = None
+    offset = 0
+    for index, part in enumerate(chapter.parts):
+        if not 0 <= part.spine_index < len(book.resources):
+            return label
+        resource = book.resources[part.spine_index]
+        if (
+            resource.id != part.resource_id
+            or not 0 <= part.start <= part.end <= len(resource.text)
+            or unicodedata.normalize("NFC", resource.text) != resource.text
+        ):
+            return label
+        try:
+            digest = hashlib.sha256(resource.text.encode()).hexdigest()
+        except UnicodeError:
+            return label
+        if digest != resource.text_sha256:
+            return label
+        if index == target.part_index:
+            if (
+                target.resource_id != part.resource_id
+                or target.spine_index != part.spine_index
+                or not part.start <= target.start < target.end <= part.end
+            ):
+                return label
+            start = offset + target.start - part.start
+        pieces.append(resource.text[part.start : part.end])
+        offset += part.end - part.start
+    raw = "".join(pieces)
+    whole = unicodedata.normalize("NFC", raw)
+    if start is None or not whole:
+        return label
+    prefix = unicodedata.normalize("NFC", raw[:start])
+    rest = unicodedata.normalize("NFC", raw[start:])
+    if prefix + rest != whole or not 0 <= len(prefix) < len(whole):
+        return label
+    percentage = f"章内约 {100 * len(prefix) // len(whole)}%"
+    return " · ".join(item for item in (label, percentage) if item)
+
+
+def _prepared_location(prepared: PreparedReference) -> str | None:
+    book = CompiledBook.model_validate_json(zlib.decompress(prepared.compiled_bundle))
+    return chapter_location(book, prepared.chapter_id, prepared.parts)
+
+
+def _display_title(
+    segment: Segment, reference: MaterialProvenance, material: Material | None
+) -> str | None:
+    origin = segment.material_provenance
+    if (
+        material is None
+        or origin is None
+        or material.source_id != segment.source_id
+        or origin.source_id != segment.source_id
+        or origin.material_id != reference.material_id
+        or material.id != reference.material_id
+    ):
+        return None
+    return material.title if material.title.strip() else None
+
+
 async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceResponse:
     segment = await require_segment(session, segment_id)
     origin = segment.material_provenance
@@ -465,6 +538,7 @@ async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceRe
     material = await session.get(Material, origin.material_id)
     if material is None:
         return result
+    result = result.model_copy(update={"display": _display_title(segment, reference, material)})
     if material.deleted_at is not None:
         return result.model_copy(update={"status": "material_deleted"})
     if material.version_id != reference.version_id:
@@ -481,14 +555,18 @@ async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceRe
     source_id = segment.source_id
     try:
         prepared = await prepare_reference(session, source_id, reference)
+        location = await asyncio.to_thread(_prepared_location, prepared)
         # Re-read after off-thread work so ancestor/material deletion cannot expose stale success.
         await require_segment(session, segment_id)
-        await recheck_reference(session, prepared)
+        material = await recheck_reference(session, prepared)
     except HTTPException as exc:
         # Ancestor deletion is still a visibility gate, never a historical location status.
         await require_segment(session, segment_id)
         current_material = await session.get(
             Material, reference.material_id, populate_existing=True
+        )
+        result = result.model_copy(
+            update={"display": _display_title(segment, reference, current_material)}
         )
         if current_material is not None and current_material.deleted_at is not None:
             return result.model_copy(update={"status": "material_deleted"})
@@ -499,8 +577,14 @@ async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceRe
         ):
             return result
         return result.model_copy(update={"status": "snapshot_mismatch"})
+    result = result.model_copy(update={"display": _display_title(segment, reference, material)})
     if prepared.text != original_text:
         return result.model_copy(update={"status": "snapshot_mismatch"})
     return result.model_copy(
-        update={"status": "resolved", "chapter_id": prepared.chapter_id, "parts": prepared.parts}
+        update={
+            "status": "resolved",
+            "chapter_id": prepared.chapter_id,
+            "parts": prepared.parts,
+            "display": " · ".join(item for item in (result.display, location) if item) or None,
+        }
     )

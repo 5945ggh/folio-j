@@ -1,6 +1,6 @@
 import type { Chapter } from "./api.ts";
-import type { Projection } from "./dom.ts";
-import { FOCUS_TIMING, isReaderFrameTarget } from "./focus.ts";
+import { type Projection, visibleContentRect } from "./dom.ts";
+import { isReaderFrameTarget } from "./focus.ts";
 import {
 	clearStudyHighlights,
 	prepareStudyUnderlines,
@@ -8,6 +8,8 @@ import {
 } from "./highlight.ts";
 import { captureNativeSelection, referenceParts } from "./reader-selection.ts";
 import type { MaterialProvenance, StudyTarget } from "./study-api.ts";
+import { type StudyMarginEntry, studyMarginEntries } from "./study-margin.ts";
+import { readingViewport } from "./viewport.ts";
 
 export type ScreenAnchor = {
 	left: number;
@@ -20,13 +22,18 @@ export type StudyMark = {
 	segment_id: string;
 	material_provenance: MaterialProvenance;
 };
-export type StudyMarkHit = { segmentIds: string[]; anchor: ScreenAnchor };
+export type StudyMarkHit = {
+	segmentIds: string[];
+	anchor: ScreenAnchor;
+	fixed?: boolean;
+};
 export type StudyBinding = {
 	materialId: string;
 	versionId: string;
 	chapterId: string;
 	onSelection: (value: StudySelection | null) => void;
 	onMarks: (value: StudyMarkHit | null) => void;
+	onEntries?: (entries: StudyMarginEntry[]) => void;
 };
 type StudyFrame = {
 	index: number;
@@ -38,7 +45,6 @@ type StudyFrame = {
 	viewport?: HTMLElement | null;
 };
 type MountedFrame = StudyFrame & { dispose: () => void; cancel: () => void };
-type LocalMark = { id: string; intervals: { start: number; end: number }[] };
 const SELECTION_SETTLE_MS = 32;
 
 function screenAnchor(
@@ -105,9 +111,9 @@ export class ReaderStudy {
 		chapter: Chapter;
 		marks: readonly StudyMark[];
 		visible: boolean;
+		margins: boolean;
 		theme: "white" | "black";
 	} | null = null;
-	private readonly local = new Map<number, LocalMark[]>();
 	private emphasized: string | null = null;
 	bind(binding: StudyBinding | null): void {
 		const changed =
@@ -121,7 +127,7 @@ export class ReaderStudy {
 				frame.cancel();
 				clearStudyHighlights(frame.doc);
 			}
-			this.local.clear();
+			binding?.onEntries?.([]);
 			binding?.onSelection(null);
 			binding?.onMarks(null);
 		}
@@ -152,7 +158,7 @@ export class ReaderStudy {
 		this.emphasized = null;
 		for (const frame of this.frames.values()) frame.dispose();
 		this.frames.clear();
-		this.local.clear();
+		this.binding?.onEntries?.([]);
 		this.binding?.onSelection(null);
 		this.binding?.onMarks(null);
 	}
@@ -163,24 +169,25 @@ export class ReaderStudy {
 		}
 		this.binding?.onSelection(null);
 	}
-	geometryChanged(): void {
+	geometryChanged(refresh = true): void {
 		this.emphasized = null;
 		for (const frame of this.frames.values()) frame.cancel();
 		this.binding?.onSelection(null);
 		this.binding?.onMarks(null);
-		this.refresh();
+		this.binding?.onEntries?.([]);
+		for (const frame of this.frames.values()) clearStudyHighlights(frame.doc);
+		if (refresh) this.refresh();
 	}
 	setMarks(
 		chapter: Chapter,
 		marks: readonly StudyMark[],
 		visible: boolean,
 		theme: "white" | "black",
+		margins = false,
 	): void {
-		this.config = { chapter, marks, visible, theme };
-		if (!visible) {
+		this.config = { chapter, marks, visible, theme, margins };
+		if (!marks.some((mark) => mark.segment_id === this.emphasized))
 			this.emphasized = null;
-			this.binding?.onMarks(null);
-		}
 		this.refresh();
 	}
 	emphasize(id: string | null): void {
@@ -189,7 +196,6 @@ export class ReaderStudy {
 		this.refresh();
 	}
 	refresh(): void {
-		this.local.clear();
 		const config = this.config;
 		const activeFrames = [...this.frames.values()].filter(
 			(frame) =>
@@ -198,10 +204,11 @@ export class ReaderStudy {
 				frame.chapter.material_id === config?.chapter.material_id &&
 				frame.chapter.version_id === config?.chapter.version_id,
 		);
-		if (!config?.visible) {
+		if (!config) {
 			for (const frame of this.frames.values()) clearStudyHighlights(frame.doc);
 			return;
 		}
+		const geometry: { id: string; rects: ScreenAnchor[] }[] = [];
 		const ranges = new Map<number, Range[]>(),
 			emphasis = new Map<number, Range[]>();
 		const projections = new Map<number, Projection>();
@@ -216,8 +223,7 @@ export class ReaderStudy {
 					config.chapter,
 					mark.material_provenance.ranges,
 				);
-				const planned: [number, Range[], { start: number; end: number }[]][] =
-					[];
+				const planned: [number, Range[]][] = [];
 				for (const [index, intervals] of parts) {
 					const frame = this.frames.get(index);
 					if (!frame || !activeFrames.includes(frame))
@@ -231,16 +237,40 @@ export class ReaderStudy {
 						projectedBaseRanges(frame.doc, projection, start, end),
 					);
 					prepareStudyUnderlines(frame.doc, projected, [], config.theme);
-					planned.push([index, projected, intervals]);
+					planned.push([index, projected]);
 				}
-				for (const [index, projected, intervals] of planned) {
+				for (const [index, projected] of planned) {
 					ranges.set(index, [...(ranges.get(index) ?? []), ...projected]);
 					if (mark.segment_id === this.emphasized)
 						emphasis.set(index, [...(emphasis.get(index) ?? []), ...projected]);
-					const local = this.local.get(index) ?? [];
-					local.push({ id: mark.segment_id, intervals });
-					this.local.set(index, local);
 				}
+				geometry.push({
+					id: mark.segment_id,
+					rects: planned.flatMap(([index, projected]) => {
+						const frame = this.frames.get(index);
+						if (!frame) return [];
+						return projected.flatMap((range) =>
+							Array.from(range.getClientRects()).flatMap((rect) => {
+								const visible = visibleContentRect(
+									frame.doc,
+									rect,
+									range.startContainer.parentElement,
+								);
+								if (!visible) return [];
+								const clipped = {
+									left: Math.max(0, visible.left),
+									right: Math.min(frame.element.clientWidth, visible.right),
+									top: Math.max(0, visible.top),
+									bottom: Math.min(frame.element.clientHeight, visible.bottom),
+								};
+								return clipped.left < clipped.right &&
+									clipped.top < clipped.bottom
+									? [screenAnchor(frame.element, clipped)]
+									: [];
+							}),
+						);
+					}),
+				});
 			} catch {
 				/* A partially available mark is never painted or made clickable. */
 			}
@@ -253,15 +283,33 @@ export class ReaderStudy {
 			try {
 				prepareStudyUnderlines(
 					frame.doc,
-					ranges.get(frame.index) ?? [],
+					config.visible ? (ranges.get(frame.index) ?? []) : [],
 					emphasis.get(frame.index) ?? [],
 					config.theme,
 				)();
 			} catch {
 				clearStudyHighlights(frame.doc);
-				this.local.delete(frame.index);
 			}
 		}
+		const viewport = activeFrames[0]?.viewport;
+		const view = viewport?.ownerDocument?.defaultView;
+		if (config.margins && viewport && view) {
+			const reserved = Array.from(
+				viewport.ownerDocument.querySelectorAll(
+					".reader-top,.reader-bottom,[data-reader-panel-side],.reader-study-notice",
+				),
+				(node) => node.getBoundingClientRect(),
+			);
+			this.binding?.onEntries?.(
+				studyMarginEntries(
+					geometry,
+					readingViewport(viewport, view.getComputedStyle(viewport)),
+					{ width: view.innerWidth, height: view.innerHeight },
+					viewport.classList.contains("material-vertical"),
+					reserved,
+				),
+			);
+		} else this.binding?.onEntries?.([]);
 	}
 	private capture(frame: StudyFrame): StudySelection | null {
 		const binding = this.binding;
@@ -304,93 +352,18 @@ export class ReaderStudy {
 				}
 			: null;
 	}
-	private hit(frame: StudyFrame, x: number, y: number): StudyMarkHit | null {
-		if (!this.config?.visible || !this.current(frame) || selected(frame.doc))
-			return null;
-		this.refresh();
-		const local = this.local.get(frame.index);
-		if (!local?.length) return null;
-		const doc = frame.doc as Document & {
-			caretPositionFromPoint?: (
-				x: number,
-				y: number,
-			) => { offsetNode: Node; offset: number } | null;
-			caretRangeFromPoint?: (x: number, y: number) => Range | null;
-		};
-		const caret = doc.caretPositionFromPoint?.(x, y);
-		const range = caret ? null : doc.caretRangeFromPoint?.(x, y);
-		const node = caret?.offsetNode ?? range?.startContainer,
-			offset = caret?.offset ?? range?.startOffset;
-		if (!node || offset === undefined || node.parentElement?.closest("rt,rp"))
-			return null;
-		const projection = frame.projection(),
-			entry = projection.entries.find((item) => item.node === node);
-		if (!entry || offset < 0 || offset > entry.node.length) return null;
-		const boundary = Array.from(
-			projection.raw.slice(0, entry.start + offset).normalize("NFC"),
-		).length;
-		const length = Array.from(projection.raw.normalize("NFC")).length;
-		const points = [boundary, boundary - 1].filter(
-			(point) => point >= 0 && point < length,
-		);
-		const hits = new Set<string>();
-		let anchor: ScreenAnchor | null = null;
-		for (const point of points) {
-			const covering = local.filter((mark) =>
-				mark.intervals.some((item) => item.start <= point && point < item.end),
-			);
-			if (!covering.length) continue;
-			let rect: DOMRect | undefined;
-			try {
-				rect = projectedBaseRanges(doc, projection, point, point + 1)
-					.flatMap((item) => Array.from(item.getClientRects()))
-					.find(
-						(item) =>
-							item.width > 0 &&
-							item.height > 0 &&
-							x >= item.left &&
-							x < item.right &&
-							y >= item.top &&
-							y < item.bottom,
-					);
-			} catch {
-				continue;
-			}
-			if (!rect) continue;
-			anchor ??= rect;
-			for (const mark of covering) hits.add(mark.id);
-		}
-		return hits.size && anchor
-			? { segmentIds: [...hits], anchor: screenAnchor(frame.element, anchor) }
-			: null;
-	}
 	mount(input: StudyFrame): () => void {
 		this.frames.get(input.index)?.dispose();
-		let selectionTimer: ReturnType<typeof setTimeout> | null = null,
-			clickTimer: ReturnType<typeof setTimeout> | null = null;
-		let pointer: {
-			id: number;
-			x: number;
-			y: number;
-			at: number;
-			moved: boolean;
-			hadSelection: boolean;
-		} | null = null;
-		let clickAllowed = false,
+		let selectionTimer: ReturnType<typeof setTimeout> | null = null;
+		let pointer = false,
 			keyActive = false;
 		const cancelSelection = () => {
 			if (selectionTimer !== null) clearTimeout(selectionTimer);
 			selectionTimer = null;
 		};
-		const cancelClick = () => {
-			if (clickTimer !== null) clearTimeout(clickTimer);
-			clickTimer = null;
-			clickAllowed = false;
-		};
 		const cancel = () => {
 			cancelSelection();
-			cancelClick();
-			pointer = null;
+			pointer = false;
 			keyActive = false;
 		};
 		const frame: MountedFrame = {
@@ -404,7 +377,6 @@ export class ReaderStudy {
 				clearStudyHighlights(input.doc, true);
 				if (this.frames.get(input.index) === frame) {
 					this.frames.delete(input.index);
-					this.local.delete(input.index);
 					if (this.sameBinding(frame)) {
 						this.binding?.onSelection(null);
 						this.dismissMarks();
@@ -441,77 +413,15 @@ export class ReaderStudy {
 			)
 				return;
 			cancelSelection();
-			cancelClick();
-			pointer = {
-				id: event.pointerId,
-				x: event.clientX,
-				y: event.clientY,
-				at: event.timeStamp,
-				moved: false,
-				hadSelection: selected(input.doc),
-			};
+			pointer = true;
 			this.binding?.onSelection(null);
-			this.dismissMarks();
 		};
-		const move = (raw: Event) => {
-			const event = raw as PointerEvent;
-			if (
-				pointer &&
-				pointer.id === event.pointerId &&
-				Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) >=
-					FOCUS_TIMING.drag
-			)
-				pointer.moved = true;
-		};
-		const up = (raw: Event) => {
-			if (
-				!this.current(frame) ||
-				!originalTarget(raw) ||
-				!isReaderFrameTarget(input.doc, raw.target)
-			) {
-				pointer = null;
-				return;
-			}
-			const event = raw as PointerEvent,
-				candidate = pointer;
-			pointer = null;
-			clickAllowed =
-				!!candidate &&
-				candidate.id === event.pointerId &&
-				!candidate.moved &&
-				!candidate.hadSelection &&
-				event.timeStamp - candidate.at < FOCUS_TIMING.longPress &&
-				Math.hypot(event.clientX - candidate.x, event.clientY - candidate.y) <
-					FOCUS_TIMING.drag;
-			schedule();
-		};
-		const click = (raw: Event) => {
-			const event = raw as MouseEvent,
-				allowed = clickAllowed;
-			cancelClick();
-			if (
-				!allowed ||
-				event.detail !== 1 ||
-				!this.current(frame) ||
-				!originalTarget(event) ||
-				!isReaderFrameTarget(input.doc, event.target) ||
-				selected(input.doc) ||
-				event.defaultPrevented
-			)
-				return;
-			clickTimer = setTimeout(() => {
-				clickTimer = null;
-				if (this.current(frame) && !selected(input.doc))
-					this.binding?.onMarks(this.hit(frame, event.clientX, event.clientY));
-			}, FOCUS_TIMING.clickDelay);
+		const up = () => {
+			pointer = false;
+			if (this.current(frame)) schedule();
 		};
 		const selectionChanged = () => {
-			if (!this.current(frame)) return;
-			if (selected(input.doc)) {
-				cancelClick();
-				this.dismissMarks();
-			}
-			schedule();
+			if (this.current(frame)) schedule();
 		};
 		const keydown = (raw: Event) => {
 			if (
@@ -524,8 +434,6 @@ export class ReaderStudy {
 			if (selectionKey(event)) {
 				keyActive = true;
 				cancelSelection();
-				cancelClick();
-				this.dismissMarks();
 			}
 		};
 		const keyup = (raw: Event) => {
@@ -541,14 +449,12 @@ export class ReaderStudy {
 			cancel();
 			this.binding?.onSelection(null);
 			this.dismissMarks();
+			this.refresh();
 		};
 		const listeners: [string, EventListener][] = [
 			["pointerdown", down],
-			["pointermove", move],
 			["pointerup", up],
 			["pointercancel", cancel],
-			["click", click],
-			["dblclick", cancelClick],
 			["selectionchange", selectionChanged],
 			["keydown", keydown],
 			["keyup", keyup],

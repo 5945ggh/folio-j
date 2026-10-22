@@ -60,6 +60,29 @@ test("target replacement and later attempts invalidate earlier fills, explicit r
 	assert.equal(draft.before.truncated, true);
 });
 
+test("clearing both sides protects empty context from a delayed fill and saves only the target", () => {
+	let draft = applyContextFill(
+		beginContextFill(createContextDraft("target")),
+		"target",
+		1,
+		fill,
+	);
+	draft = beginContextFill(draft);
+	draft = editContext(draft, "before", "");
+	draft = editContext(draft, "after", "");
+	const cleared = structuredClone(draft);
+	draft = applyContextFill(draft, "target", 2, fill);
+	assert.deepEqual(draft, cleared);
+	assert.equal(draft.before.edited, true);
+	assert.equal(draft.after.edited, true);
+	assert.equal(draft.before.automatic, false);
+	assert.equal(draft.after.automatic, false);
+	const request = prepareStudyRequest(null, reference, draft, () => "cleared");
+	assert.equal(request.context_before, "");
+	assert.equal(request.context_after, "");
+	assert.deepEqual(request.material_provenance, reference);
+});
+
 test("submission freezes context and reference; uncertain retry retains the entire original request", () => {
 	let draft = editContext(createContextDraft("target"), "before", "カ\u3099");
 	const mutableReference = structuredClone(reference);

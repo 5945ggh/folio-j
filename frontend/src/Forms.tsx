@@ -199,7 +199,9 @@ export function SegmentForm({
 						/>
 					</label>
 					<label className="field full">
-						<span>具体出处</span>
+						<span>
+							{initial?.material_provenance ? "出处补充" : "出处说明"}
+						</span>
 						<input
 							maxLength={100000}
 							value={fields.source_ref}

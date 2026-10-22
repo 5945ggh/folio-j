@@ -100,6 +100,7 @@ import {
 	type SegmentProvenance,
 	type StudyTarget,
 } from "./study-api";
+import type { StudyMarginEntry } from "./study-margin";
 import { useChapterStudyMarks } from "./study-marks-query";
 import { nativeSelectionKey } from "./study-overlays";
 import { freshestUsage, OpenAction } from "./usage";
@@ -138,6 +139,8 @@ function Reader({
 	const [selectionError, setSelectionError] = useState<Error | null>(null);
 	const [originError, setOriginError] = useState<Error | null>(null);
 	const [selection, setSelection] = useState<StudySelection | null>(null);
+	const [marginEntries, setMarginEntries] = useState<StudyMarginEntry[]>([]);
+	const markTrigger = useRef<HTMLButtonElement | null>(null);
 	const [markHit, setMarkHit] = useState<StudyMarkHit | null>(null);
 	const [markError, setMarkError] = useState<Error | null>(null);
 	const [savedNotice, setSavedNotice] = useState<{
@@ -309,6 +312,8 @@ function Reader({
 		settings,
 		presented,
 		ui,
+		selectionActive: selection !== null,
+		markActive: markHit !== null,
 		studyActive: studyTarget !== null || selection !== null || markHit !== null,
 	});
 	latest.current = {
@@ -320,6 +325,8 @@ function Reader({
 		settings,
 		presented,
 		ui,
+		selectionActive: selection !== null,
+		markActive: markHit !== null,
 		studyActive: studyTarget !== null || selection !== null || markHit !== null,
 	};
 	const setUiPreference = useCallback((next: ReaderUiPreferences) => {
@@ -383,8 +390,8 @@ function Reader({
 			event.stopPropagation();
 			viewerEscape.current();
 		};
-		document.addEventListener("keydown", escapeViewer, true);
-		return () => document.removeEventListener("keydown", escapeViewer, true);
+		document.addEventListener("keydown", escapeViewer);
+		return () => document.removeEventListener("keydown", escapeViewer);
 	}, []);
 	useEffect(() => {
 		const media = matchMedia("(max-width: 820px)");
@@ -443,8 +450,11 @@ function Reader({
 				latest.current.panels.right !== null ||
 				!latest.current.presented,
 			onEscapeOverlay: () => {
-				if (document.querySelector(".reader-study-tool")) {
+				if (latest.current.selectionActive) {
 					setSelection(null);
+					return true;
+				}
+				if (latest.current.markActive) {
 					setMarkHit(null);
 					frames.current.emphasizeStudyMark(null);
 					return true;
@@ -505,12 +515,7 @@ function Reader({
 		queryFn: () => getChapter(book.id, chapterId),
 		enabled: !!chapterId,
 	});
-	const marks = useChapterStudyMarks(
-		book.id,
-		book.version_id,
-		chapterId,
-		ui.marks.studySegments,
-	);
+	const marks = useChapterStudyMarks(book.id, book.version_id, chapterId, true);
 	const readings = useQuery({
 		queryKey: readingsKey(
 			book.id,
@@ -545,13 +550,13 @@ function Reader({
 				if (!alive.current) return;
 				setSelection(value);
 				if (value) {
-					setMarkHit(null);
 					controller.current?.show();
 				}
 			},
+			onEntries: setMarginEntries,
 			onMarks: (value) => {
 				if (!alive.current) return;
-				setMarkHit(value);
+				setMarkHit((current) => value ?? (current?.fixed ? current : null));
 				if (value) {
 					setSelection(null);
 					controller.current?.show();
@@ -560,15 +565,38 @@ function Reader({
 		});
 	});
 	const visibleHitItems = markHit
-		? marks.items.filter((item) => markHit.segmentIds.includes(item.segment_id))
+		? marks.items.filter(
+				(item) => markHit.fixed || markHit.segmentIds.includes(item.segment_id),
+			)
 		: [];
 	const closeMarkHit = useCallback(() => {
 		setMarkHit(null);
 		frames.current.emphasizeStudyMark(null);
+		markTrigger.current?.focus({ preventScroll: true });
 	}, []);
 	useEffect(() => {
-		if (!ui.marks.studySegments || marks.isError) closeMarkHit();
-	}, [ui.marks.studySegments, marks.isError, closeMarkHit]);
+		if (marks.isError) closeMarkHit();
+	}, [marks.isError, closeMarkHit]);
+	useEffect(() => {
+		if (
+			markHit &&
+			!markHit.fixed &&
+			!marks.loading &&
+			!marks.isFetching &&
+			visibleHitItems.length === 0
+		)
+			closeMarkHit();
+	}, [
+		markHit,
+		marks.loading,
+		marks.isFetching,
+		visibleHitItems.length,
+		closeMarkHit,
+	]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: a chapter switch invalidates the fixed list even when its old frame has already gone.
+	useEffect(() => {
+		setMarkHit(null);
+	}, [chapterId]);
 	const queue = useRef<PositionQueue<Position> | null>(null);
 	if (!queue.current)
 		queue.current = new PositionQueue(
@@ -924,6 +952,7 @@ function Reader({
 					receipt.complete({ anchor, located, error: navigationFailure });
 				}
 				setPresented(true);
+				frames.current.refreshStudyGeometry();
 				observe();
 			};
 		},
@@ -993,7 +1022,11 @@ function Reader({
 			if (root !== container.current || !alive.current) return;
 			const width = root.clientWidth,
 				height = root.clientHeight;
-			if (width === lastWidth && height === lastHeight) return;
+			frames.current.invalidateStudyGeometry();
+			if (width === lastWidth && height === lastHeight) {
+				frames.current.refreshStudyGeometry();
+				return;
+			}
 			lastWidth = width;
 			lastHeight = height;
 			reflowFrames();
@@ -1228,6 +1261,7 @@ function Reader({
 					size: () => (container.current === root ? viewportSize(root) : null),
 					capture,
 					measure: () => {
+						frames.current.invalidateStudyGeometry();
 						for (const frame of frames.current.values()) {
 							frame.resize();
 							frame.contentEnd = readingContentEnd(
@@ -1277,14 +1311,16 @@ function Reader({
 			),
 		});
 	};
+	// biome-ignore lint/correctness/useExhaustiveDependencies: panel visibility changes measured free space outside the text viewport.
 	useLayoutEffect(() => {
 		if (!chapter.data || !viewportReady) return;
 		try {
 			frames.current.setStudyMarks(
 				chapter.data,
 				marks.items,
-				ui.marks.studySegments,
+				ui.marks.studySegmentUnderlines,
 				theme,
+				ui.marks.studySegmentMargins,
 			);
 			setMarkError(null);
 		} catch (failure) {
@@ -1294,7 +1330,18 @@ function Reader({
 					: new Error("学习片段标记暂不可用。"),
 			);
 		}
-	}, [chapter.data, viewportReady, marks.items, ui.marks.studySegments, theme]);
+	}, [
+		chapter.data,
+		viewportReady,
+		marks.items,
+		ui.marks.studySegmentUnderlines,
+		ui.marks.studySegmentMargins,
+		theme,
+		panels.left,
+		panels.right,
+		leftView.value,
+		rightView.value,
+	]);
 	const renderToken = generation.current;
 	return (
 		<main
@@ -1352,19 +1399,43 @@ function Reader({
 						</span>
 					</p>
 				</div>
-				<button
-					type="button"
-					aria-label="书籍信息"
-					data-tooltip="书籍信息"
-					aria-expanded={panels.right === "info"}
-					onClick={() => selectPanel("info", true)}
-				>
-					<CatalogIcon name="more" />
-				</button>
+				<div className="reader-heading-actions">
+					<button
+						type="button"
+						aria-label="本章片段"
+						aria-expanded={!!markHit?.fixed}
+						disabled={!!studyTarget}
+						onClick={(event) => {
+							if (markHit?.fixed) {
+								closeMarkHit();
+								return;
+							}
+							markTrigger.current = event.currentTarget;
+							setMarkHit({
+								segmentIds: [],
+								anchor: { left: 0, right: 0, top: 80, bottom: 80 },
+								fixed: true,
+							});
+							frames.current.emphasizeStudyMark(null);
+							controller.current?.show();
+						}}
+					>
+						本章片段
+					</button>
+					<button
+						type="button"
+						aria-label="书籍信息"
+						data-tooltip="书籍信息"
+						aria-expanded={panels.right === "info"}
+						onClick={() => selectPanel("info", true)}
+					>
+						<CatalogIcon name="more" />
+					</button>
+				</div>
 			</header>
 			<div className="reader-alerts" aria-live="polite">
 				{marks.loading && <p>正在载入本章学习片段标记…</p>}
-				{ui.marks.studySegments && (marks.isError || markError) && (
+				{(marks.isError || markError) && (
 					<div className="reader-mark-error" role="alert">
 						学习片段标记暂不可用，原文可继续阅读。
 						<button type="button" onClick={() => void marks.refetch()}>
@@ -1372,7 +1443,7 @@ function Reader({
 						</button>
 					</div>
 				)}
-				{ui.marks.studySegments && !marks.isError && marks.unavailable > 0 && (
+				{!marks.isError && marks.unavailable > 0 && (
 					<p>部分历史片段的出处无法校验，未在正文中标记。</p>
 				)}
 				<InlineError
@@ -1640,13 +1711,33 @@ function Reader({
 					}}
 				/>
 			)}
-			{markHit &&
-				visibleHitItems.length > 0 &&
+			{ui.marks.studySegmentMargins &&
 				!studyTarget &&
-				!selection &&
-				ui.marks.studySegments && (
+				marginEntries.map((entry) => (
+					<button
+						key={entry.segmentIds.join(":")}
+						type="button"
+						className="reader-study-margin"
+						data-reader-tool=""
+						style={{ left: entry.left, top: entry.top }}
+						aria-label={`查看此处 ${entry.segmentIds.length} 个学习片段`}
+						onClick={(event) => {
+							markTrigger.current = event.currentTarget;
+							setMarkHit({ ...entry, fixed: false });
+							frames.current.emphasizeStudyMark(null);
+							controller.current?.show();
+						}}
+					>
+						{entry.segmentIds.length > 1 ? entry.segmentIds.length : "片"}
+					</button>
+				))}
+			{markHit &&
+				!studyTarget &&
+				(markHit.fixed || visibleHitItems.length > 0) && (
 					<StudyMarkPopover
 						anchor={markHit.anchor}
+						fixed={markHit.fixed}
+						loading={marks.loading}
 						items={visibleHitItems}
 						onOpen={openStudySegment}
 						onClose={closeMarkHit}

@@ -17,7 +17,7 @@ test("UI preferences validate enums and bounded values without adding API settin
 		theme: "white",
 		focus: false,
 		toolbarTransparency: DEFAULT_READER_UI.toolbarTransparency,
-		marks: { studySegments: true },
+		marks: { studySegmentUnderlines: true, studySegmentMargins: true },
 	});
 	assert.deepEqual(
 		normalizeReaderUi({ theme: "unknown", focus: 0 }),
@@ -112,7 +112,8 @@ test("study marks default on for old preferences and persist across books withou
 		},
 	};
 	assert.deepEqual(normalizeReaderUi({ theme: "black" }).marks, {
-		studySegments: true,
+		studySegmentUnderlines: true,
+		studySegmentMargins: true,
 	});
 	for (const marks of [
 		null,
@@ -122,11 +123,18 @@ test("study marks default on for old preferences and persist across books withou
 		{ studySegments: 0 },
 	])
 		assert.deepEqual(normalizeReaderUi({ marks }).marks, {
-			studySegments: true,
+			studySegmentUnderlines: true,
+			studySegmentMargins: true,
 		});
-	const hidden = { ...DEFAULT_READER_UI, marks: { studySegments: false } };
+	const hidden = {
+		...DEFAULT_READER_UI,
+		marks: { studySegmentUnderlines: false, studySegmentMargins: false },
+	};
 	assert.equal(writeReaderUiPreferences(hidden, store), true);
-	assert.equal(readReaderUiPreferences(store).marks.studySegments, false);
+	assert.equal(
+		readReaderUiPreferences(store).marks.studySegmentUnderlines,
+		false,
+	);
 	assert.deepEqual(
 		readBookUiPreferences("first", "v1", store),
 		DEFAULT_BOOK_UI,
@@ -136,5 +144,35 @@ test("study marks default on for old preferences and persist across books withou
 		DEFAULT_BOOK_UI,
 	);
 	assert.equal(writeReaderUiPreferences(DEFAULT_READER_UI, store), true);
-	assert.equal(readReaderUiPreferences(store).marks.studySegments, true);
+	assert.equal(
+		readReaderUiPreferences(store).marks.studySegmentUnderlines,
+		true,
+	);
+});
+
+test("legacy hidden preference upgrades both controls without revealing hidden marks", () => {
+	for (const legacy of [false, true]) {
+		assert.deepEqual(
+			normalizeReaderUi({ marks: { studySegments: legacy } }).marks,
+			{ studySegmentUnderlines: legacy, studySegmentMargins: legacy },
+		);
+		assert.deepEqual(
+			normalizeReaderUi({
+				marks: { studySegments: legacy, studySegmentMargins: !legacy },
+			}).marks,
+			{ studySegmentUnderlines: legacy, studySegmentMargins: !legacy },
+		);
+		assert.deepEqual(
+			normalizeReaderUi({
+				marks: { studySegments: legacy, studySegmentUnderlines: !legacy },
+			}).marks,
+			{ studySegmentUnderlines: !legacy, studySegmentMargins: legacy },
+		);
+	}
+	assert.deepEqual(
+		normalizeReaderUi({
+			marks: { studySegmentUnderlines: false, studySegmentMargins: true },
+		}).marks,
+		{ studySegmentUnderlines: false, studySegmentMargins: true },
+	);
 });

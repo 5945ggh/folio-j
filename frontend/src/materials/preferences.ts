@@ -5,7 +5,7 @@ export type ReaderUiPreferences = {
 	theme: ReaderTheme;
 	focus: boolean;
 	toolbarTransparency: number;
-	marks: { studySegments: boolean };
+	marks: { studySegmentUnderlines: boolean; studySegmentMargins: boolean };
 };
 export type BookUiPreferences = {
 	font: ReaderFont;
@@ -17,7 +17,7 @@ export const DEFAULT_READER_UI: ReaderUiPreferences = {
 	theme: "system",
 	focus: true,
 	toolbarTransparency: 20,
-	marks: { studySegments: true },
+	marks: { studySegmentUnderlines: true, studySegmentMargins: true },
 };
 export const DEFAULT_BOOK_UI: BookUiPreferences = {
 	font: "mincho",
@@ -60,8 +60,18 @@ export function normalizeReaderUi(
 			: {};
 	return {
 		marks: {
-			studySegments:
-				typeof marks.studySegments === "boolean" ? marks.studySegments : true,
+			studySegmentUnderlines:
+				typeof marks.studySegmentUnderlines === "boolean"
+					? marks.studySegmentUnderlines
+					: typeof marks.studySegments === "boolean"
+						? marks.studySegments
+						: true,
+			studySegmentMargins:
+				typeof marks.studySegmentMargins === "boolean"
+					? marks.studySegmentMargins
+					: typeof marks.studySegments === "boolean"
+						? marks.studySegments
+						: true,
 		},
 		theme:
 			value.theme === "black"
