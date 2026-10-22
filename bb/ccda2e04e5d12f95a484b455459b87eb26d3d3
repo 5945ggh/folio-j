@@ -1,0 +1,30 @@
+frontend/src/materials/study.css
+  s_0fe3ab6aa80701::t_29aaa9ed886325 8-15,18-19,21,25-31,35-36,43,46-48,55-61,63-73,77,81-84,86-90,96,105,109,111-117,127,131-144,147-159,161-168,172-174,185,189,194,197-215,228-229,231,244
+  s_0fe3ab6aa80701::t_f13c2868def27e 106-108,118-124
+docs/handovers/text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md
+  s_0fe3ab6aa80701::t_64e8f450e04688 1-34
+frontend/src/materials/study-draft.test.ts
+  s_0fe3ab6aa80701::t_a95d3a86a99bf3 63-85
+frontend/src/materials/StudySegmentPanel.tsx
+  s_0fe3ab6aa80701::t_54a3cf2439e688 319-320,322-332
+  s_0fe3ab6aa80701::t_d0758aa992adde 383,419,427
+  s_0fe3ab6aa80701::t_9926b2a438df8a 336-338,340-346,356-360,412
+  s_0fe3ab6aa80701::t_d415cb27ca657c 279,288,318,321,333,335,339,347-355,361,372-376,382,384-385,408-411,413-415
+  s_0fe3ab6aa80701::t_71f901db822320 483-521
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bbccda2e04e5d12f95a484b455459b87eb26d3d3",
+  "prompts": {},
+  "sessions": {
+    "s_0fe3ab6aa80701": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a163ac-b28a-70d1-b5c1-a36980634e69",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
