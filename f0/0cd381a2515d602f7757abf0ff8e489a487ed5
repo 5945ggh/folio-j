@@ -1,0 +1,36 @@
+docs/handovers/text-study/INLINE_PREVIEW_ACCEPTANCE.md
+  s_c2b2a638b24361::t_558d4d1021cf3c 31,33
+  s_c2b2a638b24361::t_4932f78b6b32e4 3
+  s_c2b2a638b24361::t_4e0ef6c160036b 1-2,4-30,32,34-36
+docs/PRD.md
+  s_c2b2a638b24361::t_e4ae1b0b644ea6 6,215-218
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_c2b2a638b24361::t_4932f78b6b32e4 4,35
+  s_c2b2a638b24361::t_4e0ef6c160036b 3,34,65
+docs/handovers/README.md
+  s_c2b2a638b24361::t_4e0ef6c160036b 9
+docs/handovers/epub-reading/README.md
+  s_c2b2a638b24361::t_e4ae1b0b644ea6 56
+docs/INFORMATION_ARCHITECTURE.md
+  s_c2b2a638b24361::t_e4ae1b0b644ea6 136,138-140
+docs/handovers/text-study/PLAN.md
+  s_c2b2a638b24361::t_e4ae1b0b644ea6 212,234
+docs/ARCHITECTURE.md
+  s_c2b2a638b24361::t_e4ae1b0b644ea6 420,422
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f00cd381a2515d602f7757abf0ff8e489a487ed5",
+  "prompts": {},
+  "sessions": {
+    "s_c2b2a638b24361": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16448-2e5d-7980-8621-d0c5445102a5",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
