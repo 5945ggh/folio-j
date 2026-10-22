@@ -1,0 +1,41 @@
+frontend/src/segments/OriginalCard.tsx
+  s_289cb711126841::t_336260b9b6f6a6 114-117
+frontend/src/api/schema.d.ts
+  s_289cb711126841::t_4fc8dd442e2b57 2450-2451
+backend/src/app/provenance_schemas.py
+  s_289cb711126841::t_996cd6c4087354 62
+backend/tests/test_segment_provenance.py
+  s_289cb711126841::t_6a10d15bc956de 672-676,684-704,708-734,779,824-836,840-854,856-859
+  s_289cb711126841::t_0899629ccbfb87 153,677-683,759,855
+  s_289cb711126841::t_7c457581532ccd 402,480
+  s_289cb711126841::t_e7273146c65923 705-707,735-758,760-778,837-839
+  s_289cb711126841::t_f9e5c89c25bf2a 780-823
+backend/src/app/services/material_provenance.py
+  s_289cb711126841::t_d88a50dd47f233 580
+  s_289cb711126841::t_59f4222fbbedbe 456,497-498,519,588
+  s_289cb711126841::t_996cd6c4087354 449-455,457-496,499-518,520-521,541,558,561,568-569,584-587,589
+  s_289cb711126841::t_2a9d798b2454c3 570
+backend/openapi.json
+  s_289cb711126841::t_4fc8dd442e2b57 4041-4051
+frontend/src/materials/SegmentMaterialOrigin.tsx
+  s_289cb711126841::t_336260b9b6f6a6 26-28
+frontend/src/Forms.tsx
+  s_289cb711126841::t_336260b9b6f6a6 202
+  s_289cb711126841::t_573f5b2f7a9c77 203-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3301440a3a04d9ddf2dc345b65287751249b0ebe",
+  "prompts": {},
+  "sessions": {
+    "s_289cb711126841": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a162c4-fd84-78d2-b2fb-dd9286a12010",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
