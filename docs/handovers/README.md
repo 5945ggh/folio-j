@@ -8,6 +8,7 @@
 
 - 文本处理与学习资料调整：架构解耦、人工保存与独立回看、统计和精确出处；见[实施计划](text-study/PLAN.md)、[验收样例](text-study/TEST_MATRIX.md)、[S0 收口](text-study/S0_ACCEPTANCE.md)、[B1 验收](text-study/B1_ACCEPTANCE.md)及[B2 验收](text-study/B2_ACCEPTANCE.md)。S0 与 A／B 线已完成工程验收；C 暂不实施。A 线证据见[独立回看](text-study/A1_ACCEPTANCE.md)与[人工资料](text-study/A2_ACCEPTANCE.md)。
 - [EPUB 原生阅读阶段](epub-reading/README.md)：组织导入、基础阅读、注音、选区学习、材料对话和讲解形成的切片顺序与准备条件。
+- [材料独立删除验收](MATERIAL_DELETION_ACCEPTANCE.md)：只删材料、保留来源与学习积累的增量迁移、工程检查、独立审查和隔离浏览器验证。
 
 ## Archived
 

@@ -5,6 +5,7 @@ import type { Source } from "../content";
 import { dateLabel, InlineError } from "../Shared";
 import {
 	type AnalysisQuery,
+	type Book,
 	type BookQuery,
 	catalogAnalyses,
 	catalogBooks,
@@ -12,6 +13,7 @@ import {
 	catalogSegments,
 	type SegmentQuery,
 } from "./api";
+import { BookDeleteDialog } from "./BookDeleteDialog";
 import { BookEditDialog } from "./BookEditDialog";
 import { BookCard } from "./Books";
 import { useCatalogScroll } from "./hooks";
@@ -55,6 +57,7 @@ export function SourceOverview({
 	const location = useLocation();
 	const [adding, setAdding] = useState(false);
 	const [editing, setEditing] = useState<string | null>(null);
+	const [deleting, setDeleting] = useState<Book | null>(null);
 	const focusAfterEdit = useRef(false);
 	const client = useQueryClient();
 	const bookQuery: BookQuery = {
@@ -80,6 +83,7 @@ export function SourceOverview({
 	useEffect(() => {
 		if (
 			editing !== null ||
+			deleting !== null ||
 			!focusAfterEdit.current ||
 			books.isFetching ||
 			books.data !== client.getQueryData(catalogKeys.books(bookQuery))
@@ -87,8 +91,18 @@ export function SourceOverview({
 			return;
 		focusAfterEdit.current = false;
 		const active = document.activeElement;
-		if (!active || active === document.body || !active.isConnected)
-			document.getElementById("source-content-panel-overview")?.focus();
+		const container = document.getElementById("source-content-panel-overview");
+		if (
+			!active ||
+			active === document.body ||
+			!active.isConnected ||
+			active === container
+		)
+			(
+				container?.querySelector<HTMLElement>(
+					".book-menu-trigger, button:not(:disabled), a[href]",
+				) ?? container
+			)?.focus();
 	});
 	const settled =
 		!analyses.isPending && !segments.isPending && !books.isPending;
@@ -147,6 +161,7 @@ export function SourceOverview({
 							book={book}
 							returnLabel={source.title}
 							onEdit={setEditing}
+							onDelete={setDeleting}
 						/>
 					))}
 				</div>
@@ -326,6 +341,16 @@ export function SourceOverview({
 			)}
 			{adding && (
 				<ImportDialog sourceId={source.id} close={() => setAdding(false)} />
+			)}
+			{deleting !== null && (
+				<BookDeleteDialog
+					book={deleting}
+					close={() => {
+						focusAfterEdit.current = true;
+						setDeleting(null);
+					}}
+					restoreFocusId="source-content-panel-overview"
+				/>
 			)}
 			{editing !== null && (
 				<BookEditDialog

@@ -1,6 +1,6 @@
 import { api } from "../api/client";
 import type { components } from "../api/schema";
-import { requireData } from "../content";
+import { errorMessage, requireData } from "../content";
 import { waitForPositionWrites } from "./persistence";
 import { positionRequest } from "./position-request";
 export type Material = components["schemas"]["MaterialResponse"];
@@ -191,4 +191,11 @@ export async function getReadings(
 		},
 	);
 	return requireData(data, error, response.status);
+}
+
+export async function deleteMaterial(id: string): Promise<void> {
+	const { error, response } = await api.DELETE("/api/materials/{material_id}", {
+		params: { path: { material_id: id } },
+	});
+	if (error || !response.ok) throw errorMessage(error, response.status);
 }

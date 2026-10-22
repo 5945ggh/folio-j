@@ -69,8 +69,9 @@ def test_cover_fallback(kwargs: dict[str, object]) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("target", ["sources", "materials"])
 async def test_cached_cover_preserves_product_and_deleted_gate(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, target: str
 ) -> None:
     import sqlite3
 
@@ -107,7 +108,11 @@ async def test_cached_cover_preserves_product_and_deleted_gate(
         monkeypatch.setattr("app.services.covers.inspect_cover", reject)
         assert (await client.get(url + "/cover")).content == PNG
         assert snapshot() == before
-        assert (await client.delete("/api/sources/" + source)).status_code == 204
+        assert (
+            await client.delete(
+                f"/api/{target}/{source if target == 'sources' else material['id']}"
+            )
+        ).status_code == 204
         assert (await client.get(url + "/cover")).status_code == 404
 
 

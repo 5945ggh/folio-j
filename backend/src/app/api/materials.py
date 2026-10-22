@@ -197,3 +197,9 @@ async def get_readings(
     generation_id: str | None = None,
 ) -> MaterialReadingsResponse:
     return await readings.get_readings(session, material_id, version_id, chapter_id, generation_id)
+
+
+@router.delete("/materials/{material_id}", status_code=204, operation_id="deleteMaterial")
+async def delete_material(material_id: str, session: Session) -> Response:
+    await service.delete_material(session, material_id)
+    return Response(status_code=204)

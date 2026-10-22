@@ -169,7 +169,8 @@ export interface paths {
         get: operations["getMaterial"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Material */
+        delete: operations["deleteMaterial"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2927,6 +2928,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MaterialResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deleteMaterial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -4,15 +4,25 @@ import asyncio
 import hashlib
 import re
 import zlib
+from datetime import datetime
 
 from fastapi import HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
 from app.epub_schemas import CompiledBook
 from app.ids import new_ulid
-from app.material_models import ChapterReadingPosition, Material, ReadingPosition
+from app.material_models import (
+    ChapterReadingPosition,
+    Material,
+    MaterialCover,
+    MaterialCustomCover,
+    MaterialReadingsCurrent,
+    MaterialReadingsGeneration,
+    MaterialUsage,
+    ReadingPosition,
+)
 from app.material_schemas import (
     ChapterResource,
     ChapterSummary,
@@ -45,7 +55,9 @@ async def require_material(
     statement = (
         select(Material)
         .join(Source, Material.source_id == Source.id)
-        .where(Material.id == material_id, Source.deleted_at.is_(None))
+        .where(
+            Material.id == material_id, Material.deleted_at.is_(None), Source.deleted_at.is_(None)
+        )
     )
     if not with_bundle:
         statement = statement.options(defer(Material.compiled_bundle))
@@ -111,11 +123,28 @@ async def list_materials(session: AsyncSession, source_id: str) -> list[Material
         await session.scalars(
             select(Material)
             .options(defer(Material.compiled_bundle))
-            .where(Material.source_id == source_id)
+            .where(Material.source_id == source_id, Material.deleted_at.is_(None))
             .order_by(Material.created_at, Material.id)
         )
     ).all()
     return [summary(m) for m in materials]
+
+
+async def reject_deleted_import(
+    session: AsyncSession, source_id: str, digest: str, started_at: datetime
+) -> None:
+    """A request predating removal cannot recreate or publish into its replacement."""
+    removed = await session.scalar(
+        select(Material.id)
+        .where(
+            Material.source_id == source_id,
+            Material.source_sha256 == digest,
+            Material.deleted_at >= started_at,
+        )
+        .limit(1)
+    )
+    if removed is not None:
+        raise HTTPException(404, "材料已删除，请重新导入")
 
 
 async def import_material(
@@ -123,6 +152,7 @@ async def import_material(
 ) -> MaterialImportResponse:
     if request.headers.get("content-type", "").split(";")[0].strip() != "application/epub+zip":
         raise HTTPException(415, "请上传 EPUB 文件")
+    started_at = utc_now()
     await require_source(session, source_id)
     await session.rollback()  # Release the read snapshot before bounded compilation.
     data = bytearray()
@@ -133,12 +163,14 @@ async def import_material(
     raw = bytes(data)
     del data
     digest = hashlib.sha256(raw).hexdigest()
+    await reject_deleted_import(session, source_id, digest, started_at)
     existing = await session.scalar(
         select(Material)
         .join(Source, Material.source_id == Source.id)
         .where(
             Material.source_id == source_id,
             Material.source_sha256 == digest,
+            Material.deleted_at.is_(None),
             Source.deleted_at.is_(None),
         )
     )
@@ -152,6 +184,7 @@ async def import_material(
         try:
             await begin_write(session)
             await require_source(session, source_id)
+            await reject_deleted_import(session, source_id, digest, started_at)
             existing = await require_material(session, existing_id)
             await session.commit()
             return MaterialImportResponse(material=await response(session, existing), reused=True)
@@ -168,9 +201,12 @@ async def import_material(
     try:
         await begin_write(session)
         await require_source(session, source_id)
+        await reject_deleted_import(session, source_id, digest, started_at)
         material = await session.scalar(
             select(Material).where(
-                Material.source_id == source_id, Material.source_sha256 == digest
+                Material.source_id == source_id,
+                Material.source_sha256 == digest,
+                Material.deleted_at.is_(None),
             )
         )
         reused = material is not None
@@ -283,6 +319,41 @@ async def save_position(
         )
         await session.commit()
         return result
+    except BaseException:
+        await session.rollback()
+        raise
+
+
+async def delete_material(session: AsyncSession, material_id: str) -> None:
+    """Keep a tombstone and remove this material's assets atomically."""
+    try:
+        await begin_write(session)
+        material = await session.scalar(
+            select(Material)
+            .join(Source, Material.source_id == Source.id)
+            .where(Material.id == material_id, Source.deleted_at.is_(None))
+            .options(defer(Material.compiled_bundle))
+        )
+        if material is None:
+            raise HTTPException(404, "材料不存在")
+        if material.deleted_at is None:
+            material.deleted_at = utc_now()
+        material.original_bytes = b""
+        material.compiled_bundle = b""
+        material.warnings = []
+        # Repeat cleanup for tombstones produced by versions that retained assets.
+        # Remove the current pointer before its immutable generations for FK safety.
+        for asset in (
+            ReadingPosition,
+            ChapterReadingPosition,
+            MaterialUsage,
+            MaterialCover,
+            MaterialCustomCover,
+            MaterialReadingsCurrent,
+            MaterialReadingsGeneration,
+        ):
+            await session.execute(delete(asset).where(asset.material_id == material_id))
+        await session.commit()
     except BaseException:
         await session.rollback()
         raise

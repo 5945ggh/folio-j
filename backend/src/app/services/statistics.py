@@ -71,7 +71,11 @@ async def _identity(
             await session.execute(
                 select(Material.version_id, Material.product_sha256)
                 .join(Source, Material.source_id == Source.id)
-                .where(Material.id == material_id, Source.deleted_at.is_(None))
+                .where(
+                    Material.id == material_id,
+                    Material.deleted_at.is_(None),
+                    Source.deleted_at.is_(None),
+                )
             )
         ).one_or_none()
         if material is None:
@@ -113,6 +117,7 @@ async def _bundle(factory: SessionFactory, identity: StatisticsInput) -> bytes:
             .join(Source, Material.source_id == Source.id)
             .where(
                 Material.id == identity.material_id,
+                Material.deleted_at.is_(None),
                 Material.version_id == identity.version_id,
                 Material.product_sha256 == identity.product_sha256,
                 Source.deleted_at.is_(None),

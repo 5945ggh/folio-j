@@ -204,7 +204,9 @@ async def source_delete_impact(session: AsyncSession, source_id: str) -> SourceD
         material_count=int(
             (
                 await session.scalar(
-                    select(func.count(Material.id)).where(Material.source_id == source_id)
+                    select(func.count(Material.id)).where(
+                        Material.source_id == source_id, Material.deleted_at.is_(None)
+                    )
                 )
             )
             or 0

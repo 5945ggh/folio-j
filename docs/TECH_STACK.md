@@ -22,7 +22,7 @@
 | Web 框架 | FastAPI | 自动生成 OpenAPI，作为前端类型的唯一来源 |
 | 数据校验 | Pydantic v2 | 同时用于 API schema、LLM 结构化输出 schema 和配置模型 |
 | ORM | SQLAlchemy 2.0（`Mapped` 类型化风格） | 不使用 SQLModel；ORM 模型与 API schema 分开定义 |
-| 迁移 | Alembic | 当前以固定 DDL 的 `0001_initial` 从空库建立完整 schema，`0002_lock_analysis_segments` 为已有历史讲解补齐原文保护；保留迁移环境、模板与 `just migrate`；发布前且数据可丢弃时可重整初始迁移，需保留日常数据或发布第一版后采用严格增量迁移；应用启动不自动删库 |
+| 迁移 | Alembic | 固定 DDL 的 `0001_initial` 从空库建立 schema，后续 `0002` 补齐原文保护、`0003` 增加材料逻辑删除与活跃材料判重；具体保留与降级约束见[架构](ARCHITECTURE.md#3-领域模型)。保留 `just migrate`；需保留日常数据或发布第一版后采用严格增量迁移，应用启动不自动删库 |
 | 数据库 | SQLite（WAL 模式） | 已采用；积累库检索尚未实现，选型保留 MVP 用 `LIKE`、P1 用 FTS5、远期用 sqlite-vec。运行中的 WAL 数据库备份须保证一致性，不能仅复制主文件 |
 | SSE | sse-starlette（预留，未安装） | 当前页面轮询持久 Run／Job；模型侧流式响应不等于浏览器已采用 SSE |
 | LLM 客户端 | `openai` 官方 Python SDK，通过 `base_url` 对接 | BYOK、多 Provider；适配 OpenAI 兼容的 Chat Completions 与 Responses 文本调用 |
@@ -38,6 +38,8 @@
 分词采用固定材料正文之上的可重建派生数据，输入版本、分析器、词典和配置与结果一起记录；不改写定位正文，不用 token 身份替代原文位置。生成使用本地词典，不调用模型；结果以 SQLite 中的压缩 JSON 保存，复用已有标准库能力。具体边界见[架构](ARCHITECTURE.md)。此处的数据 sidecar 与分发阶段的后端 sidecar 进程是不同含义。
 
 EPUB 编译使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义编译产物；包内资源清洗和有界编译不引入阅读器引擎或新依赖。不可变原 EPUB 与压缩编译包保存为 SQLite BLOB，材料发布和副本保存共用事务；接受数据库体积增长，避免外置文件的双提交及无主文件清理。阅读使用按章节排列的无脚本 sandbox iframe，隔离各原始资源的作者样式。模型、版本与阅读恢复边界见[架构](ARCHITECTURE.md)。
+
+独立删除材料在同一事务内清空其原书／编译 BLOB 并删除派生阅读数据，保留身份与学习积累；释放的 SQLite 空页供后续复用，每次删除不做全库压缩。用户原始 EPUB 文件不受影响，具体清理与空间边界见[架构](ARCHITECTURE.md#31-实体)。
 
 封面缓存只支持有界静态 PNG／JPEG（4 MiB、1600 万像素），使用标准库校验头部与结构，不引入图像解码库；APNG、GIF、WebP、SVG 与异常文件占位。优先提取有效声明封面，不可用时按有序包内图片候选回退，旧书可按规则版本重建缓存；不改不可变书籍产物，不下载远程图片。SVG `image` 只可作为包内静态图片引用来源，不表示支持 SVG 封面。正文图库沿用编译包的图片安全预算，不直接套用封面的 4 MiB／PNG-JPEG 限制。
 

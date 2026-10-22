@@ -135,8 +135,9 @@ async def test_statistics_generation_ownership_and_text_without_current_analysis
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("warm", [False, True])
+@pytest.mark.parametrize("target", ["sources", "materials"])
 async def test_source_deletion_blocks_cached_and_inflight_statistics(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, warm: bool
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, warm: bool, target: str
 ) -> None:
     monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled)
     started, release = threading.Event(), threading.Event()
@@ -153,14 +154,22 @@ async def test_source_deletion_blocks_cached_and_inflight_statistics(
         params = {"version_id": material["version_id"]}
         if warm:
             assert (await client.get(url, params=params)).status_code == 200
-            assert (await client.delete(f"/api/sources/{source}")).status_code == 204
+            assert (
+                await client.delete(
+                    f"/api/{target}/{source if target == 'sources' else material['id']}"
+                )
+            ).status_code == 204
             assert (await client.get(url, params=params)).status_code == 404
         else:
             monkeypatch.setattr(statistics, "_text_result", delayed)
             pending = asyncio.create_task(client.get(url, params=params))
             assert await asyncio.to_thread(started.wait, 5)
             try:
-                assert (await client.delete(f"/api/sources/{source}")).status_code == 204
+                assert (
+                    await client.delete(
+                        f"/api/{target}/{source if target == 'sources' else material['id']}"
+                    )
+                ).status_code == 204
             finally:
                 release.set()
             assert (await pending).status_code == 404

@@ -19,6 +19,7 @@ import {
 	updateUsage,
 } from "./api";
 import { BookCoverPlaceholder } from "./BookCoverPlaceholder";
+import { BookDeleteDialog } from "./BookDeleteDialog";
 import { BookEditDialog } from "./BookEditDialog";
 import {
 	type BookMenuPage,
@@ -40,10 +41,12 @@ export function BookCard({
 	book,
 	returnLabel,
 	onEdit,
+	onDelete,
 }: {
 	book: Book;
 	returnLabel: string;
 	onEdit: (id: string) => void;
+	onDelete: (book: Book) => void;
 }) {
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -259,8 +262,17 @@ export function BookCard({
 							</button>
 						)}
 						<hr />
-						<button type="button" role="menuitem" tabIndex={-1} disabled>
-							删除书籍… <small>暂未开放</small>
+						<button
+							type="button"
+							role="menuitem"
+							tabIndex={-1}
+							onClick={() => {
+								menu.current?.hidePopover();
+								trigger.current?.focus();
+								onDelete(book);
+							}}
+						>
+							删除书籍…
 						</button>
 					</>
 				) : (
@@ -309,10 +321,12 @@ export function BookGrid({
 	books,
 	returnLabel,
 	onEdit,
+	onDelete,
 }: {
 	books: readonly Book[];
 	returnLabel: string;
 	onEdit: (id: string) => void;
+	onDelete: (book: Book) => void;
 }) {
 	return (
 		<div className="book-grid">
@@ -322,6 +336,7 @@ export function BookGrid({
 					book={book}
 					returnLabel={returnLabel}
 					onEdit={onEdit}
+					onDelete={onDelete}
 				/>
 			))}
 		</div>
@@ -340,6 +355,7 @@ export function BookCatalog({
 }) {
 	const catalogId = useId();
 	const [editing, setEditing] = useState<string | null>(null);
+	const [deleting, setDeleting] = useState<Book | null>(null);
 	const focusAfterEdit = useRef(false);
 	const client = useQueryClient();
 	const { state, change } = useCatalogState(
@@ -363,15 +379,28 @@ export function BookCatalog({
 	useEffect(() => {
 		if (
 			editing !== null ||
+			deleting !== null ||
 			!focusAfterEdit.current ||
 			books.isFetching ||
+			(books.data &&
+				state.page > lastCatalogPage(books.data.total, books.data.page_size)) ||
 			books.data !== client.getQueryData(catalogKeys.books(query))
 		)
 			return;
 		focusAfterEdit.current = false;
 		const active = document.activeElement;
-		if (!active || active === document.body || !active.isConnected)
-			document.getElementById(catalogId)?.focus();
+		const container = document.getElementById(catalogId);
+		if (
+			!active ||
+			active === document.body ||
+			!active.isConnected ||
+			active === container
+		)
+			(
+				container?.querySelector<HTMLElement>(
+					".book-menu-trigger, button:not(:disabled), a[href]",
+				) ?? container
+			)?.focus();
 	});
 	const scroll = useCatalogScroll(
 		books.isSuccess,
@@ -382,9 +411,14 @@ export function BookCatalog({
 		? lastCatalogPage(books.data.total, books.data.page_size)
 		: null;
 	useEffect(() => {
-		if (editing === null && lastPage !== null && state.page > lastPage)
+		if (
+			editing === null &&
+			deleting === null &&
+			lastPage !== null &&
+			state.page > lastPage
+		)
 			change({ page: lastPage });
-	}, [editing, lastPage, state.page, change]);
+	}, [editing, deleting, lastPage, state.page, change]);
 	const [size, setSize] = useState(() =>
 		cardWidth(readPreference("card-width")),
 	);
@@ -482,6 +516,7 @@ export function BookCatalog({
 						books={books.data.items}
 						returnLabel={sourceId ? "来源书籍窗口" : "素材库"}
 						onEdit={setEditing}
+						onDelete={setDeleting}
 					/>
 				)}
 				{books.data && (
@@ -493,6 +528,16 @@ export function BookCatalog({
 					/>
 				)}
 			</div>
+			{deleting !== null && (
+				<BookDeleteDialog
+					book={deleting}
+					close={() => {
+						focusAfterEdit.current = true;
+						setDeleting(null);
+					}}
+					restoreFocusId={catalogId}
+				/>
+			)}
 			{editing !== null && (
 				<BookEditDialog
 					id={editing}

@@ -266,3 +266,134 @@ def _historical_content(connection: sqlite3.Connection) -> dict[str, list[tuple[
         table: connection.execute(f"SELECT * FROM {table} ORDER BY id").fetchall()
         for table in ("sources", "analyses", "analysis_revisions", "analysis_sections")
     }
+
+
+def test_material_migration_retains_referenced_rows_and_refuses_lossy_downgrade(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "materials.db"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
+    config = Config()
+    config.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
+    command.upgrade(config, "0002_lock_analysis_segments")
+    with sqlite3.connect(database) as connection:
+        connection.execute("PRAGMA foreign_keys=ON")
+        connection.execute(
+            "INSERT INTO sources (id,title,description,note,created_at,updated_at) "
+            "VALUES ('source','本','','','2020-01-01','2020-01-01')"
+        )
+        connection.execute(
+            "INSERT INTO materials (id,source_id,title,source_sha256,version_id,product_sha256,"
+            "contract_version,original_bytes,warnings,compiled_bundle,created_at) "
+            "VALUES ('material','source','本','digest','version','product','v1',?, "
+            "'[]',?, '2020-01-01')",
+            (b"original", b"compiled"),
+        )
+        for table, columns, values in (
+            (
+                "reading_positions",
+                "material_id,revision,payload,updated_at",
+                "'material',7,'{}','2020-01-01'",
+            ),
+            (
+                "chapter_reading_positions",
+                "material_id,chapter_id,revision,payload,updated_at",
+                "'material','chapter',7,'{}','2020-01-01'",
+            ),
+            (
+                "material_usage",
+                "material_id,status,revision,updated_at",
+                "'material','completed',3,'2020-01-01'",
+            ),
+            ("material_covers", "material_id,media_type,data", "'material','image/png',X'1234'"),
+            (
+                "material_custom_covers",
+                "material_id,media_type,data",
+                "'material','image/png',X'5678'",
+            ),
+            (
+                "material_readings_generations",
+                "id,material_id,version_id,asset_sha256,configuration,token_count,payload,created_at",
+                "'generation','material','version','asset','config',1,X'1234','2020-01-01'",
+            ),
+            ("material_readings_current", "material_id,generation_id", "'material','generation'"),
+        ):
+            connection.execute(f"INSERT INTO {table} ({columns}) VALUES ({values})")
+        connection.commit()
+        columns = [row[1] for row in connection.execute("PRAGMA table_info(materials)")]
+        original = connection.execute("SELECT * FROM materials").fetchall()
+        dependencies = {
+            table: connection.execute(f"SELECT * FROM {table}").fetchall()
+            for table in Base.metadata.tables
+            if table != "materials"
+        }
+    command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        assert (
+            connection.execute(f"SELECT {','.join(columns)} FROM materials").fetchall() == original
+        )
+        assert connection.execute("SELECT deleted_at FROM materials").fetchall() == [(None,)]
+        for table, rows in dependencies.items():
+            assert connection.execute(f"SELECT * FROM {table}").fetchall() == rows
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    # Safe rollback and re-upgrade also preserve every dependent row.
+    command.downgrade(config, "0002_lock_analysis_segments")
+    command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        connection.execute("PRAGMA foreign_keys=ON")
+        connection.execute("UPDATE materials SET deleted_at='2026-01-01' WHERE id='material'")
+        connection.execute(
+            "INSERT INTO materials (id,source_id,title,source_sha256,version_id,product_sha256,"
+            "contract_version,original_bytes,warnings,compiled_bundle,created_at) "
+            "SELECT 'replacement',source_id,title,source_sha256,'new-version',product_sha256,"
+            "contract_version,original_bytes,warnings,compiled_bundle,created_at FROM materials"
+        )
+        connection.commit()
+    with pytest.raises(RuntimeError, match="无法无损回退"):
+        command.downgrade(config, "0002_lock_analysis_segments")
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
+            "0003_material_soft_delete",
+        )
+        assert connection.execute("SELECT count(*) FROM materials").fetchone() == (2,)
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+        for table, rows in dependencies.items():
+            assert connection.execute(f"SELECT * FROM {table}").fetchall() == rows
+
+
+def test_failed_material_rebuild_rolls_back_schema_and_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "invalid.db"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
+    config = Config()
+    config.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
+    command.upgrade(config, "0002_lock_analysis_segments")
+    # Simulate a pre-existing corrupt FK. Rebuild must detect it before commit
+    # and roll back the new column, index, parent copy and Alembic revision.
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO materials (id,source_id,title,source_sha256,version_id,product_sha256,"
+            "contract_version,original_bytes,warnings,compiled_bundle,created_at) "
+            "VALUES ('material','missing','本','digest','version','product','v1',?, "
+            "'[]',?, '2020-01-01')",
+            (b"original", b"compiled"),
+        )
+        connection.commit()
+        before = connection.execute("SELECT * FROM materials").fetchall()
+    with pytest.raises(RuntimeError, match="外键校验失败"):
+        command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("SELECT * FROM materials").fetchall() == before
+        assert "deleted_at" not in {
+            row[1] for row in connection.execute("PRAGMA table_info(materials)")
+        }
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
+            "0002_lock_analysis_segments",
+        )
+        assert (
+            connection.execute(
+                "SELECT name FROM sqlite_master WHERE name LIKE '_alembic_tmp_%'"
+            ).fetchall()
+            == []
+        )

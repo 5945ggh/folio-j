@@ -59,7 +59,7 @@ async def material_catalog(
         .outerjoin(MaterialCover, MaterialCover.material_id == Material.id)
         .outerjoin(MaterialCustomCover, MaterialCustomCover.material_id == Material.id)
         .options(defer(Material.compiled_bundle))
-        .where(Source.deleted_at.is_(None))
+        .where(Source.deleted_at.is_(None), Material.deleted_at.is_(None))
     )
     if source_id:
         statement = statement.where(Material.source_id == source_id)
@@ -143,7 +143,7 @@ async def source_catalog(
         (
             await session.execute(
                 select(Material.source_id, func.count())
-                .where(Material.source_id.in_(ids))
+                .where(Material.source_id.in_(ids), Material.deleted_at.is_(None))
                 .group_by(Material.source_id)
             )
         ).all()

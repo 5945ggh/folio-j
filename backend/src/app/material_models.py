@@ -6,11 +6,13 @@ from sqlalchemy import (
     JSON,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     LargeBinary,
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,10 +22,17 @@ from app.db import Base
 class Material(Base):
     __tablename__ = "materials"
     __table_args__ = (
-        UniqueConstraint("source_id", "source_sha256", name="uq_material_source_bytes"),
+        Index(
+            "uq_material_source_bytes",
+            "source_id",
+            "source_sha256",
+            unique=True,
+            sqlite_where=text("deleted_at IS NULL"),
+        ),
     )
     id: Mapped[str] = mapped_column(String(26), primary_key=True)
     source_id: Mapped[str] = mapped_column(ForeignKey("sources.id"), nullable=False, index=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     title: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_revision: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0"

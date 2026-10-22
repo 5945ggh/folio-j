@@ -9,6 +9,7 @@ import type { Source } from "../content";
 import { ConfirmDialog, dateLabel, InlineError } from "../Shared";
 import {
 	type AnalysisQuery,
+	type Book,
 	type BookQuery,
 	catalogAnalyses,
 	catalogBooks,
@@ -16,6 +17,7 @@ import {
 	catalogSegments,
 	type SegmentQuery,
 } from "./api";
+import { BookDeleteDialog } from "./BookDeleteDialog";
 import { BookEditDialog } from "./BookEditDialog";
 import { BookCatalog, BookGrid } from "./Books";
 import { CatalogToolbar, Pagination, Tabs } from "./Controls";
@@ -41,6 +43,7 @@ function SourceBooks({
 }) {
 	const [adding, setAdding] = useState(false);
 	const [editing, setEditing] = useState<string | null>(null);
+	const [deleting, setDeleting] = useState<Book | null>(null);
 	const focusAfterEdit = useRef(false);
 	const client = useQueryClient();
 	const { state } = useCatalogState("books", `source-books-${source.id}`);
@@ -58,6 +61,7 @@ function SourceBooks({
 	useEffect(() => {
 		if (
 			editing !== null ||
+			deleting !== null ||
 			!focusAfterEdit.current ||
 			books.isFetching ||
 			books.data !== client.getQueryData(catalogKeys.books(query))
@@ -65,8 +69,18 @@ function SourceBooks({
 			return;
 		focusAfterEdit.current = false;
 		const active = document.activeElement;
-		if (!active || active === document.body || !active.isConnected)
-			document.getElementById("source-content-panel-materials")?.focus();
+		const container = document.getElementById("source-content-panel-materials");
+		if (
+			!active ||
+			active === document.body ||
+			!active.isConnected ||
+			active === container
+		)
+			(
+				container?.querySelector<HTMLElement>(
+					".book-menu-trigger, button:not(:disabled), a[href]",
+				) ?? container
+			)?.focus();
 	});
 	const empty = books.isSuccess && books.data.total === 0;
 	useCatalogScroll(
@@ -151,6 +165,7 @@ function SourceBooks({
 					books={books.data.items}
 					returnLabel={source.title}
 					onEdit={setEditing}
+					onDelete={setDeleting}
 				/>
 			)}
 			{expanded && (
@@ -179,6 +194,16 @@ function SourceBooks({
 			)}
 			{adding && (
 				<ImportDialog sourceId={source.id} close={() => setAdding(false)} />
+			)}
+			{deleting !== null && (
+				<BookDeleteDialog
+					book={deleting}
+					close={() => {
+						focusAfterEdit.current = true;
+						setDeleting(null);
+					}}
+					restoreFocusId="source-content-panel-materials"
+				/>
 			)}
 			{editing !== null && (
 				<BookEditDialog
