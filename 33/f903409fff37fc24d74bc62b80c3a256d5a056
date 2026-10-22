@@ -1,0 +1,97 @@
+docs/handovers/text-study/TEST_MATRIX.md
+  s_c3a6ddbbdbbaa1::t_eff790e6b83ff6 61
+  s_c3a6ddbbdbbaa1::t_d48c26a22894ea 67,70
+  s_0fe3ab6aa80701::t_a95d3a86a99bf3 50,62-64
+  s_c3a6ddbbdbbaa1::t_902faace63cdf2 47-49,51-58,60,66,68-69,72
+  s_289cb711126841::t_3d3fdce236f6a2 59,71,73,75,79,81-88,90
+  s_2266e509969e00::t_9e888e9f800a93 74,76-78,80,89
+  s_c3a6ddbbdbbaa1::t_9ccbb2a98bbbea 65
+docs/handovers/text-study/PLAN.md
+  s_289cb711126841::t_3d3fdce236f6a2 4,192,212,220-221,232,234
+  s_2266e509969e00::t_4493c9ab694a4b 3,10
+  s_c3a6ddbbdbbaa1::t_76312f0776b8de 78,183,207,216-219,222-227,255
+  s_2266e509969e00::t_9e888e9f800a93 79,206,208,210,214,231
+  s_289cb711126841::t_33a794eeb06f7b 215
+docs/PRD.md
+  s_2266e509969e00::t_5393662af68063 213-214,220
+  s_2266e509969e00::t_a984d7564b6bd4 103,119,370,492
+  s_c3a6ddbbdbbaa1::t_e8386f2d552731 139,185,218,222-230,233-237,253,483
+  s_2266e509969e00::t_4493c9ab694a4b 207
+  s_c3a6ddbbdbbaa1::t_a3d0245bc5a0c8 653
+  s_289cb711126841::t_7d90c9dce25151 6,215-217,219,231-232
+  s_289cb711126841::t_691884e442d017 221,371
+docs/handovers/epub-reading/DIRECTION.md
+  s_289cb711126841::t_3d3fdce236f6a2 68
+docs/handovers/epub-reading/MATERIAL_BASELINE.md
+  s_2266e509969e00::t_4493c9ab694a4b 5
+  s_289cb711126841::t_3d3fdce236f6a2 6,114,116,135
+  s_2266e509969e00::t_9e888e9f800a93 129
+  s_2266e509969e00::t_a984d7564b6bd4 82
+  s_c3a6ddbbdbbaa1::t_a3d0245bc5a0c8 78
+docs/GLOSSARY.md
+  s_c3a6ddbbdbbaa1::t_e8386f2d552731 16,45-46
+  s_2266e509969e00::t_a984d7564b6bd4 15,29,39,41
+  s_289cb711126841::t_7d90c9dce25151 3,17,47-48
+  s_289cb711126841::t_ec547c62aeb245 49
+docs/handovers/README.md
+  s_0fe3ab6aa80701::t_a95d3a86a99bf3 9
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_2266e509969e00::t_3291b5b02c4208 14,71,75
+  s_289cb711126841::t_3d3fdce236f6a2 62
+  s_0fe3ab6aa80701::t_64e8f450e04688 3,6,33,63
+docs/ARCHITECTURE.md
+  s_2266e509969e00::t_5393662af68063 417,423,434
+  s_289cb711126841::t_7d90c9dce25151 411,416,418-422
+  s_0fe3ab6aa80701::t_a95d3a86a99bf3 84
+  s_2266e509969e00::t_a984d7564b6bd4 68,70,74,81-82,403,405,410,414-415,443,447-448,467-469
+docs/handovers/epub-reading/README.md
+  s_2266e509969e00::t_a984d7564b6bd4 5,94-95
+  s_2266e509969e00::t_4493c9ab694a4b 35,92
+  s_289cb711126841::t_3d3fdce236f6a2 12,56
+docs/INFORMATION_ARCHITECTURE.md
+  s_2266e509969e00::t_5393662af68063 137,139,148
+  s_289cb711126841::t_7d90c9dce25151 134,136,138,140-141,145-146
+  s_c3a6ddbbdbbaa1::t_76312f0776b8de 132,143-144
+  s_2266e509969e00::t_a984d7564b6bd4 126,128,142
+  s_289cb711126841::t_c3100f8488dba1 147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "33f903409fff37fc24d74bc62b80c3a256d5a056",
+  "prompts": {},
+  "sessions": {
+    "s_0fe3ab6aa80701": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a163ac-b28a-70d1-b5c1-a36980634e69",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_2266e509969e00": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1623e-fdb9-7af3-94da-59b146c563b7",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_289cb711126841": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a162c4-fd84-78d2-b2fb-dd9286a12010",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_c3a6ddbbdbbaa1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1620f-c54d-7c32-b762-9e1dffb4162c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
