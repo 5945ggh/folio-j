@@ -1,0 +1,32 @@
+docs/handovers/text-study/READING_EXPERIENCE_PLAN.md
+  s_289cb711126841::t_7d063d1835d8cd 1-14,16-30,33-56
+  s_289cb711126841::t_0587263f4a3b8a 15,31-32,57
+docs/handovers/text-study/C2_EXACT_CASES.md
+  s_289cb711126841::t_4ce813ad67cce0 7,12-15,19,28-30,33-42
+frontend/src/materials/study-context.ts
+  s_289cb711126841::t_142c29cb4fbac6 263-266
+  s_289cb711126841::t_e1b3301ef6997d 229-239,255-262,267-276
+docs/handovers/text-study/fixtures/c2-context-cases.json
+  s_289cb711126841::t_caff4d80ad2aed 170,187,204,206,409,426,428,443,445,460,476,478,493-765
+frontend/src/materials/study-context.test.ts
+  s_289cb711126841::t_142c29cb4fbac6 102-112,129-134
+  s_289cb711126841::t_b9512dfa630895 101,113,127-128,135,240,250
+frontend/src/materials/StudySegmentPanel.tsx
+  s_289cb711126841::t_00adc737da40a0 322-324
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d06f3e6edce0bd959dc1a221a5563f21e5e6e7d7",
+  "prompts": {},
+  "sessions": {
+    "s_289cb711126841": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a162c4-fd84-78d2-b2fb-dd9286a12010",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
