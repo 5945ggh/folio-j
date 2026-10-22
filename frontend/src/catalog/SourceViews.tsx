@@ -336,8 +336,11 @@ function SourceSegments({
 									{segment.text}
 								</span>
 								<span className="segment-meta">
-									{segment.source_ref || "未填写出处"} ·{" "}
-									{dateLabel(segment.created_at)}
+									{segment.source_ref ||
+										(segment.material_provenance
+											? "已保存材料出处"
+											: "未填写出处")}{" "}
+									· {dateLabel(segment.created_at)}
 								</span>
 							</Link>
 							<Link

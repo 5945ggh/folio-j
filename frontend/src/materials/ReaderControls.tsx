@@ -248,6 +248,26 @@ export function ReaderSettings({
 					显现。
 				</p>
 			</fieldset>
+			<fieldset>
+				<legend>正文标记</legend>
+				<label className="reader-focus-label">
+					<span>
+						学习片段下划线<small>在所有书籍中生效</small>
+					</span>
+					<input
+						type="checkbox"
+						aria-label="显示学习片段下划线"
+						checked={ui.marks.studySegments}
+						onChange={(event) =>
+							onUi({
+								...ui,
+								marks: { ...ui.marks, studySegments: event.target.checked },
+							})
+						}
+					/>
+				</label>
+				<p>关闭后隐藏下划线及正文点击入口，已保存片段保持不变。</p>
+			</fieldset>
 			<label className="reader-focus-label">
 				<span>
 					专注阅读<small>静置后自动隐藏工具</small>

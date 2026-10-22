@@ -1376,6 +1376,69 @@
         "title": "MaterialChapterResponse",
         "type": "object"
       },
+      "MaterialChapterSegment": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "excerpt": {
+            "maxLength": 160,
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "material_provenance": {
+            "$ref": "#/components/schemas/MaterialProvenance"
+          },
+          "segment_id": {
+            "title": "Segment Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "segment_id",
+          "excerpt",
+          "created_at",
+          "material_provenance"
+        ],
+        "title": "MaterialChapterSegment",
+        "type": "object"
+      },
+      "MaterialChapterSegmentsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialChapterSegment"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "unavailable_count": {
+            "minimum": 0.0,
+            "title": "Unavailable Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor",
+          "unavailable_count"
+        ],
+        "title": "MaterialChapterSegmentsResponse",
+        "type": "object"
+      },
       "MaterialCoverInput": {
         "additionalProperties": false,
         "properties": {
@@ -3737,6 +3800,102 @@
         "title": "SegmentCatalogPage",
         "type": "object"
       },
+      "SegmentContextSettingsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "after_characters": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "After Characters",
+            "type": "integer"
+          },
+          "after_sentences": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "After Sentences",
+            "type": "integer"
+          },
+          "before_characters": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Before Characters",
+            "type": "integer"
+          },
+          "before_sentences": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Before Sentences",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "before_sentences",
+          "after_sentences",
+          "before_characters",
+          "after_characters",
+          "revision"
+        ],
+        "title": "SegmentContextSettingsResponse",
+        "type": "object"
+      },
+      "SegmentContextSettingsUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "after_characters": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "After Characters",
+            "type": "integer"
+          },
+          "after_sentences": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "After Sentences",
+            "type": "integer"
+          },
+          "before_characters": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Before Characters",
+            "type": "integer"
+          },
+          "before_sentences": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Before Sentences",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "before_sentences",
+          "after_sentences",
+          "before_characters",
+          "after_characters",
+          "expected_revision"
+        ],
+        "title": "SegmentContextSettingsUpdate",
+        "type": "object"
+      },
       "SegmentCreate": {
         "additionalProperties": false,
         "properties": {
@@ -5461,6 +5620,94 @@
           }
         },
         "summary": "Get Chapter"
+      }
+    },
+    "/api/materials/{material_id}/chapters/{chapter_id}/segments": {
+      "get": {
+        "operationId": "listMaterialChapterSegments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "chapter_id",
+            "required": true,
+            "schema": {
+              "title": "Chapter Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "maxLength": 26,
+              "minLength": 1,
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialChapterSegmentsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Chapter Segments"
       }
     },
     "/api/materials/{material_id}/cover": {
@@ -7344,6 +7591,60 @@
           }
         },
         "summary": "Put Profile"
+      }
+    },
+    "/api/settings/segment-context": {
+      "get": {
+        "operationId": "getSegmentContextSettings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentContextSettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Settings"
+      },
+      "put": {
+        "operationId": "saveSegmentContextSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SegmentContextSettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentContextSettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Settings"
       }
     },
     "/api/settings/styles": {

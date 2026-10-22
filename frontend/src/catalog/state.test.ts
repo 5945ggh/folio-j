@@ -199,3 +199,116 @@ test("详情来处拒绝未知子路由、外站父来处与递归状态", () =>
 		label: recursive.label,
 	});
 });
+
+test("学习往返保留详情与目录筛选，使用显式 parent 且不传递任意 state", async () => {
+	const { returnState } = await import("../navigation.ts");
+	const catalog = {
+		to: "/sources/s?view=materials&q=%E9%9B%A8&page=2&sort=title",
+		label: "来源书籍",
+	};
+	const details = returnDestination({
+		returnTo: { to: "/materials/b/details", label: "详情", parent: catalog },
+	});
+	const fromSegment = returnState(
+		{ to: "/materials/b?segment=s", label: "书" },
+		details,
+		"/segments/s",
+	);
+	const reader = returnDestination(fromSegment);
+	assert.equal(reader.to, "/materials/b?segment=s");
+	const backDetails = returnDestination(reader.state);
+	assert.equal(backDetails.to, "/materials/b/details");
+	assert.deepEqual(returnDestination(backDetails.state), catalog);
+	const toOrigin = returnState(
+		{ to: "/segments/s?analysis=a&revision=r&chat=0", label: "片段" },
+		reader,
+		"/materials/b",
+	);
+	const segment = returnDestination(toOrigin);
+	assert.equal(segment.to, "/segments/s?analysis=a&revision=r&chat=0");
+	assert.equal(returnDestination(segment.state).to, "/materials/b/details");
+	assert.deepEqual(
+		returnDestination(returnDestination(segment.state).state),
+		catalog,
+	);
+	assert.deepEqual(
+		returnDestination({
+			returnTo: {
+				to: "/materials/b",
+				label: "书",
+				state: { secret: true },
+				parent: { ...catalog, state: { unsafe: "discard" } },
+			},
+		}).state,
+		{ returnTo: catalog },
+	);
+});
+
+test("学习来处链去除同路由环，限制深度，并逐层拒绝未知路由和伪协议", async () => {
+	const { returnState } = await import("../navigation.ts");
+	const catalog = { to: "/materials?q=x&page=3", label: "目录" };
+	let back = returnDestination({
+		returnTo: { to: "/materials/b/details", label: "详情", parent: catalog },
+	});
+	for (let index = 0; index < 30; index++) {
+		back = returnDestination(
+			returnState(
+				{ to: "/materials/b?segment=s", label: "书" },
+				back,
+				"/segments/s",
+			),
+		);
+		back = returnDestination(
+			returnState(
+				{ to: "/segments/s?chat=0", label: "片段" },
+				back,
+				"/materials/b",
+			),
+		);
+	}
+	assert.ok(JSON.stringify(back).length < 600);
+	assert.equal(returnDestination(back.state).to, "/materials/b/details");
+	assert.deepEqual(
+		returnDestination(returnDestination(back.state).state),
+		catalog,
+	);
+	for (const to of [
+		"https://evil.test",
+		"//evil.test",
+		"/api/settings",
+		"/materials/a/../b",
+		"/materials/%2e%2e/details",
+		"/materials/a/unknown",
+	]) {
+		const result = returnDestination({
+			returnTo: {
+				to: "/segments/s",
+				label: "片段",
+				parent: { to, label: "未知", parent: catalog },
+			},
+		});
+		assert.equal(result.state, undefined);
+	}
+	const repeated: { to: string; label: string; parent?: unknown } = {
+		to: "/materials/b?segment=s",
+		label: "书",
+	};
+	repeated.parent = repeated;
+	assert.deepEqual(returnDestination({ returnTo: repeated }), {
+		to: repeated.to,
+		label: repeated.label,
+	});
+	let long: { to: string; label: string; parent?: unknown } = catalog;
+	for (let index = 0; index < 100; index++)
+		long = { to: `/segments/s${index}`, label: "片段", parent: long };
+	const bounded = returnDestination({ returnTo: long });
+	let hops = 0,
+		at: unknown = bounded;
+	while (at && typeof at === "object" && "to" in at) {
+		hops++;
+		at =
+			"state" in at ? returnDestination(at.state, { to: "", label: "" }) : null;
+		if (at && typeof at === "object" && "to" in at && at.to === "") break;
+	}
+	assert.ok(hops <= 4);
+});

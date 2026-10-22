@@ -11,8 +11,8 @@ import {
 import { flushSync } from "react-dom";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { Icon as CatalogIcon } from "../catalog/LibraryTools";
-import { getSource, queries, RequestError } from "../content";
-import { returnDestination } from "../navigation";
+import { getSource, queries, RequestError, type Segment } from "../content";
+import { returnDestination, returnState } from "../navigation";
 import { InlineError } from "../Shared";
 import {
 	type Chapter,
@@ -34,27 +34,17 @@ import {
 	usageKey,
 } from "./api";
 import {
-	htmlEscape,
 	imagePrecedesText,
-	imageTextOffset,
 	nearestText,
-	type Projection,
-	projectPart,
 	readingContentEnd,
 	textRect,
 	textSamplingTarget,
 } from "./dom";
-import {
-	createFocusController,
-	isReaderFrameTarget,
-	registerReaderFrameTargets,
-} from "./focus";
-import { highlightRange } from "./highlight";
+import { createFocusController, isReaderFrameTarget } from "./focus";
 import { READER_EXIT_MS, useReaderPresence } from "./motion";
 import { cacheSavedPosition, registerPositionWriter } from "./persistence";
 import {
 	chapterProgress,
-	currentSurface,
 	imageAtReadingEdge,
 	imageCoordinate,
 	imageFraction,
@@ -65,6 +55,7 @@ import {
 	type BookUiPreferences,
 	DEFAULT_BOOK_UI,
 	DEFAULT_READER_UI,
+	READER_UI_KEY,
 	type ReaderUiPreferences,
 	readBookUiPreferences,
 	readReaderUiPreferences,
@@ -72,14 +63,20 @@ import {
 	writeBookUiPreferences,
 	writeReaderUiPreferences,
 } from "./preferences";
-import { applyFramePresentation, normalizeFrameImages } from "./presentation";
+import { applyFramePresentation } from "./presentation";
 import { ReaderIcon, ReaderPanel, ReaderSettings } from "./ReaderControls";
 import { ReaderGalleryPanel, ReaderNavigationPanel } from "./ReaderPanels";
+import {
+	type ReaderFrame as Frame,
+	partDocument,
+	ReaderFrames,
+} from "./reader-frames";
 import { ReaderLayout } from "./reader-layout";
 import {
 	ReaderNavigation,
 	type ReaderNavigationCompletion,
 } from "./reader-navigation";
+import { originFailure, originPosition } from "./reader-origin";
 import {
 	closeReaderPanel,
 	EMPTY_READER_PANELS,
@@ -88,9 +85,23 @@ import {
 	type ReaderPanelsState,
 	selectReaderPanel,
 } from "./reader-panel-logic";
+import type { ReaderHighlightRange } from "./reader-selection";
+import type { StudyMarkHit, StudySelection } from "./reader-study";
 import { JumpReadingSession, returnOriginLabel } from "./return-origin";
-import { applyAutomaticRuby } from "./ruby";
+import {
+	SavedSegmentNotice,
+	SelectionToolbar,
+	StudyMarkPopover,
+} from "./StudyOverlays";
+import { StudySegmentPanel } from "./StudySegmentPanel";
 import { readerWheelScroll } from "./scroll";
+import {
+	getSegmentProvenance,
+	type SegmentProvenance,
+	type StudyTarget,
+} from "./study-api";
+import { useChapterStudyMarks } from "./study-marks-query";
+import { nativeSelectionKey } from "./study-overlays";
 import { freshestUsage, OpenAction } from "./usage";
 import {
 	atChapterEnd,
@@ -105,59 +116,35 @@ const defaults: Settings = {
 	line_height: 2,
 	writing_mode: "horizontal-tb",
 };
-type Frame = {
-	element: HTMLIFrameElement;
-	doc: Document;
-	projection: Projection;
-	imageOffsets: Map<number, number>;
-	contentEnd: number | null;
-	resize: () => void;
-	cleanup: () => void;
-	presentationCleanup: () => void;
-	rubyApplied: boolean;
-};
-function partDocument(
-	part: Chapter["parts"][number],
-	resource: Chapter["resources"][number],
-	settings: Settings,
-) {
-	const attrs = (values: Record<string, string>) =>
-		Object.entries(values)
-			.filter(([key]) => ["class", "lang", "dir"].includes(key))
-			.map(([k, v]) => `${k}="${htmlEscape(v)}"`)
-			.join(" ");
-	// Compiled author CSS is isolated in this document; CSP prevents external resource loads.
-	return `<!doctype html><html ${attrs(resource.html_attributes)}><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; script-src 'none'; connect-src 'none'"><style>${resource.css.replace(/<\/style/gi, "&lt;/style")}</style><style>html,body{margin:0!important;padding:0!important;background:transparent!important;}body{font-size:${settings.font_size}px!important;line-height:${settings.line_height}!important;writing-mode:${settings.writing_mode}!important;color:#292b28!important;}img{max-width:100%;object-fit:contain;}ruby rt{font-size:.55em;}html[data-reader-ruby-scope="original"] ruby[data-auto-ruby]{display:contents!important;}html[data-reader-ruby-scope="original"] ruby[data-auto-ruby] rt{display:none!important;}a{pointer-events:none;}html,body{overflow:hidden!important;}</style></head><body ${attrs(resource.body_attributes)}>${part.html}</body></html>`;
-}
-function applyDocumentSettings(doc: Document, settings: Settings) {
-	doc.body.style.setProperty(
-		"font-size",
-		`${settings.font_size}px`,
-		"important",
-	);
-	doc.body.style.setProperty(
-		"line-height",
-		String(settings.line_height),
-		"important",
-	);
-	doc.body.style.setProperty(
-		"writing-mode",
-		settings.writing_mode,
-		"important",
-	);
-}
 function Reader({
 	book,
 	notice,
 	readingsSummary,
+	initialOrigin,
 }: {
 	book: Material;
+	initialOrigin: SegmentProvenance | null;
 	readingsSummary: ReadingsSummary;
 	notice: "imported" | "reused" | null;
 }) {
 	const client = useQueryClient();
 	const readingGeneration = readingsSummary.generation_id;
 	const location = useLocation();
+	const navigate = useNavigate();
+	const initialAnchor = initialOrigin
+		? originPosition(initialOrigin, book.reading_position?.settings ?? defaults)
+		: book.reading_position;
+	const [studyTarget, setStudyTarget] = useState<StudyTarget | null>(null);
+	const [selectionError, setSelectionError] = useState<Error | null>(null);
+	const [originError, setOriginError] = useState<Error | null>(null);
+	const [selection, setSelection] = useState<StudySelection | null>(null);
+	const [markHit, setMarkHit] = useState<StudyMarkHit | null>(null);
+	const [markError, setMarkError] = useState<Error | null>(null);
+	const [savedNotice, setSavedNotice] = useState<{
+		id: string;
+		kind: "created" | "existing";
+		serial: number;
+	} | null>(null);
 	const returnTo = returnDestination(location.state, {
 		to: "/materials",
 		label: "素材库",
@@ -247,7 +234,7 @@ function Reader({
 	};
 	const warnings = Array.from(new Set(book.warnings));
 	const [chapterId, setChapterId] = useState(
-		book.reading_position?.chapter_id ?? book.chapters[0]?.id ?? "",
+		initialAnchor?.chapter_id ?? book.chapters[0]?.id ?? "",
 	);
 	const [settings, setSettings] = useState<Settings>(
 		book.reading_position?.settings ?? defaults,
@@ -302,11 +289,17 @@ function Reader({
 	}, []);
 	const highlight = useRef<{
 		chapterId: string;
-		resourceId: string;
-		partIndex: number;
-		start: number;
-		end: number;
-	} | null>(null);
+		ranges: ReaderHighlightRange[];
+		kind: "study" | "search";
+	} | null>(
+		initialOrigin?.material_provenance && initialOrigin.chapter_id
+			? {
+					kind: "study",
+					chapterId: initialOrigin.chapter_id,
+					ranges: initialOrigin.material_provenance.ranges,
+				}
+			: null,
+	);
 	const latest = useRef({
 		panels,
 		chapterId,
@@ -316,6 +309,7 @@ function Reader({
 		settings,
 		presented,
 		ui,
+		studyActive: studyTarget !== null || selection !== null || markHit !== null,
 	});
 	latest.current = {
 		panels,
@@ -326,13 +320,24 @@ function Reader({
 		settings,
 		presented,
 		ui,
+		studyActive: studyTarget !== null || selection !== null || markHit !== null,
 	};
 	const setUiPreference = useCallback((next: ReaderUiPreferences) => {
 		setUi(next);
 		setStorageFailed(!writeReaderUiPreferences(next));
 	}, []);
+	useEffect(() => {
+		const changed = (event: StorageEvent) => {
+			if (event.key === READER_UI_KEY || event.key === null)
+				setUi(readReaderUiPreferences());
+		};
+		window.addEventListener("storage", changed);
+		return () => window.removeEventListener("storage", changed);
+	}, []);
 	const selectPanel = useCallback(
 		(next: ReaderPanelKind, toggle = false) => {
+			setSelection(null);
+			setMarkHit(null);
 			jumpReading.current.pause();
 			invalidateNavigation();
 			navigation.current.dismissError();
@@ -401,6 +406,18 @@ function Reader({
 			onVisibilityChange: setToolsVisible,
 			onTabReveal: (event, wasHidden) => {
 				flushSync(() => setToolsVisible(true));
+				const selectionButton = document.getElementById(
+					"reader-selection-save",
+				);
+				if (
+					selectionButton &&
+					!event.shiftKey &&
+					!(event.target as Element | null)?.closest?.(".reader-study-tool")
+				) {
+					event.preventDefault();
+					selectionButton.focus({ preventScroll: true });
+					return;
+				}
 				const target = event.target as Element | null;
 				if (
 					wasHidden ||
@@ -421,10 +438,17 @@ function Reader({
 			onFocusChange: (enabled) =>
 				setUiPreference({ ...latest.current.ui, focus: enabled }),
 			hasOverlay: () =>
+				latest.current.studyActive ||
 				latest.current.panels.left !== null ||
 				latest.current.panels.right !== null ||
 				!latest.current.presented,
 			onEscapeOverlay: () => {
+				if (document.querySelector(".reader-study-tool")) {
+					setSelection(null);
+					setMarkHit(null);
+					frames.current.emphasizeStudyMark(null);
+					return true;
+				}
 				if (
 					viewerEscape.current &&
 					(!latest.current.compactPanels ||
@@ -462,7 +486,7 @@ function Reader({
 	} | null>(null);
 	const [layoutRevision, setLayoutRevision] = useState(0);
 	const [progress, setProgress] = useState<number | null>(
-		book.reading_position?.progress ?? null,
+		initialOrigin ? null : (book.reading_position?.progress ?? null),
 	);
 	const [chapterPositions, setChapterPositions] = useState(
 		() =>
@@ -481,6 +505,12 @@ function Reader({
 		queryFn: () => getChapter(book.id, chapterId),
 		enabled: !!chapterId,
 	});
+	const marks = useChapterStudyMarks(
+		book.id,
+		book.version_id,
+		chapterId,
+		ui.marks.studySegments,
+	);
 	const readings = useQuery({
 		queryKey: readingsKey(
 			book.id,
@@ -502,11 +532,43 @@ function Reader({
 	const viewportReady =
 		chapter.isSuccess && (bookUi.rubyScope !== "all" || readings.isSuccess);
 	const container = useRef<HTMLElement>(null);
-	const frames = useRef(new Map<number, Frame>());
-	const elements = useRef(new Map<number, HTMLIFrameElement>());
-	const layout = useRef(new ReaderLayout<Position>(book.reading_position));
+	const frames = useRef(new ReaderFrames());
+	const layout = useRef(new ReaderLayout<Position>(initialAnchor));
 	const generation = useRef(0);
 	const alive = useRef(true);
+	useLayoutEffect(() => {
+		frames.current.bindStudy({
+			materialId: book.id,
+			versionId: book.version_id,
+			chapterId,
+			onSelection: (value) => {
+				if (!alive.current) return;
+				setSelection(value);
+				if (value) {
+					setMarkHit(null);
+					controller.current?.show();
+				}
+			},
+			onMarks: (value) => {
+				if (!alive.current) return;
+				setMarkHit(value);
+				if (value) {
+					setSelection(null);
+					controller.current?.show();
+				}
+			},
+		});
+	});
+	const visibleHitItems = markHit
+		? marks.items.filter((item) => markHit.segmentIds.includes(item.segment_id))
+		: [];
+	const closeMarkHit = useCallback(() => {
+		setMarkHit(null);
+		frames.current.emphasizeStudyMark(null);
+	}, []);
+	useEffect(() => {
+		if (!ui.marks.studySegments || marks.isError) closeMarkHit();
+	}, [ui.marks.studySegments, marks.isError, closeMarkHit]);
 	const queue = useRef<PositionQueue<Position> | null>(null);
 	if (!queue.current)
 		queue.current = new PositionQueue(
@@ -756,6 +818,19 @@ function Reader({
 			const root = container.current;
 			const data = chapter.data;
 			if (!root || !data) return false;
+			if (highlight.current?.chapterId === chapterId) {
+				try {
+					if (highlight.current.kind === "study")
+						frames.current.validateStudyTarget(data, highlight.current.ranges);
+					else frames.current.highlight(data, highlight.current.ranges);
+					setOriginError(null);
+				} catch (failure) {
+					setOriginError(
+						failure instanceof Error ? failure : new Error(String(failure)),
+					);
+					return false;
+				}
+			}
 			jumpReading.current.pause();
 			let located = false;
 			const vertical = settings.writing_mode === "vertical-rl";
@@ -837,29 +912,10 @@ function Reader({
 				if (vertical) root.scrollLeft += adjustment;
 				else root.scrollTop += adjustment;
 			}
-			try {
-				const mark = highlight.current;
-				if (mark && mark.chapterId === chapterId) {
-					for (const [index, frame] of frames.current) {
-						const part = data.parts[index];
-						if (
-							part &&
-							part.resource_id === mark.resourceId &&
-							part.spine_index === data.parts[mark.partIndex]?.spine_index &&
-							part.end > mark.start &&
-							part.start < mark.end
-						)
-							highlightRange(
-								frame.doc,
-								frame.projection,
-								Math.max(mark.start, part.start) - part.start,
-								Math.min(mark.end, part.end) - part.start,
-							);
-					}
-				}
-			} catch (failure) {
-				navigationFailure =
-					failure instanceof Error ? failure : new Error(String(failure));
+
+			if (highlight.current && !located) {
+				setOriginError(new Error("原文尚未完整定位，已保留目标，请重试。"));
+				return false;
 			}
 
 			return () => {
@@ -888,10 +944,7 @@ function Reader({
 			: () => {};
 		return () => {
 			alive.current = false;
-			for (const frame of frames.current.values()) {
-				frame.cleanup();
-				frame.presentationCleanup();
-			}
+			frames.current.clear();
 			layout.current.cancelSave();
 			const anchor = layout.current.presentedAnchor(() => null);
 			if (anchor) queue.current?.enqueue(anchor);
@@ -899,148 +952,35 @@ function Reader({
 		};
 	}, [book.id]);
 	const load = (index: number, element: HTMLIFrameElement, token: number) => {
-		const valid = () =>
-			currentSurface(
-				token,
-				generation.current,
-				element.isConnected,
-				elements.current.get(index) === element &&
-					!!container.current?.contains(element),
-			);
-		if (!valid()) return;
-		const doc = element.contentDocument;
-		const data = chapter.data;
-		if (!doc || !data) return;
-		const part = data.parts[index];
-		if (!part) return;
-		const resource = data.resources.find((r) => r.id === part.resource_id);
-		if (!resource) return;
-		try {
-			applyDocumentSettings(doc, latest.current.settings);
-			let projection = projectPart(
-				doc,
-				Array.from(resource.text).slice(part.start, part.end).join(""),
-				part.leaf_start,
-			);
-			if (latest.current.bookUi.rubyScope === "all") {
-				const asset = readings.data?.resources.find(
-					(r) => r.resource_id === part.resource_id,
-				);
-				if (!asset || readings.data?.generation_id !== readingGeneration)
-					throw new Error("章节注音暂不可用，请重试。");
-				registerReaderFrameTargets(
-					doc,
-					applyAutomaticRuby(doc, projection, asset.tokens, part.start),
-				);
-				projection = projectPart(
-					doc,
-					Array.from(resource.text).slice(part.start, part.end).join(""),
-					part.leaf_start,
-				);
-			}
-			const resize = () => {
-				if (!valid()) return;
-				const vertical = latest.current.settings.writing_mode === "vertical-rl";
-				const root = container.current;
-				if (root)
-					normalizeFrameImages(
-						doc,
-						readingViewport(root, getComputedStyle(root)),
-					);
-				if (vertical) {
-					element.style.height = "100%";
-					doc.body.style.setProperty("height", "100%", "important");
-					doc.body.style.setProperty("width", "max-content", "important");
-					element.style.width = "1px";
-					element.style.width = `${Math.max(100, doc.body.scrollWidth, doc.documentElement.scrollWidth)}px`;
-				} else {
-					element.style.width = "100%";
-					doc.body.style.setProperty("height", "auto", "important");
-					doc.body.style.setProperty("width", "auto", "important");
-					element.style.height = "1px";
-					element.style.height = `${Math.max(32, doc.body.scrollHeight, doc.documentElement.scrollHeight)}px`;
-				}
-			};
-			frames.current.get(index)?.cleanup();
-			frames.current.get(index)?.presentationCleanup();
-			const presentationCleanup = applyFramePresentation(
-				doc,
-				latest.current.theme,
-				latest.current.bookUi,
-			);
-			const unbind = controller.current?.bindFrame(doc, element);
-			const keydown = (event: KeyboardEvent) => {
-				if (valid()) readKey(event);
-			};
-			const wheel = (event: WheelEvent) => {
-				if (valid() && isReaderFrameTarget(doc, event.target)) readWheel(event);
-			};
-			const touchmove = (event: TouchEvent) => {
-				if (valid()) recordReadingInput(event);
-			};
-			const click = (event: MouseEvent) => {
-				if (!valid()) return;
-				const target = event.target as Element | null;
-				const image = target?.closest("img[data-epub-image]");
-				if (image && !event.defaultPrevented) {
-					event.preventDefault();
-					setInitialImage({
-						requestId: ++galleryTicket.current,
-						chapterId,
-						partIndex: index,
-						imageId: Number(image.getAttribute("data-epub-image")),
-					});
-					selectPanel("gallery");
-				}
-			};
-			doc.addEventListener("keydown", keydown);
-			doc.addEventListener("wheel", wheel, { passive: false });
-			doc.addEventListener("touchmove", touchmove, { passive: true });
-			doc.addEventListener("click", click);
-			const cleanup = () => {
-				unbind?.();
-				doc.removeEventListener("keydown", keydown);
-				doc.removeEventListener("wheel", wheel);
-				doc.removeEventListener("touchmove", touchmove);
-				doc.removeEventListener("click", click);
-			};
-			frames.current.set(index, {
-				element,
-				doc,
-				projection,
-				imageOffsets: new Map(
-					Array.from(
-						doc.querySelectorAll<HTMLElement>("[data-epub-image]"),
-						(image) => [
-							Number(image.dataset.epubImage),
-							imageTextOffset(image, projection),
-						],
-					),
+		if (!chapter.data) return;
+		frames.current.load(index, element, token, {
+			chapter: chapter.data,
+			readingGeneration,
+			readings: readings.data,
+			current: () => latest.current,
+			generation: () => generation.current,
+			root: () => container.current,
+			bindFocus: (doc, frame) => controller.current?.bindFrame(doc, frame),
+			key: readKey,
+			wheel: readWheel,
+			touch: recordReadingInput,
+			image: (partIndex, imageId) => {
+				setInitialImage({
+					requestId: ++galleryTicket.current,
+					chapterId,
+					partIndex,
+					imageId,
+				});
+				selectPanel("gallery");
+			},
+			ready: (token, index) => layout.current.resourcesReady(token, index),
+			error: (failure) =>
+				setError(
+					initialOrigin
+						? new Error("原文定位不完整，目标已保留。请重新打开后重试。")
+						: failure,
 				),
-				contentEnd: null,
-				resize,
-				cleanup,
-				presentationCleanup,
-				rubyApplied: latest.current.bookUi.rubyScope === "all",
-			});
-			resize();
-			void Promise.all([
-				doc.fonts.ready,
-				...Array.from(doc.images).map((image) =>
-					image.complete
-						? Promise.resolve()
-						: new Promise<void>((resolve) => {
-								image.onload = () => resolve();
-								image.onerror = () => resolve();
-							}),
-				),
-			]).then(() => {
-				if (!valid()) return;
-				layout.current.resourcesReady(token, index);
-			});
-		} catch (failure) {
-			setError(failure instanceof Error ? failure : new Error(String(failure)));
-		}
+		});
 	};
 	// biome-ignore lint/correctness/useExhaustiveDependencies: a newly mounted keyed viewport needs its own observer.
 	useEffect(() => {
@@ -1120,20 +1060,29 @@ function Reader({
 				}
 				const { target, mark } = destination;
 				layout.current.setAnchor(target);
-				highlight.current = mark
-					? {
-							chapterId: target.chapter_id,
-							resourceId: target.resource_id,
-							partIndex: target.part_index,
-							...mark,
-						}
-					: null;
+				const part = chapter.data?.parts[target.part_index];
+				// Destination chapter may be newly fetched; the chosen part is checked by navigation.
+				const loaded = client.getQueryData<Chapter>(
+					materialKeys.chapter(book.id, target.chapter_id),
+				);
+				const targetPart = loaded?.parts[target.part_index] ?? part;
+				highlight.current =
+					mark && targetPart
+						? {
+								kind: "search",
+								chapterId: target.chapter_id,
+								ranges: [
+									{
+										resource_id: target.resource_id,
+										spine_index: targetPart.spine_index,
+										...mark,
+									},
+								],
+							}
+						: null;
+				setOriginError(null);
 				generation.current++;
 				layout.current.invalidateSurface();
-				for (const frame of frames.current.values()) {
-					frame.cleanup();
-					frame.presentationCleanup();
-				}
 				frames.current.clear();
 				setChapterId(target.chapter_id);
 				setSurfaceRevision((value) => value + 1);
@@ -1159,6 +1108,7 @@ function Reader({
 	const readKey = useCallback(
 		(event: KeyboardEvent) => {
 			const target = event.target as Element | null;
+			if (nativeSelectionKey(event)) return;
 			if (
 				target?.ownerDocument &&
 				target.ownerDocument !== document &&
@@ -1292,45 +1242,7 @@ function Reader({
 				presentation,
 				() => {
 					jumpReading.current.pause();
-					for (const [index, frame] of frames.current) {
-						frame.presentationCleanup();
-						frame.presentationCleanup = applyFramePresentation(
-							frame.doc,
-							theme,
-							bookUi,
-						);
-						applyDocumentSettings(frame.doc, settings);
-						const part = data.parts[index];
-						const resource = data.resources.find(
-							(r) => r.id === part?.resource_id,
-						);
-						if (
-							bookUi.rubyScope === "all" &&
-							!frame.rubyApplied &&
-							part &&
-							resource
-						) {
-							const asset = readings.data?.resources.find(
-								(r) => r.resource_id === part.resource_id,
-							);
-							if (!asset) throw new Error("章节注音暂不可用，请重试。");
-							registerReaderFrameTargets(
-								frame.doc,
-								applyAutomaticRuby(
-									frame.doc,
-									frame.projection,
-									asset.tokens,
-									part.start,
-								),
-							);
-							frame.projection = projectPart(
-								frame.doc,
-								Array.from(resource.text).slice(part.start, part.end).join(""),
-								part.leaf_start,
-							);
-							frame.rubyApplied = true;
-						}
-					}
+					frames.current.update(data, settings, theme, bookUi, readings.data);
 				},
 			);
 		} catch (failure) {
@@ -1355,6 +1267,34 @@ function Reader({
 			queue.current?.enqueue(anchor);
 		}
 	};
+	const openStudySegment = (id: string) => {
+		leave();
+		navigate(`/segments/${id}?chat=0`, {
+			state: returnState(
+				{ to: `/materials/${book.id}?segment=${id}`, label: book.title },
+				returnTo,
+				`/segments/${id}`,
+			),
+		});
+	};
+	useLayoutEffect(() => {
+		if (!chapter.data || !viewportReady) return;
+		try {
+			frames.current.setStudyMarks(
+				chapter.data,
+				marks.items,
+				ui.marks.studySegments,
+				theme,
+			);
+			setMarkError(null);
+		} catch (failure) {
+			setMarkError(
+				failure instanceof Error
+					? failure
+					: new Error("学习片段标记暂不可用。"),
+			);
+		}
+	}, [chapter.data, viewportReady, marks.items, ui.marks.studySegments, theme]);
 	const renderToken = generation.current;
 	return (
 		<main
@@ -1423,8 +1363,22 @@ function Reader({
 				</button>
 			</header>
 			<div className="reader-alerts" aria-live="polite">
+				{marks.loading && <p>正在载入本章学习片段标记…</p>}
+				{ui.marks.studySegments && (marks.isError || markError) && (
+					<div className="reader-mark-error" role="alert">
+						学习片段标记暂不可用，原文可继续阅读。
+						<button type="button" onClick={() => void marks.refetch()}>
+							重试标记
+						</button>
+					</div>
+				)}
+				{ui.marks.studySegments && !marks.isError && marks.unavailable > 0 && (
+					<p>部分历史片段的出处无法校验，未在正文中标记。</p>
+				)}
 				<InlineError
 					error={
+						selectionError ??
+						originError ??
 						error ??
 						positionError ??
 						navigationError ??
@@ -1432,6 +1386,21 @@ function Reader({
 						usage.error
 					}
 				/>
+				{originError && (
+					<button
+						type="button"
+						onClick={() => {
+							setError(null);
+							setOriginError(null);
+							generation.current++;
+							frames.current.clear();
+							layout.current.invalidateSurface();
+							setSurfaceRevision((value) => value + 1);
+						}}
+					>
+						重试精确定位
+					</button>
+				)}
 				{(error || positionError) && (
 					<button type="button" onClick={() => window.location.reload()}>
 						重新打开
@@ -1504,8 +1473,7 @@ function Reader({
 								sandbox="allow-same-origin"
 								srcDoc={partDocument(part, resource, defaults)}
 								ref={(element) => {
-									if (element) elements.current.set(index, element);
-									else elements.current.delete(index);
+									frames.current.register(index, element);
 								}}
 								onLoad={(e) => load(index, e.currentTarget, renderToken)}
 							/>
@@ -1622,6 +1590,78 @@ function Reader({
 					</button>
 				</nav>
 			</footer>
+			{studyTarget && (
+				<StudySegmentPanel
+					target={studyTarget}
+					sourceId={book.source_id}
+					sourceTitle={source.data?.title ?? "所属来源"}
+					onCancel={() => setStudyTarget(null)}
+					onSaved={(segment: Segment, kind) => {
+						setStudyTarget(null);
+						setSelection(null);
+						frames.current.clearStudySelection();
+						setSavedNotice({ id: segment.id, kind, serial: Date.now() });
+						void client.invalidateQueries({
+							queryKey: ["material-chapter-segments", book.id],
+						});
+					}}
+				/>
+			)}
+			{selection && !studyTarget && (
+				<SelectionToolbar
+					anchor={selection.anchor}
+					onClose={() => setSelection(null)}
+					onSave={() => {
+						try {
+							if (
+								!chapter.data ||
+								!container.current ||
+								!layout.current.canSample(viewportSize(container.current))
+							)
+								throw new Error("正文仍在准备，请重新选择。");
+							setStudyTarget(
+								frames.current.captureStudyTarget(
+									book.id,
+									book.version_id,
+									chapter.data,
+								),
+							);
+							setSelection(null);
+							closeMarkHit();
+							setSelectionError(null);
+							controller.current?.show();
+						} catch (failure) {
+							setSelectionError(
+								failure instanceof Error
+									? failure
+									: new Error("无法读取选区，请重新选择。"),
+							);
+						}
+					}}
+				/>
+			)}
+			{markHit &&
+				visibleHitItems.length > 0 &&
+				!studyTarget &&
+				!selection &&
+				ui.marks.studySegments && (
+					<StudyMarkPopover
+						anchor={markHit.anchor}
+						items={visibleHitItems}
+						onOpen={openStudySegment}
+						onClose={closeMarkHit}
+						onEmphasize={(id) => frames.current.emphasizeStudyMark(id)}
+					/>
+				)}
+			{savedNotice && (
+				<SavedSegmentNotice
+					key={savedNotice.serial}
+					id={savedNotice.id}
+					kind={savedNotice.kind}
+					onOpen={() => openStudySegment(savedNotice.id)}
+					onClose={() => setSavedNotice(null)}
+				/>
+			)}
 			{rightView.value === "settings" && (
 				<ReaderSettings
 					settings={settings}
@@ -1804,6 +1844,48 @@ function MaterialOpening({ id }: { id: string }) {
 			? "imported"
 			: null;
 	});
+	const segmentId = new URLSearchParams(location.search).get("segment");
+	const [originSnapshot, setOriginSnapshot] =
+		useState<SegmentProvenance | null>(null);
+	const origin = useQuery({
+		queryKey: ["segments", segmentId, "material-provenance"],
+		queryFn: ({ signal }) => getSegmentProvenance(segmentId ?? "", signal),
+		enabled: !!segmentId,
+		refetchOnMount: "always",
+		refetchOnWindowFocus: false,
+	});
+	useEffect(() => {
+		if (
+			!originSnapshot &&
+			origin.isSuccess &&
+			origin.isFetchedAfterMount &&
+			!origin.isFetching
+		)
+			setOriginSnapshot(origin.data);
+	}, [
+		originSnapshot,
+		origin.isSuccess,
+		origin.isFetchedAfterMount,
+		origin.isFetching,
+		origin.data,
+	]);
+	const resolvedOrigin =
+		originSnapshot ?? (origin.isSuccess ? origin.data : null);
+	let locationFailure: Error | null = null;
+	if (segmentId && resolvedOrigin) {
+		const message = originFailure(resolvedOrigin);
+		if (message) locationFailure = new Error(message);
+		else if (resolvedOrigin.material_provenance?.material_id !== id)
+			locationFailure = new Error("片段出处不属于当前材料，无法精确定位。");
+		else {
+			try {
+				originPosition(resolvedOrigin, defaults);
+			} catch (failure) {
+				locationFailure =
+					failure instanceof Error ? failure : new Error(String(failure));
+			}
+		}
+	}
 	const [snapshot, setSnapshot] = useState<Material | null>(null);
 	const startedVersion = useRef<string | null>(null);
 	const preparation = useMutation({
@@ -1826,9 +1908,12 @@ function MaterialOpening({ id }: { id: string }) {
 			const state = { ...location.state };
 			delete state.materialReused;
 			delete state.materialImported;
-			navigate(location.pathname, { replace: true, state });
+			navigate(`${location.pathname}${location.search}`, {
+				replace: true,
+				state,
+			});
 		}
-	}, [notice, location.pathname, location.state, navigate]);
+	}, [notice, location.pathname, location.search, location.state, navigate]);
 	useEffect(() => {
 		if (
 			!snapshot &&
@@ -1850,10 +1935,25 @@ function MaterialOpening({ id }: { id: string }) {
 			prepare(snapshot.version_id);
 		}
 	}, [snapshot, prepare]);
-	if (snapshot && preparation.data?.version_id === snapshot.version_id)
+	if (
+		snapshot &&
+		segmentId &&
+		resolvedOrigin &&
+		!locationFailure &&
+		resolvedOrigin.material_provenance?.version_id !== snapshot.version_id
+	)
+		locationFailure = new Error(
+			"出处绑定的材料版本不可用，不能套用到当前版本。",
+		);
+	if (
+		snapshot &&
+		preparation.data?.version_id === snapshot.version_id &&
+		(!segmentId || (originSnapshot && !locationFailure))
+	)
 		return (
 			<Reader
-				key={id}
+				key={`${id}-${segmentId ?? "reading"}`}
+				initialOrigin={segmentId ? originSnapshot : null}
 				book={snapshot}
 				notice={notice}
 				readingsSummary={preparation.data}
@@ -1875,12 +1975,26 @@ function MaterialOpening({ id }: { id: string }) {
 				← {back.label}
 			</Link>
 			<div className="reader-loading">
-				{book.isError || preparation.isError ? (
+				{book.isError ||
+				preparation.isError ||
+				origin.isError ||
+				locationFailure ? (
 					<>
-						<InlineError error={book.error ?? preparation.error} />
+						<InlineError
+							error={
+								book.error ??
+								preparation.error ??
+								origin.error ??
+								locationFailure
+							}
+						/>
 						<button
 							type="button"
 							onClick={() => {
+								if (segmentId) {
+									setOriginSnapshot(null);
+									void origin.refetch();
+								}
 								if (snapshot) prepare(snapshot.version_id);
 								else void book.refetch();
 							}}
@@ -1897,5 +2011,7 @@ function MaterialOpening({ id }: { id: string }) {
 }
 export function MaterialReader() {
 	const { id = "" } = useParams();
-	return <MaterialOpening key={id} id={id} />;
+	const location = useLocation();
+	const segmentId = new URLSearchParams(location.search).get("segment");
+	return <MaterialOpening key={`${id}-${segmentId ?? "reading"}`} id={id} />;
 }

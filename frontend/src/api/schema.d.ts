@@ -193,6 +193,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/chapters/{chapter_id}/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Chapter Segments */
+        get: operations["listMaterialChapterSegments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/materials/{material_id}/cover": {
         parameters: {
             query?: never;
@@ -689,6 +706,24 @@ export interface paths {
         get?: never;
         /** Put Profile */
         put: operations["putProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/segment-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Settings */
+        get: operations["getSegmentContextSettings"];
+        /** Save Settings */
+        put: operations["saveSegmentContextSettings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1443,6 +1478,28 @@ export interface components {
             title: string;
             /** Version Id */
             version_id: string;
+        };
+        /** MaterialChapterSegment */
+        MaterialChapterSegment: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Excerpt */
+            excerpt: string;
+            material_provenance: components["schemas"]["MaterialProvenance"];
+            /** Segment Id */
+            segment_id: string;
+        };
+        /** MaterialChapterSegmentsResponse */
+        MaterialChapterSegmentsResponse: {
+            /** Items */
+            items: components["schemas"]["MaterialChapterSegment"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Unavailable Count */
+            unavailable_count: number;
         };
         /** MaterialCoverInput */
         MaterialCoverInput: {
@@ -2290,6 +2347,36 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** SegmentContextSettingsResponse */
+        SegmentContextSettingsResponse: {
+            /** After Characters */
+            after_characters: number;
+            /** After Sentences */
+            after_sentences: number;
+            /** Before Characters */
+            before_characters: number;
+            /** Before Sentences */
+            before_sentences: number;
+            /** Enabled */
+            enabled: boolean;
+            /** Revision */
+            revision: number;
+        };
+        /** SegmentContextSettingsUpdate */
+        SegmentContextSettingsUpdate: {
+            /** After Characters */
+            after_characters: number;
+            /** After Sentences */
+            after_sentences: number;
+            /** Before Characters */
+            before_characters: number;
+            /** Before Sentences */
+            before_sentences: number;
+            /** Enabled */
+            enabled: boolean;
+            /** Expected Revision */
+            expected_revision: number;
+        };
         /** SegmentCreate */
         SegmentCreate: {
             /**
@@ -3124,6 +3211,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MaterialChapterResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listMaterialChapterSegments: {
+        parameters: {
+            query: {
+                version_id: string;
+                after?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+                chapter_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialChapterSegmentsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4426,6 +4549,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getSegmentContextSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentContextSettingsResponse"];
+                };
+            };
+        };
+    };
+    saveSegmentContextSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SegmentContextSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentContextSettingsResponse"];
                 };
             };
             /** @description Validation Error */

@@ -46,81 +46,161 @@ export function updateSegmentLocation(
 	return query ? `?${query}` : "";
 }
 
+export type ReturnTarget = {
+	to: string;
+	label: string;
+	parent?: ReturnTarget;
+};
 export type ReturnDestination = {
 	to: string;
 	label: string;
-	state?: { returnTo: { to: string; label: string } };
+	state?: { returnTo: ReturnTarget };
 };
+const CATALOG_FALLBACK = { to: "/materials", label: "素材库" };
+const MAX_RETURN_TARGETS = 4;
+const MAX_RETURN_INSPECTIONS = 12;
+const CATALOG_ROUTE = /^\/(?:materials|sources(?:\/[A-Za-z0-9_-]+)?)$/;
+const DETAILS_ROUTE = /^\/materials\/[A-Za-z0-9_-]+\/details$/;
+const LEARNING_ROUTE = /^\/(?:materials|segments)\/[A-Za-z0-9_-]+$/;
 
-export function returnDestination(
-	state: unknown,
-	fallback = { to: "/sources", label: "来源目录" },
-): ReturnDestination {
-	if (!state || typeof state !== "object" || !("returnTo" in state))
-		return fallback;
-	const target = state.returnTo;
+function returnValue(value: unknown): {
+	target: ReturnTarget;
+	pathname: string;
+	parent: unknown;
+	hasParent: boolean;
+} | null {
 	if (
-		!target ||
-		typeof target !== "object" ||
-		!("to" in target) ||
-		!("label" in target)
+		!value ||
+		typeof value !== "object" ||
+		!("to" in value) ||
+		!("label" in value)
 	)
-		return fallback;
-	const { to, label } = target;
+		return null;
+	const { to, label } = value;
 	if (
 		typeof to !== "string" ||
 		typeof label !== "string" ||
 		!label.trim() ||
 		/[\s\\]/.test(to)
 	)
-		return fallback;
-	// Reject path traversal before URL normalization can turn it into another route.
+		return null;
+	// Reject traversal before URL normalization can turn it into another allowed route.
 	if (/(?:^|\/)(?:\.|%2e){1,2}(?:\/|$)/i.test(to.split(/[?#]/)[0] ?? ""))
-		return fallback;
-	// Only known local application routes can be recorded as a return destination.
-	if (!to.startsWith("/") || to.startsWith("//")) return fallback;
+		return null;
+	if (!to.startsWith("/") || to.startsWith("//")) return null;
 	const url = new URL(to, "https://folio.invalid");
 	if (
 		url.origin !== "https://folio.invalid" ||
-		!to.startsWith("/") ||
-		to.startsWith("//")
-	)
-		return fallback;
-	if (
 		!/^\/(?:sources(?:\/[A-Za-z0-9_-]+)?|materials(?:\/[A-Za-z0-9_-]+(?:\/details)?)?|segments\/[A-Za-z0-9_-]+|settings)?$/.test(
 			url.pathname,
 		)
 	)
-		return fallback;
-	const result: ReturnDestination = {
-		to: `${url.pathname}${url.search}${url.hash}`,
-		label: label.trim(),
+		return null;
+	return {
+		target: {
+			to: `${url.pathname}${url.search}${url.hash}`,
+			label: label.trim(),
+		},
+		pathname: url.pathname,
+		parent: "parent" in value ? value.parent : undefined,
+		hasParent: "parent" in value,
 	};
-	// A Reader can return to details with its original catalog destination.
-	// Only one validated parent is carried; arbitrary nested state is discarded.
-	if (
-		/^\/materials\/[A-Za-z0-9_-]+\/details$/.test(url.pathname) &&
-		"parent" in target
-	) {
-		const candidate = target.parent;
-		const parent = returnDestination(
-			{
-				returnTo:
-					candidate &&
-					typeof candidate === "object" &&
-					"to" in candidate &&
-					"label" in candidate
-						? { to: candidate.to, label: candidate.label }
-						: null,
-			},
-			{ to: "/materials", label: "素材库" },
-		);
+}
+
+/** Only explicit, validated parent links survive; repeated routes never grow a return loop. */
+function returnTrail(
+	value: unknown,
+	excludedPath?: string,
+): ReturnTarget | null {
+	const objects = new WeakSet<object>();
+	const paths = new Set(
+		excludedPath ? [excludedPath.split(/[?#]/)[0] ?? excludedPath] : [],
+	);
+	let inspections = 0;
+	const visit = (
+		candidate: unknown,
+		remaining: number,
+	): ReturnTarget | null => {
 		if (
-			/^\/(?:materials|sources(?:\/[A-Za-z0-9_-]+)?)$/.test(
-				new URL(parent.to, "https://folio.invalid").pathname,
-			)
+			remaining === 0 ||
+			inspections++ >= MAX_RETURN_INSPECTIONS ||
+			!candidate ||
+			typeof candidate !== "object" ||
+			objects.has(candidate)
 		)
-			result.state = { returnTo: { to: parent.to, label: parent.label } };
-	}
-	return result;
+			return null;
+		objects.add(candidate);
+		const parsed = returnValue(candidate);
+		if (!parsed) return null;
+		const { target, pathname, parent, hasParent } = parsed;
+		if (paths.has(pathname)) return visit(parent, remaining);
+		paths.add(pathname);
+		if (remaining === 1) return target;
+		if (
+			!hasParent ||
+			(!DETAILS_ROUTE.test(pathname) && !LEARNING_ROUTE.test(pathname))
+		)
+			return target;
+		const parentValue = returnValue(parent);
+		if (DETAILS_ROUTE.test(pathname) && !parentValue)
+			return { ...target, parent: CATALOG_FALLBACK };
+		if (
+			!parentValue ||
+			(!CATALOG_ROUTE.test(parentValue.pathname) &&
+				!DETAILS_ROUTE.test(parentValue.pathname) &&
+				!LEARNING_ROUTE.test(parentValue.pathname))
+		)
+			return target;
+		const cleanParent = visit(parent, remaining - 1);
+		// Details have always returned directly to a catalog/source view.
+		if (
+			cleanParent &&
+			(!DETAILS_ROUTE.test(pathname) ||
+				CATALOG_ROUTE.test(
+					new URL(cleanParent.to, "https://folio.invalid").pathname,
+				))
+		)
+			target.parent = cleanParent;
+		return target;
+	};
+	return visit(value, MAX_RETURN_TARGETS);
+}
+
+export function returnDestination(
+	state: unknown,
+	fallback = { to: "/sources", label: "来源目录" },
+): ReturnDestination {
+	const target =
+		state && typeof state === "object" && "returnTo" in state
+			? returnTrail(state.returnTo)
+			: null;
+	if (!target) return fallback;
+	return {
+		to: target.to,
+		label: target.label,
+		...(target.parent ? { state: { returnTo: target.parent } } : {}),
+	};
+}
+
+/** Compose a bounded return trail from an already resolved parent, excluding the destination page. */
+export function returnState(
+	destination: Pick<ReturnDestination, "to" | "label">,
+	parent?: ReturnDestination,
+	destinationPath?: string,
+): { returnTo: ReturnTarget } {
+	const candidate = {
+		...destination,
+		...(parent
+			? {
+					parent: {
+						to: parent.to,
+						label: parent.label,
+						...(parent.state ? { parent: parent.state.returnTo } : {}),
+					},
+				}
+			: {}),
+	};
+	return {
+		returnTo: returnTrail(candidate, destinationPath) ?? CATALOG_FALLBACK,
+	};
 }

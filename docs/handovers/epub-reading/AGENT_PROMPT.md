@@ -1,6 +1,6 @@
 # EPUB 阶段开发主代理交接提示词
 
-> 2026-10-20 更新。供接手当前 EPUB 阶段使用；实现状态与验收依据见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)，开发顺序见[阶段入口](README.md#下一阶段接力顺序)。C1／C2 当前暂不实施。
+> 2026-10-22 更新。供接手当前 EPUB 阶段使用；实现状态与验收依据见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)，开发顺序见[阶段入口](README.md#下一阶段接力顺序)。本轮范围止于 C1／C2，交付与验收见实施基线；材料对话等后续切片尚未启动。
 
 请接手 `/Users/ningcc/Products/folio-j` 的 EPUB 原生阅读阶段，作为主代理负责范围、契约、任务派遣与集成验收。
 

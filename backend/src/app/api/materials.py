@@ -16,13 +16,14 @@ from app.material_schemas import (
     ReadingPositionResponse,
     ReadingPositionUpdate,
 )
+from app.material_segment_schemas import MaterialChapterSegmentsResponse
 from app.metadata_schemas import MaterialDetailsResponse, MaterialMetadataUpdate
 from app.readings_schemas import (
     MaterialReadingsPrepare,
     MaterialReadingsResponse,
     MaterialReadingsSummary,
 )
-from app.services import material_metadata, reader_queries, readings, statistics
+from app.services import material_metadata, material_segments, reader_queries, readings, statistics
 from app.services import materials as service
 from app.statistics_schemas import MaterialStatisticsResponse
 
@@ -110,6 +111,24 @@ async def get_chapter(
     material_id: str, chapter_id: str, session: Session
 ) -> MaterialChapterResponse:
     return await service.get_chapter(session, material_id, chapter_id)
+
+
+@router.get(
+    "/materials/{material_id}/chapters/{chapter_id}/segments",
+    response_model=MaterialChapterSegmentsResponse,
+    operation_id="listMaterialChapterSegments",
+)
+async def list_chapter_segments(
+    material_id: str,
+    chapter_id: str,
+    version_id: Annotated[str, Query(min_length=1, max_length=26)],
+    session: Session,
+    after: Annotated[str | None, Query(pattern=r"^[0-7][0-9A-HJKMNP-TV-Z]{25}$")] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+) -> MaterialChapterSegmentsResponse:
+    return await material_segments.list_chapter_segments(
+        session, material_id, chapter_id, version_id, after, limit
+    )
 
 
 @router.put(

@@ -11,6 +11,7 @@ import {
 	type StyleInput,
 	settingsKeys,
 } from "./api";
+import { SegmentContextSettingsGroup } from "./SegmentContextSettings";
 import {
 	SettingsEditorDialog,
 	SettingsSaveBar,
@@ -158,6 +159,7 @@ export function LearningSettings({ settings }: { settings: Settings }) {
 				pending={save.isPending}
 				onReset={draft.reset}
 			/>
+			<SegmentContextSettingsGroup />
 		</div>
 	);
 }

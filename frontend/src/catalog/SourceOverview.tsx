@@ -317,8 +317,11 @@ export function SourceOverview({
 										<Link to={`/segments/${segment.id}`} state={{ returnTo }}>
 											<p lang="ja">{segment.text}</p>
 											<small>
-												{segment.source_ref || "未填写出处"} · 添加于{" "}
-												{dateLabel(segment.created_at)}
+												{segment.source_ref ||
+													(segment.material_provenance
+														? "已保存材料出处"
+														: "未填写出处")}{" "}
+												· 添加于 {dateLabel(segment.created_at)}
 											</small>
 										</Link>
 										<Link

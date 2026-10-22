@@ -14,10 +14,17 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import URL, create_engine
 
 from alembic import command
-from app import analysis_models, chat_models, material_models, models, settings_models
+from app import (
+    analysis_models,
+    chat_models,
+    material_models,
+    models,
+    segment_context_models,
+    settings_models,
+)
 from app.db import Base
 
-_ = (analysis_models, chat_models, material_models, models, settings_models)
+_ = (analysis_models, chat_models, material_models, models, settings_models, segment_context_models)
 
 
 def test_empty_database_rebuilds_current_schema(
@@ -49,7 +56,7 @@ def test_empty_database_rebuilds_current_schema(
             row[0]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
-        assert len(Base.metadata.tables) == 23
+        assert len(Base.metadata.tables) == 24
         assert tables == {"alembic_version", *Base.metadata.tables}
 
     # Compare every column, type, nullable flag, foreign key, index and uniqueness
@@ -482,7 +489,86 @@ def test_provenance_upgrade_preserves_learning_history_and_positions(
             "SELECT count(*) FROM segment_material_provenance"
         ).fetchone() == (1,)
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0004_segment_material_provenance",
+            ScriptDirectory.from_config(config).get_current_head(),
         )
         for table, rows in before.items():
             assert connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall() == rows
+
+
+def test_context_settings_migration_preserves_provenance_and_existing_preferences(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "context-upgrade.db"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
+    config = Config()
+    config.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
+    command.upgrade(config, "0004_segment_material_provenance")
+    with sqlite3.connect(database) as connection:
+        connection.execute("PRAGMA foreign_keys=ON")
+        connection.execute(
+            "INSERT INTO sources (id,title,description,note,created_at,updated_at) "
+            "VALUES ('source','資料','説明','備考','2020-01-01','2020-01-02')"
+        )
+        connection.execute(
+            "INSERT INTO segments (id,source_id,text,translation,context_before,context_after,"
+            "transcription,note,source_ref,created_at,updated_at,revision,text_locked_at) "
+            "VALUES ('segment','source','対象𠮷','訳','旧前文','旧後文','','','',"
+            "'2020-01-01','2020-01-02',7,'2020-01-03')"
+        )
+        connection.execute(
+            "INSERT INTO materials (id,source_id,title,source_sha256,version_id,product_sha256,"
+            "contract_version,original_bytes,warnings,compiled_bundle,created_at) "
+            "VALUES ('material','source','本','digest','old-version','product','v1',X'1234',"
+            "'[]',X'5678','2020-01-01')"
+        )
+        connection.execute(
+            "INSERT INTO segment_material_provenance "
+            "(segment_id,source_id,material_id,version_id,payload,identity_sha256,request_id,"
+            "request_payload,assembly_rule,created_at) VALUES "
+            "('segment','source','material','old-version','{\"ranges\":[]}',?,'request',"
+            "'{\"old\":true}','concat-nfc-v1','2020-01-06')",
+            ("a" * 64,),
+        )
+        connection.execute(
+            "INSERT INTO learner_profile (id,native_language,explain_language,level_note) "
+            "VALUES (1,'中文','日本語','旧背景')"
+        )
+        connection.execute(
+            "INSERT INTO reading_positions (material_id,revision,payload,updated_at) "
+            "VALUES ('material',9,'{\"offset\":7}','2020-01-04')"
+        )
+        connection.commit()
+        before = {
+            table: connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall()
+            for (table,) in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name != 'alembic_version'"
+            )
+        }
+    command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        for table, rows in before.items():
+            assert connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall() == rows
+        assert connection.execute("SELECT * FROM segment_context_settings").fetchall() == []
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    command.downgrade(config, "0004_segment_material_provenance")
+    command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO segment_context_settings "
+            "(id,enabled,before_sentences,after_sentences,"
+            "before_characters,after_characters,revision) "
+            "VALUES (1,0,0,7,100000,0,4)"
+        )
+        connection.commit()
+        persisted = connection.execute("SELECT * FROM segment_context_settings").fetchall()
+    command.upgrade(config, "head")
+    with pytest.raises(RuntimeError, match="无法无损回退"):
+        command.downgrade(config, "0004_segment_material_provenance")
+    with sqlite3.connect(database) as connection:
+        for table, rows in before.items():
+            assert connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall() == rows
+        assert connection.execute("SELECT * FROM segment_context_settings").fetchall() == persisted
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
+            "0005_segment_context_settings",
+        )
+        assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)

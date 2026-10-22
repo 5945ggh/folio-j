@@ -17,6 +17,7 @@ test("UI preferences validate enums and bounded values without adding API settin
 		theme: "white",
 		focus: false,
 		toolbarTransparency: DEFAULT_READER_UI.toolbarTransparency,
+		marks: { studySegments: true },
 	});
 	assert.deepEqual(
 		normalizeReaderUi({ theme: "unknown", focus: 0 }),
@@ -100,4 +101,40 @@ test("toolbar transparency persists with cross-book UI preferences and resets to
 	assert.deepEqual(readBookUiPreferences("a", "v", store), DEFAULT_BOOK_UI);
 	assert.equal(writeReaderUiPreferences(DEFAULT_READER_UI, store), true);
 	assert.deepEqual(readReaderUiPreferences(store), DEFAULT_READER_UI);
+});
+
+test("study marks default on for old preferences and persist across books without changing book preferences", () => {
+	const values = new Map<string, string>();
+	const store = {
+		getItem: (key: string) => values.get(key) ?? null,
+		setItem: (key: string, value: string) => {
+			values.set(key, value);
+		},
+	};
+	assert.deepEqual(normalizeReaderUi({ theme: "black" }).marks, {
+		studySegments: true,
+	});
+	for (const marks of [
+		null,
+		[],
+		true,
+		{ studySegments: "false" },
+		{ studySegments: 0 },
+	])
+		assert.deepEqual(normalizeReaderUi({ marks }).marks, {
+			studySegments: true,
+		});
+	const hidden = { ...DEFAULT_READER_UI, marks: { studySegments: false } };
+	assert.equal(writeReaderUiPreferences(hidden, store), true);
+	assert.equal(readReaderUiPreferences(store).marks.studySegments, false);
+	assert.deepEqual(
+		readBookUiPreferences("first", "v1", store),
+		DEFAULT_BOOK_UI,
+	);
+	assert.deepEqual(
+		readBookUiPreferences("second", "v2", store),
+		DEFAULT_BOOK_UI,
+	);
+	assert.equal(writeReaderUiPreferences(DEFAULT_READER_UI, store), true);
+	assert.equal(readReaderUiPreferences(store).marks.studySegments, true);
 });

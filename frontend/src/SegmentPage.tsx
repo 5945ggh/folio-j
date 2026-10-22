@@ -44,6 +44,7 @@ import {
 	type SegmentFields,
 } from "./content";
 import { SegmentForm } from "./Forms";
+import { SegmentMaterialOrigin } from "./materials/SegmentMaterialOrigin";
 import {
 	readSegmentLocation,
 	returnDestination,
@@ -426,6 +427,7 @@ export function SegmentDetail() {
 									<span aria-hidden="true">／</span>
 									<span>片段</span>
 								</header>
+								<SegmentMaterialOrigin segment={current} />
 								<OriginalCard
 									segment={current}
 									returnFocusId={

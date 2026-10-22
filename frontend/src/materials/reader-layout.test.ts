@@ -307,3 +307,43 @@ test("leaving an initial reader before presentation never persists its restorati
 		null,
 	);
 });
+
+test("failed complete reference projection keeps pending target and never samples it on leave", () => {
+	const layout = new ReaderLayout(42);
+	let projected = false;
+	let completed = 0;
+	layout.commit(
+		{
+			generation: 3,
+			parts: 2,
+			geometry: "reference",
+			size: () => size,
+			capture: () =>
+				assert.fail("failed reference must not sample provisional position"),
+			measure: () => {},
+			restore: (target) => {
+				assert.equal(target, 42);
+				return projected
+					? () => {
+							completed++;
+						}
+					: false;
+			},
+		},
+		() => {},
+		() => {},
+	);
+	layout.resourcesReady(3, 0);
+	layout.resourcesReady(3, 1);
+	assert.equal(layout.canSample(size), false);
+	assert.equal(
+		layout.presentedAnchor(() => assert.fail("unpresented reference")),
+		null,
+	);
+	assert.equal(completed, 0);
+	projected = true;
+	layout.reflow();
+	assert.equal(completed, 1);
+	assert.equal(layout.canSample(size), true);
+	layout.cancelSave();
+});

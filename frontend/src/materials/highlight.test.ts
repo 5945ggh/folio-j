@@ -79,3 +79,59 @@ test("missing mapping and unsupported highlights report honest errors without pa
 	);
 	assert.equal(missing.marks.size, 0);
 });
+
+test("repainting separate intervals in one document retains all intervals", async () => {
+	const { prepareHighlights } = await import("./highlight.ts");
+	const p = projection(["甲乙丙丁"]);
+	const h = harness();
+	const paint = prepareHighlights(h.doc, p, [
+		{ start: 0, end: 1 },
+		{ start: 2, end: 4 },
+	]);
+	assert.equal(
+		h.marks.size,
+		0,
+		"validation is separate from painting across documents",
+	);
+	paint();
+	assert.equal(h.marks.size, 1);
+	assert.deepEqual(
+		h.boundaries.map(([kind, , offset]) => [kind, offset]),
+		[
+			["start", 0],
+			["end", 1],
+			["start", 2],
+			["end", 4],
+		],
+	);
+});
+
+test("study decoration declares its own red color with longhands while preserving glyph color", async () => {
+	const { prepareStudyUnderlines } = await import("./highlight.ts");
+	for (const [theme, red] of [
+		["white", "#c73535"],
+		["black", "#ff9993"],
+	] as const) {
+		const h = harness();
+		const range = h.doc.createRange();
+		prepareStudyUnderlines(h.doc, [range], [range], theme)();
+		const rules = [
+			...h.style.textContent.matchAll(
+				/::highlight\((folio-study(?:-active)?)\)\{([^}]+)\}/g,
+			),
+		];
+		assert.equal(rules.length, 2);
+		for (const rule of rules) {
+			const declarations = rule[2] ?? "";
+			assert.match(declarations, /(?:^|;)text-decoration-line:underline;/);
+			assert.match(declarations, /(?:^|;)text-decoration-style:solid;/);
+			assert.ok(declarations.includes(`text-decoration-color:${red};`));
+			assert.doesNotMatch(
+				declarations,
+				/(?:^|;)(?:color|background(?:-color)?):/,
+			);
+		}
+		assert.ok(h.marks.has("folio-study"));
+		assert.ok(h.marks.has("folio-study-active"));
+	}
+});

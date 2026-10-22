@@ -5,6 +5,7 @@ export type ReaderUiPreferences = {
 	theme: ReaderTheme;
 	focus: boolean;
 	toolbarTransparency: number;
+	marks: { studySegments: boolean };
 };
 export type BookUiPreferences = {
 	font: ReaderFont;
@@ -16,6 +17,7 @@ export const DEFAULT_READER_UI: ReaderUiPreferences = {
 	theme: "system",
 	focus: true,
 	toolbarTransparency: 20,
+	marks: { studySegments: true },
 };
 export const DEFAULT_BOOK_UI: BookUiPreferences = {
 	font: "mincho",
@@ -50,7 +52,17 @@ function load(
 export function normalizeReaderUi(
 	value: Record<string, unknown>,
 ): ReaderUiPreferences {
+	const marks =
+		value.marks &&
+		typeof value.marks === "object" &&
+		!Array.isArray(value.marks)
+			? (value.marks as Record<string, unknown>)
+			: {};
 	return {
+		marks: {
+			studySegments:
+				typeof marks.studySegments === "boolean" ? marks.studySegments : true,
+		},
 		theme:
 			value.theme === "black"
 				? "black"
