@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import sqlite3
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -83,8 +84,19 @@ async def test_material_identity_positions_delete_and_restart(
         assert duplicate["reused"] and duplicate["material"]["version_id"] == material["version_id"]
         assert (await upload(other))["material"]["id"] != material["id"]
         assert (await upload(source, b"different"))["material"]["id"] != material["id"]
-        parallel = await asyncio.gather(upload(source, b"parallel"), upload(source, b"parallel"))
+        compiling = threading.Barrier(2)
+
+        def compile_parallel(data: bytes) -> CompiledBook:
+            compiling.wait(timeout=5)
+            return compiled(data)
+
+        with monkeypatch.context() as concurrent:
+            concurrent.setattr("app.services.materials.compile_epub_bytes", compile_parallel)
+            parallel = await asyncio.gather(
+                upload(source, b"parallel"), upload(source, b"parallel")
+            )
         assert parallel[0]["material"]["id"] == parallel[1]["material"]["id"]
+        assert sorted(result["reused"] for result in parallel) == [False, True]
         url = f"/api/materials/{material['id']}"
         chapter = (await client.get(url + "/chapters/c1")).json()
         assert chapter["resources"][0]["text"] == "日本語"
@@ -165,8 +177,6 @@ async def test_failed_import_has_no_residue(
 async def test_late_import_is_rejected_after_source_deletion(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import threading
-
     started = threading.Event()
     release = threading.Event()
 
@@ -218,7 +228,24 @@ async def test_real_epub_upload_and_bounded_request(
             f"/api/materials/{material['id']}/chapters/{material['chapters'][0]['id']}"
         )
         assert chapter.status_code == 200
-        assert chapter.json()["parts"]
+        payload = chapter.json()
+        # The fixture has an NFC composition across inline elements and a non-BMP character.
+        query = "がと𠮷"
+        found = await client.get(
+            f"/api/materials/{material['id']}/search",
+            params={"version_id": material["version_id"], "q": query},
+        )
+        assert found.status_code == 200, found.text
+        assert found.json()["total"] == 1
+        match = found.json()["items"][0]
+        assert match["chapter_id"] == payload["id"]
+        resource = next(r for r in payload["resources"] if r["id"] == match["resource_id"])
+        assert resource["text"][match["start"] : match["end"]] == match["match"] == query
+        assert match["end"] - match["start"] == 3
+        part = payload["parts"][match["part_index"]]
+        assert part["resource_id"] == match["resource_id"]
+        assert part["spine_index"] == match["spine_index"]
+        assert part["start"] <= match["start"] < match["end"] <= part["end"]
 
         def unexpected(_data: bytes) -> CompiledBook:
             raise AssertionError("Duplicate uploads must reuse the published bundle")

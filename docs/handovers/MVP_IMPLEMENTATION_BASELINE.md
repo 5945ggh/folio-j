@@ -65,6 +65,8 @@
 | 2026-10-23 阅读器原处预览 | [紧凑浮卡、展开侧栏和原生选择](text-study/INLINE_PREVIEW_ACCEPTANCE.md) |
 | 2026-10-22 保存表单优化 | [语境预览、主题、清空与显式摘录](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
 
+测试质量整改已完成并提交：凭据脱敏与落库回归、真实后台调度、编译产物校验，以及独立浏览器组件回归；工程检查与独立复审通过，证据及验证缺口见[测试质量验收](TEST_QUALITY_ACCEPTANCE.md)。
+
 测试数量、包体积与提交隔离检查范围在原记录中维护；离线、真实模型与扩展验证各自对应其方法和观察。
 
 当前界面约定见[阅读与导航](../INFORMATION_ARCHITECTURE.md)，执行机制与迁移链见[架构](../ARCHITECTURE.md)，旧库及旧备份的处理边界见 [README](../../README.md#本地开发)。阶段记录中的旧迁移编号、回填和数据保留结论继续作为历史事实保留。

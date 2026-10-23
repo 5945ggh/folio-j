@@ -57,6 +57,10 @@ test:
     uv run --project backend pytest backend/tests
     pnpm --dir frontend test
 
+# 用隔离 Chrome 验证真实组件与布局；可通过 CHROME_BIN 指定可执行文件。
+test-browser:
+    pnpm --dir frontend test:browser
+
 # 从本地 FastAPI 导出契约，再生成前端类型；不需启动服务。
 gen-api:
     uv run --project backend python -m app.export_openapi
@@ -78,4 +82,4 @@ check-assets:
 check-docs:
     uv run --project backend python scripts/check_docs.py
 
-check: lint test build check-docs
+check: lint test build check-docs test-browser

@@ -117,7 +117,7 @@ async def test_catalog_sort_filters_and_aggregates(
     from app.analysis_models import Analysis
     from app.db import create_engine
     from app.ids import new_ulid
-    from app.material_models import Material
+    from app.material_models import Material, MaterialUsage
 
     monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled)
     database = tmp_path / "sort.db"
@@ -161,14 +161,34 @@ async def test_catalog_sort_filters_and_aggregates(
             await client.post(
                 f"/api/materials/{ids[0]}/opened", json={"action_id": "b", "expected_revision": 0}
             )
-            for order in ["asc", "desc"]:
+            await client.post(
+                f"/api/materials/{ids[1]}/opened", json={"action_id": "c", "expected_revision": 0}
+            )
+            async with async_sessionmaker(engine)() as session:
+                for mid, opened_at in (
+                    (ids[2], datetime(2020, 1, 2, tzinfo=UTC)),
+                    (ids[0], datetime(2020, 1, 1, tzinfo=UTC)),
+                    (ids[1], datetime(2020, 1, 1, tzinfo=UTC)),
+                ):
+                    await session.execute(
+                        update(MaterialUsage)
+                        .where(MaterialUsage.material_id == mid)
+                        .values(last_opened_at=opened_at)
+                    )
+                await session.commit()
+            tied = sorted(ids[:2])
+            for order, expected in (
+                ("asc", [*tied, ids[2]]),
+                ("desc", [ids[2], *tied]),
+            ):
                 recent = (
                     await client.get(
                         "/api/materials", params={"sort": "last_opened_at", "order": order}
                     )
                 ).json()["items"]
-                assert all(m["last_opened_at"] is not None for m in recent[:2])
-                assert all(m["last_opened_at"] is None for m in recent[2:])
+                assert [m["id"] for m in recent] == [*expected, *sorted(ids[3:])]
+                assert all(m["last_opened_at"] is not None for m in recent[:3])
+                assert all(m["last_opened_at"] is None for m in recent[3:])
             segment = (
                 await client.post(
                     f"/api/sources/{source}/segments",

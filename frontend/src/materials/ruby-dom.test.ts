@@ -150,26 +150,20 @@ test("whole token original ruby overlap and cross-format tokens remain untouched
 		["今", "日"],
 	);
 });
-test("NFC boundary table handles decomposed Japanese and astral code points once", () => {
+test("NFC boundary table handles decomposed Japanese, astral code points and a large chapter", () => {
 	assert.deepEqual(rubyBoundaries("𠮷か\u3099く"), [0, 2, 4, 5]);
 	const raw = "食べる今日𠮷".repeat(2000);
-	const start = performance.now();
 	const boundaries = rubyBoundaries(raw);
 	assert.equal(boundaries.length, Array.from(raw).length + 1);
 	assert.equal(boundaries.at(-1), raw.length);
-	console.log(`12000字の境界作成: ${(performance.now() - start).toFixed(2)}ms`);
 });
-test("a twelve-thousand-character chapter decorates without repeated whole-text boundary scans", () => {
+test("a twelve-thousand-character chapter preserves its text and decorates every token", () => {
 	const raw = "食べる".repeat(4000);
 	const h = harness([raw]);
 	const tokens = Array.from({ length: 4000 }, (_, index) =>
 		token(index * 3, "食べる", "タベル"),
 	);
-	const start = performance.now();
 	applyAutomaticRuby(h.doc, projectPart(h.doc, raw, 0), tokens, 0);
 	assert.equal(projectPart(h.doc, raw, 0).raw, raw);
 	assert.equal(h.leaves[0]?.children.length, 4000);
-	console.log(
-		`12000字/4000語の装飾+投影: ${(performance.now() - start).toFixed(2)}ms`,
-	);
 });

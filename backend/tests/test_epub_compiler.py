@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import io
-import re
+import unicodedata
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 from zipfile import ZipFile
@@ -20,6 +21,39 @@ spec = importlib.util.spec_from_file_location(
 assert spec is not None and spec.loader is not None
 fixtures: Any = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixtures)
+
+
+class LocatorText(HTMLParser):
+    """Read rendered locator text independently of the compiler's regex projection."""
+
+    def __init__(self, markup: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.stack: list[tuple[bool, bool]] = []
+        self.leaves: list[int] = []
+        self.text: list[str] = []
+        self.feed(markup)
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in {"img", "br", "hr"}:
+            return
+        locator, annotation = self.stack[-1] if self.stack else (False, False)
+        annotation = annotation or tag in {"rt", "rp"}
+        marker = dict(attrs).get("data-locator-leaf")
+        if marker is not None:
+            assert not annotation, "ruby annotation must not contribute locator text"
+            self.leaves.append(int(marker))
+        self.stack.append((locator or marker is not None, annotation))
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag not in {"img", "br", "hr"}:
+            self.stack.pop()
+
+    def handle_data(self, data: str) -> None:
+        if self.stack and self.stack[-1] == (True, False):
+            self.text.append(data)
+
+    def normalized(self) -> str:
+        return unicodedata.normalize("NFC", "".join(self.text))
 
 
 def publication(
@@ -56,18 +90,24 @@ def publication(
 
 def assert_partition(book: epub.CompiledBook) -> None:
     for index, resource in enumerate(book.resources):
+        rendered = LocatorText(resource.html)
+        assert rendered.normalized() == resource.text
         parts = [
             part for chapter in book.chapters for part in chapter.parts if part.spine_index == index
         ]
         assert parts[0].start == 0 and parts[-1].end == len(resource.text)
         assert all(a.end == b.start for a, b in zip(parts, parts[1:], strict=False))
         assert "".join(resource.text[part.start : part.end] for part in parts) == resource.text
-        leaves = [
-            int(value)
-            for part in parts
-            for value in re.findall(r'data-locator-leaf="(\d+)"', part.html)
-        ]
-        assert leaves == list(range(parts[-1].leaf_end))
+        leaves: list[int] = []
+        raw_text: list[str] = []
+        for part in parts:
+            projection = LocatorText(part.html)
+            assert projection.normalized() == resource.text[part.start : part.end]
+            assert projection.leaves == list(range(part.leaf_start, part.leaf_end))
+            leaves.extend(projection.leaves)
+            raw_text.extend(projection.text)
+        assert leaves == rendered.leaves == list(range(len(rendered.leaves)))
+        assert unicodedata.normalize("NFC", "".join(raw_text)) == resource.text
 
 
 def test_nav_nested_fragments_no_lost_or_duplicate_content(tmp_path: Path) -> None:

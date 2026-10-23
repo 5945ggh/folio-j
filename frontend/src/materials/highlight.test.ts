@@ -4,27 +4,36 @@ import type { Projection } from "./dom.ts";
 import { highlightRange } from "./highlight.ts";
 
 function harness(supported = true) {
-	const boundaries: Array<[string, unknown, number]> = [];
-	const range = {
-		setStart: (node: unknown, offset: number) =>
-			boundaries.push(["start", node, offset]),
-		setEnd: (node: unknown, offset: number) =>
-			boundaries.push(["end", node, offset]),
-	};
-	const marks = new Map<string, unknown>();
-	const style = { textContent: "" };
-	class Highlight {
-		range: unknown;
-		constructor(range: unknown) {
-			this.range = range;
+	class TestRange {
+		start: [unknown, number] | null = null;
+		end: [unknown, number] | null = null;
+		setStart(node: unknown, offset: number) {
+			this.start = [node, offset];
+		}
+		setEnd(node: unknown, offset: number) {
+			this.end = [node, offset];
 		}
 	}
+	const style = { textContent: "" };
+	class Highlight {
+		ranges: TestRange[];
+		constructor(...ranges: TestRange[]) {
+			this.ranges = ranges;
+		}
+	}
+	const marks = new Map<string, Highlight>();
 	const doc = {
-		createRange: () => range,
+		createRange: () => new TestRange(),
 		getElementById: () => style,
 		defaultView: supported ? { Highlight, CSS: { highlights: marks } } : {},
 	};
-	return { doc: doc as unknown as Document, boundaries, marks, style };
+	return {
+		doc: doc as unknown as Document,
+		marks,
+		style,
+		paintedRanges: (name = "folio-search") =>
+			marks.get(name)?.ranges.map(({ start, end }) => ({ start, end })),
+	};
 }
 function projection(chunks: string[]): Projection {
 	let offset = 0;
@@ -46,9 +55,8 @@ test("Unicode search offsets highlight exact repeated occurrence across existing
 	const p = projection(["𠮷あ", "いう𠮷", "あいう"]);
 	const h = harness();
 	highlightRange(h.doc, p, 4, 8);
-	assert.deepEqual(h.boundaries, [
-		["start", p.entries[1]?.node, 2],
-		["end", p.entries[2]?.node, 3],
+	assert.deepEqual(h.paintedRanges(), [
+		{ start: [p.entries[1]?.node, 2], end: [p.entries[2]?.node, 3] },
 	]);
 	assert.equal(h.marks.size, 1);
 	assert.ok(h.marks.has("folio-search"));
@@ -61,9 +69,8 @@ test("NFC range boundaries project decomposed source text without changing origi
 	const p = projection(["か", "\u3099く", "せい"]);
 	const h = harness();
 	highlightRange(h.doc, p, 0, 2);
-	assert.deepEqual(h.boundaries, [
-		["start", p.entries[0]?.node, 0],
-		["end", p.entries[1]?.node, 2],
+	assert.deepEqual(h.paintedRanges(), [
+		{ start: [p.entries[0]?.node, 0], end: [p.entries[1]?.node, 2] },
 	]);
 	assert.equal(p.raw, "か\u3099くせい");
 });
@@ -95,15 +102,10 @@ test("repainting separate intervals in one document retains all intervals", asyn
 	);
 	paint();
 	assert.equal(h.marks.size, 1);
-	assert.deepEqual(
-		h.boundaries.map(([kind, , offset]) => [kind, offset]),
-		[
-			["start", 0],
-			["end", 1],
-			["start", 2],
-			["end", 4],
-		],
-	);
+	assert.deepEqual(h.paintedRanges(), [
+		{ start: [p.entries[0]?.node, 0], end: [p.entries[0]?.node, 1] },
+		{ start: [p.entries[0]?.node, 2], end: [p.entries[0]?.node, 4] },
+	]);
 });
 
 test("study decoration declares its own red color with longhands while preserving glyph color", async () => {

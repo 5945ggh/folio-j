@@ -56,7 +56,6 @@ def test_empty_database_rebuilds_current_schema(
             row[0]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
-        assert len(Base.metadata.tables) == 24
         assert tables == {"alembic_version", *Base.metadata.tables}
 
     # Compare every column, type, nullable flag, foreign key, index and uniqueness

@@ -527,7 +527,7 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 
 ## 8. 测试策略
 
-当前`just test`运行后端pytest与前端Node.js纯逻辑测试。现有覆盖见[`backend/tests/`](../backend/tests/)；下列Occurrence／提取规则是未来实现的验收要求，不能作为当前通过证据。
+当前`just test`运行后端pytest与前端Node.js纯逻辑测试；`just test-browser`通过隔离 Chrome 执行真实组件与布局回归，并纳入`just check`。浏览器测试使用本地 Vite 与模拟 API，不启动模型或访问用户数据库；缺少 Chrome 时明确失败，可用`CHROME_BIN`指定可执行文件。整改方法及验证边界见[测试质量验收](handovers/TEST_QUALITY_ACCEPTANCE.md)。现有覆盖见[`backend/tests/`](../backend/tests/)；下列Occurrence／提取规则是未来实现的验收要求，不能作为当前通过证据。
 
 - **规范化器**：单元测试加 hypothesis 性质测试（R1、R2、R3），并覆盖边界用例：没有 h2、代码块中的 `#`、Setext 标题、结尾没有换行、CRLF 换行。
 - **提取校验（未来）**：纯函数测试，覆盖 surface 定位、不连续片段、非法 handle 等情况。
@@ -537,7 +537,7 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 - **LLM相关流程**：**测试中禁止发起真实网络请求。** 当前由`conftest.py`自动禁用socket连接，使用假适配器、内存流及`httpx.MockTransport`验证真实协议字段和运行状态。尚无`RECORD=1`录制／回放入口；未来需要真实LLM响应时由人类录制并保存至`tests/cassettes/`，默认测试只回放，缺录制应失败，不在测试中绕过网络禁令。
 - **回归语料（未来）**：`tests/corpus/` 中放 5 到 10 条代表性片段（包括口语缩略、不连续语法、长句），用于检查提取结果的校验通过率。
 - **API**：当前使用`httpx.AsyncClient`与`ASGITransport`，配合临时SQLite数据库及应用lifespan；覆盖接受幂等、并发／停止／删除、审核恢复及空库迁移与 schema 一致性。
-- **前端**：TypeScript类型检查加Node.js测试，覆盖导航、确切成果链接、恢复显示、审核及布局状态；讨论测试使用真实QueryClient和假API，覆盖受理／核实的组合推进、条件清草稿、版本合并、终态通知和重复观察的缓存事件。页面挂载、收起／返回列表及实际阅读仍由浏览器验证，证据见[阅读导航记录](handovers/archived/READING_NAVIGATION_ACCEPTANCE.md)和[架构重构验收](handovers/archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)。离线验收不证明真实模型教学质量或第三方工具兼容性。
+- **前端**：TypeScript类型检查加Node.js测试，覆盖导航、确切成果链接、恢复显示、审核及布局状态；讨论测试使用真实QueryClient和假API，覆盖受理／核实的组合推进、条件清草稿、版本合并、终态通知和重复观察的缓存事件。自动浏览器用例挂载真实素材库和学习片段表单，检查卡宽控制、窄容器布局，以及双侧清空在迟到预填后仍保存为空并保留出处。收起／返回列表及实际阅读等其余交互继续按阶段进行浏览器验证，证据见[阅读导航记录](handovers/archived/READING_NAVIGATION_ACCEPTANCE.md)和[架构重构验收](handovers/archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)。离线验收不证明真实模型教学质量或第三方工具兼容性。
 
 ## 9. 演进预留
 

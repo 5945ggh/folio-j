@@ -12,6 +12,7 @@ from uuid import uuid4
 import pytest
 from fastapi import HTTPException
 from httpx import AsyncClient
+from race_helpers import paused_task
 from sqlalchemy.ext.asyncio import AsyncSession
 from test_chat_api import chat_client
 
@@ -280,22 +281,19 @@ async def test_manual_save_and_original_text_edit_have_one_winner(
             await original(session)
 
         monkeypatch.setattr(module, "begin_write", delayed)
-        pending = asyncio.create_task(
+        operation = (
             client.post(create_url, json=create_payload(segment))
             if winner == "edit"
             else client.patch(segment_url, json={"text": "別原文"})
         )
-        await entered.wait()
-        try:
+        async with asyncio.timeout(5), paused_task(operation, entered, release) as pending:
             winning = (
                 await client.patch(segment_url, json={"text": "別原文"})
                 if winner == "edit"
                 else await client.post(create_url, json=create_payload(segment))
             )
             assert winning.status_code == 200, winning.text
-        finally:
-            release.set()
-        losing = await pending
+        losing = pending.result()
         assert losing.status_code == 409
         current = (await client.get(segment_url)).json()
         if winner == "edit":
@@ -359,23 +357,18 @@ async def test_manual_full_revision_and_agent_block_edit_cannot_overwrite_each_o
         url = f"/api/analyses/{document['id']}/revisions"
         body = revision_payload(segment, document, "## Manual\n新内容\n")
         if winner == "agent":
-            pending_manual = asyncio.create_task(client.post(url, json=body))
-            await entered.wait()
-            try:
+            async with (
+                asyncio.timeout(5),
+                paused_task(client.post(url, json=body), entered, release) as pending_manual,
+            ):
                 assert await agent() == "saved"
-            finally:
-                release.set()
-            manual = await pending_manual
+            manual = pending_manual.result()
             assert manual.status_code == 409 and manual.json()["code"] == "stale_revision"
         else:
-            pending_agent = asyncio.create_task(agent())
-            await entered.wait()
-            try:
+            async with asyncio.timeout(5), paused_task(agent(), entered, release) as pending_agent:
                 manual = await client.post(url, json=body)
                 assert manual.status_code == 200, manual.text
-            finally:
-                release.set()
-            assert await pending_agent == "stale"
+            assert pending_agent.result() == "stale"
         assert row_counts(database)["analysis_revisions"] == 2
         current = (await client.get(f"/api/analyses/{document['id']}")).json()
         assert current["sections"][1]["title"] == ("Agent" if winner == "agent" else "Manual")
@@ -457,23 +450,21 @@ async def test_new_manual_save_and_ancestor_deletion_serialize_without_visible_l
 
         monkeypatch.setattr(module, "begin_write", delayed)
         if winner == "save":
-            pending_delete = asyncio.create_task(client.delete(delete_url))
-            await entered.wait()
-            try:
+            async with (
+                asyncio.timeout(5),
+                paused_task(client.delete(delete_url), entered, release) as pending_delete,
+            ):
                 saved = await client.post(create_url, json=body)
                 assert saved.status_code == 200, saved.text
-            finally:
-                release.set()
-            assert (await pending_delete).status_code == 204
+            assert pending_delete.result().status_code == 204
             assert (await client.get(f"/api/analyses/{saved.json()['id']}")).status_code == 404
         else:
-            pending_save = asyncio.create_task(client.post(create_url, json=body))
-            await entered.wait()
-            try:
+            async with (
+                asyncio.timeout(5),
+                paused_task(client.post(create_url, json=body), entered, release) as pending_save,
+            ):
                 assert (await client.delete(delete_url)).status_code == 204
-            finally:
-                release.set()
-            saved = await pending_save
+            saved = pending_save.result()
             assert saved.status_code == 404 and saved.json()["code"] == "not_found"
         replay = await client.post(create_url, json=body)
         assert replay.status_code == 404 and replay.json()["code"] == "not_found"

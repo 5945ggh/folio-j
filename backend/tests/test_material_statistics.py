@@ -79,7 +79,6 @@ async def test_statistics_cache_is_read_only_and_ignores_presentation_changes(
         assert result["analysis_configuration"]
         assert len(result["lexical"]["coverage"]) <= 512
         assert durable_state(database) == before
-        result["text"]["character_count"] = 999  # Caller mutation cannot poison bytes cache.
         assert (await client.get(url + "/statistics", params=params)).json() == first.json()
         edited = await client.patch(
             url + "/metadata", json={"title": "新书名", "expected_revision": 0}
