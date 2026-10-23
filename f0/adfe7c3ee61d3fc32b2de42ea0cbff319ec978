@@ -1,0 +1,40 @@
+frontend/src/speech/controller.ts
+  s_db119264cb38a2::t_d3c17ac44d1cf1 98-110
+frontend/src/speech/speech.css
+  s_db119264cb38a2::t_0921159dd7f62d 91-92
+  s_db119264cb38a2::t_79904949ee50f4 7-8
+  s_db119264cb38a2::t_025a630dffb430 61,69
+  s_db119264cb38a2::t_22702f38824b71 58-60,62-68,70-72,75-76,93-96
+  s_db119264cb38a2::t_744d19f26dfe79 1-6,9-12,17-18,22-30,37-40,48-49,51-57,77-78,80-90,97-102,105,110-118,120-128,132-133,136-140,143,145,151-172
+frontend/src/speech/controller.test.ts
+  s_db119264cb38a2::t_aa31cc31b46f4e 286-303
+  s_db119264cb38a2::t_79904949ee50f4 252-255
+  s_db119264cb38a2::t_e0adfedd34cfc8 9,243-251,256-285
+frontend/src/speech/index.tsx
+  s_db119264cb38a2::t_0921159dd7f62d 298-326
+  s_db119264cb38a2::t_22702f38824b71 273-275,329
+  s_db119264cb38a2::t_aaa9a0e9b811be 1-7,176,184,195
+  s_db119264cb38a2::t_79904949ee50f4 288-290
+  s_db119264cb38a2::t_725b51d6e3a0b5 14,30,34,71,73-75,80-82,85-90,142-156,165,170-175,177-183,185-194,196-272,276-287,291-297,327-328,330-338
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f0adfe7c3ee61d3fc32b2de42ea0cbff319ec978",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_db119264cb38a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1693d-3728-7b83-bbea-a108a1f43a99",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
