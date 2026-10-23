@@ -417,7 +417,7 @@ C1 出处契约版本为 `1`，组装规则为 `concat-nfc-v1`；最多 64 段�
 
 阅读器标记通过 GET `/materials/{material_id}/chapters/{chapter_id}/segments` 按版本读取；按 Segment ID 游标每页扫描最多 100 条，响应包含有效条目、next_cursor 与 unavailable_count。无本章匹配条目的空页仍可有后续游标；前端扫描到末页才开放标记和完整本章列表。服务逐项验证出处并复查材料、来源及片段可见性，不受创建草稿的 20 条候选上限影响。该读取不新增标记实体或迁移。
 
-`ReaderFrames` 内的 `ReaderStudy` 负责原生选择、基字细线、完整范围强调、页边几何及点击命中。CSS Highlight 按 locator 文本节点拆 Range，排除 rt／rp，不包装正文或改变行盒；搜索保留独立 Highlight。pointerup 在排除拖动、长按、选区、修饰键、控件及扩展节点后，以 caret 邻接字符的实际 Range rect 核验可见命中，返回片段 ID 和屏幕锚点。消费后的事件阻止工具栏延迟切换；按需注音在事件分发完成后检查消费结果，避免同次触屏操作打开两种内容。页边只占真实留白，44px 命中区域配小符号／数字。`StudyPreview` 复用 Segment、Analysis 列表及确切修订读取和 Query 缓存；按选定身份校验响应，分页列表保持既有缓存形状。紧凑浮卡与展开侧栏共用组件，展开阅读使用右侧 `study` 面板状态；Markdown 标题及各块均保留，不挂载 Workbench。
+`ReaderFrames` 内的 `ReaderStudy` 负责原生选择、基字细线、完整范围强调、页边几何及点击命中。CSS Highlight 按 locator 文本节点拆 Range，排除 rt／rp，不包装正文或改变行盒；搜索保留独立 Highlight。pointerup 在排除拖动、长按、选区、修饰键、控件及扩展节点后，以 caret 邻接字符的实际 Range rect 核验可见命中，返回片段 ID 和屏幕锚点。消费后的事件阻止工具栏延迟切换；按需注音在事件分发完成后检查消费结果，避免同次触屏操作打开两种内容。页边只占真实留白，44px 命中区域配小符号／数字。入口绝对定位在正文滚动容器内，使用片段首处原文的内容坐标；完整章节按固定锚点分组，滚动由浏览器同步带动，不重新测量或按可见行切换锚点。横排通过左右留白、竖排通过底部留白容纳入口，`readingViewport` 扣除留白后保留正文尺寸。排版变化时重测；点击时才把内容锚点换算成屏幕位置，同一入口再次点击关闭预览。`StudyPreview` 复用 Segment、Analysis 列表及确切修订读取和 Query 缓存；按选定身份校验响应，分页列表保持既有缓存形状。紧凑浮卡与展开侧栏共用组件，展开阅读使用右侧 `study` 面板状态；Markdown 标题及各块均保留，不挂载 Workbench。
 
 卡外普通轻点、原文选区和滚动收起临时浮卡；固定本章列表和展开侧栏保留目标，草稿沿用保护。侧栏内滚动不改变原书位置，展开使尚未完成的旧导航意图失效；收起或关闭清空预览并保留原文位置。重排重算页边入口并恢复仍有效的当前强调；切章、旧 frame 销毁、查询失败或删除清除失效数据，旧 frame 的重复销毁不清除新 frame 的命中缓存。全局显示偏好保存在 `folio-reader-ui-v1` 的 `marks.studySegmentUnderlines`／`marks.studySegmentMargins`，两项独立默认 true。读取新项优先采用有效值，缺省分别从旧 `marks.studySegments` 回退；通过 storage 事件跨标签页同步。两项都关闭时本章列表仍可用；不可见的被动标记不接收点击，列表当前强调的可见范围仍可命中。
 

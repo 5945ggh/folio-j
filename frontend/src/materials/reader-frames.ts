@@ -349,13 +349,11 @@ export class ReaderFrames {
 				const vertical =
 					context.current().settings.writing_mode === "vertical-rl";
 				const root = context.root();
-				if (root)
-					normalizeFrameImages(
-						doc,
-						readingViewport(root, getComputedStyle(root)),
-					);
+				if (!root) return;
+				const viewport = readingViewport(root, getComputedStyle(root));
+				normalizeFrameImages(doc, viewport);
 				if (vertical) {
-					element.style.height = "100%";
+					element.style.height = `${viewport.height}px`;
 					doc.body.style.setProperty("height", "100%", "important");
 					doc.body.style.setProperty("width", "max-content", "important");
 					element.style.width = "1px";

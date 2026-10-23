@@ -227,3 +227,25 @@ test("scheduled target size is not a stable sampling baseline until completed re
 	assert.equal(recovery.finish(latest, { width: 800, height: 600 }), true);
 	assert.equal(recovery.canSample({ width: 800, height: 600 }), true);
 });
+
+test("native bookmark gutters preserve the original reading bounds", () => {
+	const root = {
+		clientWidth: 888,
+		clientHeight: 638,
+		getBoundingClientRect: () => ({
+			left: 196,
+			right: 1084,
+			top: 82,
+			bottom: 720,
+		}),
+	} as HTMLElement;
+	assert.deepEqual(
+		readingViewport(root, {
+			paddingTop: "0px",
+			paddingBottom: "0px",
+			paddingLeft: "64px",
+			paddingRight: "64px",
+		}),
+		{ left: 260, right: 1020, top: 82, bottom: 720, width: 760, height: 638 },
+	);
+});

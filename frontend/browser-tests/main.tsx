@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import type { components } from "../src/api/schema";
 import type { StudyTarget } from "../src/materials/study-api";
 import "../src/styles.css";
+import { readerBookmarks } from "./reader-bookmarks";
 
 const result = document.querySelector<HTMLPreElement>("#result");
 const container = document.querySelector<HTMLDivElement>("#root");
@@ -70,18 +72,20 @@ function inputValue(
 	input.dispatchEvent(new Event("input", { bubbles: true }));
 	input.dispatchEvent(new Event("change", { bubbles: true }));
 }
-async function mount(content: ReactNode) {
+async function mount(content: ReactNode, path = "*", initialEntry = "/") {
 	const client = new QueryClient({
 		defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
 	});
-	const router = createMemoryRouter([{ path: "*", element: content }]);
+	const router = createMemoryRouter([{ path, element: content }], {
+		initialEntries: [initialEntry],
+	});
 	root.render(
 		<QueryClientProvider client={client}>
 			<RouterProvider router={router} />
 		</QueryClientProvider>,
 	);
 	return () => {
-		root.render(null);
+		flushSync(() => root.render(null));
 		router.dispose();
 		client.clear();
 	};
@@ -350,7 +354,37 @@ async function clearStudyContext() {
 }
 
 try {
-	const lines = [await cardLayout(), await clearStudyContext()];
+	const lines =
+		new URLSearchParams(location.search).get("suite") === "reader-bookmarks"
+			? [
+					await readerBookmarks({
+						container,
+						check,
+						until,
+						inputValue,
+						mount,
+						mock: (handler) => {
+							handleRequest = handler;
+						},
+					}),
+				]
+			: [
+					await cardLayout(),
+					await clearStudyContext(),
+					await readerBookmarks(
+						{
+							container,
+							check,
+							until,
+							inputValue,
+							mount,
+							mock: (handler) => {
+								handleRequest = handler;
+							},
+						},
+						true,
+					),
+				];
 	check(unexpectedRequests.length === 0, unexpectedRequests.join("\n"));
 	output.textContent = `PASS\n${lines.join("\n")}`;
 	output.dataset.status = "passed";

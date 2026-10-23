@@ -353,40 +353,40 @@ export function StudyPreview({
 								{saved.note}
 							</p>
 						)}
-						<details className="reader-study-preview-metadata">
-							<summary>保存信息</summary>
-							<dl>
-								<dt>保存于</dt>
-								<dd>
-									{new Date(
-										saved?.created_at ?? selected.created_at,
-									).toLocaleString()}
-								</dd>
-								{saved && (
-									<>
-										<dt>片段更新于</dt>
-										<dd>{new Date(saved.updated_at).toLocaleString()}</dd>
-									</>
-								)}
-								<dt>片段 ID</dt>
-								<dd>{segmentId}</dd>
-								{analysis && (
-									<>
-										<dt>讲解更新于</dt>
-										<dd>{new Date(analysis.updated_at).toLocaleString()}</dd>
-										<dt>讲解 ID</dt>
-										<dd>{analysis.id}</dd>
-										<dt>修订 ID</dt>
-										<dd>{analysis.current_revision_id}</dd>
-									</>
-								)}
-							</dl>
-						</details>
 					</>
 				)}
 			</div>
 			{selected && (
 				<footer className="reader-study-preview-footer">
+					<details className="reader-study-preview-metadata">
+						<summary>保存信息</summary>
+						<dl>
+							<dt>保存于</dt>
+							<dd>
+								{new Date(
+									saved?.created_at ?? selected.created_at,
+								).toLocaleString()}
+							</dd>
+							{saved && (
+								<>
+									<dt>片段更新于</dt>
+									<dd>{new Date(saved.updated_at).toLocaleString()}</dd>
+								</>
+							)}
+							<dt>片段 ID</dt>
+							<dd>{segmentId}</dd>
+							{analysis && (
+								<>
+									<dt>讲解更新于</dt>
+									<dd>{new Date(analysis.updated_at).toLocaleString()}</dd>
+									<dt>讲解 ID</dt>
+									<dd>{analysis.id}</dd>
+									<dt>修订 ID</dt>
+									<dd>{analysis.current_revision_id}</dd>
+								</>
+							)}
+						</dl>
+					</details>
 					<button
 						type="button"
 						onClick={() =>

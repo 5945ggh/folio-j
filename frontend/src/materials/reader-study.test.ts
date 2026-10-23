@@ -890,3 +890,21 @@ test("complete mark anchors clip each rectangle to the frame, reader viewport, a
 		anchor: { left: 112, right: 135, top: 205, bottom: 218 },
 	});
 });
+
+test("ordinary scrolling does not measure or republish bookmark geometry", () => {
+	const viewport = new EventTarget() as HTMLElement;
+	const h = harness(undefined, viewport);
+	const entries: unknown[] = [];
+	h.study.bind({ ...h.binding, onEntries: (value) => entries.push(value) });
+	h.study.setMarks(h.chapter, [h.mark("a", 0, 4)], true, "white");
+	let measures = 0;
+	h.setRects(() => {
+		measures++;
+		return [{ left: 0, right: 40, top: 0, bottom: 20, width: 40, height: 20 }];
+	});
+	const publications = entries.length;
+	for (const type of ["wheel", "touchmove"]) h.event(type);
+	viewport.dispatchEvent(new Event("scroll"));
+	assert.equal(measures, 0);
+	assert.equal(entries.length, publications);
+});

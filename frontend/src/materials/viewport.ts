@@ -68,17 +68,20 @@ export function readingViewport(
 		HTMLElement,
 		"clientWidth" | "clientHeight" | "getBoundingClientRect"
 	>,
-	style: Pick<CSSStyleDeclaration, "paddingTop" | "paddingBottom">,
+	style: Pick<CSSStyleDeclaration, "paddingTop" | "paddingBottom"> &
+		Partial<Pick<CSSStyleDeclaration, "paddingLeft" | "paddingRight">>,
 ) {
 	const rect = element.getBoundingClientRect();
 	const top = Number.parseFloat(style.paddingTop) || 0;
 	const bottom = Number.parseFloat(style.paddingBottom) || 0;
+	const left = Number.parseFloat(style.paddingLeft ?? "0") || 0;
+	const right = Number.parseFloat(style.paddingRight ?? "0") || 0;
 	return {
-		left: rect.left,
-		right: rect.right,
+		left: rect.left + left,
+		right: rect.right - right,
 		top: rect.top + top,
 		bottom: rect.bottom - bottom,
-		width: element.clientWidth,
+		width: Math.max(0, element.clientWidth - left - right),
 		height: Math.max(0, element.clientHeight - top - bottom),
 	};
 }

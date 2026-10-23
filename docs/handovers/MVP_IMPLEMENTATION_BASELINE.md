@@ -32,7 +32,7 @@
 | 阅读跳转协调 | 已提交，工程与浏览器验收通过 | 导航意图、目标校验、原点与相邻锁集中到同一 module；请求与正文呈现分别隔离迟到结果，返回提示显示原点章节与章内进度 | [本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md) |
 | 全量注音 | 已提交、工程验收通过 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](archived/full-ruby/ACCEPTANCE.md) |
 | EPUB 学习衔接 | C1／C2、阅读体验调整及保存表单优化已提交，工程与浏览器验收通过 | 原生选区保存与完整回读；自动语境保守整理后计预算，只读出处显示当前材料及逻辑章位置；正文细线、真实留白页边入口与固定完整本章列表，两项显示偏好独立；保存表单支持双侧清空与显式重新摘录；材料对话和 Occurrence 继续后置 | [C1 验收](text-study/C1_ACCEPTANCE.md)、[C2 验收](text-study/C2_ACCEPTANCE.md)、[原阅读标记验收](text-study/READER_MARKS_ACCEPTANCE.md)、[阅读体验记录](text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单验收](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
-| 阅读器原处预览 | 已提交，工程及浏览器验收通过，用户认可当前视觉效果 | 单击可见标记直接紧凑回看，多片段先选；原文引用置顶，读取已有译文及多篇讲解，展开侧栏、收起继续阅读；页边入口扁平，原生划选保留 | [原处预览验收](text-study/INLINE_PREVIEW_ACCEPTANCE.md) |
+| 阅读器原处预览 | 已提交，页边原生滚动定位、重复点击收起及卡片精简已通过工程与浏览器验收 | 单击可见标记直接紧凑回看，多片段先选；原文引用置顶，读取已有译文及多篇讲解，展开侧栏、收起继续阅读；页边入口随原文同步滚动，再次点击同一入口收起；保存信息与打开片段同排，原生划选保留 | [原处预览验收](text-study/INLINE_PREVIEW_ACCEPTANCE.md) |
 | 文本分析与书籍统计 | 工程与浏览器验收通过 | 普通文本输入、完整分析资产读取与 EPUB 章节适配分开；详情独立展示词次／词种／汉字及覆盖曲线，有界缓存且不触发阅读打开或分词准备 | [B1 验收](text-study/B1_ACCEPTANCE.md)、[B2 验收](text-study/B2_ACCEPTANCE.md) |
 | 学习条目与积累库 | 未实现 | 尚无 Occurrence 持久化、候选工具、整理操作或积累库页面；生产字段、定位、anchor 与恢复契约待落实 | [PRD F5／F6](../PRD.md#f5-学习条目创建与整理)、[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md) |
 

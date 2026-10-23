@@ -128,14 +128,15 @@
 }
 .reader-r1 .reader-viewport {
 	position: absolute;
-	top: 0;
-	bottom: 0;
+	z-index: 0;
+	top: var(--reader-top-space);
+	bottom: var(--reader-bottom-space);
 	left: 50%;
 	transform: translateX(-50%);
-	width: min(calc(100% - 64px), var(--reader-width));
+	width: min(100%, calc(var(--reader-width) + 128px));
 	height: auto;
 	margin: 0;
-	padding: var(--reader-top-space) 0 var(--reader-bottom-space);
+	padding: 0 clamp(32px, calc((100vw - var(--reader-width)) / 2), 64px);
 	border: 0;
 	border-radius: 0;
 	background: var(--reader-bg);
@@ -145,9 +146,8 @@
 	overscroll-behavior: contain;
 }
 .reader-r1 .reader-viewport.material-vertical {
-	top: var(--reader-top-space);
-	bottom: var(--reader-bottom-space);
-	padding: 0;
+	bottom: calc(var(--reader-bottom-space) - 52px);
+	padding: 0 0 52px;
 	left: 32px;
 	right: 32px;
 	transform: none;
@@ -363,9 +363,11 @@
 		font-size: 10px;
 	}
 	.reader-r1 .reader-viewport {
-		width: calc(100% - 36px);
+		width: 100%;
+		padding-inline: 18px;
 	}
 	.reader-r1 .reader-viewport.material-vertical {
+		padding-inline: 0;
 		left: 18px;
 		right: 18px;
 		width: auto;

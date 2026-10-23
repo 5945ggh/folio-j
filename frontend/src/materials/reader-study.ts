@@ -375,20 +375,37 @@ export class ReaderStudy {
 		const viewport = activeFrames[0]?.viewport;
 		const view = viewport?.ownerDocument?.defaultView;
 		if (config.margins && viewport && view) {
-			const reserved = Array.from(
-				viewport.ownerDocument.querySelectorAll(
-					".reader-top,.reader-bottom,[data-reader-panel-side],.reader-study-notice",
-				),
-				(node) => node.getBoundingClientRect(),
-			);
+			const outer = viewport.getBoundingClientRect();
+			const content = activeFrames.reduce<ScreenAnchor>((bounds, frame) => {
+				const rect = frame.element.getBoundingClientRect();
+				return {
+					left: Math.min(bounds.left, rect.left),
+					right: Math.max(bounds.right, rect.right),
+					top: Math.min(bounds.top, rect.top),
+					bottom: Math.max(bounds.bottom, rect.bottom),
+				};
+			}, outer);
+			const dx = viewport.scrollLeft - outer.left - viewport.clientLeft;
+			const dy = viewport.scrollTop - outer.top - viewport.clientTop;
+			const local = (rect: ScreenAnchor): ScreenAnchor => ({
+				left: rect.left + dx,
+				right: rect.right + dx,
+				top: rect.top + dy,
+				bottom: rect.bottom + dy,
+			});
 			this.binding?.onEntries?.(
 				studyMarginEntries(
 					geometry,
 					readingViewport(viewport, view.getComputedStyle(viewport)),
 					{ width: view.innerWidth, height: view.innerHeight },
 					viewport.classList.contains("material-vertical"),
-					reserved,
-				),
+					content,
+				).map((entry) => ({
+					...entry,
+					anchor: local(entry.anchor),
+					left: entry.left + dx,
+					top: entry.top + dy,
+				})),
 			);
 		} else this.binding?.onEntries?.([]);
 	}
@@ -655,7 +672,6 @@ export class ReaderStudy {
 			cancel();
 			this.binding?.onSelection(null);
 			this.dismissMarks();
-			this.refresh();
 		};
 		const listeners: [string, EventListener][] = [
 			["pointerdown", down],

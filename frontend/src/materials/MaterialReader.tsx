@@ -1648,6 +1648,87 @@ function Reader({
 							/>
 						) : null;
 					})}
+					{ui.marks.studySegmentMargins &&
+						!studyTarget &&
+						marginEntries.map((entry) => (
+							<button
+								key={entry.segmentIds.join(":")}
+								type="button"
+								className="reader-study-margin"
+								data-reader-tool=""
+								style={{ left: entry.left, top: entry.top }}
+								aria-expanded={Boolean(
+									markHit &&
+										!markHit.fixed &&
+										markHit.segmentIds.length === entry.segmentIds.length &&
+										entry.segmentIds.every((id) =>
+											markHit.segmentIds.includes(id),
+										),
+								)}
+								aria-label={`查看此处 ${entry.segmentIds.length} 个学习片段`}
+								onClick={(event) => {
+									const current = latest.current.markHit;
+									if (
+										current &&
+										!current.fixed &&
+										current.segmentIds.length === entry.segmentIds.length &&
+										entry.segmentIds.every((id) =>
+											current.segmentIds.includes(id),
+										)
+									) {
+										closeMarkHit();
+										return;
+									}
+									const root = container.current;
+									if (!root) return;
+									const outer = root.getBoundingClientRect();
+									const view = readingViewport(root, getComputedStyle(root));
+									const dx = outer.left + root.clientLeft - root.scrollLeft;
+									const dy = outer.top + root.clientTop - root.scrollTop;
+									openMarkHit(
+										{
+											segmentIds: entry.segmentIds,
+											anchor: {
+												left: Math.min(
+													view.right,
+													Math.max(view.left, entry.anchor.left + dx),
+												),
+												right: Math.max(
+													view.left,
+													Math.min(view.right, entry.anchor.right + dx),
+												),
+												top: Math.min(
+													view.bottom,
+													Math.max(view.top, entry.anchor.top + dy),
+												),
+												bottom: Math.max(
+													view.top,
+													Math.min(view.bottom, entry.anchor.bottom + dy),
+												),
+											},
+										},
+										event.currentTarget,
+									);
+									controller.current?.show();
+								}}
+							>
+								{entry.segmentIds.length > 1 ? (
+									entry.segmentIds.length
+								) : (
+									<svg
+										aria-hidden="true"
+										width="16"
+										height="16"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="1.5"
+									>
+										<path d="M6 4h12v16l-6-4-6 4z" />
+									</svg>
+								)}
+							</button>
+						))}
 				</section>
 			)}
 			<footer
@@ -1809,38 +1890,7 @@ function Reader({
 					}}
 				/>
 			)}
-			{ui.marks.studySegmentMargins &&
-				!studyTarget &&
-				marginEntries.map((entry) => (
-					<button
-						key={entry.segmentIds.join(":")}
-						type="button"
-						className="reader-study-margin"
-						data-reader-tool=""
-						style={{ left: entry.left, top: entry.top }}
-						aria-label={`查看此处 ${entry.segmentIds.length} 个学习片段`}
-						onClick={(event) => {
-							openMarkHit({ ...entry, fixed: false }, event.currentTarget);
-							controller.current?.show();
-						}}
-					>
-						{entry.segmentIds.length > 1 ? (
-							entry.segmentIds.length
-						) : (
-							<svg
-								aria-hidden="true"
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.5"
-							>
-								<path d="M6 4h12v16l-6-4-6 4z" />
-							</svg>
-						)}
-					</button>
-				))}
+
 			{markHit &&
 				!studyTarget &&
 				(markHit.fixed || visibleHitItems.length > 0) && (
