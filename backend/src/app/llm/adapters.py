@@ -1,6 +1,7 @@
 """OpenAI-compatible provider adapters for verification and chat."""
 
 import json
+import re
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import Any, Literal, cast
@@ -8,6 +9,9 @@ from typing import Any, Literal, cast
 from openai import AsyncOpenAI, omit
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai.types.responses import Response
+
+_JSON_STRING = re.compile(r'"(?:[^"\\]|\\.)*(?P<end>"|\\?$)', re.DOTALL)
+_JSON_ESCAPE = re.compile(r'\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}(?:\\u[0-9a-fA-F]{4})*)')
 
 
 @dataclass(frozen=True)
@@ -346,19 +350,74 @@ def _client(base_url: str, api_key: str | None) -> AsyncOpenAI:
 
 
 def _safe(value: str, api_key: str | None) -> str:
-    return value.replace(api_key, "[redacted]") if api_key else value
+    if not api_key:
+        return value
+    variants: set[str] = set()
+    for ensure_ascii in (False, True):
+        variant = api_key
+        while len(variant) <= len(value):
+            variants.add(variant)
+            encoded = json.dumps(variant, ensure_ascii=ensure_ascii)[1:-1]
+            if encoded == variant:
+                break
+            variant = encoded
+    # Longer encodings must be removed before their unescaped substrings.
+    for variant in sorted(variants, key=len, reverse=True):
+        value = value.replace(variant, "[redacted]")
+    return value
+
+
+def _redact_string(value: str, api_key: str | None) -> str:
+    if not api_key:
+        return value
+    if value == api_key:
+        return "[redacted]"
+
+    def redact_token(match: re.Match[str]) -> str:
+        token = match.group()
+        ending = match.group("end")
+        closed = ending == '"'
+        # A missing document brace or closing quote must not hide an echoed key.
+        decodable = token if closed else token.removesuffix(ending) + '"'
+        try:
+            decoded: str = json.loads(decodable)
+        except ValueError:
+            candidate = token
+            while True:
+                decoded_candidate = _JSON_ESCAPE.sub(
+                    lambda escape: json.loads('"' + escape.group() + '"'), candidate
+                )
+                if _safe(decoded_candidate, api_key) != decoded_candidate:
+                    # Do not turn malformed model arguments into executable JSON.
+                    return "[redacted-invalid-json]"
+                if decoded_candidate == candidate:
+                    return token
+                candidate = decoded_candidate
+        redacted = _redact_string(decoded, api_key)
+        if redacted == decoded:
+            if _safe(token, api_key) == token:
+                return token
+            redacted = "[redacted]"
+        encoded = json.dumps(redacted, ensure_ascii=False)
+        return encoded if closed else encoded[:-1] + ending
+
+    # Inspect every string token; object decoding would discard duplicate keys.
+    # Unchanged tokens, whitespace and delimiters remain byte-for-byte identical.
+    return _safe(_JSON_STRING.sub(redact_token, value), api_key)
 
 
 def _redact_payload(value: Any, api_key: str | None) -> Any:
-    """Redact before JSON encoding so quotes and escapes cannot split a credential."""
+    """Redact decoded fields, including JSON encoded inside tool argument strings."""
     if isinstance(value, str):
-        return _safe(value, api_key)
+        return _redact_string(value, api_key)
     if isinstance(value, list):
         return [_redact_payload(item, api_key) for item in cast(list[Any], value)]
     if isinstance(value, dict):
         return {
-            _safe(key, api_key): _redact_payload(item, api_key)
-            for key, item in cast(dict[str, Any], value).items()
+            _redact_string(key, api_key) if isinstance(key, str) else key: _redact_payload(
+                item, api_key
+            )
+            for key, item in cast(dict[object, Any], value).items()
         }
     return value
 

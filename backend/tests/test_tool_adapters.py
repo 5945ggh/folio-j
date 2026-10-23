@@ -2,7 +2,7 @@
 
 import json
 from dataclasses import replace
-from typing import Any
+from typing import Any, cast
 
 import httpx2 as httpx
 import pytest
@@ -550,16 +550,230 @@ async def test_secret_is_redacted_in_nested_call_history_raw_and_progress(
         tools=TOOLS,
         on_progress=on_progress,
     )
-    serialized = json.dumps(
-        {
-            "calls": result.calls,
-            "history": result.history_items,
-            "raw": result.raw_response,
-            "text": result.text,
-            "progress": progress,
-        },
-        ensure_ascii=False,
+    assert_no_credential(result.calls, secret)
+    assert_no_credential(result.history_items, secret)
+    assert_no_credential(result.raw_response, secret)
+    assert_no_credential(result.text, secret)
+    assert_no_credential(progress, secret)
+
+
+def assert_no_credential(value: Any, secret: str) -> None:
+    """Inspect decoded fields, including JSON strings embedded in protocol objects."""
+    if isinstance(value, str):
+        assert secret not in value
+        assert json.dumps(secret, ensure_ascii=False)[1:-1] not in value
+        assert json.dumps(secret, ensure_ascii=True)[1:-1] not in value
+        try:
+            decoded = json.loads(value)
+        except ValueError:
+            return
+        assert_no_credential(decoded, secret)
+    elif isinstance(value, dict):
+        for key, item in cast(dict[Any, Any], value).items():
+            assert_no_credential(key, secret)
+            assert_no_credential(item, secret)
+    elif isinstance(value, list):
+        for item in cast(list[Any], value):
+            assert_no_credential(item, secret)
+
+
+def tool_response(
+    protocol: Protocol, stream: bool, arguments: str, *, completed: bool = True
+) -> httpx.Response:
+    """Build synthetic tool responses for SDK tests and durable redaction checks."""
+    if protocol == "chat_completions":
+        payload = _chat_response(arguments=arguments)
+        finish = "tool_calls" if completed else "length"
+        payload["choices"][0]["finish_reason"] = finish
+        if stream:
+            message = payload["choices"][0]["message"]
+            fragment = {"index": 0, **message["tool_calls"][0]}
+            payload["object"] = "chat.completion.chunk"
+            payload["choices"] = [
+                {"index": 0, "delta": {"tool_calls": [fragment]}, "finish_reason": finish}
+            ]
+            return httpx.Response(
+                200,
+                text=event(payload) + "data: [DONE]\n\n",
+                headers={"content-type": "text/event-stream"},
+            )
+    else:
+        payload = _response_with_call(
+            status="completed" if completed else "incomplete", arguments=arguments
+        )
+        if stream:
+            return httpx.Response(
+                200,
+                text=event(
+                    {
+                        "type": "response.completed" if completed else "response.incomplete",
+                        "sequence_number": 1,
+                        "response": payload,
+                    }
+                ),
+                headers={"content-type": "text/event-stream"},
+            )
+    return httpx.Response(200, json=payload)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("unicode_escape", [False, True])
+async def test_nested_json_arguments_redact_values_and_preserve_other_text(
+    monkeypatch: pytest.MonkeyPatch, protocol: Protocol, stream: bool, unicode_escape: bool
+) -> None:
+    secret = 'fictional"secret\\suffix'
+    note = '引用「説明」 "quoted" \\ path'
+    nested = json.dumps({"credential": secret}, ensure_ascii=False)
+    arguments = json.dumps(
+        {"id": secret, "nested": json.dumps(nested), "note": note}, ensure_ascii=False
     )
-    assert secret not in serialized
-    assert secret not in result.calls[0]["arguments"]
-    assert all(secret not in value for value in progress)
+    if unicode_escape:
+        arguments = arguments.replace("fictional", "\\u0066ictional")
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return tool_response(protocol, stream, arguments)
+
+    install_transport(monkeypatch, handler)
+    result = await adapters.complete_with_tools(
+        snapshot(protocol, stream), secret, messages=MESSAGES, tools=TOOLS
+    )
+    assert result.completed
+    assert_no_credential(result.calls, secret)
+    assert_no_credential(result.history_items, secret)
+    assert_no_credential(result.raw_response, secret)
+    decoded = json.loads(result.calls[0]["arguments"])
+    assert decoded["id"] == "[redacted]"
+    assert json.loads(json.loads(decoded["nested"]))["credential"] == "[redacted]"
+    assert decoded["note"] == note
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("api_key", [None, 'fictional"secret\\suffix'])
+@pytest.mark.parametrize("invalid_escape", [False, True])
+async def test_tool_arguments_without_credentials_keep_exact_bytes_in_replay(
+    monkeypatch: pytest.MonkeyPatch,
+    protocol: Protocol,
+    stream: bool,
+    api_key: str | None,
+    invalid_escape: bool,
+) -> None:
+    arguments = ' { "id" : "原文\\\\path", "note": "引用\\"内容\\"" } '
+    assert json.loads(arguments)["id"] == "原文\\path"
+    if invalid_escape:
+        arguments = r'{ "id": "harmless\q", "note": "quoted\"text" }'
+    if api_key is None:
+        arguments = json.dumps({"id": 'fictional"secret\\suffix', "note": arguments})
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return tool_response(protocol, stream, arguments)
+
+    install_transport(monkeypatch, handler)
+    result = await adapters.complete_with_tools(
+        snapshot(protocol, stream), api_key, messages=MESSAGES, tools=TOOLS
+    )
+    assert result.completed
+    assert result.calls[0]["arguments"] == arguments
+    continuation = [*MESSAGES, *result.history_items]
+    await adapters.complete_with_tools(
+        snapshot(protocol, stream), api_key, messages=continuation, tools=TOOLS
+    )
+    body = json.loads(requests[-1].content)
+    assert body["messages" if protocol == "chat_completions" else "input"] == continuation
+    replayed = (
+        body["messages"][-1]["tool_calls"][0]["function"]["arguments"]
+        if protocol == "chat_completions"
+        else next(
+            item["arguments"] for item in body["input"] if item.get("type") == "function_call"
+        )
+    )
+    assert replayed == arguments
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("completed", [False, True])
+async def test_invalid_or_incomplete_arguments_do_not_expose_encoded_credentials(
+    monkeypatch: pytest.MonkeyPatch, protocol: Protocol, stream: bool, completed: bool
+) -> None:
+    secret = 'fictional"secret\\suffix'
+    arguments = json.dumps({"id": secret})[:-1]
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return tool_response(protocol, stream, arguments, completed=completed)
+
+    install_transport(monkeypatch, handler)
+    result = await adapters.complete_with_tools(
+        snapshot(protocol, stream), secret, messages=MESSAGES, tools=TOOLS
+    )
+    assert result.completed is completed
+    if not completed:
+        assert result.calls == result.history_items == []
+    else:
+        redacted = result.calls[0]["arguments"]
+        assert "[redacted]" in redacted
+        with pytest.raises(json.JSONDecodeError):
+            json.loads(redacted)
+    assert_no_credential(result.calls, secret)
+    assert_no_credential(result.history_items, secret)
+    assert_no_credential(result.raw_response, secret)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(
+    "case", ["json_key", "duplicate", "truncated", "unclosed_string", "invalid_escape"]
+)
+async def test_redaction_handles_json_shaped_keys_duplicates_and_partial_unicode(
+    monkeypatch: pytest.MonkeyPatch, protocol: Protocol, stream: bool, case: str
+) -> None:
+    secret = '"123"' if case == "json_key" else 'fictional"secret\\suffix'
+    encoded = json.dumps(secret).replace("fictional", "\\u0066ictional")
+    replacement = '"[redacted]"'
+    if case == "invalid_escape":
+        arguments = '{ "id": ' + encoded[:-1] + '\\q" }'
+        expected = '{ "id": [redacted-invalid-json] }'
+    elif case == "duplicate":
+        arguments = '{ "id": ' + encoded + ', "id": "public" }'
+        expected = '{ "id": ' + replacement + ', "id": "public" }'
+    else:
+        arguments = '{ "id": ' + encoded + " }"
+        expected = '{ "id": ' + replacement + " }"
+        if case == "truncated":
+            arguments, expected = arguments[:-2], expected[:-2]
+        elif case == "unclosed_string":
+            arguments, expected = arguments[:-3], expected[:-3]
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return tool_response(protocol, stream, arguments)
+
+    install_transport(monkeypatch, handler)
+    result = await adapters.complete_with_tools(
+        snapshot(protocol, stream), secret, messages=MESSAGES, tools=TOOLS
+    )
+    assert result.completed
+    assert result.calls[0]["arguments"] == expected
+    if case == "invalid_escape":
+        with pytest.raises(json.JSONDecodeError):
+            json.loads(result.calls[0]["arguments"])
+    historical = (
+        result.history_items[0]["tool_calls"][0]["function"]["arguments"]
+        if protocol == "chat_completions"
+        else result.history_items[1]["arguments"]
+    )
+    assert historical == expected
+    if not (protocol == "chat_completions" and stream):
+        raw = json.loads(result.raw_response or "null")
+        raw_arguments = (
+            raw["choices"][0]["message"]["tool_calls"][0]["function"]["arguments"]
+            if protocol == "chat_completions"
+            else raw["output"][1]["arguments"]
+        )
+        assert raw_arguments == expected
