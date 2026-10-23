@@ -1,0 +1,44 @@
+backend/src/app/translation_schemas.py
+  s_db119264cb38a2::t_c959e845e6b6cf 101-117
+backend/src/app/api/translations.py
+  s_db119264cb38a2::t_c959e845e6b6cf 10,12,28-42
+  s_db119264cb38a2::t_46c6c342e05016 43-44
+frontend/src/api/schema.d.ts
+  s_db119264cb38a2::t_6e6b41699988dd 213-229,1659-1688,3690-3717,3720-3723,3725
+  s_db119264cb38a2::t_5940d994f151a9 3718-3719,3724
+backend/openapi.json
+  s_db119264cb38a2::t_6e6b41699988dd 1442-1522,6431-6517
+  s_db119264cb38a2::t_0c80f7b9ef9e51 6518-6519
+backend/tests/test_chapter_translations.py
+  s_db119264cb38a2::t_38e32e146e4c90 268-280,303-337,341-345
+  s_db119264cb38a2::t_0b20e8a676c461 1-126,130-133,138-165,171-177,184-191,193-230,234-236,242-257,261-264,291,295-299,346-348,352-373,377-379,385-388,409-414,422-424
+  s_db119264cb38a2::t_23baede15dfd7d 166,338-340
+  s_db119264cb38a2::t_3f03182209adc6 167-170,192
+  s_db119264cb38a2::t_045febefc84011 127-129,134-137,178-183,231-233,237-241,258-260,265-267,281-290,292-294,300-302,349-351,374-376,380-384,389-408,415-421
+backend/src/app/services/chapter_translations.py
+  s_db119264cb38a2::t_6825e9bc9e8a93 47-56,133,135-141,161,207,214-215,217-218,252
+  s_db119264cb38a2::t_38e32e146e4c90 106-110
+  s_db119264cb38a2::t_c959e845e6b6cf 1-46,57-94,98-105,111-132,134,142-160,162-206,208-213,216,219-241,245-251,253-255
+  s_db119264cb38a2::t_045febefc84011 95-97,242-244
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "85dc416a378cf8631c854fb4972ea0964b2fadb9",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_db119264cb38a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1693d-3728-7b83-bbea-a108a1f43a99",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
