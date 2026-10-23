@@ -1,0 +1,48 @@
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md
+  s_db119264cb38a2::t_03899806f6c315 97,116,120,141-153
+  s_db119264cb38a2::t_58050b56a1ea59 117-119,121-140
+  s_db119264cb38a2::t_0b44ceced4577e 94-96,98-115
+docs/INFORMATION_ARCHITECTURE.md
+  s_db119264cb38a2::t_e1b64aabfe8540 150,168
+  s_db119264cb38a2::t_e2fec1b7585306 164,170
+  s_db119264cb38a2::t_3114c20ff99b4f 169
+docs/GLOSSARY.md
+  s_db119264cb38a2::t_e1b64aabfe8540 68-69
+docs/USAGE.md
+  s_db119264cb38a2::t_e2fec1b7585306 19,25
+  s_db119264cb38a2::t_e1b64aabfe8540 9,23
+  s_db119264cb38a2::t_db0d0582d970fe 24
+docs/ARCHITECTURE.md
+  s_db119264cb38a2::t_e2fec1b7585306 419,425
+  s_db119264cb38a2::t_e1b64aabfe8540 421-424,444-446
+  s_db119264cb38a2::t_9f9d6b31abd118 420
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_PLAN.md
+  s_db119264cb38a2::t_e374b32f3255af 14,95,239
+  s_db119264cb38a2::t_58050b56a1ea59 5
+docs/PRD.md
+  s_db119264cb38a2::t_e2fec1b7585306 287-288
+  s_db119264cb38a2::t_e1b64aabfe8540 219,280-282
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_db119264cb38a2::t_03899806f6c315 3,9,19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fb5ea8a3ed07b9a39361105d6a46216ba16d15fc",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_db119264cb38a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1693d-3728-7b83-bbea-a108a1f43a99",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
