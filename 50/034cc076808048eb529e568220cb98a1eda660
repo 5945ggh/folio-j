@@ -1,0 +1,133 @@
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_PLAN.md
+  s_bc3c25284490f7::t_e09b05aaa2f9aa 66-67,69-70,247
+  s_bc3c25284490f7::t_ec2dbcc42d422e 3-4,18,126,148,162,164,187,200,207,245,260,274,276,278,283,285-286,288-296
+  s_bc3c25284490f7::t_928482c4d7f236 68
+  s_bc3c25284490f7::t_f7374c13915f4f 1-2,5-17,19-65,71-125,127-147,149-161,163,165-186,188-199,201-206,208-244,246,248-259,261-273,275,277,279-282,284,287
+docs/PRD.md
+  s_10957f1100f356::t_680db7594e8942 261-262,307,411,426
+  s_bc3c25284490f7::t_d6634584300efa 255
+  s_bc3c25284490f7::t_ec2dbcc42d422e 273-286
+  s_bc3c25284490f7::t_b1aff9c01de81f 287
+docs/INFORMATION_ARCHITECTURE.md
+  s_92db07d749dc1e::t_d9937592904452 97-99
+  s_9dab513a6866a5::t_f526fbee9c67c5 100-102,104
+  s_92db07d749dc1e::t_1cafeba352aa18 103
+  s_bc3c25284490f7::t_d6634584300efa 160-168
+  s_92db07d749dc1e::t_8678f57961679c 169
+docs/handovers/text-study/SEGMENT_UI_ACCEPTANCE.md
+  s_92db07d749dc1e::t_d9411a0302bba2 47-55
+  s_92db07d749dc1e::t_d9937592904452 56
+  s_9dab513a6866a5::t_4ce0644421b705 7
+  s_92db07d749dc1e::t_238acc7d52560e 3,41-46
+  s_9dab513a6866a5::t_f5365c2a539cda 1-2,4-6,8-14,27-30
+  s_9dab513a6866a5::t_44f8e2cc213359 15-26
+  s_9dab513a6866a5::t_55076cf4f6b5bf 31-32
+  s_92db07d749dc1e::t_e775c0cc231198 33-40
+docs/ARCHITECTURE.md
+  s_92db07d749dc1e::t_1cafeba352aa18 409,411
+  s_92db07d749dc1e::t_2302059326423d 417
+  s_bc3c25284490f7::t_57592d9eaef856 68,70,413
+  s_bc3c25284490f7::t_9fbe8f881f3da9 407-408
+  s_bc3c25284490f7::t_30b50101e8f2ff 64,401-406,410,412,414-416,418-419
+  s_92db07d749dc1e::t_337139c753ecdc 420
+docs/handovers/README.md
+  s_bc3c25284490f7::t_d4b37aed55666f 10
+AGENTS.md
+  s_0a6c4ad3aaddf6::t_189a79ed218b0d 24-25,40
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md
+  s_92db07d749dc1e::t_78fdcf13205371 75
+  s_92db07d749dc1e::t_0bf3f20ff914b4 80-93
+  s_92db07d749dc1e::t_238acc7d52560e 3,13,15-16,25,57,59,61
+  s_bc3c25284490f7::t_d173de12963541 62-69
+  s_bc3c25284490f7::t_d4b37aed55666f 1-2,4-12,14,17-24,26-56,58,60
+  s_92db07d749dc1e::t_d9411a0302bba2 70-74,76-79
+docs/UPGRADING.md
+  s_0a6c4ad3aaddf6::t_189a79ed218b0d 1-40
+docs/TECH_STACK.md
+  s_bc3c25284490f7::t_30b50101e8f2ff 90-91
+docs/handovers/archived/DEV_PREPARATION.md
+  s_0a6c4ad3aaddf6::t_189a79ed218b0d 40
+docs/USAGE.md
+  s_bc3c25284490f7::t_30b50101e8f2ff 15-24,54-55
+  s_10957f1100f356::t_680db7594e8942 11-12
+  s_0a6c4ad3aaddf6::t_189a79ed218b0d 1-10,13-14,25-53,56-57
+docs/README.md
+  s_0a6c4ad3aaddf6::t_189a79ed218b0d 3,7-9
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_92db07d749dc1e::t_afb6d3b488b217 8,18-19,21,36
+  s_0a6c4ad3aaddf6::t_52231e31a264f1 75
+docs/handovers/text-study/READER_COPY_ACCEPTANCE.md
+  s_10957f1100f356::t_2274e68ab38537 1-2,4-11,13-24
+  s_92db07d749dc1e::t_238acc7d52560e 3
+  s_10957f1100f356::t_8499f872fc81e8 12
+docs/GLOSSARY.md
+  s_bc3c25284490f7::t_ec2dbcc42d422e 64-71
+docs/DEVELOPMENT.md
+  s_6417f5c15e88c1::t_bc8fa8a5817fd5 34-35
+  s_0a6c4ad3aaddf6::t_189a79ed218b0d 1-33,36-59
+docs/handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md
+  s_0a6c4ad3aaddf6::t_52231e31a264f1 30
+README.md
+  s_0a6c4ad3aaddf6::t_7ee0538cb19867 3,5,7,9,11,13,15,17-20,22,24,26,28,30-33,35,37-39,41,43,45-48,50,52,54-58,60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "50034cc076808048eb529e568220cb98a1eda660",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_0a6c4ad3aaddf6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1646d-adb2-76b1-b3bc-16b74d2ebc01",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_10957f1100f356": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a168c5-366c-7601-97e5-51a4949fbffd",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_6417f5c15e88c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1646b-d934-7951-a8d2-710bd5171622",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_92db07d749dc1e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1690c-3734-7b70-be9c-59548a5faa11",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_9dab513a6866a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16882-7e30-7c61-aad9-dd8d82681b00",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_bc3c25284490f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1688b-83e6-7e21-b41e-bdc578e58589",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
