@@ -1,0 +1,51 @@
+frontend/src/materials/record-mark-ranges.test.ts
+  s_db119264cb38a2::t_075af4ce53c554 6-14,17-19,25-49
+  s_db119264cb38a2::t_cef9f0b951b0ba 1-5,15-16,20-24,50-51
+frontend/src/materials/reader-study.test.ts
+  s_db119264cb38a2::t_075af4ce53c554 264-266,271-280,284-288,291-295,301-306,312-315,321-326,329-331,334-338,345-347,400-401,403-405
+  s_db119264cb38a2::t_d6058b6984c637 369-396,407-408
+  s_db119264cb38a2::t_cef9f0b951b0ba 260-263,267-270,281-283,289-290,296-300,307-311,316-320,327-328,332-333,339-344,348-368,399
+  s_db119264cb38a2::t_cbd38a059d378c 397-398,402,406,409-412
+frontend/src/materials/highlight.ts
+  s_db119264cb38a2::t_075af4ce53c554 164-167
+  s_db119264cb38a2::t_1675a258786e9a 3,107-108,112-135,141-142,160-163,168,176-177
+frontend/src/materials/highlight.test.ts
+  s_db119264cb38a2::t_46b441601a81e7 10-13
+  s_db119264cb38a2::t_a69ab705d39b7c 20,163-184
+  s_db119264cb38a2::t_ad37ed45be1a4b 14-19,21,152-162,185-204
+frontend/src/materials/reader-frames.ts
+  s_db119264cb38a2::t_5ad5e26002d820 26,111-112
+frontend/src/materials/study-margin.ts
+  s_db119264cb38a2::t_5ad5e26002d820 5,54-56,60,73
+  s_db119264cb38a2::t_075af4ce53c554 24-28,57-59,70-72,74-79
+frontend/src/materials/study-margin.test.ts
+  s_db119264cb38a2::t_075af4ce53c554 39-43,48-53
+  s_db119264cb38a2::t_cef9f0b951b0ba 31-38,44-47,54-55
+frontend/src/materials/record-mark-ranges.ts
+  s_db119264cb38a2::t_1675a258786e9a 1-34
+frontend/src/materials/reader-study.ts
+  s_db119264cb38a2::t_075af4ce53c554 29-32,279-281,284-287,348-349,399-408,508-525
+  s_db119264cb38a2::t_5ad5e26002d820 14,28,37,60-66,193-194,274,278,283,288,305-306,309-310,313-314,342,345,347,350-352,355,391-393,396-397
+  s_db119264cb38a2::t_b7229a785bdcfe 282
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c68a5fe751863836e843b9d48aae7ff55539290d",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_db119264cb38a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1693d-3728-7b83-bbea-a108a1f43a99",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
