@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 Protocol = Literal["chat_completions", "responses"]
 Capability = Literal["unknown", "succeeded", "failed"]
 Reasoning = Literal["none", "low", "medium", "high"]
-RunStatus = Literal["queued", "running", "succeeded", "failed", "interrupted"]
+RunStatus = Literal["queued", "running", "succeeded", "failed", "interrupted", "cancelled"]
 
 # Storage guard only; the selected provider defines the model's real output limit.
 MAX_OUTPUT_TOKENS = 2_147_483_647
@@ -225,7 +225,7 @@ class UsageResponse(BaseModel):
 
 class RunResponse(BaseModel):
     id: str
-    purpose: Literal["verification", "chat", "analysis"] = "verification"
+    purpose: Literal["verification", "chat", "analysis", "translation"] = "verification"
     job_id: str | None = None
     provider_id: str
     provider_name: str

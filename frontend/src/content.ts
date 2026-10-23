@@ -4,7 +4,9 @@ import type { components } from "./api/schema";
 export type Source = components["schemas"]["SourceResponse"];
 export type Segment = components["schemas"]["SegmentResponse"];
 export type SourceFields = Required<components["schemas"]["SourceCreate"]>;
-export type SegmentFields = Required<components["schemas"]["SegmentUpdate"]>;
+export type SegmentFields = Required<
+	Omit<components["schemas"]["SegmentUpdate"], "expected_revision">
+>;
 
 export class RequestError extends Error {
 	constructor(

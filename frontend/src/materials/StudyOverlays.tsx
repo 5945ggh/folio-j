@@ -79,8 +79,12 @@ function AnchoredStudyTool({
 export function SelectionToolbar({
 	anchor,
 	onSave,
+	onTranslate,
+	onSpeak,
 	onClose,
 }: {
+	onTranslate?: () => void;
+	onSpeak?: () => void;
 	anchor: ScreenAnchor;
 	onSave: () => void;
 	onClose: () => void;
@@ -92,6 +96,24 @@ export function SelectionToolbar({
 			role="toolbar"
 			onClose={onClose}
 		>
+			{onTranslate && (
+				<button
+					type="button"
+					onMouseDown={(event) => event.preventDefault()}
+					onClick={onTranslate}
+				>
+					翻译
+				</button>
+			)}
+			{onSpeak && (
+				<button
+					type="button"
+					onMouseDown={(event) => event.preventDefault()}
+					onClick={onSpeak}
+				>
+					朗读
+				</button>
+			)}
 			<button
 				id="reader-selection-save"
 				type="button"

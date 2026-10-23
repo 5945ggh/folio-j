@@ -138,7 +138,11 @@ async def test_create_edit_reload_and_persist_sources_and_segments(tmp_path: Pat
         )
         edited_segment = await client.patch(
             f"/api/segments/{segment['id']}",
-            json={"text": " 新しい\n原文 ", "context_before": "前\nか\u3099"},
+            json={
+                "text": " 新しい\n原文 ",
+                "context_before": "前\nか\u3099",
+                "expected_revision": segment["revision"],
+            },
         )
         assert edited_segment.status_code == 200, edited_segment.text
         assert edited_segment.json()["text"] == " 新しい\n原文 "
@@ -156,6 +160,39 @@ async def test_create_edit_reload_and_persist_sources_and_segments(tmp_path: Pat
         assert source_reloaded["segment_count"] == 2
         assert segment_reloaded["text"] == " 新しい\n原文 "
         assert segment_reloaded["context_before"] == "前\nが"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("field", ["text", "transcription", "note", "source_ref"])
+async def test_sparse_segment_edits_honor_supplied_revision(tmp_path: Path, field: str) -> None:
+    async with api_client(tmp_path / "folio.db") as client:
+        source = (await client.post("/api/sources", json={"title": "版本保护"})).json()
+        segment = (
+            await client.post(
+                f"/api/sources/{source['id']}/segments",
+                json={"text": "原文", "translation": "原译文", field: "初始内容"},
+            )
+        ).json()
+        path = f"/api/segments/{segment['id']}"
+        changed = await client.patch(
+            path, json={field: "另一窗口的新内容", "expected_revision": segment["revision"]}
+        )
+        assert changed.status_code == 200, changed.text
+
+        stale = await client.patch(
+            path, json={field: "过时草稿", "expected_revision": segment["revision"]}
+        )
+        assert stale.status_code == 409, stale.text
+        current = (await client.get(path)).json()
+        assert current[field] == "另一窗口的新内容"
+        assert current["revision"] == changed.json()["revision"]
+
+        translated = await client.patch(
+            path, json={"translation": "新译文", "expected_revision": current["revision"]}
+        )
+        assert translated.status_code == 200, translated.text
+        assert translated.json()[field] == "另一窗口的新内容"
+        assert translated.json()["translation"] == "新译文"
 
 
 @pytest.mark.asyncio
@@ -335,7 +372,8 @@ async def test_locked_text_conflict_same_normalized_text_and_metadata_edit(tmp_p
         assert same.status_code == 200, same.text
         assert same.json()["text"] == "が\nく"
         metadata = await client.patch(
-            f"/api/segments/{segment['id']}", json={"note": "管理用", "translation": "訳"}
+            f"/api/segments/{segment['id']}",
+            json={"note": "管理用", "translation": "訳", "expected_revision": segment["revision"]},
         )
         assert metadata.status_code == 200, metadata.text
         assert metadata.json()["text"] == "が\nく"

@@ -276,7 +276,7 @@ export function ConfirmDialog({
 				if (event.key !== "Tab") return;
 				const controls = Array.from(
 					event.currentTarget.querySelectorAll<HTMLElement>(
-						"a[href],button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex='0']",
+						"a[href],button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,[tabindex='0']",
 					),
 				).filter((control) => control.getClientRects().length > 0);
 				const first = controls[0];

@@ -219,6 +219,9 @@ async def get_readings(
 
 
 @router.delete("/materials/{material_id}", status_code=204, operation_id="deleteMaterial")
-async def delete_material(material_id: str, session: Session) -> Response:
+async def delete_material(material_id: str, session: Session, request: Request) -> Response:
     await service.delete_material(session, material_id)
+    from app.services.translations import cancel_revoked
+
+    await cancel_revoked(request.app)
     return Response(status_code=204)

@@ -3524,7 +3524,8 @@
             "enum": [
               "verification",
               "chat",
-              "analysis"
+              "analysis",
+              "translation"
             ],
             "title": "Purpose",
             "type": "string"
@@ -3547,7 +3548,8 @@
               "running",
               "succeeded",
               "failed",
-              "interrupted"
+              "interrupted",
+              "cancelled"
             ],
             "title": "Status",
             "type": "string"
@@ -4200,6 +4202,18 @@
             "title": "Context Before",
             "type": "string"
           },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
           "note": {
             "title": "Note",
             "type": "string"
@@ -4748,6 +4762,617 @@
         "title": "ThreadResponse",
         "type": "object"
       },
+      "TranslationAdopt": {
+        "additionalProperties": false,
+        "properties": {
+          "context_after": {
+            "maxLength": 100000,
+            "title": "Context After",
+            "type": "string"
+          },
+          "context_before": {
+            "maxLength": 100000,
+            "title": "Context Before",
+            "type": "string"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 100000,
+            "title": "Note",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "segment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segment Id"
+          },
+          "text_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Sha256"
+          },
+          "translation": {
+            "maxLength": 100000,
+            "title": "Translation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "title": "TranslationAdopt",
+        "type": "object"
+      },
+      "TranslationAdoptionResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "result_id": {
+            "title": "Result Id",
+            "type": "string"
+          },
+          "segment": {
+            "$ref": "#/components/schemas/SegmentResponse"
+          }
+        },
+        "required": [
+          "id",
+          "result_id",
+          "segment"
+        ],
+        "title": "TranslationAdoptionResponse",
+        "type": "object"
+      },
+      "TranslationCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "context_after": {
+            "default": "",
+            "maxLength": 100000,
+            "title": "Context After",
+            "type": "string"
+          },
+          "context_before": {
+            "default": "",
+            "maxLength": 100000,
+            "title": "Context Before",
+            "type": "string"
+          },
+          "material_provenance": {
+            "$ref": "#/components/schemas/MaterialProvenance"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "source_id",
+          "material_provenance",
+          "text"
+        ],
+        "title": "TranslationCreate",
+        "type": "object"
+      },
+      "TranslationDeleteImpact": {
+        "properties": {
+          "active_task_count": {
+            "title": "Active Task Count",
+            "type": "integer"
+          },
+          "hidden_result_count": {
+            "title": "Hidden Result Count",
+            "type": "integer"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "retained_result_count": {
+            "title": "Retained Result Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "material_id",
+          "hidden_result_count",
+          "retained_result_count",
+          "active_task_count"
+        ],
+        "title": "TranslationDeleteImpact",
+        "type": "object"
+      },
+      "TranslationHistoryResponse": {
+        "properties": {
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationResultResponse"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TranslationTaskResponse"
+            },
+            "title": "Tasks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "results",
+          "tasks",
+          "next_offset"
+        ],
+        "title": "TranslationHistoryResponse",
+        "type": "object"
+      },
+      "TranslationResultResponse": {
+        "properties": {
+          "adopted_segment_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Adopted Segment Ids",
+            "type": "array"
+          },
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "string"
+          },
+          "context_after": {
+            "title": "Context After",
+            "type": "string"
+          },
+          "context_before": {
+            "title": "Context Before",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "identity_sha256": {
+            "title": "Identity Sha256",
+            "type": "string"
+          },
+          "material_deleted": {
+            "title": "Material Deleted",
+            "type": "boolean"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "material_provenance": {
+            "$ref": "#/components/schemas/MaterialProvenance"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/ProvenancePart"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "prompt_version": {
+            "title": "Prompt Version",
+            "type": "string"
+          },
+          "protocol": {
+            "title": "Protocol",
+            "type": "string"
+          },
+          "provider_name": {
+            "title": "Provider Name",
+            "type": "string"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "scheme_id": {
+            "title": "Scheme Id",
+            "type": "string"
+          },
+          "scheme_name": {
+            "title": "Scheme Name",
+            "type": "string"
+          },
+          "scheme_revision": {
+            "title": "Scheme Revision",
+            "type": "integer"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "target_language": {
+            "title": "Target Language",
+            "type": "string"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "translation": {
+            "title": "Translation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "task_id",
+          "adopted_segment_ids",
+          "source_id",
+          "material_id",
+          "material_deleted",
+          "material_provenance",
+          "identity_sha256",
+          "chapter_id",
+          "parts",
+          "text",
+          "translation",
+          "context_before",
+          "context_after",
+          "target_language",
+          "scheme_name",
+          "scheme_id",
+          "scheme_revision",
+          "prompt_version",
+          "provider_name",
+          "protocol",
+          "temperature",
+          "max_output_tokens",
+          "reasoning_effort",
+          "model_id",
+          "run_id",
+          "created_at"
+        ],
+        "title": "TranslationResultResponse",
+        "type": "object"
+      },
+      "TranslationSettingsResponse": {
+        "properties": {
+          "adapter": {
+            "const": "llm",
+            "default": "llm",
+            "title": "Adapter",
+            "type": "string"
+          },
+          "after_characters": {
+            "title": "After Characters",
+            "type": "integer"
+          },
+          "after_sentences": {
+            "title": "After Sentences",
+            "type": "integer"
+          },
+          "before_characters": {
+            "title": "Before Characters",
+            "type": "integer"
+          },
+          "before_sentences": {
+            "title": "Before Sentences",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "max_context_characters": {
+            "default": 2000,
+            "title": "Max Context Characters",
+            "type": "integer"
+          },
+          "max_target_characters": {
+            "default": 2000,
+            "title": "Max Target Characters",
+            "type": "integer"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "target_language": {
+            "title": "Target Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "name",
+          "model_id",
+          "target_language",
+          "before_sentences",
+          "after_sentences",
+          "before_characters",
+          "after_characters"
+        ],
+        "title": "TranslationSettingsResponse",
+        "type": "object"
+      },
+      "TranslationSettingsUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "after_characters": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "After Characters",
+            "type": "integer"
+          },
+          "after_sentences": {
+            "default": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "After Sentences",
+            "type": "integer"
+          },
+          "before_characters": {
+            "default": 200,
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Before Characters",
+            "type": "integer"
+          },
+          "before_sentences": {
+            "default": 3,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Before Sentences",
+            "type": "integer"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "name": {
+            "default": "默认翻译",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "target_language": {
+            "default": "简体中文",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Target Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "TranslationSettingsUpdate",
+        "type": "object"
+      },
+      "TranslationTaskResponse": {
+        "properties": {
+          "context_after": {
+            "title": "Context After",
+            "type": "string"
+          },
+          "context_before": {
+            "title": "Context Before",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "material_provenance": {
+            "$ref": "#/components/schemas/MaterialProvenance"
+          },
+          "result_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "stopping",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "interrupted"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source_id",
+          "material_id",
+          "status",
+          "result_id",
+          "run_id",
+          "error",
+          "text",
+          "material_provenance",
+          "context_before",
+          "context_after",
+          "created_at"
+        ],
+        "title": "TranslationTaskResponse",
+        "type": "object"
+      },
       "UsageResponse": {
         "properties": {
           "cache_hit_tokens": {
@@ -4914,7 +5539,8 @@
               "running",
               "succeeded",
               "failed",
-              "interrupted"
+              "interrupted",
+              "cancelled"
             ],
             "title": "Status",
             "type": "string"
@@ -5763,6 +6389,45 @@
         "summary": "Cover"
       }
     },
+    "/api/materials/{material_id}/delete-impact": {
+      "get": {
+        "operationId": "material_translation_delete_impact_api_materials__material_id__delete_impact_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationDeleteImpact"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Material Translation Delete Impact"
+      }
+    },
     "/api/materials/{material_id}/details": {
       "get": {
         "operationId": "getMaterialDetails",
@@ -6345,6 +7010,131 @@
         "summary": "Get Statistics"
       }
     },
+    "/api/materials/{material_id}/translations": {
+      "get": {
+        "operationId": "translation_history_api_materials__material_id__translations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "identity_sha256",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Identity Sha256"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationHistoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Translation History"
+      },
+      "post": {
+        "operationId": "create_translation_api_materials__material_id__translations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationTaskResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Translation"
+      }
+    },
     "/api/materials/{material_id}/usage": {
       "get": {
         "operationId": "getMaterialUsage",
@@ -6896,7 +7686,8 @@
                     "running",
                     "succeeded",
                     "failed",
-                    "interrupted"
+                    "interrupted",
+                    "cancelled"
                   ],
                   "type": "string"
                 },
@@ -7474,6 +8265,49 @@
         "summary": "Create Thread"
       }
     },
+    "/api/segments/{segment_id}/translation-results": {
+      "get": {
+        "operationId": "segment_translations_api_segments__segment_id__translation_results_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "segment_id",
+            "required": true,
+            "schema": {
+              "title": "Segment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TranslationResultResponse"
+                  },
+                  "title": "Response Segment Translations Api Segments  Segment Id  Translation Results Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Segment Translations"
+      }
+    },
     "/api/settings": {
       "get": {
         "operationId": "getSettings",
@@ -7773,6 +8607,60 @@
           }
         },
         "summary": "Put Style"
+      }
+    },
+    "/api/settings/translation": {
+      "get": {
+        "operationId": "get_translation_settings_api_settings_translation_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationSettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Translation Settings"
+      },
+      "put": {
+        "operationId": "put_translation_settings_api_settings_translation_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslationSettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationSettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Translation Settings"
       }
     },
     "/api/sources": {
@@ -8678,6 +9566,172 @@
           }
         },
         "summary": "List Messages"
+      }
+    },
+    "/api/translation-results/{result_id}": {
+      "get": {
+        "operationId": "get_translation_result_api_translation_results__result_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "result_id",
+            "required": true,
+            "schema": {
+              "title": "Result Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Translation Result"
+      }
+    },
+    "/api/translation-results/{result_id}/adopt": {
+      "post": {
+        "operationId": "adopt_translation_api_translation_results__result_id__adopt_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "result_id",
+            "required": true,
+            "schema": {
+              "title": "Result Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslationAdopt"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationAdoptionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Adopt Translation"
+      }
+    },
+    "/api/translation-tasks/{task_id}": {
+      "get": {
+        "operationId": "get_translation_task_api_translation_tasks__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationTaskResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Translation Task"
+      }
+    },
+    "/api/translation-tasks/{task_id}/stop": {
+      "post": {
+        "operationId": "stop_translation_api_translation_tasks__task_id__stop_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationTaskResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stop Translation"
       }
     }
   }

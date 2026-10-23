@@ -1,0 +1,149 @@
+.translation-card {
+	position: fixed;
+	z-index: 45;
+	inset: 90px 24px auto auto;
+	width: min(430px, calc(100vw - 24px));
+	max-height: calc(100dvh - 160px);
+	overflow: auto;
+	padding: 20px;
+	border: 1px solid var(--reader-line, #deded7);
+	border-radius: 12px;
+	background: var(--reader-bg, #fffef9);
+	color: var(--reader-fg, #292d29);
+	box-shadow: 0 12px 46px #0002;
+	font-size: 14px;
+	line-height: 1.65;
+}
+.translation-card header,
+.translation-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+.translation-card header {
+	justify-content: space-between;
+}
+.translation-card h2 {
+	font-size: 16px;
+	margin: 0;
+}
+.translation-card button,
+.translation-card select {
+	font: inherit;
+	cursor: pointer;
+}
+.translation-card button {
+	border: 1px solid #dcded6;
+	border-radius: 6px;
+	background: transparent;
+	color: inherit;
+	padding: 5px 10px;
+}
+.translation-card button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+.translation-card .translation-original {
+	margin: 12px 0;
+	padding-left: 12px;
+	border-left: 2px solid #9baf95;
+	font-size: 13px;
+	max-height: 4.5em;
+	overflow: auto;
+	white-space: pre-wrap;
+}
+.translation-card .translation-output {
+	font-size: 17px;
+	line-height: 1.85;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.translation-card small,
+.translation-card summary {
+	font-size: 12px;
+	opacity: 0.8;
+}
+.translation-card details {
+	margin: 12px 0;
+}
+.translation-card label {
+	display: block;
+	margin: 10px 0;
+}
+.translation-card textarea,
+.translation-card input,
+.translation-card select {
+	width: 100%;
+	box-sizing: border-box;
+	background: transparent;
+	color: inherit;
+	border: 1px solid #cbd0c7;
+	border-radius: 5px;
+	padding: 6px;
+}
+.translation-card input[type="checkbox"] {
+	width: auto;
+	margin-right: 8px;
+}
+.translation-card .translation-history-item {
+	width: 100%;
+	text-align: left;
+	margin: 6px 0;
+}
+.translation-card .translation-history-item span {
+	display: block;
+	max-height: 3.3em;
+	overflow: hidden;
+}
+.translation-card .translation-budget {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+}
+.translation-card :focus-visible {
+	outline: 2px solid #698a5b;
+	outline-offset: 3px;
+}
+.segment-translations {
+	margin: 12px 0;
+	font-size: 13px;
+}
+.segment-translations p {
+	white-space: pre-wrap;
+}
+.segment-assistance {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: 12px 0;
+}
+.segment-assistance > .segment-translations {
+	margin: 0;
+}
+.segment-assistance > .segment-translations[open] {
+	flex-basis: 100%;
+}
+@media (max-width: 600px) {
+	.translation-card {
+		top: 72px;
+		right: 12px;
+		max-height: calc(100dvh - 145px);
+		padding: 16px;
+	}
+}
+
+.reader-r1 > .device-speech-bar {
+	position: fixed;
+	z-index: 46;
+	bottom: 76px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: min(640px, calc(100vw - 24px));
+	max-height: 150px;
+	overflow: auto;
+	background: var(--reader-bg);
+	color: var(--reader-fg);
+	box-shadow: 0 4px 18px #0002;
+}

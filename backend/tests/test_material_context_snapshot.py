@@ -110,7 +110,12 @@ async def test_saved_context_is_frozen_per_job_without_implicit_model_calls(
 
         new_before, new_after = "後から変更した前文。", ""
         changed = await client.patch(
-            segment_url, json={"context_before": new_before, "context_after": new_after}
+            segment_url,
+            json={
+                "context_before": new_before,
+                "context_after": new_after,
+                "expected_revision": segment["revision"],
+            },
         )
         assert changed.status_code == 200, changed.text
         current = changed.json()

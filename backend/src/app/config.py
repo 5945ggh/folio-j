@@ -19,7 +19,18 @@ class DatabaseSettings(BaseModel):
     path: Path = Path("data/app.db")
 
 
+class TranslationLimits(BaseModel):
+    """Provisional budgets; real-model translation quality has not been evaluated."""
+
+    max_target_characters: int = Field(default=2000, ge=1, le=100000)
+    max_context_characters: int = Field(default=2000, ge=0, le=100000)
+    timeout_seconds: float = Field(default=120, gt=0, le=600)
+    max_pending: int = Field(default=3, ge=1, le=100)
+    default_max_output_tokens: int = Field(default=4000, ge=1, le=100000)
+
+
 class Settings(BaseModel):
+    translation: TranslationLimits = Field(default_factory=TranslationLimits)
     server: ServerSettings = Field(default_factory=ServerSettings)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
 

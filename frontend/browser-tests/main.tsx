@@ -7,6 +7,10 @@ import type { components } from "../src/api/schema";
 import type { StudyTarget } from "../src/materials/study-api";
 import "../src/styles.css";
 import { readerBookmarks } from "./reader-bookmarks";
+import { readerClipboard } from "./reader-clipboard";
+import { segmentMaterials } from "./segment-materials";
+import { translationRegression } from "./translation";
+import { workbenchRegression } from "./workbench";
 
 const result = document.querySelector<HTMLPreElement>("#result");
 const container = document.querySelector<HTMLDivElement>("#root");
@@ -354,25 +358,17 @@ async function clearStudyContext() {
 }
 
 try {
+	const suite = new URLSearchParams(location.search).get("suite");
 	const lines =
-		new URLSearchParams(location.search).get("suite") === "reader-bookmarks"
+		suite === "reader-clipboard"
 			? [
-					await readerBookmarks({
-						container,
-						check,
-						until,
-						inputValue,
-						mount,
-						mock: (handler) => {
-							handleRequest = handler;
-						},
-					}),
+					await readerClipboard(
+						new URLSearchParams(location.search).has("preview"),
+					),
 				]
-			: [
-					await cardLayout(),
-					await clearStudyContext(),
-					await readerBookmarks(
-						{
+			: suite === "translation"
+				? [
+						await translationRegression({
 							container,
 							check,
 							until,
@@ -381,10 +377,72 @@ try {
 							mock: (handler) => {
 								handleRequest = handler;
 							},
-						},
-						true,
-					),
-				];
+						}),
+					]
+				: suite === "workbench"
+					? [
+							await workbenchRegression({
+								container,
+								check,
+								until,
+								inputValue,
+								mount,
+								mock: (handler) => {
+									handleRequest = handler;
+								},
+							}),
+						]
+					: suite === "reader-bookmarks"
+						? [
+								await readerBookmarks({
+									container,
+									check,
+									until,
+									inputValue,
+									mount,
+									mock: (handler) => {
+										handleRequest = handler;
+									},
+								}),
+							]
+						: [
+								await readerClipboard(),
+								await workbenchRegression({
+									container,
+									check,
+									until,
+									inputValue,
+									mount,
+									mock: (handler) => {
+										handleRequest = handler;
+									},
+								}),
+								await cardLayout(),
+								await clearStudyContext(),
+								await segmentMaterials({
+									container,
+									check,
+									until,
+									inputValue,
+									mount,
+									mock: (handler) => {
+										handleRequest = handler;
+									},
+								}),
+								await readerBookmarks(
+									{
+										container,
+										check,
+										until,
+										inputValue,
+										mount,
+										mock: (handler) => {
+											handleRequest = handler;
+										},
+									},
+									true,
+								),
+							];
 	check(unexpectedRequests.length === 0, unexpectedRequests.join("\n"));
 	output.textContent = `PASS\n${lines.join("\n")}`;
 	output.dataset.status = "passed";

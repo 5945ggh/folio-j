@@ -87,6 +87,8 @@ Reader 继续使用无脚本、同源隔离 iframe，保留 CSP／sandbox；工�
 
 协议参考：[模型列表](https://developers.openai.com/api/reference/resources/models)、[Chat Completions 与 Responses 的差异](https://developers.openai.com/api/docs/guides/migrate-to-responses)。这些说明用于界定官方协议；第三方兼容性须通过各自配置与验证确认。
 
+阅读翻译复用既有文本 SDK、SQLite 和 asyncio，不增加依赖。独立翻译任务与当前 chat_jobs 分开；设置与 Provider 保留既有身份，迁移及事务见[架构 4.8](ARCHITECTURE.md#48-阅读翻译与设备朗读)。设备朗读使用浏览器 Web Speech SpeechSynthesis，支持播放控制及声音检测，不能直接导出音频；设备声音可能来自本地或远端，不承诺离线可用。远端 TTS、专用翻译服务与端侧模型仍未选定。候选资源限制由应用配置集中维护，真实模型质量与设备声线需要独立实测。
+
 ## 4. 分发（分阶段）
 
 1. **当前阶段：本地 Web 应用。** FastAPI 同时托管前端构建产物，`just start` 启动后在浏览器中打开 `http://127.0.0.1:<port>`。功能稳定之前一直停留在这个阶段。

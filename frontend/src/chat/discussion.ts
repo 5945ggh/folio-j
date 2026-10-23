@@ -8,6 +8,14 @@ export type ReadingPosition = {
 	revisionId: string | null;
 };
 
+export function visibleDraft(draft: Draft): Draft {
+	if (!draft.additional) return draft;
+	return {
+		question: `${draft.question ? `${draft.question}\n\n` : ""}补充要求：\n${draft.additional}`,
+		additional: "",
+	};
+}
+
 export const terminalJobStatuses = new Set<Job["status"]>([
 	"succeeded",
 	"failed",

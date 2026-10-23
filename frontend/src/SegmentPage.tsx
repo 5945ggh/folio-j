@@ -52,9 +52,16 @@ import {
 	updateSegmentLocation,
 } from "./navigation";
 import { ConfirmDialog, InlineError } from "./Shared";
+import { changedSegmentFields, segmentEditFields } from "./segments/edit";
 import { NewAnalysisActions } from "./segments/NewAnalysisActions";
 import { OriginalCard } from "./segments/OriginalCard";
 import { SegmentFrame } from "./segments/SegmentFrame";
+import {
+	SpeechControls,
+	SpeechPlaybackBar,
+	useStopSpeechOnLeave,
+} from "./speech";
+import { SegmentTranslations } from "./translation/SegmentTranslations";
 
 const CONVERSATION_WIDTH_KEY = "folio-j:conversation-width";
 
@@ -79,7 +86,9 @@ function saveConversationWidth(width: number) {
 }
 
 export function SegmentDetail() {
+	const editSnapshot = useRef<Segment | null>(null);
 	const { id = "" } = useParams();
+	useStopSpeechOnLeave(id);
 	const navigate = useNavigate();
 	const location = useLocation();
 	const {
@@ -300,23 +309,28 @@ export function SegmentDetail() {
 		enabled: deleting,
 		staleTime: 0,
 	});
+	const [conflictReadVersion, setConflictReadVersion] = useState(0);
 	const update = useMutation({
 		mutationFn: async (fields: SegmentFields) => {
-			const body = segment.data?.text_locked_at
-				? {
-						translation: fields.translation,
-						context_before: fields.context_before,
-						context_after: fields.context_after,
-						transcription: fields.transcription,
-						note: fields.note,
-						source_ref: fields.source_ref,
-					}
-				: fields;
+			const initial = editSnapshot.current;
+			if (!initial) throw new Error("无法读取编辑依据，请重新打开片段编辑。");
+			const body = changedSegmentFields(fields, initial);
+			if (Object.keys(body).length === 0) return initial;
 			const { data, error, response } = await api.PATCH(
 				"/api/segments/{segment_id}",
-				{ params: { path: { segment_id: id } }, body },
+				{
+					params: { path: { segment_id: id } },
+					body: {
+						...body,
+						expected_revision: initial.revision,
+					},
+				},
 			);
 			return requireData(data, error, response.status);
+		},
+		onError: (error) => {
+			if (error instanceof RequestError && error.status === 409)
+				setConflictReadVersion((version) => version + 1);
 		},
 		onSuccess: () => {
 			if (activeId.current === id) setEditing(null);
@@ -327,6 +341,18 @@ export function SegmentDetail() {
 					queryKey: queries.segments(segment.data.source_id),
 				});
 		},
+	});
+	const editConflicted =
+		update.error instanceof RequestError && update.error.status === 409;
+	const conflictCurrent = useQuery({
+		queryKey: ["segment-edit-current", id, conflictReadVersion],
+		queryFn: async () => {
+			const fresh = await getSegment(id);
+			client.setQueryData(queries.segment(id), fresh);
+			return fresh;
+		},
+		enabled: Boolean(editing) && editConflicted,
+		retry: false,
 	});
 	const remove = useMutation({
 		mutationFn: async () => {
@@ -369,6 +395,9 @@ export function SegmentDetail() {
 			onToggleDiscussion={() => setChatOpen(!chatOpen)}
 			onEdit={() => {
 				update.reset();
+				editSnapshot.current = segment.data
+					? structuredClone(segment.data)
+					: null;
 				setEditing("segment-more-trigger");
 			}}
 			onDelete={() => setDeleting(true)}
@@ -437,6 +466,7 @@ export function SegmentDetail() {
 									}
 									onEdit={() => {
 										update.reset();
+										editSnapshot.current = structuredClone(current);
 										setEditing(
 											compact && chatOpen
 												? "segment-discussion-toggle"
@@ -444,6 +474,18 @@ export function SegmentDetail() {
 										);
 									}}
 								/>
+								<div className="segment-assistance">
+									<SpeechControls
+										target={{
+											id: `segment:${current.id}`,
+											text: current.text,
+											label: "片段原文",
+										}}
+										compact
+									/>
+									<SegmentTranslations segmentId={current.id} />
+								</div>
+								<SpeechPlaybackBar />
 								<section
 									ref={analysisRef}
 									id="segment-analyses"
@@ -510,16 +552,6 @@ export function SegmentDetail() {
 								}
 							}}
 						>
-							<div className="segment-discussion-heading">
-								<strong>片段讨论</strong>
-								<button
-									ref={discussionClose}
-									type="button"
-									onClick={() => setChatOpen(false)}
-								>
-									{compact ? "返回阅读" : "收起讨论"}
-								</button>
-							</div>
 							<hr
 								className="conversation-resizer"
 								aria-label="调整对话栏宽度"
@@ -594,6 +626,32 @@ export function SegmentDetail() {
 							{workbenchMounted && (
 								<Workbench
 									key={current.id}
+									headerAction={
+										<button
+											ref={discussionClose}
+											className="chat-icon-button"
+											type="button"
+											aria-label={compact ? "返回阅读" : "收起讨论"}
+											title={compact ? "返回阅读" : "收起讨论"}
+											data-tooltip={compact ? "返回阅读" : "收起讨论"}
+											onClick={() => setChatOpen(false)}
+										>
+											<svg
+												aria-hidden="true"
+												width="18"
+												height="18"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												strokeWidth="1.6"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+											>
+												<rect x="3" y="4" width="18" height="16" rx="2" />
+												<path d="M15 4v16" />
+											</svg>
+										</button>
+									}
 									segment={current}
 									selectedThreadId={selectedThread}
 									onSelectThread={(threadId) =>
@@ -643,26 +701,6 @@ export function SegmentDetail() {
 							)}
 						</aside>
 					</div>
-					{editing && (
-						<ConfirmDialog
-							titleId="edit-segment-title"
-							restoreFocusId={editing}
-							onClose={() => setEditing(null)}
-						>
-							<h2 id="edit-segment-title">编辑片段</h2>
-							<div className="segment-editor">
-								<SegmentForm
-									key={current.updated_at}
-									initial={current}
-									onSave={(fields) => update.mutate(fields)}
-									onCancel={() => setEditing(null)}
-									pending={update.isPending}
-									error={update.error}
-									submitLabel="保存更改"
-								/>
-							</div>
-						</ConfirmDialog>
-					)}
 					{deleting && (
 						<ConfirmDialog
 							titleId="delete-segment-title"
@@ -710,6 +748,87 @@ export function SegmentDetail() {
 						</ConfirmDialog>
 					)}
 				</div>
+			)}
+			{editing && editSnapshot.current && (
+				<ConfirmDialog
+					titleId="edit-segment-title"
+					restoreFocusId={editing}
+					onClose={() => setEditing(null)}
+				>
+					<h2 id="edit-segment-title">编辑片段资料</h2>
+					<div className="segment-editor">
+						{editConflicted && (
+							<section aria-label="当前已保存内容">
+								<h3>当前已保存内容</h3>
+								{conflictCurrent.isFetching ? (
+									<p role="status">正在读取当前内容…</p>
+								) : conflictCurrent.isError ? (
+									<>
+										<InlineError error={conflictCurrent.error} />
+										<button
+											type="button"
+											onClick={() => void conflictCurrent.refetch()}
+										>
+											重试读取当前内容
+										</button>
+									</>
+								) : conflictCurrent.data ? (
+									<>
+										{segmentEditFields.map(([name, label]) => (
+											<div key={name} className="segment-material-field">
+												<h4>
+													{name === "source_ref" &&
+													conflictCurrent.data.material_provenance
+														? "出处补充"
+														: label}
+												</h4>
+												<p style={{ whiteSpace: "pre-wrap" }}>
+													{conflictCurrent.data[name] || "（空）"}
+												</p>
+											</div>
+										))}
+										<button
+											type="button"
+											onClick={() => {
+												if (
+													!editSnapshot.current ||
+													!conflictCurrent.data ||
+													conflictCurrent.isFetching ||
+													conflictCurrent.isError
+												)
+													return;
+												editSnapshot.current = {
+													...editSnapshot.current,
+													revision: conflictCurrent.data.revision,
+												};
+												update.reset();
+											}}
+										>
+											已核对，允许按当前版本保存草稿
+										</button>
+									</>
+								) : null}
+							</section>
+						)}
+						<SegmentForm
+							key={id}
+							initial={editSnapshot.current}
+							onSave={(fields) => update.mutate(fields)}
+							onCancel={() => setEditing(null)}
+							pending={update.isPending}
+							submitDisabled={editConflicted}
+							error={
+								update.error instanceof RequestError &&
+								update.error.status === 409
+									? new Error(
+											"片段已被其他操作更新，草稿已保留。请核对上方的当前内容，再明确重试保存。",
+										)
+									: update.error
+							}
+							submitLabel="保存更改"
+						/>
+					</div>
+				</ConfirmDialog>
 			)}
 			{analysisEditor && (
 				<AnalysisEditor

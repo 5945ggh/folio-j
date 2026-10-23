@@ -9,6 +9,7 @@ import {
 	readingPositionForJob,
 	savedArtifact,
 	shouldOpenArtifact,
+	visibleDraft,
 } from "./discussion.ts";
 
 const submitted = {
@@ -250,4 +251,18 @@ test("重复观察同版本 Job 不重复写入 QueryClient 缓存", () => {
 	coordinator.observeJob(job(1, "running"), callbacks);
 	unsubscribe();
 	assert.equal(updates, 1);
+});
+
+test("旧补充要求合并为可见问题，保留全文且再次转换不重复", () => {
+	const legacy = { question: "原问题", additional: "  保留例句\n只讲语气  " };
+	const restored = visibleDraft(legacy);
+	assert.deepEqual(restored, {
+		question: "原问题\n\n补充要求：\n  保留例句\n只讲语气  ",
+		additional: "",
+	});
+	assert.equal(visibleDraft(restored), restored);
+	assert.deepEqual(visibleDraft({ question: "", additional: "保留例句" }), {
+		question: "补充要求：\n保留例句",
+		additional: "",
+	});
 });

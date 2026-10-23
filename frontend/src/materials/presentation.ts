@@ -121,24 +121,7 @@ export function applyFramePresentation(
 		)
 			doc.documentElement.toggleAttribute("data-reader-ruby-keyboard");
 	};
-	const copy = (event: ClipboardEvent) => {
-		const selection = doc.getSelection();
-		if (
-			!selection ||
-			selection.isCollapsed ||
-			!event.clipboardData ||
-			!isReaderFrameTarget(doc, selection.anchorNode)
-		)
-			return;
-		const fragment = doc.createElement("div");
-		for (let i = 0; i < selection.rangeCount; i++)
-			fragment.append(selection.getRangeAt(i).cloneContents());
-		for (const reading of fragment.querySelectorAll("rt,rp")) reading.remove();
-		event.clipboardData.setData("text/plain", fragment.textContent ?? "");
-		event.preventDefault();
-	};
 	doc.addEventListener("keydown", keyboard);
-	doc.addEventListener("copy", copy);
 	doc.addEventListener("pointerdown", down);
 	doc.addEventListener("pointerup", reveal);
 	doc.addEventListener("pointercancel", cancel);
@@ -147,7 +130,6 @@ export function applyFramePresentation(
 	return () => {
 		cancel();
 		doc.removeEventListener("keydown", keyboard);
-		doc.removeEventListener("copy", copy);
 		doc.removeEventListener("pointerdown", down);
 		doc.removeEventListener("pointerup", reveal);
 		doc.removeEventListener("pointercancel", cancel);

@@ -13,6 +13,7 @@ import {
 	applyFramePresentation,
 	normalizeFrameImages,
 } from "./presentation.ts";
+import { copyReaderSelection } from "./reader-clipboard.ts";
 import {
 	captureNativeSelection,
 	type ReaderHighlightRange,
@@ -377,6 +378,11 @@ export class ReaderFrames {
 			const keydown = (event: KeyboardEvent) => {
 				if (valid()) context.key(event);
 			};
+			const copy = (event: ClipboardEvent) => {
+				if (!valid() || !isReaderFrameTarget(doc, event.target)) return;
+				const frame = this.frames.get(index);
+				if (frame) copyReaderSelection(doc, frame.projection, event);
+			};
 			const wheel = (event: WheelEvent) => {
 				if (valid() && isReaderFrameTarget(doc, event.target))
 					context.wheel(event);
@@ -394,6 +400,7 @@ export class ReaderFrames {
 				}
 			};
 			doc.addEventListener("keydown", keydown);
+			doc.addEventListener("copy", copy);
 			doc.addEventListener("wheel", wheel, { passive: false });
 			doc.addEventListener("touchmove", touchmove, { passive: true });
 			doc.addEventListener("click", click);
@@ -404,6 +411,7 @@ export class ReaderFrames {
 				for (const settle of resourceCleanups) settle();
 				unbind?.();
 				doc.removeEventListener("keydown", keydown);
+				doc.removeEventListener("copy", copy);
 				doc.removeEventListener("wheel", wheel);
 				doc.removeEventListener("touchmove", touchmove);
 				doc.removeEventListener("click", click);

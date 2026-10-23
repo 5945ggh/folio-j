@@ -336,6 +336,9 @@ async def delete_material(session: AsyncSession, material_id: str) -> None:
         )
         if material is None:
             raise HTTPException(404, "材料不存在")
+        from app.services.translations import revoke_tasks
+
+        await revoke_tasks(session, material_id=material_id)
         if material.deleted_at is None:
             material.deleted_at = utc_now()
         material.original_bytes = b""

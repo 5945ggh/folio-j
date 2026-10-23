@@ -281,7 +281,11 @@ async def test_final_read_rechecks_visibility_and_immutable_content(
             elif mutation == "context":
                 assert (
                     await client.patch(
-                        f"/api/segments/{saved['id']}", json={"context_before": "編集した語境"}
+                        f"/api/segments/{saved['id']}",
+                        json={
+                            "context_before": "編集した語境",
+                            "expected_revision": saved["revision"],
+                        },
                     )
                 ).status_code == 200
             else:

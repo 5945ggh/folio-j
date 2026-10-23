@@ -227,6 +227,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/delete-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Material Translation Delete Impact */
+        get: operations["material_translation_delete_impact_api_materials__material_id__delete_impact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/materials/{material_id}/details": {
         parameters: {
             query?: never;
@@ -391,6 +408,24 @@ export interface paths {
         get: operations["getMaterialStatistics"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/translations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Translation History */
+        get: operations["translation_history_api_materials__material_id__translations_get"];
+        put?: never;
+        /** Create Translation */
+        post: operations["create_translation_api_materials__material_id__translations_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -661,6 +696,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/segments/{segment_id}/translation-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Segment Translations */
+        get: operations["segment_translations_api_segments__segment_id__translation_results_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings": {
         parameters: {
             query?: never;
@@ -761,6 +813,24 @@ export interface paths {
         post?: never;
         /** Delete Style */
         delete: operations["deleteStyle"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/translation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Translation Settings */
+        get: operations["get_translation_settings_api_settings_translation_get"];
+        /** Put Translation Settings */
+        put: operations["put_translation_settings_api_settings_translation_put"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -970,6 +1040,74 @@ export interface paths {
         get: operations["listMessages"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/translation-results/{result_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Translation Result */
+        get: operations["get_translation_result_api_translation_results__result_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/translation-results/{result_id}/adopt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adopt Translation */
+        post: operations["adopt_translation_api_translation_results__result_id__adopt_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/translation-tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Translation Task */
+        get: operations["get_translation_task_api_translation_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/translation-tasks/{task_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop Translation */
+        post: operations["stop_translation_api_translation_tasks__task_id__stop_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2263,14 +2401,14 @@ export interface components {
              * @default verification
              * @enum {string}
              */
-            purpose: "verification" | "chat" | "analysis";
+            purpose: "verification" | "chat" | "analysis" | "translation";
             /** Started At */
             started_at: string | null;
             /**
              * Status
              * @enum {string}
              */
-            status: "queued" | "running" | "succeeded" | "failed" | "interrupted";
+            status: "queued" | "running" | "succeeded" | "failed" | "interrupted" | "cancelled";
             /** Stream */
             stream: boolean;
             usage: components["schemas"]["UsageResponse"] | null;
@@ -2504,6 +2642,8 @@ export interface components {
             context_after?: string;
             /** Context Before */
             context_before?: string;
+            /** Expected Revision */
+            expected_revision?: number | null;
             /** Note */
             note?: string;
             /** Source Ref */
@@ -2737,6 +2877,247 @@ export interface components {
              */
             updated_at: string;
         };
+        /** TranslationAdopt */
+        TranslationAdopt: {
+            /** Context After */
+            context_after?: string;
+            /** Context Before */
+            context_before?: string;
+            /** Expected Revision */
+            expected_revision?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /** Segment Id */
+            segment_id?: string | null;
+            /** Text Sha256 */
+            text_sha256?: string | null;
+            /** Translation */
+            translation?: string;
+        };
+        /** TranslationAdoptionResponse */
+        TranslationAdoptionResponse: {
+            /** Id */
+            id: string;
+            /** Result Id */
+            result_id: string;
+            segment: components["schemas"]["SegmentResponse"];
+        };
+        /** TranslationCreate */
+        TranslationCreate: {
+            /**
+             * Context After
+             * @default
+             */
+            context_after: string;
+            /**
+             * Context Before
+             * @default
+             */
+            context_before: string;
+            material_provenance: components["schemas"]["MaterialProvenance"];
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /** Source Id */
+            source_id: string;
+            /** Text */
+            text: string;
+        };
+        /** TranslationDeleteImpact */
+        TranslationDeleteImpact: {
+            /** Active Task Count */
+            active_task_count: number;
+            /** Hidden Result Count */
+            hidden_result_count: number;
+            /** Material Id */
+            material_id: string;
+            /** Retained Result Count */
+            retained_result_count: number;
+        };
+        /** TranslationHistoryResponse */
+        TranslationHistoryResponse: {
+            /** Next Offset */
+            next_offset: number | null;
+            /** Results */
+            results: components["schemas"]["TranslationResultResponse"][];
+            /** Tasks */
+            tasks: components["schemas"]["TranslationTaskResponse"][];
+        };
+        /** TranslationResultResponse */
+        TranslationResultResponse: {
+            /** Adopted Segment Ids */
+            adopted_segment_ids: string[];
+            /** Chapter Id */
+            chapter_id: string;
+            /** Context After */
+            context_after: string;
+            /** Context Before */
+            context_before: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Identity Sha256 */
+            identity_sha256: string;
+            /** Material Deleted */
+            material_deleted: boolean;
+            /** Material Id */
+            material_id: string;
+            material_provenance: components["schemas"]["MaterialProvenance"];
+            /** Max Output Tokens */
+            max_output_tokens: number | null;
+            /** Model Id */
+            model_id: string;
+            /** Parts */
+            parts: components["schemas"]["ProvenancePart"][];
+            /** Prompt Version */
+            prompt_version: string;
+            /** Protocol */
+            protocol: string;
+            /** Provider Name */
+            provider_name: string;
+            /** Reasoning Effort */
+            reasoning_effort: string | null;
+            /** Run Id */
+            run_id: string;
+            /** Scheme Id */
+            scheme_id: string;
+            /** Scheme Name */
+            scheme_name: string;
+            /** Scheme Revision */
+            scheme_revision: number;
+            /** Source Id */
+            source_id: string;
+            /** Target Language */
+            target_language: string;
+            /** Task Id */
+            task_id: string;
+            /** Temperature */
+            temperature: number | null;
+            /** Text */
+            text: string;
+            /** Translation */
+            translation: string;
+        };
+        /** TranslationSettingsResponse */
+        TranslationSettingsResponse: {
+            /**
+             * Adapter
+             * @default llm
+             * @constant
+             */
+            adapter: "llm";
+            /** After Characters */
+            after_characters: number;
+            /** After Sentences */
+            after_sentences: number;
+            /** Before Characters */
+            before_characters: number;
+            /** Before Sentences */
+            before_sentences: number;
+            /** Id */
+            id: string;
+            /**
+             * Max Context Characters
+             * @default 2000
+             */
+            max_context_characters: number;
+            /**
+             * Max Target Characters
+             * @default 2000
+             */
+            max_target_characters: number;
+            /** Model Id */
+            model_id: string | null;
+            /** Name */
+            name: string;
+            /** Revision */
+            revision: number;
+            /** Target Language */
+            target_language: string;
+        };
+        /** TranslationSettingsUpdate */
+        TranslationSettingsUpdate: {
+            /**
+             * After Characters
+             * @default 0
+             */
+            after_characters: number;
+            /**
+             * After Sentences
+             * @default 0
+             */
+            after_sentences: number;
+            /**
+             * Before Characters
+             * @default 200
+             */
+            before_characters: number;
+            /**
+             * Before Sentences
+             * @default 3
+             */
+            before_sentences: number;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Model Id */
+            model_id?: string | null;
+            /**
+             * Name
+             * @default 默认翻译
+             */
+            name: string;
+            /**
+             * Target Language
+             * @default 简体中文
+             */
+            target_language: string;
+        };
+        /** TranslationTaskResponse */
+        TranslationTaskResponse: {
+            /** Context After */
+            context_after: string;
+            /** Context Before */
+            context_before: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error */
+            error: string | null;
+            /** Id */
+            id: string;
+            /** Material Id */
+            material_id: string;
+            material_provenance: components["schemas"]["MaterialProvenance"];
+            /** Result Id */
+            result_id: string | null;
+            /** Run Id */
+            run_id: string | null;
+            /** Source Id */
+            source_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "stopping" | "succeeded" | "failed" | "cancelled" | "interrupted";
+            /** Text */
+            text: string;
+        };
         /** UsageResponse */
         UsageResponse: {
             /** Cache Hit Tokens */
@@ -2787,7 +3168,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "queued" | "running" | "succeeded" | "failed" | "interrupted";
+            status: "queued" | "running" | "succeeded" | "failed" | "interrupted" | "cancelled";
         };
     };
     responses: never;
@@ -3302,6 +3683,37 @@ export interface operations {
             };
         };
     };
+    material_translation_delete_impact_api_materials__material_id__delete_impact_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationDeleteImpact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     getMaterialDetails: {
         parameters: {
             query?: never;
@@ -3637,6 +4049,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MaterialStatisticsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    translation_history_api_materials__material_id__translations_get: {
+        parameters: {
+            query?: {
+                offset?: number;
+                limit?: number;
+                identity_sha256?: string | null;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_translation_api_materials__material_id__translations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranslationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationTaskResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4038,7 +4520,7 @@ export interface operations {
                 provider_id?: string | null;
                 /** @description ProviderModel 登记身份，非模型名称 */
                 model_id?: string | null;
-                status?: ("queued" | "running" | "succeeded" | "failed" | "interrupted") | null;
+                status?: ("queued" | "running" | "succeeded" | "failed" | "interrupted" | "cancelled") | null;
             };
             header?: never;
             path?: never;
@@ -4445,6 +4927,37 @@ export interface operations {
             };
         };
     };
+    segment_translations_api_segments__segment_id__translation_results_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationResultResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     getSettings: {
         parameters: {
             query?: never;
@@ -4702,6 +5215,59 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_translation_settings_api_settings_translation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationSettingsResponse"];
+                };
+            };
+        };
+    };
+    put_translation_settings_api_settings_translation_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranslationSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationSettingsResponse"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -5290,6 +5856,134 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessagePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_translation_result_api_translation_results__result_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                result_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationResultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adopt_translation_api_translation_results__result_id__adopt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                result_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranslationAdopt"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationAdoptionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_translation_task_api_translation_tasks__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationTaskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_translation_api_translation_tasks__task_id__stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationTaskResponse"];
                 };
             };
             /** @description Validation Error */

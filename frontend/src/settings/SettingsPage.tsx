@@ -2,6 +2,8 @@ import "./settings-refresh.css";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router";
 import { InlineError, Shell } from "../Shared";
+import { DeviceSpeechSettings } from "../speech";
+import { TranslationSettingsSection } from "../translation/TranslationSettings";
 import { getProviders, getSettings, settingsKeys } from "./api";
 import { LearningSettings } from "./LearningSettings";
 import { ModelDefaults } from "./ModelDefaults";
@@ -16,6 +18,8 @@ export function SettingsPage() {
 	const learning = section === "learning";
 	const permissions = section === "permissions";
 	const history = section === "history";
+	const translation = section === "translation";
+	const speech = section === "speech";
 	const settings = useQuery({
 		queryKey: settingsKeys.settings,
 		queryFn: getSettings,
@@ -23,7 +27,7 @@ export function SettingsPage() {
 	const providers = useQuery({
 		queryKey: settingsKeys.providers,
 		queryFn: getProviders,
-		enabled: !learning && !permissions,
+		enabled: !learning && !permissions && !translation && !speech,
 		refetchInterval: (query) =>
 			query.state.data?.some((provider) =>
 				provider.models.some((model) =>
@@ -50,7 +54,11 @@ export function SettingsPage() {
 					</Link>
 					<Link
 						to="/settings"
-						aria-current={!learning && !permissions ? "page" : undefined}
+						aria-current={
+							!learning && !permissions && !translation && !speech
+								? "page"
+								: undefined
+						}
 					>
 						模型与服务
 					</Link>
@@ -59,6 +67,18 @@ export function SettingsPage() {
 						aria-current={permissions ? "page" : undefined}
 					>
 						对话与权限
+					</Link>
+					<Link
+						to="/settings?section=translation"
+						aria-current={translation ? "page" : undefined}
+					>
+						翻译
+					</Link>
+					<Link
+						to="/settings?section=speech"
+						aria-current={speech ? "page" : undefined}
+					>
+						设备朗读
 					</Link>
 				</nav>
 				<div className="settings-content">
@@ -77,18 +97,26 @@ export function SettingsPage() {
 						<>
 							<div className="settings-page-head">
 								<h2>
-									{learning
-										? "学习偏好"
-										: permissions
-											? "对话与权限"
-											: "模型与服务"}
+									{translation
+										? "翻译"
+										: speech
+											? "设备朗读"
+											: learning
+												? "学习偏好"
+												: permissions
+													? "对话与权限"
+													: "模型与服务"}
 								</h2>
 								<p>
-									{learning
-										? "让讲解适合你的学习背景和阅读习惯。"
-										: permissions
-											? "设置新对话使用工具时的默认权限。"
-											: "选择任务默认模型，管理接入的模型服务。"}
+									{translation
+										? "管理独立翻译方案与语境。"
+										: speech
+											? "选择当前浏览器提供的日语声音。"
+											: learning
+												? "让讲解适合你的学习背景和阅读习惯。"
+												: permissions
+													? "设置新对话使用工具时的默认权限。"
+													: "选择任务默认模型，管理接入的模型服务。"}
 								</p>
 							</div>
 							{settings.isPending && (
@@ -108,13 +136,15 @@ export function SettingsPage() {
 									</button>
 								</section>
 							)}
+							{translation && <TranslationSettingsSection />}
+							{speech && <DeviceSpeechSettings />}
 							{learning && settings.data && (
 								<LearningSettings settings={settings.data} />
 							)}
 							{permissions && settings.data && (
 								<PermissionSettings settings={settings.data} />
 							)}
-							{!learning && !permissions && (
+							{!learning && !permissions && !translation && !speech && (
 								<>
 									{providers.isPending && (
 										<p className="settings-loading" role="status">

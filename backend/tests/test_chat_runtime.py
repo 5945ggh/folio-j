@@ -84,7 +84,10 @@ async def test_worker_uses_accepted_snapshot_and_preserves_successful_history(
         assert (
             await client.patch(
                 f"/api/segments/{seed['segment']['id']}",
-                json={"context_before": "changed-context"},
+                json={
+                    "context_before": "changed-context",
+                    "expected_revision": seed["segment"]["revision"],
+                },
             )
         ).status_code == 200
         await runtime.execute_job(app, original["id"])

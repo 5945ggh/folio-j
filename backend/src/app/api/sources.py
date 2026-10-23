@@ -69,7 +69,9 @@ async def delete_source(source_id: str, session: Session, request: Request) -> N
         session, source_id, request.app.state.chat_dispatch_lock
     )
     from app.jobs.runtime import request_chat_cancel
+    from app.services.translations import cancel_revoked
 
+    await cancel_revoked(request.app)
     for job_id in cancelled:
         request_chat_cancel(request.app, job_id)
 

@@ -43,7 +43,13 @@ try {
 	for (const [width, query] of [
 		[600, ""],
 		[1280, "?suite=reader-bookmarks"],
-	]) {
+		[1280, "?suite=translation"],
+		[390, "?suite=translation"],
+	].filter(
+		([, query]) =>
+			!process.env.BROWSER_TEST_SUITE ||
+			query === `?suite=${process.env.BROWSER_TEST_SUITE}`,
+	)) {
 		const browser = spawn(
 			chrome,
 			[

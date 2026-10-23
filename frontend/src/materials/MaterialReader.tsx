@@ -18,6 +18,15 @@ import {
 	updateSegmentLocation,
 } from "../navigation";
 import { InlineError } from "../Shared";
+import { SpeechPlaybackBar, useStopSpeechOnLeave } from "../speech";
+import { getSpeechController } from "../speech/browser";
+import type { AdoptionSession } from "../translation/AdoptTranslation";
+import {
+	type TranslationSession,
+	targetText,
+	translationTargetKey,
+} from "../translation/state";
+import { TranslationPanel } from "../translation/TranslationPanel";
 import {
 	type Chapter,
 	getChapter,
@@ -129,6 +138,13 @@ function Reader({
 	readingsSummary: ReadingsSummary;
 	notice: "imported" | "reused" | null;
 }) {
+	useStopSpeechOnLeave(book.id);
+	const [translationTarget, setTranslationTarget] =
+		useState<StudyTarget | null>(null);
+	const [translationOpen, setTranslationOpen] = useState(false);
+	const [translationMounted, setTranslationMounted] = useState(false);
+	const adoptionSessions = useRef(new Map<string, AdoptionSession>());
+	const translationSessions = useRef(new Map<string, TranslationSession>());
 	const client = useQueryClient();
 	const readingGeneration = readingsSummary.generation_id;
 	const location = useLocation();
@@ -319,7 +335,11 @@ function Reader({
 		markActive: markHit !== null,
 		markHit,
 		studyTargetActive: studyTarget !== null,
-		studyActive: studyTarget !== null || selection !== null || markHit !== null,
+		studyActive:
+			translationOpen ||
+			studyTarget !== null ||
+			selection !== null ||
+			markHit !== null,
 	});
 	latest.current = {
 		panels,
@@ -334,7 +354,11 @@ function Reader({
 		markActive: markHit !== null,
 		markHit,
 		studyTargetActive: studyTarget !== null,
-		studyActive: studyTarget !== null || selection !== null || markHit !== null,
+		studyActive:
+			translationOpen ||
+			studyTarget !== null ||
+			selection !== null ||
+			markHit !== null,
 	};
 	const closeCompactPreview = useCallback(() => {
 		if (
@@ -1650,6 +1674,7 @@ function Reader({
 					})}
 					{ui.marks.studySegmentMargins &&
 						!studyTarget &&
+						!translationOpen &&
 						marginEntries.map((entry) => (
 							<button
 								key={entry.segmentIds.join(":")}
@@ -1822,6 +1847,22 @@ function Reader({
 					</button>
 					<button
 						type="button"
+						aria-label="最近翻译"
+						data-tooltip="最近翻译"
+						onClick={() => {
+							setTranslationTarget(null);
+							setTranslationMounted(true);
+							setTranslationOpen(true);
+							setSelection(null);
+							closeMarkHit();
+							closePanel();
+							controller.current?.show();
+						}}
+					>
+						译
+					</button>
+					<button
+						type="button"
 						aria-label="阅读设置"
 						data-tooltip="阅读设置"
 						aria-expanded={panels.right === "settings"}
@@ -1840,6 +1881,70 @@ function Reader({
 					</button>
 				</nav>
 			</footer>
+			<SpeechPlaybackBar />
+			{translationMounted && (
+				<div hidden={!translationOpen}>
+					<TranslationPanel
+						key={
+							translationTarget
+								? translationTargetKey(translationTarget.reference)
+								: "recent"
+						}
+						materialId={book.id}
+						adoptionSessions={adoptionSessions.current}
+						translationSessions={translationSessions.current}
+						visible={translationOpen}
+						sourceId={book.source_id}
+						target={translationTarget}
+						autoStart={!!translationTarget}
+						onOpenSegment={openStudySegment}
+						onClose={() => {
+							setTranslationOpen(false);
+							requestAnimationFrame(() =>
+								document
+									.querySelector<HTMLButtonElement>(
+										'button[aria-label="最近翻译"]',
+									)
+									?.focus({ preventScroll: true }),
+							);
+						}}
+						onSaved={() => {
+							void client.invalidateQueries({
+								queryKey: ["material-chapter-segments", book.id],
+							});
+						}}
+						onBackToOrigin={(result) => {
+							const reference = result.material_provenance;
+							const range = reference.ranges[0];
+							const part = result.parts.find((item) => item.range_index === 0);
+							if (
+								!range ||
+								!part ||
+								result.material_deleted ||
+								reference.version_id !== book.version_id
+							) {
+								setSelectionError(new Error("原文版本或位置不可用"));
+								return;
+							}
+							setTranslationOpen(false);
+							void navigation.current.navigate({
+								type: "position",
+								target: {
+									version_id: reference.version_id,
+									chapter_id: result.chapter_id,
+									part_index: part.part_index,
+									resource_id: range.resource_id,
+									kind: "text",
+									offset: range.start,
+									at_chapter_end: false,
+									settings,
+								},
+								mark: { start: range.start, end: range.end },
+							});
+						}}
+					/>
+				</div>
+			)}
 			{studyTarget && (
 				<StudySegmentPanel
 					target={studyTarget}
@@ -1860,6 +1965,53 @@ function Reader({
 			{selection && !studyTarget && (
 				<SelectionToolbar
 					anchor={selection.anchor}
+					onTranslate={() => {
+						try {
+							if (
+								!chapter.data ||
+								!container.current ||
+								!layout.current.canSample(viewportSize(container.current))
+							)
+								throw new Error("正文仍在准备，请重新选择。");
+							const target = frames.current.captureStudyTarget(
+								book.id,
+								book.version_id,
+								chapter.data,
+							);
+							setTranslationTarget(structuredClone(target));
+							setTranslationMounted(true);
+							setTranslationOpen(true);
+							setSelection(null);
+							closeMarkHit();
+							closePanel();
+							setSelectionError(null);
+							controller.current?.show();
+						} catch (failure) {
+							setSelectionError(
+								failure instanceof Error ? failure : new Error(String(failure)),
+							);
+						}
+					}}
+					onSpeak={() => {
+						try {
+							if (!chapter.data) throw new Error("正文仍在准备，请重新选择。");
+							const target = frames.current.captureStudyTarget(
+								book.id,
+								book.version_id,
+								chapter.data,
+							);
+							getSpeechController().play({
+								id: translationTargetKey(target.reference),
+								text: targetText(target.reference),
+								label: "阅读选区",
+							});
+							setSelection(null);
+						} catch (failure) {
+							setSelectionError(
+								failure instanceof Error ? failure : new Error(String(failure)),
+							);
+						}
+					}}
 					onClose={() => setSelection(null)}
 					onSave={() => {
 						try {
@@ -1869,6 +2021,7 @@ function Reader({
 								!layout.current.canSample(viewportSize(container.current))
 							)
 								throw new Error("正文仍在准备，请重新选择。");
+							setTranslationOpen(false);
 							setStudyTarget(
 								frames.current.captureStudyTarget(
 									book.id,
@@ -1892,6 +2045,7 @@ function Reader({
 			)}
 
 			{markHit &&
+				!translationOpen &&
 				!studyTarget &&
 				(markHit.fixed || visibleHitItems.length > 0) && (
 					<StudyPreview

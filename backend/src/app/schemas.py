@@ -130,6 +130,7 @@ class SegmentCreate(StrictInput):
 
 
 class SegmentUpdate(StrictInput):
+    expected_revision: int | None = Field(default=None, ge=1)
     # String factories never reach storage unless explicitly supplied.
     text: str = Field(default_factory=str)
     translation: str = Field(default_factory=str)

@@ -468,7 +468,10 @@ async def patch_provider(
 
 
 async def delete_provider(session: AsyncSession, provider_id: str) -> None:
+    from app.services.translations import assert_no_active
+
     await session.execute(text("BEGIN IMMEDIATE"))
+    await assert_no_active(session, provider_id=provider_id)
     row = await get_provider(session, provider_id)
     active = await session.scalar(
         select(Run.id)
@@ -547,7 +550,10 @@ async def patch_model(session: AsyncSession, model_id: str, data: ModelPatch) ->
 
 
 async def delete_model(session: AsyncSession, model_id: str) -> None:
+    from app.services.translations import assert_no_active
+
     await session.execute(text("BEGIN IMMEDIATE"))
+    await assert_no_active(session, model_id=model_id)
     row = await session.get(ProviderModel, model_id)
     if row is None:
         fail(404, "模型不存在")
@@ -661,6 +667,15 @@ async def get_run(session: AsyncSession, run_id: str) -> RunResponse:
     if row is None or row.deleted_at is not None:
         fail(404, "Run 不存在")
     assert row is not None
+    if row.purpose == "translation":
+        from app.services.translations import visible_task
+        from app.translation_models import TranslationTask
+
+        task = await session.scalar(select(TranslationTask).where(TranslationTask.run_id == row.id))
+        if task is None:
+            fail(404, "Run 不存在")
+        assert task is not None
+        await visible_task(session, task)
     if row.purpose == "chat":
         job = await session.get(Job, row.job_id) if row.job_id is not None else None
         thread = await session.get(ChatThread, job.thread_id) if job is not None else None

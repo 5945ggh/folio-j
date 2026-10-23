@@ -20,6 +20,7 @@ from app.api.sources import router as sources_router
 from app.config import REPO_ROOT, load_settings
 from app.db import create_engine
 from app.jobs.runtime import recover_chat_jobs, start_chat_worker
+from app.services import translations
 from app.services.analyses import AnalysisWriteError
 from app.services.chat import ChatError
 from app.services.settings import interrupt_unfinished
@@ -47,19 +48,26 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         application.state.database_path = path
         application.state.verification_semaphore = asyncio.Semaphore(2)
         application.state.chat_dispatch_lock = asyncio.Lock()
+        application.state.translation_semaphore = asyncio.Semaphore(1)
         application.state.verification_tasks = set[asyncio.Task[None]]()
         application.state.chat_worker_event = None
         application.state.chat_tasks = set[asyncio.Task[None]]()
         application.state.chat_task_ids = set[str]()
         supervisor: asyncio.Task[None] | None = None
+        translation_supervisor: asyncio.Task[None] | None = None
         try:
             async with application.state.session_factory() as session:
                 await recover_chat_jobs(session)
                 await interrupt_unfinished(session)
+                await translations.recover(session)
             if application.state.chat_worker_enabled:
                 supervisor = start_chat_worker(application)
+                translation_supervisor = translations.start_worker(application)
             yield
         finally:
+            if translation_supervisor is not None:
+                translation_supervisor.cancel()
+                await asyncio.gather(translation_supervisor, return_exceptions=True)
             if supervisor is not None:
                 supervisor.cancel()
                 await asyncio.gather(supervisor, return_exceptions=True)
@@ -129,6 +137,9 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
     application.include_router(analyses_router)
     application.include_router(sources_router)
     application.include_router(settings_router)
+    from app.api.translations import router as translations_router
+
+    application.include_router(translations_router)
     from app.api.chat import router as chat_router
 
     application.include_router(chat_router)

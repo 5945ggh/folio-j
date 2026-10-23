@@ -568,6 +568,6 @@ def test_context_settings_migration_preserves_provenance_and_existing_preference
             assert connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid').fetchall() == rows
         assert connection.execute("SELECT * FROM segment_context_settings").fetchall() == persisted
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0005_segment_context_settings",
+            ScriptDirectory.from_config(config).get_current_head(),
         )
         assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)

@@ -61,13 +61,13 @@ flowchart LR
 
 ## 3. 领域模型
 
-当前模型覆盖 Source／Segment、设置与模型验证、讨论与 Analysis，以及材料、阅读位置、使用状态和封面缓存。来源与片段字段见[第一阶段契约](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)，Analysis 执行见第 3.5 节，材料与目录见第 3.1 节。
+当前模型覆盖 Source／Segment、设置与模型验证、讨论与 Analysis，以及材料、阅读位置、使用状态、封面缓存和独立翻译。来源与片段字段见[第一阶段契约](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)，Analysis 执行见第 3.5 节，材料与目录见第 3.1 节，翻译见第 4.8 节。
 
 设置按界面分组保存：`PATCH /api/settings` 接收完整的可选 profile 分组和字段可选的 defaults，仅校验、更新明确提交的字段；同次 profile 与 defaults 在一个事务提交，失败不部分写入。省略字段保留存量值，模型及预设身份显式 null 表示清除。既有 PUT 接口保留完整替换契约。验证历史按 Run 中保存的 Provider／登记模型身份及状态过滤后分页，不依赖配置仍然存在；只返回未软删的 verification Run。
 
-Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。独立材料删除保留 Material 身份墓碑并清理其托管副本及派生阅读数据，不改 Source、片段、讲解、讨论或任务。接受问答、成功保存持久讲解或建立精确材料出处时，在对应短写事务中首次设置 `text_locked_at`；共同保护函数不提交事务、不递增片段记录 revision，也不重写已有锁定时间。原文编辑、来源／片段删除共用事务校验边界。
+Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。独立材料删除保留 Material 身份墓碑并清理其托管副本及派生阅读数据，不改 Source、片段、讲解、讨论或片段任务；独立翻译任务按第 4.8 节撤销。接受问答、成功保存持久讲解或建立精确材料出处时，在对应短写事务中首次设置 `text_locked_at`；共同保护函数不提交事务、不递增片段记录 revision，也不重写已有锁定时间。原文编辑、来源／片段删除共用事务校验边界。
 
-数据库生命周期由应用 lifespan 管理，`0001_initial` 以固定 Alembic DDL 从空库建立初始 22 张业务表及其索引、约束和默认值，不依赖运行时 ORM 自动建表。A2 在其后增加 `0002_lock_analysis_segments` 数据迁移，为存在任意历史讲解且尚未锁定的片段补本次保护时间，包含软删讲解与片段；已有锁、正文、记录 revision、更新时间与历史资料不变。降级不解锁，避免解除迁移之后产生的依赖。`0003_material_soft_delete` 增加材料 deleted_at，将同 Source 同字节的唯一约束改为仅覆盖活跃材料的部分唯一索引；升级保留原材料与所有依赖记录。SQLite 表重建在专用迁移连接上、写事务开始前暂关外键检查，提交前检查全部外键，异常回滚后恢复检查；应用连接继续启用外键。存在已删除材料时拒绝降级，避免恢复其可见性或丢失重导记录。`0004_segment_material_provenance` 只增加出处及创建凭据表，`0005_segment_context_settings` 增加独立语境设置表，现行共 24 张业务表；有新增资料时拒绝有损降级。两次迁移均不重写旧内容。`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。旧开发期中间 revision 不再支持自动升级；已有完整旧 head 库须备份并验证 schema 等价后一次性对齐版本，操作边界见 [README](../README.md#本地开发)。历史阶段文档保留当时的迁移编号与回填事实。
+数据库生命周期由应用 lifespan 管理，`0001_initial` 以固定 Alembic DDL 从空库建立初始 22 张业务表及其索引、约束和默认值，不依赖运行时 ORM 自动建表。A2 在其后增加 `0002_lock_analysis_segments` 数据迁移，为存在任意历史讲解且尚未锁定的片段补本次保护时间，包含软删讲解与片段；已有锁、正文、记录 revision、更新时间与历史资料不变。降级不解锁，避免解除迁移之后产生的依赖。`0003_material_soft_delete` 增加材料 deleted_at，将同 Source 同字节的唯一约束改为仅覆盖活跃材料的部分唯一索引；升级保留原材料与所有依赖记录。SQLite 表重建在专用迁移连接上、写事务开始前暂关外键检查，提交前检查全部外键，异常回滚后恢复检查；应用连接继续启用外键。存在已删除材料时拒绝降级，避免恢复其可见性或丢失重导记录。`0004_segment_material_provenance` 只增加出处及创建凭据表，`0005_segment_context_settings` 增加独立语境设置表，两次迁移完成后为 24 张业务表；有新增资料时拒绝有损降级。`0006_translations` 增加四张翻译表，现行共 28 张，执行机制见第 4.8 节。增量迁移不重写旧内容。`just dev`／`just start` 先执行迁移且不自动删库。发布前且数据可丢弃时允许重整初始迁移；需保留日常数据或发布第一版后维护增量升级路径。旧开发期中间 revision 不再支持自动升级；已有完整旧 head 库须备份并验证 schema 等价后一次性对齐版本，操作边界见 [升级与备份指南](UPGRADING.md#旧开发数据库与备份)。历史阶段文档保留当时的迁移编号与回填事实。
 
 ### 3.1 实体
 
@@ -397,6 +397,26 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 - 列表：按 `kind`、`status`、`source_id` 筛选；文本搜索匹配 `surface`、`anchors` 和 `gloss`（MVP 用 `LIKE`，P1 改用 FTS5）。
 - 分组：`group_by=anchor` 时按 `anchor_keys` 展开后分组；一条 Occurrence 有多个 anchor 时出现在多个组中 `[TBD-08]`。
 - 查询排除已删除记录；整理行为见[PRD F5](PRD.md#f5-学习条目创建与整理)，阅读与筛选范围见[F6](PRD.md#f6-知识库)。积累库默认展示哪些未删除状态仍待PRD收口。
+
+### 4.8 阅读翻译与设备朗读
+
+产品行为由 [PRD 4.8](PRD.md#48-阅读翻译与设备朗读)维护。`0006_translations` 增量建立 translation_settings、translation_tasks、translation_results、translation_adoptions 四表；有数据时拒绝有损降级，不改既有 Provider、模型或 Segment 身份。累计现行 28 张业务表，空库与升级检查覆盖 ORM 一致性。
+
+`services/translations.py` 提供独立任务生命周期，不借用 chat_jobs 或虚构线程。目标复用精确材料出处值，受理时 prepare／写事务 recheck 并固定原文、实际语境、方案修订、Provider／模型配置、模板及凭据内部引用。请求身份全局唯一，同键异文或路径材料身份不同返回冲突／无效请求。历史按材料分页，可用规范出处摘要筛选；成功结果引用不可变任务输入，正文不原地修改。
+
+翻译使用 [translation-v2 系统模板](../backend/prompts/translation/system_v2.txt)，仅翻译 `target`；user 消息以 JSON 分别提供目标语言、`reference_context` 与 `target`，语境只用于理解。受理时固定实际 system／user messages，执行时原样写入 Run 并传入两种协议的 adapter。旧 v1 任务继续使用已保存的单条 prompt，历史结果不随模板升级改写。
+
+专用 worker 同时执行一项翻译，真实调用仍占全局模型并发限制。Run 以 translation 用途、task.run_id 关联，job_id 留空；调用经过 llm，每任务最多一次，无 SDK 自动重试。成功结果与任务终态原子提交；适配器已返回的截断、拒绝或空输出仍在 Run 保存脱敏输出、用量及原始响应，任务保持失败且不创建成功结果。停止、材料或 Source 删除在写事务中撤销 token，尽力取消进程内调用，迟到输出不得发布。重启未完成任务标 interrupted，不自动重放。材料删除保留可见 Segment 采用过的结果；结果、任务、Run 详情同样检查来源及可见关系，不能借直接 ID 绕过门禁。
+
+采用请求原子新建 Segment／出处或更新已有字段并保存凭据。已有片段核验确切出处、原文摘要及 expected_revision；普通 Segment 编辑只提交相对打开时快照实际改动的字段，并携带 expected_revision；服务端对任何显式版本条件执行核验，译文及语境字段始终要求版本条件。未提交字段保留服务端当前值。关联与字段更新分开表达，片段结果列表按身份去重，采用凭据保留实际提交快照；重复核实先读取成功凭据，再执行新请求的版本检查。Source／Segment 可见性仍优先，材料删除后的成功核实不恢复材料。结果详情与历史返回去重的活跃 adopted_segment_ids，整页重开可恢复确切结果的成功去向；不按同文推测关联，不覆盖当前未完成采用会话。关联不会自动改写原译文，普通字段编辑不新增完整历史表。
+
+`GET/PUT /api/settings/translation` 维护一个有独立身份及 revision 的 LLM 翻译配置；`POST/GET /api/materials/{material_id}/translations` 受理与分页读取；任务有 GET 及 stop，结果有 GET 及 adopt，Segment 有 translation-results 只读入口。`GET /api/materials/{material_id}/delete-impact` 返回未保留结果、保留结果和活动任务数量。准确请求字段由 OpenAPI 和生成客户端维护。
+
+运行配置 `TranslationLimits` 集中保存目标／语境预算、时限、队列上限与无模型输出配置时的 fallback，示例见 `config/app.example.toml`。这些是待实测候选，服务端校验实际输入，不静默裁剪；输出不完整不发布成功。模型配置的明确输出上限优先。Provider／模型删除的活动翻译检查在同一短写事务中执行，历史结果不依赖接入继续存活。
+
+前端 `translation/` 通过生成类型和 TanStack Query 读取持久状态；选区明确翻译意图在当前挂载的确切目标首页查询完成、成功且没有成功结果、活动任务或后续页，语境就绪后受理一次；后台刷新的旧空缓存不能作为新调用依据。读取到已有结果、活动任务或更多历史，或用户主动翻页后，本次自动意图即消费，浏览历史不发起调用。Reader 按目标保存翻译会话的固定请求、执行与核实状态及语境草稿，切换目标再返回仍核实原请求；明确重新翻译才建立新请求。关闭保留当前目标与草稿，任务继续在后端；采用 session 统一维护固定请求、pending、未知结果及已保存去向，重挂后仍核实同请求。全页刷新后持久任务与结果可恢复，未提交的表单草稿不承诺持久化。
+
+`speech/` 通过小 interface 包装 SpeechSynthesis，设备声音选择及语速只保存本机。控制器用播放代次隔离迟到事件；首次失败也保留目标和可见错误，播放条支持停止、重播与收起。Reader／Segment 的生命周期清理停止朗读，关闭翻译卡不卸载页面播放控制。声音列表通过 voiceschanged 更新，未提供日语声线或所选声线消失时明确反馈；不生成 Run 或音频文件。
 
 ## 5. 当前API与未来草图
 

@@ -4,7 +4,14 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useId,
+	useRef,
+	useState,
+} from "react";
 import { analysisKeys, getAnalysis } from "../analysis/api";
 import { Markdown } from "../analysis/Markdown";
 import { queries, RequestError, type Segment } from "../content";
@@ -36,12 +43,134 @@ import {
 	submissionMayHaveSucceeded,
 	threadChanged,
 	usableThread,
+	visibleDraft,
 } from "./discussion";
 import { describeReview } from "./review";
 
 type Pending = PendingSubmission;
 const emptyDraft: Draft = { question: "", additional: "" };
 const generationQuestion = "请为当前片段生成总体讲解。";
+
+function ChatIcon({ name }: { name: "back" | "send" | "copy" }) {
+	return (
+		<svg
+			aria-hidden="true"
+			width="16"
+			height="16"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.6"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+		>
+			{name === "back" ? (
+				<path d="m14 5-7 7 7 7M7 12h12" />
+			) : name === "send" ? (
+				<path d="M12 19V5m-6 6 6-6 6 6" />
+			) : (
+				<>
+					<rect x="8" y="8" width="12" height="13" rx="2" />
+					<path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3" />
+				</>
+			)}
+		</svg>
+	);
+}
+
+function ComposerSetting({
+	label,
+	panelLabel,
+	value,
+	title,
+	children,
+}: {
+	label: string;
+	panelLabel: string;
+	value: string;
+	title?: string;
+	children: ReactNode;
+}) {
+	const id = useId();
+	const trigger = useRef<HTMLButtonElement>(null);
+	const panel = useRef<HTMLDivElement>(null);
+	return (
+		<>
+			<button
+				ref={trigger}
+				type="button"
+				className="chat-setting-button"
+				aria-label={label}
+				aria-haspopup="dialog"
+				title={title ?? label}
+				popoverTarget={id}
+			>
+				<span>{value}</span>
+				<span aria-hidden="true">⌄</span>
+			</button>
+			<div
+				ref={panel}
+				id={id}
+				popover="auto"
+				role="dialog"
+				aria-label={panelLabel}
+				className="chat-setting-popover"
+				onToggle={(event) => {
+					if (event.newState !== "open" || !panel.current) return;
+					const bounds = trigger.current?.getBoundingClientRect();
+					if (!bounds) return;
+					const menu = panel.current;
+					menu.style.left = `${Math.max(8, Math.min(bounds.left, window.innerWidth - menu.offsetWidth - 8))}px`;
+					menu.style.top = `${Math.max(8, bounds.top - menu.offsetHeight - 8)}px`;
+					const selected = menu.querySelector<HTMLElement>(
+						'input[type="radio"]:checked:not(:disabled)',
+					);
+					const first = menu.querySelector<HTMLElement>(
+						"input:not(:disabled),select:not(:disabled),textarea:not(:disabled)",
+					);
+					(selected ?? first)?.focus();
+				}}
+			>
+				{children}
+			</div>
+		</>
+	);
+}
+
+function DiscussionReference({ segment }: { segment: Segment }) {
+	return (
+		<details className="chat-reference">
+			<summary>参考原文与前后文</summary>
+			<div className="chat-reference-body">
+				<p className="chat-reference-note">
+					以下是当前保存的片段资料，新任务采用这些内容；历史任务仍以当时的输入快照为准。
+				</p>
+				{segment.context_before.trim() && (
+					<section>
+						<h3 className="chat-reference-label">前文</h3>
+						<p className="chat-reference-text" lang="ja">
+							{segment.context_before}
+						</p>
+					</section>
+				)}
+				<section className="chat-reference-target">
+					<h3 className="chat-reference-label">目标原文</h3>
+					<p className="chat-reference-text" lang="ja">
+						{segment.text}
+					</p>
+				</section>
+				{segment.context_after.trim() && (
+					<section>
+						<h3 className="chat-reference-label">后文</h3>
+						<p className="chat-reference-text" lang="ja">
+							{segment.context_after}
+						</p>
+					</section>
+				)}
+			</div>
+		</details>
+	);
+}
 
 function jobLabel(job: Job): string {
 	switch (job.status) {
@@ -86,10 +215,12 @@ function FailedJob({
 					className="button secondary"
 					type="button"
 					onClick={() =>
-						onRetry({
-							question: job.data.question,
-							additional: job.data.additional_instructions,
-						})
+						onRetry(
+							visibleDraft({
+								question: job.data.question,
+								additional: job.data.additional_instructions,
+							}),
+						)
 					}
 				>
 					把原问题放回输入框
@@ -111,6 +242,9 @@ function MessageItem({
 	onOpenArtifact: (analysisId: string, revisionId: string, job?: Job) => void;
 }) {
 	const client = useQueryClient();
+	const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">(
+		"idle",
+	);
 	const savedJob = useQuery({
 		queryKey: chatKeys.job(message.job_id),
 		queryFn: async () => {
@@ -131,9 +265,11 @@ function MessageItem({
 			? activeJob.assistant_message
 			: message;
 	return (
-		<article className={`chat-message ${current.role}`}>
+		<article
+			className={`chat-message ${current.role}`}
+			aria-label={current.role === "user" ? "你的消息" : "助手消息"}
+		>
 			<div className="chat-message-heading">
-				<strong>{current.role === "user" ? "你" : "助手"}</strong>
 				{current.role === "assistant" && current.status !== "complete" && (
 					<span>
 						{activeJob && activeJob.assistant_message.id === current.id
@@ -161,6 +297,39 @@ function MessageItem({
 						: "等待回答…"}
 				</p>
 			) : null}
+			{current.role === "assistant" && current.content && (
+				<div className="chat-message-actions">
+					<button
+						type="button"
+						className="chat-copy-button"
+						aria-label={
+							copyState === "copied" ? "已复制助手消息" : "复制助手消息"
+						}
+						title={copyState === "copied" ? "已复制" : "复制回复"}
+						onClick={() => {
+							void Promise.resolve()
+								.then(() => navigator.clipboard.writeText(current.content))
+								.then(
+									() => setCopyState("copied"),
+									() => setCopyState("failed"),
+								);
+						}}
+					>
+						<ChatIcon name="copy" />
+						<span>{copyState === "copied" ? "已复制" : "复制"}</span>
+					</button>
+					<span
+						role="status"
+						className={copyState === "failed" ? "chat-copy-error" : "sr-only"}
+					>
+						{copyState === "failed"
+							? "复制失败，请选择回复文字复制。"
+							: copyState === "copied"
+								? "回复已复制"
+								: ""}
+					</span>
+				</div>
+			)}
 			{current.role === "assistant" &&
 				(activeJob?.assistant_message.id === current.id
 					? activeJob
@@ -284,7 +453,6 @@ function ThreadPanel({
 		queryKey: settingsKeys.providers,
 		queryFn: getProviders,
 	});
-	const [style, setStyle] = useState("");
 	const [stream, setStream] = useState(true);
 	const [sendError, setSendError] = useState<Error | null>(null);
 	const [sending, setSending] = useState(false);
@@ -447,26 +615,24 @@ function ThreadPanel({
 		],
 	);
 
+	useEffect(() => {
+		if (!pending && draft.additional)
+			setDraft((current) => visibleDraft(current));
+	}, [draft.additional, pending, setDraft]);
 	const makeInput = useCallback(
-		(current: Thread, action: JobInput["action"] = "chat"): JobInput => {
-			return {
-				action,
-				request_id: crypto.randomUUID(),
-				expected_thread_revision: current.revision,
-				expected_segment_revision: segment.revision,
-				question:
-					action === "generate_analysis" ? generationQuestion : draft.question,
-				additional_instructions:
-					action === "generate_analysis" ? "" : draft.additional,
-				stream,
-				...(style === "none"
-					? { style_id: null }
-					: style
-						? { style_id: style }
-						: {}),
-			};
-		},
-		[segment.revision, draft.question, draft.additional, stream, style],
+		(current: Thread, action: JobInput["action"] = "chat"): JobInput => ({
+			action,
+			request_id: crypto.randomUUID(),
+			expected_thread_revision: current.revision,
+			expected_segment_revision: segment.revision,
+			question:
+				action === "generate_analysis"
+					? generationQuestion
+					: visibleDraft(draft).question,
+			additional_instructions: "",
+			stream,
+		}),
+		[segment.revision, draft, stream],
 	);
 	useEffect(() => {
 		if (
@@ -522,97 +688,7 @@ function ThreadPanel({
 
 	return (
 		<div className="chat-panel">
-			<details className="chat-config">
-				<summary>
-					<span>
-						模型：
-						{chosen
-							? `${chosen.provider.name} / ${chosen.model.model_id}`
-							: thread.data.selected_model_id
-								? "原模型已不可用"
-								: "未选择"}
-					</span>
-					<span>设置</span>
-				</summary>
-				<div className="chat-controls">
-					<label>
-						模型
-						<select
-							value={thread.data.selected_model_id ?? ""}
-							disabled={busy || patch.isPending}
-							onChange={(event) =>
-								patch.mutate({
-									expected_revision: thread.data.revision,
-									model_id: event.target.value || null,
-								})
-							}
-						>
-							<option value="">请选择模型</option>
-							{thread.data.selected_model_id && !chosen && (
-								<option value={thread.data.selected_model_id}>
-									原模型已不可用
-								</option>
-							)}
-							{models
-								.filter(
-									({ provider, model }) => provider.enabled && model.enabled,
-								)
-								.map(({ provider, model }) => (
-									<option key={model.id} value={model.id}>
-										{provider.name} / {model.model_id}
-									</option>
-								))}
-						</select>
-					</label>
-					<label>
-						讲解预设
-						<select
-							value={style}
-							disabled={busy}
-							onChange={(event) => setStyle(event.target.value)}
-						>
-							<option value="">
-								使用当前默认{settings.data?.defaults.style_id ? "" : "（无）"}
-							</option>
-							<option value="none">本轮不使用</option>
-							{settings.data?.styles.map((item) => (
-								<option key={item.id} value={item.id}>
-									{item.name}
-								</option>
-							))}
-						</select>
-					</label>
-					<label>
-						权限
-						<select
-							value={thread.data.permission_mode}
-							disabled={busy || patch.isPending}
-							onChange={(event) =>
-								patch.mutate({
-									expected_revision: thread.data.revision,
-									permission_mode: event.target
-										.value as Thread["permission_mode"],
-								})
-							}
-						>
-							<option value="review">审核模式</option>
-							<option value="full_access">Full access</option>
-						</select>
-					</label>
-					<label className="chat-stream-choice">
-						<input
-							type="checkbox"
-							checked={stream}
-							disabled={busy}
-							onChange={(event) => setStream(event.target.checked)}
-						/>{" "}
-						后台流式生成
-					</label>
-				</div>
-				<p className="chat-permission-note">
-					讲解修改在审核模式下先展示具体方案；生成新讲解会按请求自动保存。
-				</p>
-			</details>
+			<DiscussionReference segment={segment} />
 			{!usable && providers.isSuccess && (
 				<p className="chat-notice" role="alert">
 					当前线程的模型未选或已停用。请选择可用模型后发送；系统不会自动替换原选择。
@@ -633,6 +709,8 @@ function ThreadPanel({
 					</p>
 				)}
 			<InlineError error={patch.error} />
+			<InlineError error={providers.error} />
+			<InlineError error={settings.error} />
 			<section className="chat-history" aria-label="讨论历史">
 				{history.isPending && <p className="loading">正在加载历史…</p>}
 				{history.isError && <InlineError error={history.error} />}
@@ -648,10 +726,7 @@ function ThreadPanel({
 					!messages.some(
 						(message) => message.id === active.data.user_message_id,
 					) && (
-						<article className="chat-message user">
-							<div className="chat-message-heading">
-								<strong>你</strong>
-							</div>
+						<article className="chat-message user" aria-label="你的消息">
 							<p className="chat-message-content">{active.data.question}</p>
 						</article>
 					)}
@@ -725,33 +800,20 @@ function ThreadPanel({
 				{active.isError && <InlineError error={active.error} />}
 			</section>
 			<div className="chat-composer">
-				<label htmlFor="chat-question">问题</label>
+				<label className="sr-only" htmlFor="chat-question">
+					问题
+				</label>
 				<textarea
 					id="chat-question"
-					value={draft.question}
+					value={visibleDraft(draft).question}
 					maxLength={10000}
 					rows={3}
 					placeholder="想了解这段话的什么？"
 					onChange={(event) =>
-						setDraft({ ...draft, question: event.target.value })
+						setDraft({ question: event.target.value, additional: "" })
 					}
 				/>
-				<details className="chat-additional">
-					<summary>
-						本轮补充要求（可选）{draft.additional && <span>已填写</span>}
-					</summary>
-					<label htmlFor="chat-additional">本轮补充要求（可选）</label>
-					<textarea
-						id="chat-additional"
-						value={draft.additional}
-						maxLength={10000}
-						rows={2}
-						placeholder="例如：重点说明语气与使用场景"
-						onChange={(event) =>
-							setDraft({ ...draft, additional: event.target.value })
-						}
-					/>
-				</details>
+
 				{pending?.uncertain && (
 					<div className="chat-uncertain" role="status">
 						<strong>正在核实提交</strong>
@@ -784,40 +846,159 @@ function ThreadPanel({
 				)}
 				<InlineError error={sendError} />
 				<InlineError error={stop.error} />
-				<div className="chat-composer-footer">
-					<span>
-						{thread.data.permission_mode === "review"
-							? "审核模式"
-							: "Full access"}
-					</span>
-					<div className="actions">
-						{thread.data.active_job_id && (
-							<button
-								className="button secondary"
-								type="button"
-								disabled={stop.isPending || active.data?.status === "stopping"}
-								onClick={() => stop.mutate(thread.data.active_job_id ?? "")}
-							>
-								{stop.isPending || active.data?.status === "stopping"
-									? "停止中…"
-									: "停止本轮"}
-							</button>
-						)}
-						<button
-							className="button primary"
-							type="button"
-							disabled={
-								busy ||
-								!draft.question.trim() ||
-								!usable ||
-								!history.isSuccess ||
-								!settings.isSuccess ||
-								!providers.isSuccess
+				<div
+					className={`chat-composer-tools${thread.data.active_job_id ? " has-stop" : ""}`}
+				>
+					<section className="chat-config" aria-label="本轮设置">
+						<ComposerSetting
+							label="选择模型"
+							panelLabel="模型设置"
+							value={
+								chosen
+									? chosen.model.model_id
+									: thread.data.selected_model_id
+										? "模型不可用"
+										: "选择模型"
 							}
-							onClick={() => void send(makeInput(thread.data))}
+							title={
+								chosen
+									? `${chosen.provider.name} / ${chosen.model.model_id}`
+									: "选择模型"
+							}
 						>
-							{sending ? "提交中…" : "发送问题"}
-						</button>
+							<fieldset className="chat-choice-list" aria-label="可选模型">
+								{models
+									.filter(
+										({ provider, model }) => provider.enabled && model.enabled,
+									)
+									.map(({ provider, model }) => (
+										<label className="chat-choice" key={model.id}>
+											<input
+												type="radio"
+												className="sr-only"
+												name={`model-${threadId}`}
+												data-model-id={model.id}
+												checked={thread.data.selected_model_id === model.id}
+												disabled={busy || patch.isPending}
+												onClick={(event) => {
+													if (thread.data.selected_model_id === model.id)
+														event.currentTarget
+															.closest<HTMLElement>("[popover]")
+															?.hidePopover();
+												}}
+												onChange={(event) => {
+													patch.mutate({
+														expected_revision: thread.data.revision,
+														model_id: model.id,
+													});
+													event.currentTarget
+														.closest<HTMLElement>("[popover]")
+														?.hidePopover();
+												}}
+											/>
+											<span className="chat-choice-name">
+												{model.model_id}
+												<small>{provider.name}</small>
+											</span>
+											<span className="chat-choice-check" aria-hidden="true">
+												{thread.data.selected_model_id === model.id ? "✓" : ""}
+											</span>
+										</label>
+									))}
+								{!models.some(
+									({ provider, model }) => provider.enabled && model.enabled,
+								) && <p className="chat-choice-empty">暂无可用模型</p>}
+							</fieldset>
+							<label className="chat-stream-choice">
+								<input
+									type="checkbox"
+									checked={stream}
+									disabled={busy}
+									onChange={(event) => setStream(event.target.checked)}
+								/>{" "}
+								后台流式生成
+							</label>
+						</ComposerSetting>
+						<ComposerSetting
+							label="设置审核模式"
+							panelLabel="审核模式"
+							value={
+								thread.data.permission_mode === "review"
+									? "审核模式"
+									: "Full access"
+							}
+						>
+							<fieldset className="chat-choice-list" aria-label="可选审核模式">
+								{(["review", "full_access"] as const).map((mode) => (
+									<label className="chat-choice" key={mode}>
+										<input
+											type="radio"
+											className="sr-only"
+											name={`permission-${threadId}`}
+											data-permission-mode={mode}
+											checked={thread.data.permission_mode === mode}
+											disabled={busy || patch.isPending}
+											onClick={(event) => {
+												if (thread.data.permission_mode === mode)
+													event.currentTarget
+														.closest<HTMLElement>("[popover]")
+														?.hidePopover();
+											}}
+											onChange={(event) => {
+												patch.mutate({
+													expected_revision: thread.data.revision,
+													permission_mode: mode,
+												});
+												event.currentTarget
+													.closest<HTMLElement>("[popover]")
+													?.hidePopover();
+											}}
+										/>
+										<span className="chat-choice-name">
+											{mode === "review" ? "审核模式" : "Full access"}
+										</span>
+										<span className="chat-choice-check" aria-hidden="true">
+											{thread.data.permission_mode === mode ? "✓" : ""}
+										</span>
+									</label>
+								))}
+							</fieldset>
+						</ComposerSetting>
+					</section>
+					<div className="chat-composer-footer">
+						<div className="actions">
+							{thread.data.active_job_id && (
+								<button
+									className="button secondary"
+									type="button"
+									disabled={
+										stop.isPending || active.data?.status === "stopping"
+									}
+									onClick={() => stop.mutate(thread.data.active_job_id ?? "")}
+								>
+									{stop.isPending || active.data?.status === "stopping"
+										? "停止中…"
+										: "停止本轮"}
+								</button>
+							)}
+							<button
+								className="chat-send-button"
+								type="button"
+								aria-label={sending ? "提交中…" : "发送问题"}
+								title={sending ? "提交中…" : "发送问题"}
+								disabled={
+									busy ||
+									!draft.question.trim() ||
+									!usable ||
+									!history.isSuccess ||
+									!settings.isSuccess ||
+									!providers.isSuccess
+								}
+								onClick={() => void send(makeInput(thread.data))}
+							>
+								<ChatIcon name="send" />
+							</button>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -826,6 +1007,7 @@ function ThreadPanel({
 }
 
 export function Workbench({
+	headerAction,
 	segment,
 	generateToken,
 	selectedThreadId,
@@ -835,6 +1017,7 @@ export function Workbench({
 	onJobAccepted,
 	onOpenArtifact,
 }: {
+	headerAction?: ReactNode;
 	segment: Segment;
 	generateToken: string | null;
 	selectedThreadId: string | null;
@@ -873,11 +1056,7 @@ export function Workbench({
 		queryFn: () => getThread(selected ?? ""),
 		enabled: Boolean(selected),
 	});
-	const selectedThread = usableThread(
-		selectedInfo.data,
-		segment.id,
-		selectedInfo.isSuccess,
-	);
+
 	useEffect(() => {
 		// Keep valid panels mounted for drafts and review instructions, but do not
 		// reuse a failed or foreign target after returning to the thread list.
@@ -938,20 +1117,25 @@ export function Workbench({
 				<div className="chat-pane-header">
 					<div>
 						<h2>对话</h2>
-						<small>当前片段</small>
 					</div>
-					<button
-						className="chat-new-button"
-						type="button"
-						disabled={create.isPending}
-						onClick={() => {
-							const key = createKey ?? crypto.randomUUID();
-							setCreateKey(key);
-							create.mutate({ requestId: key });
-						}}
-					>
-						新建对话
-					</button>
+					<div className="chat-header-actions">
+						<button
+							className="chat-new-button chat-icon-button"
+							type="button"
+							aria-label="新建对话"
+							title="新建对话"
+							data-tooltip="新建对话"
+							disabled={create.isPending}
+							onClick={() => {
+								const key = createKey ?? crypto.randomUUID();
+								setCreateKey(key);
+								create.mutate({ requestId: key });
+							}}
+						>
+							<span aria-hidden="true">＋</span>
+						</button>
+						{view === "list" && headerAction}
+					</div>
 				</div>
 				<InlineError error={create.error} />
 				<section className="chat-thread-list" aria-label="对话列表">
@@ -1028,17 +1212,20 @@ export function Workbench({
 						className="chat-back-button"
 						aria-label="返回对话列表"
 						title="返回对话列表"
+						data-tooltip="返回对话列表"
 						onClick={() => {
 							setView("list");
 							onSelectThread(null);
 						}}
 					>
-						←
+						<ChatIcon name="back" />
 					</button>
 					<div>
-						<h2>{selectedThread?.display_title ?? "新对话"}</h2>
-						<small>参考当前片段原文</small>
+						<h2>对话</h2>
 					</div>
+					{view === "detail" && (
+						<div className="chat-header-actions">{headerAction}</div>
+					)}
 				</div>
 				<div className="chat-main">
 					{selected ? (

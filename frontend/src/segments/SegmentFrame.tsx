@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { ReturnDestination } from "../navigation";
 
-function ToolIcon({ name }: { name: "back" | "chat" | "more" }) {
+function ToolIcon({ name }: { name: "back" | "chat" | "collapse" | "more" }) {
 	return (
 		<svg
 			aria-hidden="true"
@@ -17,6 +17,11 @@ function ToolIcon({ name }: { name: "back" | "chat" | "more" }) {
 		>
 			{name === "back" ? (
 				<path d="m14 5-7 7 7 7M7 12h12" />
+			) : name === "collapse" ? (
+				<>
+					<rect x="3" y="4" width="18" height="16" rx="2" />
+					<path d="M15 4v16" />
+				</>
 			) : name === "chat" ? (
 				<path d="M20 11.5a8 8 0 0 1-8 8 8.5 8.5 0 0 1-3.3-.7L4 20l1.2-4.7A8 8 0 1 1 20 11.5Z" />
 			) : (
@@ -80,6 +85,7 @@ export function SegmentFrame({
 					to={returnTo.to}
 					state={returnTo.state}
 					aria-label={`返回${returnTo.label}`}
+					title={`返回${returnTo.label}`}
 				>
 					<ToolIcon name="back" />
 					<span className="segment-tool-mobile-label">返回</span>
@@ -92,11 +98,12 @@ export function SegmentFrame({
 						type="button"
 						disabled={!available}
 						aria-label={chatOpen ? "收起讨论" : "展开讨论"}
+						title={chatOpen ? "收起讨论" : "展开讨论"}
 						aria-expanded={chatOpen && available}
 						aria-controls="segment-conversation"
 						onClick={onToggleDiscussion}
 					>
-						<ToolIcon name="chat" />
+						<ToolIcon name={chatOpen ? "collapse" : "chat"} />
 						<span className="segment-tool-mobile-label">讨论</span>
 						<span className="segment-tool-label">
 							{chatOpen ? "收起讨论" : "展开讨论"}
@@ -111,6 +118,7 @@ export function SegmentFrame({
 						type="button"
 						disabled={!available}
 						aria-label="片段更多操作"
+						title="片段更多操作"
 						aria-expanded={menuOpen}
 						aria-controls="segment-tools-menu"
 						onClick={() => setMenuOpen(!menuOpen)}

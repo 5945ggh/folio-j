@@ -32,6 +32,7 @@ test("the complete verification state set has only queued and running active", (
 		succeeded: false,
 		failed: false,
 		interrupted: false,
+		cancelled: false,
 	} satisfies Record<VerificationState, boolean>;
 	for (const [state, active] of Object.entries(expected)) {
 		assert.equal(

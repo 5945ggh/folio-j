@@ -21,6 +21,8 @@
 
 维护项目文档时，先读项目级 skill [文档维护原则](.agents/skills/document-maintenance/SKILL.md)与[文档写作风格](.agents/skills/document-writing-style/SKILL.md)。前者规定信息归属与更新流程，后者规定直接、准确、简明的表达方式。
 
+根 [README](README.md) 面向首次访问者，保留产品介绍、当前能力摘要和快速开始。[使用指南](docs/USAGE.md)维护日常操作与配置，[开发指南](docs/DEVELOPMENT.md)维护环境、命令与快照，[升级与备份](docs/UPGRADING.md)维护数据保护和旧库处理。修改这些内容时更新对应指南与入口链接；完整交付状态仍由实施基线维护。
+
 ## 常用命令
 
 工程已建立 `justfile`，以下命令是实际开发入口；检查失败不能描述为验证通过。
@@ -35,7 +37,7 @@ just migrate    # alembic upgrade head
 just snapshot   # Repomix 在 .snapshots/ 生成带时间戳的 XML 仓库快照；别名 just snap
 ```
 
-`just` 或 `just --list` 列出可用命令；快照工具依赖与输出说明见 [README](README.md#本地开发)。
+`just` 或 `just --list` 列出可用命令；环境与完整命令说明见[开发指南](docs/DEVELOPMENT.md)，快照工具依赖与输出说明见[仓库快照](docs/DEVELOPMENT.md#仓库快照)。使用已有数据库前先读[升级与备份](docs/UPGRADING.md)。
 
 ## 硬性规则
 

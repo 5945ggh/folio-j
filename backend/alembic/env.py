@@ -11,10 +11,18 @@ from app import material_models as _material_models
 from app import models as _models
 from app import segment_context_models as _segment_context_models
 from app import settings_models as _settings_models
+from app import translation_models as _translation_models
 from app.config import load_settings
 from app.db import create_engine
 
-_ = (_analysis_models, _chat_models, _settings_models, _material_models, _segment_context_models)
+_ = (
+    _translation_models,
+    _analysis_models,
+    _chat_models,
+    _settings_models,
+    _material_models,
+    _segment_context_models,
+)
 
 target_metadata = _models.Base.metadata
 

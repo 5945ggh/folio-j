@@ -355,6 +355,9 @@ async def _delete_source_committed(session: AsyncSession, source_id: str) -> lis
         from app.services.analyses import soft_delete_for_segments
 
         await soft_delete_for_segments(session, ids, deleted)
+        from app.services.translations import revoke_tasks
+
+        await revoke_tasks(session, source_id=source_id)
         source.deleted_at = deleted
         source.updated_at = deleted
         await session.execute(
@@ -419,7 +422,12 @@ async def update_segment(
     try:
         await begin_write(session)
         segment = await require_segment(session, segment_id)
-        changes = data.model_dump(exclude_unset=True)
+        changes = data.model_dump(exclude_unset=True, exclude={"expected_revision"})
+        requires_revision = data.expected_revision is not None or bool(
+            {"translation", "context_before", "context_after"} & changes.keys()
+        )
+        if requires_revision and data.expected_revision != segment.revision:
+            raise HTTPException(409, "片段已改变，请核对当前内容")
         if (
             "text" in changes
             and segment.text_locked_at is not None

@@ -7,6 +7,7 @@
 当前交付、提交状态与验收结论汇总见 [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)。本节保留未完成阶段的安排与配套验收；目录、封面、书籍编辑及阅读器的现行接口由[架构](../ARCHITECTURE.md)维护。
 
 - 文本处理与学习资料调整：架构解耦、人工保存与独立回看、统计和精确出处；见[实施计划](text-study/PLAN.md)、[验收样例](text-study/TEST_MATRIX.md)、[S0 收口](text-study/S0_ACCEPTANCE.md)、[B1 验收](text-study/B1_ACCEPTANCE.md)及[B2 验收](text-study/B2_ACCEPTANCE.md)。A 线证据见[独立回看](text-study/A1_ACCEPTANCE.md)与[人工资料](text-study/A2_ACCEPTANCE.md)，C 线见[C1](text-study/C1_ACCEPTANCE.md)、[C2](text-study/C2_ACCEPTANCE.md)、[阅读体验](text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md)与[原处预览](text-study/INLINE_PREVIEW_ACCEPTANCE.md)验收；当前状态汇总至实施基线。
+- [阅读翻译、译文留存与设备朗读方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)：2026-10-23 已确认行为并授权实施，覆盖成功译文找回、转为 Segment、Provider 与设置调整；资源上限保留为待实测候选，[验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)记录离线及浏览器证据，交付状态见实施基线。
 - [EPUB 原生阅读阶段](epub-reading/README.md)：组织导入、基础阅读、注音、选区学习、材料对话和讲解形成的切片顺序与准备条件。
 - [材料独立删除验收](MATERIAL_DELETION_ACCEPTANCE.md)：只删材料、保留来源与学习积累的增量迁移、工程检查、独立审查和隔离浏览器验证。
 

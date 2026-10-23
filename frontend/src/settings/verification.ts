@@ -3,11 +3,7 @@ import type { Model } from "./api";
 export type Capability = "text" | "stream";
 export type VerificationState =
 	| "unknown"
-	| "queued"
-	| "running"
-	| "succeeded"
-	| "failed"
-	| "interrupted";
+	| NonNullable<Model["text_verification"]>["status"];
 
 export function undiscoveredRegistrations(
 	discovered: readonly string[],
@@ -31,6 +27,8 @@ export function capabilityPresentation(state: VerificationState): {
 			return { icon: "!", label: "验证失败" };
 		case "interrupted":
 			return { icon: "↺", label: "验证中断" };
+		case "cancelled":
+			return { icon: "—", label: "验证已取消" };
 		default:
 			return { icon: "—", label: "未验证" };
 	}

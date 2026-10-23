@@ -166,25 +166,6 @@
 .app-shell.segment-study-shell .segment-conversation[hidden] {
 	display: none;
 }
-.app-shell.segment-study-shell .segment-discussion-heading {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-	padding: 14px 18px;
-	border-bottom: 1px solid var(--border);
-}
-.app-shell.segment-study-shell .segment-discussion-heading strong {
-	font-size: 14px;
-	font-weight: 550;
-}
-.app-shell.segment-study-shell .segment-discussion-heading button {
-	border: 0;
-	background: transparent;
-	color: var(--muted);
-	padding: 7px;
-	font-size: 12px;
-}
 .app-shell.segment-study-shell .segment-conversation .workbench {
 	flex: 1;
 	height: auto;

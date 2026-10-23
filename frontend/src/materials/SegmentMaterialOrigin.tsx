@@ -7,7 +7,13 @@ import { originFailure } from "./reader-origin";
 import { getSegmentProvenance } from "./study-api";
 
 /** Historical Segment text stays visible while the location is checked independently. */
-export function SegmentMaterialOrigin({ segment }: { segment: Segment }) {
+export function SegmentMaterialOrigin({
+	segment,
+	showReturnLink = true,
+}: {
+	segment: Segment;
+	showReturnLink?: boolean;
+}) {
 	const location = useLocation();
 	const parent = returnDestination(location.state, {
 		to: `/sources/${segment.source_id}`,
@@ -37,7 +43,7 @@ export function SegmentMaterialOrigin({ segment }: { segment: Segment }) {
 				</>
 			) : failure ? (
 				<p>{failure}</p>
-			) : (
+			) : showReturnLink ? (
 				<Link
 					to={`/materials/${segment.material_provenance.material_id}?segment=${segment.id}`}
 					state={returnState(
@@ -48,7 +54,7 @@ export function SegmentMaterialOrigin({ segment }: { segment: Segment }) {
 				>
 					返回原文 →
 				</Link>
-			)}
+			) : null}
 		</div>
 	);
 }

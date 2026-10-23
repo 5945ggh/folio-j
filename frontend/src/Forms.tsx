@@ -1,6 +1,8 @@
 import { type FormEvent, useState } from "react";
 import type { Segment, SegmentFields, Source, SourceFields } from "./content";
+import { SegmentMaterialOrigin } from "./materials/SegmentMaterialOrigin";
 import { InlineError } from "./Shared";
+import "./segments/material-fields.css";
 
 export function SourceForm({
 	initial,
@@ -99,6 +101,7 @@ export function SegmentForm({
 	pending,
 	error,
 	submitLabel,
+	submitDisabled = false,
 }: {
 	initial?: Segment;
 	onSave: (fields: SegmentFields) => void;
@@ -106,6 +109,7 @@ export function SegmentForm({
 	pending: boolean;
 	error: Error | null;
 	submitLabel: string;
+	submitDisabled?: boolean;
 }) {
 	const [fields, setFields] = useState<SegmentFields>({
 		text: initial?.text ?? "",
@@ -122,107 +126,140 @@ export function SegmentForm({
 	}
 	function submit(event: FormEvent) {
 		event.preventDefault();
+		if (pending || submitDisabled) return;
 		onSave(fields);
 	}
 	return (
-		<form className="editor-card" onSubmit={submit}>
-			<div className="form-grid">
-				<label className="field full">
-					<span>
-						目标原文 <strong aria-hidden="true">*</strong>
-					</span>
-					<textarea
-						required={!locked}
-						disabled={locked}
-						maxLength={100000}
-						rows={7}
-						lang="ja"
-						value={fields.text}
-						onChange={(event) => update("text", event.target.value)}
-						placeholder="粘贴或输入要学习的日文，换行会保留"
-					/>
-				</label>
-				{locked && (
-					<p className="field-help full">
-						目标原文已固定，不能修改。可继续维护附带资料。
-					</p>
+		<form className="editor-card segment-data-form" onSubmit={submit}>
+			<fieldset className="segment-data-group">
+				<legend>原文与语境</legend>
+				<details
+					className="segment-context-editor"
+					open={Boolean(initial?.context_before)}
+				>
+					<summary>前文（可选）</summary>
+					<label className="field">
+						<span className="sr-only">前文</span>
+						<textarea
+							rows={2}
+							maxLength={100000}
+							lang="ja"
+							disabled={pending}
+							value={fields.context_before}
+							onChange={(event) => update("context_before", event.target.value)}
+						/>
+					</label>
+				</details>
+				{locked ? (
+					<div className="segment-fixed-original">
+						<div className="segment-fixed-heading">
+							<span>目标原文</span>
+							<small>已固定</small>
+						</div>
+						<section
+							className="segment-fixed-text"
+							aria-label="目标原文（已固定）"
+							// biome-ignore lint/a11y/noNoninteractiveTabindex: The complete locked text remains keyboard-scrollable.
+							tabIndex={0}
+							lang="ja"
+						>
+							{fields.text}
+						</section>
+					</div>
+				) : (
+					<label className="field">
+						<span>
+							目标原文 <strong aria-hidden="true">*</strong>
+						</span>
+						<textarea
+							required
+							disabled={pending}
+							maxLength={100000}
+							rows={4}
+							lang="ja"
+							value={fields.text}
+							onChange={(event) => update("text", event.target.value)}
+							placeholder="粘贴或输入要学习的日文，换行会保留"
+						/>
+					</label>
 				)}
-				<label className="field full">
+				<details
+					className="segment-context-editor"
+					open={Boolean(initial?.context_after)}
+				>
+					<summary>后文（可选）</summary>
+					<label className="field">
+						<span className="sr-only">后文</span>
+						<textarea
+							rows={2}
+							maxLength={100000}
+							lang="ja"
+							disabled={pending}
+							value={fields.context_after}
+							onChange={(event) => update("context_after", event.target.value)}
+						/>
+					</label>
+				</details>
+			</fieldset>
+			<fieldset className="segment-data-group">
+				<legend>译文与听写</legend>
+				<label className="field">
 					<span>译文</span>
 					<textarea
 						rows={3}
 						maxLength={100000}
+						disabled={pending}
 						value={fields.translation}
 						onChange={(event) => update("translation", event.target.value)}
 						placeholder="可选"
 					/>
 				</label>
-			</div>
-			<details
-				className="more-fields"
-				open={Boolean(
-					initial &&
-						(initial.context_before ||
-							initial.context_after ||
-							initial.transcription ||
-							initial.note ||
-							initial.source_ref),
+				<label className="field">
+					<span>听写</span>
+					<textarea
+						rows={2}
+						maxLength={100000}
+						disabled={pending}
+						lang="ja"
+						value={fields.transcription}
+						onChange={(event) => update("transcription", event.target.value)}
+						placeholder="可选"
+					/>
+				</label>
+			</fieldset>
+			<fieldset className="segment-data-group">
+				<legend>出处与备注</legend>
+				{initial && (
+					<SegmentMaterialOrigin segment={initial} showReturnLink={false} />
 				)}
-			>
-				<summary>补充资料（可选）</summary>
-				<div className="form-grid">
-					<label className="field full">
-						<span>前文</span>
-						<textarea
-							rows={3}
-							maxLength={100000}
-							value={fields.context_before}
-							onChange={(event) => update("context_before", event.target.value)}
-						/>
-					</label>
-					<label className="field full">
-						<span>后文</span>
-						<textarea
-							rows={3}
-							maxLength={100000}
-							value={fields.context_after}
-							onChange={(event) => update("context_after", event.target.value)}
-						/>
-					</label>
-					<label className="field full">
-						<span>听写</span>
-						<textarea
-							rows={3}
-							maxLength={100000}
-							value={fields.transcription}
-							onChange={(event) => update("transcription", event.target.value)}
-						/>
-					</label>
-					<label className="field full">
-						<span>
-							{initial?.material_provenance ? "出处补充" : "出处说明"}
-						</span>
-						<input
-							maxLength={100000}
-							value={fields.source_ref}
-							onChange={(event) => update("source_ref", event.target.value)}
-							placeholder="例如：第 3 章、12:40"
-						/>
-					</label>
-					<label className="field full">
-						<span>个人管理备注</span>
-						<textarea
-							rows={3}
-							maxLength={100000}
-							value={fields.note}
-							onChange={(event) => update("note", event.target.value)}
-						/>
-					</label>
-				</div>
-			</details>
+				<label className="field">
+					<span>{initial?.material_provenance ? "出处补充" : "出处说明"}</span>
+					<input
+						maxLength={100000}
+						disabled={pending}
+						value={fields.source_ref}
+						onChange={(event) => update("source_ref", event.target.value)}
+						placeholder="例如：第 3 章、12:40"
+					/>
+				</label>
+				<label className="field">
+					<span>个人管理备注</span>
+					<textarea
+						rows={2}
+						maxLength={100000}
+						disabled={pending}
+						value={fields.note}
+						onChange={(event) => update("note", event.target.value)}
+					/>
+				</label>
+			</fieldset>
 			<InlineError error={error} />
 			<div className="actions">
-				<button className="button primary" disabled={pending} type="submit">
+				<button
+					className="button primary"
+					disabled={pending || submitDisabled}
+					type="submit"
+				>
 					{pending ? "保存中…" : submitLabel}
 				</button>
 				<button

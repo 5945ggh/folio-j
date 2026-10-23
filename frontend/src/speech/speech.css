@@ -1,0 +1,73 @@
+.device-speech {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.6rem;
+}
+.device-speech button,
+.device-speech select,
+.device-speech-settings > select {
+	padding: 0.4rem 0.65rem;
+	border: 1px solid var(--border, #d9d6ce);
+	border-radius: 0.4rem;
+	background: var(--panel, #fffdf8);
+	color: inherit;
+	font: inherit;
+}
+.device-speech button:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+.device-speech-rate {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+.device-speech-message {
+	flex-basis: 100%;
+	font-size: 0.85rem;
+}
+.device-speech-bar {
+	padding: 0.75rem;
+	margin-block: 0.75rem;
+	border: 1px solid var(--border, #d9d6ce);
+	border-radius: 0.5rem;
+	background: var(--panel, #fffdf8);
+	font-size: 0.85rem;
+}
+.device-speech-summary {
+	display: flex;
+	flex: 1 1 12rem;
+	min-width: 0;
+	gap: 0.5rem;
+}
+.device-speech-summary span {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.device-speech-summary strong {
+	flex-shrink: 0;
+}
+.device-speech-settings {
+	display: grid;
+	gap: 0.75rem;
+	max-width: 50rem;
+}
+.device-speech-settings p {
+	margin: 0;
+	font-size: 0.9rem;
+	line-height: 1.6;
+}
+.device-speech-settings > select {
+	width: 100%;
+	min-width: 0;
+}
+@media (max-width: 540px) {
+	.device-speech-summary {
+		flex-basis: 100%;
+	}
+	.device-speech-settings {
+		min-width: 0;
+	}
+}

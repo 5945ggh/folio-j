@@ -171,7 +171,14 @@ async def test_create_canonical_match_lock_and_restart(
         assert selected.json()["context_before"] == "編集した前文"
         assert (await client.patch(url, json={"text": "別の原文"})).status_code == 409
         assert (await client.patch(url, json={"material_provenance": None})).status_code == 422
-        changed = await client.patch(url, json={"context_before": "", "note": "自由に編集"})
+        changed = await client.patch(
+            url,
+            json={
+                "context_before": "",
+                "note": "自由に編集",
+                "expected_revision": saved["revision"],
+            },
+        )
         assert changed.status_code == 200, changed.text
         assert changed.json()["text"] == "が𠮷" and changed.json()["context_before"] == ""
         split_saved = await create_segment(client, source_id, split)
@@ -369,7 +376,13 @@ async def test_idempotent_retry_conflict_and_parallel_requests(
             conflict = await client.post(url, json={**payload, **changes})
             assert conflict.status_code == 409, conflict.text
         assert (
-            await client.patch(f"/api/segments/{segment_id}", json={"context_before": "編集後"})
+            await client.patch(
+                f"/api/segments/{segment_id}",
+                json={
+                    "context_before": "編集後",
+                    "expected_revision": results[0].json()["revision"],
+                },
+            )
         ).status_code == 200
     async with api_client(database) as client:
         retried = await client.post(url, json=payload)

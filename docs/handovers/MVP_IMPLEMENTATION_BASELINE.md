@@ -5,6 +5,7 @@
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
 > 阅读跳转深化已提交，工程及浏览器验收已通过；证据见[本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)。
+> 阅读翻译与设备朗读、片段资料与讨论面板、阅读器正文复制已提交 `7f1c44d`。提交前问题已修复，工程、全量浏览器与独立复审通过；证据见[阅读辅助联合验收](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-23提交前审查修复与联合验收)。
 
 当前能力与缺口见下表，产品边界见 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护。
 
@@ -14,9 +15,10 @@
 | --- | --- | --- | --- |
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定；旧资料由增量迁移补齐保护 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
 | 设置与模型接入 | 已提交、工程验收通过 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；顶部分类、统一编辑弹窗、分组原子保存、草稿保护与验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](archived/settings-refresh/ACCEPTANCE.md) |
-| 片段讨论 | 已提交 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md) |
+| 阅读翻译与设备朗读 | 已提交，工程、全量浏览器及独立复审通过 | 选区翻译、持久找回、原子采用为 Segment、版本冲突保护、独立翻译设置及设备朗读；资源候选、真实模型质量与声音仍待实测 | [方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)、[验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md) |
+| 片段讨论 | 已提交，面板调整通过工程、浏览器及独立复审 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；单行标题、可展开引用、助手全宽消息及独立设置浮层；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[界面调整验收](text-study/SEGMENT_UI_ACCEPTANCE.md) |
 | 持久讲解 | 已提交，工程与浏览器验收通过 | 直接编写／粘贴 Markdown 保存，统一记录用户保存；当前全文修订、冲突保稿与同请求核实；多份 Analysis、不可变 Revision／Section；AI 快捷生成、块编辑与审核沿用原流程 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
-| 片段阅读与导航 | 已提交，工程与浏览器验收通过；用户认可视觉效果 | 窄工具栏／中央阅读／右侧讨论，进入隐藏全局导航；讲解集合与单篇操作分层，前后文渐淡预览、完整资料浮层与折叠目录；纯回看不挂载讨论，激活后保活，窄屏切换保留草稿与阅读位置；确切修订、来处返回和人工编辑保护沿用原规则 | [阅读导航](archived/READING_NAVIGATION_ACCEPTANCE.md)、[架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[A1 验收](text-study/A1_ACCEPTANCE.md)、[专注布局](archived/segment-layout/ACCEPTANCE.md) |
+| 片段阅读与导航 | 已提交；资料查看／编辑与并发保护通过工程及浏览器验收 | 窄工具栏／中央阅读／右侧讨论，进入隐藏全局导航；讲解集合与单篇操作分层，前后文渐淡预览、完整资料浮层与折叠目录；纯回看不挂载讨论，激活后保活，窄屏切换保留草稿与阅读位置；确切修订、来处返回和人工编辑保护沿用原规则 | [阅读导航](archived/READING_NAVIGATION_ACCEPTANCE.md)、[架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[A1 验收](text-study/A1_ACCEPTANCE.md)、[专注布局](archived/segment-layout/ACCEPTANCE.md)、[资料界面调整](text-study/SEGMENT_UI_ACCEPTANCE.md) |
 | 素材库与阅读管理 | 已提交 | 跨 Source 书籍目录、搜索／筛选／排序／分页、书卡大小与状态菜单、空库整区导入；阅读三态和最近打开持久化，封面按规则版本 2 回退与缓存 | [前端调整](archived/frontend-refresh/ACCEPTANCE.md)、[素材库 A.1](archived/library-a1/ACCEPTANCE.md) |
 | 导入来源表单 | 已提交，工程检查通过；用户反馈无阻塞问题 | 添加书籍与新建来源完整视图切换，创建后自动选择来源并保留文件；单组操作、中文文案与表单提交保护 | [导入来源表单调整](archived/library-a1/ACCEPTANCE.md#2026-10-19-导入来源表单调整) |
 | 书籍管理 | 已提交，提交前工程、独立审查与浏览器复核通过；用户使用验收待进行 | 紧凑菜单与阅读状态二级入口、真实详情、书名与封面原子编辑／恢复、草稿／冲突保护及安全返回；公共默认外壳已统一并清理旧样式；移动仍禁用，不替换 EPUB；独立删除见下行 | [现行契约](../ARCHITECTURE.md#311-目录与材料使用状态)、[验收记录](archived/book-management/ACCEPTANCE.md) |
@@ -31,6 +33,7 @@
 | 底部相邻章节导航 | 已提交、工程与浏览器验收通过 | 上一章／目录／下一章、首末边界与加载锁；复用章节记忆和返回链，保留工具面板与查询；窄屏进度移到顶部；章末入口未增加 | [相邻切章验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-底部相邻章节导航)、[提交复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
 | 阅读跳转协调 | 已提交，工程与浏览器验收通过 | 导航意图、目标校验、原点与相邻锁集中到同一 module；请求与正文呈现分别隔离迟到结果，返回提示显示原点章节与章内进度 | [本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md) |
 | 全量注音 | 已提交、工程验收通过 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](archived/full-ruby/ACCEPTANCE.md) |
+| 阅读器正文复制 | 已提交，工程与实际复制粘贴验证通过 | 从当前正文投影提取所选字符，去除原书与自动注音，保留换行；纯文本复制不改变选区或注音显示 | [复制验收](text-study/READER_COPY_ACCEPTANCE.md) |
 | EPUB 学习衔接 | C1／C2、阅读体验调整及保存表单优化已提交，工程与浏览器验收通过 | 原生选区保存与完整回读；自动语境保守整理后计预算，只读出处显示当前材料及逻辑章位置；正文细线、真实留白页边入口与固定完整本章列表，两项显示偏好独立；保存表单支持双侧清空与显式重新摘录；材料对话和 Occurrence 继续后置 | [C1 验收](text-study/C1_ACCEPTANCE.md)、[C2 验收](text-study/C2_ACCEPTANCE.md)、[原阅读标记验收](text-study/READER_MARKS_ACCEPTANCE.md)、[阅读体验记录](text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单验收](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
 | 阅读器原处预览 | 已提交，页边原生滚动定位、重复点击收起及卡片精简已通过工程与浏览器验收 | 单击可见标记直接紧凑回看，多片段先选；原文引用置顶，读取已有译文及多篇讲解，展开侧栏、收起继续阅读；页边入口随原文同步滚动，再次点击同一入口收起；保存信息与打开片段同排，原生划选保留 | [原处预览验收](text-study/INLINE_PREVIEW_ACCEPTANCE.md) |
 | 文本分析与书籍统计 | 工程与浏览器验收通过 | 普通文本输入、完整分析资产读取与 EPUB 章节适配分开；详情独立展示词次／词种／汉字及覆盖曲线，有界缓存且不触发阅读打开或分词准备 | [B1 验收](text-study/B1_ACCEPTANCE.md)、[B2 验收](text-study/B2_ACCEPTANCE.md) |
@@ -69,7 +72,7 @@
 
 测试数量、包体积与提交隔离检查范围在原记录中维护；离线、真实模型与扩展验证各自对应其方法和观察。
 
-当前界面约定见[阅读与导航](../INFORMATION_ARCHITECTURE.md)，执行机制与迁移链见[架构](../ARCHITECTURE.md)，旧库及旧备份的处理边界见 [README](../../README.md#本地开发)。阶段记录中的旧迁移编号、回填和数据保留结论继续作为历史事实保留。
+当前界面约定见[阅读与导航](../INFORMATION_ARCHITECTURE.md)，执行机制与迁移链见[架构](../ARCHITECTURE.md)，旧库及旧备份的处理边界见 [升级与备份指南](../UPGRADING.md#旧开发数据库与备份)。阶段记录中的旧迁移编号、回填和数据保留结论继续作为历史事实保留。
 
 ## 2. 尚未落实的契约与目标差额
 
