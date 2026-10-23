@@ -23,6 +23,7 @@ import {
 	ReaderStudy,
 	type StudyBinding,
 	type StudyMark,
+	type StudyMarkKind,
 } from "./reader-study.ts";
 import { applyAutomaticRuby } from "./ruby.ts";
 import type { StudyTarget } from "./study-api.ts";
@@ -107,8 +108,8 @@ export class ReaderFrames {
 	): void {
 		this.study.setMarks(chapter, marks, visible, theme, margins);
 	}
-	emphasizeStudyMark(segmentId: string | null): void {
-		this.study.emphasize(segmentId);
+	emphasizeStudyMark(id: string | null, kind: StudyMarkKind = "segment"): void {
+		this.study.emphasize(id, kind);
 	}
 	invalidateStudyGeometry(): void {
 		this.study.geometryChanged(false);

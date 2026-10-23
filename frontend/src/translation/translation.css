@@ -1,71 +1,137 @@
 .translation-card {
 	position: fixed;
 	z-index: 45;
-	inset: 90px 24px auto auto;
-	width: min(430px, calc(100vw - 24px));
+	top: 82px;
+	right: 24px;
+	width: min(370px, calc(100vw - 24px));
 	max-height: calc(100dvh - 160px);
 	overflow: auto;
-	padding: 20px;
-	border: 1px solid var(--reader-line, #deded7);
+	overscroll-behavior: contain;
+	border: 1px solid var(--reader-line, #e6e8eb);
 	border-radius: 12px;
-	background: var(--reader-bg, #fffef9);
-	color: var(--reader-fg, #292d29);
-	box-shadow: 0 12px 46px #0002;
-	font-size: 14px;
-	line-height: 1.65;
+	background: var(--reader-bg, #fff);
+	color: var(--reader-fg, #252526);
+	box-shadow: 0 8px 32px #0002;
+	font:
+		13px / 1.65 system-ui,
+		sans-serif;
+	writing-mode: horizontal-tb;
+	text-align: left;
+	overflow-wrap: anywhere;
 }
-.translation-card header,
+.translation-card > header,
+.translation-header-actions,
 .translation-actions {
 	display: flex;
 	align-items: center;
-	gap: 10px;
-	flex-wrap: wrap;
+	gap: 6px;
 }
-.translation-card header {
+.translation-card > header {
+	position: sticky;
+	top: 0;
+	z-index: 1;
 	justify-content: space-between;
+	padding: 8px 9px 8px 16px;
+	border-bottom: 1px solid var(--reader-line, #e6e8eb);
+	background: var(--reader-bg, #fff);
 }
 .translation-card h2 {
-	font-size: 16px;
+	font-size: 13px;
+	font-weight: 500;
 	margin: 0;
 }
-.translation-card button,
-.translation-card select {
+.translation-header-actions {
+	justify-content: end;
+	min-width: 0;
+}
+.translation-header-actions > button:last-child {
+	font-size: 21px;
+	line-height: 1;
+	padding: 7px 9px;
+}
+.translation-content {
+	padding: 16px;
+}
+.translation-card :where(button, select) {
 	font: inherit;
 	cursor: pointer;
 }
-.translation-card button {
-	border: 1px solid #dcded6;
+.translation-card :where(button) {
+	border: 1px solid var(--reader-line, #e6e8eb);
 	border-radius: 6px;
 	background: transparent;
 	color: inherit;
-	padding: 5px 10px;
+	padding: 6px 9px;
+}
+.translation-card button:hover {
+	background: var(--reader-soft, #f6f7f8);
 }
 .translation-card button:disabled {
 	opacity: 0.5;
 	cursor: default;
 }
-.translation-card .translation-original {
-	margin: 12px 0;
-	padding-left: 12px;
-	border-left: 2px solid #9baf95;
-	font-size: 13px;
-	max-height: 4.5em;
-	overflow: auto;
+.translation-card button[aria-pressed="true"] {
+	background: var(--reader-soft, #f6f7f8);
+	color: var(--reader-fg, #252526);
+}
+.translation-original {
+	margin: 0 0 14px;
+	color: var(--reader-muted, #74777b);
+	font-size: 12px;
+}
+.translation-original blockquote {
+	margin: 0;
 	white-space: pre-wrap;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	overflow: hidden;
+}
+.translation-original[data-expanded] blockquote {
+	display: block;
+}
+.translation-original button {
+	border: 0;
+	padding: 3px 0;
+	font-size: 11px;
+	text-decoration: underline;
+	text-underline-offset: 3px;
 }
 .translation-card .translation-output {
+	margin: 0 0 12px;
 	font-size: 17px;
 	line-height: 1.85;
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
 }
+.translation-result-meta {
+	display: block;
+	margin-bottom: 12px;
+}
 .translation-card small,
 .translation-card summary {
 	font-size: 12px;
-	opacity: 0.8;
+	color: var(--reader-muted, #74777b);
 }
 .translation-card details {
-	margin: 12px 0;
+	margin: 12px 0 0;
+}
+.translation-content > details {
+	padding-top: 12px;
+	border-top: 1px solid var(--reader-line, #e6e8eb);
+}
+.translation-card summary {
+	cursor: pointer;
+}
+.translation-card details[open] > summary {
+	margin-bottom: 10px;
+}
+.translation-card details :where(p) {
+	white-space: pre-wrap;
+	margin: 8px 0;
+}
+.translation-technical {
+	font-size: 12px;
 }
 .translation-card label {
 	display: block;
@@ -75,12 +141,13 @@
 .translation-card input,
 .translation-card select {
 	width: 100%;
+	min-width: 0;
 	box-sizing: border-box;
-	background: transparent;
-	color: inherit;
-	border: 1px solid #cbd0c7;
-	border-radius: 5px;
-	padding: 6px;
+	background: var(--reader-bg, #fff);
+	color: var(--reader-fg, #252526);
+	border: 1px solid var(--reader-line, #e6e8eb);
+	border-radius: 6px;
+	padding: 7px;
 }
 .translation-card input[type="checkbox"] {
 	width: auto;
@@ -90,6 +157,7 @@
 	width: 100%;
 	text-align: left;
 	margin: 6px 0;
+	padding: 8px;
 }
 .translation-card .translation-history-item span {
 	display: block;
@@ -98,12 +166,19 @@
 }
 .translation-card .translation-budget {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	gap: 8px;
 }
+.translation-actions {
+	flex-wrap: wrap;
+	margin-top: 12px;
+}
+.translation-actions > button:first-child {
+	background: var(--reader-soft, #f6f7f8);
+}
 .translation-card :focus-visible {
-	outline: 2px solid #698a5b;
-	outline-offset: 3px;
+	outline: 2px solid #6d8dd0;
+	outline-offset: 2px;
 }
 .segment-translations {
 	margin: 12px 0;
@@ -127,23 +202,17 @@
 }
 @media (max-width: 600px) {
 	.translation-card {
-		top: 72px;
-		right: 12px;
-		max-height: calc(100dvh - 145px);
-		padding: 16px;
+		width: calc(100vw - 24px);
 	}
 }
-
-.reader-r1 > .device-speech-bar {
-	position: fixed;
-	z-index: 46;
-	bottom: 76px;
-	left: 50%;
-	transform: translateX(-50%);
-	width: min(640px, calc(100vw - 24px));
-	max-height: 150px;
-	overflow: auto;
-	background: var(--reader-bg);
-	color: var(--reader-fg);
-	box-shadow: 0 4px 18px #0002;
+@media (pointer: coarse) {
+	.translation-card button,
+	.translation-card summary {
+		min-height: 44px;
+	}
+	.translation-card input,
+	.translation-card textarea,
+	.translation-card select {
+		font-size: 16px;
+	}
 }

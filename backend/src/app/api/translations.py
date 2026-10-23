@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.services import translations as service
+from app.services.chapter_translations import list_chapter_translations
 from app.translation_schemas import (
+    MaterialChapterTranslations,
     TranslationAdopt,
     TranslationAdoptionResponse,
     TranslationCreate,
@@ -21,6 +23,23 @@ from app.translation_schemas import (
 
 router = APIRouter(prefix="/api")
 Session = Annotated[AsyncSession, Depends(get_session)]
+
+
+@router.get(
+    "/materials/{material_id}/chapters/{chapter_id}/translations",
+    response_model=MaterialChapterTranslations,
+)
+async def chapter_translations(
+    material_id: str,
+    chapter_id: str,
+    session: Session,
+    version_id: str = Query(min_length=1, max_length=26),
+    after: str | None = Query(default=None, min_length=1, max_length=2048),
+    limit: int = Query(default=100, ge=1, le=100),
+) -> MaterialChapterTranslations:
+    return await list_chapter_translations(
+        session, material_id, chapter_id, version_id, after, limit
+    )
 
 
 @router.get("/settings/translation", response_model=TranslationSettingsResponse)

@@ -257,6 +257,159 @@ test("study underlines and emphasis leave search highlights and locator text int
 	assert.equal(h.callbacks.marks.filter(Boolean).length, 0);
 });
 
+function translationMark(mark: StudyMark, id: string): StudyMark {
+	return { translation_id: id, material_provenance: mark.material_provenance };
+}
+function paintedOffsets(highlights: Map<string, unknown>, name: string) {
+	return (highlights.get(name) as { ranges: Range[] } | undefined)?.ranges.map(
+		(range) => [range.startOffset, range.endOffset],
+	);
+}
+
+test("translation painting subtracts solid coverage while overlapping characters retain both target types", () => {
+	const h = harness();
+	h.study.setMarks(
+		h.chapter,
+		[translationMark(h.mark("", 0, 4), "same"), h.mark("same", 1, 3)],
+		true,
+		"white",
+	);
+	assert.deepEqual(paintedOffsets(h.highlights, "folio-translation"), [
+		[0, 1],
+		[3, 4],
+	]);
+	assert.deepEqual(paintedOffsets(h.highlights, "folio-study"), [[1, 3]]);
+	h.event("pointerdown");
+	h.event("pointerup");
+	assert.deepEqual(h.callbacks.marks.at(-1), {
+		segmentIds: ["same"],
+		translationIds: ["same"],
+		anchor: { left: 100, right: 140, top: 200, bottom: 220 },
+	});
+	h.event("pointerdown", { clientX: 5 });
+	h.event("pointerup", { clientX: 5 });
+	assert.deepEqual(h.callbacks.marks.at(-1), {
+		segmentIds: [],
+		translationIds: ["same"],
+		anchor: { left: 100, right: 140, top: 200, bottom: 220 },
+	});
+	assert.equal(h.node.data, "甲乙丙丁");
+});
+
+test("completely overlapping translations retain their hit target without a second painted line", () => {
+	const h = harness();
+	h.study.setMarks(
+		h.chapter,
+		[h.mark("s", 0, 4), translationMark(h.mark("", 0, 4), "t")],
+		true,
+		"black",
+	);
+	assert.equal(h.highlights.has("folio-translation"), false);
+	h.study.emphasize("t", "translation");
+	assert.equal(h.highlights.has("folio-translation-active"), false);
+	h.event("pointerdown");
+	h.event("pointerup");
+	assert.deepEqual(
+		(h.callbacks.marks.at(-1) as { translationIds: string[] }).translationIds,
+		["t"],
+	);
+});
+
+test("translation emphasis has a separate namespace, paints while hidden and clears on geometry invalidation", () => {
+	const h = harness();
+	h.highlights.set("folio-search", {});
+	h.study.setMarks(
+		h.chapter,
+		[h.mark("same", 1, 3), translationMark(h.mark("", 0, 4), "same")],
+		false,
+		"black",
+	);
+	h.study.emphasize("same", "translation");
+	assert.equal(h.highlights.has("folio-study-active"), false);
+	assert.deepEqual(paintedOffsets(h.highlights, "folio-translation-active"), [
+		[0, 4],
+	]);
+	h.event("pointerdown");
+	h.event("pointerup");
+	assert.deepEqual(h.callbacks.marks.at(-1), {
+		segmentIds: [],
+		translationIds: ["same"],
+		anchor: { left: 100, right: 140, top: 200, bottom: 220 },
+	});
+	h.study.geometryChanged(false);
+	assert.equal(h.highlights.has("folio-translation-active"), false);
+	assert.equal(h.highlights.has("folio-search"), true);
+	h.study.refresh();
+	assert.equal(h.highlights.has("folio-translation-active"), false);
+	h.study.emphasize("same");
+	assert.deepEqual(paintedOffsets(h.highlights, "folio-study-active"), [
+		[1, 3],
+	]);
+	assert.equal(h.highlights.has("folio-translation-active"), false);
+	h.study.clear();
+	assert.equal(h.styles.has("folio-study-style"), false);
+});
+
+test("translation crossing an unavailable spine stays wholly absent", () => {
+	const h = harness();
+	const part = h.chapter.parts[0];
+	assert.ok(part);
+	h.chapter.parts.push({ ...part, spine_index: 2 });
+	const mark = translationMark(h.mark("", 0, 4), "t");
+	const range = mark.material_provenance.ranges[0];
+	assert.ok(range);
+	mark.material_provenance.ranges.push({ ...range, spine_index: 2 });
+	h.study.setMarks(h.chapter, [mark], true, "white");
+	assert.equal(h.highlights.has("folio-translation"), false);
+	h.event("pointerdown");
+	h.event("pointerup");
+	assert.equal(h.callbacks.marks.filter(Boolean).length, 0);
+});
+
+test("cross-spine translation coverage is subtracted only within each original frame", () => {
+	const h = harness(),
+		other = harness();
+	const part = h.chapter.parts[0];
+	assert.ok(part);
+	h.chapter.parts.push({ ...part, spine_index: 2 });
+	h.study.mount({
+		index: 1,
+		doc: other.doc as unknown as Document,
+		element: other.element,
+		chapter: h.chapter,
+		valid: () => true,
+		projection: () => ({
+			raw: other.node.data,
+			entries: [{ node: other.node, start: 0, end: 4 }],
+		}),
+	});
+	const mark = translationMark(h.mark("", 0, 4), "t");
+	const range = mark.material_provenance.ranges[0];
+	assert.ok(range);
+	mark.material_provenance.ranges.push({ ...range, spine_index: 2 });
+	h.study.setMarks(h.chapter, [h.mark("s", 1, 3), mark], true, "white");
+	assert.deepEqual(paintedOffsets(h.highlights, "folio-translation"), [
+		[0, 1],
+		[3, 4],
+	]);
+	assert.deepEqual(paintedOffsets(other.highlights, "folio-translation"), [
+		[0, 4],
+	]);
+	h.event("pointerdown");
+	h.event("pointerup");
+	assert.deepEqual(
+		(h.callbacks.marks.at(-1) as { translationIds: string[] }).translationIds,
+		["t"],
+	);
+	other.event("pointerdown");
+	other.event("pointerup");
+	assert.deepEqual(h.callbacks.marks.at(-1), {
+		segmentIds: [],
+		translationIds: ["t"],
+		anchor: { left: 100, right: 140, top: 200, bottom: 220 },
+	});
+});
+
 test("ordinary taps return exactly overlapping marked characters and their complete visible anchor", (t) => {
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const h = harness();

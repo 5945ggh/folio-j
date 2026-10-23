@@ -1,0 +1,99 @@
+.reader-r1 .reader-chapter-records {
+	position: fixed;
+	z-index: 48;
+	display: flex;
+	flex-direction: column;
+	width: min(370px, calc(100vw - 24px));
+	max-height: calc(100dvh - 160px);
+	border: 1px solid var(--reader-line);
+	border-radius: 12px;
+	background: var(--reader-bg);
+	color: var(--reader-fg);
+	box-shadow: 0 8px 32px #0002;
+	font:
+		13px / 1.65 system-ui,
+		sans-serif;
+	writing-mode: horizontal-tb;
+	text-align: left;
+	overflow: hidden;
+}
+.reader-r1 .reader-chapter-records.expanded {
+	width: min(460px, calc(100vw - 24px));
+}
+.reader-record-tabs {
+	display: flex;
+	gap: 4px;
+	padding: 7px 12px;
+	border-bottom: 1px solid var(--reader-line);
+	flex-shrink: 0;
+}
+.reader-record-tabs button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+}
+.reader-record-tabs button[aria-selected="true"] {
+	background: var(--reader-soft);
+}
+.reader-record-tabs span {
+	color: var(--reader-muted);
+	font-size: 11px;
+}
+.reader-record-body {
+	min-height: 0;
+	overflow: auto;
+	overscroll-behavior: contain;
+}
+.reader-r1 .reader-study-preview.embedded,
+.reader-r1 .translation-card.embedded {
+	position: static;
+	width: 100%;
+	max-height: none;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	overflow: visible;
+}
+.reader-r1 .reader-study-preview.embedded .reader-study-preview-content {
+	overflow: visible;
+}
+.reader-r1 .reader-record-back {
+	align-self: flex-start;
+	margin: 6px 6px 0;
+	font-size: 12px;
+}
+.reader-record-translations {
+	padding: 12px;
+}
+.reader-record-translations > p {
+	color: var(--reader-muted);
+	margin: 4px 4px 12px;
+}
+.reader-r1 .reader-record-translation {
+	display: grid;
+	width: 100%;
+	gap: 5px;
+	padding: 10px 6px;
+	text-align: left;
+	white-space: normal;
+	border-bottom: 1px solid var(--reader-line);
+	border-radius: 0;
+}
+.reader-record-translation span {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+}
+.reader-record-translation span:first-child,
+.reader-record-translation small {
+	font-size: 12px;
+	color: var(--reader-muted);
+}
+@media (max-width: 600px) {
+	.reader-r1 .reader-chapter-records {
+		width: calc(100vw - 24px);
+	}
+}

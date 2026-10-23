@@ -172,6 +172,11 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 			const { pathname } = new URL(request.url);
 			if (request.method === "GET" && pathname === `/api/materials/${book.id}`)
 				return Response.json(book);
+			if (
+				request.method === "GET" &&
+				pathname === `/api/materials/${book.id}/translations`
+			)
+				return Response.json({ results: [], tasks: [], next_offset: null });
 			if (pathname === `/api/materials/${book.id}/opened`) opened = true;
 			if (
 				pathname === `/api/materials/${book.id}/usage` ||
@@ -203,6 +208,14 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 					resources: [],
 				} satisfies Schema["MaterialReadingsResponse"]);
 			for (const id of ["chapter-one", "chapter-two"]) {
+				if (
+					pathname === `/api/materials/${book.id}/chapters/${id}/translations`
+				)
+					return Response.json({
+						items: [],
+						next_cursor: null,
+						unavailable_count: 0,
+					});
 				if (pathname === `/api/materials/${book.id}/chapters/${id}`)
 					return Response.json(chapter(id, tail));
 				if (pathname === `/api/materials/${book.id}/chapters/${id}/segments`)
@@ -295,12 +308,12 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 				await until(
 					() =>
 						!!container.querySelector(
-							'input[aria-label="显示学习片段页边入口"]',
+							'input[aria-label="显示阅读记录页边入口"]',
 						),
 					"Margin preference must load",
 				);
 				find<HTMLInputElement>(
-					'input[aria-label="显示学习片段页边入口"]',
+					'input[aria-label="显示阅读记录页边入口"]',
 				).click();
 				await until(
 					() => buttons().length === 0,
@@ -337,7 +350,7 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 			const viewport = find<HTMLElement>(".reader-viewport");
 			const singles = () =>
 				buttons().filter(
-					(node) => node.getAttribute("aria-label") === "查看此处 1 个学习片段",
+					(node) => node.getAttribute("aria-label") === "查看此处 1 条记录",
 				);
 			const first = () => {
 				const node = singles()[0];
@@ -396,7 +409,7 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 			await until(() => !preview(), "Second bookmark must close");
 			const group = () =>
 				buttons().find(
-					(node) => node.getAttribute("aria-label") === "查看此处 2 个学习片段",
+					(node) => node.getAttribute("aria-label") === "查看此处 2 条记录",
 				);
 			check(group(), "Overlapping marks must share one group bookmark");
 			group()?.click();

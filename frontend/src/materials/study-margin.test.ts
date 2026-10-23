@@ -28,6 +28,31 @@ test("real margins group collisions and retain every independent record", () => 
 	);
 	assert.ok(entries.every((x) => x.left >= viewport.right));
 });
+
+for (const vertical of [false, true]) {
+	test(`${vertical ? "vertical" : "horizontal"} neighboring segment and translation bookmarks share an entry with independent identities`, () => {
+		const entries = studyMarginEntries(
+			[
+				{ id: "same", kind: "segment", rects: [rect(100)] },
+				{ id: "same", kind: "translation", rects: [rect(110)] },
+				{ id: "same", kind: "translation", rects: [rect(120)] },
+			],
+			viewport,
+			{ width: 1000, height: 800 },
+			vertical,
+			content,
+		);
+		assert.equal(entries.length, 1);
+		assert.deepEqual(entries[0]?.segmentIds, ["same"]);
+		assert.deepEqual(entries[0]?.translationIds, ["same"]);
+		assert.deepEqual(entries[0]?.anchor, {
+			left: 120,
+			right: 190,
+			top: 100,
+			bottom: 140,
+		});
+	});
+}
 test("insufficient cross-axis whitespace hides buttons without squeezing the text", () => {
 	assert.deepEqual(
 		studyMarginEntries(

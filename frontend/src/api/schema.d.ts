@@ -210,6 +210,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/chapters/{chapter_id}/translations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chapter Translations */
+        get: operations["chapter_translations_api_materials__material_id__chapters__chapter_id__translations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/materials/{material_id}/cover": {
         parameters: {
             query?: never;
@@ -1634,6 +1651,36 @@ export interface components {
         MaterialChapterSegmentsResponse: {
             /** Items */
             items: components["schemas"]["MaterialChapterSegment"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Unavailable Count */
+            unavailable_count: number;
+        };
+        /** MaterialChapterTranslation */
+        MaterialChapterTranslation: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Excerpt */
+            excerpt: string;
+            /** Identity Sha256 */
+            identity_sha256: string;
+            material_provenance: components["schemas"]["MaterialProvenance"];
+            /** Result Count */
+            result_count: number;
+            /** Result Id */
+            result_id: string;
+            /** Target Language */
+            target_language: string;
+            /** Translation Excerpt */
+            translation_excerpt: string;
+        };
+        /** MaterialChapterTranslations */
+        MaterialChapterTranslations: {
+            /** Items */
+            items: components["schemas"]["MaterialChapterTranslation"][];
             /** Next Cursor */
             next_cursor: string | null;
             /** Unavailable Count */
@@ -3630,6 +3677,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MaterialChapterSegmentsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chapter_translations_api_materials__material_id__chapters__chapter_id__translations_get: {
+        parameters: {
+            query: {
+                version_id: string;
+                after?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+                chapter_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialChapterTranslations"];
                 };
             };
             /** @description Validation Error */

@@ -1,5 +1,6 @@
 import type { Projection } from "./dom";
 import { rawOffset } from "./position.ts";
+import { subtractMarkIntervals } from "./record-mark-ranges.ts";
 
 /** CSS Highlight paints existing ranges; locator leaves and native selections stay intact. */
 function projectedRanges(
@@ -103,7 +104,33 @@ export function clearStudyHighlights(doc: Document, removeStyle = false): void {
 		| null;
 	view?.CSS?.highlights?.delete("folio-study");
 	view?.CSS?.highlights?.delete("folio-study-active");
+	view?.CSS?.highlights?.delete("folio-translation");
+	view?.CSS?.highlights?.delete("folio-translation-active");
 	if (removeStyle) doc.getElementById("folio-study-style")?.remove?.();
+}
+
+/** Base ranges stay within one locator node, including ruby bases and UTF-16 boundaries. */
+export function uncoveredStudyRanges(
+	doc: Document,
+	ranges: readonly Range[],
+	covered: readonly Range[],
+): Range[] {
+	const nodes = new Set(ranges.map((range) => range.startContainer));
+	return [...nodes].flatMap((node) =>
+		subtractMarkIntervals(
+			ranges
+				.filter((range) => range.startContainer === node)
+				.map((range) => ({ start: range.startOffset, end: range.endOffset })),
+			covered
+				.filter((range) => range.startContainer === node)
+				.map((range) => ({ start: range.startOffset, end: range.endOffset })),
+		).map(({ start, end }) => {
+			const range = doc.createRange();
+			range.setStart(node, start);
+			range.setEnd(node, end);
+			return range;
+		}),
+	);
 }
 
 export function prepareStudyUnderlines(
@@ -111,6 +138,8 @@ export function prepareStudyUnderlines(
 	ranges: readonly Range[],
 	active: readonly Range[],
 	theme: "white" | "black",
+	translations: readonly Range[] = [],
+	activeTranslations: readonly Range[] = [],
 ): () => void {
 	const view = doc.defaultView as
 		| (Window & {
@@ -128,6 +157,15 @@ export function prepareStudyUnderlines(
 		if (active.length)
 			registry.set("folio-study-active", new Highlight(...active));
 		else registry.delete("folio-study-active");
+		if (translations.length)
+			registry.set("folio-translation", new Highlight(...translations));
+		else registry.delete("folio-translation");
+		if (activeTranslations.length)
+			registry.set(
+				"folio-translation-active",
+				new Highlight(...activeTranslations),
+			);
+		else registry.delete("folio-translation-active");
 		let style = doc.getElementById("folio-study-style");
 		if (!style) {
 			style = doc.createElement("style");
@@ -135,6 +173,7 @@ export function prepareStudyUnderlines(
 			doc.head.append(style);
 		}
 		const red = theme === "black" ? "#ff9993" : "#c73535";
-		style.textContent = `::highlight(folio-study){text-decoration-line:underline;text-decoration-style:solid;text-decoration-color:${red};text-decoration-thickness:1px;text-underline-offset:2px;text-underline-position:under left;}::highlight(folio-study-active){text-decoration-line:underline;text-decoration-style:solid;text-decoration-color:${red};text-decoration-thickness:2px;text-underline-offset:2px;text-underline-position:under left;}`;
+		const translationRed = `${red}b3`;
+		style.textContent = `::highlight(folio-study){text-decoration-line:underline;text-decoration-style:solid;text-decoration-color:${red};text-decoration-thickness:1px;text-underline-offset:2px;text-underline-position:under left;}::highlight(folio-study-active){text-decoration-line:underline;text-decoration-style:solid;text-decoration-color:${red};text-decoration-thickness:2px;text-underline-offset:2px;text-underline-position:under left;}::highlight(folio-translation){text-decoration-line:underline;text-decoration-style:dashed;text-decoration-color:${translationRed};text-decoration-thickness:1px;text-underline-offset:2px;text-underline-position:under left;}::highlight(folio-translation-active){text-decoration-line:underline;text-decoration-style:dashed;text-decoration-color:${red};text-decoration-thickness:2px;text-underline-offset:2px;text-underline-position:under left;}`;
 	};
 }

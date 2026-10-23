@@ -36,6 +36,7 @@
 	align-items: center;
 	padding: 3px;
 	max-width: calc(100vw - 24px);
+	writing-mode: horizontal-tb;
 }
 .reader-study-tool.dialog {
 	width: min(320px, calc(100vw - 24px));

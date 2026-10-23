@@ -98,6 +98,23 @@ class TranslationHistoryResponse(BaseModel):
     next_offset: int | None
 
 
+class MaterialChapterTranslation(BaseModel):
+    identity_sha256: str
+    result_id: str
+    material_provenance: MaterialProvenance
+    excerpt: str
+    translation_excerpt: str
+    result_count: int
+    target_language: str
+    created_at: datetime
+
+
+class MaterialChapterTranslations(BaseModel):
+    items: list[MaterialChapterTranslation]
+    next_cursor: str | None
+    unavailable_count: int
+
+
 class TranslationAdopt(StrictInput):
     request_id: UUID
     segment_id: str | None = None

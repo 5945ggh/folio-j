@@ -117,10 +117,12 @@ export function SelectionToolbar({
 			<button
 				id="reader-selection-save"
 				type="button"
+				aria-label="保存为学习片段"
+				data-tooltip="保存为学习片段"
 				onMouseDown={(event) => event.preventDefault()}
 				onClick={onSave}
 			>
-				保存为学习片段
+				保存
 			</button>
 			<button
 				type="button"

@@ -253,11 +253,11 @@ export function ReaderSettings({
 				<legend>正文标记</legend>
 				<label className="reader-focus-label">
 					<span>
-						学习片段下划线<small>在所有书籍中生效</small>
+						阅读记录下划线<small>在所有书籍中生效</small>
 					</span>
 					<input
 						type="checkbox"
-						aria-label="显示学习片段下划线"
+						aria-label="显示阅读记录下划线"
 						checked={ui.marks.studySegmentUnderlines}
 						onChange={(event) =>
 							onUi({
@@ -272,11 +272,11 @@ export function ReaderSettings({
 				</label>
 				<label className="reader-focus-label">
 					<span>
-						学习片段页边入口<small>在所有书籍中生效</small>
+						阅读记录页边入口<small>在所有书籍中生效</small>
 					</span>
 					<input
 						type="checkbox"
-						aria-label="显示学习片段页边入口"
+						aria-label="显示阅读记录页边入口"
 						checked={ui.marks.studySegmentMargins}
 						onChange={(event) =>
 							onUi({
@@ -289,7 +289,9 @@ export function ReaderSettings({
 						}
 					/>
 				</label>
-				<p>页边空间不足时使用“本章片段”。两项独立生效，已有片段保持不变。</p>
+				<p>
+					实线表示学习片段，虚线表示翻译；重叠处保留实线。页边空间不足时使用“本章记录”。隐藏标记不删除记录。
+				</p>
 			</fieldset>
 			<label className="reader-focus-label">
 				<span>

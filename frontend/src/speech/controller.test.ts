@@ -6,6 +6,7 @@ import {
 	readSpeechPreferences,
 	type SpeechAdapter,
 	selectedVoice,
+	speechTargetAction,
 	speechUnavailableReason,
 } from "./controller.ts";
 
@@ -238,4 +239,65 @@ test("停止并收起取消当前播放，迟到事件不恢复目标；之后�
 	assert.equal(f.calls.length, 1);
 	f.controller.play(target);
 	assert.equal(f.calls.length, 2);
+});
+
+test("目标动作只停止自己的原文快照，其他目标播放后替换当前朗读", () => {
+	const f = fixture();
+	const other = { id: "b", text: "別の原文" };
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), target), "play");
+	f.controller.play(target);
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), target), "stop");
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), other), "play");
+	assert.equal(
+		speechTargetAction(f.controller.getSnapshot(), {
+			...target,
+			text: "新選区",
+		}),
+		"play",
+	);
+	f.controller.play(other);
+	f.call(0).onEnd();
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), other), "stop");
+	f.controller.stop();
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), other), "replay");
+	f.controller.replay();
+	f.call(2).onEnd();
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), other), "replay");
+});
+
+test("离页清理目标后保留声音与语速，迟到事件与重播不能恢复旧目标", () => {
+	const f = fixture();
+	f.controller.setVoice(remote);
+	f.controller.setRate(0.8);
+	f.controller.play(target);
+	const preferences = f.controller.getSnapshot().preferences;
+	f.controller.dismiss();
+	f.call(0).onError("late");
+	f.call(0).onStart();
+	f.call(0).onEnd();
+	f.controller.replay();
+	assert.equal(f.calls.length, 1);
+	assert.equal(f.controller.getSnapshot().target, null);
+	assert.equal(f.controller.getSnapshot().status, "idle");
+	assert.deepEqual(f.controller.getSnapshot().preferences, preferences);
+	f.controller.play({ id: "new-book", text: "新しい本" });
+	assert.equal(f.call(1).rate, 0.8);
+	assert.equal(f.call(1).voice, remote);
+});
+
+test("播放时声音消失仍保留当前目标的停止动作", () => {
+	const f = fixture();
+	f.controller.setVoice(remote);
+	f.controller.play(target);
+	f.call(0).onStart();
+	f.voices([local]);
+	assert.match(
+		speechUnavailableReason(f.controller.getSnapshot()) ?? "",
+		/已选日语声音当前不可用/,
+	);
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), target), "stop");
+	f.controller.stop();
+	assert.equal(f.controller.getSnapshot().status, "stopped");
+	f.call(0).onError("late");
+	assert.equal(f.controller.getSnapshot().error, null);
 });

@@ -259,6 +259,22 @@ export async function translationRegression(h: BrowserHarness) {
 			(node) => node.textContent === text,
 		);
 		check(button, `Missing ${text}`);
+		const folds: HTMLDetailsElement[] = [];
+		for (
+			let ancestor = button.parentElement;
+			ancestor;
+			ancestor = ancestor.parentElement
+		) {
+			if (ancestor instanceof HTMLDetailsElement) folds.unshift(ancestor);
+		}
+		for (const fold of folds) {
+			if (!fold.open) fold.querySelector("summary")?.click();
+		}
+		check(
+			!button.disabled && button.getClientRects().length > 0,
+			`Button is not reachable: ${text}`,
+		);
+		button.scrollIntoView({ block: "nearest" });
 		button.click();
 	};
 	try {

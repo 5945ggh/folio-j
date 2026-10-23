@@ -40,15 +40,36 @@ try {
 		throw new Error("Vite did not select a port");
 	const url = `http://127.0.0.1:${address.port}/browser-tests/`;
 	console.log(`Browser regression page: ${url}`);
-	for (const [width, query] of [
-		[600, ""],
-		[1280, "?suite=reader-bookmarks"],
-		[1280, "?suite=translation"],
-		[390, "?suite=translation"],
+	for (const [width, height, query] of [
+		[600, 900, ""],
+		[1280, 900, "?suite=reader-bookmarks"],
+		[1280, 900, "?suite=chapter-records"],
+		[1280, 900, "?suite=chapter-records&theme=dark"],
+		[1280, 900, "?suite=chapter-records&direction=vertical-rl"],
+		[1280, 900, "?suite=chapter-records&direction=vertical-rl&theme=dark"],
+		[320, 900, "?suite=chapter-records"],
+		[320, 900, "?suite=chapter-records&theme=dark"],
+		[320, 900, "?suite=chapter-records&direction=vertical-rl"],
+		[320, 900, "?suite=chapter-records&direction=vertical-rl&theme=dark"],
+		[1280, 900, "?suite=chapter-records&detached"],
+		[1280, 900, "?suite=chapter-records&detached&evicted"],
+		[
+			320,
+			900,
+			"?suite=chapter-records&direction=vertical-rl&theme=dark&detached",
+		],
+		[1280, 900, "?suite=translation"],
+		[390, 900, "?suite=translation"],
+		[1280, 900, "?suite=reading-aids"],
+		[390, 900, "?suite=reading-aids"],
+		[320, 900, "?suite=reading-aids"],
+		[320, 320, "?suite=reading-aids&scenario=short"],
+		[640, 360, "?suite=reading-aids&scenario=short"],
 	].filter(
-		([, query]) =>
+		([, , query]) =>
 			!process.env.BROWSER_TEST_SUITE ||
-			query === `?suite=${process.env.BROWSER_TEST_SUITE}`,
+			new URLSearchParams(query).get("suite") ===
+				process.env.BROWSER_TEST_SUITE,
 	)) {
 		const browser = spawn(
 			chrome,
@@ -65,7 +86,7 @@ try {
 				"--remote-debugging-pipe",
 				"--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1",
 				`--user-data-dir=${profile}`,
-				`--window-size=${width},900`,
+				`--window-size=${width},${height}`,
 			],
 			{ stdio: ["ignore", "ignore", "pipe", "pipe", "pipe"] },
 		);
@@ -113,6 +134,16 @@ try {
 				flatten: true,
 			});
 			await command("Page.enable", {}, sessionId);
+			await command(
+				"Emulation.setDeviceMetricsOverride",
+				{
+					width,
+					height,
+					deviceScaleFactor: 1,
+					mobile: false,
+				},
+				sessionId,
+			);
 			await command("Page.navigate", { url: `${url}${query}` }, sessionId);
 			// Use actual rendering and scroll/ResizeObserver delivery, not virtual time.
 			const evaluated = await command(

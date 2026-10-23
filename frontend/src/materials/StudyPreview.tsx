@@ -17,6 +17,7 @@ export type StudyPreviewProps = {
 	loading?: boolean;
 	expanded: boolean;
 	inactive?: boolean;
+	embedded?: boolean;
 	onExpand: () => void;
 	onCollapse: () => void;
 	onClose: () => void;
@@ -31,6 +32,7 @@ export function StudyPreview({
 	loading = false,
 	expanded,
 	inactive = false,
+	embedded = false,
 	onExpand,
 	onCollapse,
 	onClose,
@@ -82,7 +84,7 @@ export function StudyPreview({
 		return () => node.removeEventListener("keydown", handleEscape);
 	}, [inactive]);
 	useLayoutEffect(() => {
-		if (expanded || fixed) return;
+		if (expanded || fixed || embedded) return;
 		const node = element.current;
 		if (!node) return;
 		const measure = () =>
@@ -101,7 +103,7 @@ export function StudyPreview({
 			observer.disconnect();
 			window.removeEventListener("resize", measure);
 		};
-	}, [anchor, expanded, fixed]);
+	}, [anchor, expanded, fixed, embedded]);
 	useLayoutEffect(() => {
 		if (segmentId && content.current) content.current.scrollTop = 0;
 		if (focusAfterSelection.current) {
@@ -154,51 +156,67 @@ export function StudyPreview({
 	};
 
 	return (
+		// biome-ignore lint/a11y/useAriaPropsSupportedByRole: both dialog and the named embedded region support labels.
 		<div
 			ref={element}
-			className={`reader-study-preview${expanded ? " expanded" : ""}${fixed ? " fixed" : ""}${translation ? " has-translation" : ""}`}
-			style={expanded || fixed ? undefined : position}
-			role="dialog"
-			aria-modal={false}
-			aria-labelledby={headingId}
+			className={`reader-study-preview${embedded ? " embedded" : ""}${expanded ? " expanded" : ""}${fixed ? " fixed" : ""}${translation ? " has-translation" : ""}`}
+			style={expanded || fixed || embedded ? undefined : position}
+			role={embedded ? "region" : "dialog"}
+			aria-label={embedded ? "学习片段" : undefined}
+			aria-labelledby={embedded ? undefined : headingId}
 			aria-hidden={inactive || undefined}
 			inert={inactive || undefined}
 			data-reader-tool=""
 			data-reader-panel-side={expanded ? "right" : undefined}
 		>
-			<header className="reader-study-preview-header">
-				<div>
-					{selected && canReturn ? (
+			{!embedded && (
+				<header className="reader-study-preview-header">
+					<div>
+						{selected && canReturn ? (
+							<button
+								type="button"
+								className="reader-study-preview-back"
+								onClick={() => select(null)}
+							>
+								← {fixed ? "本章片段" : "片段列表"}
+							</button>
+						) : null}
+						<strong id={headingId}>
+							{selected
+								? "学习片段"
+								: fixed
+									? `本章片段 · ${items.length}`
+									: `此处的学习片段 · ${items.length}`}
+						</strong>
+					</div>
+					<div className="reader-study-preview-actions">
 						<button
 							type="button"
-							className="reader-study-preview-back"
-							onClick={() => select(null)}
+							onClick={expanded ? onCollapse : onExpand}
+							aria-label={expanded ? "收起学习片段预览" : "展开学习片段预览"}
+							aria-expanded={expanded}
 						>
-							← {fixed ? "本章片段" : "片段列表"}
+							{expanded ? "收起" : "展开阅读"}
 						</button>
-					) : null}
-					<strong id={headingId}>
-						{selected
-							? "学习片段"
-							: fixed
-								? `本章片段 · ${items.length}`
-								: `此处的学习片段 · ${items.length}`}
-					</strong>
-				</div>
-				<div className="reader-study-preview-actions">
-					<button
-						type="button"
-						onClick={expanded ? onCollapse : onExpand}
-						aria-label={expanded ? "收起学习片段预览" : "展开学习片段预览"}
-						aria-expanded={expanded}
-					>
-						{expanded ? "收起" : "展开阅读"}
-					</button>
-					<button type="button" aria-label="关闭学习片段预览" onClick={onClose}>
-						×
-					</button>
-				</div>
-			</header>
+						<button
+							type="button"
+							aria-label="关闭学习片段预览"
+							onClick={onClose}
+						>
+							×
+						</button>
+					</div>
+				</header>
+			)}
+			{embedded && selected && canReturn && (
+				<button
+					className="reader-record-back"
+					type="button"
+					onClick={() => select(null)}
+				>
+					← 学习片段列表
+				</button>
+			)}
 			<div ref={content} className="reader-study-preview-content">
 				{!selected ? (
 					<>

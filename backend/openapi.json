@@ -1439,6 +1439,87 @@
         "title": "MaterialChapterSegmentsResponse",
         "type": "object"
       },
+      "MaterialChapterTranslation": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "identity_sha256": {
+            "title": "Identity Sha256",
+            "type": "string"
+          },
+          "material_provenance": {
+            "$ref": "#/components/schemas/MaterialProvenance"
+          },
+          "result_count": {
+            "title": "Result Count",
+            "type": "integer"
+          },
+          "result_id": {
+            "title": "Result Id",
+            "type": "string"
+          },
+          "target_language": {
+            "title": "Target Language",
+            "type": "string"
+          },
+          "translation_excerpt": {
+            "title": "Translation Excerpt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "identity_sha256",
+          "result_id",
+          "material_provenance",
+          "excerpt",
+          "translation_excerpt",
+          "result_count",
+          "target_language",
+          "created_at"
+        ],
+        "title": "MaterialChapterTranslation",
+        "type": "object"
+      },
+      "MaterialChapterTranslations": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialChapterTranslation"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "unavailable_count": {
+            "title": "Unavailable Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor",
+          "unavailable_count"
+        ],
+        "title": "MaterialChapterTranslations",
+        "type": "object"
+      },
       "MaterialCoverInput": {
         "additionalProperties": false,
         "properties": {
@@ -6345,6 +6426,95 @@
           }
         },
         "summary": "List Chapter Segments"
+      }
+    },
+    "/api/materials/{material_id}/chapters/{chapter_id}/translations": {
+      "get": {
+        "operationId": "chapter_translations_api_materials__material_id__chapters__chapter_id__translations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "chapter_id",
+            "required": true,
+            "schema": {
+              "title": "Chapter Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "maxLength": 26,
+              "minLength": 1,
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 2048,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialChapterTranslations"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Chapter Translations"
       }
     },
     "/api/materials/{material_id}/cover": {

@@ -95,6 +95,19 @@ export function speechUnavailableReason(state: SpeechState): string | null {
 	return null;
 }
 
+/** A target may stop only its own immutable playback snapshot. */
+export function speechTargetAction(
+	state: SpeechState,
+	target: SpeechTarget,
+): "play" | "stop" | "replay" {
+	const current =
+		state.target?.id === target.id && state.target.text === target.text;
+	if (!current) return "play";
+	return state.status === "starting" || state.status === "speaking"
+		? "stop"
+		: "replay";
+}
+
 export function createSpeechController(
 	adapter?: SpeechAdapter,
 	storage?: PreferenceStorage,

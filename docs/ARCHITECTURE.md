@@ -416,7 +416,13 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 前端 `translation/` 通过生成类型和 TanStack Query 读取持久状态；选区明确翻译意图在当前挂载的确切目标首页查询完成、成功且没有成功结果、活动任务或后续页，语境就绪后受理一次；后台刷新的旧空缓存不能作为新调用依据。读取到已有结果、活动任务或更多历史，或用户主动翻页后，本次自动意图即消费，浏览历史不发起调用。Reader 按目标保存翻译会话的固定请求、执行与核实状态及语境草稿，切换目标再返回仍核实原请求；明确重新翻译才建立新请求。关闭保留当前目标与草稿，任务继续在后端；采用 session 统一维护固定请求、pending、未知结果及已保存去向，重挂后仍核实同请求。全页刷新后持久任务与结果可恢复，未提交的表单草稿不承诺持久化。
 
-`speech/` 通过小 interface 包装 SpeechSynthesis，设备声音选择及语速只保存本机。控制器用播放代次隔离迟到事件；首次失败也保留目标和可见错误，播放条支持停止、重播与收起。Reader／Segment 的生命周期清理停止朗读，关闭翻译卡不卸载页面播放控制。声音列表通过 voiceschanged 更新，未提供日语声线或所选声线消失时明确反馈；不生成 Run 或音频文件。
+`translation/placement.ts` 按原屏幕选区、横竖排、视口和播放条占用区域计算卡片位置；内容尺寸变化后重新定位，短屏使用实际剩余高度。Reader 在正文滚动或重排时清理屏幕锚点，保留固定翻译目标并让卡片停靠；原文折叠通过实际溢出检测决定是否显示展开入口。
+
+GET `/api/materials/{material_id}/chapters/{chapter_id}/translations` 按 version_id 读取本章成功译文，以规范出处 identity_sha256 归并、选择 created_at／id 最新有效结果并保留 result_count，按 chapter part 和范围坐标排序。游标绑定材料、版本、章节及最后位置，单页最多 100 项；unavailable_count 是本章不可定位目标总数，各页重复，前端取最大值。服务在读取后离开事务校验正文、parts、出处摘要和原文，再复查材料、Source 可见性及成功结果快照，不建立新表。当前每页校验材料全部成功历史，开销随历史增长。
+
+Reader 的章节翻译 query 完成全部分页后发布标记；阅读页独立观察翻译活动，卡片关闭或换选区不卸载任务观察。recent 中未再出现的已知活动任务按 task_id 单独查询到终态，新成功结果使章 query 失效；受理响应未确定时也只刷新状态查询。`ChapterRecords` 复用 `StudyPreview` 和嵌入式 `TranslationPanel`，选择译文时明确传入 result_id，回看不消费自动翻译意图。
+
+`speech/` 通过小 interface 包装 SpeechSynthesis，设备声音选择及语速只保存本机。控制器用播放代次隔离迟到事件；首次失败也保留目标和可见错误，播放条在停止或结束后保持同一布局并切换重播动作。原生 popover 复用声音表单，完整错误在浮层内查看；Reader 颜色沿用阅读器主题。Reader／Segment 的生命周期清理调用 dismiss，停止并清空目标但保留偏好；关闭翻译卡不卸载页面播放控制。声音列表通过 voiceschanged 更新，未提供日语声线或所选声线消失时明确反馈；不生成 Run 或音频文件。
 
 ## 5. 当前API与未来草图
 
@@ -435,7 +441,9 @@ C1 出处契约版本为 `1`，组装规则为 `concat-nfc-v1`；最多 64 段�
 
 `SegmentProvenanceResponse.display` 由出处解析服务集中派生，不持久化；全部出处验证成功后使用当前材料名、章名及“章内约 N%”。逻辑章按 part 顺序连接资源正文片段，重复 spine 每次计入，整体 NFC 后以 Unicode 码点为分母；分子为第一段起点前正文的整体 NFC 码点数，取 `floor(100 * prefix / total)`，有效非空目标为 0–99%。跨 part 目标仅取第一段起点；空章或起点切开跨 part NFC 组合边界时省略百分比。布局和当前阅读位置不参与。材料已删、版本不可用或快照失配时只保留可靠材料名与原状态；无可靠名称则 display 为 null。source_ref 独立保留。
 
-阅读器标记通过 GET `/materials/{material_id}/chapters/{chapter_id}/segments` 按版本读取；按 Segment ID 游标每页扫描最多 100 条，响应包含有效条目、next_cursor 与 unavailable_count。无本章匹配条目的空页仍可有后续游标；前端扫描到末页才开放标记和完整本章列表。服务逐项验证出处并复查材料、来源及片段可见性，不受创建草稿的 20 条候选上限影响。该读取不新增标记实体或迁移。
+阅读器片段标记通过 GET `/materials/{material_id}/chapters/{chapter_id}/segments` 按版本读取；按 Segment ID 游标每页扫描最多 100 条，响应包含有效条目、next_cursor 与 unavailable_count。无本章匹配条目的空页仍可有后续游标；前端扫描到末页才开放标记和完整本章列表。服务逐项验证出处并复查材料、来源及片段可见性，不受创建草稿的 20 条候选上限影响。翻译标记使用第 4.8 节的章节翻译接口，两类读取均不新增标记实体或迁移。
+
+`StudyMark` 分别携带 segment_id 或 translation_id（确切出处摘要），命中及页边聚合分别返回 segmentIds／translationIds。翻译虚线在绘制前按同一正文节点区间扣除片段实线范围，完整原文命中范围仍保留，ruby 不参与扣除或命中。记录面板按材料、版本、spine 出现和半开范围计算相连重叠分组，不以相同文字、紧邻端点或屏幕位置合并身份。显示偏好沿用现存存储键并统一控制两类记录。
 
 `ReaderFrames` 内的 `ReaderStudy` 负责原生选择、基字细线、完整范围强调、页边几何及点击命中。CSS Highlight 按 locator 文本节点拆 Range，排除 rt／rp，不包装正文或改变行盒；搜索保留独立 Highlight。pointerup 在排除拖动、长按、选区、修饰键、控件及扩展节点后，以 caret 邻接字符的实际 Range rect 核验可见命中，返回片段 ID 和屏幕锚点。消费后的事件阻止工具栏延迟切换；按需注音在事件分发完成后检查消费结果，避免同次触屏操作打开两种内容。页边只占真实留白，44px 命中区域配小符号／数字。入口绝对定位在正文滚动容器内，使用片段首处原文的内容坐标；完整章节按固定锚点分组，滚动由浏览器同步带动，不重新测量或按可见行切换锚点。横排通过左右留白、竖排通过底部留白容纳入口，`readingViewport` 扣除留白后保留正文尺寸。排版变化时重测；点击时才把内容锚点换算成屏幕位置，同一入口再次点击关闭预览。`StudyPreview` 复用 Segment、Analysis 列表及确切修订读取和 Query 缓存；按选定身份校验响应，分页列表保持既有缓存形状。紧凑浮卡与展开侧栏共用组件，展开阅读使用右侧 `study` 面板状态；Markdown 标题及各块均保留，不挂载 Workbench。
 

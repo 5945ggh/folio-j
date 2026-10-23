@@ -2,6 +2,7 @@ import type { ScreenAnchor } from "./reader-study.ts";
 
 export type StudyMarginEntry = {
 	segmentIds: string[];
+	translationIds?: string[];
 	/** ReaderStudy publishes the anchor and offsets in scroll-container content coordinates. */
 	anchor: ScreenAnchor;
 	left: number;
@@ -20,7 +21,11 @@ function union(a: ScreenAnchor, b: ScreenAnchor): ScreenAnchor {
 
 /** Lay out the complete chapter at stable original anchors; scrolling never changes grouping. */
 export function studyMarginEntries(
-	marks: readonly { id: string; rects: ScreenAnchor[] }[],
+	marks: readonly {
+		id: string;
+		kind?: "segment" | "translation";
+		rects: ScreenAnchor[];
+	}[],
 	viewport: ScreenAnchor,
 	screen: { width: number; height: number },
 	vertical: boolean,
@@ -46,7 +51,13 @@ export function studyMarginEntries(
 				: left < gap || left + size > screen.width - gap
 		)
 			continue;
-		candidates.push({ segmentIds: [mark.id], anchor, left, top });
+		candidates.push({
+			segmentIds: mark.kind === "translation" ? [] : [mark.id],
+			...(mark.kind === "translation" ? { translationIds: [mark.id] } : {}),
+			anchor,
+			left,
+			top,
+		});
 	}
 	candidates.sort((a, b) => (vertical ? a.left - b.left : a.top - b.top));
 	const groups: StudyMarginEntry[] = [];
@@ -56,7 +67,16 @@ export function studyMarginEntries(
 			group &&
 			(vertical ? entry.left - group.left : entry.top - group.top) < size + gap
 		) {
-			group.segmentIds.push(...entry.segmentIds);
+			group.segmentIds = [
+				...new Set([...group.segmentIds, ...entry.segmentIds]),
+			];
+			if (entry.translationIds)
+				group.translationIds = [
+					...new Set([
+						...(group.translationIds ?? []),
+						...entry.translationIds,
+					]),
+				];
 			group.anchor = union(group.anchor, entry.anchor);
 		} else groups.push(entry);
 	}

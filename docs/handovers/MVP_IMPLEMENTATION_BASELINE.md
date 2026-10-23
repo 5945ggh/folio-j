@@ -1,11 +1,12 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-23，材料独立删除已提交。文本与资料调整以 `85d8725` 为代码起点，S0／B1 分别提交为 `4e705a1`／`bb900ce`，B2 提交为 `3f6491f`，A1 提交为 `13de4e9`，A2 提交为 `367f4f4`；A 线完成；C1 已提交 `290a6a0`，C2 已提交 `7eaedbe` 并完成工程与浏览器验收；阅读标记交互已提交 `c389ca3`。后续阅读体验调整及验收已提交，结果和限制见[阅读体验记录](text-study/READING_EXPERIENCE_ACCEPTANCE.md)；保存表单优化见[独立验收](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md)。当前增量迁移及已有能力的证据见下表和历史记录。
+> 状态核对：2026-10-24，材料独立删除已提交。文本与资料调整以 `85d8725` 为代码起点，S0／B1 分别提交为 `4e705a1`／`bb900ce`，B2 提交为 `3f6491f`，A1 提交为 `13de4e9`，A2 提交为 `367f4f4`；A 线完成；C1 已提交 `290a6a0`，C2 已提交 `7eaedbe` 并完成工程与浏览器验收；阅读标记交互已提交 `c389ca3`。后续阅读体验调整及验收已提交，结果和限制见[阅读体验记录](text-study/READING_EXPERIENCE_ACCEPTANCE.md)；保存表单优化见[独立验收](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md)。当前增量迁移及已有能力的证据见下表和历史记录。
 > 原处预览以 `54214a2` 为起点，实现已提交 `cbf5851`，工程、独立审查及浏览器验收通过；用户认可当前视觉效果，后续在实际阅读中继续迭代。见[原处预览验收](text-study/INLINE_PREVIEW_ACCEPTANCE.md)。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
 > 阅读跳转深化已提交，工程及浏览器验收已通过；证据见[本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)。
 > 阅读翻译与设备朗读、片段资料与讨论面板、阅读器正文复制已提交 `7f1c44d`。提交前问题已修复，工程、全量浏览器与独立复审通过；证据见[阅读辅助联合验收](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-23提交前审查修复与联合验收)。
+> 翻译卡片、朗读控制、本章记录与正文翻译标记已分批提交，界面集成提交为 `3ec616e`；2026-10-24 通过工程、全量浏览器及独立复审，见[交互调整](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-23-翻译卡片与朗读控制交互调整)与[本章记录验收](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-24-本章记录与正文翻译标记)。
 
 当前能力与缺口见下表，产品边界见 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护。
 
@@ -15,7 +16,7 @@
 | --- | --- | --- | --- |
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定；旧资料由增量迁移补齐保护 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
 | 设置与模型接入 | 已提交、工程验收通过 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；顶部分类、统一编辑弹窗、分组原子保存、草稿保护与验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](archived/settings-refresh/ACCEPTANCE.md) |
-| 阅读翻译与设备朗读 | 已提交，工程、全量浏览器及独立复审通过 | 选区翻译、持久找回、原子采用为 Segment、版本冲突保护、独立翻译设置及设备朗读；资源候选、真实模型质量与声音仍待实测 | [方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)、[验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md) |
+| 阅读翻译与设备朗读 | 已提交，工程、全量浏览器及独立复审通过 | 选区翻译、持久找回、原子采用、版本冲突保护；本章记录分片段／翻译，同出处成功译文归并标记、重叠入口合并，后台完成自动刷新；卡片适应横竖排与窄屏，朗读结束后原条保留并切换重播，声音语速就地调整；真实模型质量与设备声音待实测，外部 TTS 后置 | [方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)、[验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md) |
 | 片段讨论 | 已提交，面板调整通过工程、浏览器及独立复审 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；单行标题、可展开引用、助手全宽消息及独立设置浮层；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[界面调整验收](text-study/SEGMENT_UI_ACCEPTANCE.md) |
 | 持久讲解 | 已提交，工程与浏览器验收通过 | 直接编写／粘贴 Markdown 保存，统一记录用户保存；当前全文修订、冲突保稿与同请求核实；多份 Analysis、不可变 Revision／Section；AI 快捷生成、块编辑与审核沿用原流程 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
 | 片段阅读与导航 | 已提交；资料查看／编辑与并发保护通过工程及浏览器验收 | 窄工具栏／中央阅读／右侧讨论，进入隐藏全局导航；讲解集合与单篇操作分层，前后文渐淡预览、完整资料浮层与折叠目录；纯回看不挂载讨论，激活后保活，窄屏切换保留草稿与阅读位置；确切修订、来处返回和人工编辑保护沿用原规则 | [阅读导航](archived/READING_NAVIGATION_ACCEPTANCE.md)、[架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[A1 验收](text-study/A1_ACCEPTANCE.md)、[专注布局](archived/segment-layout/ACCEPTANCE.md)、[资料界面调整](text-study/SEGMENT_UI_ACCEPTANCE.md) |

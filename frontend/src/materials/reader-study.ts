@@ -11,6 +11,7 @@ import {
 	clearStudyHighlights,
 	prepareStudyUnderlines,
 	projectedBaseRanges,
+	uncoveredStudyRanges,
 } from "./highlight.ts";
 import { captureNativeSelection, referenceParts } from "./reader-selection.ts";
 import type { MaterialProvenance, StudyTarget } from "./study-api.ts";
@@ -24,12 +25,16 @@ export type ScreenAnchor = {
 	bottom: number;
 };
 export type StudySelection = { target: StudyTarget; anchor: ScreenAnchor };
-export type StudyMark = {
-	segment_id: string;
+export type StudyMarkKind = "segment" | "translation";
+export type StudyMark = (
+	| { segment_id: string }
+	| { translation_id: string }
+) & {
 	material_provenance: MaterialProvenance;
 };
 export type StudyMarkHit = {
 	segmentIds: string[];
+	translationIds?: string[];
 	anchor: ScreenAnchor;
 	fixed?: boolean;
 };
@@ -52,6 +57,13 @@ type StudyFrame = {
 	viewport?: HTMLElement | null;
 };
 type MountedFrame = StudyFrame & { dispose: () => void; cancel: () => void };
+type MarkTarget = { id: string; kind: StudyMarkKind };
+type MarkRanges = MarkTarget & { ranges: Range[] };
+function markTarget(mark: StudyMark): MarkTarget {
+	return "segment_id" in mark
+		? { id: mark.segment_id, kind: "segment" }
+		: { id: mark.translation_id, kind: "translation" };
+}
 const SELECTION_SETTLE_MS = 32;
 
 function screenAnchor(
@@ -178,8 +190,8 @@ export class ReaderStudy {
 		margins: boolean;
 		theme: "white" | "black";
 	} | null = null;
-	private emphasized: string | null = null;
-	private readonly hits = new Map<number, { id: string; ranges: Range[] }[]>();
+	private emphasized: MarkTarget | null = null;
+	private readonly hits = new Map<number, MarkRanges[]>();
 	bind(binding: StudyBinding | null): void {
 		const changed =
 			binding?.materialId !== this.binding?.materialId ||
@@ -259,13 +271,21 @@ export class ReaderStudy {
 		margins = false,
 	): void {
 		this.config = { chapter, marks, visible, theme, margins };
-		if (!marks.some((mark) => mark.segment_id === this.emphasized))
+		if (!marks.some((mark) => this.isEmphasized(markTarget(mark))))
 			this.emphasized = null;
 		this.refresh();
 	}
-	emphasize(id: string | null): void {
-		if (this.emphasized === id) return;
-		this.emphasized = id;
+	private isEmphasized(target: MarkTarget): boolean {
+		return (
+			this.emphasized?.id === target.id && this.emphasized.kind === target.kind
+		);
+	}
+	emphasize(id: string | null, kind: StudyMarkKind = "segment"): void {
+		if (
+			id === null ? this.emphasized === null : this.isEmphasized({ id, kind })
+		)
+			return;
+		this.emphasized = id === null ? null : { id, kind };
 		this.refresh();
 	}
 	refresh(): void {
@@ -282,12 +302,16 @@ export class ReaderStudy {
 			for (const frame of this.frames.values()) clearStudyHighlights(frame.doc);
 			return;
 		}
-		const geometry: { id: string; rects: ScreenAnchor[] }[] = [];
-		const hitRanges = new Map<number, { id: string; ranges: Range[] }[]>();
+		const geometry: (MarkTarget & { rects: ScreenAnchor[] })[] = [];
+		const hitRanges = new Map<number, MarkRanges[]>();
 		const ranges = new Map<number, Range[]>(),
 			emphasis = new Map<number, Range[]>();
+		const translationRanges = new Map<number, Range[]>(),
+			translationEmphasis = new Map<number, Range[]>();
 		const projections = new Map<number, Projection>();
 		for (const mark of config.marks) {
+			const target = markTarget(mark);
+			const emphasized = this.isEmphasized(target);
 			if (
 				mark.material_provenance.material_id !== config.chapter.material_id ||
 				mark.material_provenance.version_id !== config.chapter.version_id
@@ -315,17 +339,20 @@ export class ReaderStudy {
 					planned.push([index, projected]);
 				}
 				for (const [index, projected] of planned) {
-					if (config.visible || mark.segment_id === this.emphasized)
+					if (config.visible || emphasized)
 						hitRanges.set(index, [
 							...(hitRanges.get(index) ?? []),
-							{ id: mark.segment_id, ranges: projected },
+							{ ...target, ranges: projected },
 						]);
-					ranges.set(index, [...(ranges.get(index) ?? []), ...projected]);
-					if (mark.segment_id === this.emphasized)
-						emphasis.set(index, [...(emphasis.get(index) ?? []), ...projected]);
+					const paint = target.kind === "segment" ? ranges : translationRanges;
+					const active =
+						target.kind === "segment" ? emphasis : translationEmphasis;
+					paint.set(index, [...(paint.get(index) ?? []), ...projected]);
+					if (emphasized)
+						active.set(index, [...(active.get(index) ?? []), ...projected]);
 				}
 				geometry.push({
-					id: mark.segment_id,
+					...target,
 					rects: planned.flatMap(([index, projected]) => {
 						const frame = this.frames.get(index);
 						if (!frame) return [];
@@ -361,11 +388,24 @@ export class ReaderStudy {
 				continue;
 			}
 			try {
+				const solid = config.visible ? (ranges.get(frame.index) ?? []) : [];
+				const activeSolid = emphasis.get(frame.index) ?? [];
+				const covered = [...solid, ...activeSolid];
 				prepareStudyUnderlines(
 					frame.doc,
-					config.visible ? (ranges.get(frame.index) ?? []) : [],
-					emphasis.get(frame.index) ?? [],
+					solid,
+					activeSolid,
 					config.theme,
+					uncoveredStudyRanges(
+						frame.doc,
+						config.visible ? (translationRanges.get(frame.index) ?? []) : [],
+						covered,
+					),
+					uncoveredStudyRanges(
+						frame.doc,
+						translationEmphasis.get(frame.index) ?? [],
+						covered,
+					),
 				)();
 				this.hits.set(frame.index, hitRanges.get(frame.index) ?? []);
 			} catch {
@@ -465,7 +505,24 @@ export class ReaderStudy {
 							);
 							return anchor
 								? {
-										segmentIds: [...new Set(ids.map((mark) => mark.id))],
+										segmentIds: [
+											...new Set(
+												ids
+													.filter((mark) => mark.kind === "segment")
+													.map((mark) => mark.id),
+											),
+										],
+										...(ids.some((mark) => mark.kind === "translation")
+											? {
+													translationIds: [
+														...new Set(
+															ids
+																.filter((mark) => mark.kind === "translation")
+																.map((mark) => mark.id),
+														),
+													],
+												}
+											: {}),
 										anchor,
 									}
 								: null;

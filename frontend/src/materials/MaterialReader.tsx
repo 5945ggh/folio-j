@@ -5,6 +5,7 @@ import {
 	useCallback,
 	useEffect,
 	useLayoutEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -21,6 +22,7 @@ import { InlineError } from "../Shared";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "../speech";
 import { getSpeechController } from "../speech/browser";
 import type { AdoptionSession } from "../translation/AdoptTranslation";
+import type { TranslationResult } from "../translation/api";
 import {
 	type TranslationSession,
 	targetText,
@@ -46,6 +48,12 @@ import {
 	setUsage,
 	usageKey,
 } from "./api";
+import { ChapterRecords } from "./ChapterRecords";
+import { recordsAtHit, sameRecordHit } from "./chapter-records";
+import {
+	useChapterTranslations,
+	useMaterialTranslationActivity,
+} from "./chapter-translations-query";
 import {
 	imagePrecedesText,
 	nearestText,
@@ -99,10 +107,13 @@ import {
 	selectReaderPanel,
 } from "./reader-panel-logic";
 import type { ReaderHighlightRange } from "./reader-selection";
-import type { StudyMarkHit, StudySelection } from "./reader-study";
+import type {
+	ScreenAnchor,
+	StudyMarkHit,
+	StudySelection,
+} from "./reader-study";
 import { JumpReadingSession, returnOriginLabel } from "./return-origin";
 import { SavedSegmentNotice, SelectionToolbar } from "./StudyOverlays";
-import { StudyPreview } from "./StudyPreview";
 import { StudySegmentPanel } from "./StudySegmentPanel";
 import { readerWheelScroll } from "./scroll";
 import {
@@ -139,9 +150,12 @@ function Reader({
 	notice: "imported" | "reused" | null;
 }) {
 	useStopSpeechOnLeave(book.id);
+	useMaterialTranslationActivity(book.id);
 	const [translationTarget, setTranslationTarget] =
 		useState<StudyTarget | null>(null);
 	const [translationOpen, setTranslationOpen] = useState(false);
+	const [translationAnchor, setTranslationAnchor] =
+		useState<ScreenAnchor | null>(null);
 	const [translationMounted, setTranslationMounted] = useState(false);
 	const adoptionSessions = useRef(new Map<string, AdoptionSession>());
 	const translationSessions = useRef(new Map<string, TranslationSession>());
@@ -160,7 +174,10 @@ function Reader({
 	const markTrigger = useRef<HTMLButtonElement | null>(null);
 	const [markHit, setMarkHit] = useState<StudyMarkHit | null>(null);
 	const [previewSerial, setPreviewSerial] = useState(0);
-	const previewEmphasis = useRef<string | null>(null);
+	const previewEmphasis = useRef<{
+		id: string;
+		kind: "segment" | "translation";
+	} | null>(null);
 	const [markError, setMarkError] = useState<Error | null>(null);
 	const [savedNotice, setSavedNotice] = useState<{
 		id: string;
@@ -591,6 +608,21 @@ function Reader({
 		enabled: !!chapterId,
 	});
 	const marks = useChapterStudyMarks(book.id, book.version_id, chapterId, true);
+	const chapterTranslations = useChapterTranslations(
+		book.id,
+		book.version_id,
+		chapterId,
+	);
+	const recordMarks = useMemo(
+		() => [
+			...marks.items,
+			...chapterTranslations.items.map((item) => ({
+				translation_id: item.identity_sha256,
+				material_provenance: item.material_provenance,
+			})),
+		],
+		[marks.items, chapterTranslations.items],
+	);
 	const readings = useQuery({
 		queryKey: readingsKey(
 			book.id,
@@ -618,6 +650,7 @@ function Reader({
 	const alive = useRef(true);
 	const openMarkHit = useCallback(
 		(value: StudyMarkHit, trigger: HTMLButtonElement | null = null) => {
+			setTranslationOpen(false);
 			markTrigger.current = trigger;
 			previewEmphasis.current = null;
 			frames.current.emphasizeStudyMark(null);
@@ -661,7 +694,10 @@ function Reader({
 					latest.current.panels.right === "study" ||
 					latest.current.markHit?.fixed
 				) {
-					frames.current.emphasizeStudyMark(previewEmphasis.current);
+					frames.current.emphasizeStudyMark(
+						previewEmphasis.current?.id ?? null,
+						previewEmphasis.current?.kind,
+					);
 				} else {
 					setMarkHit(null);
 					previewEmphasis.current = null;
@@ -670,11 +706,11 @@ function Reader({
 			onBackgroundTap: closeCompactPreview,
 		});
 	});
-	const visibleHitItems = markHit
-		? marks.items.filter(
-				(item) => markHit.fixed || markHit.segmentIds.includes(item.segment_id),
-			)
-		: [];
+	const hitRecords = useMemo(
+		() => recordsAtHit(marks.items, chapterTranslations.items, markHit),
+		[marks.items, chapterTranslations.items, markHit],
+	);
+	const visibleHitItems = hitRecords.segments;
 	const closeMarkHit = useCallback(() => {
 		setMarkHit(null);
 		previewEmphasis.current = null;
@@ -685,21 +721,24 @@ function Reader({
 		markTrigger.current?.focus({ preventScroll: true });
 	}, []);
 	useEffect(() => {
-		if (marks.isError) closeMarkHit();
-	}, [marks.isError, closeMarkHit]);
-	useEffect(() => {
 		if (
 			markHit &&
 			!markHit.fixed &&
 			!marks.loading &&
 			!marks.isFetching &&
-			visibleHitItems.length === 0
+			!chapterTranslations.loading &&
+			!chapterTranslations.isFetching &&
+			visibleHitItems.length === 0 &&
+			hitRecords.translations.length === 0
 		)
 			closeMarkHit();
 	}, [
 		markHit,
 		marks.loading,
 		marks.isFetching,
+		chapterTranslations.loading,
+		chapterTranslations.isFetching,
+		hitRecords.translations.length,
 		visibleHitItems.length,
 		closeMarkHit,
 	]);
@@ -1134,6 +1173,7 @@ function Reader({
 			lastHeight = root.clientHeight;
 		const resize = () => {
 			if (root !== container.current || !alive.current) return;
+			setTranslationAnchor(null);
 			const width = root.clientWidth,
 				height = root.clientHeight;
 			frames.current.invalidateStudyGeometry();
@@ -1308,6 +1348,7 @@ function Reader({
 	const [rubyError, setRubyError] = useState<Error | null>(null);
 	const preferenceSubmission = useRef(new ReaderPreferenceSubmission());
 	const change = (next: Settings) => {
+		setTranslationAnchor(null);
 		layout.current.cancelSave();
 		const anchor = layout.current.anchor(capture);
 		layout.current.setAnchor(anchor ? { ...anchor, settings: next } : null);
@@ -1438,7 +1479,7 @@ function Reader({
 		try {
 			frames.current.setStudyMarks(
 				chapter.data,
-				marks.items,
+				recordMarks,
 				ui.marks.studySegmentUnderlines,
 				theme,
 				ui.marks.studySegmentMargins,
@@ -1448,13 +1489,13 @@ function Reader({
 			setMarkError(
 				failure instanceof Error
 					? failure
-					: new Error("学习片段标记暂不可用。"),
+					: new Error("阅读记录标记暂不可用。"),
 			);
 		}
 	}, [
 		chapter.data,
 		viewportReady,
-		marks.items,
+		recordMarks,
 		ui.marks.studySegmentUnderlines,
 		ui.marks.studySegmentMargins,
 		theme,
@@ -1463,6 +1504,36 @@ function Reader({
 		leftView.value,
 		rightView.value,
 	]);
+	const backToTranslationOrigin = (result: TranslationResult) => {
+		closeMarkHit();
+		const reference = result.material_provenance;
+		const range = reference.ranges[0];
+		const part = result.parts.find((item) => item.range_index === 0);
+		if (
+			!range ||
+			!part ||
+			result.material_deleted ||
+			reference.version_id !== book.version_id
+		) {
+			setSelectionError(new Error("原文版本或位置不可用"));
+			return;
+		}
+		setTranslationOpen(false);
+		void navigation.current.navigate({
+			type: "position",
+			target: {
+				version_id: reference.version_id,
+				chapter_id: result.chapter_id,
+				part_index: part.part_index,
+				resource_id: range.resource_id,
+				kind: "text",
+				offset: range.start,
+				at_chapter_end: false,
+				settings,
+			},
+			mark: { start: range.start, end: range.end },
+		});
+	};
 	const renderToken = generation.current;
 	return (
 		<main
@@ -1523,7 +1594,7 @@ function Reader({
 				<div className="reader-heading-actions">
 					<button
 						type="button"
-						aria-label="本章片段"
+						aria-label="本章记录"
 						aria-expanded={!!markHit?.fixed}
 						disabled={!!studyTarget}
 						onClick={(event) => {
@@ -1542,7 +1613,7 @@ function Reader({
 							controller.current?.show();
 						}}
 					>
-						本章片段
+						本章记录
 					</button>
 					<button
 						type="button"
@@ -1641,7 +1712,10 @@ function Reader({
 					key={`${chapterId}-${surfaceRevision}`}
 					ref={container}
 					tabIndex={-1}
-					onScroll={observe}
+					onScroll={() => {
+						setTranslationAnchor(null);
+						observe();
+					}}
 					onTouchMove={(event) => recordReadingInput(event.nativeEvent)}
 					onPointerDown={(event) => {
 						if (event.target === event.currentTarget && event.button === 0)
@@ -1677,29 +1751,21 @@ function Reader({
 						!translationOpen &&
 						marginEntries.map((entry) => (
 							<button
-								key={entry.segmentIds.join(":")}
+								key={`${entry.segmentIds.join(":")}|${entry.translationIds?.join(":") ?? ""}`}
 								type="button"
 								className="reader-study-margin"
 								data-reader-tool=""
 								style={{ left: entry.left, top: entry.top }}
 								aria-expanded={Boolean(
-									markHit &&
-										!markHit.fixed &&
-										markHit.segmentIds.length === entry.segmentIds.length &&
-										entry.segmentIds.every((id) =>
-											markHit.segmentIds.includes(id),
-										),
+									markHit && !markHit.fixed && sameRecordHit(markHit, entry),
 								)}
-								aria-label={`查看此处 ${entry.segmentIds.length} 个学习片段`}
+								aria-label={`查看此处 ${entry.segmentIds.length + (entry.translationIds?.length ?? 0)} 条记录`}
 								onClick={(event) => {
 									const current = latest.current.markHit;
 									if (
 										current &&
 										!current.fixed &&
-										current.segmentIds.length === entry.segmentIds.length &&
-										entry.segmentIds.every((id) =>
-											current.segmentIds.includes(id),
-										)
+										sameRecordHit(current, entry)
 									) {
 										closeMarkHit();
 										return;
@@ -1713,6 +1779,7 @@ function Reader({
 									openMarkHit(
 										{
 											segmentIds: entry.segmentIds,
+											translationIds: entry.translationIds,
 											anchor: {
 												left: Math.min(
 													view.right,
@@ -1737,8 +1804,11 @@ function Reader({
 									controller.current?.show();
 								}}
 							>
-								{entry.segmentIds.length > 1 ? (
-									entry.segmentIds.length
+								{entry.segmentIds.length + (entry.translationIds?.length ?? 0) >
+								1 ? (
+									entry.segmentIds.length + (entry.translationIds?.length ?? 0)
+								) : entry.translationIds?.length ? (
+									"译"
 								) : (
 									<svg
 										aria-hidden="true"
@@ -1851,6 +1921,7 @@ function Reader({
 						data-tooltip="最近翻译"
 						onClick={() => {
 							setTranslationTarget(null);
+							setTranslationAnchor(null);
 							setTranslationMounted(true);
 							setTranslationOpen(true);
 							setSelection(null);
@@ -1894,6 +1965,8 @@ function Reader({
 						adoptionSessions={adoptionSessions.current}
 						translationSessions={translationSessions.current}
 						visible={translationOpen}
+						anchor={translationAnchor}
+						direction={settings.writing_mode}
 						sourceId={book.source_id}
 						target={translationTarget}
 						autoStart={!!translationTarget}
@@ -1913,35 +1986,7 @@ function Reader({
 								queryKey: ["material-chapter-segments", book.id],
 							});
 						}}
-						onBackToOrigin={(result) => {
-							const reference = result.material_provenance;
-							const range = reference.ranges[0];
-							const part = result.parts.find((item) => item.range_index === 0);
-							if (
-								!range ||
-								!part ||
-								result.material_deleted ||
-								reference.version_id !== book.version_id
-							) {
-								setSelectionError(new Error("原文版本或位置不可用"));
-								return;
-							}
-							setTranslationOpen(false);
-							void navigation.current.navigate({
-								type: "position",
-								target: {
-									version_id: reference.version_id,
-									chapter_id: result.chapter_id,
-									part_index: part.part_index,
-									resource_id: range.resource_id,
-									kind: "text",
-									offset: range.start,
-									at_chapter_end: false,
-									settings,
-								},
-								mark: { start: range.start, end: range.end },
-							});
-						}}
+						onBackToOrigin={backToTranslationOrigin}
 					/>
 				</div>
 			)}
@@ -1979,6 +2024,7 @@ function Reader({
 								chapter.data,
 							);
 							setTranslationTarget(structuredClone(target));
+							setTranslationAnchor(selection.anchor);
 							setTranslationMounted(true);
 							setTranslationOpen(true);
 							setSelection(null);
@@ -2045,15 +2091,36 @@ function Reader({
 			)}
 
 			{markHit &&
+				chapter.data &&
 				!translationOpen &&
 				!studyTarget &&
-				(markHit.fixed || visibleHitItems.length > 0) && (
-					<StudyPreview
+				(markHit.fixed ||
+					visibleHitItems.length > 0 ||
+					hitRecords.translations.length > 0) && (
+					<ChapterRecords
 						key={previewSerial}
 						anchor={markHit.anchor}
 						fixed={markHit.fixed}
 						loading={marks.loading}
 						items={visibleHitItems}
+						translations={hitRecords.translations}
+						translationsLoading={chapterTranslations.loading}
+						translationsError={chapterTranslations.error}
+						unavailable={chapterTranslations.unavailable}
+						onRetryTranslations={() => {
+							void chapterTranslations.refetch();
+						}}
+						chapter={chapter.data}
+						sourceId={book.source_id}
+						direction={settings.writing_mode}
+						adoptionSessions={adoptionSessions.current}
+						translationSessions={translationSessions.current}
+						onBackToOrigin={backToTranslationOrigin}
+						onSaved={() => {
+							void client.invalidateQueries({
+								queryKey: ["material-chapter-segments", book.id],
+							});
+						}}
 						onOpen={openStudySegment}
 						onClose={closeMarkHit}
 						expanded={panels.right === "study"}
@@ -2070,9 +2137,9 @@ function Reader({
 							controller.current?.show();
 						}}
 						onCollapse={closeMarkHit}
-						onEmphasize={(id) => {
-							previewEmphasis.current = id;
-							frames.current.emphasizeStudyMark(id);
+						onEmphasize={(id, kind = "segment") => {
+							previewEmphasis.current = id ? { id, kind } : null;
+							frames.current.emphasizeStudyMark(id, kind);
 						}}
 					/>
 				)}

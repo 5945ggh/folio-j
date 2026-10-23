@@ -6,8 +6,10 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import type { components } from "../src/api/schema";
 import type { StudyTarget } from "../src/materials/study-api";
 import "../src/styles.css";
+import { chapterRecords } from "./chapter-records";
 import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
+import { readingAidsRegression } from "./reading-aids";
 import { segmentMaterials } from "./segment-materials";
 import { translationRegression } from "./translation";
 import { workbenchRegression } from "./workbench";
@@ -360,15 +362,10 @@ async function clearStudyContext() {
 try {
 	const suite = new URLSearchParams(location.search).get("suite");
 	const lines =
-		suite === "reader-clipboard"
+		suite === "chapter-records"
 			? [
-					await readerClipboard(
-						new URLSearchParams(location.search).has("preview"),
-					),
-				]
-			: suite === "translation"
-				? [
-						await translationRegression({
+					await chapterRecords(
+						{
 							container,
 							check,
 							until,
@@ -377,24 +374,35 @@ try {
 							mock: (handler) => {
 								handleRequest = handler;
 							},
-						}),
+						},
+						new URLSearchParams(location.search).has("preview"),
+					),
+				]
+			: suite === "reader-clipboard"
+				? [
+						await readerClipboard(
+							new URLSearchParams(location.search).has("preview"),
+						),
 					]
-				: suite === "workbench"
+				: suite === "reading-aids"
 					? [
-							await workbenchRegression({
-								container,
-								check,
-								until,
-								inputValue,
-								mount,
-								mock: (handler) => {
-									handleRequest = handler;
+							await readingAidsRegression(
+								{
+									container,
+									check,
+									until,
+									inputValue,
+									mount,
+									mock: (handler) => {
+										handleRequest = handler;
+									},
 								},
-							}),
+								new URLSearchParams(location.search).has("preview"),
+							),
 						]
-					: suite === "reader-bookmarks"
+					: suite === "translation"
 						? [
-								await readerBookmarks({
+								await translationRegression({
 									container,
 									check,
 									until,
@@ -405,32 +413,9 @@ try {
 									},
 								}),
 							]
-						: [
-								await readerClipboard(),
-								await workbenchRegression({
-									container,
-									check,
-									until,
-									inputValue,
-									mount,
-									mock: (handler) => {
-										handleRequest = handler;
-									},
-								}),
-								await cardLayout(),
-								await clearStudyContext(),
-								await segmentMaterials({
-									container,
-									check,
-									until,
-									inputValue,
-									mount,
-									mock: (handler) => {
-										handleRequest = handler;
-									},
-								}),
-								await readerBookmarks(
-									{
+						: suite === "workbench"
+							? [
+									await workbenchRegression({
 										container,
 										check,
 										until,
@@ -439,10 +424,59 @@ try {
 										mock: (handler) => {
 											handleRequest = handler;
 										},
-									},
-									true,
-								),
-							];
+									}),
+								]
+							: suite === "reader-bookmarks"
+								? [
+										await readerBookmarks({
+											container,
+											check,
+											until,
+											inputValue,
+											mount,
+											mock: (handler) => {
+												handleRequest = handler;
+											},
+										}),
+									]
+								: [
+										await readerClipboard(),
+										await workbenchRegression({
+											container,
+											check,
+											until,
+											inputValue,
+											mount,
+											mock: (handler) => {
+												handleRequest = handler;
+											},
+										}),
+										await cardLayout(),
+										await clearStudyContext(),
+										await segmentMaterials({
+											container,
+											check,
+											until,
+											inputValue,
+											mount,
+											mock: (handler) => {
+												handleRequest = handler;
+											},
+										}),
+										await readerBookmarks(
+											{
+												container,
+												check,
+												until,
+												inputValue,
+												mount,
+												mock: (handler) => {
+													handleRequest = handler;
+												},
+											},
+											true,
+										),
+									];
 	check(unexpectedRequests.length === 0, unexpectedRequests.join("\n"));
 	output.textContent = `PASS\n${lines.join("\n")}`;
 	output.dataset.status = "passed";
