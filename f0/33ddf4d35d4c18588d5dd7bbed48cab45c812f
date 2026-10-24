@@ -1,0 +1,65 @@
+frontend/browser-tests/inline-records.tsx
+  s_eb44868f0c0200::t_ec0c70ede848b7 619
+docs/handovers/text-study/INLINE_PREVIEW_ACCEPTANCE.md
+  s_eb44868f0c0200::t_93154381f5db33 173-175,177-179
+  s_eb44868f0c0200::t_0a2b6aa9f98f57 176
+  s_eb44868f0c0200::t_0ae4de37c19596 180
+frontend/src/materials/StudyPreview.tsx
+  s_eb44868f0c0200::t_c3afc51d1f2167 207,210
+frontend/browser-tests/chapter-records.tsx
+  s_eb44868f0c0200::t_bc2fda2f31f07a 822-841,843-859,863-864,938-940,1081,1300
+  s_eb44868f0c0200::t_6890f752cff072 842,860-862
+  s_eb44868f0c0200::t_ec0c70ede848b7 888,930
+docs/ARCHITECTURE.md
+  s_eb44868f0c0200::t_12c1383ec92125 456,470
+  s_eb44868f0c0200::t_311f116888ff8e 518
+  s_eb44868f0c0200::t_db95fc97234d72 517
+  s_eb44868f0c0200::t_039ae8a41e3b09 411-415,425
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_eb44868f0c0200::t_0a2b6aa9f98f57 9,25,47
+  s_eb44868f0c0200::t_a24d71836a37e1 8
+docs/INFORMATION_ARCHITECTURE.md
+  s_eb44868f0c0200::t_bc2fda2f31f07a 150
+  s_eb44868f0c0200::t_039ae8a41e3b09 144,162,170
+  s_eb44868f0c0200::t_12c1383ec92125 148,172
+docs/PRD.md
+  s_eb44868f0c0200::t_bc2fda2f31f07a 222
+  s_eb44868f0c0200::t_12c1383ec92125 6,216-217,287
+  s_eb44868f0c0200::t_039ae8a41e3b09 215,284-286,290
+  s_eb44868f0c0200::t_db95fc97234d72 226
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md
+  s_eb44868f0c0200::t_bc2fda2f31f07a 211
+  s_eb44868f0c0200::t_0ae4de37c19596 173,183,191,193
+  s_eb44868f0c0200::t_0a2b6aa9f98f57 158,175,179,196-209
+  s_eb44868f0c0200::t_87aeba8dbbde1b 154-157,159-167,174
+  s_eb44868f0c0200::t_a0b24cc7964ae8 172
+  s_eb44868f0c0200::t_6f5f361467c35b 168,170-171
+  s_eb44868f0c0200::t_eb16e4b84a0aa0 176-178,180-182,184-190,192,194-195
+  s_eb44868f0c0200::t_3a2066ad7d9a6b 169
+  s_eb44868f0c0200::t_97d3f1102fbb41 210
+frontend/src/materials/ChapterRecords.tsx
+  s_eb44868f0c0200::t_c3afc51d1f2167 303-311
+frontend/browser-tests/reader-bookmarks.tsx
+  s_eb44868f0c0200::t_0e987bbfee3ca3 611,637
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f033ddf4d35d4c18588d5dd7bbed48cab45c812f",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_eb44868f0c0200": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16c79-d382-72b0-b54d-48d23b70cfa0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
