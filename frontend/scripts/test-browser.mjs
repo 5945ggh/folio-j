@@ -43,6 +43,11 @@ try {
 	for (const [width, height, query] of [
 		[600, 900, ""],
 		[1280, 900, "?suite=reader-bookmarks"],
+		[1280, 900, "?suite=inline-records"],
+		[1280, 900, "?suite=inline-records&performance"],
+		[1280, 900, "?suite=inline-records&performance&reduced-motion"],
+		[390, 900, "?suite=inline-records"],
+		[1280, 900, "?suite=inline-records&direction=vertical-rl"],
 		[1280, 900, "?suite=chapter-records"],
 		[1280, 900, "?suite=chapter-records&theme=dark"],
 		[1280, 900, "?suite=chapter-records&direction=vertical-rl"],
@@ -75,6 +80,14 @@ try {
 			new URLSearchParams(query).get("suite") ===
 				process.env.BROWSER_TEST_SUITE,
 	)) {
+		if (
+			process.env.BROWSER_TEST_QUERY &&
+			query !== process.env.BROWSER_TEST_QUERY
+		)
+			continue;
+		const testQuery = process.env.BROWSER_TEST_BASELINE
+			? `${query}&baseline`
+			: query;
 		const browser = spawn(
 			chrome,
 			[
@@ -111,6 +124,35 @@ try {
 			while (boundary !== -1) {
 				const message = JSON.parse(incoming.slice(0, boundary));
 				incoming = incoming.slice(boundary + 1);
+				if (
+					message.method === "Runtime.bindingCalled" &&
+					message.params.name === "__dispatchBrowserPointer"
+				) {
+					const { id, events } = JSON.parse(message.params.payload);
+					void (async () => {
+						for (const event of events) {
+							await command(
+								"Input.dispatchMouseEvent",
+								event,
+								message.sessionId,
+							);
+							await command(
+								"Runtime.evaluate",
+								{
+									expression:
+										"new Promise(resolve => requestAnimationFrame(() => resolve()))",
+									awaitPromise: true,
+								},
+								message.sessionId,
+							);
+						}
+						await command(
+							"Runtime.evaluate",
+							{ expression: `window.__pointerResolvers.get(${id})()` },
+							message.sessionId,
+						);
+					})();
+				}
 				const waiter = pending.get(message.id);
 				if (waiter) {
 					pending.delete(message.id);
@@ -138,6 +180,20 @@ try {
 				flatten: true,
 			});
 			await command("Page.enable", {}, sessionId);
+			await command("Page.bringToFront", {}, sessionId);
+			await command("Runtime.enable", {}, sessionId);
+			await command(
+				"Runtime.addBinding",
+				{ name: "__dispatchBrowserPointer" },
+				sessionId,
+			);
+			await command(
+				"Page.addScriptToEvaluateOnNewDocument",
+				{
+					source: `window.__pointerResolvers = new Map(); window.browserPointer = (events) => new Promise((resolve) => { const id = window.__pointerResolvers.size + 1; window.__pointerResolvers.set(id, resolve); window.__dispatchBrowserPointer(JSON.stringify({id,events})); });`,
+				},
+				sessionId,
+			);
 			if (new URLSearchParams(query).get("suite") === "theme") {
 				await command(
 					"Emulation.setEmulatedMedia",
@@ -152,6 +208,13 @@ try {
 					sessionId,
 				);
 			}
+			if (new URLSearchParams(query).has("reduced-motion")) {
+				await command(
+					"Emulation.setEmulatedMedia",
+					{ features: [{ name: "prefers-reduced-motion", value: "reduce" }] },
+					sessionId,
+				);
+			}
 			await command(
 				"Emulation.setDeviceMetricsOverride",
 				{
@@ -162,7 +225,7 @@ try {
 				},
 				sessionId,
 			);
-			await command("Page.navigate", { url: `${url}${query}` }, sessionId);
+			await command("Page.navigate", { url: `${url}${testQuery}` }, sessionId);
 			// Use actual rendering and scroll/ResizeObserver delivery, not virtual time.
 			const evaluated = await command(
 				"Runtime.evaluate",

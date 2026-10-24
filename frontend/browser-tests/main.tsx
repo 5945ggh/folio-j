@@ -376,7 +376,7 @@ try {
 						},
 					}),
 				]
-			: suite === "chapter-records"
+			: suite === "chapter-records" || suite === "inline-records"
 				? [
 						await chapterRecords(
 							{

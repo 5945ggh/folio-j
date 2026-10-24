@@ -7,6 +7,7 @@ import {
 } from "./dom.ts";
 import { isReaderFrameTarget, registerReaderFrameTargets } from "./focus.ts";
 import { prepareHighlights, projectedBaseRanges } from "./highlight.ts";
+import { InlineTranslation } from "./inline-translation.ts";
 import { currentSurface } from "./position.ts";
 import type { BookUiPreferences } from "./preferences.ts";
 import {
@@ -26,7 +27,7 @@ import {
 	type StudyMarkKind,
 } from "./reader-study.ts";
 import { applyAutomaticRuby } from "./ruby.ts";
-import type { StudyTarget } from "./study-api.ts";
+import type { MaterialProvenance, StudyTarget } from "./study-api.ts";
 import { readingViewport } from "./viewport.ts";
 
 export type ReaderFrame = {
@@ -96,6 +97,49 @@ type FrameContext = {
 /** Owns iframe lifetime and exact native-selection/reference projection. */
 export class ReaderFrames {
 	private readonly study = new ReaderStudy();
+	private readonly inlineTranslation = new InlineTranslation();
+	setInlineTranslation(
+		chapter: Chapter,
+		value: { reference: MaterialProvenance; text: string } | null,
+		mutate: (update: () => void) => void,
+	): boolean {
+		if (!value) {
+			this.inlineTranslation.hide(mutate);
+			return true;
+		}
+		try {
+			const reference = value.reference;
+			if (
+				reference.contract_version !== "1" ||
+				reference.material_id !== chapter.material_id ||
+				reference.version_id !== chapter.version_id
+			)
+				throw new Error("出处身份失配。");
+			const targets = referenceParts(chapter, reference.ranges);
+			let final: { index: number; end: number; projection: Projection } | null =
+				null;
+			for (const [index, intervals] of targets) {
+				const projection = this.freshProjection(index, chapter);
+				for (const interval of intervals)
+					final = { index, end: interval.end, projection };
+			}
+			if (!final) throw new Error("没有可定位的出处。");
+			const frame = this.frames.get(final.index),
+				valid = this.validity.get(final.index);
+			if (!frame || !valid) throw new Error("正文尚未显示。");
+			return this.inlineTranslation.set(
+				frame.doc,
+				final.projection,
+				final.end,
+				value.text,
+				mutate,
+				valid,
+			);
+		} catch {
+			this.inlineTranslation.clear();
+			return false;
+		}
+	}
 	bindStudy(binding: StudyBinding | null): void {
 		this.study.bind(binding);
 	}
@@ -180,6 +224,7 @@ export class ReaderFrames {
 		else this.elements.delete(index);
 	}
 	clear() {
+		this.inlineTranslation.clear(false);
 		this.study.clear();
 		for (const frame of this.frames.values()) {
 			frame.cleanup();
@@ -254,6 +299,8 @@ export class ReaderFrames {
 		bookUi: BookUiPreferences,
 		readings: ReadingsResponse | undefined,
 	) {
+		if (settings.writing_mode !== "horizontal-tb")
+			this.inlineTranslation.clear(false);
 		for (const [index, frame] of this.frames) {
 			frame.presentationCleanup();
 			frame.presentationCleanup = applyFramePresentation(
@@ -293,6 +340,7 @@ export class ReaderFrames {
 				frame.rubyApplied = true;
 			}
 		}
+		this.inlineTranslation.refresh();
 		this.study.geometryChanged();
 	}
 	load(
@@ -321,6 +369,7 @@ export class ReaderFrames {
 		const resource = data.resources.find((r) => r.id === part.resource_id);
 		if (!resource) return;
 		try {
+			this.inlineTranslation.clear(false);
 			applyDocumentSettings(doc, context.current().settings);
 			let projection = projectPart(
 				doc,

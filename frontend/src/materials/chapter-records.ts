@@ -5,7 +5,30 @@ type RecordHit = {
 	segmentIds: string[];
 	translationIds?: string[];
 	fixed?: boolean;
+	anchorPlacement?: string;
 };
+
+/** Ambiguous or mixed records keep the existing chooser; only a direct translation is inline. */
+export function inlineTranslationAtHit<
+	S extends LocatedRecord & { segment_id: string },
+	T extends LocatedRecord & { identity_sha256: string },
+>(
+	segments: readonly S[],
+	translations: readonly T[],
+	hit: RecordHit,
+	direction: "horizontal-tb" | "vertical-rl",
+): T | null {
+	if (
+		direction !== "horizontal-tb" ||
+		hit.fixed ||
+		(hit.anchorPlacement && hit.anchorPlacement !== "text")
+	)
+		return null;
+	const records = recordsAtHit(segments, translations, hit);
+	return !records.segments.length && records.translations.length === 1
+		? (records.translations[0] ?? null)
+		: null;
+}
 
 export function sameRecordHit(a: RecordHit, b: RecordHit): boolean {
 	return ["segmentIds", "translationIds"].every((field) => {

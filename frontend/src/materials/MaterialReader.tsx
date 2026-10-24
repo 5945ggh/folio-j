@@ -22,7 +22,10 @@ import { InlineError } from "../Shared";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "../speech";
 import { getSpeechController } from "../speech/browser";
 import type { AdoptionSession } from "../translation/AdoptTranslation";
-import type { TranslationResult } from "../translation/api";
+import {
+	getTranslationResult,
+	type TranslationResult,
+} from "../translation/api";
 import { useTranslationSessions } from "../translation/session-react";
 import { targetText, translationTargetKey } from "../translation/state";
 import { TranslationPanel } from "../translation/TranslationPanel";
@@ -46,8 +49,13 @@ import {
 	usageKey,
 } from "./api";
 import { ChapterRecords } from "./ChapterRecords";
-import { recordsAtHit, sameRecordHit } from "./chapter-records";
 import {
+	inlineTranslationAtHit,
+	recordsAtHit,
+	sameRecordHit,
+} from "./chapter-records";
+import {
+	type ChapterTranslation,
 	useChapterTranslations,
 	useMaterialTranslationActivity,
 } from "./chapter-translations-query";
@@ -135,6 +143,11 @@ const defaults: Settings = {
 	line_height: 2,
 	writing_mode: "horizontal-tb",
 };
+type InlineTranslationRequest = {
+	chapterId: string;
+	item: ChapterTranslation;
+	hit: StudyMarkHit;
+};
 function Reader({
 	book,
 	notice,
@@ -170,6 +183,12 @@ function Reader({
 	const [marginEntries, setMarginEntries] = useState<StudyMarginEntry[]>([]);
 	const markTrigger = useRef<HTMLButtonElement | null>(null);
 	const [markHit, setMarkHit] = useState<StudyMarkHit | null>(null);
+	const [manualPosition, setManualPosition] = useState<{
+		left: number;
+		top: number;
+	} | null>(null);
+	const [inlineRequest, setInlineRequest] =
+		useState<InlineTranslationRequest | null>(null);
 	const [previewSerial, setPreviewSerial] = useState(0);
 	const previewEmphasis = useRef<{
 		id: string;
@@ -348,6 +367,8 @@ function Reader({
 		selectionActive: selection !== null,
 		markActive: markHit !== null,
 		markHit,
+		manualPosition,
+		inlineRequest,
 		studyTargetActive: studyTarget !== null,
 		studyActive:
 			translationOpen ||
@@ -367,6 +388,8 @@ function Reader({
 		selectionActive: selection !== null,
 		markActive: markHit !== null,
 		markHit,
+		manualPosition,
+		inlineRequest,
 		studyTargetActive: studyTarget !== null,
 		studyActive:
 			translationOpen ||
@@ -377,6 +400,7 @@ function Reader({
 	const closeCompactPreview = useCallback(() => {
 		if (
 			!latest.current.markHit ||
+			latest.current.manualPosition ||
 			latest.current.markHit.fixed ||
 			latest.current.panels.right === "study"
 		)
@@ -385,6 +409,13 @@ function Reader({
 		previewEmphasis.current = null;
 		frames.current.emphasizeStudyMark(null);
 		return true;
+	}, []);
+	const closeInlineTranslation = useCallback(() => {
+		setInlineRequest(null);
+		if (latest.current.inlineRequest) {
+			previewEmphasis.current = null;
+			frames.current.emphasizeStudyMark(null);
+		}
 	}, []);
 	const dismissReadingBackground = useCallback(() => {
 		const hadToolbar = latest.current.selectionActive;
@@ -535,6 +566,10 @@ function Reader({
 					setSelection(null);
 					return true;
 				}
+				if (latest.current.inlineRequest) {
+					closeInlineTranslation();
+					return true;
+				}
 				if (
 					latest.current.markActive &&
 					!(
@@ -576,7 +611,12 @@ function Reader({
 			focus.dispose();
 			controller.current = null;
 		};
-	}, [closePanel, dismissReadingBackground, setUiPreference]);
+	}, [
+		closePanel,
+		closeInlineTranslation,
+		dismissReadingBackground,
+		setUiPreference,
+	]);
 	useEffect(() => {
 		controller.current?.setFocus(ui.focus);
 	}, [ui.focus]);
@@ -653,6 +693,7 @@ function Reader({
 	const alive = useRef(true);
 	const openMarkHit = useCallback(
 		(value: StudyMarkHit, trigger: HTMLButtonElement | null = null) => {
+			closeInlineTranslation();
 			setTranslationOpen(false);
 			markTrigger.current = trigger;
 			previewEmphasis.current = null;
@@ -666,7 +707,51 @@ function Reader({
 			setPreviewSerial((serial) => serial + 1);
 			setMarkHit(value);
 		},
-		[],
+		[closeInlineTranslation],
+	);
+	const openTextMark = useCallback(
+		(value: StudyMarkHit) => {
+			const item = !latest.current.manualPosition
+				? inlineTranslationAtHit(
+						marks.items,
+						chapterTranslations.items,
+						value,
+						latest.current.settings.writing_mode,
+					)
+				: null;
+			if (!item) {
+				openMarkHit(value);
+				return;
+			}
+			if (
+				latest.current.inlineRequest?.item.identity_sha256 ===
+				item.identity_sha256
+			) {
+				closeInlineTranslation();
+				return;
+			}
+			setMarkHit(null);
+			setTranslationOpen(false);
+			frames.current.clearStudySelection();
+			setPanels((current) =>
+				current.right === "study"
+					? closeReaderPanel(current, "right")
+					: current,
+			);
+			previewEmphasis.current = {
+				id: item.identity_sha256,
+				kind: "translation",
+			};
+			frames.current.emphasizeStudyMark(item.identity_sha256, "translation");
+			setInlineRequest({ chapterId, item, hit: value });
+		},
+		[
+			marks.items,
+			chapterTranslations.items,
+			chapterId,
+			openMarkHit,
+			closeInlineTranslation,
+		],
 	);
 	useLayoutEffect(() => {
 		frames.current.bindStudy({
@@ -679,6 +764,8 @@ function Reader({
 				if (value) {
 					if (
 						!latest.current.markHit?.fixed &&
+						!latest.current.manualPosition &&
+						!latest.current.inlineRequest &&
 						latest.current.panels.right !== "study"
 					) {
 						setMarkHit(null);
@@ -692,9 +779,11 @@ function Reader({
 			onMarks: (value) => {
 				if (!alive.current) return;
 				if (value) {
-					if (!latest.current.studyTargetActive) openMarkHit(value);
+					if (!latest.current.studyTargetActive) openTextMark(value);
 				} else if (
 					latest.current.panels.right === "study" ||
+					latest.current.manualPosition ||
+					latest.current.inlineRequest ||
 					latest.current.markHit?.fixed
 				) {
 					frames.current.emphasizeStudyMark(
@@ -715,6 +804,8 @@ function Reader({
 	);
 	const visibleHitItems = hitRecords.segments;
 	const closeMarkHit = useCallback(() => {
+		closeInlineTranslation();
+		setManualPosition(null);
 		setMarkHit(null);
 		previewEmphasis.current = null;
 		frames.current.emphasizeStudyMark(null);
@@ -722,7 +813,19 @@ function Reader({
 			current.right === "study" ? closeReaderPanel(current, "right") : current,
 		);
 		markTrigger.current?.focus({ preventScroll: true });
-	}, []);
+	}, [closeInlineTranslation]);
+	useEffect(() => {
+		if (!markHit) setManualPosition(null);
+	}, [markHit]);
+	const inlineResult = useQuery({
+		queryKey: ["translation-result", inlineRequest?.item.result_id],
+		queryFn: () => getTranslationResult(inlineRequest?.item.result_id ?? ""),
+		enabled:
+			!!inlineRequest &&
+			inlineRequest.chapterId === chapterId &&
+			settings.writing_mode === "horizontal-tb",
+		retry: false,
+	});
 	useEffect(() => {
 		if (
 			markHit &&
@@ -747,6 +850,8 @@ function Reader({
 	]);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: a chapter switch invalidates the fixed list even when its old frame has already gone.
 	useEffect(() => {
+		closeInlineTranslation();
+		setManualPosition(null);
 		setMarkHit(null);
 		previewEmphasis.current = null;
 		setPanels((current) =>
@@ -1122,6 +1227,55 @@ function Reader({
 		],
 	);
 	const reflowFrames = useCallback(() => layout.current.reflow(), []);
+	const mutateInlineLayout = useCallback(
+		(update: () => void) => {
+			const root = container.current;
+			const data = chapter.data;
+			if (!root || !data || !alive.current) {
+				update();
+				return;
+			}
+			const anchor = capture();
+			const screenTop = () => {
+				if (!anchor) return null;
+				const frame = frames.current.get(anchor.part_index);
+				const part = data.parts[anchor.part_index];
+				if (!frame || !part) return null;
+				const rect =
+					anchor.kind === "text"
+						? textRect(
+								frame.doc,
+								frame.projection,
+								(anchor.offset ?? part.start) - part.start,
+								false,
+							)
+						: frame.doc
+								.querySelector<HTMLElement>(
+									`[data-epub-image="${anchor.image_id}"]`,
+								)
+								?.getBoundingClientRect();
+				return rect
+					? frame.element.getBoundingClientRect().top + rect.top
+					: null;
+			};
+			const before = screenTop();
+			jumpReading.current.pause();
+			let applied = false;
+			layout.current.reflow(() => {
+				applied = true;
+				update();
+			});
+			if (!applied) {
+				update();
+				return;
+			}
+			const after = screenTop();
+			if (before !== null && after !== null) root.scrollTop += after - before;
+			// restore() already refreshes study geometry; only resample after pixel compensation.
+			observe();
+		},
+		[capture, chapter.data, observe],
+	);
 	useEffect(() => {
 		alive.current = true;
 		const unregister = queue.current
@@ -1451,6 +1605,79 @@ function Reader({
 		capture,
 		restore,
 	]);
+	useLayoutEffect(() => {
+		const data = chapter.data;
+		if (!data) return;
+		if (
+			!inlineRequest ||
+			inlineRequest.chapterId !== chapterId ||
+			settings.writing_mode !== "horizontal-tb"
+		) {
+			frames.current.setInlineTranslation(data, null, mutateInlineLayout);
+			if (inlineRequest) closeInlineTranslation();
+			return;
+		}
+		const item = inlineRequest.item;
+		if (
+			!chapterTranslations.loading &&
+			!chapterTranslations.isFetching &&
+			!marks.loading &&
+			!marks.isFetching &&
+			!inlineTranslationAtHit(
+				marks.items,
+				chapterTranslations.items,
+				inlineRequest.hit,
+				settings.writing_mode,
+			)
+		) {
+			closeInlineTranslation();
+			return;
+		}
+		const result = inlineResult.data;
+		if (inlineResult.isError) {
+			openMarkHit(inlineRequest.hit);
+			return;
+		}
+		if (!result) {
+			frames.current.setInlineTranslation(data, null, mutateInlineLayout);
+			return;
+		}
+		const matching =
+			result.id === item.result_id &&
+			result.identity_sha256 === item.identity_sha256 &&
+			result.material_provenance.material_id === book.id &&
+			result.material_provenance.version_id === book.version_id;
+		if (
+			!matching ||
+			!frames.current.setInlineTranslation(
+				data,
+				{
+					reference: result.material_provenance,
+					text: result.translation,
+				},
+				mutateInlineLayout,
+			)
+		)
+			openMarkHit(inlineRequest.hit);
+	}, [
+		inlineRequest,
+		inlineResult.data,
+		inlineResult.isError,
+		chapter.data,
+		chapterId,
+		settings,
+		marks.items,
+		marks.loading,
+		marks.isFetching,
+		chapterTranslations.loading,
+		chapterTranslations.isFetching,
+		chapterTranslations.items,
+		book.id,
+		book.version_id,
+		mutateInlineLayout,
+		closeInlineTranslation,
+		openMarkHit,
+	]);
 	const leave = () => {
 		layout.current.cancelSave();
 		const anchor = layout.current.presentedAnchor(capture);
@@ -1630,6 +1857,9 @@ function Reader({
 				</div>
 			</header>
 			<div className="reader-alerts" aria-live="polite">
+				{inlineRequest && inlineResult.isPending && (
+					<p role="status">正在读取译文…</p>
+				)}
 				{marks.loading && <p>正在载入本章学习片段标记…</p>}
 				{(marks.isError || markError) && (
 					<div className="reader-mark-error" role="alert">
@@ -2089,6 +2319,8 @@ function Reader({
 					hitRecords.translations.length > 0) && (
 					<ChapterRecords
 						key={previewSerial}
+						manualPosition={manualPosition}
+						onManualPositionChange={setManualPosition}
 						anchor={markHit.anchor}
 						anchorPlacement={markHit.anchorPlacement}
 						fixed={markHit.fixed}

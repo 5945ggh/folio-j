@@ -20,6 +20,19 @@
 .reader-r1 .reader-chapter-records.expanded {
 	width: min(460px, calc(100vw - 24px));
 }
+.reader-chapter-records > [data-reader-card-draggable="true"] {
+	cursor: grab;
+	touch-action: none;
+	user-select: none;
+}
+.reader-chapter-records[data-reader-card-dragging="true"]
+	> [data-reader-card-drag-handle] {
+	cursor: grabbing;
+}
+.reader-chapter-records > [data-reader-card-draggable="true"]:focus-visible {
+	outline: 2px solid var(--reader-fg);
+	outline-offset: -3px;
+}
 .reader-record-tabs {
 	display: flex;
 	gap: 4px;

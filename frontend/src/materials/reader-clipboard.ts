@@ -1,4 +1,5 @@
 import type { Projection } from "./dom.ts";
+import { inlineTranslationInRange } from "./inline-translation.ts";
 
 /** Copy selected base text, including compiled line breaks, without changing the native selection. */
 export function copyReaderSelection(
@@ -26,6 +27,25 @@ export function copyReaderSelection(
 		)
 	)
 		return;
+	// A translation-only selection owns its own plain-text copy; mixed selections
+	// continue through canonical leaves so translation can never join source copy.
+	const translation =
+		ranges.length === 1 && ranges[0]
+			? inlineTranslationInRange(doc, ranges[0])
+			: null;
+	if (
+		translation &&
+		ranges.every(
+			(range) =>
+				translation.contains(range.startContainer) &&
+				translation.contains(range.endContainer),
+		)
+	) {
+		event.preventDefault();
+		event.clipboardData.clearData();
+		event.clipboardData.setData("text/plain", selection.toString());
+		return;
+	}
 	const text = ranges
 		.map((range) =>
 			projection.entries

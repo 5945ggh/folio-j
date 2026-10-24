@@ -386,6 +386,26 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 					.map((node) => node.getAttribute("aria-expanded"))
 					.join(",")})`,
 			);
+			await until(
+				() =>
+					!!container
+						.querySelector(".reader-study-preview-original")
+						?.textContent?.trim(),
+				"Bookmark source details must load before measuring placement",
+			);
+			let previousPanelBounds = "";
+			let stablePanelFrames = 0;
+			await until(() => {
+				const bounds = JSON.stringify(
+					find<HTMLElement>(".reader-chapter-records")
+						.getBoundingClientRect()
+						.toJSON(),
+				);
+				stablePanelFrames =
+					bounds === previousPanelBounds ? stablePanelFrames + 1 : 0;
+				previousPanelBounds = bounds;
+				return stablePanelFrames >= 4;
+			}, "Bookmark detail placement must settle after content loading");
 			const triggerBounds = first().getBoundingClientRect();
 			const panelBounds = find<HTMLElement>(
 				".reader-chapter-records",

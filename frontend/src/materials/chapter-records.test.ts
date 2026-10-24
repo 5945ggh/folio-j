@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
 	completeChapterTranslations,
+	inlineTranslationAtHit,
 	recordsAtHit,
 	sameRecordHit,
 } from "./chapter-records.ts";
@@ -30,6 +31,50 @@ function reference(
 		],
 	};
 }
+test("只有横排正文的单一翻译目标就地展开，学习片段与歧义目标保留浮卡", () => {
+	const first = { identity_sha256: "t1", material_provenance: reference(3, 8) };
+	const second = {
+		identity_sha256: "t2",
+		material_provenance: reference(6, 10),
+	};
+	const hit = { segmentIds: [], translationIds: ["t1"] };
+	assert.equal(
+		inlineTranslationAtHit([], [first], hit, "horizontal-tb"),
+		first,
+	);
+	assert.equal(inlineTranslationAtHit([], [first], hit, "vertical-rl"), null);
+	assert.equal(
+		inlineTranslationAtHit(
+			[],
+			[first],
+			{ ...hit, anchorPlacement: "margin-right" },
+			"horizontal-tb",
+		),
+		null,
+	);
+	assert.equal(
+		inlineTranslationAtHit(
+			[],
+			[first],
+			{ ...hit, fixed: true },
+			"horizontal-tb",
+		),
+		null,
+	);
+	assert.equal(
+		inlineTranslationAtHit([], [first, second], hit, "horizontal-tb"),
+		null,
+	);
+	assert.equal(
+		inlineTranslationAtHit(
+			[{ segment_id: "s", material_provenance: reference(0, 5) }],
+			[first],
+			hit,
+			"horizontal-tb",
+		),
+		null,
+	);
+});
 test("部分重叠从任一端进入都合并两类记录，相邻范围与别次spine不混入", () => {
 	const segments = [{ segment_id: "s", material_provenance: reference(0, 5) }];
 	const translations = [

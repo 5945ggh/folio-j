@@ -18,7 +18,13 @@ import type { TranslationSessions } from "../translation/session";
 import { TranslationPanel } from "../translation/TranslationPanel";
 import type { Chapter } from "./api";
 import type { ChapterTranslation } from "./chapter-translations-query";
+import {
+	clampReaderCardPosition,
+	type ReaderCardBounds,
+	type ReaderCardPosition,
+} from "./reader-card-drag";
 import { StudyPreview, type StudyPreviewProps } from "./StudyPreview";
+import { useReaderCardDrag } from "./use-reader-card-drag";
 import "./chapter-records.css";
 
 type Props = Omit<StudyPreviewProps, "onEmphasize" | "embedded"> & {
@@ -36,6 +42,8 @@ type Props = Omit<StudyPreviewProps, "onEmphasize" | "embedded"> & {
 	onBackToOrigin: (result: TranslationResult) => void;
 	adoptionSessions: Map<string, AdoptionSession>;
 	translationSessions: TranslationSessions;
+	manualPosition?: ReaderCardPosition | null;
+	onManualPositionChange?: (value: ReaderCardPosition | null) => void;
 };
 
 export function ChapterRecords(props: Props) {
@@ -77,6 +85,37 @@ export function ChapterRecords(props: Props) {
 	);
 	const [position, setPosition] =
 		useState<ReturnType<typeof translationCardPosition>>();
+	const [localManualPosition, setLocalManualPosition] =
+		useState<ReaderCardPosition | null>(null);
+	const manualPosition =
+		props.manualPosition === undefined
+			? localManualPosition
+			: props.manualPosition;
+	const manual = useRef(manualPosition);
+	manual.current = manualPosition;
+	const measurePosition = useRef<(() => void) | null>(null);
+	const manualBounds = useRef<{
+		bounds: ReaderCardBounds;
+		height: number;
+	} | null>(null);
+	const [wide, setWide] = useState(() => innerWidth > 600);
+	const draggable = wide && !expanded && !inactive;
+	const { dragging, handlers: dragHandlers } = useReaderCardDrag(
+		element,
+		draggable,
+		(value) =>
+			manualBounds.current
+				? clampReaderCardPosition(
+						value,
+						manualBounds.current.bounds,
+						manualBounds.current.height,
+					)
+				: value,
+		(value) => {
+			if (props.manualPosition === undefined) setLocalManualPosition(value);
+			props.onManualPositionChange?.(value);
+		},
+	);
 	const returnToList = () => {
 		if (!selected || !canReturn) return;
 		nextFocus.current = selected.identity_sha256;
@@ -115,20 +154,50 @@ export function ChapterRecords(props: Props) {
 				: 76;
 			const headerHeight =
 				node.offsetHeight - (body.current?.offsetHeight ?? 0);
+			const viewport = { width: innerWidth, height: innerHeight };
+			const size = {
+				width: node.offsetWidth,
+				height: headerHeight + (body.current?.scrollHeight ?? 0),
+			};
+			const available = translationCardPosition(
+				null,
+				viewport,
+				{ ...size, height: Number.MAX_SAFE_INTEGER },
+				direction,
+				bottomInset,
+			);
+			const renderedHeight = Math.min(size.height, available.maxHeight);
+			manualBounds.current = {
+				bounds: {
+					left: 12,
+					right: available.left,
+					top: available.top,
+					bottom: Math.max(available.top, viewport.height - bottomInset),
+				},
+				height: renderedHeight,
+			};
+			setWide(innerWidth > 600);
 			setPosition(
-				translationCardPosition(
-					fixed || expanded ? null : anchor,
-					{ width: innerWidth, height: innerHeight },
-					{
-						width: node.offsetWidth,
-						height: headerHeight + (body.current?.scrollHeight ?? 0),
-					},
-					direction,
-					bottomInset,
-					fixed || expanded ? "text" : anchorPlacement,
-				),
+				manual.current && innerWidth > 600 && !expanded
+					? {
+							...clampReaderCardPosition(
+								manual.current,
+								manualBounds.current.bounds,
+								renderedHeight,
+							),
+							maxHeight: available.maxHeight,
+						}
+					: translationCardPosition(
+							fixed || expanded ? null : anchor,
+							viewport,
+							size,
+							direction,
+							bottomInset,
+							fixed || expanded ? "text" : anchorPlacement,
+						),
 			);
 		};
+		measurePosition.current = measure;
 		measure();
 		const observer = new ResizeObserver(measure);
 		observer.observe(node);
@@ -139,6 +208,7 @@ export function ChapterRecords(props: Props) {
 		if (playback) observer.observe(playback);
 		window.addEventListener("resize", measure);
 		return () => {
+			measurePosition.current = null;
 			observer.disconnect();
 			window.removeEventListener("resize", measure);
 		};
@@ -151,6 +221,10 @@ export function ChapterRecords(props: Props) {
 		anchorPlacement,
 		speechState,
 	]);
+	useLayoutEffect(() => {
+		manual.current = manualPosition;
+		measurePosition.current?.();
+	}, [manualPosition]);
 	useEffect(() => {
 		if (tab !== "translation") return;
 		callbacks.current.onEmphasize(
@@ -173,6 +247,8 @@ export function ChapterRecords(props: Props) {
 			aria-labelledby={`${id}-title`}
 			data-reader-tool=""
 			data-reader-panel-side={expanded ? "right" : undefined}
+			data-reader-card-manual={manualPosition ? "true" : undefined}
+			data-reader-card-dragging={dragging ? "true" : undefined}
 			aria-hidden={inactive || undefined}
 			inert={inactive || undefined}
 			onKeyDown={(event) => {
@@ -188,7 +264,18 @@ export function ChapterRecords(props: Props) {
 				}
 			}}
 		>
-			<header className="reader-study-preview-header">
+			<header
+				className="reader-study-preview-header"
+				data-reader-card-drag-handle=""
+				data-reader-card-draggable={draggable ? "true" : "false"}
+				tabIndex={draggable ? 0 : undefined}
+				title={
+					draggable
+						? "拖动标题栏移动；聚焦后用方向键移动，Shift 加快"
+						: undefined
+				}
+				{...dragHandlers}
+			>
 				<div className="reader-record-title">
 					{tab === "translation" && canReturn && (
 						<button

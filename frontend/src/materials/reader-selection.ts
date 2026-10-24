@@ -1,5 +1,6 @@
 import type { Chapter } from "./api.ts";
 import type { Projection } from "./dom.ts";
+import { inlineTranslationInRange } from "./inline-translation.ts";
 import { rawBoundary } from "./position.ts";
 import type { MaterialProvenance } from "./study-api.ts";
 
@@ -16,6 +17,8 @@ export function captureNativeSelection(
 	if (!selection || selection.isCollapsed || selection.rangeCount !== 1)
 		throw new Error("请在同一个正文区域内选择一段连续原文。");
 	const range = selection.getRangeAt(0);
+	if (inlineTranslationInRange(doc, range))
+		throw new Error("选区包含译文，请只选择原文。");
 	const endpoint = (node: Node, offset: number) => {
 		if (node.ownerDocument !== doc || !doc.body.contains(node))
 			throw new Error("选区已不属于当前正文，请重新选择。");
