@@ -1,0 +1,22 @@
+references/folio-reading-aids-v0.1/THIRD_PARTY_NOTICES.txt
+  s_0fe3ab6aa80701::t_35c7d62d544989 1-5,7-62
+  s_0fe3ab6aa80701::t_ed25ac4c5ee003 6
+references/folio-reading-aids-v0.1/README.md
+  s_0fe3ab6aa80701::t_35c7d62d544989 1-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a96c0cb714c310f49070ab819c27f59cec41ec60",
+  "prompts": {},
+  "sessions": {
+    "s_0fe3ab6aa80701": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a163ac-b28a-70d1-b5c1-a36980634e69",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}

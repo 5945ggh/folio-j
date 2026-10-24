@@ -1,0 +1,75 @@
+backend/tests/test_catalog.py
+  s_6417f5c15e88c1::t_e0e306ce53458a 120,164-183,189-191
+backend/tests/test_race_helpers.py
+  s_6417f5c15e88c1::t_31f174363fcb64 1-13,15-30,32-33
+  s_6417f5c15e88c1::t_1159a23958ed49 14,31
+backend/tests/test_manual_analyses.py
+  s_6417f5c15e88c1::t_1159a23958ed49 289,296,360-363,365,368,371,453-456,459,462-465
+  s_6417f5c15e88c1::t_7962b887279e4d 15,284,467
+backend/tests/test_materials.py
+  s_6417f5c15e88c1::t_e0e306ce53458a 242
+  s_6417f5c15e88c1::t_0e4655c93f2402 6,87-97,99,231-241,243-246
+  s_6417f5c15e88c1::t_40c785187242cb 247-248
+frontend/tsconfig.json
+  s_6417f5c15e88c1::t_461eb698abc6d8 22
+frontend/scripts/test-browser.mjs
+  s_6417f5c15e88c1::t_2385717bf406f4 19-21,37,74
+  s_6417f5c15e88c1::t_750b44e686cce3 6,10-12,14-16,25-36,40-41,44-71
+  s_6417f5c15e88c1::t_461eb698abc6d8 1-5,7-9,13,17-18,22-24,38-39,42-43,72-73,75-76
+frontend/src/materials/ruby-dom.test.ts
+  s_6417f5c15e88c1::t_8c7dd27e61f0e4 153,160
+frontend/src/materials/highlight.test.ts
+  s_6417f5c15e88c1::t_8c7dd27e61f0e4 7-16,19-21,24,26,30-36,58-59,72-73,105-108
+frontend/browser-tests/main.tsx
+  s_6417f5c15e88c1::t_24d16b0131fb2a 207,228-229,231,278
+  s_6417f5c15e88c1::t_750b44e686cce3 15-17,59-62,120-123,137-138,154-156,163-174,177-203,211-221,225-227,230,232-240,242-258,262-272,274-277,279-281,283-286,289-296,298-301,304-313,317-320
+  s_6417f5c15e88c1::t_b900b1b72157cb 323-335,338-344
+  s_6417f5c15e88c1::t_461eb698abc6d8 1-14,18-24,29-58,63-119,124-136,139-153,157-162,175-176,204-206,208-210,222-224,241,259-261,273,282,287-288,297,302-303,314-316,346-360
+  s_6417f5c15e88c1::t_a817d24b918f50 25-28,321-322,336-337,345
+docs/handovers/TEST_QUALITY_ACCEPTANCE.md
+  s_6417f5c15e88c1::t_98a980671b5a55 3,40
+  s_6417f5c15e88c1::t_1c7496262b39c9 1-2,4-36,44-53
+  s_6417f5c15e88c1::t_d00fdb1c14dc28 37-39,41-43
+  s_6417f5c15e88c1::t_18c8da1f875147 54-55
+justfile
+  s_6417f5c15e88c1::t_408e062de2ee08 60-63,85
+backend/tests/test_worker_dispatch.py
+  s_6417f5c15e88c1::t_5a57eb9decc0e6 1-141,143
+  s_6417f5c15e88c1::t_8e0714ace6f9c4 142
+frontend/browser-tests/index.html
+  s_6417f5c15e88c1::t_461eb698abc6d8 1-13
+backend/tests/race_helpers.py
+  s_6417f5c15e88c1::t_8e0714ace6f9c4 4,16
+  s_6417f5c15e88c1::t_1159a23958ed49 1,20-26
+  s_6417f5c15e88c1::t_31f174363fcb64 2-3,5-15,17-19,27-32
+frontend/package.json
+  s_6417f5c15e88c1::t_461eb698abc6d8 13
+backend/tests/test_epub_compiler.py
+  s_6417f5c15e88c1::t_0e4655c93f2402 7-8,26-58,93-94,101-110
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_6417f5c15e88c1::t_d00fdb1c14dc28 69
+  s_6417f5c15e88c1::t_98a980671b5a55 68
+docs/ARCHITECTURE.md
+  s_6417f5c15e88c1::t_1a4436d96aa0f5 530,540
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a28578c968e8971b4f991f5d4327ab651be8d42",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_6417f5c15e88c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1646b-d934-7951-a8d2-710bd5171622",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}

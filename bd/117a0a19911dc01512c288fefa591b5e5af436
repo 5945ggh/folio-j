@@ -1,0 +1,85 @@
+frontend/src/materials/reader-study.test.ts
+  s_4cf800c8e68531::t_4b05348c7cf4b7 893-894,899-900,906,908,910
+  s_4cf800c8e68531::t_de4c6cbfb9886f 901-904
+  s_4cf800c8e68531::t_bb41ce9ad7f8eb 895-898,905,907,909
+frontend/src/materials/study-margin.test.ts
+  s_4cf800c8e68531::t_4b05348c7cf4b7 31,43,64-75,77-78,83-87
+  s_4cf800c8e68531::t_de4c6cbfb9886f 79-82,88-94,96,98-102
+  s_4cf800c8e68531::t_2e53c809697529 6,23,38,49,55-61,76,95,103-112,114-115
+frontend/src/materials/study-preview.css
+  s_4cf800c8e68531::t_8221f569c20242 252-254,259-261,277-278,280,282-286
+frontend/src/materials/reader-frames.ts
+  s_4cf800c8e68531::t_4b0b16b7935fc8 352-354,356
+frontend/src/materials/study-overlays.css
+  s_4cf800c8e68531::t_8163d99c50363c 104
+frontend/browser-tests/main.tsx
+  s_4cf800c8e68531::t_417bdcfb7a3dbb 9,75,79-81,88,357,360-368
+  s_4cf800c8e68531::t_5d0a76881a0a07 371-387
+  s_4cf800c8e68531::t_9787e3503bf5d4 3,358-359,369-370
+frontend/browser-tests/reader-bookmarks.tsx
+  s_4cf800c8e68531::t_a19d9d698766a2 323-329,331-336
+  s_4cf800c8e68531::t_cdf1872e6d7827 353
+  s_4cf800c8e68531::t_f9636a78355158 338-351,357,361,365,368,370-371,375,377,380,385,388-389,395,397-402,405,410,412,416-417,419-422,441-442,445
+  s_4cf800c8e68531::t_417bdcfb7a3dbb 1-28,31-42,44-97,99-100,103-114,122-168,171-174,176-206,208-211,215-220,222-263,319,321-322,337,352,354-356,358-360,362-364,366-367,369,374,376,378-379,381,386-387,393-394,396,403-404,406-409,411,413-415,418,423-429,439-440,443-444,446-492
+  s_4cf800c8e68531::t_a24530ab22425b 101-102
+  s_4cf800c8e68531::t_4b656851fe18df 169,175
+  s_4cf800c8e68531::t_5d0a76881a0a07 98,264-318,372-373,430-438
+  s_4cf800c8e68531::t_d063ce16b9c88c 170,221,320
+  s_4cf800c8e68531::t_5b445567d2dadf 29-30,43,115-121,207,212-214,330,382-384,390-392
+frontend/src/materials/reader-r1.css
+  s_4cf800c8e68531::t_8163d99c50363c 131-133,136,139,149-150,366-367,370
+frontend/src/materials/viewport.ts
+  s_4cf800c8e68531::t_8163d99c50363c 71-72,77-78,80-81,84
+frontend/src/materials/study-margin.ts
+  s_4cf800c8e68531::t_2e53c809697529 27,35,41
+  s_4cf800c8e68531::t_bb41ce9ad7f8eb 5
+  s_4cf800c8e68531::t_8163d99c50363c 12-13,18-19,21,31,33,42,60
+  s_4cf800c8e68531::t_de4c6cbfb9886f 14-17,44-46
+docs/PRD.md
+  s_4cf800c8e68531::t_4b797c31244ead 216
+  s_4cf800c8e68531::t_76a033427c1357 217
+frontend/src/materials/MaterialReader.tsx
+  s_4cf800c8e68531::t_de4c6cbfb9886f 1651-1691,1708-1731,1893
+  s_4cf800c8e68531::t_3547d82e06f37c 1692-1707
+frontend/scripts/test-browser.mjs
+  s_4cf800c8e68531::t_cdf1872e6d7827 1,43-64,66-130
+  s_4cf800c8e68531::t_81865f7bbc9fbe 131
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_4cf800c8e68531::t_76a033427c1357 35
+frontend/src/materials/StudyPreview.tsx
+  s_4cf800c8e68531::t_8221f569c20242 361-389
+frontend/src/materials/reader-study.ts
+  s_4cf800c8e68531::t_8163d99c50363c 378,388-390,395,403-408
+  s_4cf800c8e68531::t_2e53c809697529 379-387,402
+  s_4cf800c8e68531::t_de4c6cbfb9886f 391-394
+frontend/src/materials/viewport.test.ts
+  s_4cf800c8e68531::t_de4c6cbfb9886f 233-240,242-250
+  s_4cf800c8e68531::t_03e6f5f8314eae 241
+  s_4cf800c8e68531::t_4b05348c7cf4b7 230-232,251
+docs/handovers/text-study/INLINE_PREVIEW_ACCEPTANCE.md
+  s_4cf800c8e68531::t_76a033427c1357 38,40,42
+  s_4cf800c8e68531::t_1fe4337b9ee915 37,39,41,43-48
+docs/ARCHITECTURE.md
+  s_4cf800c8e68531::t_04270f8741b068 420
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bd117a0a19911dc01512c288fefa591b5e5af436",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_4cf800c8e68531": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16644-e172-7da0-bd74-07523de81f0c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}

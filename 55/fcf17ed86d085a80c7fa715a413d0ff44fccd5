@@ -1,0 +1,136 @@
+frontend/src/materials/reader-frames.test.ts
+  s_eb44868f0c0200::t_45622b9d43cab8 387-390,478-480,496-499
+  s_eb44868f0c0200::t_b7d9b78662c5f9 548-567
+  s_eb44868f0c0200::t_abb58233ac37af 10,19,41-48,67-68,70
+  s_eb44868f0c0200::t_426fefd391a606 2,385-386,391-477,481-489,495,500-547,568
+  s_eb44868f0c0200::t_549e9f4fe940dd 490-494
+frontend/browser-tests/navigation-feedback.tsx
+  s_eb44868f0c0200::t_c098876508aa5e 169-172,177-178,192
+  s_eb44868f0c0200::t_8f2103aaa4486a 6-7,12-40,42-43,45-50,54-58,62-69,123,128-132,135-138,140-143,148-150,152-155,160-163,165-168,195-202,210-212,216-219,222-229,235-237,245-247,249-252,255-259,266-273,280-282,287-291,295-298,300-301,303,317-320
+  s_eb44868f0c0200::t_86b9a2f580bfa9 110-111,116-117
+  s_eb44868f0c0200::t_55a3518cdc3784 73-74,79,84-93,98,108,204,263,275,293,299,302,304,309-311,316
+  s_eb44868f0c0200::t_4e8726c686b681 173-176,179-191
+  s_eb44868f0c0200::t_588166a7b74c22 206-209,231-234
+  s_eb44868f0c0200::t_f4543f307608dc 75-78,80-83,94-97,99-105,107,276-279,283-286,305-308,312-315
+  s_eb44868f0c0200::t_92a2a2ffefce10 112-115
+  s_eb44868f0c0200::t_039ae0bc5a0f02 106
+  s_eb44868f0c0200::t_365266174eaee3 1-5,8-11,41,44,51-53,59-61,70-72,109,122,133-134,139,144-147,151,156-159,164,193-194,203,205,213-215,220-221,230,238-244,248,253-254,260-262,264-265,274,292,294,321-325
+  s_eb44868f0c0200::t_ef629b31afdf2b 118-121,124-127
+frontend/src/materials/highlight.ts
+  s_eb44868f0c0200::t_8bf53c9ce7504a 117,122-125,128
+  s_eb44868f0c0200::t_45622b9d43cab8 118-121
+  s_eb44868f0c0200::t_441e87e1a70070 6,14,98-102,127
+  s_eb44868f0c0200::t_c098876508aa5e 17-27,129
+  s_eb44868f0c0200::t_c9247bf5831f90 5,7-13,15-16,103,126
+  s_eb44868f0c0200::t_db7af9bdecc65d 130
+frontend/src/materials/highlight.test.ts
+  s_eb44868f0c0200::t_0e4ae2a4f124a5 231-242,244-246,252-257
+  s_eb44868f0c0200::t_58dbf0492cce82 248-251
+  s_eb44868f0c0200::t_4e8726c686b681 261-262,277-281
+  s_eb44868f0c0200::t_441e87e1a70070 114,243,247,258-259,263-272,274,276,285-286
+  s_eb44868f0c0200::t_bf0416700ede20 4,89-97,101-113
+  s_eb44868f0c0200::t_abb58233ac37af 98-100
+  s_eb44868f0c0200::t_c098876508aa5e 260,273,275,282-284
+frontend/src/materials/navigation-highlight.ts
+  s_eb44868f0c0200::t_8bf53c9ce7504a 1,3-4,11-13,18-23,25-26,28-29,37-38,40-41,43-45,47-50,52-58,61,91-97,99-100,103-104
+  s_eb44868f0c0200::t_c9247bf5831f90 2,5-10,14-17,24,27,30-36,39,42,46,51,59-60,62-90,98,101-102
+frontend/src/materials/navigation-highlight.test.ts
+  s_eb44868f0c0200::t_45622b9d43cab8 7-8,27-31,41-45
+  s_eb44868f0c0200::t_0e4ae2a4f124a5 123-230
+  s_eb44868f0c0200::t_bf0416700ede20 1-6,9-26,32-40,46-122
+frontend/browser-tests/main.tsx
+  s_eb44868f0c0200::t_6d21ecba27b52e 11,373
+  s_eb44868f0c0200::t_a8a5ad2a95b2da 375
+frontend/src/materials/MaterialReader.tsx
+  s_eb44868f0c0200::t_b179937391f142 364-371,1413,1455
+  s_eb44868f0c0200::t_692e4fb6f436d0 70,1453-1454
+  s_eb44868f0c0200::t_a905090ba3ea55 362-363,372,1053,1234-1235,1328,1412,1414,1417-1418
+  s_eb44868f0c0200::t_c098876508aa5e 1595
+frontend/src/materials/reader-frames.ts
+  s_eb44868f0c0200::t_c9247bf5831f90 14,353-354,356-357
+  s_eb44868f0c0200::t_0e4ae2a4f124a5 263,282,352,355,360
+  s_eb44868f0c0200::t_c098876508aa5e 13,363-365,417
+  s_eb44868f0c0200::t_8bf53c9ce7504a 9-12,15,99,358-359,361-362,513-526,545,554,559
+frontend/scripts/test-browser.mjs
+  s_eb44868f0c0200::t_8b201871ff41b1 73-77
+docs/INFORMATION_ARCHITECTURE.md
+  s_eb44868f0c0200::t_12c1383ec92125 148,172
+  s_eb44868f0c0200::t_c7e2d3586abd46 150
+  s_eb44868f0c0200::t_039ae8a41e3b09 144,162,170
+frontend/src/materials/study-preview.css
+  s_eb44868f0c0200::t_bed2fe24fdb9e5 352-354
+frontend/browser-tests/reader-bookmarks.tsx
+  s_eb44868f0c0200::t_0e987bbfee3ca3 611,637
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_eb44868f0c0200::t_0a2b6aa9f98f57 9,25,47
+  s_eb44868f0c0200::t_c7e2d3586abd46 8
+frontend/browser-tests/chapter-records.tsx
+  s_eb44868f0c0200::t_11d7b76c969041 763-764,768-772,774-786,792,827,837-840
+  s_eb44868f0c0200::t_bf1e90c59aa0b5 787-791
+  s_eb44868f0c0200::t_bc2fda2f31f07a 842-861,863-879,883,958-960,1101,1320
+  s_eb44868f0c0200::t_6890f752cff072 862,880-882
+  s_eb44868f0c0200::t_ec0c70ede848b7 908,950
+  s_eb44868f0c0200::t_c226a89cc239b4 841
+docs/ARCHITECTURE.md
+  s_eb44868f0c0200::t_12c1383ec92125 456,470
+  s_eb44868f0c0200::t_db95fc97234d72 517
+  s_eb44868f0c0200::t_311f116888ff8e 518
+  s_eb44868f0c0200::t_039ae8a41e3b09 411-415,425
+docs/PRD.md
+  s_eb44868f0c0200::t_db95fc97234d72 226
+  s_eb44868f0c0200::t_039ae8a41e3b09 215,284-286,290
+  s_eb44868f0c0200::t_12c1383ec92125 6,216,287
+  s_eb44868f0c0200::t_bc2fda2f31f07a 222
+  s_eb44868f0c0200::t_c7e2d3586abd46 217
+frontend/src/materials/StudyPreview.tsx
+  s_eb44868f0c0200::t_bed2fe24fdb9e5 165,176,337
+  s_eb44868f0c0200::t_c3afc51d1f2167 207,210
+frontend/browser-tests/inline-records.tsx
+  s_eb44868f0c0200::t_ec0c70ede848b7 619
+frontend/src/materials/ChapterRecords.tsx
+  s_eb44868f0c0200::t_c3afc51d1f2167 303-311
+docs/handovers/text-study/INLINE_PREVIEW_ACCEPTANCE.md
+  s_eb44868f0c0200::t_0ae4de37c19596 180
+  s_eb44868f0c0200::t_93154381f5db33 173-175,177-179
+  s_eb44868f0c0200::t_0a2b6aa9f98f57 176
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md
+  s_eb44868f0c0200::t_0a2b6aa9f98f57 158,175,179,196-209
+  s_eb44868f0c0200::t_97d3f1102fbb41 210
+  s_eb44868f0c0200::t_bd70a4f4813fec 212-213
+  s_eb44868f0c0200::t_0ae4de37c19596 173,183,191,193
+  s_eb44868f0c0200::t_eb16e4b84a0aa0 176-178,180-182,184-190,192,194-195
+  s_eb44868f0c0200::t_a0b24cc7964ae8 172
+  s_eb44868f0c0200::t_87aeba8dbbde1b 154-157,159-167,174
+  s_eb44868f0c0200::t_c7e2d3586abd46 211
+  s_eb44868f0c0200::t_6f5f361467c35b 168,170-171
+  s_eb44868f0c0200::t_3a2066ad7d9a6b 169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "55fcf17ed86d085a80c7fa715a413d0ff44fccd5",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_eb44868f0c0200": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16c79-d382-72b0-b54d-48d23b70cfa0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_f538034b366642": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d6c-03c2-78d0-ae70-86223a9946f0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}

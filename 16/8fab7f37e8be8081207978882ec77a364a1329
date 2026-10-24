@@ -1,0 +1,90 @@
+frontend/src/materials/focus.test.ts
+  s_e40010368f82a1::t_cee1d2e89f4512 481-489,493-506,509,515-519,521-526,528-540,544,547-553
+  s_e40010368f82a1::t_4712a36091645e 480,490-492,507-508,510-514,520,527,541-543,546,554-563
+  s_e40010368f82a1::t_4f5bfaf0b6f166 545
+frontend/src/translation/translation.css
+  s_e40010368f82a1::t_2c4355b85fac48 78-80,86-87,98-100,107-119
+frontend/src/materials/reader-study.test.ts
+  s_e40010368f82a1::t_cee1d2e89f4512 884,901-902,973,975,977-978,1082-1088,1110-1153
+  s_e40010368f82a1::t_4712a36091645e 971,1012,1014,1076-1081,1089-1090,1092-1108
+  s_e40010368f82a1::t_f45120cf60be78 974,976,1091,1109
+frontend/src/materials/MaterialReader.tsx
+  s_e40010368f82a1::t_f02d9bb6008888 579
+  s_e40010368f82a1::t_2a7d29a1554290 389-394,494,660,709,1779,1784-1790,2093
+frontend/src/materials/reader-frames.ts
+  s_e40010368f82a1::t_ebf1bd33e3e5fe 120-121
+frontend/src/materials/ChapterRecords.tsx
+  s_e40010368f82a1::t_bb61a655073063 51,66,80-84,92,128,186-187,192-205,291
+  s_e40010368f82a1::t_80a030851c8252 145-153
+  s_e40010368f82a1::t_c87912db7a03e2 13-16,28
+frontend/browser-tests/chapter-records.tsx
+  s_e40010368f82a1::t_b53c7d9d7e5c37 569
+  s_e40010368f82a1::t_27a1cc033c833c 571,573,595-603,653,716-718,880
+  s_e40010368f82a1::t_c3fe3f2186c40a 583-586
+  s_e40010368f82a1::t_426598821917b2 620
+  s_e40010368f82a1::t_edd2f571c573a6 604-619,621-622,701-708,719-730,733
+  s_e40010368f82a1::t_f075108c95dda4 579-582,587-594
+frontend/src/translation/placement.ts
+  s_e40010368f82a1::t_edb0ff2558c9a2 83
+  s_e40010368f82a1::t_8e3e31e388bdac 39-40,70-73
+  s_e40010368f82a1::t_dc1d0470e4481c 3-8,16,49-51,62-67,74-77
+frontend/src/materials/focus.ts
+  s_e40010368f82a1::t_ebf1bd33e3e5fe 59-63,71-72,77,88-89,99,111-117,210,218,263,363
+  s_e40010368f82a1::t_cee1d2e89f4512 64-70,73-76,78-87,219-224,266-269
+frontend/src/translation/placement.test.ts
+  s_e40010368f82a1::t_7884f9c3ade0f2 7-15,22-29,36-39,55-56,62-64,70-77
+  s_e40010368f82a1::t_d2608bfa744001 16-21,30-35,57-61,65-69
+  s_e40010368f82a1::t_41af6e23558eac 40-54
+frontend/src/materials/chapter-records.css
+  s_e40010368f82a1::t_5028b7acd0aafa 76-77,80
+  s_e40010368f82a1::t_da5becf95afb02 63-66
+  s_e40010368f82a1::t_c87912db7a03e2 30
+  s_e40010368f82a1::t_bb61a655073063 26,34-35,67-70,78-79,81-84
+frontend/src/speech/index.tsx
+  s_e40010368f82a1::t_80a030851c8252 289-297,305-307
+  s_e40010368f82a1::t_1d7f0b52a10cda 246,250,256-261,266-268,276-288,298-304
+frontend/src/materials/reader-study.ts
+  s_e40010368f82a1::t_ebf1bd33e3e5fe 4,41,107,111,259-260,266,601-607,670,706,717-722,735
+  s_e40010368f82a1::t_cee1d2e89f4512 112,119-124,517-520,676-680
+frontend/src/translation/TranslationPanel.tsx
+  s_e40010368f82a1::t_2c4355b85fac48 13,71-77,96-104,138-141,479,490-491,495,503-505,572-575,717-720
+frontend/src/speech/speech.css
+  s_e40010368f82a1::t_1d7f0b52a10cda 37-46
+frontend/browser-tests/reader-bookmarks.tsx
+  s_e40010368f82a1::t_2d2ac5cf64c1a1 3,389-393,395-409,411-412,454-503,505-513,518-524,529-531,535-537,542,549,553-554,571,576-577,582,587-588,592-593,598-599,604-608,613
+  s_e40010368f82a1::t_b53c7d9d7e5c37 394,504,514-517,525-528,532-534,538-541,550-552,572-575,578-581,583-586,589-591,594-597,600-603,609-612
+  s_e40010368f82a1::t_d4d9f15b22dee5 543-548,555,560-561,566
+  s_e40010368f82a1::t_d5156d07a90bf8 556-559,562-565,567-570
+  s_e40010368f82a1::t_262e7495e9962d 410
+docs/ARCHITECTURE.md
+  s_e40010368f82a1::t_775c279544fd3a 423,452-454
+docs/PRD.md
+  s_e40010368f82a1::t_775c279544fd3a 218-219,285
+docs/handovers/text-study/INLINE_PREVIEW_ACCEPTANCE.md
+  s_e40010368f82a1::t_26d0504c175961 53
+  s_e40010368f82a1::t_97b7282f298960 49-52,54-62,64-70
+  s_e40010368f82a1::t_510773103e60fb 63
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e40010368f82a1::t_26d0504c175961 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "168fab7f37e8be8081207978882ec77a364a1329",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_e40010368f82a1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16bd3-9e81-7633-ab9f-551a9d272c86",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}

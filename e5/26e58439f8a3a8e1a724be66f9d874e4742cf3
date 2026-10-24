@@ -1,0 +1,203 @@
+docs/PRD.md
+  s_dcb9f7ed51211b::t_052f8613c120d6 294
+  s_de5de4d47d6adb::t_7b633a4dd88544 517
+frontend/src/speech/browser.test.ts
+  s_dcb9f7ed51211b::t_afdd264ceb2014 77,79-86
+  s_dcb9f7ed51211b::t_e68698ea218408 19-21,50-53,94-95,98-102
+  s_dcb9f7ed51211b::t_ba2630c178116d 5
+  s_dcb9f7ed51211b::t_09078fe284b3d7 1-4,6-18,22-49,54-76,87-93,96-97,103-105
+  s_dcb9f7ed51211b::t_eb3c0a94292ab3 78
+frontend/src/speech/controller.ts
+  s_dcb9f7ed51211b::t_0639b37afdc98d 12,15-22,30-31,37-38,114,118-119,131,139,167,173-177,202-209,243-266,270
+  s_dcb9f7ed51211b::t_a82e9ac3748a86 267-269,271-272
+frontend/browser-tests/reading-aids.tsx
+  s_dcb9f7ed51211b::t_04481b8ffe4b8b 602-603
+  s_dcb9f7ed51211b::t_2ddfa1b0648368 608
+docs/USAGE.md
+  s_dcb9f7ed51211b::t_9f5b72d7e16b7a 16
+  s_f538034b366642::t_b93bcdf02f20b9 15
+  s_dcb9f7ed51211b::t_052f8613c120d6 27
+frontend/src/segments/share.test.ts
+  s_dcb9f7ed51211b::t_5fe3664ded1362 1-2,4-32,38,41-42,44-45,47-56,58-62,64-67,74-84,94,96-99,171
+  s_dcb9f7ed51211b::t_21c46222ba904a 68-72,85-92,100-107,120-122
+  s_de5de4d47d6adb::t_d9fcd6e62ae0fa 46,63,156-160,164-168
+  s_dcb9f7ed51211b::t_81e8ac898040d8 3,33-37,40,109-115,117-119,123-135,137-141
+  s_de5de4d47d6adb::t_ac3a2b8498a11a 39,43,57,73,93,95,108,116,136,142-155,161-163,169-170
+frontend/src/segments/OriginalCard.tsx
+  s_dcb9f7ed51211b::t_e5f6b16c23ff99 32,34,39,41,92-98,100-105,107-109
+  s_f538034b366642::t_febbb0235aaf00 8,33,40,106
+frontend/src/speech/index.tsx
+  s_dcb9f7ed51211b::t_111c280d594c92 50-55,70-76,123,129-132,166-185,188-191,213-230,317-318,331
+  s_dcb9f7ed51211b::t_267c2b5fbdfed0 6,38,41-45,47-49,56-57,59-64,66-69,79-80,87,97-98,105-109,192-194,210-212,231,239-240,251-252,322,328-329,405,411,449
+  s_dcb9f7ed51211b::t_dec0f5b43e1619 480
+  s_dcb9f7ed51211b::t_873d56561b31bd 77,99-104,114-116,118-122,232-238,241-244,246-250,303-310,360-368,376-379,381-383,389,406-410,412-423,425-434,437-448,450,456-464,481-482,484-489,491,507-508,511
+  s_dcb9f7ed51211b::t_aa2d621978a6ae 133-149,151-165,186-187,245
+  s_dcb9f7ed51211b::t_526f0656fa2194 280-281,283-288,424,435-436,483
+  s_dcb9f7ed51211b::t_5c5d49dadb2c17 262,298-299,321
+  s_dcb9f7ed51211b::t_09078fe284b3d7 323-327
+  s_dcb9f7ed51211b::t_7121b940f90179 451
+frontend/src/segments/layout.css
+  s_f538034b366642::t_febbb0235aaf00 9
+  s_f538034b366642::t_0875da28b0a451 6-8
+  s_ab28960906ffb8::t_465dd8a84cacb0 5,144-146,159,163,167-169,306,316
+frontend/src/speech/speech.css
+  s_dcb9f7ed51211b::t_ddc7111be4c9e3 229,300-301,311-313,338,356
+  s_dcb9f7ed51211b::t_5c5d49dadb2c17 93
+  s_69b2d20544b6d2::t_bf5b3ca7e19b24 208,224,438-440,444
+  s_69b2d20544b6d2::t_2f342f139f42fa 247-248,250,253-257
+  s_dcb9f7ed51211b::t_6c1f6357a02cf8 39-43,371
+  s_dcb9f7ed51211b::t_a5f8e66c39443f 5-7,105,108-109,113-116,120,124-146,149-186,191,196,198,201-203,206-207,284-285,288,292,296-298,303,305,307,314,316-337,339-355,357-364,366-370,372-375,377-379,381-384,387-400,402-408,410-411,413-423,425
+  s_dcb9f7ed51211b::t_526f0656fa2194 213-216,225-227,428-436
+  s_dcb9f7ed51211b::t_dec0f5b43e1619 220-221,241
+  s_dcb9f7ed51211b::t_9f0a99d2164395 437,441-443
+  s_dcb9f7ed51211b::t_873d56561b31bd 212,217-219,222-223,228,230-240,242-246,249,251-252,258-283,286-287,289-291,293-295,299,302,304,306,308-310,315,365,376,380,385-386,401,409,412
+frontend/browser-tests/segment-share-source.tsx
+  s_f538034b366642::t_34d9fbe8b95821 36,38,43,59-62,72,172,182-187,210,225,228,234-236,256,260,270,275,288,331
+  s_f538034b366642::t_19516d24458924 321-322
+  s_f538034b366642::t_05934b629b3927 190-197,200-203
+  s_f538034b366642::t_10991392d47c0c 188-189,198-199,204-206
+  s_f538034b366642::t_b5991c79f33438 1-25,34-35,37,41-42,44-46,50-58,63-71,73-81,85-86,90-92,102,111-112,121-123,127-130,139-140,152,157-158,171,173,289-290,295-296,303-304,326-330,332-336
+  s_f538034b366642::t_54f015243ce447 110,117,276-285,317-320,323-324
+  s_f538034b366642::t_a449db3abcd1aa 26-33,39-40,207-209,211-224,226-227,229-233,237-255,257-259,261-269,271-274
+  s_f538034b366642::t_6607b27d8fc558 47-49,82-84,87-89,93-101,103-109,113-116,118-120,124-126,131-138,141-151,153-156,159-170,174-181,286-287,291-294,297-302,305-316,325
+frontend/src/segments/share.css
+  s_de5de4d47d6adb::t_4c804885902c46 112
+  s_de5de4d47d6adb::t_d9fcd6e62ae0fa 32,34-40,43-46,48,50,52-61,64,66-72,74-76,79-81,84,87,92-93,95,97-99,101-111,113-129,131-133,135,138-142,144-174,176-181,183-193,195-237
+  s_f538034b366642::t_65923937a1b96b 41-42
+  s_dcb9f7ed51211b::t_e5f6b16c23ff99 1-31,33,47,49,51,62-63,65,73,77-78,82-83,85-86,88-91,94,96,100,130,134,136-137,143,175,182,194,238
+frontend/browser-tests/segment-share.tsx
+  s_de5de4d47d6adb::t_324f0e38203510 9
+  s_de5de4d47d6adb::t_8b6fc43e92a760 117-118
+  s_de5de4d47d6adb::t_1e19d701850b9a 2-5,7,16-17,21,23-25,27-32,34,36-42,44,51-57,59-75,80-81,83-93,95-101,109-110,112-113,128,147-150,157-158,168,185-189,214,230-231,241-242,264,266,301,303,305-306,308-311,316-321,329
+  s_de5de4d47d6adb::t_ca9fc7443baf3b 191-213,251-257
+  s_de5de4d47d6adb::t_62ea47eea49e43 19-20,111,167,236,291,307
+  s_de5de4d47d6adb::t_9397c504b48d61 14-15,18,26,35,82,94,263,302,304
+  s_de5de4d47d6adb::t_c0ee5402350cae 11-13,46-50,129-132,175-184,265,267-273,276-283,286-289
+  s_de5de4d47d6adb::t_7ce3f8f25c9a3a 135-137,145-146,247,300
+  s_de5de4d47d6adb::t_eac05d4e41df12 1,22,33,43,45,58,133-134,170,173-174,274-275,284-285,290
+  s_de5de4d47d6adb::t_218109fca80182 190
+  s_de5de4d47d6adb::t_2e13a3852b252d 10
+  s_de5de4d47d6adb::t_07003e74acc2c6 138-144
+  s_de5de4d47d6adb::t_d9fcd6e62ae0fa 76-79,102-108,114-116,119-127,151-156,159-166,169,171-172,215-229,232-235,237-240,243-246,248-250,258-262,292-299,312-315
+  s_f538034b366642::t_b5991c79f33438 6,8,322-328
+frontend/src/segments/segment-speech.css
+  s_dcb9f7ed51211b::t_0e9acc8a3ea9e0 1-41
+frontend/src/SegmentPage.tsx
+  s_dcb9f7ed51211b::t_fb33e653fcba6d 482
+  s_dcb9f7ed51211b::t_0e9acc8a3ea9e0 3,220,297-311,548-550
+  s_f538034b366642::t_febbb0235aaf00 481
+frontend/src/segments/SegmentShare.tsx
+  s_de5de4d47d6adb::t_ca9fc7443baf3b 159-163
+  s_f538034b366642::t_febbb0235aaf00 1,3,15-19,23,28,50,55-62,246-253,267-269,303-306
+  s_de5de4d47d6adb::t_d9fcd6e62ae0fa 10-12,20-22,24-27,29,31-34,36-44,47-49,51-54,63-75,77-152,175-231,233-234,236-239,242-245,254-266,270-295,297-302,307-315
+  s_de5de4d47d6adb::t_3a38a754df0188 45
+  s_de5de4d47d6adb::t_218109fca80182 154-158,164-173
+  s_dcb9f7ed51211b::t_f3296f685ac3bd 4-9,13-14,30,316
+  s_de5de4d47d6adb::t_4c804885902c46 46,241
+  s_de5de4d47d6adb::t_8b6fc43e92a760 35,76,153,174,232,235,240,296
+  s_de5de4d47d6adb::t_b4188aeb522e31 2
+frontend/browser-tests/segment-materials.tsx
+  s_de5de4d47d6adb::t_6911ac69035078 533-536
+docs/ARCHITECTURE.md
+  s_dcb9f7ed51211b::t_052f8613c120d6 403-404
+frontend/src/speech/controller.test.ts
+  s_dcb9f7ed51211b::t_062fe0bbac9cbb 333-336,373-376,423-426
+  s_dcb9f7ed51211b::t_922c01ce439ad5 25,29-30,43-52,69-74,322-332,337-372,377-422,427
+docs/INFORMATION_ARCHITECTURE.md
+  s_f538034b366642::t_b93bcdf02f20b9 99
+  s_dcb9f7ed51211b::t_052f8613c120d6 176
+  s_dcb9f7ed51211b::t_9f5b72d7e16b7a 97
+  s_66ff3ed1676a96::t_075b620fd94deb 98
+frontend/src/segments/share.ts
+  s_de5de4d47d6adb::t_d9fcd6e62ae0fa 25-27,36-38,40-49
+  s_dcb9f7ed51211b::t_9b6b0bf1b41c19 2-6,9-12,17,20,22,30,35,39,51-52
+  s_dcb9f7ed51211b::t_f3296f685ac3bd 7-8
+  s_dcb9f7ed51211b::t_81e8ac898040d8 1
+  s_dcb9f7ed51211b::t_f0b60f42b31018 14-16
+  s_dcb9f7ed51211b::t_d2ca104d98fdb9 13,18-19
+  s_de5de4d47d6adb::t_9914e3761fec87 21,23-24,28-29,31-34,50
+frontend/src/speech/browser.ts
+  s_dcb9f7ed51211b::t_09078fe284b3d7 24-25,45-47
+  s_dcb9f7ed51211b::t_0639b37afdc98d 21-23,26-33,40-41
+frontend/scripts/test-browser.mjs
+  s_de5de4d47d6adb::t_1e19d701850b9a 81-84
+frontend/browser-tests/main.tsx
+  s_de5de4d47d6adb::t_1e19d701850b9a 17
+  s_de5de4d47d6adb::t_b6fbcb98c8bbd7 461
+  s_de5de4d47d6adb::t_62ea47eea49e43 456-457,459-460,462-465
+README.md
+  h_c735ec7f46d14b 5-6
+  h_c735ec7f46d14b 7
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_dcb9f7ed51211b::t_ba2630c178116d 16
+  s_f538034b366642::t_995f2a148c1de9 15,26
+docs/handovers/text-study/SEGMENT_UI_ACCEPTANCE.md
+  s_dcb9f7ed51211b::t_c0708fe27552eb 141-151
+  s_de5de4d47d6adb::t_df46215972a871 152-166
+  s_dcb9f7ed51211b::t_c1e2b798d0ca58 134-140
+  s_de5de4d47d6adb::t_3f0b97802a2923 167-174
+  s_de5de4d47d6adb::t_eb19cfc5ce89ed 175
+  s_f538034b366642::t_995f2a148c1de9 176-189
+  s_dcb9f7ed51211b::t_b01df788ece297 123-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e526e58439f8a3a8e1a724be66f9d874e4742cf3",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_66ff3ed1676a96": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d7d-2235-7c61-9ca5-774d21398dc0",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_69b2d20544b6d2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d30-d260-7570-8e28-23cb3e1d93a0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_ab28960906ffb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d6c-a064-7953-8725-b70e855eb769",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_dcb9f7ed51211b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d15-5cf3-7a20-be9f-bd8d787e1cd1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_de5de4d47d6adb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d38-ad0e-7b61-bdcd-19c4280c7579",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_f538034b366642": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d6c-03c2-78d0-ae70-86223a9946f0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
