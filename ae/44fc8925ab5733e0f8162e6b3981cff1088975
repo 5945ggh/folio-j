@@ -1,0 +1,20 @@
+frontend/browser-tests/chapter-records.tsx
+  s_73fab29525c839::t_b0548b0c9e46a4 1197-1199,1203
+  s_73fab29525c839::t_9d88cf4103de34 1200-1202
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ae44fc8925ab5733e0f8162e6b3981cff1088975",
+  "prompts": {},
+  "sessions": {
+    "s_73fab29525c839": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16e63-1511-7030-a2b9-17f5c10fdf6b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
