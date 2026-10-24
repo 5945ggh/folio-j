@@ -1,0 +1,39 @@
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e502f759c16be0::t_a6565a40f75cf1 20
+frontend/src/materials/ruby-dom.test.ts
+  s_e502f759c16be0::t_ec83aa0aada8e1 153-165,168-202,207-218
+  s_e502f759c16be0::t_d643f7bb63f92d 166-167,203-206
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md
+  s_e502f759c16be0::t_97a53c5e498e49 224-226,228-230,233
+  s_e502f759c16be0::t_a6565a40f75cf1 227
+  s_e502f759c16be0::t_8f3514bedb4e66 231-232
+docs/ARCHITECTURE.md
+  s_e502f759c16be0::t_97a53c5e498e49 189
+docs/PRD.md
+  s_e502f759c16be0::t_97a53c5e498e49 263
+frontend/src/materials/ruby-selection.test.ts
+  s_e502f759c16be0::t_6dc2f0107cff4f 127-131,133-135,186
+  s_e502f759c16be0::t_bf1e82ebc62d15 132
+frontend/src/materials/ruby.ts
+  s_e502f759c16be0::t_d643f7bb63f92d 140
+  s_e502f759c16be0::t_8b3b3c58f4ee4d 10,15-25,137-139,143,151,154-156,166-168
+frontend/src/materials/ruby-preferences.test.ts
+  s_e502f759c16be0::t_ec83aa0aada8e1 35-56,61-63,65-68
+  s_e502f759c16be0::t_8b3b3c58f4ee4d 20,25,30,57-60,64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9f2d6e42fcf5ee268f040163f3a52f80bef566df",
+  "prompts": {},
+  "sessions": {
+    "s_e502f759c16be0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16df2-7ad4-7f42-afb1-d8a979f338a5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
