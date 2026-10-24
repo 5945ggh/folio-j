@@ -541,6 +541,9 @@
 	font-variant-numeric: tabular-nums;
 	flex-shrink: 0;
 }
+.reader-r1 [aria-current="location"] .reader-toc-progress {
+	color: inherit;
+}
 .reader-chapter-beginning {
 	margin-top: 8px;
 	font-size: 12px;

@@ -17,6 +17,22 @@ export function applyFramePresentation(
 	preferences: BookUiPreferences,
 ): () => void {
 	snapshotReaderFrameTargets(doc);
+	let themeStyle = doc.getElementById(
+		"folio-reader-theme",
+	) as HTMLStyleElement | null;
+	if (!themeStyle) {
+		themeStyle = doc.createElement("style");
+		themeStyle.id = "folio-reader-theme";
+	}
+	// Important declarations in the first layer beat author CSS, including its
+	// own layers. Compiled EPUBs omit inline styles; keep layout rules outside
+	// this layer and in their existing source order.
+	themeStyle.textContent = `@layer folio-reader-theme {
+		html, body { color: ${theme === "black" ? "#e5e5e5" : "#282828"} !important; background-color: ${theme === "black" ? "#191919" : "#fff"} !important; }
+		body :not(img):not(svg):not(svg *) { color: inherit !important; background-color: transparent !important; }
+		html, body, body :not(img):not(svg):not(svg *) { background-image: none !important; -webkit-text-fill-color: currentColor !important; text-shadow: none !important; }
+	}`;
+	doc.head.prepend(themeStyle);
 	let style = doc.getElementById(
 		"folio-reader-presentation",
 	) as HTMLStyleElement | null;
@@ -28,7 +44,7 @@ export function applyFramePresentation(
 	doc.documentElement.dataset.readerRuby = preferences.ruby;
 	doc.documentElement.dataset.readerRubyScope =
 		preferences.rubyScope ?? "original";
-	style.textContent = `html,body { background: ${theme === "black" ? "#191919" : "#fff"} !important; color: ${theme === "black" ? "#e5e5e5" : "#282828"} !important; } body { font-family: ${READER_FONT_FAMILIES[preferences.font]} !important; } body :not(img):not(svg):not(svg *) { color: inherit !important; background-color: transparent !important; font-family: inherit !important; } rt { opacity: ${preferences.ruby === "hide" || preferences.ruby === "on-demand" ? 0 : 1} !important; } @media (hover:hover) { html[data-reader-ruby="on-demand"] ruby:hover rt { opacity: 1 !important; } } html[data-reader-ruby="on-demand"][data-reader-ruby-keyboard] rt, html[data-reader-ruby="on-demand"] ruby[data-reader-ruby-selected] rt, html[data-reader-ruby="on-demand"] ruby[data-reader-ruby-open] rt { opacity: 1 !important; }`;
+	style.textContent = `body { font-family: ${READER_FONT_FAMILIES[preferences.font]} !important; } body :not(img):not(svg):not(svg *) { font-family: inherit !important; } rt { opacity: ${preferences.ruby === "hide" || preferences.ruby === "on-demand" ? 0 : 1} !important; } @media (hover:hover) { html[data-reader-ruby="on-demand"] ruby:hover rt { opacity: 1 !important; } } html[data-reader-ruby="on-demand"][data-reader-ruby-keyboard] rt, html[data-reader-ruby="on-demand"] ruby[data-reader-ruby-selected] rt, html[data-reader-ruby="on-demand"] ruby[data-reader-ruby-open] rt { opacity: 1 !important; }`;
 	let tap: { point: Point; time: number; id: number } | null = null;
 	let revealTimer: ReturnType<typeof setTimeout> | undefined;
 	const selected = () => {

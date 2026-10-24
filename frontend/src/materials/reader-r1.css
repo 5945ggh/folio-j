@@ -1,9 +1,12 @@
 .reader-r1 {
 	--reader-bg: #fff;
 	--reader-fg: #282828;
-	--reader-muted: #858585;
+	--reader-muted: #6d6d6d;
 	--reader-line: #e9e9e9;
 	--reader-soft: #f6f6f6;
+	--reader-error: #a3443e;
+	--reader-selected-bg: #eaf0fc;
+	--reader-selected-fg: #365b9f;
 	--reader-toolbar-opacity: 80%;
 	--reader-top-space: 82px;
 	--reader-bottom-space: calc(80px + env(safe-area-inset-bottom, 0px));
@@ -17,6 +20,7 @@
 	isolation: isolate;
 	background: var(--reader-bg);
 	color: var(--reader-fg);
+	color-scheme: light;
 	overflow: hidden;
 	font-family: system-ui, sans-serif;
 }
@@ -26,6 +30,9 @@
 	--reader-muted: #999;
 	--reader-line: #393939;
 	--reader-soft: #252525;
+	--reader-error: #ef9a9a;
+	--reader-selected-bg: #293951;
+	--reader-selected-fg: #c5d8ff;
 	color-scheme: dark;
 }
 .reader-r1 button,
@@ -53,8 +60,25 @@
 }
 .reader-r1 button[aria-pressed="true"],
 .reader-r1 [aria-current="location"] {
-	background: #eaf0fc;
-	color: #4e73bd;
+	background: var(--reader-selected-bg);
+	color: var(--reader-selected-fg);
+}
+.reader-r1 .inline-error {
+	color: var(--reader-error);
+}
+.reader-r1 .confirm-card {
+	background: var(--reader-bg);
+	color: var(--reader-fg);
+	color-scheme: inherit;
+	border: 1px solid var(--reader-line);
+}
+.reader-r1 .confirm-card p:not(.eyebrow):not(.inline-error) {
+	color: var(--reader-muted);
+}
+.reader-r1 .confirm-card blockquote {
+	background: var(--reader-soft);
+	border-left-color: var(--reader-line);
+	color: inherit;
 }
 .reader-r1 a {
 	color: inherit;
@@ -474,7 +498,7 @@
 .reader-info-link-hint {
 	display: block;
 	font-size: 11px;
-	color: #5c7bb8;
+	color: var(--reader-selected-fg);
 	margin-top: 4px;
 }
 

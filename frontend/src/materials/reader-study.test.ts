@@ -88,6 +88,11 @@ function harness(
 			},
 		}),
 		head: {
+			prepend: (style: {
+				id: string;
+				textContent: string;
+				remove: () => void;
+			}) => styles.set(style.id, style),
 			append: (style: {
 				id: string;
 				textContent: string;

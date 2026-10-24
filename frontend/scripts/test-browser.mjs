@@ -65,6 +65,10 @@ try {
 		[320, 900, "?suite=reading-aids"],
 		[320, 320, "?suite=reading-aids&scenario=short"],
 		[640, 360, "?suite=reading-aids&scenario=short"],
+		[1280, 900, "?suite=theme&system=light"],
+		[1280, 900, "?suite=theme&system=dark"],
+		[320, 900, "?suite=theme&system=light"],
+		[320, 900, "?suite=theme&system=dark"],
 	].filter(
 		([, , query]) =>
 			!process.env.BROWSER_TEST_SUITE ||
@@ -134,6 +138,20 @@ try {
 				flatten: true,
 			});
 			await command("Page.enable", {}, sessionId);
+			if (new URLSearchParams(query).get("suite") === "theme") {
+				await command(
+					"Emulation.setEmulatedMedia",
+					{
+						features: [
+							{
+								name: "prefers-color-scheme",
+								value: new URLSearchParams(query).get("system") ?? "light",
+							},
+						],
+					},
+					sessionId,
+				);
+			}
 			await command(
 				"Emulation.setDeviceMetricsOverride",
 				{

@@ -38,6 +38,7 @@ function documentFixture(text = "") {
 		getSelection: () =>
 			selected ? { isCollapsed: false, toString: () => "選択" } : null,
 		getElementById: () => ({ textContent: "" }),
+		head: { prepend: () => {} },
 		documentElement: { dataset: {}, scrollWidth: 100, scrollHeight: 100 },
 		body: { style, scrollWidth: 100, scrollHeight: 100 },
 		defaultView: null,

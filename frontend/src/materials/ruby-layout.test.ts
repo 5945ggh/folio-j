@@ -32,6 +32,7 @@ test("repeated in-place range changes preserve the document and release presenta
 	const doc = Object.assign(new EventTarget(), {
 		documentElement: { dataset: {} as Record<string, string> },
 		getElementById: () => style,
+		head: { prepend: () => {} },
 		querySelectorAll: () => [ruby],
 		getSelection: () => null,
 	});

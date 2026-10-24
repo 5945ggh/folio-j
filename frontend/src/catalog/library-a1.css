@@ -231,7 +231,7 @@
 	color: #7d8490;
 }
 .catalog-count {
-	color: #8a8f98;
+	color: var(--muted, #686e78);
 	font-size: 11px;
 	margin-top: 24px;
 }

@@ -7,6 +7,85 @@ import {
 	normalizeFrameImages,
 } from "./presentation.ts";
 
+test("theme paint owns the first cascade layer and updates without moving layout rules or author styles", () => {
+	const author = {
+		id: "author",
+		textContent:
+			"@layer publisher { .ink { color: #000 !important; background-image: linear-gradient(white, white) !important; -webkit-text-fill-color: #000 !important; text-shadow: 0 0 2px white !important; } }",
+	};
+	const authorCss = author.textContent;
+	const presentation = { id: "folio-reader-presentation", textContent: "" };
+	const head = [author, presentation];
+	const move = (style: (typeof head)[number], first: boolean) => {
+		const previous = head.indexOf(style);
+		if (previous !== -1) head.splice(previous, 1);
+		if (first) head.unshift(style);
+		else head.push(style);
+	};
+	const doc = Object.assign(new EventTarget(), {
+		getElementById: (id: string) => head.find((style) => style.id === id),
+		createElement: () => ({ id: "", textContent: "" }),
+		head: {
+			prepend: (style: (typeof head)[number]) => move(style, true),
+			append: (style: (typeof head)[number]) => move(style, false),
+		},
+		documentElement: { dataset: {} },
+		querySelectorAll: () => [],
+		getSelection: () => null,
+	});
+	let firstPaint: (typeof head)[number] | undefined;
+	for (const theme of ["black", "white", "black"] as const) {
+		const cleanup = applyFramePresentation(
+			doc as unknown as Document,
+			theme,
+			DEFAULT_BOOK_UI,
+		);
+		const paint = head[0];
+		assert.ok(paint);
+		assert.notEqual(paint, author);
+		assert.notEqual(paint, presentation);
+		firstPaint ??= paint;
+		assert.equal(paint, firstPaint);
+		assert.match(paint.textContent, /^\s*@layer folio-reader-theme\s*\{/);
+		assert.match(
+			paint.textContent,
+			new RegExp(
+				`color:\\s*${theme === "black" ? "#e5e5e5" : "#282828"}\\s*!important`,
+			),
+		);
+		assert.match(
+			paint.textContent,
+			new RegExp(
+				`background-color:\\s*${theme === "black" ? "#191919" : "#fff"}\\s*!important`,
+			),
+		);
+		assert.match(
+			paint.textContent,
+			/body :not\(img\):not\(svg\):not\(svg \*\)/,
+		);
+		for (const declaration of [
+			/color:\s*inherit\s*!important/,
+			/background-color:\s*transparent\s*!important/,
+			/background-image:\s*none\s*!important/,
+			/-webkit-text-fill-color:\s*currentColor\s*!important/,
+			/text-shadow:\s*none\s*!important/,
+		])
+			assert.match(paint.textContent, declaration);
+		assert.doesNotMatch(
+			paint.textContent,
+			/font-|display:|visibility:|opacity:|writing-mode:|line-height:|filter:|\bfill:/,
+		);
+		assert.deepEqual(head.slice(1), [author, presentation]);
+		assert.match(presentation.textContent, /font-family:/);
+		assert.match(presentation.textContent, /@media \(hover:hover\)/);
+		cleanup();
+		// A later stylesheet insertion must not take ownership of the first layer.
+		move(author, true);
+	}
+	assert.equal(head.length, 3);
+	assert.equal(author.textContent, authorCss);
+});
+
 test("ruby selection reveals original readings while preserving the original DOM and releasing listeners", () => {
 	const marks = new Set<string>();
 	const ruby = {
@@ -22,6 +101,7 @@ test("ruby selection reveals original readings while preserving the original DOM
 	let selection = false;
 	const doc = Object.assign(new EventTarget(), {
 		getElementById: () => style,
+		head: { prepend: () => {} },
 		documentElement: { dataset: {} },
 		querySelectorAll: (query: string) =>
 			query === "ruby" || query === "*" ? [ruby] : [],
@@ -153,6 +233,7 @@ function rubyTapHarness() {
 	};
 	const doc = Object.assign(new EventTarget(), {
 		getElementById: () => ({ textContent: "" }),
+		head: { prepend: () => {} },
 		documentElement: { dataset: {} },
 		querySelectorAll: (query: string) =>
 			query === "ruby[data-reader-ruby-open]"
