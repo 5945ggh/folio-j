@@ -124,10 +124,15 @@ function token(start: number, surface: string, reading: string): ReadingsToken {
 	};
 }
 
-for (const backward of [false, true]) {
-	test(`automatic ruby preserves ${backward ? "backward" : "forward"} original text selection`, () => {
-		const h = harness(["𠮷食べる", "今日か\u3099"]);
-		const projection = projectPart(h.doc, "𠮷食べる今日が", 0);
+for (const [surface, reading, backward] of [
+	["食べる", "タベル", false],
+	["食べる", "タベル", true],
+	["まな板", "マナイタ", false],
+	["まな板", "マナイタ", true],
+] as const) {
+	test(`automatic ruby preserves ${backward ? "backward" : "forward"} original text selection for ${surface}`, () => {
+		const h = harness([`𠮷${surface}`, "今日か\u3099"]);
+		const projection = projectPart(h.doc, `𠮷${surface}今日が`, 0);
 		const first = projection.entries[0]?.node;
 		const last = projection.entries[1]?.node;
 		assert.ok(first);
@@ -178,7 +183,7 @@ for (const backward of [false, true]) {
 			applyAutomaticRuby(
 				h.doc,
 				projection,
-				[token(1, "食べる", "タベル"), token(4, "今日", "キョウ")],
+				[token(1, surface, reading), token(4, "今日", "キョウ")],
 				0,
 			);
 			const fresh = projectPart(h.doc, projection.raw.normalize("NFC"), 0);

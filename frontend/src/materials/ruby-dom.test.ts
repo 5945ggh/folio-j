@@ -150,6 +150,72 @@ test("whole token original ruby overlap and cross-format tokens remain untouched
 		["今", "日"],
 	);
 });
+
+test("trimmed ruby uses the kanji boundaries with nonzero part offsets and decomposed kana", () => {
+	const raw = "𠮷まな板の上、お早う。か\u3099向く";
+	const normalized = raw.normalize("NFC");
+	const partStart = 37;
+	const h = harness([raw]);
+	const tokens = [
+		["まな板", "マナイタ"],
+		["お早う", "オハヨウ"],
+		["が向く", "ガムク"],
+	].map(([surface, reading]) => {
+		assert.ok(surface && reading);
+		return token(
+			partStart +
+				Array.from(normalized.slice(0, normalized.indexOf(surface))).length,
+			surface,
+			reading,
+		);
+	});
+	const created = applyAutomaticRuby(
+		h.doc,
+		projectPart(h.doc, normalized, 0),
+		tokens,
+		partStart,
+	);
+	assert.equal(created.length, 6);
+	assert.deepEqual(
+		h.leaves[0]?.children.map((ruby) => ({
+			base: (ruby.childNodes[0] as TextNode).data,
+			reading: ruby.children[0]?.textContent,
+		})),
+		[
+			{ base: "板", reading: "いた" },
+			{ base: "早", reading: "はよ" },
+			{ base: "向", reading: "む" },
+		],
+	);
+	assert.equal(projectPart(h.doc, normalized, 0).raw, raw);
+});
+
+test("trimming kana preserves whole-token original ruby, formatting and text checks", () => {
+	for (const originalIndex of [-1, 0]) {
+		const h = harness(["まな", "板"], originalIndex);
+		const created = applyAutomaticRuby(
+			h.doc,
+			projectPart(h.doc, "まな板", 0),
+			[token(0, "まな板", "マナイタ")],
+			0,
+		);
+		assert.equal(created.length, 0);
+		assert.deepEqual(
+			h.leaves.map((leaf) => leaf.textContent),
+			["まな", "板"],
+		);
+	}
+	const mismatch = harness(["もな板"]);
+	assert.equal(
+		applyAutomaticRuby(
+			mismatch.doc,
+			projectPart(mismatch.doc, "もな板", 0),
+			[token(0, "まな板", "マナイタ")],
+			0,
+		).length,
+		0,
+	);
+});
 test("NFC boundary table handles decomposed Japanese, astral code points and a large chapter", () => {
 	assert.deepEqual(rubyBoundaries("𠮷か\u3099く"), [0, 2, 4, 5]);
 	const raw = "食べる今日𠮷".repeat(2000);

@@ -7,23 +7,22 @@ export function hiragana(reading: string): string {
 		.normalize("NFC")
 		.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));
 }
-/** Strip an unambiguous kana suffix; otherwise retain the whole dictionary token. */
+/** Strip matching kana at either edge; start is a code-point offset within the token. */
 export function rubyLabel(surface: string, reading: string) {
 	const kana = hiragana(reading);
 	if (!/\p{Script=Han}/u.test(surface) || !/^[ぁ-ゖー]+$/u.test(kana))
 		return null;
-	const suffix = surface.match(/[ぁ-ゖァ-ヶー]+$/u)?.[0];
-	if (
-		suffix &&
-		kana.endsWith(hiragana(suffix)) &&
-		kana.length > suffix.length
-	) {
-		return {
-			surface: surface.slice(0, -suffix.length),
-			reading: kana.slice(0, -suffix.length),
-		};
-	}
-	return { surface, reading: kana };
+	const prefix = surface.match(/^[ぁ-ゖァ-ヶー]+/u)?.[0] ?? "";
+	const suffix = surface.match(/[ぁ-ゖァ-ヶー]+$/u)?.[0] ?? "";
+	const leading = kana.startsWith(hiragana(prefix)) ? prefix.length : 0;
+	const trailing = kana.endsWith(hiragana(suffix)) ? suffix.length : 0;
+	if (leading + trailing >= kana.length)
+		return { surface, reading: kana, start: 0 };
+	return {
+		surface: surface.slice(leading, surface.length - trailing),
+		reading: kana.slice(leading, kana.length - trailing),
+		start: Array.from(surface.slice(0, leading)).length,
+	};
 }
 /** Build global NFC code-point boundaries once, retaining only verified raw boundaries. */
 export function rubyBoundaries(raw: string): Array<number | undefined> {
@@ -135,11 +134,13 @@ export function applyAutomaticRuby(
 	for (const token of [...tokens].sort((a, b) => b.start - a.start)) {
 		const label = rubyLabel(token.surface, token.reading);
 		if (!label || token.start < partStart) continue;
-		const begin = boundaries[token.start - partStart];
-		const end =
-			boundaries[token.start - partStart + Array.from(label.surface).length];
+		const wholeBegin = boundaries[token.start - partStart];
+		const labelStart = token.start - partStart + label.start;
+		const begin = boundaries[labelStart];
+		const end = boundaries[labelStart + Array.from(label.surface).length];
 		const wholeEnd = boundaries[token.end - partStart];
 		if (
+			wholeBegin === undefined ||
 			begin === undefined ||
 			end === undefined ||
 			wholeEnd === undefined ||
@@ -147,10 +148,12 @@ export function applyAutomaticRuby(
 		)
 			continue;
 		const originalRange =
-			originalRanges[firstAfter(originalRanges, begin, (r) => r.end)];
+			originalRanges[firstAfter(originalRanges, wholeBegin, (r) => r.end)];
 		if (originalRange && originalRange.start < wholeEnd) continue;
 		const entry =
-			projection.entries[firstAfter(projection.entries, begin, (e) => e.end)];
+			projection.entries[
+				firstAfter(projection.entries, wholeBegin, (e) => e.end)
+			];
 		if (entry && entry.end < wholeEnd) continue;
 		if (
 			!entry ||
@@ -160,8 +163,9 @@ export function applyAutomaticRuby(
 			continue;
 		const local = begin - entry.start;
 		if (
-			entry.node.data.slice(local, wholeEnd - entry.start).normalize("NFC") !==
-			token.surface
+			entry.node.data
+				.slice(wholeBegin - entry.start, wholeEnd - entry.start)
+				.normalize("NFC") !== token.surface
 		)
 			continue;
 		if (end - entry.start > entry.node.length) continue;
