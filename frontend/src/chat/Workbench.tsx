@@ -5,6 +5,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import {
+	memo,
 	type ReactNode,
 	useCallback,
 	useEffect,
@@ -222,7 +223,7 @@ function FailedJob({
 	);
 }
 
-function MessageItem({
+const MessageItem = memo(function MessageItem({
 	message,
 	activeJob,
 	onRetry,
@@ -339,7 +340,7 @@ function MessageItem({
 				)}
 		</article>
 	);
-}
+});
 
 function ThreadPanel({
 	segment,
@@ -726,7 +727,11 @@ function ThreadPanel({
 					<MessageItem
 						key={message.id}
 						message={message}
-						activeJob={active.data}
+						activeJob={
+							active.data?.assistant_message.id === message.id
+								? active.data
+								: undefined
+						}
 						onRetry={setDraft}
 						onOpenArtifact={onOpenArtifact}
 					/>
@@ -1032,6 +1037,23 @@ export function Workbench({
 	);
 	const [drafts, setDrafts] = useState<Record<string, Draft>>({});
 	const [pending, setPending] = useState<Record<string, Pending | null>>({});
+	const setSelectedDraft = useCallback(
+		(next: Draft | ((current: Draft) => Draft)) => {
+			if (!selected) return;
+			setDrafts((old) => ({
+				...old,
+				[selected]:
+					typeof next === "function" ? next(old[selected] ?? emptyDraft) : next,
+			}));
+		},
+		[selected],
+	);
+	const setSelectedPending = useCallback(
+		(item: Pending | null) => {
+			if (selected) setPending((old) => ({ ...old, [selected]: item }));
+		},
+		[selected],
+	);
 	const [createKey, setCreateKey] = useState<string | null>(null);
 	const [firstModelId, setFirstModelId] = useState<string | null>(null);
 	const defaults = useQuery({
@@ -1226,19 +1248,9 @@ export function Workbench({
 							segment={segment}
 							threadId={selected}
 							draft={drafts[selected] ?? emptyDraft}
-							setDraft={(next) =>
-								setDrafts((old) => ({
-									...old,
-									[selected]:
-										typeof next === "function"
-											? next(old[selected] ?? emptyDraft)
-											: next,
-								}))
-							}
+							setDraft={setSelectedDraft}
 							pending={pending[selected] ?? null}
-							setPending={(item) =>
-								setPending((old) => ({ ...old, [selected]: item }))
-							}
+							setPending={setSelectedPending}
 							quickGenerateToken={generateToken}
 							onGenerationAccepted={onGenerationAccepted}
 							onSubmissionStarted={onSubmissionStarted}

@@ -19,6 +19,7 @@ import { themeRegression } from "./theme";
 import { translationRegression } from "./translation";
 import { workbenchRegression } from "./workbench";
 import { workbenchHistory } from "./workbench-history";
+import { workbenchRender } from "./workbench-render";
 
 const result = document.querySelector<HTMLPreElement>("#result");
 const container = document.querySelector<HTMLDivElement>("#root");
@@ -452,7 +453,8 @@ try {
 											},
 										}),
 									]
-								: suite === "workbench-history" ||
+								: suite === "workbench-render" ||
+										suite === "workbench-history" ||
 										suite === "workbench" ||
 										suite === "segment-materials" ||
 										suite === "analysis-reading" ||
@@ -466,7 +468,9 @@ try {
 														? segmentMaterials
 														: suite === "workbench-history"
 															? workbenchHistory
-															: workbenchRegression)({
+															: suite === "workbench-render"
+																? workbenchRender
+																: workbenchRegression)({
 												container,
 												check,
 												until,

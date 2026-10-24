@@ -1,8 +1,9 @@
+import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { imageHref, safeHref } from "./links";
 
-export function Markdown({ text }: { text: string }) {
+export const Markdown = memo(function Markdown({ text }: { text: string }) {
 	return (
 		<div className="analysis-markdown">
 			<ReactMarkdown
@@ -35,4 +36,4 @@ export function Markdown({ text }: { text: string }) {
 			</ReactMarkdown>
 		</div>
 	);
-}
+});

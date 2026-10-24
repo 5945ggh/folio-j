@@ -23,6 +23,17 @@ try {
 		server: { host: "127.0.0.1", port: 0, strictPort: false, proxy: {} },
 		plugins: [
 			{
+				name: "count-chat-markdown-renders",
+				enforce: "pre",
+				transform(source, id) {
+					if (!id.endsWith("/src/analysis/Markdown.tsx")) return;
+					return source.replace(
+						"\treturn (",
+						`globalThis.__chatMarkdownRenders ??= {}; globalThis.__chatMarkdownRenders[text] = (globalThis.__chatMarkdownRenders[text] ?? 0) + 1;\n\treturn (`,
+					);
+				},
+			},
+			{
 				name: "block-unmocked-test-api",
 				configureServer(vite) {
 					vite.middlewares.use((request, response, next) => {
@@ -43,6 +54,8 @@ try {
 	for (const [width, height, query] of [
 		[600, 900, ""],
 		[1280, 900, "?suite=workbench-history"],
+		[1280, 900, "?suite=workbench-render"],
+		[390, 900, "?suite=workbench-render"],
 		[1280, 900, "?suite=segment-materials"],
 		[1280, 900, "?suite=analysis-reading"],
 		[320, 900, "?suite=analysis-reading"],
