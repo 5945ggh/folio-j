@@ -1194,7 +1194,13 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		button("翻译", toolbar).click();
 		if (detached) {
 			await h.until(
-				() => acceptedTask && h.container.textContent?.includes("等待翻译…"),
+				() =>
+					acceptedTask &&
+					h.container
+						.querySelector(
+							".translation-card:not(.embedded) .translation-progress",
+						)
+						?.textContent?.trim() === "等待翻译",
 				"Explicit selection must create a queued translation before leaving its target",
 			);
 			button("关闭翻译（任务继续）").click();
