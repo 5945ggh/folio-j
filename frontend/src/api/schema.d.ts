@@ -2632,6 +2632,8 @@ export interface components {
             assembly_rule: string;
             /** Chapter Id */
             chapter_id?: string | null;
+            /** Chapter Title */
+            chapter_title?: string | null;
             /** Display */
             display?: string | null;
             material_provenance: components["schemas"]["MaterialProvenance"] | null;
@@ -2644,6 +2646,8 @@ export interface components {
              * @enum {string}
              */
             status: "resolved" | "material_deleted" | "version_unavailable" | "snapshot_mismatch" | "invalid_reference" | "none";
+            /** Title */
+            title?: string | null;
         };
         /** SegmentResponse */
         SegmentResponse: {

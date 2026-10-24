@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import type { Segment } from "../content";
 import { SegmentMaterialOrigin } from "../materials/SegmentMaterialOrigin";
 import { ConfirmDialog, dateLabel } from "../Shared";
+import { SpeechControls } from "../speech";
+import { SegmentTranslations } from "../translation/SegmentTranslations";
 import "./material-fields.css";
 import "./original-card.css";
 
@@ -43,30 +45,50 @@ export function OriginalCard({
 		);
 	};
 	return (
-		<section id="segment-original" aria-label="原文">
-			<button
-				id="segment-original-trigger"
-				type="button"
-				className="segment-original-card"
-				aria-label="查看完整原文与资料"
-				aria-haspopup="dialog"
-				onClick={() => setOpen(true)}
-			>
-				<span className="segment-original-label">原文</span>
-				<span className="segment-context-preview" lang="ja">
+		<section id="segment-original" aria-label="片段内容">
+			<div className="segment-original-card">
+				<header className="segment-original-header">
+					<h2 className="segment-original-label">原文</h2>
+					<SpeechControls
+						target={{
+							id: `segment:${segment.id}`,
+							text: segment.text,
+							label: "片段原文",
+						}}
+						compact
+						iconOnly
+					/>
+				</header>
+				<div className="segment-context-preview" lang="ja">
 					{segment.context_before.trim() && (
-						<span className="segment-context-line segment-context-before">
-							<span>{segment.context_before}</span>
-						</span>
+						<section className="segment-context" aria-label="已保存前文">
+							<div className="segment-context-line segment-context-before">
+								<span>{segment.context_before}</span>
+							</div>
+						</section>
 					)}
-					<span className="segment-original-focus">{segment.text}</span>
+					<section className="segment-original-focus" aria-label="目标原文">
+						{segment.text}
+					</section>
 					{segment.context_after.trim() && (
-						<span className="segment-context-line segment-context-after">
-							<span>{segment.context_after}</span>
-						</span>
+						<section className="segment-context" aria-label="已保存后文">
+							<div className="segment-context-line segment-context-after">
+								<span>{segment.context_after}</span>
+							</div>
+						</section>
 					)}
-				</span>
-				<span className="segment-original-footer">
+				</div>
+				<SegmentTranslations
+					segmentId={segment.id}
+					translation={segment.translation}
+				/>
+				<button
+					id="segment-original-trigger"
+					type="button"
+					className="segment-original-footer"
+					aria-haspopup="dialog"
+					onClick={() => setOpen(true)}
+				>
 					<span>查看完整原文与资料</span>
 					<svg
 						width="16"
@@ -79,8 +101,8 @@ export function OriginalCard({
 					>
 						<path d="M14 4h6v6M20 4l-9 9M10 4H4v16h16v-6" />
 					</svg>
-				</span>
-			</button>
+				</button>
+			</div>
 			{open &&
 				overlayHost &&
 				createPortal(

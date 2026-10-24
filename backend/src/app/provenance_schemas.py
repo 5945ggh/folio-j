@@ -60,6 +60,8 @@ class SegmentProvenanceResponse(BaseModel):
     segment_id: str
     material_provenance: MaterialProvenance | None
     display: str | None = None
+    title: str | None = None
+    chapter_title: str | None = None
     status: Literal[
         "resolved",
         "material_deleted",

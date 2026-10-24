@@ -151,6 +151,8 @@ async def test_create_canonical_match_lock_and_restart(
         assert resolved.status_code == 200, resolved.text
         assert resolved.json()["status"] == "resolved"
         assert resolved.json()["display"] == "引用検証 · 同じ章 · 章内约 16%"
+        assert resolved.json()["title"] == "引用検証"
+        assert resolved.json()["chapter_title"] == "同じ章"
         assert resolved.json()["chapter_id"] == "c1"
         assert resolved.json()["assembly_rule"] == "concat-nfc-v1"
         assert [
@@ -413,6 +415,8 @@ async def test_deleted_material_history_is_retained_and_reimport_never_rebinds(
         assert resolution.status_code == 200 and resolution.json()["status"] == "material_deleted"
         assert resolution.json()["parts"] == []
         assert resolution.json()["display"] == "引用検証"
+        assert resolution.json()["title"] == "引用検証"
+        assert resolution.json()["chapter_title"] is None
         assert (
             await client.post(url + "/material-provenance/select", json=reference)
         ).status_code in {404, 409}
@@ -491,6 +495,8 @@ async def test_unavailable_material_returns_explicit_status_and_preserves_text(
         )
         assert resolved.json()["parts"] == []
         assert resolved.json()["display"] == "引用検証"
+        assert resolved.json()["title"] == "引用検証"
+        assert resolved.json()["chapter_title"] is None
         assert reread.json()["material_provenance"] == saved["material_provenance"]
 
 
@@ -676,6 +682,7 @@ async def test_persisted_snapshot_is_checked_before_matching_or_selecting(
         assert resolved.json()["status"] == (
             "invalid_reference" if corruption == "json" else "snapshot_mismatch"
         )
+        assert resolved.json()["chapter_title"] is None
         matched = await client.post(
             f"/api/sources/{source_id}/segments/material-provenance/matches", json=reference
         )
@@ -785,6 +792,8 @@ async def test_resolved_nfc_seam_keeps_exact_location_but_omits_unrepresentable_
         resolved = (await client.get(f"/api/segments/{saved['id']}/material-provenance")).json()
         assert resolved["status"] == "resolved"
         assert resolved["display"] == "引用検証 · 同じ章"
+        assert resolved["title"] == "引用検証"
+        assert resolved["chapter_title"] == "同じ章"
         assert resolved["material_provenance"] == saved["material_provenance"]
         assert resolved["parts"][0]["start"] == 0
 
@@ -796,6 +805,15 @@ async def test_resolved_nfc_seam_keeps_exact_location_but_omits_unrepresentable_
         ("", "同じ章", "同じ章 · 章内约 16%"),
         ("引用検証", "", "引用検証 · 章内约 16%"),
         (" \t", " \t", "章内约 16%"),
+        (
+            "長い題名 · 副題 — " + "書名" * 100,
+            "章名 · 節名 — " + "本文" * 100,
+            "長い題名 · 副題 — "
+            + "書名" * 100
+            + " · 章名 · 節名 — "
+            + "本文" * 100
+            + " · 章内约 16%",
+        ),
     ],
 )
 async def test_display_omits_empty_title_items(
@@ -831,6 +849,8 @@ async def test_display_omits_empty_title_items(
         resolved = (await client.get(f"/api/segments/{saved['id']}/material-provenance")).json()
         assert resolved["status"] == "resolved"
         assert resolved["display"] == expected
+        assert resolved["title"] == (material_title if material_title.strip() else None)
+        assert resolved["chapter_title"] == (chapter_title if chapter_title.strip() else None)
 
 
 @pytest.mark.asyncio
@@ -867,6 +887,8 @@ async def test_display_uses_current_name_and_never_exposes_foreign_material_name
         assert resolved["display"] == (
             "現在の題名 · 同じ章 · 章内约 16%" if mutation == "rename" else None
         )
+        assert resolved["title"] == ("現在の題名" if mutation == "rename" else None)
+        assert resolved["chapter_title"] == ("同じ章" if mutation == "rename" else None)
         reread = (await client.get(url)).json()
         assert reread["material_provenance"] == saved["material_provenance"]
         assert reread["source_ref"] == "追記"

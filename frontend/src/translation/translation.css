@@ -200,25 +200,43 @@
 	outline: 2px solid #6d8dd0;
 	outline-offset: 2px;
 }
+.app-shell.segment-study-shell .segment-translation-area {
+	margin-top: 16px;
+	padding-top: 14px;
+	border-top: 1px solid var(--border);
+	font-size: 14px;
+	line-height: 1.8;
+	overflow-wrap: anywhere;
+}
+.app-shell.segment-study-shell .segment-translation-area h3 {
+	margin: 0 0 6px;
+	color: var(--muted);
+	font-size: 12px;
+	font-weight: 400;
+}
+.app-shell.segment-study-shell .segment-current-translation {
+	margin: 0 0 8px;
+	white-space: pre-wrap;
+}
 .segment-translations {
-	margin: 12px 0;
+	margin: 8px 0;
 	font-size: 13px;
+}
+.app-shell.segment-study-shell .segment-translations summary {
+	cursor: pointer;
+	overflow-wrap: anywhere;
+}
+.segment-translations > details {
+	margin-top: 10px;
 }
 .segment-translations p {
 	white-space: pre-wrap;
+	overflow-wrap: anywhere;
 }
-.segment-assistance {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 12px;
-	margin: 12px 0;
-}
-.segment-assistance > .segment-translations {
-	margin: 0;
-}
-.segment-assistance > .segment-translations[open] {
-	flex-basis: 100%;
+.segment-translations .segment-translation-hint,
+.segment-translations .segment-translation-context {
+	color: var(--muted);
+	font-size: 12px;
 }
 @media (max-width: 600px) {
 	.translation-card {

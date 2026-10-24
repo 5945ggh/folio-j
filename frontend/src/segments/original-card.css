@@ -2,16 +2,24 @@
 	display: block;
 	width: 100%;
 	padding: 20px 24px;
-	border: 1px solid transparent;
+	border: 1px solid var(--border);
 	border-radius: 10px;
 	background: var(--sidebar);
 	color: var(--text);
 	text-align: left;
-	cursor: pointer;
 }
-.app-shell.segment-study-shell .segment-original-card:hover {
-	border-color: #d9dadd;
-	background: #f0f1f3;
+.app-shell.segment-study-shell .segment-original-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.app-shell.segment-study-shell .segment-original-header .device-speech-icon {
+	background: transparent;
+}
+.app-shell.segment-study-shell .segment-original-header .device-speech-message {
+	white-space: normal;
 }
 .app-shell.segment-study-shell .segment-original-label,
 .app-shell.segment-study-shell .segment-original-footer {
@@ -21,8 +29,8 @@
 }
 .app-shell.segment-study-shell .segment-context-preview {
 	display: grid;
-	gap: 12px;
-	margin: 18px 0;
+	gap: 10px;
+	margin: 12px 0 16px;
 	font-weight: 400;
 	text-align: left;
 }
@@ -31,8 +39,9 @@
 	-webkit-line-clamp: 4;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
+	margin: 0;
 	font-size: 20px;
-	line-height: 1.9;
+	line-height: 1.8;
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
 }
@@ -40,12 +49,11 @@
 	display: flex;
 	flex-direction: column;
 	max-height: 3.6em;
-	padding-inline: 8px;
 	overflow: hidden;
-	color: #858992;
+	color: #646972;
 	font-size: 15px;
 	line-height: 1.8;
-	white-space: pre-wrap;
+	white-space: normal;
 	overflow-wrap: anywhere;
 }
 .app-shell.segment-study-shell .segment-context-line > span {
@@ -53,16 +61,27 @@
 }
 .app-shell.segment-study-shell .segment-context-before {
 	justify-content: flex-end;
-	mask-image: linear-gradient(to bottom, #0002, #000c);
 }
-.app-shell.segment-study-shell .segment-context-after {
-	mask-image: linear-gradient(to bottom, #000c, #0002);
+.app-shell.segment-study-shell .segment-original-label {
+	margin: 0;
 }
+
 .app-shell.segment-study-shell .segment-original-footer {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
+	width: 100%;
+	padding: 8px 0 0;
+	border: 0;
+	background: transparent;
+	text-align: left;
+	cursor: pointer;
+}
+.app-shell.segment-study-shell .segment-original-footer:hover {
+	color: var(--text);
+	text-decoration: underline;
+	text-underline-offset: 3px;
 }
 .app-shell.segment-study-shell .segment-material-dialog {
 	width: min(720px, calc(100vw - 32px));
@@ -157,7 +176,6 @@
 		font-size: 18px;
 	}
 	.app-shell.segment-study-shell .segment-context-line {
-		padding-inline: 4px;
 		font-size: 14px;
 	}
 	.app-shell.segment-study-shell .segment-material-dialog {

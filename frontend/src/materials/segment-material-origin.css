@@ -1,0 +1,63 @@
+.segment-material-origin {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px 16px;
+	min-width: 0;
+	max-width: 100%;
+	padding: 12px 14px;
+	border: 1px solid var(--border, #e5e7eb);
+	border-radius: 10px;
+	background: transparent;
+	color: var(--muted, #737b80);
+	font-size: 12px;
+	line-height: 1.7;
+}
+
+.segment-material-origin-identity {
+	display: flex;
+	flex: 1 1 12rem;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+
+.segment-material-origin-identity > svg {
+	flex: none;
+}
+
+.segment-material-origin-text {
+	min-width: 0;
+}
+
+.segment-material-origin .segment-material-origin-title,
+.segment-material-origin .segment-material-origin-chapter {
+	margin: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.segment-material-origin .segment-material-origin-title {
+	color: var(--text, #292c2e);
+	font-size: 13px;
+}
+
+.segment-material-origin .segment-material-origin-chapter {
+	font-size: 12px;
+}
+
+.segment-material-origin .segment-material-origin-status {
+	flex-basis: 100%;
+	min-width: 0;
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.segment-material-origin-link {
+	display: inline-block;
+	flex: none;
+	margin-inline-start: auto;
+	padding-block: 3px;
+	font-size: 12px;
+}

@@ -2,17 +2,30 @@ import { useQuery } from "@tanstack/react-query";
 import { InlineError } from "../Shared";
 import { getSegmentTranslations } from "./api";
 import "./translation.css";
-export function SegmentTranslations({ segmentId }: { segmentId: string }) {
+
+export function SegmentTranslations({
+	segmentId,
+	translation,
+}: {
+	segmentId: string;
+	translation: string;
+}) {
 	const results = useQuery({
 		queryKey: ["segment-translations", segmentId],
 		queryFn: () => getSegmentTranslations(segmentId),
 		retry: false,
 	});
+	const hasCurrent = !!translation.trim();
+	if (!hasCurrent && results.isSuccess && results.data.length === 0)
+		return null;
 	return (
-		<details className="segment-translations">
-			<summary>
-				关联的翻译记录{results.data?.length ? `（${results.data.length}）` : ""}
-			</summary>
+		<section className="segment-translation-area" aria-label="译文与翻译记录">
+			{hasCurrent && (
+				<>
+					<h3>当前译文</h3>
+					<p className="segment-current-translation">{translation}</p>
+				</>
+			)}
 			<InlineError error={results.error} />
 			{results.isPending && <p role="status">正在读取翻译记录…</p>}
 			{results.isError && (
@@ -20,22 +33,28 @@ export function SegmentTranslations({ segmentId }: { segmentId: string }) {
 					重试读取
 				</button>
 			)}
-			{results.data?.map((item) => (
-				<details key={item.id}>
-					<summary>
-						{item.scheme_name} · {item.target_language} ·{" "}
-						{new Date(item.created_at).toLocaleString()}
-					</summary>
-					<p>{item.translation}</p>
-					<small>模型：{item.model_id}；回看不会改写当前采用译文。</small>
-					<p>前文：{item.context_before || "（空）"}</p>
-					<p>后文：{item.context_after || "（空）"}</p>
-					{item.material_deleted && <p>原材料已删除；此译文快照保留。</p>}
+			{!!results.data?.length && (
+				<details className="segment-translations">
+					<summary>关联的翻译记录（{results.data.length}）</summary>
+					<p className="segment-translation-hint">回看记录不会改写当前译文。</p>
+					{results.data.map((item) => (
+						<details key={item.id}>
+							<summary>
+								{item.scheme_name} · {item.target_language} ·{" "}
+								{new Date(item.created_at).toLocaleString()}
+							</summary>
+							<p>{item.translation}</p>
+							<details className="segment-translation-context">
+								<summary>本次翻译的语境与模型</summary>
+								<p>前文：{item.context_before || "（空）"}</p>
+								<p>后文：{item.context_after || "（空）"}</p>
+								<p>模型：{item.model_id}</p>
+							</details>
+							{item.material_deleted && <p>原材料已删除；此译文快照保留。</p>}
+						</details>
+					))}
 				</details>
-			))}
-			{results.data?.length === 0 && (
-				<p>还没有关联的翻译结果。当前采用文在片段资料中查看。</p>
 			)}
-		</details>
+		</section>
 	);
 }

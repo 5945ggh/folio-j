@@ -42,6 +42,8 @@ try {
 	console.log(`Browser regression page: ${url}`);
 	for (const [width, height, query] of [
 		[600, 900, ""],
+		[1280, 900, "?suite=segment-materials"],
+		[320, 900, "?suite=segment-materials"],
 		[1280, 900, "?suite=reader-bookmarks"],
 		[1280, 900, "?suite=inline-records"],
 		[1280, 900, "?suite=inline-records&performance"],

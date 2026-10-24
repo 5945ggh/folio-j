@@ -427,9 +427,11 @@ try {
 										},
 									}),
 								]
-							: suite === "workbench"
+							: suite === "workbench" || suite === "segment-materials"
 								? [
-										await workbenchRegression({
+										await (suite === "segment-materials"
+											? segmentMaterials
+											: workbenchRegression)({
 											container,
 											check,
 											until,

@@ -1,6 +1,45 @@
 import type { components } from "../src/api/schema";
 import type { SegmentFields } from "../src/content";
 import type { BrowserHarness } from "./harness";
+import { segmentOriginStability } from "./segment-origin-stability";
+
+/** Keep this regression isolated from installed voices and the real device. */
+function segmentSpeech() {
+	const utterances: SpeechSynthesisUtterance[] = [];
+	class Utterance extends EventTarget {
+		voice: SpeechSynthesisVoice | null = null;
+		lang = "";
+		rate = 1;
+		onstart: (() => void) | null = null;
+		onend: (() => void) | null = null;
+		onerror: ((event: { error: string }) => void) | null = null;
+		constructor(public text: string) {
+			super();
+		}
+	}
+	const synthesis = new EventTarget();
+	Object.assign(synthesis, {
+		getVoices: () => [
+			{
+				voiceURI: "segment-fixture",
+				name: "片段回归日语声音",
+				lang: "ja-JP",
+				localService: true,
+			},
+		],
+		cancel: () => {},
+		speak: (utterance: SpeechSynthesisUtterance) => utterances.push(utterance),
+	});
+	Object.defineProperty(window, "speechSynthesis", {
+		configurable: true,
+		value: synthesis,
+	});
+	Object.defineProperty(window, "SpeechSynthesisUtterance", {
+		configurable: true,
+		value: Utterance,
+	});
+	return utterances;
+}
 
 export const materialSegment: components["schemas"]["SegmentResponse"] = {
 	id: "segment",
@@ -37,21 +76,33 @@ export const materialSegment: components["schemas"]["SegmentResponse"] = {
 };
 
 export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
+	const speech = segmentSpeech();
+	if (new URLSearchParams(location.search).has("segment-content-preview")) {
+		await segmentContentAggregation(h, speech, true);
+		return "segment content preview: saved current translation and distinct historical result";
+	}
+	const originStability = await segmentOriginStability(h, materialSegment);
 	const { SegmentForm } = await import("../src/Forms");
 	const { OriginalCard } = await import("../src/segments/OriginalCard");
 	const { ConfirmDialog } = await import("../src/Shared");
 	const { container, mount, until, inputValue, mock } = h;
 	const check: BrowserHarness["check"] = h.check;
 	mock(async (request) => {
-		if (
-			new URL(request.url).pathname ===
-			"/api/segments/segment/material-provenance"
-		)
+		const path = new URL(request.url).pathname;
+		if (request.method !== "GET")
+			throw new Error(
+				`Material viewing must stay read-only: ${request.method} ${path}`,
+			);
+		if (path === "/api/segments/segment/translation-results")
+			return Response.json([]);
+		if (path === "/api/segments/segment/material-provenance")
 			return Response.json({
 				segment_id: "segment",
 				status: "resolved",
 				assembly_rule: "concat-nfc-v1",
 				chapter_id: "chapter",
+				title: "回归书籍",
+				chapter_title: "第三章",
 				display: "回归书籍 · 第三章 · 第 4—9 字",
 				material_provenance: materialSegment.material_provenance ?? null,
 				parts: [],
@@ -151,7 +202,9 @@ export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
 				`Edit field order changed: ${labels.join("|")}`,
 			);
 			await until(
-				() => container.textContent?.includes("回归书籍 · 第三章") === true,
+				() =>
+					container.textContent?.includes("回归书籍") === true &&
+					container.textContent?.includes("第三章") === true,
 				"Editing must display exact material origin",
 			);
 		}
@@ -212,7 +265,7 @@ export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
 			"Original card must mount",
 		);
 		container
-			.querySelector<HTMLButtonElement>(".segment-original-card")
+			.querySelector<HTMLButtonElement>("#segment-original-trigger")
 			?.click();
 		await until(
 			() => !!container.querySelector("dialog[open]"),
@@ -250,7 +303,9 @@ export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
 				`Read field order changed: ${labels.join("|")}`,
 			);
 			await until(
-				() => body.textContent?.includes("回归书籍 · 第三章") === true,
+				() =>
+					body.textContent?.includes("回归书籍") === true &&
+					body.textContent?.includes("第三章") === true,
 				"Viewing must display exact material origin",
 			);
 		}
@@ -290,7 +345,7 @@ export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
 			"Minimal original card must mount",
 		);
 		container
-			.querySelector<HTMLButtonElement>(".segment-original-card")
+			.querySelector<HTMLButtonElement>("#segment-original-trigger")
 			?.click();
 		await until(
 			() => !!container.querySelector("dialog[open]"),
@@ -365,8 +420,377 @@ export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
 	} finally {
 		dispose();
 	}
+	await segmentContentAggregation(h, speech);
 	await segmentEditConflicts(h);
-	return "segment materials: seven-field dialog; sparse edits preserve concurrent fields; conflicts require fresh readable content and explicit confirmation";
+	return `segment materials: original/context/current translation/history aggregate; empty/retry/read-only/speech/provenance/narrow layout; seven-field dialog; sparse edits preserve concurrent fields; conflicts require fresh readable content and explicit confirmation; ${originStability}`;
+}
+
+async function segmentContentAggregation(
+	h: BrowserHarness,
+	utterances: SpeechSynthesisUtterance[],
+	preview = false,
+) {
+	const { OriginalCard } = await import("../src/segments/OriginalCard");
+	const { getSpeechController } = await import("../src/speech/browser");
+	const { container, mount, until, mock } = h;
+	const check: BrowserHarness["check"] = h.check;
+	const provenance = materialSegment.material_provenance;
+	check(provenance, "Translation fixture requires material provenance");
+	const history: components["schemas"]["TranslationResultResponse"] = {
+		id: "saved-history",
+		task_id: "task",
+		source_id: "source",
+		material_id: "book",
+		material_deleted: false,
+		material_provenance: provenance,
+		identity_sha256: "c".repeat(64),
+		text: materialSegment.text,
+		translation: "历史机器译文，与人工采用文不同。",
+		context_before: "历史前文。",
+		context_after: "历史后文。",
+		target_language: "简体中文",
+		scheme_name: "历史翻译方案",
+		model_id: "fixture-model",
+		run_id: "fixture-run",
+		created_at: materialSegment.created_at,
+		adopted_segment_ids: [materialSegment.id],
+		chapter_id: "chapter",
+		parts: [],
+		scheme_id: "default",
+		scheme_revision: 1,
+		provider_name: "隔离回归",
+		protocol: "chat_completions",
+		prompt_version: "v1",
+		temperature: null,
+		reasoning_effort: null,
+		max_output_tokens: 1000,
+	};
+	const current = "  人工采用的 **字面文本**。\n第二行保留。  ";
+	const scenarios = [
+		{ name: "current-and-history", translation: current, records: true },
+		{ name: "current-only", translation: current, records: false },
+		{ name: "history-only", translation: "", records: true },
+		{ name: "empty", translation: "", records: false },
+		{ name: "whitespace", translation: " \n\t ", records: false },
+		{ name: "read-failure", translation: current, records: true },
+		{ name: "history-only-read-failure", translation: "", records: true },
+		{ name: "manual", translation: current, records: false },
+		{ name: "material-deleted", translation: current, records: true },
+		{ name: "snapshot-mismatch", translation: current, records: true },
+		{ name: "long-narrow", translation: current.repeat(20), records: true },
+	];
+	for (const scenario of scenarios) {
+		getSpeechController().dismiss();
+		const segment = {
+			...materialSegment,
+			translation: scenario.translation,
+			...(scenario.name === "manual" ? { material_provenance: null } : {}),
+			...(scenario.name === "long-narrow"
+				? {
+						text: "長い目標原文を最後まで確認する。".repeat(50),
+						context_before: "長い前文。".repeat(40),
+						context_after: "長い後文。".repeat(40),
+						note: "長い個人管理備考。".repeat(80),
+					}
+				: {}),
+		};
+		let translationReads = 0;
+		let failReads = scenario.name.includes("read-failure");
+		const requests: Request[] = [];
+		mock(async (request) => {
+			requests.push(request);
+			const path = new URL(request.url).pathname;
+			check(
+				request.method === "GET",
+				`Reading ${scenario.name} must not write or generate: ${request.method} ${path}`,
+			);
+			if (path === "/api/segments/segment/translation-results") {
+				translationReads++;
+				return failReads
+					? Response.json({ detail: "历史读取失败" }, { status: 500 })
+					: Response.json(scenario.records ? [history] : []);
+			}
+			if (path === "/api/segments/segment/material-provenance")
+				return Response.json({
+					segment_id: "segment",
+					status:
+						scenario.name === "material-deleted"
+							? "material_deleted"
+							: scenario.name === "snapshot-mismatch"
+								? "snapshot_mismatch"
+								: "resolved",
+					assembly_rule: "concat-nfc-v1",
+					chapter_id: "chapter",
+					title: "回归书籍",
+					chapter_title: "第三章",
+					display: "回归书籍 · 第三章 · 第 4—9 字",
+					material_provenance: provenance,
+					parts: [],
+				} satisfies components["schemas"]["SegmentProvenanceResponse"]);
+			throw new Error(`Unexpected aggregation request ${path}`);
+		});
+		const dispose = await mount(
+			<div className="app-shell segment-study-shell">
+				<div style={{ width: preview ? 760 : 320, maxWidth: "100%" }}>
+					<div id="segment-overlays" />
+					<OriginalCard segment={segment} onEdit={() => {}} />
+				</div>
+			</div>,
+		);
+		try {
+			await until(
+				() => translationReads > 0,
+				`${scenario.name}: card must read associated translations`,
+			);
+			await until(
+				() =>
+					!container.querySelector(".segment-translation-area [role='status']"),
+				`${scenario.name}: translation read must settle`,
+			);
+			if (preview) return;
+			const card = container.querySelector<HTMLElement>(
+				".segment-original-card",
+			);
+			const trigger = container.querySelector<HTMLButtonElement>(
+				"#segment-original-trigger",
+			);
+			check(
+				card && trigger,
+				`${scenario.name}: missing card or material trigger`,
+			);
+			check(
+				card.tagName !== "BUTTON" && !card.hasAttribute("role"),
+				"Original card must be a noninteractive content container",
+			);
+			check(
+				(trigger.getAttribute("aria-label") ?? trigger.textContent?.trim()) ===
+					"查看完整原文与资料" &&
+					!trigger.querySelector("button") &&
+					!card.querySelector("button button"),
+				"Full materials and speech must have independent accessible buttons",
+			);
+			check(
+				card.querySelector(".segment-original-focus")?.textContent ===
+					segment.text &&
+					card
+						.querySelector(".segment-context-before")
+						?.textContent?.includes(segment.context_before) &&
+					card
+						.querySelector(".segment-context-after")
+						?.textContent?.includes(segment.context_after),
+				`${scenario.name}: target/context preview lost saved text`,
+			);
+			const before = card.querySelector('[aria-label="已保存前文"]');
+			const target = card.querySelector('[aria-label="目标原文"]');
+			const after = card.querySelector('[aria-label="已保存后文"]');
+			check(
+				before &&
+					target &&
+					after &&
+					Boolean(
+						before.compareDocumentPosition(target) &
+							Node.DOCUMENT_POSITION_FOLLOWING,
+					) &&
+					Boolean(
+						target.compareDocumentPosition(after) &
+							Node.DOCUMENT_POSITION_FOLLOWING,
+					),
+				"Saved contexts must be separately named before and after the target",
+			);
+			check(
+				before.textContent === segment.context_before &&
+					after.textContent === segment.context_after,
+				"Context previews must show only saved text while retaining their accessible names",
+			);
+			const translation = card.querySelector(".segment-current-translation");
+			check(
+				Boolean(translation) === Boolean(scenario.translation.trim()),
+				`${scenario.name}: current translation visibility must match saved content`,
+			);
+			if (translation) {
+				check(
+					(translation.querySelector("p") ?? translation).textContent ===
+						scenario.translation,
+					"Current manual translation must preserve whitespace and literal Markdown",
+				);
+				check(
+					!translation.querySelector("strong"),
+					"Current translation must stay plain text",
+				);
+			}
+			let records = card.querySelector<HTMLDetailsElement>(
+				".segment-translations",
+			);
+			if (failReads) {
+				check(
+					Boolean(translation) === Boolean(scenario.translation.trim()),
+					"History read failure must preserve the current translation state",
+				);
+				const retry = [...card.querySelectorAll("button")].find(
+					(node) => node.textContent?.trim() === "重试读取",
+				);
+				check(retry, "History read failure must offer retry");
+				if (records) records.open = true;
+				failReads = false;
+				retry.click();
+				await until(
+					() =>
+						translationReads === 2 &&
+						card.textContent?.includes(history.scheme_name) === true,
+					"History read retry must recover associated results",
+				);
+				records = card.querySelector<HTMLDetailsElement>(
+					".segment-translations",
+				);
+			}
+			check(
+				Boolean(records) === scenario.records,
+				`${scenario.name}: associated history visibility must match saved records`,
+			);
+			if (!scenario.translation.trim() && !scenario.records)
+				check(
+					!card.querySelector(".segment-translation-area"),
+					"Both empty current/history values must hide the entire translation area",
+				);
+			if (records) {
+				records.open = true;
+				const item = records.querySelector<HTMLDetailsElement>("details");
+				check(item, "Associated historical result must remain expandable");
+				item.open = true;
+				check(
+					item.textContent?.includes(history.translation),
+					"Opening history lost saved translation",
+				);
+				check(
+					!item.querySelector("button") &&
+						(translation?.querySelector("p") ?? translation)?.textContent ===
+							(scenario.translation.trim() ? scenario.translation : undefined),
+					"Reading historical result must preserve the current manual translation",
+				);
+			}
+			const speak = card.querySelector<HTMLButtonElement>(
+				".device-speech-icon[aria-label='朗读原文']",
+			);
+			check(
+				speak && !speak.disabled,
+				"Card header speech must be reachable as an icon button",
+			);
+			const spoken = utterances.length;
+			speak.click();
+			await until(
+				() => utterances.length === spoken + 1,
+				"Card speech must reach mocked device",
+			);
+			check(
+				utterances.at(-1)?.text === segment.text,
+				"Speech must read only Segment target text",
+			);
+			check(
+				!container.querySelector("dialog[open]"),
+				"Speech must not open full materials",
+			);
+			getSpeechController().dismiss();
+			trigger.focus();
+			trigger.click();
+			await until(
+				() => !!container.querySelector("dialog[open]"),
+				"Independent trigger must open full materials",
+			);
+			const body = container.querySelector<HTMLElement>(
+				".segment-material-body",
+			);
+			check(body, "Complete materials body must exist");
+			check(
+				body?.textContent?.includes(segment.text) &&
+					body.textContent.includes(segment.note),
+				"Full dialog must preserve complete target and notes",
+			);
+			if (scenario.name === "manual") {
+				check(
+					body.textContent?.includes(segment.source_ref),
+					"Manual origin must remain readable",
+				);
+				check(
+					!body.querySelector("a[href*='/materials/']"),
+					"Manual origin must not invent a material destination",
+				);
+				check(
+					!requests.some((request) =>
+						request.url.endsWith("material-provenance"),
+					),
+					"Manual origin must not request material provenance",
+				);
+			}
+			if (scenario.name === "current-and-history") {
+				await until(
+					() =>
+						body.querySelector(".segment-material-origin-title")
+							?.textContent === "回归书籍" &&
+						body.querySelector(".segment-material-origin-chapter")
+							?.textContent === "第三章",
+					"Material origin must use separate structured title and chapter fields",
+				);
+				const origin = body.querySelector('[aria-label="材料出处"]');
+				check(
+					origin && !origin.textContent?.includes("第 4—9 字"),
+					"Readable origin must not expose locator offsets from legacy display",
+				);
+				check(
+					origin
+						.querySelector(".segment-material-origin-link")
+						?.textContent?.includes("在原文中定位"),
+					"Material origin must retain its independent locate action",
+				);
+			}
+			if (["material-deleted", "snapshot-mismatch"].includes(scenario.name)) {
+				await until(
+					() =>
+						body.textContent?.includes(
+							scenario.name === "material-deleted"
+								? "原材料已删除"
+								: "快照不一致",
+						) === true,
+					"Unavailable origin must explain the saved snapshot state",
+				);
+				check(
+					!body.querySelector("a[href*='/materials/']"),
+					"Unavailable provenance must not offer a false return link",
+				);
+			}
+			if (scenario.name === "long-narrow") {
+				const bounds = card.getBoundingClientRect();
+				check(
+					bounds.width <= 320 && card.scrollWidth <= card.clientWidth + 1,
+					"Long original/current/history content must fit a narrow card",
+				);
+				check(
+					body.scrollWidth <= body.clientWidth + 1,
+					"Complete materials must wrap long text without horizontal scrolling",
+				);
+				body.scrollTop = body.scrollHeight;
+				check(
+					body.scrollTop > 0,
+					"Long complete materials must remain vertically scrollable",
+				);
+			}
+			container
+				.querySelector<HTMLButtonElement>("[aria-label='关闭原文与资料']")
+				?.click();
+			await until(
+				() =>
+					!container.querySelector("dialog[open]") &&
+					document.activeElement === trigger,
+				"Closing complete materials must restore focus to its independent trigger",
+			);
+			check(
+				requests.every((request) => request.method === "GET"),
+				"Content browsing must not write or start a model call",
+			);
+		} finally {
+			if (!preview) dispose();
+			getSpeechController().dismiss();
+		}
+	}
 }
 
 async function segmentEditConflicts(h: BrowserHarness) {

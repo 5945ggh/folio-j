@@ -498,9 +498,11 @@ def chapter_location(
     return " · ".join(item for item in (label, percentage) if item)
 
 
-def _prepared_location(prepared: PreparedReference) -> str | None:
+def _prepared_location(prepared: PreparedReference) -> tuple[str | None, str | None]:
     book = CompiledBook.model_validate_json(zlib.decompress(prepared.compiled_bundle))
-    return chapter_location(book, prepared.chapter_id, prepared.parts)
+    chapter = next((item for item in book.chapters if item.id == prepared.chapter_id), None)
+    chapter_title = chapter.title if chapter is not None and chapter.title.strip() else None
+    return chapter_title, chapter_location(book, prepared.chapter_id, prepared.parts)
 
 
 def _display_title(
@@ -538,7 +540,8 @@ async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceRe
     material = await session.get(Material, origin.material_id)
     if material is None:
         return result
-    result = result.model_copy(update={"display": _display_title(segment, reference, material)})
+    title = _display_title(segment, reference, material)
+    result = result.model_copy(update={"display": title, "title": title})
     if material.deleted_at is not None:
         return result.model_copy(update={"status": "material_deleted"})
     if material.version_id != reference.version_id:
@@ -555,7 +558,7 @@ async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceRe
     source_id = segment.source_id
     try:
         prepared = await prepare_reference(session, source_id, reference)
-        location = await asyncio.to_thread(_prepared_location, prepared)
+        chapter_title, location = await asyncio.to_thread(_prepared_location, prepared)
         # Re-read after off-thread work so ancestor/material deletion cannot expose stale success.
         await require_segment(session, segment_id)
         material = await recheck_reference(session, prepared)
@@ -565,9 +568,8 @@ async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceRe
         current_material = await session.get(
             Material, reference.material_id, populate_existing=True
         )
-        result = result.model_copy(
-            update={"display": _display_title(segment, reference, current_material)}
-        )
+        title = _display_title(segment, reference, current_material)
+        result = result.model_copy(update={"display": title, "title": title})
         if current_material is not None and current_material.deleted_at is not None:
             return result.model_copy(update={"status": "material_deleted"})
         detail = exc.detail
@@ -577,13 +579,15 @@ async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceRe
         ):
             return result
         return result.model_copy(update={"status": "snapshot_mismatch"})
-    result = result.model_copy(update={"display": _display_title(segment, reference, material)})
+    title = _display_title(segment, reference, material)
+    result = result.model_copy(update={"display": title, "title": title})
     if prepared.text != original_text:
         return result.model_copy(update={"status": "snapshot_mismatch"})
     return result.model_copy(
         update={
             "status": "resolved",
             "chapter_id": prepared.chapter_id,
+            "chapter_title": chapter_title,
             "parts": prepared.parts,
             "display": " · ".join(item for item in (result.display, location) if item) or None,
         }

@@ -56,12 +56,7 @@ import { changedSegmentFields, segmentEditFields } from "./segments/edit";
 import { NewAnalysisActions } from "./segments/NewAnalysisActions";
 import { OriginalCard } from "./segments/OriginalCard";
 import { SegmentFrame } from "./segments/SegmentFrame";
-import {
-	SpeechControls,
-	SpeechPlaybackBar,
-	useStopSpeechOnLeave,
-} from "./speech";
-import { SegmentTranslations } from "./translation/SegmentTranslations";
+import { SpeechPlaybackBar, useStopSpeechOnLeave } from "./speech";
 
 const CONVERSATION_WIDTH_KEY = "folio-j:conversation-width";
 
@@ -474,17 +469,6 @@ export function SegmentDetail() {
 										);
 									}}
 								/>
-								<div className="segment-assistance">
-									<SpeechControls
-										target={{
-											id: `segment:${current.id}`,
-											text: current.text,
-											label: "片段原文",
-										}}
-										compact
-									/>
-									<SegmentTranslations segmentId={current.id} />
-								</div>
 								<SpeechPlaybackBar />
 								<section
 									ref={analysisRef}

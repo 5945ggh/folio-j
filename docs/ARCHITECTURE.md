@@ -443,7 +443,7 @@ Reader 的章节翻译 query 完成全部分页后发布标记；阅读页独立
 
 C1 出处契约版本为 `1`，组装规则为 `concat-nfc-v1`；最多 64 段、100000 码点快照，识别用 prefix／suffix 各 64 码点，候选最多 20 条。POST 创建带 UUID request_id，响应丢失以完整原请求核实；同键异文 409。GET 出处返回 resolved、none、material_deleted、version_unavailable、snapshot_mismatch 或 invalid_reference；历史目标仍由可见 Segment 保留。校验在写锁外进行，短事务内复查祖先、材料及完整不可变产物身份后提交。
 
-`SegmentProvenanceResponse.display` 由出处解析服务集中派生，不持久化；全部出处验证成功后使用当前材料名、章名及“章内约 N%”。逻辑章按 part 顺序连接资源正文片段，重复 spine 每次计入，整体 NFC 后以 Unicode 码点为分母；分子为第一段起点前正文的整体 NFC 码点数，取 `floor(100 * prefix / total)`，有效非空目标为 0–99%。跨 part 目标仅取第一段起点；空章或起点切开跨 part NFC 组合边界时省略百分比。布局和当前阅读位置不参与。材料已删、版本不可用或快照失配时只保留可靠材料名与原状态；无可靠名称则 display 为 null。source_ref 独立保留。
+`SegmentProvenanceResponse.title` 与 `chapter_title` 分别提供可靠的当前材料名和校验后的章名，供片段出处栏独立呈现；名称不参与定位身份。只有全部出处验证成功才返回章名，失效时保留可核实的材料名。兼容字段 `SegmentProvenanceResponse.display` 由出处解析服务集中派生，不持久化；全部出处验证成功后使用当前材料名、章名及“章内约 N%”。逻辑章按 part 顺序连接资源正文片段，重复 spine 每次计入，整体 NFC 后以 Unicode 码点为分母；分子为第一段起点前正文的整体 NFC 码点数，取 `floor(100 * prefix / total)`，有效非空目标为 0–99%。跨 part 目标仅取第一段起点；空章或起点切开跨 part NFC 组合边界时省略百分比。布局和当前阅读位置不参与。材料已删、版本不可用或快照失配时只保留可靠材料名与原状态；无可靠名称则 display 为 null。source_ref 独立保留。
 
 阅读器片段标记通过 GET `/materials/{material_id}/chapters/{chapter_id}/segments` 按版本读取；按 Segment ID 游标每页扫描最多 100 条，响应包含有效条目、next_cursor 与 unavailable_count。无本章匹配条目的空页仍可有后续游标；前端扫描到末页才开放标记和完整本章列表。服务逐项验证出处并复查材料、来源及片段可见性，不受创建草稿的 20 条候选上限影响。翻译标记使用第 4.8 节的章节翻译接口，两类读取均不新增标记实体或迁移。
 
