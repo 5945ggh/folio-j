@@ -1,0 +1,43 @@
+backend/tests/test_epub_compiler.py
+  s_e16c74902fc2c1::t_cf28dfdd96e9bd 390-391
+  s_e16c74902fc2c1::t_c5b24a8f6bbe21 297
+  s_e16c74902fc2c1::t_f7e629c4afa7a8 374-377,379,384-387,396-404
+  s_e16c74902fc2c1::t_44a56bb7b9d1e3 327-330,336-355
+  s_e16c74902fc2c1::t_6521771a5d4db3 364
+  s_e16c74902fc2c1::t_1a8ad19b53fb12 12,16-17,305
+  s_e16c74902fc2c1::t_cccb219f98c95d 331-335
+  s_e16c74902fc2c1::t_9b0610e62e0683 292,294,298
+  s_e16c74902fc2c1::t_f6f62717c97cff 130-149
+  s_e16c74902fc2c1::t_169d822e56e286 293,295-296,299-304,306-326,356-363,365-373,378,380-383,388-389,392-395,405-410
+  s_e16c74902fc2c1::t_3d3c0ea994971d 411-412
+docs/ARCHITECTURE.md
+  s_e16c74902fc2c1::t_c403f6f6c6f335 106
+docs/handovers/CR_FIXES_ACCEPTANCE.md
+  s_e16c74902fc2c1::t_4f9f8d7a8e1855 10-12
+  s_e16c74902fc2c1::t_c403f6f6c6f335 13
+backend/src/app/services/epub.py
+  s_e16c74902fc2c1::t_fce8546c0f2b0f 27,632-645,649-669
+  s_e16c74902fc2c1::t_cccb219f98c95d 868,930-931
+  s_e16c74902fc2c1::t_0902c3cbbf94a0 605-609,611,614-615
+  s_e16c74902fc2c1::t_f7e629c4afa7a8 847-854,864,867,928-929,932-933
+  s_e16c74902fc2c1::t_da12b1840140e9 15,567-604,610,612-613,616-618,622,631,646-648
+  s_e16c74902fc2c1::t_eb4150941c1a80 14
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e16c74902fc2c1::t_2bc09e379a4927 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a2ee43393c1076fd67e5234a9d1ec62d8ab2956c",
+  "prompts": {},
+  "sessions": {
+    "s_e16c74902fc2c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d9e-7bda-7563-b0c8-1739312b12e5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
