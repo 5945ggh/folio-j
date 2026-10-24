@@ -1,0 +1,31 @@
+docs/handovers/READER_THEME_ACCEPTANCE.md
+  s_8100536b21dab1::t_a88cd36db194c8 1-2,4-21,35-38
+  s_8100536b21dab1::t_5282205a1b4285 22-33
+  s_8100536b21dab1::t_4171d9cfe175b2 34
+  s_8100536b21dab1::t_152f6a60237f73 3
+docs/ARCHITECTURE.md
+  s_8100536b21dab1::t_a88cd36db194c8 503-504
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_8100536b21dab1::t_54889d95ea201e 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e563da70b1301dbcb556f9085730522efa101019",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_8100536b21dab1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16959-ecbf-7170-9850-65f35d342d2b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
