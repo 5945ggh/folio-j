@@ -1,0 +1,57 @@
+frontend/browser-tests/translation.tsx
+  s_e502f759c16be0::t_fb2bd9c8862392 1138
+docs/INFORMATION_ARCHITECTURE.md
+  s_e502f759c16be0::t_4b019ac4e6647d 172
+frontend/src/materials/MaterialReader.tsx
+  s_e502f759c16be0::t_c4a08b2f88e591 2197,2206
+  s_e502f759c16be0::t_edb0251d651a32 2194,2211
+docs/USAGE.md
+  s_e502f759c16be0::t_4b019ac4e6647d 21,25
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e502f759c16be0::t_a6565a40f75cf1 19
+frontend/browser-tests/record-saving.tsx
+  s_e502f759c16be0::t_fb2bd9c8862392 174,261,429-432,447-452,457
+frontend/src/translation/session.ts
+  s_e502f759c16be0::t_e9f9be284f9dce 78-80
+  s_e502f759c16be0::t_177763d22c389b 357-359,383
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_PLAN.md
+  s_e502f759c16be0::t_b22c0c4f4f66f3 6
+frontend/browser-tests/reading-aids.tsx
+  s_e502f759c16be0::t_fb2bd9c8862392 763-776
+frontend/browser-tests/translation-session.tsx
+  s_e502f759c16be0::t_fb2bd9c8862392 583,594
+  s_e502f759c16be0::t_e9f9be284f9dce 575-577,601-604
+frontend/browser-tests/chapter-records.tsx
+  s_e502f759c16be0::t_5c7413cbcad306 1075-1078
+frontend/src/translation/session.test.ts
+  s_e502f759c16be0::t_177763d22c389b 380-381,389,461,469-471,474
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md
+  s_e502f759c16be0::t_a6565a40f75cf1 217
+  s_e502f759c16be0::t_f187a392f4279f 222-223
+  s_e502f759c16be0::t_b22c0c4f4f66f3 214-216,218-221
+docs/PRD.md
+  s_e502f759c16be0::t_4b019ac4e6647d 283-284,288
+  s_e502f759c16be0::t_5975d40d31872f 289
+frontend/src/translation/TranslationPanel.tsx
+  s_e502f759c16be0::t_c4a08b2f88e591 171,230-231,241-242,255-256,259-264,270,276,298,316-317,319,329-330,333,365,370,373,375,378,405,419,428-431,446
+  s_e502f759c16be0::t_5fdb5441881a33 474-480,482-511,514-528,531-595,635,637
+  s_e502f759c16be0::t_e9f9be284f9dce 454-459,481
+docs/ARCHITECTURE.md
+  s_e502f759c16be0::t_b5cd33fba10d84 428
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fee5f7da641ce21c49e29ba424a605019908c9ab",
+  "prompts": {},
+  "sessions": {
+    "s_e502f759c16be0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16df2-7ad4-7f42-afb1-d8a979f338a5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
