@@ -1,0 +1,24 @@
+.gitignore
+  s_f538034b366642::t_26bc300ef92cb2 52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "15165d1c9cce558c6d276aad0a5c9285ba71cce6",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_f538034b366642": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d6c-03c2-78d0-ae70-86223a9946f0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
