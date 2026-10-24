@@ -1,0 +1,28 @@
+docs/ARCHITECTURE.md
+  s_e16c74902fc2c1::t_4f9f8d7a8e1855 372
+docs/handovers/CR_FIXES_ACCEPTANCE.md
+  s_e16c74902fc2c1::t_4f9f8d7a8e1855 14-16
+  s_e16c74902fc2c1::t_c403f6f6c6f335 17
+backend/src/app/jobs/agent.py
+  s_e16c74902fc2c1::t_a08b5cdadb0580 583,585-586
+backend/tests/test_analysis_agent.py
+  s_e16c74902fc2c1::t_2d10eb6ab9eb61 436,522,526,542-559,706,708,720,744-748,755-757
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e16c74902fc2c1::t_356c5bda4306d8 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "88779bd2546d7215d9d275984a57b8219a76ddc2",
+  "prompts": {},
+  "sessions": {
+    "s_e16c74902fc2c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d9e-7bda-7563-b0c8-1739312b12e5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
