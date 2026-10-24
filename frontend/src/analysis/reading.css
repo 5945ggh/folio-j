@@ -4,9 +4,35 @@
 
 .app-shell.segment-study-shell .analysis-toolbar {
 	align-items: center;
-	margin-bottom: 24px;
-	padding-bottom: 16px;
+	margin-bottom: 12px;
+	padding-bottom: 8px;
 	border-bottom: 1px solid var(--border);
+}
+
+.app-shell.segment-study-shell .analysis-back-button {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	min-width: 28px;
+	min-height: 36px;
+	padding: 0;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--muted);
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.app-shell.segment-study-shell .analysis-back-button:hover {
+	background: var(--sidebar);
+	color: var(--text);
+}
+
+.app-shell.segment-study-shell .analysis-return {
+	margin-bottom: 8px;
 }
 
 .app-shell.segment-study-shell .analysis-picker-wrap {
@@ -67,12 +93,16 @@
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
-	gap: 14px;
+	gap: 10px;
 	scroll-margin-top: 24px;
 }
 
 .app-shell.segment-study-shell .analysis-document-heading {
+	display: flex;
 	flex: 1;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 2px 12px;
 	min-width: 0;
 	overflow-wrap: anywhere;
 }
@@ -84,9 +114,9 @@
 	:is(h1, h2) {
 	margin: 0;
 	color: var(--text, inherit);
-	font-size: clamp(22px, 2.4vw, 27px);
-	font-weight: 650;
-	line-height: 1.55;
+	font-size: 20px;
+	font-weight: 600;
+	line-height: 1.45;
 }
 
 .app-shell.segment-study-shell .analysis-document-actions {
@@ -169,24 +199,38 @@
 	overflow-wrap: anywhere;
 }
 
-.app-shell.segment-study-shell .analysis-historical-notice {
+.app-shell.segment-study-shell .analysis-document-title {
+	min-width: 0;
+	max-width: 100%;
+}
+
+.app-shell.segment-study-shell .analysis-revision-status {
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
-	gap: 8px 18px;
-	margin-bottom: 18px;
-	padding: 8px 14px;
-	border: 1px solid var(--border);
-	border-radius: 6px;
-	background: var(--sidebar);
-	color: var(--text, inherit);
+	gap: 2px 10px;
+	color: var(--muted);
 	font-size: 12px;
+	line-height: 1.5;
+}
+
+.app-shell.segment-study-shell
+	.analysis-revision-status
+	.analysis-quiet-button {
+	min-height: 28px;
+	padding: 3px 0;
+}
+
+.app-shell.segment-study-shell .analysis-version-title {
+	overflow-wrap: anywhere;
+	font-weight: 500;
 }
 
 .app-shell.segment-study-shell .analysis-toc-disclosure {
-	margin: 20px 0 4px;
-	padding: 10px 0;
-	border-block: 1px solid var(--border);
+	margin: 8px 0 4px;
+	padding: 4px 0;
+	border-block: 0;
+	border-bottom: 1px solid var(--border);
 	color: var(--muted);
 	font-size: 12px;
 }
@@ -304,6 +348,6 @@
 		.analysis-document-heading
 		.analysis-markdown
 		:is(h1, h2) {
-		font-size: 21px;
+		font-size: 18px;
 	}
 }

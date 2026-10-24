@@ -43,6 +43,8 @@ try {
 	for (const [width, height, query] of [
 		[600, 900, ""],
 		[1280, 900, "?suite=segment-materials"],
+		[1280, 900, "?suite=analysis-reading"],
+		[320, 900, "?suite=analysis-reading"],
 		[320, 900, "?suite=segment-materials"],
 		[1280, 900, "?suite=reader-bookmarks"],
 		[1280, 900, "?suite=inline-records"],

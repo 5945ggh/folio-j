@@ -144,16 +144,19 @@ export function SegmentDetail() {
 		analysisId: string | null;
 		revisionId: string | null;
 		top: number | "analysis";
+		focusReturn: boolean;
 	} | null>(null);
 	const selectAnalysis = (
 		analysisId: string | null,
 		revisionId: string | null,
+		focusReturn = false,
 	) => {
 		if (analysisId && !selectedAnalysis)
 			analysisListScroll.current = readerRef.current?.scrollTop ?? null;
 		setPendingReadingScroll({
 			analysisId,
 			revisionId,
+			focusReturn,
 			top: !analysisId
 				? (analysisListScroll.current ?? "analysis")
 				: "analysis",
@@ -184,6 +187,10 @@ export function SegmentDetail() {
 						15
 					: pending.top,
 		});
+		if (pending.focusReturn)
+			section
+				.querySelector<HTMLButtonElement>("#analysis-list-return")
+				?.focus({ preventScroll: true });
 	}, [pendingReadingScroll, selectedAnalysis, selectedRevision]);
 	const client = useQueryClient();
 	useEffect(() => {
@@ -825,7 +832,11 @@ export function SegmentDetail() {
 						if (activeId.current !== id) return;
 						setAnalysisEditor(null);
 						const target = savedAnalysisLocation(result);
-						selectAnalysis(target.analysisId, target.revisionId);
+						selectAnalysis(
+							target.analysisId,
+							target.revisionId,
+							!analysisEditor.initial,
+						);
 					}}
 				/>
 			)}

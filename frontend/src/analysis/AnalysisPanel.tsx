@@ -104,27 +104,44 @@ export function AnalysisPanel({
 			void client.invalidateQueries({ queryKey: ["catalog"] });
 		},
 	});
+	const backToList = (
+		<button
+			id="analysis-list-return"
+			type="button"
+			className="analysis-back-button"
+			aria-label="返回讲解列表"
+			title="返回讲解列表"
+			onClick={() => {
+				setDeleting(false);
+				onSelect(null, null);
+			}}
+		>
+			<svg
+				width="18"
+				height="18"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="1.7"
+				aria-hidden="true"
+			>
+				<path d="m14 5-7 7 7 7" />
+			</svg>
+			{!document && <span>讲解列表</span>}
+		</button>
+	);
 	return (
 		<div className="analysis-panel">
-			<div className="analysis-toolbar">
-				<div className="analysis-picker-wrap">
-					{effectiveId ? (
-						<button
-							type="button"
-							className="analysis-quiet-button"
-							onClick={() => {
-								setDeleting(false);
-								onSelect(null, null);
-							}}
-						>
-							← 全部讲解
-						</button>
-					) : (
+			{!effectiveId ? (
+				<div className="analysis-toolbar">
+					<div className="analysis-picker-wrap">
 						<h2>讲解</h2>
-					)}
+					</div>
+					<div className="analysis-toolbar-actions">{toolbarActions}</div>
 				</div>
-				<div className="analysis-toolbar-actions">{toolbarActions}</div>
-			</div>
+			) : !document ? (
+				<div className="analysis-return">{backToList}</div>
+			) : null}
 			{!effectiveId && items.length > 0 && (
 				<section className="analysis-list" aria-label="讲解">
 					{items.map((item) => (
@@ -200,19 +217,7 @@ export function AnalysisPanel({
 				</p>
 			)}
 			{document && presentation && (
-				<article className="analysis-document">
-					{document.revision_id !== document.current_revision_id && (
-						<div className="analysis-historical-notice">
-							<span>历史版本（只读）</span>
-							<button
-								type="button"
-								className="analysis-quiet-button"
-								onClick={() => onSelect(document.id, null)}
-							>
-								查看当前版本
-							</button>
-						</div>
-					)}
+				<article className="analysis-document" aria-label={document.title}>
 					<header
 						className="analysis-document-header"
 						id={
@@ -221,12 +226,31 @@ export function AnalysisPanel({
 								: undefined
 						}
 					>
+						{backToList}
 						<div className="analysis-document-heading">
-							{presentation.title ? (
-								<Markdown text={presentation.title.markdown} />
-							) : (
-								<h2>{document.title}</h2>
-							)}
+							<div className="analysis-document-title">
+								{presentation.title ? (
+									<Markdown text={presentation.title.markdown} />
+								) : (
+									<h2>{document.title}</h2>
+								)}
+							</div>
+							<div className="analysis-revision-status">
+								{document.revision_id === document.current_revision_id ? (
+									<span>当前版本</span>
+								) : (
+									<>
+										<span>历史版本（只读）</span>
+										<button
+											type="button"
+											className="analysis-quiet-button"
+											onClick={() => onSelect(document.id, null)}
+										>
+											查看当前版本
+										</button>
+									</>
+								)}
+							</div>
 						</div>
 						<DocumentActions
 							key={`${document.id}-${document.revision_id}`}
@@ -493,12 +517,15 @@ function DocumentActions({
 					onClose={() => setVersionOpen(false)}
 				>
 					<h2 id={versionTitleId}>版本信息</h2>
+					<p className="analysis-version-title">{document.title}</p>
 					<p>
 						{document.revision_id === document.current_revision_id
 							? "正在阅读当前版本。"
 							: "正在阅读历史版本，此版本只读。"}
 					</p>
 					<dl>
+						<dt>讲解 ID</dt>
+						<dd>{document.id}</dd>
 						<dt>所读修订</dt>
 						<dd>{document.revision_id}</dd>
 						<dt>当前修订</dt>

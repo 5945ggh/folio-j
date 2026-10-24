@@ -6,6 +6,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import type { components } from "../src/api/schema";
 import type { StudyTarget } from "../src/materials/study-api";
 import "../src/styles.css";
+import { analysisReading } from "./analysis-reading";
 import { chapterRecords } from "./chapter-records";
 import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
@@ -427,11 +428,15 @@ try {
 										},
 									}),
 								]
-							: suite === "workbench" || suite === "segment-materials"
+							: suite === "workbench" ||
+									suite === "segment-materials" ||
+									suite === "analysis-reading"
 								? [
-										await (suite === "segment-materials"
-											? segmentMaterials
-											: workbenchRegression)({
+										await (suite === "analysis-reading"
+											? analysisReading
+											: suite === "segment-materials"
+												? segmentMaterials
+												: workbenchRegression)({
 											container,
 											check,
 											until,
