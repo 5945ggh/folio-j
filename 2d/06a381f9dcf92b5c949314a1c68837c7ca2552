@@ -1,0 +1,50 @@
+frontend/src/materials/chapter-records.css
+  s_eb44868f0c0200::t_69e90511555c41 99,108-110,114-120,129
+frontend/browser-tests/chapter-records.tsx
+  s_eb44868f0c0200::t_c226a89cc239b4 10-32,493-498,718-770,773-811,815-922,924-928
+  s_eb44868f0c0200::t_fd9552bce89421 771-772,812-814
+  s_eb44868f0c0200::t_c4a56b0ee4b174 1278
+frontend/src/materials/study-overlays.ts
+  s_eb44868f0c0200::t_105c642c1ff3ca 62-75
+frontend/src/materials/ChapterRecords.tsx
+  s_eb44868f0c0200::t_105c642c1ff3ca 163
+  s_eb44868f0c0200::t_cf9845189890eb 252
+  s_eb44868f0c0200::t_c2fdf5503bb87e 27,164-166,186,196,201,245-247,253-255,310
+frontend/src/materials/StudyPreview.tsx
+  s_eb44868f0c0200::t_c2174a85eaa5e7 165,176
+  s_eb44868f0c0200::t_77e64a1b0b0829 110-114
+  s_eb44868f0c0200::t_69e90511555c41 244-247,264-275
+  s_eb44868f0c0200::t_3461331afc8c43 44-45,163-164,166-175,207,210,222-242,337,379-383
+frontend/src/materials/study-preview.css
+  s_eb44868f0c0200::t_69e90511555c41 95-97,126-127,129-135,142,145
+  s_eb44868f0c0200::t_c2174a85eaa5e7 189-191
+  s_eb44868f0c0200::t_3461331afc8c43 51,55-70,192-194,225-227,301,355
+frontend/src/materials/study-overlays.test.ts
+  s_eb44868f0c0200::t_105c642c1ff3ca 7,76-77,88-94,100
+  s_eb44868f0c0200::t_cf9845189890eb 78-87,95-99
+frontend/browser-tests/reader-bookmarks.tsx
+  s_eb44868f0c0200::t_b416b302e74ffa 624-650,652-655
+frontend/src/materials/MaterialReader.tsx
+  s_eb44868f0c0200::t_0efcc3eff7c8ee 2373-2379
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2d06a381f9dcf92b5c949314a1c68837c7ca2552",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_eb44868f0c0200": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16c79-d382-72b0-b54d-48d23b70cfa0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
