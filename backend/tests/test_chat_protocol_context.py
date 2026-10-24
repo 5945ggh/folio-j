@@ -1,6 +1,6 @@
 """Frozen chat input keeps the complete provider protocol prefix."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -26,7 +26,7 @@ async def test_next_turn_keeps_complete_protocol_prefix_and_appends_new_material
         input_snapshot={"messages": prefix},
     )
     failed = SimpleNamespace(
-        created_at=datetime.now(UTC),
+        created_at=prior.created_at + timedelta(seconds=1),
         execution_state={
             "artifacts": [
                 {
