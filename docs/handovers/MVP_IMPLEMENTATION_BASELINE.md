@@ -18,6 +18,7 @@
 > 设备语速存在用户复核异常：Chrome 中多种音色修改语速并从头重播后，听感仍无变化；目前只验证了参数传递，根因与实际变速效果未确认。调查记录见[Chrome 语速问题](text-study/SEGMENT_UI_ACCEPTANCE.md#chrome-语速问题调查)。
 > 手动试用调整已提交：同出处历史译文条目省略重复原句，顶部详情保留原句；移除底部“最近翻译”及其专用视图和旧任务重做分支。范围与检查见[手动试用记录](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#手动试用调整与注音调查2026-10-24)。
 > 全量注音词首假名修复已提交：“まな板”仅在“板”标“いた”，保留整词核验、原书注音保护及原文选区；无需重建分词数据。范围与检查见[后续验收](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#自动注音词首假名修复2026-10-24)。
+> 竖排正文标记修复已提交：学习片段与译文使用固定 SVG 旁线，保留原文范围与点击契约；横排继续使用原生下划线。真实章节复现、横竖排切换及滚动尺寸验证见[验收记录](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#竖排正文标记修复2026-10-24)。
 
 当前能力与缺口见下表，产品边界见 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护。
 

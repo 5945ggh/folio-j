@@ -71,7 +71,7 @@ const chapter: Schema["MaterialChapterResponse"] = {
 			text_sha256: hash,
 			href: "chapter.xhtml",
 			css: "p{margin:0 0 1.8em}",
-			html_attributes: {},
+			html_attributes: { lang: "ja" },
 			body_attributes: {},
 		},
 	],
@@ -663,6 +663,33 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				);
 		const markStyle =
 			doc.getElementById("folio-study-style")?.textContent ?? "";
+		const verticalLines =
+			doc.querySelector<SVGSVGElement>("#folio-study-lines");
+		if (direction === "vertical-rl") {
+			check(
+				verticalLines?.getAttribute("aria-hidden") === "true",
+				"Japanese vertical marks must have a decorative line layer",
+			);
+			check(
+				doc.defaultView?.getComputedStyle(verticalLines).pointerEvents ===
+					"none",
+				"Vertical lines must preserve native selection and taps",
+			);
+			const paths = [...verticalLines.querySelectorAll("path")];
+			check(
+				paths.some((path) => !path.hasAttribute("stroke-dasharray")) &&
+					paths.some((path) => path.getAttribute("stroke-dasharray") === "3 3"),
+				"Vertical saved segments and translations must both have visible line paths",
+			);
+			check(
+				paths.every((path) => path.getBBox().height > 0),
+				"Vertical lines must follow nonempty source columns",
+			);
+		} else
+			check(
+				!verticalLines,
+				"Horizontal records must use native underlines without an overlay",
+			);
 		check(
 			/::highlight\(folio-study\)\{[^}]*text-decoration-style:solid/.test(
 				markStyle,
@@ -1321,6 +1348,72 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => !h.container.querySelector('[aria-label="选区操作"]'),
 			"Clearing the regression selection must restore native record tapping",
 		);
+		if (!inlineSuite) {
+			button("阅读设置").click();
+			await h.until(
+				() => !!h.container.querySelector('select[aria-label="文字方向"]'),
+				"Reader settings must finish opening",
+			);
+			const writing = h.container.querySelector<HTMLSelectElement>(
+				'select[aria-label="文字方向"]',
+			);
+			check(writing, "Reader settings must expose writing direction");
+			for (const mode of [
+				"horizontal-tb",
+				"vertical-rl",
+				"horizontal-tb",
+				direction,
+			]) {
+				writing.value = mode;
+				writing.dispatchEvent(new Event("change", { bubbles: true }));
+				await h.until(
+					() =>
+						doc.defaultView?.getComputedStyle(doc.body).writingMode === mode &&
+						Boolean(doc.querySelector("#folio-study-lines path")) ===
+							(mode === "vertical-rl"),
+					"Direction changes must repaint existing saved records",
+				);
+				await new Promise<void>((resolve) =>
+					requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+				);
+				check(
+					projectPart(doc, text, 0).raw === text &&
+						doc.documentElement.lang === "ja",
+					"Direction changes must preserve exact Japanese source",
+				);
+				const layer = doc.querySelector<SVGSVGElement>("#folio-study-lines");
+				if (layer) {
+					const extent = [
+						doc.body.scrollWidth,
+						doc.body.scrollHeight,
+						doc.documentElement.scrollWidth,
+						doc.documentElement.scrollHeight,
+					];
+					layer.style.display = "none";
+					check(
+						JSON.stringify(extent) ===
+							JSON.stringify([
+								doc.body.scrollWidth,
+								doc.body.scrollHeight,
+								doc.documentElement.scrollWidth,
+								doc.documentElement.scrollHeight,
+							]),
+						"Vertical line painting must not change document scroll extent",
+					);
+					layer.style.removeProperty("display");
+					const viewport =
+						h.container.querySelector<HTMLElement>(".reader-viewport");
+					check(viewport, "Vertical reader must retain its scroll viewport");
+					viewport.scrollTop = 100;
+					doc.defaultView?.scrollTo(0, 100);
+					check(
+						viewport.scrollTop === 0 &&
+							(doc.scrollingElement?.scrollTop ?? 0) === 0,
+						"Vertical record lines must not introduce upward or downward scrolling",
+					);
+				}
+			}
+		}
 		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: chapter header without expand/collapse, clean record rows, minute dates, right-side segment action, measured long/short clipping, full-height reading reaches ending, return preserves segment/analysis/tab/manual position, close icon, selection→chapter record→selection shares edited context with floating host kept mounted, two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
 	} finally {
 		if (!preview) dispose();

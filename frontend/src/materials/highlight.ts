@@ -1,4 +1,4 @@
-import type { Projection } from "./dom";
+import { type Projection, visibleContentRect } from "./dom.ts";
 import { rawOffset } from "./position.ts";
 import { subtractMarkIntervals } from "./record-mark-ranges.ts";
 
@@ -147,7 +147,81 @@ export function clearStudyHighlights(doc: Document, removeStyle = false): void {
 	view?.CSS?.highlights?.delete("folio-study-active");
 	view?.CSS?.highlights?.delete("folio-translation");
 	view?.CSS?.highlights?.delete("folio-translation-active");
+	doc.getElementById("folio-study-lines")?.remove?.();
 	if (removeStyle) doc.getElementById("folio-study-style")?.remove?.();
+}
+
+/** Japanese vertical Highlight decorations can disappear even while their ranges remain valid. */
+function paintVerticalStudyLines(
+	doc: Document,
+	groups: readonly {
+		ranges: readonly Range[];
+		color: string;
+		width: number;
+		dashed?: boolean;
+	}[],
+): void {
+	doc.getElementById("folio-study-lines")?.remove?.();
+	const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+	svg.id = "folio-study-lines";
+	svg.setAttribute("aria-hidden", "true");
+	svg.style.cssText =
+		"position:fixed!important;inset:0!important;width:100%!important;height:100%!important;pointer-events:none!important;user-select:none!important;overflow:hidden!important;z-index:1!important;";
+	for (const { ranges, color, width, dashed } of groups) {
+		const columns = new Map<
+			string,
+			{ x: number; width: number; spans: { start: number; end: number }[] }
+		>();
+		for (const range of ranges) {
+			for (const rect of range.getClientRects()) {
+				if (rect.width <= 0 || rect.height <= 0) continue;
+				const left = rect.left - 2 - width;
+				const visible = visibleContentRect(
+					doc,
+					{
+						left,
+						width,
+						top: rect.top,
+						right: left + width,
+						bottom: rect.bottom,
+						height: rect.height,
+					} as DOMRect,
+					range.startContainer.parentElement,
+				);
+				if (!visible) continue;
+				const x = (visible.left + visible.right) / 2;
+				const stroke = visible.right - visible.left;
+				const key = `${x}|${stroke}`;
+				let column = columns.get(key);
+				if (!column) {
+					column = { x, width: stroke, spans: [] };
+					columns.set(key, column);
+				}
+				column.spans.push({ start: visible.top, end: visible.bottom });
+			}
+		}
+		for (const column of columns.values()) {
+			const spans: { start: number; end: number }[] = [];
+			for (const { start, end } of column.spans.sort(
+				(a, b) => a.start - b.start,
+			)) {
+				const last = spans.at(-1);
+				if (last && start <= last.end + 0.5) last.end = Math.max(last.end, end);
+				else spans.push({ start, end });
+			}
+			const path = doc.createElementNS("http://www.w3.org/2000/svg", "path");
+			path.setAttribute(
+				"d",
+				spans.map(({ start, end }) => `M${column.x} ${start}V${end}`).join(""),
+			);
+			path.setAttribute("fill", "none");
+			path.setAttribute("stroke", color);
+			path.setAttribute("stroke-width", String(column.width));
+			if (dashed) path.setAttribute("stroke-dasharray", "3 3");
+			svg.append(path);
+		}
+	}
+	if (svg.childElementCount) doc.documentElement.append(svg);
 }
 
 /** Base ranges stay within one locator node, including ruby bases and UTF-16 boundaries. */
@@ -193,6 +267,13 @@ export function prepareStudyUnderlines(
 	const Highlight = view.Highlight,
 		registry = view.CSS.highlights;
 	return () => {
+		const vertical =
+			!!doc.body &&
+			Boolean(
+				doc.defaultView
+					?.getComputedStyle?.(doc.body)
+					.writingMode?.startsWith("vertical"),
+			);
 		if (ranges.length) registry.set("folio-study", new Highlight(...ranges));
 		else registry.delete("folio-study");
 		if (active.length)
@@ -216,5 +297,17 @@ export function prepareStudyUnderlines(
 		const red = theme === "black" ? "#ff9993" : "#c73535";
 		const translationRed = `${red}b3`;
 		style.textContent = `::highlight(folio-study){text-decoration-line:underline;text-decoration-style:solid;text-decoration-color:${red};text-decoration-thickness:1px;text-underline-offset:2px;text-underline-position:under left;}::highlight(folio-study-active){text-decoration-line:underline;text-decoration-style:solid;text-decoration-color:${red};text-decoration-thickness:2px;text-underline-offset:2px;text-underline-position:under left;}::highlight(folio-translation){text-decoration-line:underline;text-decoration-style:dashed;text-decoration-color:${translationRed};text-decoration-thickness:1px;text-underline-offset:2px;text-underline-position:under left;}::highlight(folio-translation-active){text-decoration-line:underline;text-decoration-style:dashed;text-decoration-color:${red};text-decoration-thickness:2px;text-underline-offset:2px;text-underline-position:under left;}`;
+		if (vertical) {
+			style.textContent = style.textContent.replaceAll(
+				"text-decoration-line:underline",
+				"text-decoration-line:none",
+			);
+			paintVerticalStudyLines(doc, [
+				{ ranges, color: red, width: 1 },
+				{ ranges: translations, color: translationRed, width: 1, dashed: true },
+				{ ranges: active, color: red, width: 2 },
+				{ ranges: activeTranslations, color: red, width: 2, dashed: true },
+			]);
+		} else doc.getElementById("folio-study-lines")?.remove?.();
 	};
 }
