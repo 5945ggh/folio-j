@@ -8,7 +8,7 @@ function present(source_md: string, title = "講解") {
 
 test("首个简单 H1 承担标题，展示副本保留正文与源文", () => {
 	const source = "\n# 原文の解説\n\n本文\n";
-	const result = present(source);
+	const result = present(source, "原文の解説");
 	assert.equal(result.title?.markdown, "# 原文の解説\n");
 	assert.equal(result.blocks[0]?.raw, "\n本文\n");
 	assert.equal(source, "\n# 原文の解説\n\n本文\n");
@@ -37,9 +37,18 @@ test("代码围栏、缩进代码、正文后标题与非法井号不参与去�
 		assert.equal(result.blocks[0]?.raw, markdown);
 	}
 	assert.equal(
-		present("# 井号 # の説明 ###\n本文").title?.markdown,
+		present("# 井号 # の説明 ###\n本文", "井号 # の説明").title?.markdown,
 		"# 井号 # の説明 ###\n",
 	);
+});
+
+test("重命名后页头采用新名称，原始标题和正文保留在阅读副本", () => {
+	for (const heading of ["# 原名称", "## 原名称"]) {
+		const source = `${heading}\n\n本文`;
+		const result = present(source, "新名称");
+		assert.equal(result.title, null);
+		assert.equal(result.blocks[0]?.raw, source);
+	}
 });
 
 test("格式化、链接、实体、转义及 HTML 标题保守保留", () => {

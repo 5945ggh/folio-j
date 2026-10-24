@@ -53,11 +53,15 @@ try {
 	console.log(`Browser regression page: ${url}`);
 	for (const [width, height, query] of [
 		[600, 900, ""],
+		[1280, 900, "?suite=workbench"],
+		[390, 900, "?suite=workbench"],
 		[1280, 900, "?suite=workbench-history"],
 		[1280, 900, "?suite=workbench-render"],
 		[390, 900, "?suite=workbench-render"],
 		[1280, 900, "?suite=segment-materials"],
 		[1280, 900, "?suite=analysis-reading"],
+		[1280, 900, "?suite=analysis-rename"],
+		[390, 900, "?suite=analysis-rename"],
 		[320, 900, "?suite=analysis-reading"],
 		[320, 900, "?suite=segment-materials"],
 		[1280, 900, "?suite=reader-bookmarks"],

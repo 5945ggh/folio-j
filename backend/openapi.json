@@ -265,6 +265,27 @@
         "title": "AnalysisListItem",
         "type": "object"
       },
+      "AnalysisRename": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_title": {
+            "title": "Expected Title",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "expected_title"
+        ],
+        "title": "AnalysisRename",
+        "type": "object"
+      },
       "AnalysisValidationErrorResponse": {
         "properties": {
           "detail": {
@@ -5823,6 +5844,53 @@
           }
         },
         "summary": "Get Analysis"
+      },
+      "patch": {
+        "operationId": "renameAnalysis",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisListItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rename Analysis"
       }
     },
     "/api/analyses/{analysis_id}/delete-impact": {

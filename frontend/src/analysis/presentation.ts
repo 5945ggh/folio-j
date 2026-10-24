@@ -24,10 +24,7 @@ export function analysisPresentation(document: {
 	const text = leading[2]?.replace(/[ \t]+#+[ \t]*$/, "").trim() ?? "";
 	if (!text || /^#+$/.test(text) || /[\\`*_~[\]<>&]/.test(text))
 		return { title: null, blocks };
-	if (
-		leading[1] === "##" &&
-		text.normalize("NFC") !== document.title.trim().normalize("NFC")
-	)
+	if (text.normalize("NFC") !== document.title.trim().normalize("NFC"))
 		return { title: null, blocks };
 
 	const markdown = leading[0];

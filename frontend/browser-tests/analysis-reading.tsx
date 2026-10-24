@@ -478,6 +478,11 @@ export async function analysisReading(h: BrowserHarness) {
 		);
 		key(button("版本信息"), "ArrowDown");
 		check(
+			document.activeElement === button("重命名"),
+			"Version menu ArrowDown must reach rename without activating it",
+		);
+		key(button("重命名"), "ArrowDown");
+		check(
 			document.activeElement === button("删除此讲解"),
 			"Version menu ArrowDown must reach delete without activating it",
 		);

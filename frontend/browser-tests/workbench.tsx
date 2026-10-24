@@ -206,6 +206,7 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 	let thread = makeThread();
 	let job: Job | null = null;
 	let submitted: JobInput | undefined;
+	let submissionCount = 0;
 	let patched: Record<string, unknown>[] = [];
 	let decision: Schema["JobDecision"] | undefined;
 	let openedArtifact = "";
@@ -265,6 +266,7 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 					next_cursor: null,
 				});
 			if (path === "/api/threads/thread/jobs" && request.method === "POST") {
+				submissionCount++;
 				submitted = await request.json();
 				if (failSubmission)
 					return Response.json({ detail: "离线拒绝提交" }, { status: 422 });
@@ -347,11 +349,44 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 				button("选择模型").textContent?.includes("offline-model") === true,
 			"Discussion must load settings and model",
 		);
+		const pressEnter = (options: KeyboardEventInit = {}) => {
+			const event = new KeyboardEvent("keydown", {
+				key: "Enter",
+				bubbles: true,
+				cancelable: true,
+				...options,
+			});
+			find("#chat-question").dispatchEvent(event);
+			return event;
+		};
+		check(pressEnter().defaultPrevented, "Empty Enter must not add a newline");
+		check(submissionCount === 0, "Empty Enter must not submit a job");
 		inputValue(find("#chat-question"), "请解释这个语气");
 		await until(
 			() =>
 				find<HTMLTextAreaElement>("#chat-question").value === "请解释这个语气",
 			"Question edit must settle",
+		);
+		for (const options of [
+			{ shiftKey: true },
+			{ ctrlKey: true },
+			{ altKey: true },
+			{ metaKey: true },
+			{ isComposing: true },
+			{ keyCode: 229 },
+		])
+			check(
+				!pressEnter(options).defaultPrevented,
+				"Modified Enter and IME confirmation must retain native input behavior",
+			);
+		check(
+			pressEnter({ repeat: true }).defaultPrevented,
+			"Held Enter must not insert a newline or repeatedly send",
+		);
+		check(
+			submissionCount === 0 &&
+				find<HTMLTextAreaElement>("#chat-question").value === "请解释这个语气",
+			"Line breaks, IME confirmation and held Enter must preserve the draft without submitting",
 		);
 		check(
 			find(".chat-config").tagName !== "DETAILS",
@@ -538,7 +573,7 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 			"Definite submission failure lost draft",
 		);
 		failSubmission = false;
-		button("发送问题").click();
+		check(pressEnter().defaultPrevented, "Enter must send without a newline");
 		await until(
 			() => !!job && permissionChoice("full_access").disabled,
 			"Accepted running job must lock permission controls",
@@ -550,6 +585,21 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 				find<HTMLInputElement>(".chat-stream-choice input").disabled &&
 				button("发送问题").disabled,
 			"Busy job must prevent settings mutation and duplicate submission",
+		);
+		inputValue(find("#chat-question"), "下一轮草稿");
+		await until(
+			() => find<HTMLTextAreaElement>("#chat-question").value === "下一轮草稿",
+			"Busy discussion must allow the next draft",
+		);
+		const countBeforeBusyEnter = submissionCount;
+		check(pressEnter().defaultPrevented, "Busy Enter must not add a newline");
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => resolve()),
+		);
+		check(
+			submissionCount === countBeforeBusyEnter &&
+				find<HTMLTextAreaElement>("#chat-question").value === "下一轮草稿",
+			"Busy Enter must preserve the draft without submitting another job",
 		);
 		if (refreshed) {
 			check(

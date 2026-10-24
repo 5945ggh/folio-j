@@ -6,6 +6,7 @@ import { analysisWriteError } from "./editor";
 export type AnalysisItem = components["schemas"]["AnalysisListItem"];
 export type AnalysisDetail = components["schemas"]["AnalysisDetail"];
 export type AnalysisImpact = components["schemas"]["AnalysisDeleteImpact"];
+export type AnalysisRename = components["schemas"]["AnalysisRename"];
 export type ManualAnalysisCreate =
 	components["schemas"]["ManualAnalysisCreate"];
 export type ManualAnalysisRevisionCreate =
@@ -79,6 +80,20 @@ export async function getAnalysisImpact(analysisId: string) {
 		{ params: { path: { analysis_id: analysisId } } },
 	);
 	return requireData(data, error, response.status);
+}
+
+export async function renameAnalysis(analysisId: string, body: AnalysisRename) {
+	const { data, error, response } = await api.PATCH(
+		"/api/analyses/{analysis_id}",
+		{
+			params: { path: { analysis_id: analysisId } },
+			body,
+		},
+	);
+	const result = requireData(data, error, response.status);
+	if (result.id !== analysisId)
+		throw new Error("重命名返回的讲解不匹配，请重新读取。");
+	return result;
 }
 
 export async function deleteAnalysis(analysisId: string) {

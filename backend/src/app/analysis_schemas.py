@@ -63,6 +63,25 @@ class ManualAnalysisRevisionCreate(ManualAnalysisInput):
     base_revision_id: str = Field(pattern=r"^[0-7][0-9A-HJKMNP-TV-Z]{25}$")
 
 
+class AnalysisRename(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=200)
+    expected_title: str
+
+    @field_validator("title", "expected_title", mode="before")
+    @classmethod
+    def normalize_title(cls, value: object) -> object:
+        if isinstance(value, str):
+            value = unicodedata.normalize("NFC", value)
+        return value
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def strip_title(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
 class AnalysisListItem(BaseModel):
     id: str
     segment_id: str

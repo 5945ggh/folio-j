@@ -19,7 +19,8 @@ export interface paths {
         delete: operations["deleteAnalysis"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Rename Analysis */
+        patch: operations["renameAnalysis"];
         trace?: never;
     };
     "/api/analyses/{analysis_id}/delete-impact": {
@@ -1248,6 +1249,13 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** AnalysisRename */
+        AnalysisRename: {
+            /** Expected Title */
+            expected_title: string;
+            /** Title */
+            title: string;
         };
         /** AnalysisValidationErrorResponse */
         AnalysisValidationErrorResponse: {
@@ -3298,6 +3306,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    renameAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisRename"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisListItem"];
+                };
             };
             /** @description Validation Error */
             422: {

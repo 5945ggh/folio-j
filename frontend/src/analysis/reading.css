@@ -184,6 +184,10 @@
 	background: var(--surface);
 }
 
+.analysis-rename-dialog .actions {
+	margin-top: 18px;
+}
+
 .app-shell.segment-study-shell .analysis-version-dialog dl {
 	margin-block: 24px;
 	font-size: 13px;

@@ -17,6 +17,7 @@ from app.analysis_schemas import (
     AnalysisDeleteImpact,
     AnalysisDetail,
     AnalysisListItem,
+    AnalysisRename,
     AnalysisWriteErrorCode,
     ManualAnalysisCreate,
     ManualAnalysisRevisionCreate,
@@ -176,6 +177,26 @@ async def get_analysis(
 ) -> AnalysisDetail:
     analysis = await _active_analysis(session, analysis_id)
     return await _detail(session, analysis, revision_id or analysis.current_revision_id)
+
+
+async def rename_analysis(
+    session: AsyncSession, analysis_id: str, data: AnalysisRename
+) -> AnalysisListItem:
+    try:
+        await begin_write(session)
+        analysis = await _active_analysis(session, analysis_id)
+        if analysis.title != data.title:
+            if unicodedata.normalize("NFC", analysis.title) != data.expected_title:
+                raise HTTPException(status_code=409, detail="讲解标题已变化，请重新读取后重命名")
+            analysis.title = data.title
+            analysis.updated_at = _now()
+            await session.flush()
+        result = _item(analysis)
+        await session.commit()
+        return result
+    except BaseException:
+        await session.rollback()
+        raise
 
 
 async def get_editable_analysis(

@@ -14,6 +14,7 @@ import {
 	useState,
 } from "react";
 import { ConfirmDialog, InlineError } from "../Shared";
+import { AnalysisRenameDialog } from "./AnalysisRenameDialog";
 import {
 	type AnalysisDetail,
 	analysisKeys,
@@ -48,9 +49,11 @@ export function AnalysisPanel({
 }) {
 	const client = useQueryClient();
 	const [deleting, setDeleting] = useState(false);
+	const [renaming, setRenaming] = useState<AnalysisDetail | null>(null);
 	const selectedRef = useRef(selectedId);
 	useEffect(() => {
 		selectedRef.current = selectedId;
+		setRenaming((current) => (current?.id === selectedId ? current : null));
 	}, [selectedId]);
 
 	const analyses = useInfiniteQuery({
@@ -257,6 +260,7 @@ export function AnalysisPanel({
 							document={document}
 							fetching={detail.isFetching}
 							onEdit={onEdit}
+							onRename={() => setRenaming(document)}
 							onDelete={() => {
 								remove.reset();
 								setDeleting(true);
@@ -308,6 +312,12 @@ export function AnalysisPanel({
 						);
 					})}
 				</article>
+			)}
+			{renaming && renaming.id === selectedId && (
+				<AnalysisRenameDialog
+					analysis={renaming}
+					onClose={() => setRenaming(null)}
+				/>
 			)}
 			{deleting && document && (
 				<ConfirmDialog
@@ -366,11 +376,13 @@ function DocumentActions({
 	document,
 	fetching,
 	onEdit,
+	onRename,
 	onDelete,
 }: {
 	document: AnalysisDetail;
 	fetching: boolean;
 	onEdit?: (document: AnalysisDetail) => void;
+	onRename: () => void;
 	onDelete: () => void;
 }) {
 	const menuId = useId();
@@ -391,9 +403,13 @@ function DocumentActions({
 	useLayoutEffect(() => {
 		if (!menuOpen) return;
 		positionMenu();
-		const controls =
-			menu.current?.querySelectorAll<HTMLButtonElement>("button");
-		(lastItemFirst.current ? controls?.item(1) : controls?.item(0))?.focus();
+		const controls = menu.current?.querySelectorAll<HTMLButtonElement>(
+			"button:not(:disabled)",
+		);
+		(lastItemFirst.current
+			? controls?.item(controls.length - 1)
+			: controls?.item(0)
+		)?.focus();
 		lastItemFirst.current = false;
 	}, [menuOpen, positionMenu]);
 	useEffect(() => {
@@ -466,7 +482,9 @@ function DocumentActions({
 						return;
 					}
 					const controls = Array.from(
-						event.currentTarget.querySelectorAll<HTMLButtonElement>("button"),
+						event.currentTarget.querySelectorAll<HTMLButtonElement>(
+							"button:not(:disabled)",
+						),
 					);
 					const index = controls.indexOf(
 						globalThis.document.activeElement as HTMLButtonElement,
@@ -497,6 +515,18 @@ function DocumentActions({
 					}}
 				>
 					版本信息
+				</button>
+				<button
+					type="button"
+					role="menuitem"
+					tabIndex={-1}
+					disabled={fetching}
+					onClick={() => {
+						closeMenu();
+						onRename();
+					}}
+				>
+					重命名
 				</button>
 				<button
 					type="button"

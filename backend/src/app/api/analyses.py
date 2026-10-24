@@ -9,6 +9,7 @@ from app.analysis_schemas import (
     AnalysisDeleteImpact,
     AnalysisDetail,
     AnalysisListItem,
+    AnalysisRename,
     AnalysisValidationErrorResponse,
     AnalysisWriteErrorResponse,
     ManualAnalysisCreate,
@@ -72,6 +73,15 @@ async def get_analysis(
     analysis_id: str, session: Session, revision_id: str | None = None
 ) -> AnalysisDetail:
     return await service.get_analysis(session, analysis_id, revision_id)
+
+
+@router.patch(
+    "/analyses/{analysis_id}", response_model=AnalysisListItem, operation_id="renameAnalysis"
+)
+async def rename_analysis(
+    analysis_id: str, data: AnalysisRename, session: Session
+) -> AnalysisListItem:
+    return await service.rename_analysis(session, analysis_id, data)
 
 
 @router.get(

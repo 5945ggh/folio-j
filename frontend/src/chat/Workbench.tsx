@@ -460,6 +460,13 @@ function ThreadPanel({
 		Boolean(active.data && !isTerminalJob(active.data)) ||
 		Boolean(pending) ||
 		sending;
+	const sendDisabled =
+		busy ||
+		!draft.question.trim() ||
+		!usable ||
+		!history.isSuccess ||
+		!settings.isSuccess ||
+		!providers.isSuccess;
 	const messages = [...(history.data?.pages ?? [])]
 		.reverse()
 		.flatMap((page) => page.items);
@@ -806,9 +813,25 @@ function ThreadPanel({
 					maxLength={10000}
 					rows={3}
 					placeholder="想了解这段话的什么？"
+					title="Enter 发送，Shift+Enter 换行"
 					onChange={(event) =>
 						setDraft({ question: event.target.value, additional: "" })
 					}
+					onKeyDown={(event) => {
+						if (
+							event.key !== "Enter" ||
+							event.shiftKey ||
+							event.ctrlKey ||
+							event.altKey ||
+							event.metaKey ||
+							event.nativeEvent.isComposing ||
+							event.nativeEvent.keyCode === 229
+						)
+							return;
+						event.preventDefault();
+						if (!sendDisabled && !event.repeat)
+							void send(makeInput(thread.data));
+					}}
 				/>
 
 				{pending?.uncertain && (
@@ -982,15 +1005,8 @@ function ThreadPanel({
 								className="chat-send-button"
 								type="button"
 								aria-label={sending ? "提交中…" : "发送问题"}
-								title={sending ? "提交中…" : "发送问题"}
-								disabled={
-									busy ||
-									!draft.question.trim() ||
-									!usable ||
-									!history.isSuccess ||
-									!settings.isSuccess ||
-									!providers.isSuccess
-								}
+								title={sending ? "提交中…" : "发送问题（Enter）"}
+								disabled={sendDisabled}
 								onClick={() => void send(makeInput(thread.data))}
 							>
 								<ChatIcon name="send" />

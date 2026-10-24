@@ -7,6 +7,7 @@ import type { components } from "../src/api/schema";
 import type { StudyTarget } from "../src/materials/study-api";
 import "../src/styles.css";
 import { analysisReading } from "./analysis-reading";
+import { analysisRename } from "./analysis-rename";
 import { chapterRecords } from "./chapter-records";
 import { navigationFeedback } from "./navigation-feedback";
 import { readerBookmarks } from "./reader-bookmarks";
@@ -458,19 +459,22 @@ try {
 										suite === "workbench" ||
 										suite === "segment-materials" ||
 										suite === "analysis-reading" ||
+										suite === "analysis-rename" ||
 										suite === "segment-share"
 									? [
 											await (suite === "segment-share"
 												? segmentShareRegression
-												: suite === "analysis-reading"
-													? analysisReading
-													: suite === "segment-materials"
-														? segmentMaterials
-														: suite === "workbench-history"
-															? workbenchHistory
-															: suite === "workbench-render"
-																? workbenchRender
-																: workbenchRegression)({
+												: suite === "analysis-rename"
+													? analysisRename
+													: suite === "analysis-reading"
+														? analysisReading
+														: suite === "segment-materials"
+															? segmentMaterials
+															: suite === "workbench-history"
+																? workbenchHistory
+																: suite === "workbench-render"
+																	? workbenchRender
+																	: workbenchRegression)({
 												container,
 												check,
 												until,
