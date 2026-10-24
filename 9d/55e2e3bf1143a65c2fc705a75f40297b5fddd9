@@ -1,0 +1,28 @@
+frontend/browser-tests/analysis-reading.tsx
+  s_f538034b366642::t_4207e974f340d1 965,970-973,1001-1003
+  s_f538034b366642::t_4cdaac2ac96a22 982-987,997
+frontend/browser-tests/inline-records.tsx
+  s_f538034b366642::t_1649c3f0847d17 620-624,627-635
+  s_f538034b366642::t_c1d428e33a0eea 625-626
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9d55e2e3bf1143a65c2fc705a75f40297b5fddd9",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_f538034b366642": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d6c-03c2-78d0-ae70-86223a9946f0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
