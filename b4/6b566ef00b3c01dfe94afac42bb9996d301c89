@@ -1,0 +1,79 @@
+frontend/browser-tests/translation-session.tsx
+  s_9c1eebffe148af::t_cf9c538757a3f2 410,479,596,616,633,703,712
+  s_9c1eebffe148af::t_05fc9d33301789 150-151,554-557
+frontend/src/translation/state.ts
+  s_9c1eebffe148af::t_42265cbb6f2add 80-92
+frontend/src/translation/state.test.ts
+  s_9c1eebffe148af::t_42265cbb6f2add 7,53-69
+  s_e502f759c16be0::t_acdd2171887816 70
+frontend/browser-tests/translation-drag.tsx
+  s_9c1eebffe148af::t_9b201fda3695e7 88-94
+  s_9c1eebffe148af::t_74f5db3bf65c21 120-126
+  s_9c1eebffe148af::t_6a50381567b2f2 1-87,95-119,127-136
+frontend/src/translation/translation.css
+  s_9c1eebffe148af::t_ea83c240bbe396 47-57
+  s_9c1eebffe148af::t_5b42246bffc73d 2
+  s_9c1eebffe148af::t_f2981c3a14fceb 24,41-42,45-46,62-101,103-106,184-188,191-202,321-324
+docs/PRD.md
+  s_9c1eebffe148af::t_db14b5ebdaaeca 284
+docs/USAGE.md
+  s_9c1eebffe148af::t_db14b5ebdaaeca 21-23
+frontend/src/translation/TranslationPanel.tsx
+  s_9c1eebffe148af::t_05fc9d33301789 517,651-653,657,817-835
+  s_9c1eebffe148af::t_cf9c538757a3f2 599
+  s_9c1eebffe148af::t_ea83c240bbe396 13-17,20,238-261,277-296,298-307,316,324,329-332,618-619,634-644
+  s_9c1eebffe148af::t_5d271a88bf34ab 462-477,515
+  s_9c1eebffe148af::t_42265cbb6f2add 3,41,121,126,138-141,164-195,308-313,341-342,486-487,503-504,506-507,509-514,516,518-598,600-608
+  s_9c1eebffe148af::t_0659d21010536e 646,648,656,673-682,684,711,717,719-720,722,814-816
+  s_9c1eebffe148af::t_06922724518596 508
+  s_9c1eebffe148af::t_0414315b8151f9 196-197
+frontend/browser-tests/translation.tsx
+  s_9c1eebffe148af::t_6aa4d91ece3f45 143-145,157-158,1208
+  s_9c1eebffe148af::t_408a4fd370cf10 923-925,927-929
+  s_9c1eebffe148af::t_cf9c538757a3f2 930,944
+  s_9c1eebffe148af::t_93103459811fa8 6,161,213
+  s_9c1eebffe148af::t_0d71227dfe9aae 8,12,273-274,740-741,939-940
+  s_9c1eebffe148af::t_6a73de92ad66b3 159,926
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_9c1eebffe148af::t_9839c51b27d9af 30
+frontend/browser-tests/translation-toolbar.tsx
+  s_9c1eebffe148af::t_0b84264ed1db54 6-8,18-29,34-60,64-96,98-103,112-126,130-143,146-152,160-168,213,220,230-232,234-253,255-262,264-267,270-276,281-289,292-295,298-301,304-314,316-319,321-330,332-338,347,349-356,358-365,367-371
+  s_9c1eebffe148af::t_3921bc63962a3a 156-157,222-228,303,320,331
+  s_9c1eebffe148af::t_88d13cdaa12c02 10-12,174-202,209-211,215-219,221,277-280,339-346
+  s_9c1eebffe148af::t_5d271a88bf34ab 172-173,203-204,212,214,233
+  s_9c1eebffe148af::t_06922724518596 205-206,208
+  s_9c1eebffe148af::t_0d71227dfe9aae 1-5,9,13-17,30-33,61-63,97,104-111,127-129,144-145,153-155,158-159,169-171,229,254,263,268-269,290-291,296-297,302,315,348,357,366,372-376
+  s_9c1eebffe148af::t_9e450a723acd44 207
+docs/ARCHITECTURE.md
+  s_9c1eebffe148af::t_db14b5ebdaaeca 431
+  s_9c1eebffe148af::t_340b315f061a05 430
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md
+  s_9c1eebffe148af::t_9839c51b27d9af 237
+  s_9c1eebffe148af::t_2e38900424641a 235-236,238-244
+  s_9c1eebffe148af::t_e33ec6ed1cf02a 245-247
+  s_e502f759c16be0::t_ed185a720a87bc 234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b46b566ef00b3c01dfe94afac42bb9996d301c89",
+  "prompts": {},
+  "sessions": {
+    "s_9c1eebffe148af": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16e2f-d7b0-7491-9f40-2d2b62b5b972",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_e502f759c16be0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16df2-7ad4-7f42-afb1-d8a979f338a5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
