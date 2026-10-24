@@ -1,5 +1,5 @@
 import "./reader-r1.css";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	type CSSProperties,
 	useCallback,
@@ -18,6 +18,10 @@ import {
 	returnState,
 	updateSegmentLocation,
 } from "../navigation";
+import {
+	useViewActivity,
+	ViewActivityProvider,
+} from "../navigation/RetainedRoute";
 import { InlineError } from "../Shared";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "../speech";
 import { getSpeechController } from "../speech/browser";
@@ -68,7 +72,11 @@ import {
 import { createFocusController, isReaderFrameTarget } from "./focus";
 import { READER_EXIT_MS, useReaderPresence } from "./motion";
 import { NavigationHighlightLifetime } from "./navigation-highlight";
-import { cacheSavedPosition, registerPositionWriter } from "./persistence";
+import {
+	cacheSavedPosition,
+	registerPositionWriter,
+	waitForPositionWrites,
+} from "./persistence";
 import {
 	chapterProgress,
 	imageAtReadingEdge,
@@ -112,6 +120,11 @@ import {
 	selectReaderPanel,
 } from "./reader-panel-logic";
 import type { ReaderHighlightRange } from "./reader-selection";
+import {
+	cancelReaderSessionReads,
+	canResumeReader,
+	readerSessionIdentity,
+} from "./reader-session";
 import type {
 	ScreenAnchor,
 	StudyMarkHit,
@@ -143,6 +156,10 @@ const defaults: Settings = {
 	line_height: 2,
 	writing_mode: "horizontal-tb",
 };
+type ReaderPositionWriter = {
+	current: PositionQueue<Position> | null;
+	healthy: boolean;
+};
 type InlineTranslationRequest = {
 	chapterId: string;
 	item: ChapterTranslation;
@@ -153,14 +170,23 @@ function Reader({
 	notice,
 	readingsSummary,
 	initialOrigin,
+	sessionToken,
+	discard,
+	positionWriter,
 }: {
 	book: Material;
+	sessionToken: string;
+	discard: { current: boolean };
+	positionWriter: ReaderPositionWriter;
 	initialOrigin: SegmentProvenance | null;
 	readingsSummary: ReadingsSummary;
 	notice: "imported" | "reused" | null;
 }) {
+	const { active, activation } = useViewActivity();
+	const activeRef = useRef(active);
+	activeRef.current = active;
 	useStopSpeechOnLeave(book.id);
-	useMaterialTranslationActivity(book.id);
+	useMaterialTranslationActivity(book.id, active, activation);
 	const [translationTarget, setTranslationTarget] =
 		useState<StudyTarget | null>(null);
 	const [translationOpen, setTranslationOpen] = useState(false);
@@ -209,10 +235,12 @@ function Reader({
 	});
 	const source = useQuery({
 		queryKey: queries.source(book.source_id),
+		enabled: active,
 		queryFn: () => getSource(book.source_id),
 	});
 	const usage = useQuery({
 		queryKey: usageKey(book.id),
+		enabled: active,
 		queryFn: async () => {
 			const fresh = await getUsage(book.id);
 			return freshestUsage(
@@ -268,8 +296,8 @@ function Reader({
 		client,
 	]);
 	useEffect(() => {
-		if (presented) void opened();
-	}, [presented, opened]);
+		if (active && presented) void opened();
+	}, [active, presented, opened]);
 	const updateUsage = async (next: MaterialUsage["status"]) => {
 		if (!usage.data || usageBusy) return;
 		setUsageBusy(true);
@@ -345,6 +373,7 @@ function Reader({
 	const registerViewerEscape = useCallback((close: (() => void) | null) => {
 		viewerEscape.current = close;
 	}, []);
+	const pendingOrigin = useRef<SegmentProvenance | null>(null);
 	const highlight = useRef<{
 		chapterId: string;
 		ranges: ReaderHighlightRange[];
@@ -493,6 +522,7 @@ function Reader({
 	);
 	useEffect(() => {
 		const escapeViewer = (event: KeyboardEvent) => {
+			if (!activeRef.current) return;
 			if (
 				event.key !== "Escape" ||
 				event.isComposing ||
@@ -531,7 +561,7 @@ function Reader({
 		return () => media.removeEventListener("change", update);
 	}, []);
 	useEffect(() => {
-		if (!shell.current) return;
+		if (!active || !shell.current) return;
 		const focus = createFocusController({
 			root: shell.current,
 			focus: readReaderUiPreferences().focus,
@@ -626,6 +656,7 @@ function Reader({
 			controller.current = null;
 		};
 	}, [
+		active,
 		closePanel,
 		closeInlineTranslation,
 		dismissReadingBackground,
@@ -662,13 +693,22 @@ function Reader({
 	const chapter = useQuery({
 		queryKey: materialKeys.chapter(book.id, chapterId),
 		queryFn: () => getChapter(book.id, chapterId),
-		enabled: !!chapterId,
+		staleTime: Number.POSITIVE_INFINITY,
+		enabled: active && !!chapterId,
 	});
-	const marks = useChapterStudyMarks(book.id, book.version_id, chapterId, true);
+	const marks = useChapterStudyMarks(
+		book.id,
+		book.version_id,
+		chapterId,
+		active,
+		activation,
+	);
 	const chapterTranslations = useChapterTranslations(
 		book.id,
 		book.version_id,
 		chapterId,
+		active,
+		activation,
 	);
 	const recordMarks = useMemo(
 		() => [
@@ -695,7 +735,7 @@ function Reader({
 				readingGeneration,
 				signal,
 			),
-		enabled: !!chapterId,
+		enabled: active && !!chapterId,
 		staleTime: Number.POSITIVE_INFINITY,
 	});
 	const viewportReady =
@@ -773,7 +813,7 @@ function Reader({
 			versionId: book.version_id,
 			chapterId,
 			onSelection: (value) => {
-				if (!alive.current) return;
+				if (!alive.current || !activeRef.current) return;
 				setSelection(value);
 				if (value) {
 					if (
@@ -791,7 +831,7 @@ function Reader({
 			},
 			onEntries: setMarginEntries,
 			onMarks: (value) => {
-				if (!alive.current) return;
+				if (!alive.current || !activeRef.current) return;
 				if (value) {
 					if (!latest.current.studyTargetActive) openTextMark(value);
 				} else if (
@@ -835,6 +875,7 @@ function Reader({
 		queryKey: ["translation-result", inlineRequest?.item.result_id],
 		queryFn: () => getTranslationResult(inlineRequest?.item.result_id ?? ""),
 		enabled:
+			active &&
 			!!inlineRequest &&
 			inlineRequest.chapterId === chapterId &&
 			settings.writing_mode === "horizontal-tb",
@@ -895,6 +936,7 @@ function Reader({
 				return saved.revision;
 			},
 			(state, failure) => {
+				if (state === "error") positionWriter.healthy = false;
 				if (!alive.current) return;
 				setStatus(
 					state === "saving"
@@ -911,6 +953,7 @@ function Reader({
 			},
 			(value) => value.chapter_id,
 		);
+	positionWriter.current = queue.current;
 	const geometryKey = [
 		surfaceRevision,
 		layoutRevision,
@@ -938,7 +981,7 @@ function Reader({
 	}, []);
 	const capture = useCallback((): Position | null => {
 		const root = container.current;
-		if (frames.current.inlineMotionRunning) return null;
+		if (!activeRef.current || frames.current.inlineMotionRunning) return null;
 		if (!root || !chapter.data || !layout.current.canSample(viewportSize(root)))
 			return null;
 		const vertical = settings.writing_mode === "vertical-rl";
@@ -1019,6 +1062,7 @@ function Reader({
 	const sampleJumpReading = useCallback(() => {
 		const root = container.current;
 		if (
+			!activeRef.current ||
 			!root ||
 			document.hidden ||
 			!document.hasFocus() ||
@@ -1039,7 +1083,8 @@ function Reader({
 	}, []);
 	const recordReadingInput = useCallback(
 		(event: Event) => {
-			if (!event.isTrusted || event.defaultPrevented) return;
+			if (!activeRef.current || !event.isTrusted || event.defaultPrevented)
+				return;
 			const target = event.target as Node | null;
 			if (
 				target?.ownerDocument &&
@@ -1057,7 +1102,13 @@ function Reader({
 	const readWheel = useCallback(
 		(event: WheelEvent, outside = false) => {
 			const root = container.current;
-			if (!root || event.ctrlKey || event.defaultPrevented) return;
+			if (
+				!activeRef.current ||
+				!root ||
+				event.ctrlKey ||
+				event.defaultPrevented
+			)
+				return;
 			const current = latest.current.settings;
 			const vertical = current.writing_mode === "vertical-rl";
 			const view = readingViewport(root, getComputedStyle(root));
@@ -1097,7 +1148,8 @@ function Reader({
 	}, []);
 	const observe = useCallback(() => {
 		const root = container.current;
-		if (!root || frames.current.inlineMotionRunning) return;
+		if (!activeRef.current || !root || frames.current.inlineMotionRunning)
+			return;
 		const anchor = layout.current.observe(
 			viewportSize(root),
 			capture,
@@ -1123,7 +1175,7 @@ function Reader({
 		(anchor: Position | null, initialPresentation: boolean) => {
 			const root = container.current;
 			const data = chapter.data;
-			if (!root || !data) return false;
+			if (!activeRef.current || !root || !data) return false;
 			if (highlight.current?.chapterId === chapterId) {
 				try {
 					if (highlight.current.kind === "study")
@@ -1245,11 +1297,14 @@ function Reader({
 			chapterContentEnd,
 		],
 	);
-	const reflowFrames = useCallback(() => layout.current.reflow(), []);
+	const reflowFrames = useCallback(() => {
+		if (activeRef.current) layout.current.reflow();
+	}, []);
 	const mutateInlineLayout = useCallback(
 		(update: () => void) => {
 			const root = container.current;
 			const data = chapter.data;
+			if (!activeRef.current) return;
 			if (!root || !data || !alive.current) {
 				update();
 				return;
@@ -1307,14 +1362,16 @@ function Reader({
 			frames.current.clear();
 			layout.current.cancelSave();
 			const anchor = layout.current.presentedAnchor(() => null);
-			if (anchor) queue.current?.enqueue(anchor);
+			if (discard.current) queue.current?.stop();
+			else if (anchor) queue.current?.enqueue(anchor);
 			unregister();
 		};
-	}, [book.id]);
+	}, [book.id, discard]);
 	const load = (index: number, element: HTMLIFrameElement, token: number) => {
 		if (!chapter.data) return;
 		frames.current.load(index, element, token, {
 			chapter: chapter.data,
+			active: () => activeRef.current,
 			readingGeneration,
 			readings: readings.data,
 			current: () => latest.current,
@@ -1345,13 +1402,14 @@ function Reader({
 	};
 	// biome-ignore lint/correctness/useExhaustiveDependencies: a newly mounted keyed viewport needs its own observer.
 	useEffect(() => {
-		if (!viewportReady) return;
+		if (!active || !viewportReady) return;
 		const root = container.current;
 		if (!root) return;
 		let lastWidth = root.clientWidth,
 			lastHeight = root.clientHeight;
 		const resize = () => {
-			if (root !== container.current || !alive.current) return;
+			if (!activeRef.current || root !== container.current || !alive.current)
+				return;
 			frames.current.finishInlineMotion();
 			setTranslationAnchor(null);
 			const width = root.clientWidth,
@@ -1372,8 +1430,9 @@ function Reader({
 			observer.disconnect();
 			window.removeEventListener("resize", resize);
 		};
-	}, [reflowFrames, surfaceRevision, viewportReady]);
+	}, [active, reflowFrames, surfaceRevision, viewportReady]);
 	useLayoutEffect(() => {
+		if (!active) return;
 		navigation.current.bind({
 			versionId: book.version_id,
 			chapterId,
@@ -1409,6 +1468,7 @@ function Reader({
 				return Number.isFinite(offset) && Math.abs(offset) <= 1;
 			},
 			loadChapter: (id) => {
+				if (chapter.data?.id === id) return Promise.resolve(chapter.data);
 				navigationHighlight.current?.clear(true);
 				return client.fetchQuery({
 					queryKey: materialKeys.chapter(book.id, id),
@@ -1449,10 +1509,25 @@ function Reader({
 								],
 							}
 						: null;
+				if (
+					pendingOrigin.current?.chapter_id === target.chapter_id &&
+					pendingOrigin.current.material_provenance
+				) {
+					highlight.current = {
+						kind: "study",
+						chapterId: target.chapter_id,
+						ranges: pendingOrigin.current.material_provenance.ranges,
+					};
+					pendingOrigin.current = null;
+				}
 				if (highlight.current?.kind === "search")
 					navigationHighlight.current?.replace();
 				else navigationHighlight.current?.clear(true);
 				setOriginError(null);
+				if (target.chapter_id === chapterId) {
+					setLayoutRevision((value) => value + 1);
+					return;
+				}
 				generation.current++;
 				layout.current.invalidateSurface();
 				frames.current.clear();
@@ -1479,6 +1554,7 @@ function Reader({
 		: undefined;
 	const readKey = useCallback(
 		(event: KeyboardEvent) => {
+			if (!activeRef.current) return;
 			const target = event.target as Element | null;
 			if (nativeSelectionKey(event)) return;
 			if (
@@ -1526,9 +1602,10 @@ function Reader({
 		[recordReadingInput],
 	);
 	useEffect(() => {
+		if (!active) return;
 		document.addEventListener("keydown", readKey);
 		return () => document.removeEventListener("keydown", readKey);
-	}, [readKey]);
+	}, [active, readKey]);
 	const [rubyPreparing, setRubyPreparing] = useState(false);
 	const [rubyError, setRubyError] = useState<Error | null>(null);
 	const preferenceSubmission = useRef(new ReaderPreferenceSubmission());
@@ -1541,6 +1618,7 @@ function Reader({
 		setSettings(next);
 	};
 	useLayoutEffect(() => {
+		if (!active) return;
 		preferenceSubmission.current.bind({
 			chapter: chapterId,
 			current: bookUi,
@@ -1578,7 +1656,7 @@ function Reader({
 	const changeBookUi = (next: BookUiPreferences) =>
 		preferenceSubmission.current.submit(next);
 	useLayoutEffect(() => {
-		if (!viewportReady) return;
+		if (!active || !viewportReady) return;
 		const root = container.current;
 		const data = chapter.data;
 		if (!root || !data) return;
@@ -1600,7 +1678,10 @@ function Reader({
 					generation: generation.current,
 					parts: data.parts.length,
 					geometry: geometryKey,
-					size: () => (container.current === root ? viewportSize(root) : null),
+					size: () =>
+						activeRef.current && container.current === root
+							? viewportSize(root)
+							: null,
 					capture,
 					measure: () => {
 						frames.current.invalidateStudyGeometry();
@@ -1625,6 +1706,7 @@ function Reader({
 			setError(failure instanceof Error ? failure : new Error(String(failure)));
 		}
 	}, [
+		active,
 		settings,
 		geometryKey,
 		viewportReady,
@@ -1637,7 +1719,7 @@ function Reader({
 	]);
 	useLayoutEffect(() => {
 		const data = chapter.data;
-		if (!data) return;
+		if (!active || !data) return;
 		if (
 			!inlineRequest ||
 			inlineRequest.chapterId !== chapterId ||
@@ -1690,6 +1772,7 @@ function Reader({
 		)
 			openMarkHit(inlineRequest.hit);
 	}, [
+		active,
 		inlineRequest,
 		inlineResult.data,
 		inlineResult.isError,
@@ -1710,8 +1793,8 @@ function Reader({
 	]);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: wait for React to commit the updated margin coordinates.
 	useLayoutEffect(() => {
-		frames.current.inlineMarginsChanged();
-	}, [marginEntries]);
+		if (active) frames.current.inlineMarginsChanged();
+	}, [active, marginEntries]);
 	const leave = () => {
 		frames.current.finishInlineMotion();
 		layout.current.cancelSave();
@@ -1740,7 +1823,7 @@ function Reader({
 	};
 	// biome-ignore lint/correctness/useExhaustiveDependencies: panel visibility changes measured free space outside the text viewport.
 	useLayoutEffect(() => {
-		if (!chapter.data || !viewportReady) return;
+		if (!active || !chapter.data || !viewportReady) return;
 		try {
 			frames.current.setStudyMarks(
 				chapter.data,
@@ -1758,6 +1841,7 @@ function Reader({
 			);
 		}
 	}, [
+		active,
 		chapter.data,
 		viewportReady,
 		recordMarks,
@@ -1769,6 +1853,39 @@ function Reader({
 		leftView.value,
 		rightView.value,
 	]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: lifecycle edges use the last stable anchor, independent of changing destinations.
+	useLayoutEffect(() => {
+		if (active) {
+			layout.current.setAnchor(
+				layout.current.presentedAnchor(() => null) ?? initialAnchor,
+			);
+			setLayoutRevision((value) => value + 1);
+			return;
+		}
+		layout.current.cancelSave();
+		const anchor = layout.current.presentedAnchor(() => null);
+		if (anchor && !discard.current) queue.current?.enqueue(anchor);
+		void queue.current?.flush();
+		jumpReading.current.pause();
+		navigation.current.suspend();
+		navigationHighlight.current?.clear(true);
+		navigationHighlight.current?.dispose();
+		preferenceSubmission.current.suspend();
+		getSpeechController().stop();
+	}, [active]);
+	const previousSession = useRef(sessionToken);
+	useEffect(() => {
+		if (!active || previousSession.current === sessionToken) return;
+		previousSession.current = sessionToken;
+		if (!initialOrigin) return;
+		pendingOrigin.current = initialOrigin;
+		void navigation.current.navigate({
+			type: "position",
+			target: originPosition(initialOrigin, latest.current.settings),
+		});
+	}, [active, sessionToken, initialOrigin]);
+
 	const backToTranslationOrigin = (result: TranslationResult) => {
 		closeMarkHit();
 		const reference = result.material_provenance;
@@ -2198,7 +2315,7 @@ function Reader({
 						materialId={book.id}
 						onResultSelected={rememberTranslation}
 						translationSessions={translationSessions}
-						visible={translationOpen}
+						visible={active && translationOpen}
 						anchor={translationAnchor}
 						direction={settings.writing_mode}
 						sourceId={book.source_id}
@@ -2352,9 +2469,10 @@ function Reader({
 						onClose={closeMarkHit}
 						expanded={panels.right === "study"}
 						inactive={
-							panels.right === "study" &&
-							compactPanels &&
-							panels.activeSide !== "right"
+							!active ||
+							(panels.right === "study" &&
+								compactPanels &&
+								panels.activeSide !== "right")
 						}
 						onExpand={() => {
 							jumpReading.current.pause();
@@ -2392,7 +2510,8 @@ function Reader({
 					bookUi={bookUi}
 					closing={rightView.exiting}
 					inactive={
-						compactPanels && !!panels.left && panels.activeSide === "left"
+						!active ||
+						(compactPanels && !!panels.left && panels.activeSide === "left")
 					}
 					onSettings={change}
 					onUi={setUiPreference}
@@ -2442,7 +2561,8 @@ function Reader({
 					}
 					closing={leftView.exiting}
 					inactive={
-						compactPanels && !!panels.right && panels.activeSide === "right"
+						!active ||
+						(compactPanels && !!panels.right && panels.activeSide === "right")
 					}
 					tab={leftView.value}
 					onTab={(tab) => selectPanel(tab)}
@@ -2473,7 +2593,8 @@ function Reader({
 					initialImage={initialImage}
 					closing={rightView.exiting}
 					inactive={
-						compactPanels && !!panels.left && panels.activeSide === "left"
+						!active ||
+						(compactPanels && !!panels.left && panels.activeSide === "left")
 					}
 					onViewerEscape={registerViewerEscape}
 					navigationError={navigationError}
@@ -2494,7 +2615,8 @@ function Reader({
 					title="书籍信息"
 					closing={rightView.exiting}
 					inactive={
-						compactPanels && !!panels.left && panels.activeSide === "left"
+						!active ||
+						(compactPanels && !!panels.left && panels.activeSide === "left")
 					}
 					onClose={() => closePanel("right")}
 				>
@@ -2556,185 +2678,219 @@ function Reader({
 }
 
 function MaterialOpening({ id }: { id: string }) {
+	const host = useViewActivity();
+	const client = useQueryClient();
 	const location = useLocation();
 	const navigate = useNavigate();
+	const segmentId = new URLSearchParams(location.search).get("segment");
+	const [retry, setRetry] = useState(0);
+	const token = `${host.activation}:${location.search}:${retry}`;
+	const [session, setSession] = useState<{
+		book: Material;
+		summary: ReadingsSummary;
+		origin: SegmentProvenance | null;
+		token: string;
+		serial: number;
+		activation: number;
+		discard: { current: boolean };
+		positionWriter: ReaderPositionWriter;
+	} | null>(null);
+	const currentSession = useRef(session);
+	currentSession.current = session;
+	const [failure, setFailure] = useState<Error | null>(null);
+	const [validated, setValidated] = useState<string | null>(null);
 	const [notice] = useState<"imported" | "reused" | null>(() => {
-		if (typeof location.state !== "object" || location.state === null)
-			return null;
-		if (location.state.materialReused === true) return "reused";
-		return location.state.materialImported === true ||
-			location.state.materialReused === false
+		if (location.state?.materialReused === true) return "reused";
+		return location.state?.materialImported === true ||
+			location.state?.materialReused === false
 			? "imported"
 			: null;
 	});
-	const segmentId = new URLSearchParams(location.search).get("segment");
-	const [originSnapshot, setOriginSnapshot] =
-		useState<SegmentProvenance | null>(null);
-	const origin = useQuery({
-		queryKey: ["segments", segmentId, "material-provenance"],
-		queryFn: ({ signal }) => getSegmentProvenance(segmentId ?? "", signal),
-		enabled: !!segmentId,
-		refetchOnMount: "always",
-		refetchOnWindowFocus: false,
-	});
 	useEffect(() => {
 		if (
-			!originSnapshot &&
-			origin.isSuccess &&
-			origin.isFetchedAfterMount &&
-			!origin.isFetching
+			!notice ||
+			!host.active ||
+			!location.state ||
+			!(
+				"materialReused" in location.state ||
+				"materialImported" in location.state
+			)
 		)
-			setOriginSnapshot(origin.data);
+			return;
+		const state = { ...location.state };
+		delete state.materialReused;
+		delete state.materialImported;
+		navigate(`${location.pathname}${location.search}`, {
+			replace: true,
+			state,
+		});
 	}, [
-		originSnapshot,
-		origin.isSuccess,
-		origin.isFetchedAfterMount,
-		origin.isFetching,
-		origin.data,
+		host.active,
+		notice,
+		location.pathname,
+		location.search,
+		location.state,
+		navigate,
 	]);
-	const resolvedOrigin =
-		originSnapshot ?? (origin.isSuccess ? origin.data : null);
-	let locationFailure: Error | null = null;
-	if (segmentId && resolvedOrigin) {
-		const message = originFailure(resolvedOrigin);
-		if (message) locationFailure = new Error(message);
-		else if (resolvedOrigin.material_provenance?.material_id !== id)
-			locationFailure = new Error("片段出处不属于当前材料，无法精确定位。");
-		else {
-			try {
-				originPosition(resolvedOrigin, defaults);
-			} catch (failure) {
-				locationFailure =
-					failure instanceof Error ? failure : new Error(String(failure));
+	useEffect(() => {
+		if (!host.active) return;
+		let current = true;
+		setFailure(null);
+		setValidated(null);
+		void (async () => {
+			await waitForPositionWrites(id);
+			if (!current) return;
+			const bookKey = materialKeys.book(id);
+			const originKey = ["segments", segmentId, "material-provenance"] as const;
+			if (
+				!(await cancelReaderSessionReads(
+					client,
+					[bookKey, ...(segmentId ? [originKey] : [])],
+					() => current,
+				))
+			)
+				return;
+			const previous = currentSession.current;
+			const drainedRevision = previous?.positionWriter.current?.revision ?? 0;
+			const [book, origin] = await Promise.all([
+				client.fetchQuery({
+					queryKey: bookKey,
+					queryFn: () => getMaterial(id),
+					staleTime: 0,
+				}),
+				segmentId
+					? client.fetchQuery({
+							queryKey: originKey,
+							queryFn: ({ signal }) => getSegmentProvenance(segmentId, signal),
+							staleTime: 0,
+						})
+					: Promise.resolve(null),
+			]);
+			if (!current) return;
+			if (origin) {
+				const message = originFailure(origin);
+				if (message) throw new Error(message);
+				if (origin.material_provenance?.material_id !== id)
+					throw new Error("片段出处不属于当前材料，无法精确定位。");
+				if (origin.material_provenance?.version_id !== book.version_id)
+					throw new Error("出处绑定的材料版本不可用，不能套用到当前版本。");
+				originPosition(origin, defaults);
 			}
-		}
-	}
-	const [snapshot, setSnapshot] = useState<Material | null>(null);
-	const startedVersion = useRef<string | null>(null);
-	const preparation = useMutation({
-		mutationFn: (version: string) => prepareReadings(id, version),
-	});
-	const { mutate: prepare } = preparation;
-	const book = useQuery({
-		queryKey: materialKeys.book(id),
-		queryFn: () => getMaterial(id),
-		refetchOnMount: "always",
-	});
-	useEffect(() => {
-		if (
-			notice &&
-			typeof location.state === "object" &&
-			location.state !== null &&
-			("materialReused" in location.state ||
-				"materialImported" in location.state)
-		) {
-			const state = { ...location.state };
-			delete state.materialReused;
-			delete state.materialImported;
-			navigate(`${location.pathname}${location.search}`, {
-				replace: true,
-				state,
+			const summary = await prepareReadings(id, book.version_id);
+			if (summary.version_id !== book.version_id)
+				throw new Error("材料注音版本已改变，请重新打开。");
+			if (!current) return;
+			const identity = {
+				materialId: id,
+				versionId: book.version_id,
+				generationId: summary.generation_id,
+			};
+			const reuse =
+				previous &&
+				canResumeReader(
+					{
+						materialId: id,
+						versionId: previous.book.version_id,
+						generationId: previous.summary.generation_id,
+					},
+					identity,
+					drainedRevision,
+					book.reading_position?.revision ?? 0,
+					previous.positionWriter.healthy,
+				);
+			if (previous && !reuse) {
+				previous.discard.current = true;
+				if (previous.book.version_id !== book.version_id)
+					await client.invalidateQueries({
+						queryKey: ["materials", id, "chapter"],
+						refetchType: "none",
+					});
+			}
+			if (!current) return;
+			setSession({
+				book,
+				summary,
+				origin,
+				token,
+				activation: previous ? previous.activation + 1 : 0,
+				serial: reuse ? previous.serial : (previous?.serial ?? 0) + 1,
+				discard: reuse ? previous.discard : { current: false },
+				positionWriter: reuse
+					? previous.positionWriter
+					: { current: null, healthy: true },
 			});
-		}
-	}, [notice, location.pathname, location.search, location.state, navigate]);
-	useEffect(() => {
-		if (
-			!snapshot &&
-			book.isSuccess &&
-			book.isFetchedAfterMount &&
-			!book.isFetching
-		)
-			setSnapshot(book.data);
-	}, [
-		snapshot,
-		book.isSuccess,
-		book.isFetchedAfterMount,
-		book.isFetching,
-		book.data,
-	]);
-	useEffect(() => {
-		if (snapshot && startedVersion.current !== snapshot.version_id) {
-			startedVersion.current = snapshot.version_id;
-			prepare(snapshot.version_id);
-		}
-	}, [snapshot, prepare]);
-	if (
-		snapshot &&
-		segmentId &&
-		resolvedOrigin &&
-		!locationFailure &&
-		resolvedOrigin.material_provenance?.version_id !== snapshot.version_id
-	)
-		locationFailure = new Error(
-			"出处绑定的材料版本不可用，不能套用到当前版本。",
-		);
-	if (
-		snapshot &&
-		preparation.data?.version_id === snapshot.version_id &&
-		(!segmentId || (originSnapshot && !locationFailure))
-	)
-		return (
-			<Reader
-				key={`${id}-${segmentId ?? "reading"}`}
-				initialOrigin={segmentId ? originSnapshot : null}
-				book={snapshot}
-				notice={notice}
-				readingsSummary={preparation.data}
-			/>
-		);
+			setValidated(token);
+		})().catch((error: unknown) => {
+			if (!current) return;
+			if (currentSession.current) currentSession.current.discard.current = true;
+			setSession(null);
+			setFailure(error instanceof Error ? error : new Error(String(error)));
+		});
+		return () => {
+			current = false;
+		};
+	}, [host.active, id, segmentId, token, client]);
+	const ready = host.active && validated === token && !failure;
 	const back = returnDestination(location.state, {
 		to: "/materials",
 		label: "素材库",
 	});
 	return (
-		<main
-			className="reader-r1 reader-opening"
-			data-theme={resolveReaderTheme(
-				readReaderUiPreferences().theme,
-				matchMedia("(prefers-color-scheme: dark)").matches,
-			)}
-		>
-			<Link to={back.to} state={back.state}>
-				← {back.label}
-			</Link>
-			<div className="reader-loading">
-				{book.isError ||
-				preparation.isError ||
-				origin.isError ||
-				locationFailure ? (
-					<>
-						<InlineError
-							error={
-								book.error ??
-								preparation.error ??
-								origin.error ??
-								locationFailure
-							}
+		<>
+			{session && (
+				<ViewActivityProvider
+					value={{ active: ready, activation: session.activation }}
+				>
+					<div
+						hidden={!ready}
+						inert={!ready}
+						style={!ready ? { display: "none" } : undefined}
+					>
+						<Reader
+							key={`${readerSessionIdentity({ materialId: id, versionId: session.book.version_id, generationId: session.summary.generation_id })}:${session.serial}`}
+							book={session.book}
+							readingsSummary={session.summary}
+							initialOrigin={session.origin}
+							sessionToken={session.token}
+							discard={session.discard}
+							positionWriter={session.positionWriter}
+							notice={notice}
 						/>
-						<button
-							type="button"
-							onClick={() => {
-								if (segmentId) {
-									setOriginSnapshot(null);
-									void origin.refetch();
-								}
-								if (snapshot) prepare(snapshot.version_id);
-								else void book.refetch();
-							}}
-						>
-							重试打开
-						</button>
-					</>
-				) : (
-					<p>{snapshot ? "正在准备全书注音…" : "正在打开书籍…"}</p>
-				)}
-			</div>
-		</main>
+					</div>
+				</ViewActivityProvider>
+			)}
+			{!ready && host.active && (
+				<main
+					className="reader-r1 reader-opening"
+					data-theme={resolveReaderTheme(
+						readReaderUiPreferences().theme,
+						matchMedia("(prefers-color-scheme: dark)").matches,
+					)}
+				>
+					<Link to={back.to} state={back.state}>
+						← {back.label}
+					</Link>
+					<div className="reader-loading">
+						{failure ? (
+							<>
+								<InlineError error={failure} />
+								<button
+									type="button"
+									onClick={() => setRetry((value) => value + 1)}
+								>
+									重试打开
+								</button>
+							</>
+						) : (
+							<p>正在打开书籍…</p>
+						)}
+					</div>
+				</main>
+			)}
+		</>
 	);
 }
 export function MaterialReader() {
 	const { id = "" } = useParams();
-	const location = useLocation();
-	const segmentId = new URLSearchParams(location.search).get("segment");
-	return <MaterialOpening key={`${id}-${segmentId ?? "reading"}`} id={id} />;
+	return <MaterialOpening key={id} id={id} />;
 }

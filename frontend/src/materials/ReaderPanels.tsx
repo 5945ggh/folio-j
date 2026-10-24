@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Icon as CatalogIcon } from "../catalog/LibraryTools";
+import { useViewActivity } from "../navigation/RetainedRoute";
 import {
 	type Illustration,
 	listIllustrations,
@@ -63,12 +64,13 @@ function ReaderQueryPanel({
 	closing?: boolean;
 	onClose: () => void;
 }) {
+	const { active } = useViewActivity();
 	const ref = useRef<HTMLElement>(null);
 	const closeRef = useRef(onClose);
 	closeRef.current = onClose;
 	const label = useId();
 	useEffect(() => {
-		if (closing) return;
+		if (!active || inactive || closing) return;
 		const node = ref.current;
 		const previous = document.activeElement;
 		const keydown = (event: KeyboardEvent) => {
@@ -87,7 +89,7 @@ function ReaderQueryPanel({
 			node?.removeEventListener("keydown", keydown);
 			if (node) restoreReaderPanelFocus(node, previous);
 		};
-	}, [closing]);
+	}, [active, inactive, closing]);
 	return (
 		<section
 			ref={ref}
@@ -274,6 +276,7 @@ export function ReaderNavigationPanel(
 }
 
 function ReaderSearchContent(props: PanelProps & { active: boolean }) {
+	const activity = useViewActivity();
 	const [input, setInput] = useState("");
 	const [query, setQuery] = useState("");
 	const [composing, setComposing] = useState(false);
@@ -315,7 +318,12 @@ function ReaderSearchContent(props: PanelProps & { active: boolean }) {
 				? last.offset + last.items.length
 				: undefined,
 		enabled:
-			props.active && !!query && !composing && !tooLong && normalized === query,
+			activity.active &&
+			props.active &&
+			!!query &&
+			!composing &&
+			!tooLong &&
+			normalized === query,
 		retry: false,
 	});
 	const current = !composing && normalized === query && !tooLong;
@@ -447,6 +455,7 @@ function IllustrationImage({
 	zoom?: number;
 	onOpen?: () => void;
 }) {
+	const activity = useViewActivity();
 	const [requested, setRequested] = useState(
 		() => large || typeof IntersectionObserver === "undefined",
 	);
@@ -456,7 +465,7 @@ function IllustrationImage({
 	const [available, setAvailable] = useState({ width: 600, height: 600 });
 	const stage = useRef<HTMLDivElement>(null);
 	useEffect(() => {
-		if (requested || large || !stage.current) return;
+		if (!activity.active || requested || large || !stage.current) return;
 		const node = stage.current;
 		let active = true;
 		const observer = new IntersectionObserver(
@@ -473,9 +482,9 @@ function IllustrationImage({
 			active = false;
 			observer.disconnect();
 		};
-	}, [requested, large]);
+	}, [activity.active, requested, large]);
 	useEffect(() => {
-		if (!large || !stage.current) return;
+		if (!activity.active || !large || !stage.current) return;
 		const node = stage.current;
 		const observer = new ResizeObserver(() =>
 			setAvailable({
@@ -485,7 +494,7 @@ function IllustrationImage({
 		);
 		observer.observe(node);
 		return () => observer.disconnect();
-	}, [large]);
+	}, [activity.active, large]);
 	const size = fitImageSize(
 		natural.width,
 		natural.height,
@@ -575,6 +584,7 @@ function ImageViewer({
 	onClose: () => void;
 	closing?: boolean;
 }) {
+	const activity = useViewActivity();
 	const [zoom, setZoom] = useState(1);
 	const closeRef = useRef(onClose);
 	closeRef.current = onClose;
@@ -591,6 +601,7 @@ function ImageViewer({
 			"illustration",
 			ordinal,
 		],
+		enabled: activity.active,
 		queryFn: ({ signal }) =>
 			listIllustrations(props.materialId, props.versionId, ordinal, 1, signal),
 		retry: false,
@@ -707,12 +718,14 @@ function ImageViewer({
 export function ReaderGalleryPanel(
 	props: PanelProps & { bookTitle?: string; initialImage?: ReaderImageTarget },
 ) {
+	const activity = useViewActivity();
 	const [offset, setOffset] = useState(0);
 	const [ordinal, setOrdinal] = useState<number | null>(null);
 	const imageView = useReaderPresence(ordinal);
 	const [initialHandled, setInitialHandled] = useState(false);
 	const initial = props.initialImage;
 	const gallery = useQuery({
+		enabled: activity.active,
 		queryKey: [
 			"materials",
 			props.materialId,
@@ -740,7 +753,7 @@ export function ReaderGalleryPanel(
 			initial?.partIndex,
 			initial?.imageId,
 		],
-		enabled: !!initial && !initialHandled,
+		enabled: activity.active && !!initial && !initialHandled,
 		queryFn: async ({ signal }) => {
 			let cursor = 0;
 			while (!signal.aborted) {

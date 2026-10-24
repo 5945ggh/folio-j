@@ -14,6 +14,7 @@ import {
 } from "../translation/api";
 import { activeTranslation } from "../translation/state";
 import { completeChapterTranslations } from "./chapter-records";
+import { useReaderSessionRefresh } from "./reader-session-query";
 
 export type ChapterTranslation =
 	components["schemas"]["MaterialChapterTranslation"];
@@ -34,11 +35,17 @@ export const translationActivityKey = (materialId: string) =>
 type TranslationActivity = { tasks: TranslationTask[]; resultIds: string[] };
 
 /** Accepted work remains observable after its card is closed or replaced by another selection. */
-export function useMaterialTranslationActivity(materialId: string) {
+export function useMaterialTranslationActivity(
+	materialId: string,
+	enabled = true,
+	activation = 0,
+) {
 	const client = useQueryClient();
 	const key = translationActivityKey(materialId);
 	const query = useQuery({
 		queryKey: key,
+		enabled,
+		staleTime: activation > 0 ? Number.POSITIVE_INFINITY : 0,
 		queryFn: async (): Promise<TranslationActivity> => {
 			const previous = client.getQueryData<TranslationActivity>(key);
 			const recent = await getTranslationHistory(materialId);
@@ -63,21 +70,26 @@ export function useMaterialTranslationActivity(materialId: string) {
 		},
 		refetchOnMount: "always",
 		refetchInterval: (current) =>
-			current.state.data?.tasks.some(activeTranslation) ? 1200 : false,
+			enabled && current.state.data?.tasks.some(activeTranslation)
+				? 1200
+				: false,
 	});
+	useReaderSessionRefresh(key, query.refetch, enabled, activation);
 	const published = query.data?.resultIds.join(":");
 	useEffect(() => {
-		if (published)
+		if (enabled && published)
 			void client.invalidateQueries({
 				queryKey: chapterTranslationsKey(materialId),
 			});
-	}, [client, materialId, published]);
+	}, [client, materialId, published, enabled]);
 }
 
 export function useChapterTranslations(
 	materialId: string,
 	versionId: string,
 	chapterId: string,
+	enabled = true,
+	activation = 0,
 ) {
 	const query = useInfiniteQuery({
 		queryKey: chapterTranslationsKey(materialId, versionId, chapterId),
@@ -100,25 +112,36 @@ export function useChapterTranslations(
 		},
 		initialPageParam: null as string | null,
 		getNextPageParam: (page) => page.next_cursor ?? undefined,
-		enabled: Boolean(chapterId),
+		enabled: enabled && Boolean(chapterId),
+		staleTime: activation > 0 ? Number.POSITIVE_INFINITY : 0,
 		refetchOnMount: "always",
 		retry: false,
 	});
+	const refreshed = useReaderSessionRefresh(
+		chapterTranslationsKey(materialId, versionId, chapterId),
+		query.refetch,
+		enabled,
+		activation,
+	);
 	const { hasNextPage, isFetching, isError, fetchNextPage } = query;
 	useEffect(() => {
-		if (hasNextPage && !isFetching && !isError) void fetchNextPage();
-	}, [hasNextPage, isFetching, isError, fetchNextPage]);
+		if (refreshed && hasNextPage && !isFetching && !isError)
+			void fetchNextPage();
+	}, [refreshed, hasNextPage, isFetching, isError, fetchNextPage]);
 	const items = useMemo(
 		() =>
-			query.isError || !query.isFetchedAfterMount
+			!refreshed || query.isError || !query.isFetchedAfterMount
 				? []
 				: completeChapterTranslations(query.data?.pages),
-		[query.data, query.isError, query.isFetchedAfterMount],
+		[refreshed, query.data, query.isError, query.isFetchedAfterMount],
 	);
 	return {
 		...query,
 		items,
-		loading: !isError && (!query.isFetchedAfterMount || hasNextPage),
+		loading:
+			enabled &&
+			!isError &&
+			(!refreshed || !query.isFetchedAfterMount || hasNextPage),
 		unavailable: Math.max(
 			0,
 			...(query.data?.pages.map((page) => page.unavailable_count) ?? []),

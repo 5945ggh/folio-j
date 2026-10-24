@@ -5,6 +5,7 @@ import {
 	translationActivityKey,
 } from "../materials/chapter-translations-query";
 import type { MaterialProvenance } from "../materials/study-api";
+import { useViewActivity } from "../navigation/RetainedRoute";
 import {
 	createTranslation,
 	getTranslationHistory,
@@ -150,6 +151,7 @@ export function translationQueryAdapter(
 export function useTranslationSessions(
 	existing?: TranslationSessions,
 ): TranslationSessions {
+	const { active } = useViewActivity();
 	const client = useQueryClient();
 	const local = useMemo(
 		() => createTranslationSessions(translationQueryAdapter(client)),
@@ -157,8 +159,8 @@ export function useTranslationSessions(
 	);
 	const sessions = existing ?? local;
 	useLayoutEffect(
-		() => (existing ? undefined : sessions.bindOwner()),
-		[existing, sessions],
+		() => (existing || !active ? undefined : sessions.bindOwner()),
+		[active, existing, sessions],
 	);
 	return sessions;
 }

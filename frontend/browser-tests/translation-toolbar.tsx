@@ -1,3 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { flushSync } from "react-dom";
 import type { components } from "../src/api/schema";
 import type { StudyTarget } from "../src/materials/study-api";
 import type { BrowserHarness } from "./harness";
@@ -9,6 +12,9 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 	const { targetIdentity } = await import("../src/translation/state");
 	const { useTranslationSessions } = await import(
 		"../src/translation/session-react"
+	);
+	const { ViewActivityProvider } = await import(
+		"../src/navigation/RetainedRoute"
 	);
 	const check: BrowserHarness["check"] = h.check;
 	const reference: components["schemas"]["MaterialProvenance"] = {
@@ -101,12 +107,29 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 		translation: "重新生成的译文。",
 		created_at: "2026-10-24T03:00:00Z",
 	};
-	for (const embedded of [false, true]) {
+	for (const [embedded, resumed] of [
+		[false, false],
+		[true, false],
+		[false, true],
+		[true, true],
+	] as const) {
 		let posts = 0;
 		let stops = 0;
 		let closed = 0;
 		let active: components["schemas"]["TranslationTaskResponse"] | null = null;
-		let releaseResult: ((response: Response) => void) | undefined;
+		let resultRequested = false;
+		let resultResponse: Response | undefined;
+		const pendingResults: Array<(response: Response) => void> = [];
+		const releaseResult = (response: Response) => {
+			resultResponse = response;
+			for (const settle of pendingResults.splice(0)) settle(response.clone());
+		};
+		let restoreGate: Promise<void> | undefined;
+		let restoreReads = 0;
+		let changeActivity:
+			| ((next: { active: boolean; activation: number }) => void)
+			| undefined;
+		let refreshResult: (() => Promise<void>) | undefined;
 		h.mock(async (request) => {
 			const path = new URL(request.url).pathname;
 			if (path === "/api/settings/translation")
@@ -159,18 +182,33 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 			}
 			if (path === `/api/translation-tasks/${active?.id}`)
 				return Response.json(active);
-			if (path === `/api/translation-results/${generated.id}`)
+			if (path === `/api/translation-results/${generated.id}`) {
+				if (resultResponse) return resultResponse.clone();
 				return new Promise((resolve) => {
-					releaseResult = resolve;
+					pendingResults.push(resolve);
+					resultRequested = true;
 				});
+			}
 			const saved = [latest, previous].find(
 				(item) => path === `/api/translation-results/${item.id}`,
 			);
-			if (saved) return Response.json(saved);
+			if (saved) {
+				if (saved.id === latest.id && restoreGate) {
+					restoreReads++;
+					await restoreGate;
+				}
+				return Response.json(saved);
+			}
 			throw new Error(`Unexpected toolbar request ${request.method} ${path}`);
 		});
 		function Fixture() {
 			const sessions = useTranslationSessions();
+			const client = useQueryClient();
+			refreshResult = () =>
+				client.invalidateQueries({
+					queryKey: ["translation-result", generated.id],
+					exact: true,
+				});
 			return (
 				<div className="reader-r1">
 					<div data-toolbar-host="initiator">
@@ -201,7 +239,19 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 				</div>
 			);
 		}
-		const dispose = await h.mount(<Fixture />);
+		function ActivityFixture() {
+			const [activity, setActivity] = useState({
+				active: true,
+				activation: 0,
+			});
+			changeActivity = setActivity;
+			return (
+				<ViewActivityProvider value={activity}>
+					<Fixture />
+				</ViewActivityProvider>
+			);
+		}
+		const dispose = await h.mount(<ActivityFixture />);
 		await h.until(
 			() => !!h.container.querySelector('[data-toolbar-host="initiator"]'),
 			"Toolbar fixture should mount",
@@ -266,6 +316,35 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 				"Version shortcut should return to the prior newer result",
 			);
 			check(posts === 0, "Version navigation must not call the model");
+			if (resumed) {
+				check(changeActivity, "Reader activity control must be ready");
+				const setActivity = changeActivity;
+				flushSync(() => setActivity({ active: false, activation: 0 }));
+				let releaseRestore: (() => void) | undefined;
+				restoreGate = new Promise<void>((resolve) => {
+					releaseRestore = resolve;
+				});
+				flushSync(() => setActivity({ active: true, activation: 1 }));
+				await h.until(
+					() => restoreReads > 0,
+					"Resume must reread the saved result before showing it",
+				);
+				check(
+					!output() && !followerOutput(),
+					"Resume must withhold cached output in both hosts before validation finishes",
+				);
+				check(releaseRestore, "Resume validation must be controllable");
+				releaseRestore();
+				restoreGate = undefined;
+				await h.until(
+					() =>
+						output() === latest.translation &&
+						followerOutput() === latest.translation &&
+						!action("重新翻译")?.disabled,
+					"Resume should release both hosts only after refreshing the saved output",
+				);
+				check(posts === 0, "Resuming must not generate a translation");
+			}
 			action("重新翻译")?.click();
 			await h.until(
 				() => !!action("停止翻译"),
@@ -330,7 +409,7 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 			);
 			updateTask("succeeded", generated.id);
 			await h.until(
-				() => !!releaseResult,
+				() => resultRequested,
 				"New result read should be independently delayed",
 			);
 			check(
@@ -345,11 +424,105 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 				followerOutput() === latest.translation,
 				"The following host also retains old output while the new result loads",
 			);
-			releaseResult?.(Response.json(generated));
+			if (resumed) {
+				releaseResult(
+					Response.json({ detail: "new result unavailable" }, { status: 503 }),
+				);
+				resultRequested = false;
+				await h.until(
+					() =>
+						[...h.container.querySelectorAll('[role="alert"]')].filter((node) =>
+							node.textContent?.includes("new result unavailable"),
+						).length === 2,
+					"Both hosts must report the failed new-result read",
+				);
+				check(
+					output() === latest.translation &&
+						followerOutput() === latest.translation,
+					"A failed new-result GET must preserve previously validated output in both resumed hosts",
+				);
+				check(
+					version()?.disabled,
+					"Failed new-result reads keep shortcut pairing disabled",
+				);
+				check(refreshResult, "Result refresh control must be ready");
+				resultResponse = undefined;
+				void refreshResult();
+				await h.until(
+					() => resultRequested,
+					"Refreshing the failed result should issue another GET",
+				);
+				check(
+					output() === latest.translation &&
+						followerOutput() === latest.translation,
+					"Retrying a new-result GET must keep the validated old output readable",
+				);
+			}
+			releaseResult(Response.json(generated));
 			await h.until(
-				() => output() === generated.translation,
-				"New complete output replaces the retained result",
+				() =>
+					output() === generated.translation &&
+					followerOutput() === generated.translation,
+				"New complete output replaces the retained result in both hosts",
 			);
+			if (resumed) {
+				check(
+					changeActivity,
+					"Reader activity control must survive retranslation",
+				);
+				const setActivity = changeActivity;
+				flushSync(() => setActivity({ active: false, activation: 1 }));
+				resultResponse = undefined;
+				resultRequested = false;
+				flushSync(() => setActivity({ active: true, activation: 2 }));
+				await h.until(
+					() => resultRequested,
+					"A second resume must revalidate the current generated result",
+				);
+				check(
+					!output() && !followerOutput(),
+					"A second resume must withhold both cached generated output and earlier fallback snapshots",
+				);
+				releaseResult(
+					Response.json(
+						{ detail: "resumed result unavailable" },
+						{ status: 503 },
+					),
+				);
+				resultRequested = false;
+				await h.until(
+					() =>
+						[...h.container.querySelectorAll('[role="alert"]')].filter((node) =>
+							node.textContent?.includes("resumed result unavailable"),
+						).length === 2,
+					"Both hosts must report failed second-resume validation",
+				);
+				check(
+					!output() && !followerOutput(),
+					"Failed second-resume validation must not reveal output or fallback snapshots from the prior activation",
+				);
+				check(
+					refreshResult,
+					"Result refresh control must survive a second resume",
+				);
+				resultResponse = undefined;
+				void refreshResult();
+				await h.until(
+					() => resultRequested,
+					"Second-resume validation can retry the exact current result",
+				);
+				check(
+					!output() && !followerOutput(),
+					"Retrying resume validation must continue withholding prior-activation snapshots",
+				);
+				releaseResult(Response.json(generated));
+				await h.until(
+					() =>
+						output() === generated.translation &&
+						followerOutput() === generated.translation,
+					"Successful second-resume validation releases the exact current result in both hosts",
+				);
+			}
 			await h.until(
 				() => version()?.textContent === "上一版",
 				"Generated result should offer its preceding saved output",

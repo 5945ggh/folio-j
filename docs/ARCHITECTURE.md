@@ -162,6 +162,12 @@ Source 目录提供材料、未删除片段与讲解的真实计数，概览仅�
 
 ### 3.1.2 阅读器 R1.1 呈现与只读派生查询
 
+前端 `navigation/RetainedRoute` 保留一个匹配路由的 DOM 与冻结的路由上下文，统一提供 active／activation 生命周期；纯 `retained-session` module 负责身份替换、恢复代次和暂离十分钟的租期，过期检查同时覆盖定时淘汰和直接返回。当前只接入材料阅读器与片段页往返，打开其他材料替换旧实例，离开适用路由释放。缓存只存在当前标签页内存，不持久化书籍正文，也不增加依赖。后续入口可复用宿主与生命周期，分别维护自己的可用性核验和失效规则。
+
+宿主只冻结组件路由的 location／params；Data router 的 loader／action 不属于保留范围，嵌套 `Routes location` 的导航类型按 Router 行为显示为 POP，依赖 PUSH／REPLACE 的后续入口须单独传递其策略。接入视图须用 `useViewActivity` 停止隐藏期间的输入、布局及查询副作用；最终卸载仍执行资源清理。保留状态不替代 TanStack Query 的服务端数据缓存。
+
+Reader 暂停时保留 iframe 与正文投影，停用输入、重排与位置采样，完成离开前稳定锚点的串行写入。恢复协调先等待写入队列，再读取材料与片段出处并核验注音代次；同身份复用现有 DOM，版本、代次或外部位置修订变化时安全重建，失效不展示旧正文。返回刷新当前学习标记、译文及相关资料，有 `segment` 参数时通过既有精确校验与导航定位原文，不通过更改 React key 重建整页。真正淘汰才清理 frames 与监听；读取失败和重试保留目标。
+
 搜索与图库按不可变编译包派生，不新增领域实体、持久索引或数据库表，不改变原字节、正文、版本及产物摘要。DTO 见 [OpenAPI](../backend/openapi.json)；浏览器兼容与历史成本观测见[阅读器验收](handovers/archived/reader-r1/ACCEPTANCE.md)和[历史 API 记录](handovers/archived/reader-r1/API.md#本机只读查询成本记录)。服务层在线程中执行解压、扫描、HTML 解析与图片解码；当前无派生缓存，每次非空搜索／图库请求仍解析有界全书包。每个请求核验 Material、所属 Source 和必填 version_id；缺失／不可见返回 404、查询版本不符返回 409、参数错误返回 422，不改变位置写入的版本／范围错误 422 契约。
 
 `GET /api/materials/{material_id}/search` 的 q 默认空、输入至多 160 码点，服务去两端空白并 NFC；空白查询返回空页且不解压扫描。搜索与 `GET .../illustrations` 共用 offset 默认 0 且非负、limit 默认 40 且范围 1–100。搜索按章节／part／spine 顺序扫描资源局部正文，排除 rt／rp 与 UI 标题；重复和重叠字面命中均保留。同资源同 spine 的连续 part 可衔接，不跨章、资源或 spine 出现拼接；命中归 start 所在 part，保留资源码点半开范围与前后各至多 40 码点摘录，不能把 start 当作摘录偏移或 UTF-16 索引。分页只保留请求页并统计完整范围，不构造全量命中数组。

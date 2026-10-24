@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import { useReaderSessionRefresh } from "./reader-session-query";
 import { chapterSegmentsKey, getChapterSegments } from "./study-api";
 import { completeChapterMarks } from "./study-marks";
 
@@ -8,6 +9,7 @@ export function useChapterStudyMarks(
 	versionId: string,
 	chapterId: string,
 	enabled: boolean,
+	activation = 0,
 ) {
 	const query = useInfiniteQuery({
 		queryKey: chapterSegmentsKey(materialId, versionId, chapterId),
@@ -16,21 +18,33 @@ export function useChapterStudyMarks(
 		initialPageParam: null as string | null,
 		getNextPageParam: (page) => page.next_cursor ?? undefined,
 		enabled: enabled && Boolean(chapterId),
+		// Resumed queries refresh through the session ticket, without an earlier automatic request.
+		staleTime: activation > 0 ? Number.POSITIVE_INFINITY : 0,
 		refetchOnMount: "always",
 		retry: false,
 	});
+	const refreshed = useReaderSessionRefresh(
+		chapterSegmentsKey(materialId, versionId, chapterId),
+		query.refetch,
+		enabled,
+		activation,
+	);
 	const { hasNextPage, isFetching, isError, fetchNextPage } = query;
 	useEffect(() => {
-		if (enabled && hasNextPage && !isFetching && !isError) void fetchNextPage();
-	}, [enabled, hasNextPage, isFetching, isError, fetchNextPage]);
+		if (refreshed && hasNextPage && !isFetching && !isError)
+			void fetchNextPage();
+	}, [refreshed, hasNextPage, isFetching, isError, fetchNextPage]);
 	const items = useMemo(() => {
-		if (!enabled || query.isError || !query.isFetchedAfterMount) return [];
+		if (!refreshed || query.isError || !query.isFetchedAfterMount) return [];
 		return completeChapterMarks(query.data?.pages);
-	}, [enabled, query.data, query.isError, query.isFetchedAfterMount]);
+	}, [refreshed, query.data, query.isError, query.isFetchedAfterMount]);
 	return {
 		...query,
 		items,
-		loading: enabled && !isError && (!query.isFetchedAfterMount || hasNextPage),
+		loading:
+			enabled &&
+			!isError &&
+			(!refreshed || !query.isFetchedAfterMount || hasNextPage),
 		unavailable:
 			query.data?.pages.reduce(
 				(sum, page) => sum + page.unavailable_count,

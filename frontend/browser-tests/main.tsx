@@ -12,6 +12,7 @@ import { chapterRecords } from "./chapter-records";
 import { navigationFeedback } from "./navigation-feedback";
 import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
+import { readerSession } from "./reader-session";
 import { readingAidsRegression } from "./reading-aids";
 import { recordSaving } from "./record-saving";
 import { segmentMaterials } from "./segment-materials";
@@ -485,9 +486,11 @@ try {
 												},
 											}),
 										]
-									: suite === "reader-bookmarks"
+									: suite === "reader-bookmarks" || suite === "reader-session"
 										? [
-												await readerBookmarks({
+												await (suite === "reader-session"
+													? readerSession
+													: readerBookmarks)({
 													container,
 													check,
 													until,

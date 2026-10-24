@@ -4,6 +4,8 @@ import { analysisKeys, getAnalysis, listAnalyses } from "../analysis/api";
 import { Markdown } from "../analysis/Markdown";
 import { analysisPresentation } from "../analysis/presentation";
 import { getSegment, queries } from "../content";
+import { useViewActivity } from "../navigation/RetainedRoute";
+import { useReaderSessionRefresh } from "./reader-session-query";
 import type { ScreenAnchor } from "./reader-study";
 import type { ChapterSegment } from "./study-api";
 import { studyPreviewPosition } from "./study-overlays";
@@ -31,7 +33,7 @@ export function StudyPreview({
 	fixed = false,
 	loading = false,
 	expanded,
-	inactive = false,
+	inactive: panelInactive = false,
 	embedded = false,
 	onExpand,
 	onCollapse,
@@ -39,6 +41,8 @@ export function StudyPreview({
 	onOpen,
 	onEmphasize,
 }: StudyPreviewProps) {
+	const activity = useViewActivity();
+	const inactive = panelInactive || !activity.active;
 	const element = useRef<HTMLDivElement>(null);
 	const content = useRef<HTMLDivElement>(null);
 	const analysisPreview = useRef<HTMLDivElement>(null);
@@ -86,7 +90,7 @@ export function StudyPreview({
 		return () => node.removeEventListener("keydown", handleEscape);
 	}, [inactive]);
 	useLayoutEffect(() => {
-		if (expanded || fixed || embedded) return;
+		if (inactive || expanded || fixed || embedded) return;
 		const node = element.current;
 		if (!node) return;
 		const measure = () =>
@@ -105,7 +109,7 @@ export function StudyPreview({
 			observer.disconnect();
 			window.removeEventListener("resize", measure);
 		};
-	}, [anchor, expanded, fixed, embedded]);
+	}, [inactive, anchor, expanded, fixed, embedded]);
 	useLayoutEffect(() => {
 		if (segmentId && content.current) {
 			content.current.scrollTop = 0;
@@ -133,7 +137,22 @@ export function StudyPreview({
 			last.length === 100 ? all.length * 100 : undefined,
 		enabled: Boolean(segmentId) && !inactive,
 	});
-	const analysisItems = previewAnalyses(analyses.data?.pages, segmentId);
+	const segmentReady = useReaderSessionRefresh(
+		queries.segment(segmentId),
+		segment.refetch,
+		Boolean(segmentId) && !inactive,
+		activity.activation,
+	);
+	const analysesReady = useReaderSessionRefresh(
+		analysisKeys.list(segmentId),
+		analyses.refetch,
+		Boolean(segmentId) && !inactive,
+		activity.activation,
+	);
+	const analysisItems = previewAnalyses(
+		analysesReady && !analyses.isError ? analyses.data?.pages : undefined,
+		segmentId,
+	);
 	const analysis =
 		analysisItems.find(
 			(item) =>
@@ -149,9 +168,22 @@ export function StudyPreview({
 			getAnalysis(analysis?.id ?? "", analysis?.current_revision_id),
 		enabled: Boolean(analysis) && !inactive,
 	});
-	const document = previewDocument(detail.data, segmentId, analysis);
+	const detailReady = useReaderSessionRefresh(
+		analysisKeys.detail(analysis?.id ?? "", analysis?.current_revision_id),
+		detail.refetch,
+		Boolean(analysis) && !inactive,
+		activity.activation,
+	);
+	const document = previewDocument(
+		detailReady && !detail.isError ? detail.data : undefined,
+		segmentId,
+		analysis,
+	);
 	const presentation = document ? analysisPresentation(document) : null;
-	const saved = segment.data?.id === segmentId ? segment.data : null;
+	const saved =
+		segmentReady && !segment.isError && segment.data?.id === segmentId
+			? segment.data
+			: null;
 	const translation = saved?.translation.trim();
 	const original = saved?.text ?? selected?.excerpt ?? "";
 	const canReturn = fixed || items.length > 1;

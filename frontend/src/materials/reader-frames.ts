@@ -79,6 +79,7 @@ function applyDocumentSettings(doc: Document, settings: Settings) {
 	);
 }
 type FrameContext = {
+	active?: () => boolean;
 	chapter: Chapter;
 	readingGeneration: string;
 	readings: ReadingsResponse | undefined;
@@ -473,7 +474,7 @@ export class ReaderFrames {
 				);
 			}
 			const resize = () => {
-				if (!valid()) return;
+				if (context.active?.() === false || !valid()) return;
 				const vertical =
 					context.current().settings.writing_mode === "vertical-rl";
 				const root = context.root();
@@ -503,19 +504,28 @@ export class ReaderFrames {
 			);
 			const unbind = context.bindFocus(doc, element);
 			const keydown = (event: KeyboardEvent) => {
-				if (valid()) context.key(event);
+				if (context.active?.() !== false && valid()) context.key(event);
 			};
 			const copy = (event: ClipboardEvent) => {
-				if (!valid() || !isReaderFrameTarget(doc, event.target)) return;
+				if (
+					context.active?.() === false ||
+					!valid() ||
+					!isReaderFrameTarget(doc, event.target)
+				)
+					return;
 				const frame = this.frames.get(index);
 				if (frame) copyReaderSelection(doc, frame.projection, event);
 			};
 			const pointerdown = (event: PointerEvent) => {
-				if (valid() && isReaderFrameTarget(doc, event.target))
+				if (
+					context.active?.() !== false &&
+					valid() &&
+					isReaderFrameTarget(doc, event.target)
+				)
 					context.interaction?.(event);
 			};
 			const selectionchange = (event: Event) => {
-				if (!valid()) return;
+				if (context.active?.() === false || !valid()) return;
 				const selection = doc.getSelection();
 				if (!selection || selection.isCollapsed) return;
 				this.finishInlineMotion();
@@ -526,14 +536,18 @@ export class ReaderFrames {
 					context.interaction?.(event);
 			};
 			const wheel = (event: WheelEvent) => {
-				if (valid() && isReaderFrameTarget(doc, event.target))
+				if (
+					context.active?.() !== false &&
+					valid() &&
+					isReaderFrameTarget(doc, event.target)
+				)
 					context.wheel(event);
 			};
 			const touchmove = (event: TouchEvent) => {
-				if (valid()) context.touch(event);
+				if (context.active?.() !== false && valid()) context.touch(event);
 			};
 			const click = (event: MouseEvent) => {
-				if (!valid()) return;
+				if (context.active?.() === false || !valid()) return;
 				const target = event.target as Element | null;
 				const image = target?.closest("img[data-epub-image]");
 				if (image && !event.defaultPrevented) {
@@ -591,7 +605,7 @@ export class ReaderFrames {
 				doc,
 				element,
 				chapter: data,
-				valid,
+				valid: () => context.active?.() !== false && valid(),
 				projection: () => this.freshProjection(index, data),
 				viewport: context.root(),
 			});

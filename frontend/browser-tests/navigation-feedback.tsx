@@ -136,9 +136,14 @@ export async function navigationFeedback(h: BrowserHarness, preview = false) {
 			() => !!h.container.querySelector(".translation-output"),
 			"Translation details must load",
 		);
+		const previousHighlight =
+			doc()?.defaultView?.CSS.highlights.get("folio-search");
 		button("返回原处").click();
 		await h.until(
-			() => highlighted(),
+			() =>
+				highlighted() &&
+				doc()?.defaultView?.CSS.highlights.get("folio-search") !==
+					previousHighlight,
 			"Return must paint exact source after presentation",
 		);
 		return doc();
@@ -290,11 +295,13 @@ export async function navigationFeedback(h: BrowserHarness, preview = false) {
 			"Ending feedback must retain persistent translation underlines",
 		);
 		const old = await openReturn();
+		const oldHighlight = old?.defaultView?.CSS.highlights.get("folio-search");
 		await pause(2100);
 		await openReturn();
 		check(
-			!old?.defaultView?.CSS.highlights.has("folio-search"),
-			"Replacing a navigation must clean its old frame",
+			doc() === old &&
+				doc()?.defaultView?.CSS.highlights.get("folio-search") !== oldHighlight,
+			"Same-chapter navigation must reuse its document and replace the old highlight",
 		);
 		await pause(750);
 		check(
@@ -307,10 +314,16 @@ export async function navigationFeedback(h: BrowserHarness, preview = false) {
 				"Replacement isolation must also start while an old fade is actually running",
 			);
 			const fadingOld = doc();
+			const fadingHighlight =
+				fadingOld?.defaultView?.CSS.highlights.get("folio-search");
 			await openReturn();
 			await pause(350);
 			check(
-				!highlighted(fadingOld) && highlighted() && alpha() > 0.95,
+				doc() === fadingOld &&
+					doc()?.defaultView?.CSS.highlights.get("folio-search") !==
+						fadingHighlight &&
+					highlighted() &&
+					alpha() > 0.95,
 				"A cancelled old fade must not change the new target after its former ending time",
 			);
 		}

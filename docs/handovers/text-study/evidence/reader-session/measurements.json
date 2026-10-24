@@ -1,0 +1,282 @@
+{
+  "baseline": {
+    "1280x900 cold open": {
+      "firstFrameMs": 46,
+      "allFramesMs": 75.9,
+      "readableMs": 100.2,
+      "savedMs": 667.4,
+      "samples": 3,
+      "requests": [
+        11,
+        11,
+        11
+      ],
+      "frameReused": [
+        false,
+        false,
+        false
+      ],
+      "documentReused": [
+        false,
+        false,
+        false
+      ],
+      "requestStartMs": {
+        "GET /api/materials/reader-session": 11.7,
+        "GET /api/materials/reader-session/chapters/long-chapter": 19.5,
+        "GET /api/materials/reader-session/chapters/long-chapter/segments": 19.9,
+        "GET /api/materials/reader-session/chapters/long-chapter/translations": 20,
+        "GET /api/materials/reader-session/readings": 20,
+        "GET /api/materials/reader-session/translations": 19.1,
+        "GET /api/materials/reader-session/usage": 19.2,
+        "GET /api/sources/source": 19.1,
+        "POST /api/materials/reader-session/opened": 91.5,
+        "POST /api/materials/reader-session/readings/prepare": 13.8,
+        "PUT /api/materials/reader-session/reading-position": 647.8
+      }
+    },
+    "1280x900 reader → segment → ?segment return": {
+      "firstFrameMs": 15.5,
+      "allFramesMs": 50,
+      "readableMs": 86.9,
+      "savedMs": 639.6,
+      "samples": 3,
+      "requests": [
+        11,
+        11,
+        11
+      ],
+      "frameReused": [
+        false,
+        false,
+        false
+      ],
+      "documentReused": [
+        false,
+        false,
+        false
+      ],
+      "requestStartMs": {
+        "GET /api/materials/reader-session": 2.9,
+        "GET /api/materials/reader-session/chapters/long-chapter": 10.8,
+        "GET /api/materials/reader-session/chapters/long-chapter/segments": 11,
+        "GET /api/materials/reader-session/chapters/long-chapter/translations": 11.1,
+        "GET /api/materials/reader-session/translations": 10.5,
+        "GET /api/materials/reader-session/usage": 10.7,
+        "GET /api/segments/saved/material-provenance": 2.7,
+        "GET /api/sources/source": 10.7,
+        "POST /api/materials/reader-session/opened": 67,
+        "POST /api/materials/reader-session/readings/prepare": 3.8,
+        "PUT /api/materials/reader-session/reading-position": 619.2
+      }
+    },
+    "390x900 cold open": {
+      "firstFrameMs": 43.7,
+      "allFramesMs": 78.4,
+      "readableMs": 101.6,
+      "savedMs": 657.5,
+      "samples": 3,
+      "requests": [
+        11,
+        11,
+        11
+      ],
+      "frameReused": [
+        false,
+        false,
+        false
+      ],
+      "documentReused": [
+        false,
+        false,
+        false
+      ],
+      "requestStartMs": {
+        "GET /api/materials/reader-session": 17.5,
+        "GET /api/materials/reader-session/chapters/long-chapter": 25.7,
+        "GET /api/materials/reader-session/chapters/long-chapter/segments": 26.1,
+        "GET /api/materials/reader-session/chapters/long-chapter/translations": 26.1,
+        "GET /api/materials/reader-session/readings": 26.2,
+        "GET /api/materials/reader-session/translations": 25.3,
+        "GET /api/materials/reader-session/usage": 25.4,
+        "GET /api/sources/source": 25.4,
+        "POST /api/materials/reader-session/opened": 93.7,
+        "POST /api/materials/reader-session/readings/prepare": 19.8,
+        "PUT /api/materials/reader-session/reading-position": 643.3
+      }
+    },
+    "390x900 reader → segment → ?segment return": {
+      "firstFrameMs": 12.5,
+      "allFramesMs": 47.9,
+      "readableMs": 82.1,
+      "savedMs": 631.8,
+      "samples": 3,
+      "requests": [
+        11,
+        11,
+        11
+      ],
+      "frameReused": [
+        false,
+        false,
+        false
+      ],
+      "documentReused": [
+        false,
+        false,
+        false
+      ],
+      "requestStartMs": {
+        "GET /api/materials/reader-session": 2.4,
+        "GET /api/materials/reader-session/chapters/long-chapter": 9.7,
+        "GET /api/materials/reader-session/chapters/long-chapter/segments": 9.9,
+        "GET /api/materials/reader-session/chapters/long-chapter/translations": 9.9,
+        "GET /api/materials/reader-session/translations": 9.4,
+        "GET /api/materials/reader-session/usage": 9.6,
+        "GET /api/segments/saved/material-provenance": 2.3,
+        "GET /api/sources/source": 9.6,
+        "POST /api/materials/reader-session/opened": 62.2,
+        "POST /api/materials/reader-session/readings/prepare": 3.3,
+        "PUT /api/materials/reader-session/reading-position": 612.5
+      }
+    }
+  },
+  "retained": {
+    "1280x900 cold open": {
+      "firstFrameMs": 68.8,
+      "allFramesMs": 81.8,
+      "readableMs": 107.3,
+      "savedMs": 673.9,
+      "samples": 3,
+      "requests": [
+        11,
+        11,
+        11
+      ],
+      "frameReused": [
+        false,
+        false,
+        false
+      ],
+      "documentReused": [
+        false,
+        false,
+        false
+      ],
+      "requestStartMs": {
+        "GET /api/materials/reader-session": 12.7,
+        "GET /api/materials/reader-session/chapters/long-chapter": 20.9,
+        "GET /api/materials/reader-session/chapters/long-chapter/segments": 21.2,
+        "GET /api/materials/reader-session/chapters/long-chapter/translations": 21.3,
+        "GET /api/materials/reader-session/readings": 21.5,
+        "GET /api/materials/reader-session/translations": 20.3,
+        "GET /api/materials/reader-session/usage": 20.4,
+        "GET /api/sources/source": 20.4,
+        "POST /api/materials/reader-session/opened": 99.6,
+        "POST /api/materials/reader-session/readings/prepare": 13,
+        "PUT /api/materials/reader-session/reading-position": 654
+      }
+    },
+    "1280x900 reader → segment → ?segment return": {
+      "firstFrameMs": 62.2,
+      "allFramesMs": 62.3,
+      "readableMs": 95.6,
+      "savedMs": 95.6,
+      "samples": 3,
+      "requests": [
+        9,
+        9,
+        9
+      ],
+      "frameReused": [
+        true,
+        true,
+        true
+      ],
+      "documentReused": [
+        true,
+        true,
+        true
+      ],
+      "requestStartMs": {
+        "GET /api/materials/reader-session": 6.3,
+        "GET /api/materials/reader-session/chapters/long-chapter/segments": 61.8,
+        "GET /api/materials/reader-session/chapters/long-chapter/translations": 62,
+        "GET /api/materials/reader-session/translations": 61.6,
+        "GET /api/materials/reader-session/usage": 37.8,
+        "GET /api/segments/saved/material-provenance": 6.2,
+        "GET /api/sources/source": 37.8,
+        "POST /api/materials/reader-session/readings/prepare": 6.5,
+        "PUT /api/materials/reader-session/reading-position": 61.1
+      }
+    },
+    "390x900 cold open": {
+      "firstFrameMs": 44.2,
+      "allFramesMs": 81.8,
+      "readableMs": 104.6,
+      "savedMs": 672.8,
+      "samples": 3,
+      "requests": [
+        11,
+        11,
+        11
+      ],
+      "frameReused": [
+        false,
+        false,
+        false
+      ],
+      "documentReused": [
+        false,
+        false,
+        false
+      ],
+      "requestStartMs": {
+        "GET /api/materials/reader-session": 17.8,
+        "GET /api/materials/reader-session/chapters/long-chapter": 25.6,
+        "GET /api/materials/reader-session/chapters/long-chapter/segments": 26,
+        "GET /api/materials/reader-session/chapters/long-chapter/translations": 26.1,
+        "GET /api/materials/reader-session/readings": 26.2,
+        "GET /api/materials/reader-session/translations": 25.1,
+        "GET /api/materials/reader-session/usage": 25.2,
+        "GET /api/sources/source": 25.2,
+        "POST /api/materials/reader-session/opened": 99.1,
+        "POST /api/materials/reader-session/readings/prepare": 18.1,
+        "PUT /api/materials/reader-session/reading-position": 652.9
+      }
+    },
+    "390x900 reader → segment → ?segment return": {
+      "firstFrameMs": 57.3,
+      "allFramesMs": 57.3,
+      "readableMs": 93.3,
+      "savedMs": 93.3,
+      "samples": 3,
+      "requests": [
+        9,
+        9,
+        9
+      ],
+      "frameReused": [
+        true,
+        true,
+        true
+      ],
+      "documentReused": [
+        true,
+        true,
+        true
+      ],
+      "requestStartMs": {
+        "GET /api/materials/reader-session": 5.6,
+        "GET /api/materials/reader-session/chapters/long-chapter/segments": 57.1,
+        "GET /api/materials/reader-session/chapters/long-chapter/translations": 57.1,
+        "GET /api/materials/reader-session/translations": 57,
+        "GET /api/materials/reader-session/usage": 33.9,
+        "GET /api/segments/saved/material-provenance": 5.5,
+        "GET /api/sources/source": 33.9,
+        "POST /api/materials/reader-session/readings/prepare": 5.8,
+        "PUT /api/materials/reader-session/reading-position": 56.6
+      }
+    }
+  }
+}

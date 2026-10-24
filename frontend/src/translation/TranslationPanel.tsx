@@ -15,9 +15,11 @@ import {
 	type ReaderCardBounds,
 	type ReaderCardPosition,
 } from "../materials/reader-card-drag";
+import { useReaderSessionRefresh } from "../materials/reader-session-query";
 import type { ScreenAnchor } from "../materials/reader-study";
 import type { MaterialProvenance, StudyTarget } from "../materials/study-api";
 import { useReaderCardDrag } from "../materials/use-reader-card-drag";
+import { useViewActivity } from "../navigation/RetainedRoute";
 import { InlineError } from "../Shared";
 import { SpeechControls } from "../speech";
 import { getSpeechController } from "../speech/browser";
@@ -41,6 +43,12 @@ import {
 	translationVersionShortcut,
 } from "./state";
 import "./translation.css";
+
+type ResultSnapshot = {
+	session: TranslationSession;
+	activation: number;
+	result: TranslationResult;
+};
 
 function ResultConfiguration({ result }: { result: TranslationResult }) {
 	return (
@@ -226,6 +234,7 @@ export function TranslationPanel({
 	onBackToOrigin: (result: TranslationResult) => void;
 	onResultSelected?: (result: TranslationResult) => void;
 }) {
+	const { active, activation } = useViewActivity();
 	const element = useRef<HTMLElement>(null);
 	const content = useRef<HTMLDivElement>(null);
 	const speech = getSpeechController();
@@ -245,7 +254,7 @@ export function TranslationPanel({
 		height: number;
 	} | null>(null);
 	const [wide, setWide] = useState(() => innerWidth > 600);
-	const draggable = wide && visible && !embedded;
+	const draggable = active && wide && visible && !embedded;
 	const { dragging, handlers: dragHandlers } = useReaderCardDrag(
 		element,
 		draggable,
@@ -338,14 +347,15 @@ export function TranslationPanel({
 	const [resultId, setResultId] = useState<string | null>(
 		initialResultId ?? null,
 	);
-	const [retainedResult, setRetainedResult] = useState<TranslationResult>();
+	const [retainedResult, setRetainedResult] = useState<ResultSnapshot>();
 	const [versionReturnId, setVersionReturnId] = useState<string | null>(null);
 	const [selectedTaskId, setTaskId] = useState<string | null | undefined>(
 		undefined,
 	);
 	const choiceGeneration = useRef(0);
-	const view = useRef({ mounted: true, session });
+	const view = useRef({ mounted: true, session, active });
 	view.current.session = session;
+	view.current.active = active;
 	useEffect(() => {
 		view.current.mounted = true;
 		return () => {
@@ -354,10 +364,12 @@ export function TranslationPanel({
 	}, []);
 	const heading = useRef<HTMLHeadingElement>(null);
 	const settings = useQuery({
+		enabled: active,
 		queryKey: translationSettingsKey,
 		queryFn: getTranslationSettings,
 	});
 	const identity = useQuery({
+		enabled: active,
 		queryKey: ["translation-identity", target.reference],
 		queryFn: () => targetIdentity(target.reference),
 	});
@@ -367,12 +379,19 @@ export function TranslationPanel({
 			if (!identity.data) throw new Error("缺少翻译目标身份");
 			return getTranslationHistory(materialId, offset, identity.data);
 		},
-		enabled: !!identity.data,
+		enabled: active && !!identity.data,
 		retry: false,
 		refetchInterval: (query) =>
-			query.state.data?.tasks.some(activeTranslation) ? 1200 : false,
+			active && query.state.data?.tasks.some(activeTranslation) ? 1200 : false,
 	});
+	const historyRefreshed = useReaderSessionRefresh(
+		["translations", materialId, identity.data, offset],
+		history.refetch,
+		active && !!identity.data,
+		activation,
+	);
 	const historyReady =
+		historyRefreshed &&
 		!!identity.data &&
 		history.isSuccess &&
 		history.isFetchedAfterMount &&
@@ -384,9 +403,9 @@ export function TranslationPanel({
 	const task = useQuery({
 		queryKey: ["translation-task", taskId],
 		queryFn: () => getTranslationTask(taskId ?? ""),
-		enabled: !!taskId,
+		enabled: active && !!taskId,
 		refetchInterval: (query) =>
-			activeTranslation(query.state.data) ? 800 : false,
+			active && activeTranslation(query.state.data) ? 800 : false,
 	});
 	const currentTask = resultId
 		? undefined
@@ -408,6 +427,7 @@ export function TranslationPanel({
 			if (
 				outcome.kind === "accepted" &&
 				view.current.mounted &&
+				view.current.active &&
 				view.current.session === origin &&
 				choiceGeneration.current === generation
 			) {
@@ -418,13 +438,16 @@ export function TranslationPanel({
 		[],
 	);
 	useEffect(() => {
+		if (!active) return;
 		void applyOutcome(
 			session.open({ kind: autoStart ? "selection" : "history" }),
 			session,
 		);
-	}, [session, autoStart, applyOutcome]);
+	}, [active, session, autoStart, applyOutcome]);
 	useEffect(() => {
 		if (
+			!active ||
+			!historyRefreshed ||
 			!history.isSuccess ||
 			history.isFetching ||
 			!settings.isSuccess ||
@@ -436,6 +459,8 @@ export function TranslationPanel({
 			session,
 		);
 	}, [
+		active,
+		historyRefreshed,
 		session,
 		autoStart,
 		applyOutcome,
@@ -446,44 +471,65 @@ export function TranslationPanel({
 	]);
 	const publishedResult = task.data?.result_id ?? history.data?.results[0]?.id;
 	useEffect(() => {
-		if (publishedResult)
+		if (active && publishedResult)
 			void client.invalidateQueries({
 				queryKey: chapterTranslationsKey(materialId),
 			});
-	}, [client, materialId, publishedResult]);
+	}, [active, client, materialId, publishedResult]);
 	const resolvedId =
 		resultId ?? (taskId ? task.data?.result_id : history.data?.results[0]?.id);
 	const result = useQuery({
 		queryKey: ["translation-result", resolvedId],
 		queryFn: () => getTranslationResult(resolvedId ?? ""),
-		enabled: !!resolvedId,
+		enabled: active && !!resolvedId,
 		retry: false,
 	});
-	const lastLoadedResult = useRef<{
-		session: TranslationSession;
-		result: TranslationResult;
-	} | null>(null);
+	const resultRefreshed = useReaderSessionRefresh(
+		["translation-result", resolvedId],
+		result.refetch,
+		active && !!resolvedId,
+		activation,
+	);
+	const readableResult =
+		resultRefreshed && result.isSuccess && result.data.id === resolvedId
+			? result.data
+			: undefined;
+	const lastLoadedResult = useRef<ResultSnapshot | null>(null);
 	useLayoutEffect(() => {
-		if (result.data?.id === resolvedId && result.data)
-			lastLoadedResult.current = { session, result: result.data };
-	}, [session, result.data, resolvedId]);
+		if (readableResult)
+			lastLoadedResult.current = {
+				session,
+				activation,
+				result: readableResult,
+			};
+	}, [session, activation, readableResult]);
 	const followedResult =
 		resultId === null &&
 		selectedTaskId === undefined &&
 		taskId &&
-		lastLoadedResult.current?.session === session
+		lastLoadedResult.current?.session === session &&
+		lastLoadedResult.current.activation === activation
 			? lastLoadedResult.current.result
 			: undefined;
-	const displayedResult = result.data ?? retainedResult ?? followedResult;
+	const retained =
+		retainedResult?.session === session &&
+		retainedResult.activation === activation
+			? retainedResult.result
+			: undefined;
+	// Only this activation's validated output may bridge a pending or failed retranslation read.
+	const displayedResult = readableResult ?? retained ?? followedResult;
 	useEffect(() => {
-		if (visible && result.isSuccess && result.data.id === resolvedId)
-			onResultSelected?.(result.data);
-	}, [visible, result.isSuccess, result.data, resolvedId, onResultSelected]);
+		if (visible && readableResult) onResultSelected?.(readableResult);
+	}, [visible, readableResult, onResultSelected]);
 	useEffect(() => {
 		if (visible) heading.current?.focus({ preventScroll: true });
 	}, [visible]);
 	const start = () => {
-		setRetainedResult(displayedResult);
+		setRetainedResult(
+			displayedResult
+				? { session, activation, result: displayedResult }
+				: undefined,
+		);
 		setVersionReturnId(null);
 		void applyOutcome(
 			session.execute({ kind: uncertain ? "verify" : "translate" }),
@@ -512,7 +558,7 @@ export function TranslationPanel({
 		<button
 			type="button"
 			className="translation-version-action"
-			disabled={busy || (!!displayedResult && !!resolvedId && !result.data)}
+			disabled={busy || (!!displayedResult && !!resolvedId && !readableResult)}
 			onClick={() => {
 				const returnId = versionReturnId ? null : (displayedResult?.id ?? null);
 				browse();
@@ -537,7 +583,7 @@ export function TranslationPanel({
 					? "停止中"
 					: history.isPending ||
 							identity.isPending ||
-							(result.isFetching && !result.data && !!resolvedId)
+							(result.isFetching && !readableResult && !!resolvedId)
 						? "读取中"
 						: "";
 	const actionLabel = uncertain
@@ -552,7 +598,7 @@ export function TranslationPanel({
 				!initialized ||
 				!settings.data?.model_id ||
 				busy ||
-				(!!resolvedId && !result.data)));
+				(!!resolvedId && !readableResult)));
 	const toolbar = (
 		<>
 			<span className="translation-progress" role="status">
