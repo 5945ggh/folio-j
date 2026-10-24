@@ -359,3 +359,50 @@ async def test_stop_cannot_commit_between_dispatch_check_and_sdk_entry(
             allow_dispatch.set()
             finish_call.set()
             await asyncio.wait_for(asyncio.gather(execution, stopping), timeout=3)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure", ["provider_error", "timeout", "progress_limit", "result_limit"])
+async def test_quick_failure_preserves_durable_partial_without_success_or_history(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    partial = "## 已脱敏的残文\n\n已经收到的有效讲解正文 [REDACTED]"
+    captured: list[adapters.CallSnapshot] = []
+
+    async def generate(
+        snapshot: adapters.CallSnapshot,
+        _key: str | None,
+        progress: Callable[[str], Awaitable[None]],
+    ) -> adapters.GenerateResult:
+        captured.append(snapshot)
+        if len(captured) > 1:
+            return adapters.GenerateResult("后续正常回答", True, None, "{}")
+        await progress(partial)
+        if failure == "provider_error":
+            raise ConnectionError("synthetic connection failure")
+        if failure == "timeout":
+            raise TimeoutError()
+        if failure == "progress_limit":
+            await progress("超" * (agent.OUTPUT_CHAR_LIMIT + 1))
+        return adapters.GenerateResult("超" * (agent.OUTPUT_CHAR_LIMIT + 1), True, None, "{}")
+
+    install_text_turn(monkeypatch, generate)
+    async with chat_client(tmp_path / "quick-failure.db") as (client, app):
+        seed = await seed_chat(client)
+        job = await accept(client, seed, action="generate_analysis")
+        await runtime.execute_job(app, job["id"])
+        failed = (await client.get(f"/api/jobs/{job['id']}")).json()
+        expected_code = "output_limit" if failure.endswith("limit") else failure
+        assert failed["status"] == "failed"
+        assert failed["error_code"] == expected_code
+        assert failed["artifacts"] == []
+        assert failed["assistant_message"]["status"] == "failed"
+        assert failed["assistant_message"]["content"] == partial
+        run = (await client.get(f"/api/runs/{failed['run_id']}")).json()
+        assert run["status"] == "failed"
+        assert run["output_text"] == partial
+        analyses = await client.get(f"/api/segments/{seed['segment']['id']}/analyses")
+        assert analyses.json() == []
+        next_job = await accept(client, await current_seed(client, seed), question="新的问题")
+        await runtime.execute_job(app, next_job["id"])
+        assert partial not in json.dumps(captured[-1].messages, ensure_ascii=False)

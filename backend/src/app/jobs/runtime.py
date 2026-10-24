@@ -170,8 +170,10 @@ async def _finish(  # pyright: ignore[reportUnusedFunction]
         assistant = await _assistant(session, job_id)
         if run is None or run.status != "running" or assistant is None:
             return
-        final_text = redact_credential(result.text, key) if result is not None else partial
-        final_text = final_text or partial
+        partial = redact_credential(partial or run.output_text or assistant.content, key) or ""
+        final_text = (
+            redact_credential(result.text, key) if result is not None else partial
+        ) or partial
         complete = (
             result is not None and result.completed and bool(final_text.strip()) and not error_code
         )
@@ -197,7 +199,7 @@ async def _finish(  # pyright: ignore[reportUnusedFunction]
         job.status = run.status = status
         job.error_code, job.error = error_code, error
         run.error = error
-        run.output_text = result.text if result is not None else partial
+        run.output_text = (redact_credential(result.text, key) or partial) if result else partial
         assistant.content = final_text
         run.usage = result.usage if result is not None else None
         run.raw_response = (
