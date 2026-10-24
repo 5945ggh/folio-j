@@ -77,3 +77,16 @@ export function activeTranslation(
 ): boolean {
 	return !!task && ["queued", "running", "stopping"].includes(task.status);
 }
+
+/** Navigate one known result pair without treating a paged history as the latest result. */
+export function translationVersionShortcut(
+	results: readonly { id: string }[],
+	currentId: string | undefined,
+	returnId: string | null,
+): { id: string; label: "上一版" | "返回新版" } | null {
+	if (returnId && returnId !== currentId)
+		return { id: returnId, label: "返回新版" };
+	const index = results.findIndex((result) => result.id === currentId);
+	const previous = index < 0 ? undefined : results[index + 1];
+	return previous ? { id: previous.id, label: "上一版" } : null;
+}

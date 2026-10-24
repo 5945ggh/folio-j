@@ -1,4 +1,5 @@
 .translation-card {
+	box-sizing: border-box;
 	position: fixed;
 	z-index: 45;
 	top: 82px;
@@ -20,6 +21,7 @@
 	overflow-wrap: anywhere;
 }
 .translation-card > header,
+.translation-embedded-toolbar,
 .translation-header-actions,
 .translation-actions {
 	display: flex;
@@ -36,18 +38,72 @@
 	background: var(--reader-bg, #fff);
 }
 .translation-card h2 {
+	margin-right: auto;
+	flex-shrink: 0;
 	font-size: 13px;
 	font-weight: 500;
-	margin: 0;
+	margin-block: 0;
+}
+.translation-card > [data-reader-card-draggable="true"] {
+	cursor: grab;
+	touch-action: none;
+	user-select: none;
+}
+.translation-card[data-reader-card-dragging="true"]
+	> [data-reader-card-drag-handle] {
+	cursor: grabbing;
+}
+.translation-card > [data-reader-card-draggable="true"]:focus-visible {
+	outline-offset: -3px;
 }
 .translation-header-actions {
 	justify-content: end;
 	min-width: 0;
+	flex-shrink: 0;
+	gap: 2px;
 }
-.translation-header-actions > button:last-child {
-	font-size: 21px;
-	line-height: 1;
-	padding: 7px 9px;
+.translation-embedded-toolbar {
+	justify-content: flex-end;
+	padding: 0 0 8px;
+}
+.translation-card .translation-icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 6px;
+	border: 0;
+}
+.translation-icon-button svg {
+	flex-shrink: 0;
+}
+.translation-progress {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--reader-muted, #74777b);
+	font-size: 11px;
+	white-space: nowrap;
+}
+.translation-spinner {
+	width: 12px;
+	height: 12px;
+	box-sizing: border-box;
+	border: 1.5px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 50%;
+	animation: translation-spin 1s linear infinite;
+}
+@keyframes translation-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.translation-spinner {
+		animation: none;
+	}
 }
 .translation-content {
 	padding: 16px;
@@ -125,8 +181,24 @@
 	overflow-wrap: anywhere;
 }
 .translation-result-meta {
-	display: block;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	flex-wrap: wrap;
 	margin-bottom: 12px;
+}
+.translation-card .translation-version-action {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	border: 0;
+	padding: 3px 0 3px 6px;
+	font-size: 12px;
+	color: var(--reader-muted, #74777b);
+}
+.translation-result-view[aria-busy="true"] .translation-output {
+	opacity: 0.65;
 }
 .translation-card small,
 .translation-card summary {
@@ -246,6 +318,10 @@
 	}
 }
 @media (pointer: coarse) {
+	.translation-card .translation-icon-button {
+		width: 44px;
+		height: 44px;
+	}
 	.translation-card button,
 	.translation-card summary {
 		min-height: 44px;

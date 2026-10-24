@@ -147,7 +147,8 @@ export async function translationSessionRegression(h: BrowserHarness) {
 			);
 		const click = (text: string) => {
 			const button = [...h.container.querySelectorAll("button")].find(
-				(node) => node.textContent === text,
+				(node) =>
+					node.textContent === text || node.getAttribute("aria-label") === text,
 			);
 			check(button && !button.disabled, `Missing enabled button ${text}`);
 			button.click();
@@ -406,7 +407,7 @@ async function translationHostSelectionRegression(
 			);
 			const translate = [
 				...host("initiator").querySelectorAll<HTMLButtonElement>("button"),
-			].find((item) => item.textContent === "按当前语境重新翻译");
+			].find((item) => item.getAttribute("aria-label") === "重新翻译");
 			check(
 				translate && !translate.disabled,
 				"Initiating host must expose retranslation",
@@ -475,7 +476,7 @@ async function translationHostSelectionRegression(
 				);
 				const observerTranslate = [
 					...host("observer").querySelectorAll<HTMLButtonElement>("button"),
-				].find((button) => button.textContent === "按当前语境重新翻译");
+				].find((button) => button.getAttribute("aria-label") === "重新翻译");
 				check(
 					observerTranslate && !observerTranslate.disabled,
 					"Observer must be able to initiate its own explicit retranslation",
@@ -550,7 +551,10 @@ async function translationRecoveryViewRegression(
 	const click = (label: string) => {
 		const button = [
 			...h.container.querySelectorAll<HTMLButtonElement>("button"),
-		].find((item) => item.textContent === label);
+		].find(
+			(item) =>
+				item.textContent === label || item.getAttribute("aria-label") === label,
+		);
 		check(button && !button.disabled, `Missing enabled button ${label}`);
 		const fold = button.closest("details");
 		if (fold) fold.open = true;
@@ -589,7 +593,7 @@ async function translationRecoveryViewRegression(
 		await h.until(
 			() =>
 				[...h.container.querySelectorAll("button")].some(
-					(button) => button.textContent === "停止翻译",
+					(button) => button.getAttribute("aria-label") === "停止翻译",
 				),
 			"Exact-source history must initially expose the actual active task",
 		);
@@ -609,7 +613,7 @@ async function translationRecoveryViewRegression(
 		);
 		check(
 			![...h.container.querySelectorAll("button")].some(
-				(button) => button.textContent === "停止翻译",
+				(button) => button.getAttribute("aria-label") === "停止翻译",
 			),
 			"Pending selected failed task must not expose stop for a different active task",
 		);
@@ -626,7 +630,7 @@ async function translationRecoveryViewRegression(
 		);
 		check(
 			![...h.container.querySelectorAll("button")].some(
-				(button) => button.textContent === "停止翻译",
+				(button) => button.getAttribute("aria-label") === "停止翻译",
 			),
 			"Failed selected-task read must not expose stop for another task",
 		);
@@ -696,7 +700,7 @@ async function translationRecoveryViewRegression(
 	dispose = await h.mount(<UncertainFixture />);
 	const verify = () =>
 		[...h.container.querySelectorAll<HTMLButtonElement>("button")].find(
-			(button) => button.textContent === "核实原提交",
+			(button) => button.getAttribute("aria-label") === "核实原提交",
 		);
 	try {
 		await h.until(
@@ -705,7 +709,7 @@ async function translationRecoveryViewRegression(
 				latest.translation,
 			"Uncertain-view fixture must begin at a saved result",
 		);
-		click("按当前语境重新翻译");
+		click("重新翻译");
 		await h.until(
 			() => h.container.textContent?.includes("提交响应尚未核实") ?? false,
 			"Lost submission must expose verification",

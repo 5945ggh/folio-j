@@ -3,10 +3,13 @@ import { StrictMode, useState } from "react";
 import type { components } from "../src/api/schema";
 import type { StudyTarget } from "../src/materials/study-api";
 import type { BrowserHarness } from "./harness";
+import { translationDragRegression } from "./translation-drag";
 import { translationSessionRegression } from "./translation-session";
+import { translationToolbarRegression } from "./translation-toolbar";
 
 export async function translationRegression(h: BrowserHarness) {
 	await translationSessionRegression(h);
+	await translationToolbarRegression(h);
 	const { TranslationPanel } = await import(
 		"../src/translation/TranslationPanel"
 	);
@@ -137,6 +140,9 @@ export async function translationRegression(h: BrowserHarness) {
 	});
 	function Fixture() {
 		const [key, setKey] = useState("a");
+		const [direction, setDirection] = useState<"horizontal-tb" | "vertical-rl">(
+			"horizontal-tb",
+		);
 		return (
 			<>
 				<button
@@ -148,7 +154,11 @@ export async function translationRegression(h: BrowserHarness) {
 				>
 					选择 B
 				</button>
+				<button type="button" onClick={() => setDirection("vertical-rl")}>
+					切换竖排
+				</button>
 				<TranslationPanel
+					direction={direction}
 					key={key}
 					sourceId="source"
 					materialId="book"
@@ -200,6 +210,7 @@ export async function translationRegression(h: BrowserHarness) {
 			card.getBoundingClientRect().width <= 430,
 			"Translation card should stay compact",
 		);
+		await translationDragRegression(h, card);
 		// Continue with the atomic adoption and lost-response fixture after disposing this panel.
 	} finally {
 		dispose();
@@ -259,7 +270,8 @@ export async function translationRegression(h: BrowserHarness) {
 	);
 	const click = (text: string) => {
 		const button = [...container.querySelectorAll("button")].find(
-			(node) => node.textContent === text,
+			(node) =>
+				node.textContent === text || node.getAttribute("aria-label") === text,
 		);
 		check(button, `Missing ${text}`);
 		const folds: HTMLDetailsElement[] = [];
@@ -725,7 +737,8 @@ export async function translationRegression(h: BrowserHarness) {
 		);
 		check(
 			![...container.querySelectorAll("button")].some(
-				(button) => button.textContent === "开始翻译",
+				(button) =>
+					button.getAttribute("aria-label") === "开始翻译" && !button.disabled,
 			),
 			"Failed history exposed new generation",
 		);
@@ -907,7 +920,14 @@ export async function translationRegression(h: BrowserHarness) {
 			explicitRequests.length === 0,
 			"Existing result automatically regenerated",
 		);
-		click("按当前语境重新翻译");
+		await until(
+			() =>
+				!!container.querySelector<HTMLButtonElement>(
+					'[aria-label="重新翻译"]:not(:disabled)',
+				),
+			"Existing result should finish its history refresh before explicit retranslation",
+		);
+		click("重新翻译");
 		await until(
 			() => container.textContent?.includes("翻译失败") ?? false,
 			"Explicit retranslation should settle",
@@ -916,11 +936,12 @@ export async function translationRegression(h: BrowserHarness) {
 			() =>
 				[...container.querySelectorAll("button")].some(
 					(button) =>
-						button.textContent === "按当前语境重新翻译" && !button.disabled,
+						button.getAttribute("aria-label") === "重新翻译" &&
+						!button.disabled,
 				),
 			"Explicit retry should become available",
 		);
-		click("按当前语境重新翻译");
+		click("重新翻译");
 		await until(
 			() => explicitRequests.length === 2,
 			"Second explicit retranslation should be accepted",
@@ -1184,5 +1205,5 @@ export async function translationRegression(h: BrowserHarness) {
 	} finally {
 		cleanup();
 	}
-	return "translation: shared two-host context/edit/clear/budget and latest-input submission; independent result choices across delayed retranslation; late isolation/history/no-generation; responsive layout; pending/lost adoption identity; automatic intent once under StrictMode/reopen and A→B→A with delayed history; pending/unknown translation UUID and frozen-input recovery without current settings/history; cached-history failure blocks generation; explicit retranslation uses new UUID; successful/failed/cancelled history paging and partial first page never generate; settings conflict comparison; exact-result destination recovery without POST or a separate segment creation entry";
+	return "translation: shared two-host context/edit/clear/budget and latest-input submission; independent result choices across delayed retranslation; late isolation/history/no-generation; responsive layout; horizontal/vertical native selection-card dragging and keyboard movement, narrow drag exclusion, selectable output, configuration resize bounds and header close; pending/lost adoption identity; automatic intent once under StrictMode/reopen and A→B→A with delayed history; pending/unknown translation UUID and frozen-input recovery without current settings/history; cached-history failure blocks generation; explicit retranslation uses new UUID; successful/failed/cancelled history paging and partial first page never generate; settings conflict comparison; exact-result destination recovery without POST or a separate segment creation entry";
 }

@@ -4,6 +4,7 @@ import {
 	TranslationSubmission,
 	targetText,
 	translationTargetKey,
+	translationVersionShortcut,
 } from "./state.ts";
 
 const range = {
@@ -48,6 +49,24 @@ test("same text at different spine occurrence never reuses identity", () => {
 			ranges: [{ ...range, prefix: "ignored" }],
 		}),
 	);
+});
+test("version shortcut returns to the exact newer result even when history pages change", () => {
+	const results = [{ id: "new" }, { id: "previous" }, { id: "old" }];
+	assert.deepEqual(translationVersionShortcut(results, "new", null), {
+		id: "previous",
+		label: "上一版",
+	});
+	assert.deepEqual(
+		translationVersionShortcut([{ id: "old" }], "previous", "new"),
+		{ id: "new", label: "返回新版" },
+	);
+	assert.deepEqual(translationVersionShortcut(results, "previous", null), {
+		id: "old",
+		label: "上一版",
+	});
+	assert.equal(translationVersionShortcut(results, "old", null), null);
+	assert.equal(translationVersionShortcut(results, "unloaded", null), null);
+	assert.equal(translationVersionShortcut([], undefined, null), null);
 });
 test("snapshot concatenates base text before NFC", () => {
 	assert.equal(
