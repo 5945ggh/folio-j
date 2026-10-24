@@ -8,14 +8,9 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { Link } from "react-router";
-import { RequestError } from "../content";
-import {
-	chapterTranslationsKey,
-	translationActivityKey,
-} from "../materials/chapter-translations-query";
+import { chapterTranslationsKey } from "../materials/chapter-translations-query";
 import type { ScreenAnchor } from "../materials/reader-study";
 import type { StudyTarget } from "../materials/study-api";
-import { prefillContext } from "../materials/study-context";
 import { InlineError } from "../Shared";
 import { SpeechControls } from "../speech";
 import { getSpeechController } from "../speech/browser";
@@ -28,21 +23,18 @@ import {
 	SavedTranslationDestinations,
 } from "./AdoptTranslation";
 import {
-	createTranslation,
 	getTranslationHistory,
 	getTranslationResult,
 	getTranslationSettings,
 	getTranslationTask,
-	stopTranslation,
 	type TranslationResult,
 	translationSettingsKey,
 } from "./api";
 import { translationCardPosition } from "./placement";
+import type { TranslationSession, TranslationSessions } from "./session";
+import { useTranslationSession, useTranslationSessions } from "./session-react";
 import {
 	activeTranslation,
-	createTranslationSession,
-	notifyTranslationSession,
-	type TranslationSession,
 	targetIdentity,
 	targetText,
 	translationTargetKey,
@@ -221,7 +213,7 @@ export function TranslationPanel({
 	embedded?: boolean;
 	initialResultId?: string;
 	adoptionSessions?: Map<string, AdoptionSession>;
-	translationSessions?: Map<string, TranslationSession>;
+	translationSessions?: TranslationSessions;
 	onClose: () => void;
 	onSaved: () => void;
 	onOpenSegment?: (id: string) => void;
@@ -282,55 +274,28 @@ export function TranslationPanel({
 		}
 		return session;
 	};
-	const fallbackTranslations = useRef(new Map<string, TranslationSession>());
-	const translations = translationSessions ?? fallbackTranslations.current;
-	const sessionKey = target ? translationTargetKey(target.reference) : "recent";
-	let translationSession = translations.get(sessionKey);
-	if (!translationSession) {
-		translationSession = createTranslationSession();
-		translations.set(sessionKey, translationSession);
-	}
-	const session = translationSession;
-	useSyncExternalStore(
-		(listener) => {
-			session.listeners.add(listener);
-			return () => {
-				session.listeners.delete(listener);
-			};
-		},
-		() => session.version,
-	);
+	const translations = useTranslationSessions(translationSessions);
+	const targetSession = target
+		? translations.forTarget(sourceId, target)
+		: null;
+	const targetState = useTranslationSession(targetSession);
 	const client = useQueryClient();
 	const [offset, setOffset] = useState(0);
 	const [resultId, setResultId] = useState<string | null>(
 		initialResultId ?? null,
 	);
-	const taskId = session.taskId;
-	const setTaskId = (id: string | null) => {
-		session.taskId = id;
-		notifyTranslationSession(session);
-	};
-	const [before, setBefore] = useState(session.draft?.before ?? "");
-	const [after, setAfter] = useState(session.draft?.after ?? "");
-	const [edited, setEdited] = useState(session.draft?.edited ?? false);
-	const [initialized, setInitialized] = useState(
-		session.draft?.initialized ?? false,
+	const [selectedTaskId, setTaskId] = useState<string | null | undefined>(
+		undefined,
 	);
-	const [localError, setLocalError] = useState<Error | null>(
-		session.draft?.localError ?? null,
-	);
-	const uncertain = session.uncertain;
-	const [budget, setBudget] = useState(
-		session.draft?.budget ?? {
-			before_sentences: 3,
-			before_characters: 200,
-			after_sentences: 0,
-			after_characters: 0,
-		},
-	);
+	const choiceGeneration = useRef(0);
+	const view = useRef({ mounted: true, session: targetSession });
+	view.current.session = targetSession;
 	useEffect(() => {
-		session.draft = { before, after, edited, initialized, budget, localError };
-	}, [session, before, after, edited, initialized, budget, localError]);
+		view.current.mounted = true;
+		return () => {
+			view.current.mounted = false;
+		};
+	}, []);
 	const heading = useRef<HTMLHeadingElement>(null);
 	const settings = useQuery({
 		queryKey: translationSettingsKey,
@@ -362,13 +327,81 @@ export function TranslationPanel({
 		history.isSuccess &&
 		history.isFetchedAfterMount &&
 		!history.isFetching;
+	const taskId =
+		selectedTaskId === undefined && resultId === null
+			? targetState.acceptedTaskId
+			: selectedTaskId;
 	const task = useQuery({
 		queryKey: ["translation-task", taskId],
 		queryFn: () => getTranslationTask(taskId ?? ""),
 		enabled: !!taskId,
-		refetchInterval: (q) => (activeTranslation(q.state.data) ? 800 : false),
+		refetchInterval: (query) =>
+			activeTranslation(query.state.data) ? 800 : false,
 	});
-	const currentTask = task.data ?? history.data?.tasks.find(activeTranslation);
+	const currentTask = resultId
+		? undefined
+		: taskId
+			? task.data
+			: selectedTaskId === undefined
+				? history.data?.tasks.find(activeTranslation)
+				: undefined;
+	const recentSession =
+		!target && currentTask ? translations.forTask(sourceId, currentTask) : null;
+	const recentState = useTranslationSession(recentSession);
+	const session = targetSession ?? recentSession;
+	const state = target ? targetState : recentState;
+	view.current.session = session;
+	const { before, after, budget, initialized, localError } = state.draft;
+	const uncertain = state.phase === "uncertain";
+	const pending = state.phase === "submitting";
+	const applyOutcome = useCallback(
+		async (
+			operation: ReturnType<TranslationSession["execute"]>,
+			origin: TranslationSession | null,
+		) => {
+			const generation = choiceGeneration.current;
+			const outcome = await operation;
+			if (
+				outcome.kind === "accepted" &&
+				view.current.mounted &&
+				view.current.session === origin &&
+				choiceGeneration.current === generation
+			) {
+				setResultId(null);
+				setTaskId(outcome.taskId);
+			}
+		},
+		[],
+	);
+	useEffect(() => {
+		if (!targetSession) return;
+		void applyOutcome(
+			targetSession.open({ kind: autoStart ? "selection" : "history" }),
+			targetSession,
+		);
+	}, [targetSession, autoStart, applyOutcome]);
+	useEffect(() => {
+		if (
+			!targetSession ||
+			!history.isSuccess ||
+			history.isFetching ||
+			!settings.isSuccess ||
+			!settings.data?.model_id
+		)
+			return;
+		void applyOutcome(
+			targetSession.open({ kind: autoStart ? "selection" : "history" }),
+			targetSession,
+		);
+	}, [
+		targetSession,
+		autoStart,
+		applyOutcome,
+		history.isSuccess,
+		history.isFetching,
+		settings.isSuccess,
+		settings.data?.model_id,
+	]);
 	const publishedResult = task.data?.result_id ?? history.data?.results[0]?.id;
 	useEffect(() => {
 		if (publishedResult)
@@ -377,7 +410,7 @@ export function TranslationPanel({
 			});
 	}, [client, materialId, publishedResult]);
 	const resolvedId =
-		resultId ?? task.data?.result_id ?? history.data?.results[0]?.id;
+		resultId ?? (taskId ? task.data?.result_id : history.data?.results[0]?.id);
 	const result = useQuery({
 		queryKey: ["translation-result", resolvedId],
 		queryFn: () => getTranslationResult(resolvedId ?? ""),
@@ -387,151 +420,32 @@ export function TranslationPanel({
 	useEffect(() => {
 		if (visible) heading.current?.focus({ preventScroll: true });
 	}, [visible]);
-	useEffect(() => {
-		if (initialized || !settings.data || !target) return;
-		const b = settings.data;
-		setBudget(b);
-		try {
-			const fill = prefillContext(target.chapter, target.reference, {
-				...b,
-				enabled: true,
-			});
-			if (!edited) {
-				setBefore(fill.before);
-				setAfter(fill.after);
-			}
-			setInitialized(true);
-		} catch (error) {
-			setLocalError(error instanceof Error ? error : new Error(String(error)));
-			setInitialized(true);
-		}
-	}, [initialized, settings.data, target, edited]);
-	const create = useMutation({
-		onSettled: () => {
-			void client.invalidateQueries({
-				queryKey: translationActivityKey(materialId),
-			});
-		},
-		mutationFn: async () => {
-			if (session.request.current)
-				return createTranslation(materialId, session.request.current);
-			if (!historyReady) throw new Error("请先读取并核实已有翻译。");
-			const recovery = currentTask;
-			if (!target && !recovery) throw new Error("请从原文选区开始翻译。");
-			const values = target
-				? {
-						source_id: sourceId,
-						material_provenance: target.reference,
-						text: targetText(target.reference),
-						context_before: before,
-						context_after: after,
-					}
-				: (() => {
-						if (!recovery) throw new Error("缺少恢复任务");
-						return {
-							source_id: sourceId,
-							material_provenance: recovery.material_provenance,
-							text: recovery.text,
-							context_before: recovery.context_before,
-							context_after: recovery.context_after,
-						};
-					})();
-			const body = session.request.prepare(JSON.stringify(values), () => ({
-				...values,
-				request_id: crypto.randomUUID(),
-			}));
-			return createTranslation(materialId, body);
-		},
-		onSuccess: (value) => {
-			session.taskId = value.id;
-			session.pending = false;
-			setResultId(null);
-			session.uncertain = false;
-			session.error = null;
-			session.request.clear();
-			notifyTranslationSession(session);
-			client.setQueryData(["translation-task", value.id], value);
-			void history.refetch();
-		},
-		onError: (error) => {
-			const lost =
-				!!session.request.current &&
-				(!(error instanceof RequestError) ||
-					error.status === 0 ||
-					error.status >= 500);
-			session.uncertain = lost;
-			session.pending = false;
-			session.error = error;
-			if (!lost) session.request.clear();
-			notifyTranslationSession(session);
-		},
-	});
-	const start = useCallback(() => {
-		if (session.pending) return;
-		session.pending = true;
-		session.error = null;
-		session.autoStartConsumed = true;
-		notifyTranslationSession(session);
-		create.mutate();
-	}, [session, create.mutate]);
-	useEffect(() => {
-		if (!autoStart || session.autoStartConsumed || !target || !historyReady)
-			return;
-		// Only a complete initial lookup may conclude that no saved result exists.
-		// Browsing history consumes the opening intent; it never requests generation.
-		if (
-			offset > 0 ||
-			history.data.results.length ||
-			history.data.tasks.some(activeTranslation) ||
-			history.data.next_offset !== null
-		) {
-			session.autoStartConsumed = true;
-			return;
-		}
-		if (
-			session.pending ||
-			session.uncertain ||
-			!initialized ||
-			localError ||
-			!settings.data?.model_id
-		)
-			return;
-		start();
-	}, [
-		autoStart,
-		target,
-		historyReady,
-		offset,
-		session,
-		history.data,
-		initialized,
-		localError,
-		settings.data,
-		start,
-	]);
+	const start = () => {
+		if (!session) return;
+		void applyOutcome(
+			session.execute(
+				uncertain
+					? { kind: "verify" }
+					: !target && currentTask
+						? { kind: "repeat-task", task: currentTask }
+						: { kind: "translate" },
+			),
+			session,
+		);
+	};
 	const stop = useMutation({
-		mutationFn: (id: string) => stopTranslation(id),
-		onSuccess: (value) => {
-			client.setQueryData(["translation-task", value.id], value);
-			void history.refetch();
+		mutationFn: (id: string) => {
+			if (!session) throw new Error("缺少翻译任务");
+			return session.stop(id);
 		},
 	});
-	const busy =
-		activeTranslation(currentTask) || session.pending || create.isPending;
-	const fill = () => {
-		if (!target) return;
-		try {
-			const next = prefillContext(target.chapter, target.reference, {
-				...budget,
-				enabled: true,
-			});
-			setBefore(next.before);
-			setAfter(next.after);
-			setEdited(true);
-			setLocalError(null);
-		} catch (error) {
-			setLocalError(error instanceof Error ? error : new Error(String(error)));
-		}
+	const busy = activeTranslation(currentTask) || pending;
+	const fill = () => session?.edit({ kind: "refill" });
+	const setBudget = (value: typeof budget) =>
+		session?.edit({ kind: "budget", value });
+	const browse = () => {
+		choiceGeneration.current++;
+		session?.browseHistory();
 	};
 	const speechReference = result.data?.material_provenance ?? target?.reference;
 	return (
@@ -593,7 +507,20 @@ export function TranslationPanel({
 				)}
 				<InlineError error={history.error ?? identity.error} />
 				{history.isError && (
-					<button type="button" onClick={() => void history.refetch()}>
+					<button
+						type="button"
+						onClick={() => {
+							void history.refetch().then(() => {
+								if (targetSession)
+									void applyOutcome(
+										targetSession.open({
+											kind: autoStart ? "selection" : "history",
+										}),
+										targetSession,
+									);
+							});
+						}}
+					>
 						重试读取已有翻译
 					</button>
 				)}
@@ -610,11 +537,22 @@ export function TranslationPanel({
 				)}
 				{target && !result.data && (
 					<>
-						<InlineError
-							error={localError ?? settings.error ?? session.error}
-						/>
+						<InlineError error={localError ?? settings.error ?? state.error} />
 						{settings.isError && (
-							<button type="button" onClick={() => void settings.refetch()}>
+							<button
+								type="button"
+								onClick={() => {
+									void settings.refetch().then(() => {
+										if (targetSession)
+											void applyOutcome(
+												targetSession.open({
+													kind: autoStart ? "selection" : "history",
+												}),
+												targetSession,
+											);
+									});
+								}}
+							>
 								重试翻译设置
 							</button>
 						)}
@@ -700,8 +638,10 @@ export function TranslationPanel({
 									disabled={busy || uncertain}
 									value={before}
 									onChange={(event) => {
-										setBefore(event.target.value);
-										setEdited(true);
+										session?.edit({
+											kind: "context",
+											before: event.target.value,
+										});
 									}}
 								/>
 							</label>
@@ -712,8 +652,10 @@ export function TranslationPanel({
 									disabled={busy || uncertain}
 									value={after}
 									onChange={(event) => {
-										setAfter(event.target.value);
-										setEdited(true);
+										session?.edit({
+											kind: "context",
+											after: event.target.value,
+										});
 									}}
 								/>
 							</label>
@@ -724,22 +666,22 @@ export function TranslationPanel({
 									选择模型。
 								</p>
 							)}
-							<InlineError error={localError ?? session.error} />
+							<InlineError error={localError ?? state.error} />
 							{uncertain && <p>提交响应尚未核实，请重试原请求。</p>}
-							{historyReady && !busy && (
+							{(historyReady || uncertain) && (uncertain || !busy) && (
 								<button
 									type="button"
 									disabled={
-										!initialized ||
+										(!uncertain && !initialized) ||
 										(!uncertain && !settings.data?.model_id) ||
-										create.isPending ||
-										(!!resolvedId && !result.data)
+										pending ||
+										(!uncertain && !!resolvedId && !result.data)
 									}
 									onClick={start}
 								>
 									{uncertain
 										? "核实原提交"
-										: result.data
+										: result.data || history.data?.results.length
 											? "按当前语境重新翻译"
 											: "开始翻译"}
 								</button>
@@ -765,7 +707,7 @@ export function TranslationPanel({
 							}
 						</p>
 						{currentTask.error && <p>{currentTask.error}</p>}
-						{!target && !activeTranslation(currentTask) && (
+						{!target && (!activeTranslation(currentTask) || uncertain) && (
 							<>
 								<TranslationOriginal text={currentTask.text} />
 								<details>
@@ -773,13 +715,12 @@ export function TranslationPanel({
 									<p>{currentTask.context_before || "（无前文）"}</p>
 									<p>{currentTask.context_after || "（无后文）"}</p>
 								</details>
-								<InlineError error={session.error} />
+								<InlineError error={state.error} />
 								<button
 									type="button"
 									disabled={
-										!historyReady ||
-										session.pending ||
-										create.isPending ||
+										(!uncertain && !historyReady) ||
+										pending ||
 										(!uncertain && !settings.data?.model_id)
 									}
 									onClick={start}
@@ -821,10 +762,10 @@ export function TranslationPanel({
 									<button
 										className="translation-history-item"
 										type="button"
-										disabled={session.pending || uncertain}
 										key={item.id}
 										aria-pressed={resolvedId === item.id}
 										onClick={() => {
+											browse();
 											setResultId(item.id);
 											setTaskId(null);
 										}}
@@ -844,9 +785,9 @@ export function TranslationPanel({
 										<button
 											className="translation-history-item"
 											type="button"
-											disabled={session.pending || uncertain}
 											key={item.id}
 											onClick={() => {
+												browse();
 												setTaskId(item.id);
 												setResultId(null);
 											}}
@@ -859,9 +800,9 @@ export function TranslationPanel({
 								<div className="translation-actions">
 									<button
 										type="button"
-										disabled={offset === 0 || session.pending || uncertain}
+										disabled={offset === 0}
 										onClick={() => {
-											session.autoStartConsumed = true;
+											browse();
 											setOffset(Math.max(0, offset - 15));
 											setResultId(null);
 											setTaskId(null);
@@ -871,13 +812,9 @@ export function TranslationPanel({
 									</button>
 									<button
 										type="button"
-										disabled={
-											history.data.next_offset === null ||
-											session.pending ||
-											uncertain
-										}
+										disabled={history.data.next_offset === null}
 										onClick={() => {
-											session.autoStartConsumed = true;
+											browse();
 											setOffset(history.data?.next_offset ?? 0);
 											setResultId(null);
 											setTaskId(null);

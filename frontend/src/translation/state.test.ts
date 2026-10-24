@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-	createTranslationSession,
-	notifyTranslationSession,
 	TranslationSubmission,
 	targetText,
 	translationTargetKey,
@@ -73,37 +71,4 @@ test("uncertain submission keeps the original request and rejects changed draft"
 	assert.throws(() => submission.prepare("b", () => ({ id: "third" })));
 	submission.clear();
 	assert.equal(submission.prepare("b", () => ({ id: "third" })).id, "third");
-});
-
-test("target sessions keep frozen requests and notify remounted observers independently", () => {
-	const first = createTranslationSession();
-	const second = createTranslationSession();
-	const body = first.request.prepare("draft", () => ({
-		request_id: "original",
-		source_id: "source",
-		text: "猫",
-		material_provenance: target,
-		context_before: "前文",
-		context_after: "",
-	}));
-	first.pending = true;
-	const sessions = new Map([[translationTargetKey(target), first]]);
-	assert.equal(sessions.get(translationTargetKey(target)), first);
-	assert.equal(first.request.current, body);
-	assert.equal(second.request.current, undefined);
-	let notifications = 0;
-	const observer = () => {
-		notifications++;
-	};
-	first.listeners.add(observer);
-	first.pending = false;
-	first.uncertain = true;
-	notifyTranslationSession(first);
-	assert.equal(notifications, 1);
-	assert.equal(first.version, 1);
-	assert.equal(second.version, 0);
-	assert.equal(first.request.current?.request_id, "original");
-	first.listeners.delete(observer);
-	first.request.clear();
-	assert.equal(first.request.current, undefined);
 });

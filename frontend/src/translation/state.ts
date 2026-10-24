@@ -1,5 +1,4 @@
 import type { MaterialProvenance } from "../materials/study-api.ts";
-import type { TranslationInput } from "./api.ts";
 
 /** Identity excludes display chapter, selection rectangles and annotation generations. */
 export function translationTargetKey(reference: MaterialProvenance): string {
@@ -49,42 +48,6 @@ export type TranslationBudget = {
 	after_sentences: number;
 	after_characters: number;
 };
-
-/** Reader-owned state survives keyed target remounts and late submission responses. */
-export type TranslationSession = {
-	version: number;
-	listeners: Set<() => void>;
-	request: TranslationSubmission<TranslationInput>;
-	pending: boolean;
-	uncertain: boolean;
-	autoStartConsumed: boolean;
-	taskId: string | null;
-	error: Error | null;
-	draft?: {
-		before: string;
-		after: string;
-		budget: TranslationBudget;
-		edited: boolean;
-		initialized: boolean;
-		localError: Error | null;
-	};
-};
-export function createTranslationSession(): TranslationSession {
-	return {
-		version: 0,
-		listeners: new Set(),
-		request: new TranslationSubmission<TranslationInput>(),
-		pending: false,
-		uncertain: false,
-		autoStartConsumed: false,
-		taskId: null,
-		error: null,
-	};
-}
-export function notifyTranslationSession(session: TranslationSession) {
-	session.version++;
-	for (const listener of session.listeners) listener();
-}
 
 export async function sha256(text: string): Promise<string> {
 	const digest = await crypto.subtle.digest(

@@ -2,14 +2,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { StrictMode, useState } from "react";
 import type { components } from "../src/api/schema";
 import type { StudyTarget } from "../src/materials/study-api";
-import type { TranslationSession } from "../src/translation/state";
 import type { BrowserHarness } from "./harness";
+import { translationSessionRegression } from "./translation-session";
 
 export async function translationRegression(h: BrowserHarness) {
+	await translationSessionRegression(h);
 	const { TranslationPanel } = await import(
 		"../src/translation/TranslationPanel"
 	);
 	const { targetIdentity } = await import("../src/translation/state");
+	const { useTranslationSessions } = await import(
+		"../src/translation/session-react"
+	);
 	const { container, mount, until, mock, inputValue } = h;
 	const check: BrowserHarness["check"] = h.check;
 	const reference: components["schemas"]["MaterialProvenance"] = {
@@ -468,7 +472,6 @@ export async function translationRegression(h: BrowserHarness) {
 	// One QueryClient survives target remounts, matching Reader's keyed card.
 	for (const outcome of ["accepted", "lost"] as const) {
 		const requests: components["schemas"]["TranslationCreate"][] = [];
-		const sessions = new Map<string, TranslationSession>();
 		const secondTarget: StudyTarget = {
 			...target,
 			chapter: {
@@ -488,8 +491,22 @@ export async function translationRegression(h: BrowserHarness) {
 		let releaseRefresh: ((response: Response) => void) | undefined;
 		let releaseSubmission: ((response: Response) => void) | undefined;
 		let changedSettings = false;
+		let verificationOnly = false;
+		let verificationPrerequisiteReads = 0;
 		mock(async (request) => {
 			const url = new URL(request.url);
+			if (
+				verificationOnly &&
+				request.method === "GET" &&
+				(url.pathname === "/api/settings/translation" ||
+					url.pathname === "/api/materials/book/translations")
+			) {
+				if (requests.length < 3) verificationPrerequisiteReads++;
+				return Response.json(
+					{ detail: "核实时设置和历史不可用" },
+					{ status: 503 },
+				);
+			}
 			if (url.pathname === "/api/settings/translation")
 				return Response.json({
 					id: "default",
@@ -539,6 +556,7 @@ export async function translationRegression(h: BrowserHarness) {
 			);
 		});
 		function SessionFixture() {
+			const sessions = useTranslationSessions();
 			const [key, setKey] = useState("a");
 			return (
 				<>
@@ -627,10 +645,15 @@ export async function translationRegression(h: BrowserHarness) {
 					requests.length === 2,
 					"Unknown submission retried without explicit verification",
 				);
+				verificationOnly = true;
 				click("核实原提交");
 				await until(
 					() => requests.length === 3,
 					"Original A request should be verified explicitly",
+				);
+				check(
+					verificationPrerequisiteReads === 0,
+					"Verifying a frozen submission must not depend on current settings or history reads",
 				);
 				check(
 					JSON.stringify(requests[0]) === JSON.stringify(requests[2]),
@@ -1174,5 +1197,5 @@ export async function translationRegression(h: BrowserHarness) {
 	} finally {
 		cleanup();
 	}
-	return "translation: late isolation/history/no-generation; responsive layout; pending/lost adoption identity; automatic intent once under StrictMode/reopen and A→B→A with delayed history; pending/unknown translation UUID and frozen-input recovery; cached-history failure blocks generation; explicit retranslation uses new UUID; successful/failed/cancelled history paging and partial first page never generate; settings conflict comparison; fresh-map exact-result destination recovery without POST and explicit separate-save";
+	return "translation: shared two-host context/edit/clear/budget and latest-input submission; independent result choices across delayed retranslation; late isolation/history/no-generation; responsive layout; pending/lost adoption identity; automatic intent once under StrictMode/reopen and A→B→A with delayed history; pending/unknown translation UUID and frozen-input recovery without current settings/history; cached-history failure blocks generation; explicit retranslation uses new UUID; successful/failed/cancelled history paging and partial first page never generate; settings conflict comparison; fresh-map exact-result destination recovery without POST and explicit separate-save";
 }

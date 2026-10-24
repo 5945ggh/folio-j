@@ -746,7 +746,103 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				evictedTaskReads > 0,
 				"Reader must recover evicted pending task through its task detail before refreshing marks",
 			);
-		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
+		const generationsBeforeSharedEdit = generated.length;
+		const sharedLeaf = doc.querySelector('[data-locator-leaf="2"]');
+		const sharedSelection = doc.getSelection();
+		check(
+			sharedLeaf && sharedSelection,
+			"Fixture needs an already translated selectable paragraph",
+		);
+		const sharedRange = doc.createRange();
+		sharedRange.selectNodeContents(sharedLeaf);
+		const selectSharedTarget = async () => {
+			sharedSelection.removeAllRanges();
+			sharedSelection.addRange(sharedRange);
+			doc.dispatchEvent(new Event("selectionchange"));
+			await h.until(
+				() => !!h.container.querySelector('[aria-label="选区操作"]'),
+				"Existing source selection must expose translation action",
+			);
+			const actions = h.container.querySelector('[aria-label="选区操作"]');
+			check(actions, "Existing source actions must render");
+			button("翻译", actions).click();
+			await h.until(
+				() =>
+					h.container.querySelector(".translation-output")?.textContent ===
+					results[1]?.translation,
+				"Existing source selection must show its saved translation",
+			);
+		};
+		await selectSharedTarget();
+		const floatingEditor = h.container.querySelector<HTMLTextAreaElement>(
+			".translation-card textarea",
+		);
+		check(floatingEditor, "Original selection card must expose context editor");
+		button("关闭翻译（任务继续）").click();
+		button("本章记录").click();
+		await h.until(
+			() => !!h.container.querySelector('[role="tab"]'),
+			"Chapter records must reopen",
+		);
+		button("翻译").click();
+		const sharedRow = [
+			...h.container.querySelectorAll<HTMLButtonElement>(
+				".reader-record-translation",
+			),
+		].find((node) =>
+			node.textContent?.includes(results[1]?.translation ?? "MISSING"),
+		);
+		check(sharedRow, "Chapter records must expose the same selected source");
+		sharedRow.click();
+		await h.until(
+			() =>
+				!!h.container.querySelector(
+					".reader-chapter-records .translation-card textarea",
+				),
+			"Chapter record details must mount its own context editor",
+		);
+		const embeddedEditor = h.container.querySelector<HTMLTextAreaElement>(
+			".reader-chapter-records .translation-card textarea",
+		);
+		check(
+			embeddedEditor && embeddedEditor !== floatingEditor,
+			"Record details must use a second real translation host",
+		);
+		h.inputValue(embeddedEditor, "真实阅读器共享语境");
+		await h.until(
+			() => embeddedEditor.value === "真实阅读器共享语境",
+			"Embedded context edit must render",
+		);
+		button("← 返回翻译列表").click();
+		button("本章记录").click();
+		await h.until(
+			() => !h.container.querySelector('[role="tab"]'),
+			"Record details must close before returning to selection",
+		);
+		await selectSharedTarget();
+		const reopenedEditor = h.container.querySelector<HTMLTextAreaElement>(
+			".translation-card textarea",
+		);
+		check(
+			reopenedEditor === floatingEditor,
+			"Reader must retain the original floating translation host",
+		);
+		check(
+			reopenedEditor?.value === "真实阅读器共享语境",
+			`Reader selection must restore context edited through chapter records; saw ${JSON.stringify(reopenedEditor?.value)}`,
+		);
+		check(
+			generated.length === generationsBeforeSharedEdit,
+			"Reopening the same translated source must never generate",
+		);
+		button("关闭翻译（任务继续）").click();
+		sharedSelection.removeAllRanges();
+		doc.dispatchEvent(new Event("selectionchange"));
+		await h.until(
+			() => !h.container.querySelector('[aria-label="选区操作"]'),
+			"Clearing the regression selection must restore native record tapping",
+		);
+		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: selection→chapter record→selection shares edited context with floating host kept mounted, two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
 	} finally {
 		if (!preview) dispose();
 	}

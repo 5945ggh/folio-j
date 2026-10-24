@@ -23,11 +23,8 @@ import { SpeechPlaybackBar, useStopSpeechOnLeave } from "../speech";
 import { getSpeechController } from "../speech/browser";
 import type { AdoptionSession } from "../translation/AdoptTranslation";
 import type { TranslationResult } from "../translation/api";
-import {
-	type TranslationSession,
-	targetText,
-	translationTargetKey,
-} from "../translation/state";
+import { useTranslationSessions } from "../translation/session-react";
+import { targetText, translationTargetKey } from "../translation/state";
 import { TranslationPanel } from "../translation/TranslationPanel";
 import {
 	type Chapter,
@@ -158,7 +155,7 @@ function Reader({
 		useState<ScreenAnchor | null>(null);
 	const [translationMounted, setTranslationMounted] = useState(false);
 	const adoptionSessions = useRef(new Map<string, AdoptionSession>());
-	const translationSessions = useRef(new Map<string, TranslationSession>());
+	const translationSessions = useTranslationSessions();
 	const client = useQueryClient();
 	const readingGeneration = readingsSummary.generation_id;
 	const location = useLocation();
@@ -1963,7 +1960,7 @@ function Reader({
 						}
 						materialId={book.id}
 						adoptionSessions={adoptionSessions.current}
-						translationSessions={translationSessions.current}
+						translationSessions={translationSessions}
 						visible={translationOpen}
 						anchor={translationAnchor}
 						direction={settings.writing_mode}
@@ -2114,7 +2111,7 @@ function Reader({
 						sourceId={book.source_id}
 						direction={settings.writing_mode}
 						adoptionSessions={adoptionSessions.current}
-						translationSessions={translationSessions.current}
+						translationSessions={translationSessions}
 						onBackToOrigin={backToTranslationOrigin}
 						onSaved={() => {
 							void client.invalidateQueries({

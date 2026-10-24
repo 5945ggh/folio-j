@@ -11,7 +11,7 @@ import { getSpeechController } from "../speech/browser";
 import type { AdoptionSession } from "../translation/AdoptTranslation";
 import type { TranslationResult } from "../translation/api";
 import { translationCardPosition } from "../translation/placement";
-import type { TranslationSession } from "../translation/state";
+import type { TranslationSessions } from "../translation/session";
 import { TranslationPanel } from "../translation/TranslationPanel";
 import type { Chapter } from "./api";
 import type { ChapterTranslation } from "./chapter-translations-query";
@@ -31,7 +31,7 @@ type Props = Omit<StudyPreviewProps, "onEmphasize" | "embedded"> & {
 	onSaved: () => void;
 	onBackToOrigin: (result: TranslationResult) => void;
 	adoptionSessions: Map<string, AdoptionSession>;
-	translationSessions: Map<string, TranslationSession>;
+	translationSessions: TranslationSessions;
 };
 
 export function ChapterRecords(props: Props) {
