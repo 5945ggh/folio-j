@@ -14,14 +14,7 @@ import type { MaterialProvenance, StudyTarget } from "../materials/study-api";
 import { InlineError } from "../Shared";
 import { SpeechControls } from "../speech";
 import { getSpeechController } from "../speech/browser";
-import {
-	type AdoptionSession,
-	AdoptTranslation,
-	adoptionDestinations,
-	beginSeparateAdoption,
-	createAdoptionSession,
-	SavedTranslationDestinations,
-} from "./AdoptTranslation";
+import { SavedTranslationDestinations } from "./AdoptTranslation";
 import {
 	getTranslationHistory,
 	getTranslationResult,
@@ -118,21 +111,14 @@ function TranslationOriginal({
 function ResultView({
 	result,
 	showConfiguration = true,
-	session,
-	onSaved,
 	onOpenSegment,
 	onBackToOrigin,
 }: {
 	result: TranslationResult;
 	showConfiguration?: boolean;
-	session: AdoptionSession;
-	onSaved: () => void;
 	onOpenSegment?: (id: string) => void;
 	onBackToOrigin?: (result: TranslationResult) => void;
 }) {
-	const [saving, setSaving] = useState(false);
-	const destinations = adoptionDestinations(result, session);
-	const [adoptionOpened, setAdoptionOpened] = useState(false);
 	return (
 		<>
 			<TranslationOriginal
@@ -140,66 +126,34 @@ function ResultView({
 				reference={result.material_provenance}
 			/>
 
-			{adoptionOpened && (
-				<div hidden={!saving}>
-					<AdoptTranslation
-						key={session.newDraftVersion ?? 0}
-						result={result}
-						session={session}
-						onSaved={onSaved}
-						onOpenSegment={onOpenSegment}
-						onClose={() => setSaving(false)}
-					/>
-				</div>
+			<p className="translation-output">{result.translation}</p>
+			<small className="translation-result-meta">
+				{result.target_language} · 已留存
+			</small>
+			{showConfiguration && (
+				<details>
+					<summary>本次语境与配置</summary>
+					<ResultConfiguration result={result} />
+				</details>
 			)}
-			{!saving && (
-				<>
-					<p className="translation-output">{result.translation}</p>
-					<small className="translation-result-meta">
-						{result.target_language} · 已留存
-					</small>
-					{showConfiguration && (
-						<details>
-							<summary>本次语境与配置</summary>
-							<ResultConfiguration result={result} />
-						</details>
-					)}
-					{destinations.length > 0 && (
-						<SavedTranslationDestinations
-							ids={destinations}
-							allowCreateNew={!result.material_deleted}
-							onOpenSegment={onOpenSegment}
-							onCreateNew={() => {
-								beginSeparateAdoption(session);
-								setAdoptionOpened(true);
-								setSaving(true);
-							}}
-						/>
-					)}
-					<div className="translation-actions">
-						{!result.material_deleted && !destinations.length && (
-							<button
-								type="button"
-								onClick={() => {
-									setAdoptionOpened(true);
-									setSaving(true);
-								}}
-							>
-								保存为学习片段
-							</button>
-						)}
-						{onBackToOrigin && (
-							<button
-								type="button"
-								disabled={result.material_deleted}
-								onClick={() => onBackToOrigin(result)}
-							>
-								{result.material_deleted ? "原材料已删除" : "返回原处"}
-							</button>
-						)}
-					</div>
-				</>
+			{result.adopted_segment_ids.length > 0 && (
+				<SavedTranslationDestinations
+					ids={result.adopted_segment_ids}
+					allowCreateNew={false}
+					onOpenSegment={onOpenSegment}
+				/>
 			)}
+			<div className="translation-actions">
+				{onBackToOrigin && (
+					<button
+						type="button"
+						disabled={result.material_deleted}
+						onClick={() => onBackToOrigin(result)}
+					>
+						{result.material_deleted ? "原材料已删除" : "返回原处"}
+					</button>
+				)}
+			</div>
 		</>
 	);
 }
@@ -214,12 +168,11 @@ export function TranslationPanel({
 	direction = "horizontal-tb",
 	embedded = false,
 	initialResultId,
-	adoptionSessions,
 	translationSessions,
 	onClose,
-	onSaved,
 	onOpenSegment,
 	onBackToOrigin,
+	onResultSelected,
 }: {
 	materialId: string;
 	sourceId: string;
@@ -230,12 +183,11 @@ export function TranslationPanel({
 	direction?: "horizontal-tb" | "vertical-rl";
 	embedded?: boolean;
 	initialResultId?: string;
-	adoptionSessions?: Map<string, AdoptionSession>;
 	translationSessions?: TranslationSessions;
 	onClose: () => void;
-	onSaved: () => void;
 	onOpenSegment?: (id: string) => void;
 	onBackToOrigin: (result: TranslationResult) => void;
+	onResultSelected?: (result: TranslationResult) => void;
 }) {
 	const element = useRef<HTMLElement>(null);
 	const content = useRef<HTMLDivElement>(null);
@@ -282,16 +234,6 @@ export function TranslationPanel({
 			window.removeEventListener("resize", measure);
 		};
 	}, [anchor, direction, visible, speechState, embedded]);
-	const fallbackSessions = useRef(new Map<string, AdoptionSession>());
-	const sessions = adoptionSessions ?? fallbackSessions.current;
-	const sessionFor = (id: string) => {
-		let session = sessions.get(id);
-		if (!session) {
-			session = createAdoptionSession();
-			sessions.set(id, session);
-		}
-		return session;
-	};
 	const translations = useTranslationSessions(translationSessions);
 	const targetSession = target
 		? translations.forTarget(sourceId, target)
@@ -436,6 +378,10 @@ export function TranslationPanel({
 		retry: false,
 	});
 	useEffect(() => {
+		if (visible && result.isSuccess && result.data.id === resolvedId)
+			onResultSelected?.(result.data);
+	}, [visible, result.isSuccess, result.data, resolvedId, onResultSelected]);
+	useEffect(() => {
 		if (visible) heading.current?.focus({ preventScroll: true });
 	}, [visible]);
 	const start = () => {
@@ -531,8 +477,6 @@ export function TranslationPanel({
 						key={result.data.id}
 						result={result.data}
 						showConfiguration={!target}
-						session={sessionFor(result.data.id)}
-						onSaved={onSaved}
 						onOpenSegment={onOpenSegment}
 						onBackToOrigin={onBackToOrigin}
 					/>

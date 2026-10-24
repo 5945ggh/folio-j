@@ -4,6 +4,7 @@ import {
 	nativeSelectionKey,
 	studyOverlayPosition,
 	studyPreviewPosition,
+	studySidebarPosition,
 } from "./study-overlays.ts";
 
 test("selection tools stay above the bottom controls and within narrow or vertical viewports", () => {
@@ -71,4 +72,29 @@ test("native keyboard range extension wins over reading scroll shortcuts", () =>
 		false,
 	);
 	assert.equal(nativeSelectionKey({ key: " ", shiftKey: true }), false);
+});
+
+test("完整阅读侧栏使用全部可用高度，窄屏不受预览高度限制", () => {
+	assert.deepEqual(studySidebarPosition({ width: 1280, height: 900 }, 460), {
+		left: 808,
+		top: 76,
+		maxHeight: 748,
+	});
+	assert.deepEqual(studySidebarPosition({ width: 390, height: 844 }, 366), {
+		left: 12,
+		top: 76,
+		maxHeight: 692,
+	});
+});
+
+test("完整阅读侧栏为播放条留出空间，短视口仍保留顶部边距", () => {
+	assert.deepEqual(
+		studySidebarPosition({ width: 1280, height: 900 }, 460, 200),
+		{ left: 808, top: 76, maxHeight: 624 },
+	);
+	assert.deepEqual(studySidebarPosition({ width: 844, height: 390 }, 460), {
+		left: 372,
+		top: 12,
+		maxHeight: 302,
+	});
 });

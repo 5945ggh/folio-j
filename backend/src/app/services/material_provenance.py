@@ -34,8 +34,10 @@ from app.services.sources import (
     require_segment,
     require_source,
     segment_response,
+    segment_text_sha256,
     utc_now,
 )
+from app.translation_schemas import TranslationResultResponse
 
 
 class ProvenanceError(ValueError):
@@ -65,6 +67,72 @@ def identity_payload(reference: MaterialProvenance) -> str:
 
 def identity_sha256(reference: MaterialProvenance) -> str:
     return hashlib.sha256(identity_payload(reference).encode()).hexdigest()
+
+
+# Unicode White_Space, matching JavaScript /\p{White_Space}/u rather than str.isspace().
+_TRANSLATION_EDGE_SPACE = (
+    "\u0009\u000a\u000b\u000c\u000d\u0020\u0085\u00a0\u1680"
+    "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a"
+    "\u2028\u2029\u202f\u205f\u3000"
+)
+
+
+def translation_reference_matches(left: MaterialProvenance, right: MaterialProvenance) -> bool:
+    """Compare exact locations after trimming only the complete ordered target's edges."""
+    if (left.contract_version, left.material_id, left.version_id) != (
+        right.contract_version,
+        right.material_id,
+        right.version_id,
+    ):
+        return False
+
+    def trimmed(reference: MaterialProvenance) -> list[tuple[str, int, int, int, str, str]]:
+        ranges = list(reference.ranges)
+        while ranges:
+            item = ranges[0]
+            exact = item.exact.lstrip(_TRANSLATION_EDGE_SPACE)
+            if exact:
+                ranges[0] = item.model_copy(
+                    update={"start": item.start + len(item.exact) - len(exact), "exact": exact}
+                )
+                break
+            ranges.pop(0)
+        while ranges:
+            item = ranges[-1]
+            exact = item.exact.rstrip(_TRANSLATION_EDGE_SPACE)
+            if exact:
+                ranges[-1] = item.model_copy(
+                    update={"end": item.end - len(item.exact) + len(exact), "exact": exact}
+                )
+                break
+            ranges.pop()
+        canonical: list[tuple[str, int, int, int, str, str]] = []
+        for item in ranges:
+            if canonical and (
+                canonical[-1][0] == item.resource_id
+                and canonical[-1][1] == item.spine_index
+                and canonical[-1][3] == item.start
+                and canonical[-1][5] == item.text_sha256
+            ):
+                previous = canonical.pop()
+                canonical.append(
+                    (*previous[:3], item.end, previous[4] + item.exact, item.text_sha256)
+                )
+            else:
+                canonical.append(
+                    (
+                        item.resource_id,
+                        item.spine_index,
+                        item.start,
+                        item.end,
+                        item.exact,
+                        item.text_sha256,
+                    )
+                )
+        return canonical
+
+    target = trimmed(left)
+    return bool(target) and target == trimmed(right)
 
 
 def _resource(book: CompiledBook, item: MaterialProvenanceRange) -> CompiledResource:
@@ -314,6 +382,8 @@ async def create_material_segment(
     source_id: str,
     data: SegmentCreate,
 ) -> SegmentResponse:
+    from app.services.translations import get_result
+
     reference = data.material_provenance
     if reference is None or data.request_id is None:
         raise failure("invalid_provenance", "材料出处和请求身份不能为空")
@@ -326,6 +396,22 @@ async def create_material_segment(
         prepared = await prepare_reference(session, source_id, reference)
         if data.text is not None and data.text != prepared.text:
             raise failure("invalid_provenance", "提交原文与材料出处不一致")
+        translation_reference: PreparedReference | None = None
+        translation: TranslationResultResponse | None = None
+        if data.translation_result_id is not None:
+            translation = await get_result(session, data.translation_result_id)
+            if translation.source_id != source_id or not translation_reference_matches(
+                prepared.reference, translation.material_provenance
+            ):
+                raise failure("invalid_provenance", "译文与保存目标出处不一致")
+            translation_reference = await prepare_reference(
+                session, source_id, translation.material_provenance
+            )
+            if (
+                translation_reference.text != translation.text
+                or identity_sha256(translation_reference.reference) != translation.identity_sha256
+            ):
+                raise failure("invalid_provenance", "译文目标与材料不一致")
         await begin_write(session)
         # Another request may have committed while validation ran outside the write lock.
         replay = await replay_creation(session, source_id, data)
@@ -333,6 +419,14 @@ async def create_material_segment(
             await session.commit()
             return replay
         await recheck_reference(session, prepared)
+        if translation_reference is not None:
+            assert translation is not None and data.translation_result_id is not None
+            await recheck_reference(session, translation_reference)
+            current = await get_result(session, data.translation_result_id)
+            if current.model_dump(exclude={"adopted_segment_ids"}) != translation.model_dump(
+                exclude={"adopted_segment_ids"}
+            ):
+                raise failure("stale_provenance", "译文身份已变化", 409)
         created = utc_now()
         segment = Segment(
             id=new_ulid(),
@@ -341,7 +435,9 @@ async def create_material_segment(
             created_at=created,
             updated_at=created,
             revision=1,
-            **data.model_dump(exclude={"text", "request_id", "material_provenance"}),
+            **data.model_dump(
+                exclude={"text", "request_id", "material_provenance", "translation_result_id"}
+            ),
         )
         lock_segment_text(segment, created)
         segment.material_provenance = SegmentMaterialProvenance(
@@ -357,6 +453,34 @@ async def create_material_segment(
         )
         session.add(segment)
         await session.flush()
+        if data.translation_result_id is not None:
+            from app.translation_models import TranslationAdoption
+
+            session.add(
+                TranslationAdoption(
+                    id=new_ulid(),
+                    request_id=str(data.request_id),
+                    request_payload=request_payload(data),
+                    result_id=data.translation_result_id,
+                    segment_id=segment.id,
+                    created_at=created,
+                    adopted_payload=json.dumps(
+                        {
+                            "action": "create",
+                            "fields": {
+                                "translation": segment.translation,
+                                "context_before": segment.context_before,
+                                "context_after": segment.context_after,
+                            },
+                            "text_sha256": segment_text_sha256(segment.text),
+                        },
+                        ensure_ascii=True,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                )
+            )
+            await session.flush()
         result = segment_response(segment)
         await session.commit()
         return result

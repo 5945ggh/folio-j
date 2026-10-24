@@ -167,7 +167,6 @@ export async function translationRegression(h: BrowserHarness) {
 								}
 					}
 					onClose={() => {}}
-					onSaved={() => {}}
 					onBackToOrigin={() => {}}
 				/>
 			</>
@@ -424,7 +423,6 @@ export async function translationRegression(h: BrowserHarness) {
 						sourceId="source"
 						target={target}
 						onClose={() => setVisible(false)}
-						onSaved={() => {}}
 						onBackToOrigin={() => {}}
 					/>
 				</div>
@@ -574,7 +572,6 @@ export async function translationRegression(h: BrowserHarness) {
 						sourceId="source"
 						target={key === "a" ? target : secondTarget}
 						onClose={() => {}}
-						onSaved={() => {}}
 						onBackToOrigin={() => {}}
 					/>
 				</>
@@ -711,7 +708,6 @@ export async function translationRegression(h: BrowserHarness) {
 				sourceId="source"
 				target={target}
 				onClose={() => {}}
-				onSaved={() => {}}
 				onBackToOrigin={() => {}}
 			/>
 		);
@@ -805,7 +801,6 @@ export async function translationRegression(h: BrowserHarness) {
 				sourceId="source"
 				target={target}
 				onClose={() => {}}
-				onSaved={() => {}}
 				onBackToOrigin={() => {}}
 			/>,
 		);
@@ -900,7 +895,6 @@ export async function translationRegression(h: BrowserHarness) {
 			sourceId="source"
 			target={target}
 			onClose={() => {}}
-			onSaved={() => {}}
 			onBackToOrigin={() => {}}
 		/>,
 	);
@@ -1142,9 +1136,7 @@ export async function translationRegression(h: BrowserHarness) {
 				materialId="book"
 				sourceId="source"
 				target={null}
-				adoptionSessions={new Map()}
 				onClose={() => {}}
-				onSaved={() => {}}
 				onOpenSegment={(id) => reopenedIds.push(id)}
 				onBackToOrigin={() => {}}
 			/>,
@@ -1177,25 +1169,20 @@ export async function translationRegression(h: BrowserHarness) {
 			"Second refresh must preserve destination recovery without local session",
 		);
 		check(restoredPosts === 0, "New map refresh must not submit an adoption");
-		click("另存为新片段");
-		await until(
-			() =>
-				[...container.querySelectorAll("button")].some(
-					(button) => button.textContent === "确认保存" && !button.disabled,
+		check(
+			![...container.querySelectorAll("button")].some((button) =>
+				["另存为新片段", "保存为学习片段"].includes(
+					button.textContent?.trim() ?? "",
 				),
-			"Explicit separate-save should open an editable new draft",
-		);
-		click("确认保存");
-		await until(
-			() => container.textContent?.includes("已保存学习片段。") ?? false,
-			"Explicit separate-save should persist a new destination",
+			),
+			"Translation details must keep source selection as the only reader creation entry",
 		);
 		check(
-			Number(restoredPosts) === 1,
-			"Only explicit separate-save may create a new segment",
+			restoredPosts === 0,
+			"Translation details must never create a segment",
 		);
 	} finally {
 		cleanup();
 	}
-	return "translation: shared two-host context/edit/clear/budget and latest-input submission; independent result choices across delayed retranslation; late isolation/history/no-generation; responsive layout; pending/lost adoption identity; automatic intent once under StrictMode/reopen and A→B→A with delayed history; pending/unknown translation UUID and frozen-input recovery without current settings/history; cached-history failure blocks generation; explicit retranslation uses new UUID; successful/failed/cancelled history paging and partial first page never generate; settings conflict comparison; fresh-map exact-result destination recovery without POST and explicit separate-save";
+	return "translation: shared two-host context/edit/clear/budget and latest-input submission; independent result choices across delayed retranslation; late isolation/history/no-generation; responsive layout; pending/lost adoption identity; automatic intent once under StrictMode/reopen and A→B→A with delayed history; pending/unknown translation UUID and frozen-input recovery without current settings/history; cached-history failure blocks generation; explicit retranslation uses new UUID; successful/failed/cancelled history paging and partial first page never generate; settings conflict comparison; exact-result destination recovery without POST or a separate segment creation entry";
 }

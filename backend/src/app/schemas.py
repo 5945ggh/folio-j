@@ -100,6 +100,7 @@ class SegmentCreate(StrictInput):
     text: str | None = None
     request_id: UUID | None = None
     material_provenance: MaterialProvenance | None = None
+    translation_result_id: str | None = None
     translation: str = ""
     context_before: str = ""
     context_after: str = ""
@@ -121,6 +122,8 @@ class SegmentCreate(StrictInput):
 
     @model_validator(mode="after")
     def require_creation_target(self) -> "SegmentCreate":
+        if self.material_provenance is None and "translation_result_id" in self.model_fields_set:
+            raise ValueError("翻译来源仅可用于材料出处创建")
         if self.material_provenance is not None:
             if self.request_id is None:
                 raise ValueError("材料出处创建须携带 request_id")

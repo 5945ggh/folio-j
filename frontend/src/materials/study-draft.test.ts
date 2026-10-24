@@ -3,10 +3,12 @@ import test from "node:test";
 import type { MaterialProvenance } from "./study-api";
 import {
 	applyContextFill,
+	applyStudyTranslation,
 	beginContextFill,
 	contextInputError,
 	createContextDraft,
 	editContext,
+	editStudyTranslation,
 	prepareStudyRequest,
 	uncertainStudyFailure,
 } from "./study-draft.ts";
@@ -127,4 +129,53 @@ test("manual context is not cut to automatic budget and its input limit counts N
 	draft = editContext(draft, "after", "😀".repeat(100_001));
 	assert.match(contextInputError(draft) ?? "", /100,000/);
 	assert.throws(() => prepareStudyRequest(null, reference, draft, () => "id"));
+});
+
+test("译文只预填一次，迟到结果不覆盖修改、清空或另一目标", () => {
+	const initial = createContextDraft("target");
+	const result = { id: "translation-a", translation: "译文" };
+	assert.equal(applyStudyTranslation(initial, "other", result), initial);
+	const filled = applyStudyTranslation(initial, "target", result);
+	assert.equal(filled.translation.value, "译文");
+	assert.equal(
+		applyStudyTranslation(filled, "target", {
+			id: "translation-b",
+			translation: "新译文",
+		}),
+		filled,
+	);
+	for (const value of ["手动译文", ""]) {
+		const edited = editStudyTranslation(initial, value);
+		assert.equal(applyStudyTranslation(edited, "target", result), edited);
+		assert.equal(edited.translation.value, value);
+	}
+});
+
+test("提交冻结实际译文及关联结果，核实时不改选区或采用其他结果", () => {
+	let draft = applyStudyTranslation(createContextDraft("target"), "target", {
+		id: "translation-a",
+		translation: "カ\u3099",
+	});
+	const request = prepareStudyRequest(
+		null,
+		reference,
+		draft,
+		() => "translation-save",
+	);
+	assert.equal(request.translation, "ガ");
+	assert.equal(request.translation_result_id, "translation-a");
+	assert.deepEqual(request.material_provenance, reference);
+	draft = editStudyTranslation(draft, "");
+	assert.equal(
+		prepareStudyRequest(request, reference, draft, () => "retry"),
+		request,
+	);
+	assert.equal(
+		prepareStudyRequest(null, reference, draft, () => "clear").translation,
+		"",
+	);
+	assert.equal(
+		contextInputError(editStudyTranslation(draft, "😀".repeat(100_001))),
+		"译文和前后文各不能超过 100,000 个字符。",
+	);
 });

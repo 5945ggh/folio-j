@@ -18,6 +18,7 @@ export type ContextDraft = {
 	generation: number;
 	before: ContextField;
 	after: ContextField;
+	translation: { value: string; edited: boolean; resultId: string | null };
 };
 
 export function createContextDraft(target: string): ContextDraft {
@@ -26,6 +27,7 @@ export function createContextDraft(target: string): ContextDraft {
 		generation: 0,
 		before: { value: "", edited: false, automatic: false, truncated: false },
 		after: { value: "", edited: false, automatic: false, truncated: false },
+		translation: { value: "", edited: false, resultId: null },
 	};
 }
 
@@ -37,6 +39,38 @@ export function editContext(
 	return {
 		...draft,
 		[side]: { value, edited: true, automatic: false, truncated: false },
+	};
+}
+
+export function editStudyTranslation(
+	draft: ContextDraft,
+	value: string,
+): ContextDraft {
+	return {
+		...draft,
+		translation: { ...draft.translation, value, edited: true },
+	};
+}
+
+/** A late result cannot refill an edited/cleared field or change its chosen source. */
+export function applyStudyTranslation(
+	draft: ContextDraft,
+	target: string,
+	result: { id: string; translation: string },
+): ContextDraft {
+	if (
+		draft.target !== target ||
+		draft.translation.edited ||
+		draft.translation.resultId
+	)
+		return draft;
+	return {
+		...draft,
+		translation: {
+			value: result.translation,
+			resultId: result.id,
+			edited: false,
+		},
 	};
 }
 
@@ -67,10 +101,10 @@ export function applyContextFill(
 }
 
 export function contextInputError(draft: ContextDraft): string | null {
-	return [draft.before.value, draft.after.value].some(
+	return [draft.before.value, draft.after.value, draft.translation.value].some(
 		(value) => Array.from(value.normalize("NFC")).length > 100_000,
 	)
-		? "前后文各不能超过 100,000 个字符。"
+		? "译文和前后文各不能超过 100,000 个字符。"
 		: null;
 }
 
@@ -93,7 +127,10 @@ export function prepareStudyRequest(
 		request_id: newId(),
 		context_before: draft.before.value.normalize("NFC"),
 		context_after: draft.after.value.normalize("NFC"),
-		translation: "",
+		translation: draft.translation.value.normalize("NFC"),
+		...(draft.translation.resultId
+			? { translation_result_id: draft.translation.resultId }
+			: {}),
 		transcription: "",
 		note: "",
 		source_ref: "",

@@ -621,7 +621,38 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 				!!container.querySelector(".reader-chapter-records.expanded"),
 				"Plain margin tap must retain an expanded record sidebar",
 			);
+			const expandedPanel = find<HTMLElement>(
+				".reader-chapter-records.expanded",
+			);
+			check(
+				expandedPanel.getBoundingClientRect().height > 520 &&
+					expandedPanel.getBoundingClientRect().height > innerHeight * 0.6,
+				"Anchored preview expansion must use full available sidebar height",
+			);
+			const expandedOriginal = find<HTMLElement>(
+				".reader-study-preview-original",
+			).textContent;
+			const collapse = [
+				...container.querySelectorAll<HTMLButtonElement>("button"),
+			].find((node) => node.textContent === "返回预览");
+			check(collapse, "Expanded record needs its return-to-preview action");
+			collapse.click();
+			await until(
+				() =>
+					!!preview() &&
+					!container.querySelector(".reader-chapter-records.expanded"),
+				"Returning from an anchored sidebar must keep the preview open",
+			);
+			check(
+				find<HTMLElement>(".reader-study-preview-original").textContent ===
+					expandedOriginal && first().getAttribute("aria-expanded") === "true",
+				"Anchored return must retain selected segment and bookmark state",
+			);
 			click("关闭阅读记录");
+			await until(
+				() => !preview(),
+				"Close icon must dismiss the returned anchored preview",
+			);
 			click("本章记录");
 			await until(() => !!preview(), "Fixed chapter record panel must open");
 			tap(viewport);

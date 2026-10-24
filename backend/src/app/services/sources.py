@@ -402,7 +402,9 @@ async def create_segment(
             updated_at=created,
             revision=1,
             material_provenance=None,
-            **data.model_dump(exclude={"request_id", "material_provenance"}),
+            **data.model_dump(
+                exclude={"request_id", "material_provenance", "translation_result_id"}
+            ),
         )
         session.add(segment)
         await session.commit()

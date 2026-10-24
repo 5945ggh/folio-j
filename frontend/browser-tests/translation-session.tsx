@@ -580,7 +580,6 @@ async function translationRecoveryViewRegression(
 			sourceId="source"
 			target={null}
 			onClose={() => {}}
-			onSaved={() => {}}
 			onBackToOrigin={() => {}}
 		/>,
 	);
@@ -684,7 +683,6 @@ async function translationRecoveryViewRegression(
 					sourceId="source"
 					target={target}
 					onClose={() => {}}
-					onSaved={() => {}}
 					onBackToOrigin={() => {}}
 				/>
 			</>

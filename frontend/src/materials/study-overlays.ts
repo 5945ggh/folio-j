@@ -59,6 +59,20 @@ export function studyPreviewPosition(
 	};
 }
 
+/** Full reading uses the available side of the viewport without a preview height cap. */
+export function studySidebarPosition(
+	viewport: { width: number; height: number },
+	width: number,
+	bottomInset = 76,
+) {
+	const top = viewport.height < 500 ? 12 : 76;
+	return {
+		left: Math.max(12, viewport.width - width - 12),
+		top,
+		maxHeight: Math.max(0, viewport.height - bottomInset - top),
+	};
+}
+
 export function nativeSelectionKey(
 	event: Pick<KeyboardEvent, "key" | "shiftKey">,
 ) {

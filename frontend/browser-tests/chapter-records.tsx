@@ -7,6 +7,29 @@ import { inlineRecords } from "./inline-records";
 type Schema = components["schemas"];
 const timestamp = "2026-10-23T00:00:00Z";
 const hash = "a".repeat(64);
+const previewAnalyses: Schema["AnalysisDetail"][] = ["long", "short"].map(
+	(kind) => ({
+		id: `preview-${kind}`,
+		segment_id: "saved",
+		current_revision_id: `revision-${kind}`,
+		revision_id: `revision-${kind}`,
+		title: kind === "long" ? "完整长讲解" : "简短讲解",
+		excerpt: "讲解回归",
+		source_md:
+			kind === "long"
+				? `${Array.from({ length: 35 }, (_, index) => `第${index + 1}段讲解。这里说明句子结构与语境，完整阅读应能看到每一段。`).join("\n\n")}\n\n完整讲解终点。`
+				: "短讲解正文。",
+		sections: [],
+		origin: "manual",
+		normalizer_version: 1,
+		parent_revision_id: null,
+		run_id: null,
+		warnings: [],
+		created_at: timestamp,
+		updated_at: kind === "long" ? "2026-10-24T00:00:00Z" : timestamp,
+	}),
+);
+
 const paragraphs = [
 	"春の風が静かな庭を通り抜ける。",
 	"猫は縁側でゆっくりと目を開けた。",
@@ -467,7 +490,12 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				created_at: timestamp,
 				updated_at: timestamp,
 			});
-		if (path === "/api/segments/saved/analyses") return Response.json([]);
+		if (path === "/api/segments/saved/analyses")
+			return Response.json(previewAnalyses);
+		const previewAnalysis = previewAnalyses.find(
+			(item) => path === `/api/analyses/${item.id}`,
+		);
+		if (previewAnalysis) return Response.json(previewAnalysis);
 		if (path === "/api/settings/translation")
 			return Response.json({
 				id: "default",
@@ -687,9 +715,217 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			),
 			"Chapter translations must follow source order across pagination",
 		);
+		check(
+			summaryButtons.every(
+				(node, index) =>
+					node.children.length === 2 &&
+					node.textContent ===
+						`${summaries[index]?.excerpt}${summaries[index]?.translation_excerpt}`,
+			),
+			"Translation list rows must contain only original and latest translation",
+		);
+		button("学习片段").click();
+		await h.until(
+			() =>
+				!!h.container.querySelector(
+					".reader-study-preview-candidates button time",
+				),
+			"Learning segment list must load its saved date",
+		);
+		const candidate = h.container.querySelector<HTMLButtonElement>(
+			".reader-study-preview-candidates button",
+		);
+		check(candidate, "Chapter list needs the saved learning segment");
+		const savedDate = candidate.querySelector("time");
+		check(
+			candidate.children.length === 2 &&
+				!candidate.textContent?.includes("saved") &&
+				!h.container
+					.querySelector(".reader-study-preview-list")
+					?.textContent?.includes("选择"),
+			"Learning list must omit selection instructions and segment ID suffixes",
+		);
+		check(
+			savedDate?.textContent ===
+				new Date(timestamp).toLocaleString(undefined, {
+					year: "numeric",
+					month: "2-digit",
+					day: "2-digit",
+					hour: "2-digit",
+					minute: "2-digit",
+				}),
+			"Learning list date must include year, month, day, hour and minute",
+		);
+		candidate.click();
+		const markdown = () =>
+			h.container.querySelector<HTMLElement>(".reader-study-preview-markdown");
+		await h.until(
+			() => markdown()?.dataset.clipped === "true",
+			"Overflowing compact explanation must report actual clipping",
+		);
+		check(
+			h.container.querySelector(".reader-study-preview-analysis-heading h3")
+				?.textContent === "讲解预览" &&
+				getComputedStyle(markdown() as HTMLElement).maskImage.includes(
+					"linear-gradient",
+				) &&
+				(markdown()?.scrollHeight ?? 0) > (markdown()?.clientHeight ?? 0) + 1,
+			"Compact explanation must show preview heading and fade only on overflow",
+		);
+		const open = h.container.querySelector<HTMLElement>(
+			".reader-study-preview-open",
+		);
+		const originalBounds = h.container
+			.querySelector(".reader-study-preview-original")
+			?.getBoundingClientRect();
+		const tabsBounds = h.container
+			.querySelector(".reader-record-tabs")
+			?.getBoundingClientRect();
+		check(
+			open && originalBounds && tabsBounds,
+			"Selected learning segment needs its open action, source and tabs",
+		);
+		const openBounds = open.getBoundingClientRect();
+		const compactBounds = h.container
+			.querySelector(".reader-chapter-records")
+			?.getBoundingClientRect();
+		check(
+			compactBounds &&
+				openBounds.top >= tabsBounds.bottom - 1 &&
+				openBounds.bottom <= originalBounds.top + 1 &&
+				openBounds.right > (compactBounds.left + compactBounds.right) / 2,
+			"Open segment action must sit on the right below tabs and before original source",
+		);
+		const picker = h.container.querySelector<HTMLSelectElement>(
+			".reader-study-preview-analysis select",
+		);
+		check(picker, "Long and short explanations must be selectable");
+		picker.value = "preview-short";
+		picker.dispatchEvent(new Event("change", { bubbles: true }));
+		await h.until(
+			() =>
+				markdown()?.textContent?.includes("短讲解正文。") === true &&
+				!markdown()?.hasAttribute("data-clipped"),
+			"Short explanation must remove clipping after switching from long explanation",
+		);
+		check(
+			getComputedStyle(markdown() as HTMLElement).maskImage === "none" &&
+				(markdown()?.scrollHeight ?? 0) <= (markdown()?.clientHeight ?? 0) + 1,
+			"Short explanation must fit completely without fading",
+		);
+		picker.value = "preview-long";
+		picker.dispatchEvent(new Event("change", { bubbles: true }));
+		await h.until(
+			() => markdown()?.dataset.clipped === "true",
+			"Switching back must restore long explanation clipping",
+		);
+		const dragHeader = h.container.querySelector<HTMLElement>(
+			".reader-chapter-records > header",
+		);
+		if (innerWidth > 600) {
+			check(dragHeader, "Wide preview needs its movable header");
+			dragHeader.focus();
+			dragHeader.dispatchEvent(
+				new KeyboardEvent("keydown", {
+					key: "ArrowLeft",
+					bubbles: true,
+					cancelable: true,
+				}),
+			);
+			await h.until(
+				() =>
+					h.container.querySelector<HTMLElement>(".reader-chapter-records")
+						?.dataset.readerCardManual === "true",
+				"Keyboard movement must set a manual preview position",
+			);
+		}
+		const manualPosition = h.container.querySelector<HTMLElement>(
+			".reader-chapter-records",
+		)?.style.left;
+		button("展开阅读").click();
+		await h.until(
+			() => !!h.container.querySelector(".reader-chapter-records.expanded"),
+			"Preview must expand for full explanation reading",
+		);
+		await h.until(
+			() => getComputedStyle(markdown() as HTMLElement).maxHeight === "none",
+			"Expanded explanation must remove the compact height limit",
+		);
+		const expandedPanel = h.container.querySelector<HTMLElement>(
+			".reader-chapter-records.expanded",
+		);
+		check(
+			expandedPanel &&
+				expandedPanel.getBoundingClientRect().height > innerHeight * 0.6 &&
+				expandedPanel.getBoundingClientRect().height > 520,
+			"Expanded sidebar must use available viewport height beyond former 520px and 60% caps",
+		);
+		const body = h.container.querySelector<HTMLElement>(".reader-record-body");
+		check(
+			body && body.scrollHeight > body.clientHeight,
+			"Long explanation must produce a scrollable full-reading body",
+		);
+		body.scrollTop = body.scrollHeight;
+		await h.until(
+			() => body.scrollTop > 0,
+			"Full explanation must scroll to its end",
+		);
+		const lastParagraph = markdown()?.querySelector(
+			".analysis-markdown:last-child > :last-child",
+		);
+		check(
+			lastParagraph?.textContent === "完整讲解终点。",
+			"Expanded reading must retain the complete explanation ending",
+		);
+		const endingBounds = lastParagraph.getBoundingClientRect();
+		const bodyBounds = body.getBoundingClientRect();
+		check(
+			endingBounds.top >= bodyBounds.top &&
+				endingBounds.bottom <= bodyBounds.bottom + 1,
+			"Explanation ending must be visible when scrolled to the bottom",
+		);
+		button("返回预览").click();
+		await h.until(
+			() =>
+				!h.container.querySelector(".reader-chapter-records.expanded") &&
+				markdown()?.dataset.clipped === "true",
+			"Return must restore the compact explanation preview",
+		);
+		check(
+			picker.value === "preview-long" &&
+				h.container
+					.querySelector('[role="tab"][aria-label="学习片段"]')
+					?.getAttribute("aria-selected") === "true" &&
+				(h.container
+					.querySelector(".reader-study-preview-original")
+					?.textContent?.includes(first.text) ??
+					false) &&
+				(innerWidth <= 600 ||
+					h.container.querySelector<HTMLElement>(".reader-chapter-records")
+						?.style.left === manualPosition),
+			"Return must preserve selected segment, explanation, tab and manual position",
+		);
+		button("关闭阅读记录").click();
+		await h.until(
+			() => !h.container.querySelector(".reader-chapter-records"),
+			"Close icon must dismiss the preview",
+		);
+		button("本章记录").click();
+		await h.until(
+			() => !!h.container.querySelector('[role="tab"]'),
+			"Chapter records must reopen after close",
+		);
+		button("翻译").click();
+		await h.until(
+			() => !!h.container.querySelector(".reader-record-translation"),
+			"Translation rows must return after preview checks",
+		);
 		const firstRowText = summaryButtons[0]?.textContent;
-		summaryButtons[0]?.focus();
-		summaryButtons[0]?.click();
+		const firstSummary = h.container.querySelector<HTMLButtonElement>(
+			".reader-record-translation",
+		);
+		firstSummary?.focus();
+		firstSummary?.click();
 		await h.until(
 			() =>
 				h.container
@@ -1039,7 +1275,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => !h.container.querySelector('[aria-label="选区操作"]'),
 			"Clearing the regression selection must restore native record tapping",
 		);
-		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: selection→chapter record→selection shares edited context with floating host kept mounted, two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
+		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: clean record rows, minute dates, right-side segment action, measured long/short clipping, full-height reading reaches ending, return preserves segment/analysis/tab/manual position, close icon, selection→chapter record→selection shares edited context with floating host kept mounted, two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
 	} finally {
 		if (!preview) dispose();
 	}

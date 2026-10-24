@@ -172,13 +172,15 @@ details[open] > summary .study-disclosure-icon {
 .study-context-side[open] .study-context-preview {
 	display: none;
 }
-.study-context-fields label {
+.study-context-fields label,
+.study-translation-field {
 	display: grid;
 	gap: 5px;
 	font-size: 12px;
 	margin: 10px 0;
 }
 .study-context-fields textarea,
+.study-translation-field textarea,
 .study-context-fields input[type="number"] {
 	width: 100%;
 	box-sizing: border-box;
@@ -189,7 +191,8 @@ details[open] > summary .study-disclosure-icon {
 	background: var(--reader-soft);
 	font: inherit;
 }
-.study-context-fields textarea {
+.study-context-fields textarea,
+.study-translation-field textarea {
 	resize: vertical;
 	font-size: 13px;
 	line-height: 1.7;

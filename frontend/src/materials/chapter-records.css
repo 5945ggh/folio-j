@@ -96,7 +96,7 @@
 	line-height: 1;
 }
 .reader-record-translations {
-	padding: 12px;
+	padding: 6px 12px;
 }
 .reader-record-translations > p {
 	color: var(--reader-muted);
@@ -105,12 +105,19 @@
 .reader-r1 .reader-record-translation {
 	display: grid;
 	width: 100%;
-	gap: 5px;
-	padding: 10px 6px;
+	gap: 6px;
+	padding: 12px 8px;
+	line-height: 1.75;
 	text-align: left;
 	white-space: normal;
 	border-bottom: 1px solid var(--reader-line);
-	border-radius: 0;
+	border-radius: 6px;
+}
+.reader-r1 .reader-record-translation:last-child {
+	border-bottom-color: transparent;
+}
+.reader-r1 .reader-record-translation:focus-visible {
+	outline-offset: -2px;
 }
 .reader-record-translation span {
 	display: -webkit-box;
@@ -119,8 +126,7 @@
 	overflow: hidden;
 	overflow-wrap: anywhere;
 }
-.reader-record-translation span:first-child,
-.reader-record-translation small {
+.reader-record-translation span:first-child {
 	font-size: 12px;
 	color: var(--reader-muted);
 }

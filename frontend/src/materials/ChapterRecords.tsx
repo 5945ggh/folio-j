@@ -8,7 +8,6 @@ import {
 } from "react";
 import { InlineError } from "../Shared";
 import { getSpeechController } from "../speech/browser";
-import type { AdoptionSession } from "../translation/AdoptTranslation";
 import type { TranslationResult } from "../translation/api";
 import {
 	type AnchorPlacement,
@@ -24,6 +23,7 @@ import {
 	type ReaderCardPosition,
 } from "./reader-card-drag";
 import { StudyPreview, type StudyPreviewProps } from "./StudyPreview";
+import { studySidebarPosition } from "./study-overlays";
 import { useReaderCardDrag } from "./use-reader-card-drag";
 import "./chapter-records.css";
 
@@ -38,9 +38,8 @@ type Props = Omit<StudyPreviewProps, "onEmphasize" | "embedded"> & {
 	unavailable: number;
 	onRetryTranslations: () => void;
 	onEmphasize: (id: string | null, kind?: "segment" | "translation") => void;
-	onSaved: () => void;
+	onResultSelected: (result: TranslationResult) => void;
 	onBackToOrigin: (result: TranslationResult) => void;
-	adoptionSessions: Map<string, AdoptionSession>;
 	translationSessions: TranslationSessions;
 	manualPosition?: ReaderCardPosition | null;
 	onManualPositionChange?: (value: ReaderCardPosition | null) => void;
@@ -159,6 +158,10 @@ export function ChapterRecords(props: Props) {
 				width: node.offsetWidth,
 				height: headerHeight + (body.current?.scrollHeight ?? 0),
 			};
+			if (expanded) {
+				setPosition(studySidebarPosition(viewport, size.width, bottomInset));
+				return;
+			}
 			const available = translationCardPosition(
 				null,
 				viewport,
@@ -178,7 +181,7 @@ export function ChapterRecords(props: Props) {
 			};
 			setWide(innerWidth > 600);
 			setPosition(
-				manual.current && innerWidth > 600 && !expanded
+				manual.current && innerWidth > 600
 					? {
 							...clampReaderCardPosition(
 								manual.current,
@@ -188,12 +191,12 @@ export function ChapterRecords(props: Props) {
 							maxHeight: available.maxHeight,
 						}
 					: translationCardPosition(
-							fixed || expanded ? null : anchor,
+							fixed ? null : anchor,
 							viewport,
 							size,
 							direction,
 							bottomInset,
-							fixed || expanded ? "text" : anchorPlacement,
+							fixed ? "text" : anchorPlacement,
 						),
 			);
 		};
@@ -237,11 +240,17 @@ export function ChapterRecords(props: Props) {
 		setTab(next);
 		if (body.current) body.current.scrollTop = 0;
 	};
+	useLayoutEffect(() => {
+		if (!expanded && body.current) body.current.scrollTop = 0;
+	}, [expanded]);
 	return (
 		<div
 			ref={element}
 			className={`reader-chapter-records${expanded ? " expanded" : ""}`}
-			style={position}
+			style={{
+				...position,
+				height: expanded ? position?.maxHeight : undefined,
+			}}
 			role="dialog"
 			aria-modal="false"
 			aria-labelledby={`${id}-title`}
@@ -296,7 +305,7 @@ export function ChapterRecords(props: Props) {
 						aria-expanded={expanded}
 						onClick={expanded ? props.onCollapse : props.onExpand}
 					>
-						{expanded ? "收起" : "展开阅读"}
+						{expanded ? "返回预览" : "展开阅读"}
 					</button>
 					<button type="button" aria-label="关闭阅读记录" onClick={onClose}>
 						×
@@ -370,9 +379,8 @@ export function ChapterRecords(props: Props) {
 							sourceId={props.sourceId}
 							target={{ reference: selected.material_provenance, chapter }}
 							visible={!inactive && tab === "translation"}
-							adoptionSessions={props.adoptionSessions}
 							translationSessions={props.translationSessions}
-							onSaved={props.onSaved}
+							onResultSelected={props.onResultSelected}
 							onOpenSegment={props.onOpen}
 							onBackToOrigin={props.onBackToOrigin}
 							onClose={onClose}
@@ -417,12 +425,6 @@ export function ChapterRecords(props: Props) {
 								>
 									<span lang="ja">{item.excerpt}</span>
 									<span>{item.translation_excerpt}</span>
-									<small>
-										{item.target_language} ·{" "}
-										{item.result_count > 1
-											? `${item.result_count} 份译文`
-											: "已留存"}
-									</small>
 								</button>
 							))}
 						</div>

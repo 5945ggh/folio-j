@@ -21,7 +21,6 @@ import {
 import { InlineError } from "../Shared";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "../speech";
 import { getSpeechController } from "../speech/browser";
-import type { AdoptionSession } from "../translation/AdoptTranslation";
 import {
 	getTranslationResult,
 	type TranslationResult,
@@ -167,7 +166,11 @@ function Reader({
 	const [translationAnchor, setTranslationAnchor] =
 		useState<ScreenAnchor | null>(null);
 	const [translationMounted, setTranslationMounted] = useState(false);
-	const adoptionSessions = useRef(new Map<string, AdoptionSession>());
+	const selectedTranslations = useRef(new Map<string, TranslationResult>());
+	const rememberTranslation = useCallback((result: TranslationResult) => {
+		selectedTranslations.current.delete(result.identity_sha256);
+		selectedTranslations.current.set(result.identity_sha256, result);
+	}, []);
 	const translationSessions = useTranslationSessions();
 	const client = useQueryClient();
 	const readingGeneration = readingsSummary.generation_id;
@@ -2193,7 +2196,7 @@ function Reader({
 								: "recent"
 						}
 						materialId={book.id}
-						adoptionSessions={adoptionSessions.current}
+						onResultSelected={rememberTranslation}
 						translationSessions={translationSessions}
 						visible={translationOpen}
 						anchor={translationAnchor}
@@ -2212,11 +2215,6 @@ function Reader({
 									?.focus({ preventScroll: true }),
 							);
 						}}
-						onSaved={() => {
-							void client.invalidateQueries({
-								queryKey: ["material-chapter-segments", book.id],
-							});
-						}}
 						onBackToOrigin={backToTranslationOrigin}
 					/>
 				</div>
@@ -2224,6 +2222,11 @@ function Reader({
 			{studyTarget && (
 				<StudySegmentPanel
 					target={studyTarget}
+					translations={chapterTranslations.items}
+					translationsReady={
+						!chapterTranslations.loading && !chapterTranslations.isError
+					}
+					preferredTranslations={[...selectedTranslations.current.values()]}
 					sourceId={book.source_id}
 					sourceTitle={source.data?.title ?? "所属来源"}
 					onCancel={() => setStudyTarget(null)}
@@ -2347,14 +2350,9 @@ function Reader({
 						chapter={chapter.data}
 						sourceId={book.source_id}
 						direction={settings.writing_mode}
-						adoptionSessions={adoptionSessions.current}
+						onResultSelected={rememberTranslation}
 						translationSessions={translationSessions}
 						onBackToOrigin={backToTranslationOrigin}
-						onSaved={() => {
-							void client.invalidateQueries({
-								queryKey: ["material-chapter-segments", book.id],
-							});
-						}}
 						onOpen={openStudySegment}
 						onClose={closeMarkHit}
 						expanded={panels.right === "study"}
@@ -2370,7 +2368,13 @@ function Reader({
 							setPanels((current) => selectReaderPanel(current, "study"));
 							controller.current?.show();
 						}}
-						onCollapse={closeMarkHit}
+						onCollapse={() =>
+							setPanels((current) =>
+								current.right === "study"
+									? closeReaderPanel(current, "right")
+									: current,
+							)
+						}
 						onEmphasize={(id, kind = "segment") => {
 							previewEmphasis.current = id ? { id, kind } : null;
 							frames.current.emphasizeStudyMark(id, kind);

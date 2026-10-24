@@ -9,6 +9,11 @@ import {
 	segmentContextKey,
 } from "../settings/segment-context-api";
 import {
+	getTranslationResult,
+	type TranslationResult,
+} from "../translation/api";
+import type { ChapterTranslation } from "./chapter-translations-query";
+import {
 	createMaterialSegment,
 	type MaterialSegmentInput,
 	matchMaterialSegments,
@@ -18,6 +23,7 @@ import {
 import { prefillContext } from "./study-context";
 import {
 	applyContextFill,
+	applyStudyTranslation,
 	beginContextFill,
 	type ContextDraft,
 	type ContextFill,
@@ -25,9 +31,14 @@ import {
 	contextInputError,
 	createContextDraft,
 	editContext,
+	editStudyTranslation,
 	prepareStudyRequest,
 	uncertainStudyFailure,
 } from "./study-draft";
+import {
+	matchingStudyTranslation,
+	translationReferenceKey,
+} from "./study-translation";
 import "./study.css";
 
 export function StudySegmentPanel({
@@ -37,6 +48,9 @@ export function StudySegmentPanel({
 	onCancel,
 	onSaved,
 	reopenToken,
+	translations = [],
+	translationsReady = true,
+	preferredTranslations = [],
 }: {
 	target: StudyTarget;
 	sourceId: string;
@@ -44,6 +58,9 @@ export function StudySegmentPanel({
 	onCancel: () => void;
 	onSaved: (segment: Segment, kind: "created" | "existing") => void;
 	reopenToken?: number;
+	translations?: readonly ChapterTranslation[];
+	translationsReady?: boolean;
+	preferredTranslations?: readonly TranslationResult[];
 }) {
 	const client = useQueryClient();
 	const titleId = useId();
@@ -51,10 +68,35 @@ export function StudySegmentPanel({
 	const [targetKey] = useState(() => JSON.stringify(snapshot.reference));
 	const [draft, setDraft] = useState(() => createContextDraft(targetKey));
 	const draftRef = useRef(draft);
-	const updateDraft = (next: ContextDraft) => {
+	const updateDraft = useCallback((next: ContextDraft) => {
 		draftRef.current = next;
 		setDraft(next);
-	};
+	}, []);
+	const [preferred] = useState(() => structuredClone(preferredTranslations));
+	const [translationResultId, setTranslationResultId] = useState<
+		string | null
+	>();
+	useEffect(() => {
+		if (translationResultId !== undefined) return;
+		const chosen = matchingStudyTranslation(
+			snapshot.reference,
+			translationsReady ? translations : [],
+			preferred,
+		);
+		if (chosen || translationsReady) setTranslationResultId(chosen);
+	}, [
+		translationResultId,
+		translationsReady,
+		snapshot.reference,
+		translations,
+		preferred,
+	]);
+	const savedTranslation = useQuery({
+		queryKey: ["translation-result", translationResultId],
+		queryFn: () => getTranslationResult(translationResultId ?? ""),
+		enabled: !!translationResultId,
+		retry: false,
+	});
 	const [budget, setBudget] = useState<ContextBudget | null>(null);
 	const [collapsed, setCollapsed] = useState(false);
 	useEffect(() => {
@@ -87,7 +129,8 @@ export function StudySegmentPanel({
 			matchMaterialSegments(sourceId, snapshot.reference, signal),
 		retry: false,
 	});
-	const changed = draft.before.edited || draft.after.edited;
+	const changed =
+		draft.before.edited || draft.after.edited || draft.translation.edited;
 	const blocker = useBlocker(
 		() => !completed.current && (changed || uncertain || submitting.current),
 	);
@@ -99,6 +142,7 @@ export function StudySegmentPanel({
 				!completed.current &&
 				(draftRef.current.before.edited ||
 					draftRef.current.after.edited ||
+					draftRef.current.translation.edited ||
 					pendingRequest.current ||
 					submitting.current)
 			) {
@@ -123,6 +167,17 @@ export function StudySegmentPanel({
 		void client.invalidateQueries({ queryKey: queries.segments(sourceId) });
 		void client.invalidateQueries({ queryKey: queries.source(sourceId) });
 		void client.invalidateQueries({ queryKey: ["catalog"] });
+		if (kind === "created" && draftRef.current.translation.resultId) {
+			void client.invalidateQueries({
+				queryKey: ["translation-result", draftRef.current.translation.resultId],
+			});
+			void client.invalidateQueries({
+				queryKey: ["translations", snapshot.reference.material_id],
+			});
+			void client.invalidateQueries({
+				queryKey: ["segment-translations", segment.id],
+			});
+		}
 		if (blockerRef.current.state === "blocked") blockerRef.current.reset();
 		onSaved(segment, kind);
 	};
@@ -149,6 +204,32 @@ export function StudySegmentPanel({
 		},
 	});
 	const locked = save.isPending || select.isPending || uncertain;
+	useEffect(() => {
+		const result = savedTranslation.data;
+		if (
+			!result ||
+			result.id !== translationResultId ||
+			result.material_deleted ||
+			result.source_id !== sourceId ||
+			!alive.current ||
+			completed.current ||
+			locked ||
+			submitting.current ||
+			pendingRequest.current ||
+			translationReferenceKey(snapshot.reference) !==
+				translationReferenceKey(result.material_provenance)
+		)
+			return;
+		updateDraft(applyStudyTranslation(draftRef.current, targetKey, result));
+	}, [
+		savedTranslation.data,
+		translationResultId,
+		snapshot.reference,
+		sourceId,
+		targetKey,
+		locked,
+		updateDraft,
+	]);
 	const fill = (chosen: ContextBudget, explicit: boolean) => {
 		if (submitting.current || pendingRequest.current) return;
 		const next = beginContextFill(draftRef.current);
@@ -313,6 +394,33 @@ export function StudySegmentPanel({
 						))}
 						{candidates.data.truncated && <p>这里只列出最近 20 个匹配项。</p>}
 					</section>
+				)}
+				<label className="study-translation-field">
+					译文（可选）
+					<textarea
+						rows={3}
+						disabled={locked}
+						value={draft.translation.value}
+						onChange={(event) => {
+							if (!submitting.current)
+								updateDraft(
+									editStudyTranslation(draftRef.current, event.target.value),
+								);
+						}}
+					/>
+				</label>
+				{savedTranslation.isFetching && <p role="status">正在读取已存译文…</p>}
+				{savedTranslation.isError && (
+					<div>
+						<InlineError error={savedTranslation.error} />
+						<button
+							type="button"
+							disabled={locked}
+							onClick={() => void savedTranslation.refetch()}
+						>
+							重试读取译文
+						</button>
+					</div>
 				)}
 				<fieldset disabled={locked} className="study-context-fields">
 					<legend>
@@ -531,7 +639,7 @@ export function StudySegmentPanel({
 					<p>
 						{uncertain
 							? "保存结果尚未确认。放弃后可从来源检查片段是否已保存。"
-							: "未保存的语境修改会丢失。"}
+							: "未保存的译文或语境修改会丢失。"}
 					</p>
 					<div className="actions">
 						<button
@@ -560,7 +668,7 @@ export function StudySegmentPanel({
 					onClose={() => setReuse(null)}
 				>
 					<h2 id={`${titleId}-reuse`}>选用已有片段？</h2>
-					<p>将保留已有片段的语境，本次未保存的修改会被放弃。</p>
+					<p>将保留已有片段的译文和语境，本次未保存的修改会被放弃。</p>
 					<div className="actions">
 						<button
 							type="button"

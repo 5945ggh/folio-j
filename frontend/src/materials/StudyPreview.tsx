@@ -41,6 +41,8 @@ export function StudyPreview({
 }: StudyPreviewProps) {
 	const element = useRef<HTMLDivElement>(null);
 	const content = useRef<HTMLDivElement>(null);
+	const analysisPreview = useRef<HTMLDivElement>(null);
+	const [previewClipped, setPreviewClipped] = useState(false);
 	const focusAfterSelection = useRef(false);
 	const callbacks = useRef({ onClose, onEmphasize });
 	callbacks.current = { onClose, onEmphasize };
@@ -105,7 +107,11 @@ export function StudyPreview({
 		};
 	}, [anchor, expanded, fixed, embedded]);
 	useLayoutEffect(() => {
-		if (segmentId && content.current) content.current.scrollTop = 0;
+		if (segmentId && content.current) {
+			content.current.scrollTop = 0;
+			const body = content.current.closest(".reader-record-body");
+			if (body) body.scrollTop = 0;
+		}
 		if (focusAfterSelection.current) {
 			focusAfterSelection.current = false;
 			element.current
@@ -154,6 +160,20 @@ export function StudyPreview({
 		setSelectedId(id);
 		setAnalysisSelection(null);
 	};
+	useLayoutEffect(() => {
+		const node = analysisPreview.current;
+		if (!document || !node || expanded || inactive) {
+			setPreviewClipped(false);
+			return;
+		}
+		const measure = () =>
+			setPreviewClipped(node.scrollHeight > node.clientHeight + 1);
+		measure();
+		const observer = new ResizeObserver(measure);
+		observer.observe(node);
+		for (const child of node.children) observer.observe(child);
+		return () => observer.disconnect();
+	}, [document, expanded, inactive]);
 
 	return (
 		// biome-ignore lint/a11y/useAriaPropsSupportedByRole: both dialog and the named embedded region support labels.
@@ -172,15 +192,6 @@ export function StudyPreview({
 			{!embedded && (
 				<header className="reader-study-preview-header">
 					<div>
-						{selected && canReturn ? (
-							<button
-								type="button"
-								className="reader-study-preview-back"
-								onClick={() => select(null)}
-							>
-								← {fixed ? "本章片段" : "片段列表"}
-							</button>
-						) : null}
 						<strong id={headingId}>
 							{selected
 								? "学习片段"
@@ -193,10 +204,10 @@ export function StudyPreview({
 						<button
 							type="button"
 							onClick={expanded ? onCollapse : onExpand}
-							aria-label={expanded ? "收起学习片段预览" : "展开学习片段预览"}
+							aria-label={expanded ? "返回学习片段预览" : "展开学习片段预览"}
 							aria-expanded={expanded}
 						>
-							{expanded ? "收起" : "展开阅读"}
+							{expanded ? "返回预览" : "展开阅读"}
 						</button>
 						<button
 							type="button"
@@ -208,21 +219,34 @@ export function StudyPreview({
 					</div>
 				</header>
 			)}
-			{embedded && selected && canReturn && (
-				<button
-					className="reader-record-back"
-					type="button"
-					onClick={() => select(null)}
-				>
-					← 学习片段列表
-				</button>
+			{selected && (
+				<div className="reader-study-preview-toolbar">
+					{canReturn && (
+						<button
+							className="reader-study-preview-back"
+							type="button"
+							onClick={() => select(null)}
+						>
+							← 学习片段列表
+						</button>
+					)}
+					<button
+						className="reader-study-preview-open"
+						type="button"
+						onClick={() =>
+							onOpen(segmentId, analysis?.id, analysis?.current_revision_id)
+						}
+					>
+						打开片段 <span aria-hidden="true">→</span>
+					</button>
+				</div>
 			)}
-			<div ref={content} className="reader-study-preview-content">
+			<div
+				ref={content}
+				className={`reader-study-preview-content${!selected ? " reader-study-preview-list" : ""}`}
+			>
 				{!selected ? (
 					<>
-						<p className="reader-study-preview-hint">
-							选择片段，直接查看已保存的内容。
-						</p>
 						{loading && <p role="status">正在读取本章片段…</p>}
 						{!loading && items.length === 0 && <p>此处暂无可定位片段。</p>}
 						<div className="reader-study-preview-candidates">
@@ -237,10 +261,18 @@ export function StudyPreview({
 									onBlur={() => onEmphasize(null)}
 								>
 									<span lang="ja">{item.excerpt}</span>
-									<small>
-										{new Date(item.created_at).toLocaleString()} ·{" "}
-										{item.segment_id.slice(-6)}
-									</small>
+									<time
+										dateTime={item.created_at}
+										title={new Date(item.created_at).toLocaleString()}
+									>
+										{new Date(item.created_at).toLocaleString(undefined, {
+											year: "numeric",
+											month: "2-digit",
+											day: "2-digit",
+											hour: "2-digit",
+											minute: "2-digit",
+										})}
+									</time>
 								</button>
 							))}
 						</div>
@@ -302,7 +334,7 @@ export function StudyPreview({
 								aria-label="已保存讲解"
 							>
 								<div className="reader-study-preview-analysis-heading">
-									<h3>讲解</h3>
+									<h3>{expanded ? "讲解" : "讲解预览"}</h3>
 									{analysisItems.length > 1 || analyses.hasNextPage ? (
 										<>
 											<label
@@ -344,7 +376,11 @@ export function StudyPreview({
 									<p role="alert">讲解与当前片段或版本不匹配，请重新选择。</p>
 								)}
 								{presentation && (
-									<div className="reader-study-preview-markdown">
+									<div
+										ref={analysisPreview}
+										className="reader-study-preview-markdown"
+										data-clipped={previewClipped || undefined}
+									>
 										{presentation.title && (
 											<Markdown text={presentation.title.markdown} />
 										)}
@@ -405,14 +441,6 @@ export function StudyPreview({
 							)}
 						</dl>
 					</details>
-					<button
-						type="button"
-						onClick={() =>
-							onOpen(segmentId, analysis?.id, analysis?.current_revision_id)
-						}
-					>
-						打开片段 →
-					</button>
 				</footer>
 			)}
 		</div>

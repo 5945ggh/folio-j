@@ -4044,6 +4044,17 @@
             "default": "",
             "title": "Translation",
             "type": "string"
+          },
+          "translation_result_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translation Result Id"
           }
         },
         "title": "SegmentCreate",

@@ -245,7 +245,10 @@ export async function themeRegression(h: BrowserHarness) {
 					"Study candidates not loaded",
 				);
 				node<HTMLDetailsElement>(".study-context-side").open = true;
-				h.inputValue(node<HTMLTextAreaElement>("textarea"), "编辑后的前文");
+				h.inputValue(
+					node<HTMLTextAreaElement>(".study-context-fields textarea"),
+					"编辑后的前文",
+				);
 				await h.until(
 					() => node(".study-context-status").textContent === "已编辑",
 					"Draft edit not received",
@@ -279,7 +282,8 @@ export async function themeRegression(h: BrowserHarness) {
 				))
 					contrast(element, `reuse ${theme} ${element.textContent}`);
 				check(
-					node<HTMLTextAreaElement>("textarea").value === "编辑后的前文",
+					node<HTMLTextAreaElement>(".study-context-fields textarea").value ===
+						"编辑后的前文",
 					"Confirmation must preserve edited context",
 				);
 				button("继续编辑", node("dialog[open]")).click();
@@ -420,7 +424,6 @@ export async function themeRegression(h: BrowserHarness) {
 						target={target}
 						embedded
 						onClose={noop}
-						onSaved={noop}
 						onBackToOrigin={noop}
 					/>
 				</div>,

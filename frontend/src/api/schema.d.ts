@@ -2599,6 +2599,8 @@ export interface components {
              * @default
              */
             translation: string;
+            /** Translation Result Id */
+            translation_result_id?: string | null;
         };
         /** SegmentDeleteImpact */
         SegmentDeleteImpact: {

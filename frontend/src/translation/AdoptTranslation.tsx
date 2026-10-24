@@ -69,7 +69,7 @@ export function SavedTranslationDestinations({
 }: {
 	ids: string[];
 	onOpenSegment?: (id: string) => void;
-	onCreateNew: () => void;
+	onCreateNew?: () => void;
 	allowCreateNew?: boolean;
 	onClose?: () => void;
 }) {
@@ -97,7 +97,7 @@ export function SavedTranslationDestinations({
 						</Link>
 					),
 				)}
-				{allowCreateNew && (
+				{allowCreateNew && onCreateNew && (
 					<button type="button" onClick={onCreateNew}>
 						另存为新片段
 					</button>

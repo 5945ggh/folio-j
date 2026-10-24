@@ -344,7 +344,6 @@ export async function readingAidsRegression(
 						anchor={anchor}
 						direction={direction}
 						onClose={() => setOpen(false)}
-						onSaved={() => {}}
 						onBackToOrigin={() => {}}
 					/>
 				)}
@@ -427,22 +426,28 @@ export async function readingAidsRegression(
 					getComputedStyle(card).overflowY === "auto",
 				"Short-screen translation content must be scrollable",
 			);
-			const save = button(h, "保存为学习片段", card);
-			save.scrollIntoView({ block: "end" });
-			await afterLayout();
-			const saveBounds = save.getBoundingClientRect();
 			check(
-				saveBounds.top >= header.getBoundingClientRect().bottom - 1 &&
-					saveBounds.bottom <= card.getBoundingClientRect().bottom + 1,
-				"Scrolling must expose the save action below the sticky header",
+				![...card.querySelectorAll("button")].some((node) =>
+					node.textContent?.includes("保存为学习片段"),
+				),
+				"Translation details must not expose a competing save action",
+			);
+			const back = button(h, "返回原处", card);
+			back.scrollIntoView({ block: "end" });
+			await afterLayout();
+			const backBounds = back.getBoundingClientRect();
+			check(
+				backBounds.top >= header.getBoundingClientRect().bottom - 1 &&
+					backBounds.bottom <= card.getBoundingClientRect().bottom + 1,
+				"Scrolling must expose return-to-origin below the sticky header",
 			);
 			const hit = document.elementFromPoint(
-				saveBounds.left + saveBounds.width / 2,
-				saveBounds.top + saveBounds.height / 2,
+				backBounds.left + backBounds.width / 2,
+				backBounds.top + backBounds.height / 2,
 			);
 			check(
-				hit && save.contains(hit),
-				"Visible save action must remain clickable in the short-screen error state",
+				hit && back.contains(hit),
+				"Return-to-origin must remain clickable",
 			);
 			button(h, "声音与语速", bar).click();
 			await h.until(
@@ -462,7 +467,7 @@ export async function readingAidsRegression(
 		} finally {
 			disposeShort();
 		}
-		return `reading aids: ${innerWidth}×${innerHeight}; error card/bar do not overlap; sticky header leaves scrollable content and reachable save; complete reason in sound popover`;
+		return `reading aids: ${innerWidth}×${innerHeight}; error card/bar do not overlap; sticky header leaves scrollable content and reachable return-to-origin; complete reason in sound popover`;
 	}
 	for (const direction of ["horizontal-tb", "vertical-rl"] as const) {
 		for (const dark of [false, true]) {
@@ -498,7 +503,13 @@ export async function readingAidsRegression(
 					),
 					"Secondary configuration/history should start collapsed",
 				);
-				button(h, "保存为学习片段", card);
+				check(
+					![...card.querySelectorAll("button")].some((node) =>
+						node.textContent?.includes("保存为学习片段"),
+					),
+					"Translation details must not expose a save action",
+				);
+				button(h, "返回原处", card);
 				const style = getComputedStyle(card);
 				check(
 					contrast(style.color, style.backgroundColor) >= 4.5,
@@ -752,7 +763,6 @@ export async function readingAidsRegression(
 				sourceId="source"
 				target={null}
 				onClose={() => {}}
-				onSaved={() => {}}
 				onBackToOrigin={() => {}}
 			/>
 		</main>,
