@@ -1,0 +1,80 @@
+frontend/src/materials/study.css
+  s_eb44868f0c0200::t_86b9a2f580bfa9 175-176,183,194-195
+frontend/src/materials/study-translation.test.ts
+  s_eb44868f0c0200::t_5b6a1f845c602f 92-94
+  s_eb44868f0c0200::t_cf3b43cf421aa6 1-5,10-11,29-33,38,50-55,76-86,91,95-99,116,135-136
+  s_eb44868f0c0200::t_692e4fb6f436d0 6-9,12-28,34-37,39-49,56-75,87-90,100-115,117-134
+frontend/browser-tests/reading-aids.tsx
+  s_eb44868f0c0200::t_9addbcf5e95bb5 429,432-436,438,440-442,445-446,470,506,509-512
+  s_eb44868f0c0200::t_cc145dde3ff4a1 430-431,449-450,507-508
+frontend/browser-tests/record-saving.tsx
+  s_eb44868f0c0200::t_cf4c1f33d7c027 569-573
+  s_eb44868f0c0200::t_9ac0b268e7db1d 482-483,487,492-500
+  s_eb44868f0c0200::t_d22179526d0cd5 579-582
+  s_eb44868f0c0200::t_34914ff14199b9 484-486,488-491
+  s_eb44868f0c0200::t_2ef52a155f75c5 35,41-64,341,369,429-442,467,602
+  s_eb44868f0c0200::t_696df70a77190a 2-3,382,397-407,411
+  s_eb44868f0c0200::t_6d21ecba27b52e 291-292,466
+  s_eb44868f0c0200::t_cc145dde3ff4a1 13-34,68-290,293-340,342-368,370-380,383-396,409-410,412-428,445-465,468-481,502-567,574-578,583-601,603-639
+  s_eb44868f0c0200::t_b4452d2d03b03e 1,4-12,36-40,65-67,381,408,443-444,501,568,640-642
+frontend/browser-tests/theme.tsx
+  s_eb44868f0c0200::t_f4543f307608dc 248-251,285-286
+frontend/src/materials/study-translation.ts
+  s_eb44868f0c0200::t_692e4fb6f436d0 6-8,10-17,40-42,44-46,52-62,73-79,81-91
+  s_eb44868f0c0200::t_456f394273e1c4 1-5,9,18-39,43,47-51,63-72,80,92
+frontend/browser-tests/main.tsx
+  s_eb44868f0c0200::t_95ce3dff62b81a 288
+  s_eb44868f0c0200::t_2f709e98e0e321 295,299
+  s_eb44868f0c0200::t_cc145dde3ff4a1 14,374-383,385-386,388,390-397,399,401,403-413,417,419,423,425-434,436-437,439,441,452-454,456-460,471-473,482-520
+  s_eb44868f0c0200::t_f32947fc3463c0 296-298
+  s_eb44868f0c0200::t_907c24e0b07679 372,521
+frontend/src/materials/ChapterRecords.tsx
+  s_eb44868f0c0200::t_b45e53027d9ba7 41,383
+frontend/src/translation/TranslationPanel.tsx
+  s_eb44868f0c0200::t_692e4fb6f436d0 129-137,139-144,146-156
+  s_eb44868f0c0200::t_b45e53027d9ba7 175,190,380-383
+  s_eb44868f0c0200::t_4d5388cd9776d7 17
+frontend/src/materials/study-draft.test.ts
+  s_eb44868f0c0200::t_692e4fb6f436d0 140-146,156-157,159-164,169-180
+  s_eb44868f0c0200::t_cf3b43cf421aa6 6,11,133-139,147-155,158,165-168,181
+frontend/src/materials/MaterialReader.tsx
+  s_eb44868f0c0200::t_b45e53027d9ba7 169-173,2226
+  s_eb44868f0c0200::t_692e4fb6f436d0 2225
+  s_eb44868f0c0200::t_07cd8d15d33b2e 2199,2227-2229,2353
+frontend/browser-tests/translation.tsx
+  s_eb44868f0c0200::t_4d5388cd9776d7 1173-1175,1177-1178,1181-1182,1187
+  s_eb44868f0c0200::t_ed91aad9b26163 1172
+frontend/src/translation/AdoptTranslation.tsx
+  s_eb44868f0c0200::t_b45e53027d9ba7 72,100
+frontend/src/materials/study-draft.ts
+  s_eb44868f0c0200::t_692e4fb6f436d0 45-52,61-65,67-74,131-133
+  s_eb44868f0c0200::t_456f394273e1c4 21,30,53-60,66,75-76,104,107,130
+frontend/src/materials/StudySegmentPanel.tsx
+  s_eb44868f0c0200::t_1b0d3a7d09b167 26,34,51-53,61-63,71,74-75,79,94-99,145,170,180,207-208,222-223,399-404,409-415,421-424,642,671
+  s_eb44868f0c0200::t_86b9a2f580bfa9 398
+  s_eb44868f0c0200::t_692e4fb6f436d0 11-15,38-41,76-78,87-93,132-133,171-179,209-212,214-221,224-227,229-232,405-408,416-420
+  s_eb44868f0c0200::t_4d5388cd9776d7 80-86,213,228
+frontend/scripts/test-browser.mjs
+  s_eb44868f0c0200::t_8e08404b4edbd0 70-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bc375b3b14f4d9dbeba6a4987191ad40be40c9d5",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_eb44868f0c0200": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16c79-d382-72b0-b54d-48d23b70cfa0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
