@@ -1,0 +1,126 @@
+docs/ARCHITECTURE.md
+  s_a17f141e6c0844::t_2edca4789475b7 446
+docs/INFORMATION_ARCHITECTURE.md
+  s_a17f141e6c0844::t_2edca4789475b7 96,98-99
+  s_a17f141e6c0844::t_b8cfded51d4070 95,97
+frontend/src/segments/original-card.css
+  s_a17f141e6c0844::t_ac412774d893ba 5,11-22,32-33,42,44,53,65-66,68,74-84
+  s_a17f141e6c0844::t_115c3c2edca3af 56
+frontend/src/translation/translation.css
+  s_a17f141e6c0844::t_08e85f89ff1ae6 225
+  s_a17f141e6c0844::t_ac412774d893ba 203-220,222,226-227,229-230,232-234,236-239
+frontend/src/materials/segment-material-origin.css
+  s_a17f141e6c0844::t_82b421c4af82f1 2-5,8-12,15-30,33-35,39-54,59-60
+  s_a17f141e6c0844::t_76c616f1493e7e 1,6-7,13-14,31-32,36-38,55-58,61-63
+frontend/src/segments/layout.css
+  s_a17f141e6c0844::t_d4a87c83a2bd54 139,146
+  s_a17f141e6c0844::t_88c8cd05d87a56 143-145
+  s_a17f141e6c0844::t_28ad18ff74ba91 147
+frontend/browser-tests/main.tsx
+  s_a17f141e6c0844::t_e31ef6ea003581 430,432-434
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_a17f141e6c0844::t_980ce29e942e1a 25
+frontend/src/SegmentPage.tsx
+  s_a17f141e6c0844::t_ac412774d893ba 59
+frontend/scripts/test-browser.mjs
+  s_a17f141e6c0844::t_e31ef6ea003581 45-46
+frontend/browser-tests/segment-origin-stability.tsx
+  s_a17f141e6c0844::t_1575828adc0f63 20,166,173-174,263
+  s_38eb4863b23f19::t_32ea6ac3f9cd4d 1-19,21-99,102-165,167-172,175-262,264
+  s_a17f141e6c0844::t_71a242a03a0b12 100-101
+frontend/browser-tests/segment-materials.tsx
+  s_a17f141e6c0844::t_08e85f89ff1ae6 93-95,98,490-494,551-553,556-559,573-580,612-613,616-619,621-623,637-639,641-643,661-664,674-677,680-691,695-701,703-707,709,711-713,715-722,747,749-752,754-755,757,762-769,771-774,776-778,780-782,784-787
+  s_a17f141e6c0844::t_a09dd307665f88 476,498,583-591,593-595,597-599,625-626,628,650-652,654,723-730,732-735,737-741,743
+  s_a17f141e6c0844::t_ca0260c6639a03 82
+  s_a17f141e6c0844::t_1575828adc0f63 84,425
+  s_a17f141e6c0844::t_12e867175a0fef 6-42,426
+  s_38eb4863b23f19::t_32ea6ac3f9cd4d 4
+  s_a17f141e6c0844::t_b640179e025f78 79,91-92,96-97,104-105,268,348,423
+  s_a17f141e6c0844::t_a4f21a62a43e52 205-206,306-307,546-547,566-567
+  s_a17f141e6c0844::t_9486831a2f85a1 600-604
+  s_a17f141e6c0844::t_df37240d118558 702
+  s_a17f141e6c0844::t_84868e6da89f50 83,428-430,432-475,477-489,495-497,499-533,535-545,548-549,554-555,560-565,568-572,581-582,605-611,614-615,620,624,629-636,640,644-649,655-660,665-673,678-679,692-694,708,744-746,753,758-761,770,775,779,783,788-789,791-793
+  s_a17f141e6c0844::t_fb5c4ac65cfb6e 80-81
+  s_a17f141e6c0844::t_162c54c35f0bae 207
+  s_a17f141e6c0844::t_22e792de877b2f 308
+  s_a17f141e6c0844::t_267abe35edf657 427
+  s_a17f141e6c0844::t_41c3e213a53b05 431
+  s_a17f141e6c0844::t_1e008f5682e809 534
+  s_a17f141e6c0844::t_bd3d3f7d27dba3 550
+  s_a17f141e6c0844::t_9d855c6b8e039c 592
+  s_a17f141e6c0844::t_9b846aaa1200d8 596
+  s_a17f141e6c0844::t_ff87ed6713f61c 627
+  s_a17f141e6c0844::t_11441269b4c75e 653
+  s_a17f141e6c0844::t_96ca9558c00f68 710
+  s_a17f141e6c0844::t_357fb3a5aca3d9 714
+  s_a17f141e6c0844::t_50d99cfbdff25a 731
+  s_a17f141e6c0844::t_741ce678da1d1c 736
+  s_a17f141e6c0844::t_070c3651c95436 742
+  s_a17f141e6c0844::t_c694bad92f5861 748
+  s_a17f141e6c0844::t_beb4a2d518ab82 756
+  s_a17f141e6c0844::t_df95a5bb1cea3a 790
+  s_464499a7d49f52::t_56ca0453954fb1 5
+backend/src/app/provenance_schemas.py
+  s_a17f141e6c0844::t_76c616f1493e7e 63-64
+docs/handovers/text-study/SEGMENT_UI_ACCEPTANCE.md
+  s_a17f141e6c0844::t_2edca4789475b7 57-74
+  s_a17f141e6c0844::t_8de1af7da88eff 96
+  s_a17f141e6c0844::t_b8cfded51d4070 82-95
+  s_a17f141e6c0844::t_1b0f784574f241 75-81
+frontend/src/api/schema.d.ts
+  s_a17f141e6c0844::t_f81e6e30137960 2635-2636,2649-2650
+backend/src/app/services/material_provenance.py
+  s_a17f141e6c0844::t_76c616f1493e7e 501,503-505,543-544,561,571-572,582-583,590
+backend/tests/test_segment_provenance.py
+  s_a17f141e6c0844::t_0cf0e4b5078b4c 154-155,418-419,498-499,685,795-796,808-816,852-853,890-891
+backend/openapi.json
+  s_a17f141e6c0844::t_f81e6e30137960 4124-4134,4178-4188
+frontend/src/translation/SegmentTranslations.tsx
+  s_a17f141e6c0844::t_ac412774d893ba 5-12,18-20,22-28,36-55,58
+frontend/src/materials/SegmentMaterialOrigin.tsx
+  s_a17f141e6c0844::t_5cf28b0b9b1240 37,109
+  s_a17f141e6c0844::t_82b421c4af82f1 38-40,42,44-71,74,76,85,87
+  s_a17f141e6c0844::t_76c616f1493e7e 8,98,106
+  s_a17f141e6c0844::t_e9efc1cb9ea1cb 30-35,41,43,73,78-82,88-95
+frontend/src/segments/OriginalCard.tsx
+  s_a17f141e6c0844::t_cee86f4788c3c2 6-7,48-52,58-62,64-68,74-78,80,85-91,104-105
+  s_a17f141e6c0844::t_08e85f89ff1ae6 70,72
+  s_a17f141e6c0844::t_ac412774d893ba 53-57,71,81-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "799402231cc55dd2224bd646d7689dfad26d3ea7",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_38eb4863b23f19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16c0e-80ef-7263-b87d-276e06e0774c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_464499a7d49f52": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16c0c-adc5-7660-b58f-cff3247cbd91",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_a17f141e6c0844": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16c02-612c-7d43-92a5-817643768641",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
