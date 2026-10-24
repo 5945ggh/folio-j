@@ -1,5 +1,7 @@
 # 前端调整验收记录
 
+> 2026-10-24 本机资产整理：本文链接的证据已迁至私有归档；旧验收数据库、构建与脚本已清理。以下 `temp/` 路径和服务地址记录当时环境，保留范围见[本机证据保留说明](../LOCAL_EVIDENCE.md)。
+
 > 历史阶段资料（2026-10-20 归档）。现行规则见[PRD](../../../PRD.md)与[架构](../../../ARCHITECTURE.md)，当前交付和未完成验收见[实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。
 
 > 2026-10-04；本轮 A–E 已完成。以下为实现代理与主代理本轮命令、独立数据库、真实浏览器及离线工具执行证据；不以旧 EPUB 记录或参考图代替本轮验收。
@@ -54,13 +56,13 @@
 
 截图位于隔离验收目录，合成内容不冒充用户真实书库；临时文件保留在本地，不保证随公开仓库分发。
 
-- [最终生产素材库](../../../../temp/frontend-refresh-acceptance/evidence/materials-final-wide.jpg)
-- [素材库宽屏](../../../../temp/frontend-refresh-acceptance/evidence/materials-wide.jpg)、[窄屏](../../../../temp/frontend-refresh-acceptance/evidence/materials-narrow.jpg)
-- [Source 素材](../../../../temp/frontend-refresh-acceptance/evidence/source-materials-wide.jpg)、[片段](../../../../temp/frontend-refresh-acceptance/evidence/source-segments-wide.jpg)、[讲解宽屏](../../../../temp/frontend-refresh-acceptance/evidence/source-analyses-wide.jpg)、[讲解窄屏](../../../../temp/frontend-refresh-acceptance/evidence/source-analyses-narrow.jpg)
-- [展开窗口宽屏](../../../../temp/frontend-refresh-acceptance/evidence/source-window-wide.jpg)、[窄屏](../../../../temp/frontend-refresh-acceptance/evidence/source-window-narrow.jpg)、[设置窄屏](../../../../temp/frontend-refresh-acceptance/evidence/settings-narrow.jpg)
-- [阅读竖排重排](../../../../temp/frontend-refresh-acceptance/evidence/reader-vertical-reflow.jpg)、[窄屏恢复](../../../../temp/frontend-refresh-acceptance/evidence/reader-narrow-restored.jpg)、[复用与完成](../../../../temp/frontend-refresh-acceptance/evidence/reader-reused-completed.jpg)
-- [历史讲解](../../../../temp/frontend-refresh-acceptance/evidence/workbench-historical-wide.jpg)、[审核](../../../../temp/frontend-refresh-acceptance/evidence/workbench-review-wide.jpg)、[失败保留成果](../../../../temp/frontend-refresh-acceptance/evidence/workbench-failure-with-artifact.jpg)、[工作台窄屏](../../../../temp/frontend-refresh-acceptance/evidence/workbench-narrow.jpg)
-- [导入失败保留 Source](../../../../temp/frontend-refresh-acceptance/evidence/import-failure-preserves-source.jpg)
+- [最终生产素材库](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/materials-final-wide.jpg)
+- [素材库宽屏](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/materials-wide.jpg)、[窄屏](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/materials-narrow.jpg)
+- [Source 素材](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/source-materials-wide.jpg)、[片段](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/source-segments-wide.jpg)、[讲解宽屏](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/source-analyses-wide.jpg)、[讲解窄屏](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/source-analyses-narrow.jpg)
+- [展开窗口宽屏](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/source-window-wide.jpg)、[窄屏](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/source-window-narrow.jpg)、[设置窄屏](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/settings-narrow.jpg)
+- [阅读竖排重排](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/reader-vertical-reflow.jpg)、[窄屏恢复](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/reader-narrow-restored.jpg)、[复用与完成](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/reader-reused-completed.jpg)
+- [历史讲解](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/workbench-historical-wide.jpg)、[审核](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/workbench-review-wide.jpg)、[失败保留成果](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/workbench-failure-with-artifact.jpg)、[工作台窄屏](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/workbench-narrow.jpg)
+- [导入失败保留 Source](../../../../data/acceptance-evidence/frontend-refresh-acceptance/evidence/import-failure-preserves-source.jpg)
 
 ## 默认、迁移与限制
 

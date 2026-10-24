@@ -1,5 +1,7 @@
 # 素材库 A.1 集成验收记录
 
+> 2026-10-24 本机资产整理：本文链接的证据已迁至私有归档；旧验收数据库、构建与脚本已清理。以下 `temp/` 路径和服务地址记录当时环境，保留范围见[本机证据保留说明](../LOCAL_EVIDENCE.md)。
+
 > 历史阶段资料（2026-10-20 归档）。现行规则见[PRD](../../../PRD.md)与[架构](../../../ARCHITECTURE.md)，当前交付和未完成验收见[实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。
 
 日期：2026-10-05。状态：实现、综合检查与本轮浏览器验收通过。本文只记录本轮工程结果，2026-10-04 前端调整与离线原型的历史证据保持原记录。
@@ -22,21 +24,21 @@
 - 返回素材库后两本真实封面成功解码，尺寸为 1120×1600、1443×2048；封面完整展示，无全书进度槽、常驻状态下拉与重复来源。
 - 三点菜单修改完成状态不触发阅读导航；503 时保留原状态并显示错误，解除故障后可重试。
 - 条件无结果独立显示；旧版本失败缓存重新生成版本 2 声明封面。缓存 QA 核对原始字节／不可变产物 hash、材料版本／ID、完整阅读位置保持不变。
-- 已留存[空库](../../../../temp/library-a1-acceptance/evidence/empty-wide.jpg)、[两本真实封面](../../../../temp/library-a1-acceptance/evidence/two-real-covers-wide.jpg)、[菜单失败](../../../../temp/library-a1-acceptance/evidence/status-failure-menu.jpg)、[无结果](../../../../temp/library-a1-acceptance/evidence/no-results.jpg)、[旧缓存重建](../../../../temp/library-a1-acceptance/evidence/old-cache-rebuilt.jpg)与[阅读器回归](../../../../temp/library-a1-acceptance/evidence/reader-regression.jpg)截图。
+- 已留存[空库](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/empty-wide.jpg)、[两本真实封面](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/two-real-covers-wide.jpg)、[菜单失败](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/status-failure-menu.jpg)、[无结果](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/no-results.jpg)、[旧缓存重建](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/old-cache-rebuilt.jpg)与[阅读器回归](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/reader-regression.jpg)截图。
 
 真实样书与参考封面只留用户本机，不放公开仓库或站点。用户原日常库仅进行只读调查，未迁移；独立测试库验证迁移与重建，无删库重导。
 
-封面调查见[本机后端报告](../../../../temp/library-a1-acceptance/COVER_REPORT.md)，不变式核对见[旧缓存验证 JSON](../../../../temp/library-a1-acceptance/old-cache-verification.json)。以上 `temp/` 证据为 gitignored 本机文件；不随公开仓库分发，仓库读者可能无法访问。综合命令输出由主代理工具执行确认，未另存日志文件。
+封面调查见[本机后端报告](../../../../data/acceptance-evidence/library-a1-acceptance/COVER_REPORT.md)，不变式核对见[旧缓存验证 JSON](../../../../data/acceptance-evidence/library-a1-acceptance/old-cache-verification.json)。以上本机证据为 gitignored 本机文件；不随公开仓库分发，仓库读者可能无法访问。综合命令输出由主代理工具执行确认，未另存日志文件。
 
 ## 补充浏览器验收与限制
 
 最终生产构建在独立验收入口 8773 验证以下行为：
 
-- 55 本书分页为首 50 本／末 5 本，最近打开／降序与搜索条件可见；有书但筛选零结果显示无匹配和清除入口，无整区空库导入。目录 503 时先显示加载再显示错误／重试，从未冒充空库，故障解除后重试成功。见[多页窄屏](../../../../temp/library-a1-acceptance/evidence/pagination-narrow.jpg)、[目录失败](../../../../temp/library-a1-acceptance/evidence/catalog-failure.jpg)。
-- 320px 下长混合标题保持两行（实测高 44.8px）及完整 `title`，文档宽 320px 无横向溢出；390px 卡片大小 280 时单列、140 时双列，实测卡片宽度分别准确。见[长标题](../../../../temp/library-a1-acceptance/evidence/long-title-320.jpg)、[真实封面窄屏](../../../../temp/library-a1-acceptance/evidence/two-real-covers-narrow.jpg)。
-- Source 保留原主从结构和三视图，共享书卡显示真实图片，1280px 无横向溢出；菜单 End 聚焦末项，Escape 返回触发按钮。见[来源页回归](../../../../temp/library-a1-acceptance/evidence/source-regression-wide.jpg)。本轮只同步共享书卡与导航命名／图标，Source 页面风格可继续独立设计。
-- Reader 图文、章节与工具沿用原布局可用，阅读返回保留 `q`／`sort`／`order`；目录滚动从 1392px 打开书再返回仍为 1392px。见[滚动返回](../../../../temp/library-a1-acceptance/evidence/scroll-return.jpg)。Reader 风格可继续独立设计。
-- Segment 确切历史修订 `65KCPG` 定位准确，390px 无溢出，讨论草稿收起重开不丢，1280px 保持原布局；未调用真实模型。见[工作台宽屏](../../../../temp/library-a1-acceptance/evidence/workbench-regression-wide.jpg)、[工作台窄屏](../../../../temp/library-a1-acceptance/evidence/workbench-regression-narrow.jpg)。
+- 55 本书分页为首 50 本／末 5 本，最近打开／降序与搜索条件可见；有书但筛选零结果显示无匹配和清除入口，无整区空库导入。目录 503 时先显示加载再显示错误／重试，从未冒充空库，故障解除后重试成功。见[多页窄屏](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/pagination-narrow.jpg)、[目录失败](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/catalog-failure.jpg)。
+- 320px 下长混合标题保持两行（实测高 44.8px）及完整 `title`，文档宽 320px 无横向溢出；390px 卡片大小 280 时单列、140 时双列，实测卡片宽度分别准确。见[长标题](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/long-title-320.jpg)、[真实封面窄屏](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/two-real-covers-narrow.jpg)。
+- Source 保留原主从结构和三视图，共享书卡显示真实图片，1280px 无横向溢出；菜单 End 聚焦末项，Escape 返回触发按钮。见[来源页回归](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/source-regression-wide.jpg)。本轮只同步共享书卡与导航命名／图标，Source 页面风格可继续独立设计。
+- Reader 图文、章节与工具沿用原布局可用，阅读返回保留 `q`／`sort`／`order`；目录滚动从 1392px 打开书再返回仍为 1392px。见[滚动返回](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/scroll-return.jpg)。Reader 风格可继续独立设计。
+- Segment 确切历史修订 `65KCPG` 定位准确，390px 无溢出，讨论草稿收起重开不丢，1280px 保持原布局；未调用真实模型。见[工作台宽屏](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/workbench-regression-wide.jpg)、[工作台窄屏](../../../../data/acceptance-evidence/library-a1-acceptance/evidence/workbench-regression-narrow.jpg)。
 - 封面临时 503 后显示占位；恢复服务并点击同卡片菜单“重试封面”，资源带 `?v=2&retry=1`，实际解码宽 1443px，无需刷新页面，验证旧失败状态可解除。
 
 迟到导入测试从 A.1 加号提交延迟 3 秒的合成书后取消，路由始终保持 `/materials?type=book&sort=title&order=asc`，最终计数由 55 增至 56，迟到结果没有抢导航。临时运行入口为原型 8771、开发前端 5175／API 8772、生产验收 8773，这些地址不作为持久成果链接。

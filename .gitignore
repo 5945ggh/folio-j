@@ -58,6 +58,7 @@ coverage/
 
 # Local scratch files and repository snapshots
 /temp/
+/data/acceptance-evidence/
 .snapshots/
 
 # Private EPUB samples and compiled publication text (slice 0 only)

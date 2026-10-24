@@ -1,5 +1,7 @@
 # 来源空间 S2 工程验收记录
 
+> 2026-10-24 本机资产整理：本文链接的证据已迁至私有归档；旧验收数据库、构建与脚本已清理。以下 `temp/` 路径和服务地址记录当时环境，保留范围见[本机证据保留说明](../LOCAL_EVIDENCE.md)。
+
 > 历史阶段资料（2026-10-20 归档）。现行规则见[PRD](../../../PRD.md)与[架构](../../../ARCHITECTURE.md)，当前交付和未完成验收见[实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。
 
 日期：2026-10-05。状态：实现完成，本轮浏览器与独立 API 工程验收已完成；最终综合命令已通过。本记录不表示用户最终使用验收，也不继承原型或 A.1 的历史通过结论。
@@ -10,19 +12,19 @@
 
 完成来源三栏（主导航／来源列表／来源内容）、概览／素材／片段／讲解四视图；有界预览 2／3／3、来源每页 50 项且可访问后续页、普通来源身份核实、旧窗口链接兼容与真实来源管理。复用 A.1，Reader 与 Segment 工作台内部不重设计。长期规范已同步 PRD、信息架构、GLOSSARY，阶段入口与实施基线已关联本轮。
 
-A.1 旧构建保留在本机 `temp/folio-s2-acceptance/baseline-dist`；对照截图为（宽屏在施工前采集，窄屏使用保留基线构建补录）[宽屏](../../../../temp/folio-s2-acceptance/evidence/a1-before-wide.jpg)与[窄屏](../../../../temp/folio-s2-acceptance/evidence/a1-before-narrow.jpg)。原型 35 项及旧生产验收保持各自历史身份。
+A.1 旧构建保留在本机 `temp/folio-s2-acceptance/baseline-dist`；对照截图为（宽屏在施工前采集，窄屏使用保留基线构建补录）[宽屏](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/a1-before-wide.jpg)与[窄屏](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/a1-before-narrow.jpg)。原型 35 项及旧生产验收保持各自历史身份。
 
 ## 2. 页面结构和操作范围
 
 主代理验证三栏与四视图、紧凑来源标题及菜单，来源创建／编辑／信息全文、手动片段添加、当前来源固定导入均接真实业务。初始 65 来源第二页可达，390px 抽屉可跨页切源。无额外学习模型、统计或新书架。
 
-截图：[概览宽屏](../../../../temp/folio-s2-acceptance/evidence/overview-wide.jpg)、[来源抽屉](../../../../temp/folio-s2-acceptance/evidence/source-drawer-narrow.jpg)、[片段 1024px](../../../../temp/folio-s2-acceptance/evidence/segments-1024.jpg)。截图记录对应时刻的真实页面。
+截图：[概览宽屏](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/overview-wide.jpg)、[来源抽屉](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/source-drawer-narrow.jpg)、[片段 1024px](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/segments-1024.jpg)。截图记录对应时刻的真实页面。
 
 ## 3. 概览内容与真实状态
 
 独立 API 验证讲解 updated_at 降序返回 2／真实总数 6、片段 created_at 降序返回 3／真实总数 7、材料返回 3／真实总数 52；来源总数 65 分页 50／15。主代理验证概览讲解点击携带确切 revision，旧修订尾号 `DH4GFM` 显示历史版本而非跳当前。
 
-仅手动片段、仅书、空来源与零来源已实际浏览；讲解区块 503 时其他区块继续显示，延迟切源后不串数据。单区故障截图：[讲解失败](../../../../temp/folio-s2-acceptance/evidence/overview-partial-failure.jpg)。空态截图：[手动片段](../../../../temp/folio-s2-acceptance/evidence/manual-only-narrow.jpg)、[空来源宽屏](../../../../temp/folio-s2-acceptance/evidence/empty-source-wide.jpg)、[空来源窄屏](../../../../temp/folio-s2-acceptance/evidence/empty-source-narrow.jpg)、[零来源](../../../../temp/folio-s2-acceptance/evidence/zero-sources.jpg)。加载与错误分支同时有既有自动测试及代码核对，不声称每个端点都单独注入故障。
+仅手动片段、仅书、空来源与零来源已实际浏览；讲解区块 503 时其他区块继续显示，延迟切源后不串数据。单区故障截图：[讲解失败](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/overview-partial-failure.jpg)。空态截图：[手动片段](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/manual-only-narrow.jpg)、[空来源宽屏](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/empty-source-wide.jpg)、[空来源窄屏](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/empty-source-narrow.jpg)、[零来源](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/zero-sources.jpg)。加载与错误分支同时有既有自动测试及代码核对，不声称每个端点都单独注入故障。
 
 ## 4. 默认进入与恢复场景
 
@@ -32,26 +34,26 @@ A.1 旧构建保留在本机 `temp/folio-s2-acceptance/baseline-dist`；对照�
 | 主动选择来源 | 已验证：打开新来源概览；390px 抽屉跨页切源 |
 | 显式讲解／片段／素材视图 | 已验证：URL 与视图保持，未被概览默认抢占 |
 | 浏览器后退／前进、当前路径刷新 | 已验证：精确保留 URL；讲解条件刷新保持 |
-| 筛选讲解进入修订后返回 | 已验证：q=合成讲解、sort=updated_at、order=desc 保持，滚动恢复 472px；[截图](../../../../temp/folio-s2-acceptance/evidence/filtered-analysis-return.jpg) |
-| 概览讲解进入与返回 | 已验证：确切 revision 及概览入口；[修订入口](../../../../temp/folio-s2-acceptance/evidence/explanation-exact.jpg) |
+| 筛选讲解进入修订后返回 | 已验证：q=合成讲解、sort=updated_at、order=desc 保持，滚动恢复 472px；[截图](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/filtered-analysis-return.jpg) |
+| 概览讲解进入与返回 | 已验证：确切 revision 及概览入口；[修订入口](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/explanation-exact.jpg) |
 | 概览片段进入后原位置恢复 | 入口已验证；未单独报告该分支的滚动数值，不复用讲解 472px 结论 |
-| 完整书籍窗口阅读后返回 | 已验证：q／排序／位置恢复，Escape 关闭后焦点回素材 tab；[截图](../../../../temp/folio-s2-acceptance/evidence/book-window-return.jpg) |
+| 完整书籍窗口阅读后返回 | 已验证：q／排序／位置恢复，Escape 关闭后焦点回素材 tab；[截图](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/book-window-return.jpg) |
 | expanded=book 无 view 旧链接 | 已验证：兼容素材窗口背景及打开／关闭 |
 | 素材库阅读返回 | 已验证 q=S2封面 进入阅读、选择第二章、返回条件保持、再次打开仍为第二章；全部排序／页码组合未逐项模拟，沿用既有测试 |
 | 左侧来源搜索隐藏当前项 | 已验证：sq 无匹配仍保留原来源与 472px，左右检索隔离 |
 | 记忆来源不在首批 | 已验证：按身份核实，不静默切源；65 来源可继续翻页 |
-| 普通记忆来源失效 | 已验证：缓存普通入口后，仅删除本轮自建无内容的专用测试来源，再点主导航核实 404 并回有效首项；[截图](../../../../temp/folio-s2-acceptance/evidence/invalid-memory-fallback.jpg) |
-| 显式失效来源 | 已验证：显示不可用；[截图](../../../../temp/folio-s2-acceptance/evidence/invalid-source.jpg) |
+| 普通记忆来源失效 | 已验证：缓存普通入口后，仅删除本轮自建无内容的专用测试来源，再点主导航核实 404 并回有效首项；[截图](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/invalid-memory-fallback.jpg) |
+| 显式失效来源 | 已验证：显示不可用；[截图](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/invalid-source.jpg) |
 | 跨对象非法修订／讨论与外部 returnTo | 既有自动测试及校验静态核对，本轮未逐个浏览器伪造 |
 | Storage 禁用或损坏记录 | try/catch 降级及参数校验静态核对；未实际浏览器禁用 Storage |
 
-返回复用内部来处校验，不使用无条件 history.back()。旧 `/sources?q=…&sort=…&order=…&page=…` 来源总表链接也已验证迁移为来源栏条件；无效末页按真实总数降级。[兼容截图](../../../../temp/folio-s2-acceptance/evidence/legacy-directory-query.jpg)。
+返回复用内部来处校验，不使用无条件 history.back()。旧 `/sources?q=…&sort=…&order=…&page=…` 来源总表链接也已验证迁移为来源栏条件；无效末页按真实总数降级。[兼容截图](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/legacy-directory-query.jpg)。
 
-旧历史修订截图：[历史版本](../../../../temp/folio-s2-acceptance/evidence/historical-revision.jpg)。
+旧历史修订截图：[历史版本](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/historical-revision.jpg)。
 
 ## 5. CRUD、导入和持久化
 
-主代理实际创建来源、编辑备注、读取来源信息全文、创建手动片段并回概览；当前来源固定导入合成 EPUB 后进入真实 Reader。来源删除显示真实影响，取消恢复焦点；影响 503 时确认禁用。保存 503 保留输入，延迟 3 秒提交取消再重开后，旧成功不关闭新表单或抢导航。截图：[删除影响](../../../../temp/folio-s2-acceptance/evidence/delete-impact-narrow.jpg)、[影响失败](../../../../temp/folio-s2-acceptance/evidence/impact-failure.jpg)、[保存失败](../../../../temp/folio-s2-acceptance/evidence/create-failure.jpg)、[迟到成功保护](../../../../temp/folio-s2-acceptance/evidence/late-create-protected.jpg)。另以延迟 3 秒合成 EPUB 验证提交后取消并切到片段视图：成功响应到达后仍停留原来源片段视图，无对话框或跳转；[截图](../../../../temp/folio-s2-acceptance/evidence/late-import-protected.jpg)。
+主代理实际创建来源、编辑备注、读取来源信息全文、创建手动片段并回概览；当前来源固定导入合成 EPUB 后进入真实 Reader。来源删除显示真实影响，取消恢复焦点；影响 503 时确认禁用。保存 503 保留输入，延迟 3 秒提交取消再重开后，旧成功不关闭新表单或抢导航。截图：[删除影响](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/delete-impact-narrow.jpg)、[影响失败](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/impact-failure.jpg)、[保存失败](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/create-failure.jpg)、[迟到成功保护](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/late-create-protected.jpg)。另以延迟 3 秒合成 EPUB 验证提交后取消并切到片段视图：成功响应到达后仍停留原来源片段视图，无对话框或跳转；[截图](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/late-import-protected.jpg)。
 
 数据代理独立执行真实 localhost HTTP CRUD：仅自建专用来源，创建／编辑／手动片段成功；同源两次导入同一材料 ID，首次 reused=false、第二次 true；影响恰为 1 片段／1 材料、无线程／讲解／任务。删除只针对该临时记录，随后来源／片段／材料／目录读取均 404，原 fixture 来源响应一致。前后 Run 均为 0。未删除浏览器记录或日常数据。
 
@@ -59,11 +61,11 @@ A.1 旧构建保留在本机 `temp/folio-s2-acceptance/baseline-dist`；对照�
 
 主代理验证 A.1 零素材整区入口 Enter 导入及取消焦点、搜索无结果、菜单状态 503 与重试成功／Escape 焦点。合成旧 fixture 无有效封面时占位正常；另用 valid-cover.epub 验证有效 PNG 回退，来源与素材库共用同一材料和 180×240 封面。封面逻辑生产代码未修改，本轮只做受影响回归，不重宣称完整提取安全测试。
 
-截图：[A.1 当前宽屏](../../../../temp/folio-s2-acceptance/evidence/a1-after-wide.jpg)、[空库入口](../../../../temp/folio-s2-acceptance/evidence/a1-empty-regression.jpg)、[状态失败](../../../../temp/folio-s2-acceptance/evidence/a1-status-failure.jpg)、[来源封面](../../../../temp/folio-s2-acceptance/evidence/source-cover-regression.jpg)、[真实 Reader](../../../../temp/folio-s2-acceptance/evidence/reader.jpg)。确切历史修订已浏览验证。讨论审核／停止／迟到成果等沿用既有自动测试，本轮没有重跑完整审核 UI 或模型教学；不扩张为真实模型质量验收。
+截图：[A.1 当前宽屏](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/a1-after-wide.jpg)、[空库入口](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/a1-empty-regression.jpg)、[状态失败](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/a1-status-failure.jpg)、[来源封面](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/source-cover-regression.jpg)、[真实 Reader](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/reader.jpg)。确切历史修订已浏览验证。讨论审核／停止／迟到成果等沿用既有自动测试，本轮没有重跑完整审核 UI 或模型教学；不扩张为真实模型质量验收。
 
 ## 7. 视觉、键盘、命令与交付
 
-主代理实际检查 1440／1280／1024／390px 无横向溢出、窄屏来源切换、窗口 Escape 与取消焦点。概览窄屏截图见[本机证据](../../../../temp/folio-s2-acceptance/evidence/overview-narrow.jpg)。补充截图：[窄屏讲解](../../../../temp/folio-s2-acceptance/evidence/analyses-narrow.jpg)、[窄屏片段](../../../../temp/folio-s2-acceptance/evidence/segments-narrow.jpg)、[窄屏书籍窗口](../../../../temp/folio-s2-acceptance/evidence/window-narrow.jpg)、[A.1 当前窄屏](../../../../temp/folio-s2-acceptance/evidence/a1-after-narrow.jpg)。没有逐个菜单穷举所有键盘组合，也不把源码语义核对冒充浏览器检查。
+主代理实际检查 1440／1280／1024／390px 无横向溢出、窄屏来源切换、窗口 Escape 与取消焦点。概览窄屏截图见[本机证据](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/overview-narrow.jpg)。补充截图：[窄屏讲解](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/analyses-narrow.jpg)、[窄屏片段](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/segments-narrow.jpg)、[窄屏书籍窗口](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/window-narrow.jpg)、[A.1 当前窄屏](../../../../data/acceptance-evidence/folio-s2-acceptance/evidence/a1-after-narrow.jpg)。没有逐个菜单穷举所有键盘组合，也不把源码语义核对冒充浏览器检查。
 
 | 命令 | 执行者与结果 |
 | --- | --- |

@@ -2,7 +2,7 @@
 
 > 历史阶段资料（2026-10-20 归档）。现行规则见[PRD](../../../PRD.md)与[架构](../../../ARCHITECTURE.md)，当前交付和未完成验收见[实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。
 
-> 2026-10-04 实施安排。先规范后实施；FUTURE_NOTES 不执行。验收证据和范围见 [ACCEPTANCE.md](ACCEPTANCE.md)，当前交付与提交状态见 [MVP 实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。
+> 2026-10-04 实施安排。先规范后实施；[后续讨论备忘](FUTURE_NOTES.md)保留当时的未定案想法，不属于本阶段实施范围。验收证据和范围见 [ACCEPTANCE.md](ACCEPTANCE.md)，当前交付与提交状态见 [MVP 实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。
 
 | 增量 | 范围 | 验证关口 |
 | --- | --- | --- |

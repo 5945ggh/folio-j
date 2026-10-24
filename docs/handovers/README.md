@@ -15,6 +15,8 @@
 
 2026-10-20 将以下已完成阶段移入归档，保留当时的计划、接口快照、验收数字、用户反馈与未验证项。书籍管理、S2 的用户使用验收待项继续由[实施基线](MVP_IMPLEMENTATION_BASELINE.md)维护。归档接口中的旧默认值、旧迁移编号和当时的能力限制仅用于理解历史。
 
+2026-10-24 整理本机临时资产：文档链接引用的证据迁至私有目录，验收库、旧构建、脚本及其余临时产物已清理。历史 `temp/` 路径和启动命令记录当时环境，不能作为现成可用的复现入口；保留清单与范围见[本机证据保留说明](archived/LOCAL_EVIDENCE.md)。
+
 | 阶段 | 计划与接口快照 | 验收证据 |
 | --- | --- | --- |
 | 片段专注布局 | [范围](archived/segment-layout/PLAN.md) | [工程、浏览器及用户反馈](archived/segment-layout/ACCEPTANCE.md) |
@@ -24,7 +26,7 @@
 | 阅读器 R1.1 | [计划](archived/reader-r1/PLAN.md)、[API 快照](archived/reader-r1/API.md) | [工程验收](archived/reader-r1/ACCEPTANCE.md)、[后续交互优化](archived/reader-r1/INTERACTION_POLISH.md) |
 | 来源空间 S2 | [计划](archived/sources-s2/PLAN.md) | [工程与浏览器验收](archived/sources-s2/ACCEPTANCE.md) |
 | 素材库 A.1 | [计划](archived/library-a1/PLAN.md)、[封面 API 快照](archived/library-a1/API.md) | [素材库与后续导入表单](archived/library-a1/ACCEPTANCE.md) |
-| 前端调整 | [计划](archived/frontend-refresh/PLAN.md)、[API 快照](archived/frontend-refresh/API.md) | [目录、状态与导航](archived/frontend-refresh/ACCEPTANCE.md) |
+| 前端调整 | [计划](archived/frontend-refresh/PLAN.md)、[API 快照](archived/frontend-refresh/API.md)、[未定案备忘](archived/frontend-refresh/FUTURE_NOTES.md) | [目录、状态与导航](archived/frontend-refresh/ACCEPTANCE.md) |
 | EPUB 基础阅读 | [章节与阅读调查](archived/epub-reading/CHAPTER_RESEARCH.md) | [切片 0](archived/epub-reading/SLICE_0_ACCEPTANCE.md)、[切片 1](archived/epub-reading/SLICE_1_ACCEPTANCE.md)、[章节位置记忆与章末进度](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md) |
 
 - [开发期迁移基线整理验收](archived/DATABASE_BASELINE_ACCEPTANCE.md)：单初始基线、历史升级测试清理、业务回归与现用测试库数据保留证据。
