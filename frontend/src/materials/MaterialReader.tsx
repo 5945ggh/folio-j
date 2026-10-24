@@ -166,7 +166,6 @@ function Reader({
 	const [translationOpen, setTranslationOpen] = useState(false);
 	const [translationAnchor, setTranslationAnchor] =
 		useState<ScreenAnchor | null>(null);
-	const [translationMounted, setTranslationMounted] = useState(false);
 	const selectedTranslations = useRef(new Map<string, TranslationResult>());
 	const rememberTranslation = useCallback((result: TranslationResult) => {
 		selectedTranslations.current.delete(result.identity_sha256);
@@ -2173,23 +2172,6 @@ function Reader({
 					</button>
 					<button
 						type="button"
-						aria-label="最近翻译"
-						data-tooltip="最近翻译"
-						onClick={() => {
-							setTranslationTarget(null);
-							setTranslationAnchor(null);
-							setTranslationMounted(true);
-							setTranslationOpen(true);
-							setSelection(null);
-							closeMarkHit();
-							closePanel();
-							controller.current?.show();
-						}}
-					>
-						译
-					</button>
-					<button
-						type="button"
 						aria-label="阅读设置"
 						data-tooltip="阅读设置"
 						aria-expanded={panels.right === "settings"}
@@ -2209,14 +2191,10 @@ function Reader({
 				</nav>
 			</footer>
 			<SpeechPlaybackBar />
-			{translationMounted && (
+			{translationTarget && (
 				<div hidden={!translationOpen}>
 					<TranslationPanel
-						key={
-							translationTarget
-								? translationTargetKey(translationTarget.reference)
-								: "recent"
-						}
+						key={translationTargetKey(translationTarget.reference)}
 						materialId={book.id}
 						onResultSelected={rememberTranslation}
 						translationSessions={translationSessions}
@@ -2225,16 +2203,12 @@ function Reader({
 						direction={settings.writing_mode}
 						sourceId={book.source_id}
 						target={translationTarget}
-						autoStart={!!translationTarget}
+						autoStart
 						onOpenSegment={openStudySegment}
 						onClose={() => {
 							setTranslationOpen(false);
 							requestAnimationFrame(() =>
-								document
-									.querySelector<HTMLButtonElement>(
-										'button[aria-label="最近翻译"]',
-									)
-									?.focus({ preventScroll: true }),
+								container.current?.focus({ preventScroll: true }),
 							);
 						}}
 						onBackToOrigin={backToTranslationOrigin}
@@ -2281,7 +2255,6 @@ function Reader({
 							);
 							setTranslationTarget(structuredClone(target));
 							setTranslationAnchor(selection.anchor);
-							setTranslationMounted(true);
 							setTranslationOpen(true);
 							setSelection(null);
 							closeMarkHit();

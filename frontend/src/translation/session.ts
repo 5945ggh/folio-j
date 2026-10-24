@@ -75,17 +75,14 @@ export interface TranslationSession {
 	open(intent: { kind: "selection" | "history" }): Promise<TranslationOutcome>;
 	edit(change: TranslationEdit): boolean;
 	browseHistory(): void;
-	execute(
-		command:
-			| { kind: "translate" | "verify" }
-			| { kind: "repeat-task"; task: TranslationTask },
-	): Promise<TranslationOutcome>;
+	execute(command: {
+		kind: "translate" | "verify";
+	}): Promise<TranslationOutcome>;
 	stop(taskId: string): Promise<TranslationTask>;
 }
 export interface TranslationSessions {
 	bindOwner(): () => void;
 	forTarget(sourceId: string, target: StudyTarget): TranslationSession;
-	forTask(sourceId: string, task: TranslationTask): TranslationSession;
 }
 
 const failure = (error: unknown) =>
@@ -351,21 +348,15 @@ export function createTranslationSessions(
 			if (!bound) return Promise.resolve(skipped("inactive"));
 			const currentEpoch = epoch;
 			const draft = this.state.draft;
-			const repeat = command.kind === "repeat-task" ? command.task : undefined;
-			if (
-				repeat &&
-				translationTargetKey(repeat.material_provenance) !== this.key
-			)
-				return Promise.resolve(skipped("draft"));
 			const values =
 				command.kind === "verify"
 					? null
 					: {
 							source_id: this.sourceId,
 							material_provenance: this.reference,
-							text: repeat?.text ?? targetText(this.reference),
-							context_before: repeat?.context_before ?? draft.before,
-							context_after: repeat?.context_after ?? draft.after,
+							text: targetText(this.reference),
+							context_before: draft.before,
+							context_after: draft.after,
 						};
 			const reservation = {
 				posted: false,
@@ -389,7 +380,7 @@ export function createTranslationSessions(
 							)
 								return skipped("inactive");
 							if (!settings.model_id) return skipped("model");
-							if (!repeat && !draft.initialized) return skipped("draft");
+							if (!draft.initialized) return skipped("draft");
 							const history = adapter.peekHistory(this.reference);
 							if (!history || this.freshEpoch !== currentEpoch)
 								return skipped("history");
@@ -502,9 +493,6 @@ export function createTranslationSessions(
 			const session = get(sourceId, target.reference);
 			session.attach(target);
 			return session;
-		},
-		forTask(sourceId, task) {
-			return get(sourceId, task.material_provenance);
 		},
 	};
 }

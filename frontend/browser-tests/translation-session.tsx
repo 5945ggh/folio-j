@@ -572,13 +572,15 @@ async function translationRecoveryViewRegression(
 			return new Promise((resolve) => {
 				releaseFailed = resolve;
 			});
-		throw new Error(`Unexpected recent-view request ${request.method} ${path}`);
+		throw new Error(
+			`Unexpected history-view request ${request.method} ${path}`,
+		);
 	});
 	let dispose = await h.mount(
 		<TranslationPanel
 			materialId="book"
 			sourceId="source"
-			target={null}
+			target={target}
 			onClose={() => {}}
 			onBackToOrigin={() => {}}
 		/>,
@@ -589,14 +591,17 @@ async function translationRecoveryViewRegression(
 				[...h.container.querySelectorAll("button")].some(
 					(button) => button.textContent === "停止翻译",
 				),
-			"Recent list must initially expose the actual active task",
+			"Exact-source history must initially expose the actual active task",
 		);
 		const failedChoice = [
 			...h.container.querySelectorAll<HTMLButtonElement>(
 				".translation-history-item",
 			),
 		].find((button) => button.textContent?.includes("failed"));
-		check(failedChoice, "Recent history must expose the failed task choice");
+		check(
+			failedChoice,
+			"Exact-source history must expose the failed task choice",
+		);
 		failedChoice.click();
 		await h.until(
 			() => !!releaseFailed,

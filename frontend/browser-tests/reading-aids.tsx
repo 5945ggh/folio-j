@@ -760,7 +760,20 @@ export async function readingAidsRegression(
 			<TranslationPanel
 				materialId="reading-aids"
 				sourceId="source"
-				target={null}
+				target={{
+					reference: multilineReference,
+					chapter: {
+						...target.chapter,
+						resources: target.chapter.resources.map((resource) => ({
+							...resource,
+							text: multiline,
+						})),
+						parts: target.chapter.parts.map((part) => ({
+							...part,
+							end: Array.from(multiline).length,
+						})),
+					},
+				}}
 				onClose={() => {}}
 				onBackToOrigin={() => {}}
 			/>

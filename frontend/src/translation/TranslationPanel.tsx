@@ -110,12 +110,10 @@ function TranslationOriginal({
 
 function ResultView({
 	result,
-	showConfiguration = true,
 	onOpenSegment,
 	onBackToOrigin,
 }: {
 	result: TranslationResult;
-	showConfiguration?: boolean;
 	onOpenSegment?: (id: string) => void;
 	onBackToOrigin?: (result: TranslationResult) => void;
 }) {
@@ -130,12 +128,6 @@ function ResultView({
 			<small className="translation-result-meta">
 				{result.target_language} · 已留存
 			</small>
-			{showConfiguration && (
-				<details>
-					<summary>本次语境与配置</summary>
-					<ResultConfiguration result={result} />
-				</details>
-			)}
 			{result.adopted_segment_ids.length > 0 && (
 				<SavedTranslationDestinations
 					ids={result.adopted_segment_ids}
@@ -176,7 +168,7 @@ export function TranslationPanel({
 }: {
 	materialId: string;
 	sourceId: string;
-	target: StudyTarget | null;
+	target: StudyTarget;
 	autoStart?: boolean;
 	visible?: boolean;
 	anchor?: ScreenAnchor | null;
@@ -235,10 +227,8 @@ export function TranslationPanel({
 		};
 	}, [anchor, direction, visible, speechState, embedded]);
 	const translations = useTranslationSessions(translationSessions);
-	const targetSession = target
-		? translations.forTarget(sourceId, target)
-		: null;
-	const targetState = useTranslationSession(targetSession);
+	const session = translations.forTarget(sourceId, target);
+	const state = useTranslationSession(session);
 	const client = useQueryClient();
 	const [offset, setOffset] = useState(0);
 	const [resultId, setResultId] = useState<string | null>(
@@ -248,8 +238,8 @@ export function TranslationPanel({
 		undefined,
 	);
 	const choiceGeneration = useRef(0);
-	const view = useRef({ mounted: true, session: targetSession });
-	view.current.session = targetSession;
+	const view = useRef({ mounted: true, session });
+	view.current.session = session;
 	useEffect(() => {
 		view.current.mounted = true;
 		return () => {
@@ -262,34 +252,28 @@ export function TranslationPanel({
 		queryFn: getTranslationSettings,
 	});
 	const identity = useQuery({
-		queryKey: ["translation-identity", target?.reference],
-		queryFn: () => {
-			if (!target) throw new Error("缺少翻译目标");
-			return targetIdentity(target.reference);
-		},
-		enabled: !!target,
+		queryKey: ["translation-identity", target.reference],
+		queryFn: () => targetIdentity(target.reference),
 	});
 	const history = useQuery({
-		queryKey: ["translations", materialId, identity.data ?? "recent", offset],
-		queryFn: () =>
-			getTranslationHistory(
-				materialId,
-				offset,
-				target ? identity.data : undefined,
-			),
-		enabled: !target || !!identity.data,
+		queryKey: ["translations", materialId, identity.data, offset],
+		queryFn: () => {
+			if (!identity.data) throw new Error("缺少翻译目标身份");
+			return getTranslationHistory(materialId, offset, identity.data);
+		},
+		enabled: !!identity.data,
 		retry: false,
 		refetchInterval: (query) =>
 			query.state.data?.tasks.some(activeTranslation) ? 1200 : false,
 	});
 	const historyReady =
-		(!target || !!identity.data) &&
+		!!identity.data &&
 		history.isSuccess &&
 		history.isFetchedAfterMount &&
 		!history.isFetching;
 	const taskId =
 		selectedTaskId === undefined && resultId === null
-			? targetState.acceptedTaskId
+			? state.acceptedTaskId
 			: selectedTaskId;
 	const task = useQuery({
 		queryKey: ["translation-task", taskId],
@@ -305,19 +289,13 @@ export function TranslationPanel({
 			: selectedTaskId === undefined
 				? history.data?.tasks.find(activeTranslation)
 				: undefined;
-	const recentSession =
-		!target && currentTask ? translations.forTask(sourceId, currentTask) : null;
-	const recentState = useTranslationSession(recentSession);
-	const session = targetSession ?? recentSession;
-	const state = target ? targetState : recentState;
-	view.current.session = session;
 	const { before, after, budget, initialized, localError } = state.draft;
 	const uncertain = state.phase === "uncertain";
 	const pending = state.phase === "submitting";
 	const applyOutcome = useCallback(
 		async (
 			operation: ReturnType<TranslationSession["execute"]>,
-			origin: TranslationSession | null,
+			origin: TranslationSession,
 		) => {
 			const generation = choiceGeneration.current;
 			const outcome = await operation;
@@ -334,15 +312,13 @@ export function TranslationPanel({
 		[],
 	);
 	useEffect(() => {
-		if (!targetSession) return;
 		void applyOutcome(
-			targetSession.open({ kind: autoStart ? "selection" : "history" }),
-			targetSession,
+			session.open({ kind: autoStart ? "selection" : "history" }),
+			session,
 		);
-	}, [targetSession, autoStart, applyOutcome]);
+	}, [session, autoStart, applyOutcome]);
 	useEffect(() => {
 		if (
-			!targetSession ||
 			!history.isSuccess ||
 			history.isFetching ||
 			!settings.isSuccess ||
@@ -350,11 +326,11 @@ export function TranslationPanel({
 		)
 			return;
 		void applyOutcome(
-			targetSession.open({ kind: autoStart ? "selection" : "history" }),
-			targetSession,
+			session.open({ kind: autoStart ? "selection" : "history" }),
+			session,
 		);
 	}, [
-		targetSession,
+		session,
 		autoStart,
 		applyOutcome,
 		history.isSuccess,
@@ -385,31 +361,21 @@ export function TranslationPanel({
 		if (visible) heading.current?.focus({ preventScroll: true });
 	}, [visible]);
 	const start = () => {
-		if (!session) return;
 		void applyOutcome(
-			session.execute(
-				uncertain
-					? { kind: "verify" }
-					: !target && currentTask
-						? { kind: "repeat-task", task: currentTask }
-						: { kind: "translate" },
-			),
+			session.execute({ kind: uncertain ? "verify" : "translate" }),
 			session,
 		);
 	};
 	const stop = useMutation({
-		mutationFn: (id: string) => {
-			if (!session) throw new Error("缺少翻译任务");
-			return session.stop(id);
-		},
+		mutationFn: (id: string) => session.stop(id),
 	});
 	const busy = activeTranslation(currentTask) || pending;
-	const fill = () => session?.edit({ kind: "refill" });
+	const fill = () => session.edit({ kind: "refill" });
 	const setBudget = (value: typeof budget) =>
-		session?.edit({ kind: "budget", value });
+		session.edit({ kind: "budget", value });
 	const browse = () => {
 		choiceGeneration.current++;
-		session?.browseHistory();
+		session.browseHistory();
 	};
 	return (
 		<section
@@ -436,7 +402,7 @@ export function TranslationPanel({
 			{!embedded && (
 				<header>
 					<h2 id="translation-heading" ref={heading} tabIndex={-1}>
-						{target ? "选区翻译" : "最近翻译"}
+						选区翻译
 					</h2>
 					<div className="translation-header-actions">
 						<button
@@ -450,7 +416,7 @@ export function TranslationPanel({
 				</header>
 			)}
 			<div ref={content} className="translation-content">
-				{(history.isPending || (identity.isPending && !!target)) && (
+				{(history.isPending || identity.isPending) && (
 					<p role="status">正在找回译文与任务…</p>
 				)}
 				<InlineError error={history.error ?? identity.error} />
@@ -459,13 +425,10 @@ export function TranslationPanel({
 						type="button"
 						onClick={() => {
 							void history.refetch().then(() => {
-								if (targetSession)
-									void applyOutcome(
-										targetSession.open({
-											kind: autoStart ? "selection" : "history",
-										}),
-										targetSession,
-									);
+								void applyOutcome(
+									session.open({ kind: autoStart ? "selection" : "history" }),
+									session,
+								);
 							});
 						}}
 					>
@@ -476,12 +439,11 @@ export function TranslationPanel({
 					<ResultView
 						key={result.data.id}
 						result={result.data}
-						showConfiguration={!target}
 						onOpenSegment={onOpenSegment}
 						onBackToOrigin={onBackToOrigin}
 					/>
 				)}
-				{target && !result.data && (
+				{!result.data && (
 					<>
 						<InlineError error={localError ?? settings.error ?? state.error} />
 						{settings.isError && (
@@ -489,13 +451,12 @@ export function TranslationPanel({
 								type="button"
 								onClick={() => {
 									void settings.refetch().then(() => {
-										if (targetSession)
-											void applyOutcome(
-												targetSession.open({
-													kind: autoStart ? "selection" : "history",
-												}),
-												targetSession,
-											);
+										void applyOutcome(
+											session.open({
+												kind: autoStart ? "selection" : "history",
+											}),
+											session,
+										);
 									});
 								}}
 							>
@@ -510,134 +471,128 @@ export function TranslationPanel({
 						)}
 					</>
 				)}
-				{target && (
-					<>
-						{!result.data && (
-							<TranslationOriginal
-								text={targetText(target.reference)}
-								reference={target.reference}
-							/>
-						)}
-						<details>
-							<summary>
-								{result.data ? "语境与重新翻译" : "翻译语境与配置"}
-							</summary>
-							{result.data && (
-								<>
-									<ResultConfiguration result={result.data} />
-									<hr />
-									<p>准备新的翻译</p>
-								</>
-							)}
-							{settings.data ? (
-								<p>
-									{settings.data.name} · {settings.data.target_language}
-								</p>
-							) : (
-								<InlineError error={settings.error} />
-							)}
-							<Link to="/settings?section=translation">翻译设置</Link>
-							<div className="translation-budget">
-								{(["before", "after"] as const).map((side) => (
-									<label key={side}>
-										{side === "before" ? "前文" : "后文"}句数
-										<input
-											type="number"
-											min={0}
-											max={100}
-											value={budget[`${side}_sentences`]}
-											onChange={(event) =>
-												setBudget({
-													...budget,
-													[`${side}_sentences`]: event.target.valueAsNumber,
-												})
-											}
-										/>
-									</label>
-								))}
-								{(["before", "after"] as const).map((side) => (
-									<label key={`${side}-characters`}>
-										{side === "before" ? "前文" : "后文"}码点
-										<input
-											type="number"
-											min={0}
-											max={settings.data?.max_context_characters ?? 2000}
-											value={budget[`${side}_characters`]}
-											onChange={(event) =>
-												setBudget({
-													...budget,
-													[`${side}_characters`]: event.target.valueAsNumber,
-												})
-											}
-										/>
-									</label>
-								))}
-							</div>
-							<button
-								type="button"
-								disabled={!initialized || busy || uncertain}
-								onClick={fill}
-							>
-								按句数重新摘录（替换下面语境）
-							</button>
-							<label>
-								前文
-								<textarea
-									rows={3}
-									disabled={busy || uncertain}
-									value={before}
-									onChange={(event) => {
-										session?.edit({
-											kind: "context",
-											before: event.target.value,
-										});
-									}}
-								/>
-							</label>
-							<label>
-								后文
-								<textarea
-									rows={2}
-									disabled={busy || uncertain}
-									value={after}
-									onChange={(event) => {
-										session?.edit({
-											kind: "context",
-											after: event.target.value,
-										});
-									}}
-								/>
-							</label>
-							<small>提交后固定本次输入。旧译文仍使用上次生成时的语境。</small>
-							{settings.data && !settings.data.model_id && (
-								<p>
-									先在<Link to="/settings?section=translation">翻译设置</Link>
-									选择模型。
-								</p>
-							)}
-							<InlineError error={localError ?? state.error} />
-							{uncertain && <p>提交响应尚未核实，请重试原请求。</p>}
-							{(historyReady || uncertain) && (uncertain || !busy) && (
-								<button
-									type="button"
-									disabled={
-										(!uncertain && !initialized) ||
-										(!uncertain && !settings.data?.model_id) ||
-										pending ||
-										(!uncertain && !!resolvedId && !result.data)
-									}
-									onClick={start}
-								>
-									{uncertain
-										? "核实原提交"
-										: result.data || history.data?.results.length
-											? "按当前语境重新翻译"
-											: "开始翻译"}
-								</button>
-							)}
-						</details>
-					</>
+				{!result.data && (
+					<TranslationOriginal
+						text={targetText(target.reference)}
+						reference={target.reference}
+					/>
 				)}
+				<details>
+					<summary>{result.data ? "语境与重新翻译" : "翻译语境与配置"}</summary>
+					{result.data && (
+						<>
+							<ResultConfiguration result={result.data} />
+							<hr />
+							<p>准备新的翻译</p>
+						</>
+					)}
+					{settings.data ? (
+						<p>
+							{settings.data.name} · {settings.data.target_language}
+						</p>
+					) : (
+						<InlineError error={settings.error} />
+					)}
+					<Link to="/settings?section=translation">翻译设置</Link>
+					<div className="translation-budget">
+						{(["before", "after"] as const).map((side) => (
+							<label key={side}>
+								{side === "before" ? "前文" : "后文"}句数
+								<input
+									type="number"
+									min={0}
+									max={100}
+									value={budget[`${side}_sentences`]}
+									onChange={(event) =>
+										setBudget({
+											...budget,
+											[`${side}_sentences`]: event.target.valueAsNumber,
+										})
+									}
+								/>
+							</label>
+						))}
+						{(["before", "after"] as const).map((side) => (
+							<label key={`${side}-characters`}>
+								{side === "before" ? "前文" : "后文"}码点
+								<input
+									type="number"
+									min={0}
+									max={settings.data?.max_context_characters ?? 2000}
+									value={budget[`${side}_characters`]}
+									onChange={(event) =>
+										setBudget({
+											...budget,
+											[`${side}_characters`]: event.target.valueAsNumber,
+										})
+									}
+								/>
+							</label>
+						))}
+					</div>
+					<button
+						type="button"
+						disabled={!initialized || busy || uncertain}
+						onClick={fill}
+					>
+						按句数重新摘录（替换下面语境）
+					</button>
+					<label>
+						前文
+						<textarea
+							rows={3}
+							disabled={busy || uncertain}
+							value={before}
+							onChange={(event) => {
+								session.edit({
+									kind: "context",
+									before: event.target.value,
+								});
+							}}
+						/>
+					</label>
+					<label>
+						后文
+						<textarea
+							rows={2}
+							disabled={busy || uncertain}
+							value={after}
+							onChange={(event) => {
+								session.edit({
+									kind: "context",
+									after: event.target.value,
+								});
+							}}
+						/>
+					</label>
+					<small>提交后固定本次输入。旧译文仍使用上次生成时的语境。</small>
+					{settings.data && !settings.data.model_id && (
+						<p>
+							先在<Link to="/settings?section=translation">翻译设置</Link>
+							选择模型。
+						</p>
+					)}
+					<InlineError error={localError ?? state.error} />
+					{uncertain && <p>提交响应尚未核实，请重试原请求。</p>}
+					{(historyReady || uncertain) && (uncertain || !busy) && (
+						<button
+							type="button"
+							disabled={
+								(!uncertain && !initialized) ||
+								(!uncertain && !settings.data?.model_id) ||
+								pending ||
+								(!uncertain && !!resolvedId && !result.data)
+							}
+							onClick={start}
+						>
+							{uncertain
+								? "核实原提交"
+								: result.data || history.data?.results.length
+									? "按当前语境重新翻译"
+									: "开始翻译"}
+						</button>
+					)}
+				</details>
 				{currentTask && currentTask.status !== "succeeded" && (
 					<section role="status">
 						<p>
@@ -656,31 +611,6 @@ export function TranslationPanel({
 							}
 						</p>
 						{currentTask.error && <p>{currentTask.error}</p>}
-						{!target && (!activeTranslation(currentTask) || uncertain) && (
-							<>
-								<TranslationOriginal
-									text={currentTask.text}
-									reference={currentTask.material_provenance}
-								/>
-								<details>
-									<summary>任务实际语境</summary>
-									<p>{currentTask.context_before || "（无前文）"}</p>
-									<p>{currentTask.context_after || "（无后文）"}</p>
-								</details>
-								<InlineError error={state.error} />
-								<button
-									type="button"
-									disabled={
-										(!uncertain && !historyReady) ||
-										pending ||
-										(!uncertain && !settings.data?.model_id)
-									}
-									onClick={start}
-								>
-									{uncertain ? "核实原提交" : "用原语境重新翻译"}
-								</button>
-							</>
-						)}
 						{activeTranslation(currentTask) && (
 							<button
 								type="button"
@@ -697,18 +627,14 @@ export function TranslationPanel({
 					<p role="status">正在读取译文…</p>
 				)}
 
-				{!target && history.data?.tasks.length === 0 && (
-					<p>还没有翻译记录。可在原文选区点击翻译。</p>
-				)}
 				{history.data &&
 					(history.data.results.length > 0 ||
 						history.data.tasks.length > 0 ||
 						offset > 0) && (
 						<>
-							<details open={!target}>
+							<details>
 								<summary>
-									{target ? "此处历史翻译" : "翻译记录"}（本页{" "}
-									{history.data.results.length}）
+									此处历史翻译（本页 {history.data.results.length}）
 								</summary>
 								{history.data.results.map((item) => (
 									<button
@@ -726,7 +652,6 @@ export function TranslationPanel({
 											{new Date(item.created_at).toLocaleString()} ·{" "}
 											{item.target_language}
 										</small>
-										<span lang="ja">{item.text}</span>
 										<span>{item.translation}</span>
 									</button>
 								))}

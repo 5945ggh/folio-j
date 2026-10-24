@@ -1135,7 +1135,7 @@ export async function translationRegression(h: BrowserHarness) {
 			<TranslationPanel
 				materialId="book"
 				sourceId="source"
-				target={null}
+				target={target}
 				onClose={() => {}}
 				onOpenSegment={(id) => reopenedIds.push(id)}
 				onBackToOrigin={() => {}}

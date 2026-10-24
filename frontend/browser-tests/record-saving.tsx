@@ -171,7 +171,7 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 				"clear",
 				"frozen",
 				"history",
-				"recent-failure",
+				"chapter-history-failure",
 				"existing",
 			];
 	const completed: string[] = [];
@@ -258,7 +258,7 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 					unavailable_count: 0,
 				});
 			if (path.endsWith("/chapters/chapter/translations")) {
-				if (scenario === "recent-failure")
+				if (scenario === "chapter-history-failure")
 					return Response.json({ detail: "离线列表失败" }, { status: 503 });
 				return Response.json({
 					items: [
@@ -426,6 +426,10 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 						?.contentDocument?.querySelector('[data-locator-leaf="3"]'),
 				"Reader iframe must load",
 			);
+			check(
+				!h.container.querySelector('button[aria-label="最近翻译"]'),
+				"Reader toolbar must omit the removed recent-translations entry",
+			);
 			if (scenario === "latest") {
 				await select();
 				button(
@@ -440,13 +444,17 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 				);
 				button("关闭翻译（任务继续）").click();
 			}
-			if (["history", "recent-failure"].includes(scenario)) {
-				button("最近翻译").click();
+			if (["history", "chapter-history-failure"].includes(scenario)) {
+				await select();
+				button(
+					"翻译",
+					h.container.querySelector('[aria-label="选区操作"]') ?? h.container,
+				).click();
 				await h.until(
 					() =>
 						h.container.querySelectorAll(".translation-history-item").length ===
 						2,
-					"Recent translations must load",
+					"Exact-source translation history must load",
 				);
 				const wanted =
 					scenario === "history" ? historical.translation : latest.translation;

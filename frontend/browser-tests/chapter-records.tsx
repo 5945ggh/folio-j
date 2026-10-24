@@ -1072,6 +1072,10 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				".translation-history-item",
 			),
 		].find((node) => node.textContent?.includes(historical.translation));
+		check(
+			historicalButton && !historicalButton.querySelector('[lang="ja"]'),
+			"Exact-source history rows must omit the original already shown in details",
+		);
 		historicalButton?.click();
 		await h.until(
 			() =>

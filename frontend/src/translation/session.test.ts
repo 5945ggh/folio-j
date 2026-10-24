@@ -377,8 +377,8 @@ test("incomplete canonical history and successful results consume automatic inte
 	}
 });
 
-test("new active facts before POST block manual, automatic and recent submissions", async () => {
-	for (const kind of ["translate", "automatic", "repeat"] as const) {
+test("new active facts before POST block manual and automatic submissions", async () => {
+	for (const kind of ["translate", "automatic"] as const) {
 		const f = fixture();
 		await f.session.open({ kind: "history" });
 		const read = deferred<TranslationSettings>();
@@ -386,11 +386,7 @@ test("new active facts before POST block manual, automatic and recent submission
 		const operation =
 			kind === "automatic"
 				? f.session.open({ kind: "selection" })
-				: f.session.execute(
-						kind === "repeat"
-							? { kind: "repeat-task", task: { ...task(), status: "failed" } }
-							: { kind: "translate" },
-					);
+				: f.session.execute({ kind: "translate" });
 		await Promise.resolve();
 		await Promise.resolve();
 		f.histories.set(f.session.key, { ...f.empty(), tasks: [task()] });
@@ -462,23 +458,20 @@ test("history observer cannot take over a selection's pending automatic completi
 	assert.equal(f.requests.length, 1);
 });
 
-test("recent repeat uses task input, keeps edited shared draft and cannot bypass unknown", async () => {
+test("manual retry uses edited shared draft and cannot bypass unknown", async () => {
 	const f = fixture();
 	await f.session.open({ kind: "history" });
 	f.session.edit({ kind: "context", before: "当前草稿", after: "新后文" });
-	const previous = { ...task(), status: "failed" as const };
-	const recent = f.sessions.forTask("source", previous);
-	assert.equal(recent, f.session);
 	f.adapter.submit = async (_id, body) => {
 		f.requests.push(body);
 		throw new Error("lost");
 	};
-	await recent.execute({ kind: "repeat-task", task: previous });
-	assert.equal(f.requests[0]?.context_before, "历史前文");
-	assert.equal(f.requests[0]?.context_after, "历史后文");
+	await f.session.execute({ kind: "translate" });
+	assert.equal(f.requests[0]?.context_before, "当前草稿");
+	assert.equal(f.requests[0]?.context_after, "新后文");
 	assert.equal(f.session.getSnapshot().draft.before, "当前草稿");
 	assert.equal(
-		(await recent.execute({ kind: "repeat-task", task: previous })).kind,
+		(await f.session.execute({ kind: "translate" })).kind,
 		"not-executed",
 	);
 	assert.equal(f.requests.length, 1);
