@@ -1,0 +1,26 @@
+docs/handovers/CR_FIXES_ACCEPTANCE.md
+  s_e16c74902fc2c1::t_4f9f8d7a8e1855 18-20
+  s_e16c74902fc2c1::t_c403f6f6c6f335 21
+backend/tests/test_chat_runtime.py
+  s_e16c74902fc2c1::t_e3ea7256cd3f54 362-408
+backend/src/app/jobs/runtime.py
+  s_e16c74902fc2c1::t_06e743eaa6e048 173-176,202
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e16c74902fc2c1::t_7540b4911c5c82 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e4d60ecca5679e87764f8666ef33405fbea3e661",
+  "prompts": {},
+  "sessions": {
+    "s_e16c74902fc2c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d9e-7bda-7563-b0c8-1739312b12e5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
