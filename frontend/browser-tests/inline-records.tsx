@@ -616,7 +616,7 @@ export async function inlineRecords(
 	check(current, "Record card must remain reachable before expanding");
 	const expand = [
 		...current.querySelectorAll<HTMLButtonElement>("button"),
-	].find((node) => node.textContent?.trim() === "展开阅读");
+	].find((node) => node.textContent?.trim() === "展开");
 	check(expand, "Header expand control must remain usable");
 	expand.click();
 	await h.until(

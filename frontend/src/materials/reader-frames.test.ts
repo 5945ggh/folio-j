@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 import type { Chapter } from "./api.ts";
 import { DEFAULT_BOOK_UI } from "./preferences.ts";
 import { ReaderFrames } from "./reader-frames.ts";
@@ -7,6 +7,7 @@ import { ReaderFrames } from "./reader-frames.ts";
 function documentFixture(text = "") {
 	let finishFonts: (() => void) | undefined;
 	let selected = false;
+	let selectionTarget: Node | null = null;
 	const image = Object.assign(new EventTarget(), { complete: false });
 	const style = { setProperty: () => {} };
 	const textNode = {
@@ -15,6 +16,7 @@ function documentFixture(text = "") {
 		parentElement: { closest: () => null },
 	};
 	const leaf = {
+		nodeType: 1,
 		dataset: { locatorLeaf: "0" },
 		closest: () => null,
 		children: [],
@@ -36,7 +38,14 @@ function documentFixture(text = "") {
 		},
 		createRange: () => ({ setStart: () => {}, setEnd: () => {} }),
 		getSelection: () =>
-			selected ? { isCollapsed: false, toString: () => "選択" } : null,
+			selected
+				? {
+						isCollapsed: false,
+						anchorNode: selectionTarget,
+						focusNode: selectionTarget,
+						toString: () => "選択",
+					}
+				: null,
 		getElementById: () => ({ textContent: "" }),
 		head: { prepend: () => {} },
 		documentElement: { dataset: {}, scrollWidth: 100, scrollHeight: 100 },
@@ -55,8 +64,10 @@ function documentFixture(text = "") {
 		image,
 		fonts: () => finishFonts?.(),
 		textNode,
-		select: () => {
+		leaf: leaf as unknown as Node,
+		select: (target = leaf as unknown as Node) => {
 			selected = true;
+			selectionTarget = target;
 		},
 	};
 }
@@ -370,4 +381,188 @@ test("strict study validation requires every current part and snapshot without d
 			Object.defineProperty(globalThis, "getComputedStyle", original);
 		else Reflect.deleteProperty(globalThis, "getComputedStyle");
 	}
+});
+
+function feedbackFixture(t: TestContext) {
+	const original = Object.getOwnPropertyDescriptor(
+		globalThis,
+		"getComputedStyle",
+	);
+	Object.defineProperty(globalThis, "getComputedStyle", {
+		configurable: true,
+		value: () => ({
+			paddingTop: "0",
+			paddingBottom: "0",
+			paddingLeft: "0",
+			paddingRight: "0",
+		}),
+	});
+	t.after(() => {
+		if (original)
+			Object.defineProperty(globalThis, "getComputedStyle", original);
+		else Reflect.deleteProperty(globalThis, "getComputedStyle");
+	});
+	const frames = new ReaderFrames();
+	t.after(() => frames.clear());
+	const h = documentFixture("甲乙");
+	const element = {
+		contentDocument: h.doc,
+		isConnected: true,
+		style: {},
+	} as unknown as HTMLIFrameElement;
+	const root = Object.assign(new EventTarget(), {
+		contains: () => true,
+		clientWidth: 0,
+		clientHeight: 0,
+		getBoundingClientRect: () => ({ left: 0, top: 0, right: 0, bottom: 0 }),
+	}) as unknown as HTMLElement;
+	const currentChapter = {
+		...chapter,
+		resources: [{ id: "r", text: "甲乙" }],
+		parts: [{ ...chapter.parts[0], end: 2 }],
+	} as Chapter;
+	let generation = 0;
+	const interactions: string[] = [];
+	const context = {
+		chapter: currentChapter,
+		readingGeneration: "g",
+		readings: undefined,
+		current: () => ({
+			settings: {
+				font_size: 22,
+				line_height: 2,
+				writing_mode: "horizontal-tb" as const,
+			},
+			theme: "white" as const,
+			bookUi: DEFAULT_BOOK_UI,
+		}),
+		generation: () => generation,
+		root: () => root,
+		bindFocus: () => undefined,
+		key: () => {},
+		wheel: () => {},
+		touch: () => {},
+		interaction: (event: Event) => interactions.push(event.type),
+		image: () => {},
+		ready: () => {},
+		error: (error: Error) => assert.fail(error.message),
+	};
+	frames.register(0, element);
+	frames.load(0, element, 0, context);
+	return {
+		frames,
+		h,
+		element,
+		context,
+		interactions,
+		invalidate: () => generation++,
+	};
+}
+
+function pointerdown(h: ReturnType<typeof documentFixture>, target: Node) {
+	const event = new Event("pointerdown");
+	Object.defineProperty(event, "target", { value: target });
+	h.event.dispatchEvent(event);
+}
+
+test("navigation feedback clears across frames and releases the old document on replacement and teardown", (t) => {
+	const { frames, h, element, context } = feedbackFixture(t);
+	const next = documentFixture("甲乙");
+	const firstMarks = new Map([
+		["folio-search", {}],
+		["folio-study", {}],
+		["folio-translation", {}],
+	]);
+	const nextMarks = new Map(firstMarks);
+	Object.assign(h.event, { defaultView: { CSS: { highlights: firstMarks } } });
+	Object.assign(next.event, {
+		defaultView: { CSS: { highlights: nextMarks } },
+	});
+	const other = { ...element, contentDocument: next.doc };
+	frames.register(1, other);
+	frames.load(1, other, 0, {
+		...context,
+		chapter: {
+			...context.chapter,
+			parts: [context.chapter.parts[0], context.chapter.parts[0]],
+		} as Chapter,
+	});
+	for (const marks of [firstMarks, nextMarks]) {
+		marks.set("folio-search", {});
+		marks.set("folio-study", {});
+		marks.set("folio-translation", {});
+	}
+	frames.clearSearchHighlights();
+	assert.deepEqual(
+		[...firstMarks.keys()],
+		["folio-study", "folio-translation"],
+	);
+	assert.deepEqual([...nextMarks.keys()], ["folio-study", "folio-translation"]);
+	firstMarks.set("folio-search", {});
+	nextMarks.set("folio-search", {});
+	Object.assign(element, { contentDocument: next.doc });
+	frames.load(0, element, 0, context);
+	assert.equal(firstMarks.has("folio-search"), false);
+	assert.equal(nextMarks.has("folio-search"), true);
+	frames.clear();
+	assert.equal(nextMarks.has("folio-search"), false);
+});
+
+test("only current original reader targets and noncollapsed reader selections notify interaction", (t) => {
+	const f = feedbackFixture(t);
+	const foreign = { nodeType: 1 } as Node;
+	pointerdown(f.h, f.h.leaf);
+	pointerdown(f.h, foreign);
+	f.h.event.dispatchEvent(new Event("selectionchange"));
+	assert.deepEqual(f.interactions, ["pointerdown"]);
+	f.h.select(foreign);
+	f.h.event.dispatchEvent(new Event("selectionchange"));
+	assert.deepEqual(f.interactions, ["pointerdown"]);
+	f.h.select();
+	f.h.event.dispatchEvent(new Event("selectionchange"));
+	assert.deepEqual(f.interactions, ["pointerdown", "selectionchange"]);
+	f.invalidate();
+	pointerdown(f.h, f.h.leaf);
+	f.h.event.dispatchEvent(new Event("selectionchange"));
+	assert.deepEqual(f.interactions, ["pointerdown", "selectionchange"]);
+});
+
+test("replaced frame documents release pointer and selection listeners", (t) => {
+	const f = feedbackFixture(t);
+	const next = documentFixture("甲乙");
+	Object.assign(f.element, { contentDocument: next.doc });
+	f.frames.load(0, f.element, 0, f.context);
+	pointerdown(f.h, f.h.leaf);
+	f.h.select();
+	f.h.event.dispatchEvent(new Event("selectionchange"));
+	assert.deepEqual(f.interactions, []);
+	pointerdown(next, next.leaf);
+	next.select();
+	next.event.dispatchEvent(new Event("selectionchange"));
+	assert.deepEqual(f.interactions, ["pointerdown", "selectionchange"]);
+	f.frames.clear();
+	pointerdown(next, next.leaf);
+	next.event.dispatchEvent(new Event("selectionchange"));
+	assert.deepEqual(f.interactions, ["pointerdown", "selectionchange"]);
+});
+
+test("reader reflows retain the current navigation fade and clearing restores a fresh target", (t) => {
+	const { frames, h, context } = feedbackFixture(t);
+	const style = { textContent: "" };
+	const marks = new Map<string, unknown>();
+	Object.assign(h.event, {
+		getElementById: () => style,
+		defaultView: { Highlight: class {}, CSS: { highlights: marks } },
+	});
+	const ranges = [{ resource_id: "r", spine_index: 0, start: 0, end: 2 }];
+	frames.highlight(context.chapter, ranges);
+	frames.setSearchHighlightOpacity(0.5);
+	assert.match(style.textContent, /\/ 0.5\)/);
+	frames.highlight(context.chapter, ranges);
+	assert.match(style.textContent, /\/ 0.5\)/);
+	assert.ok(marks.has("folio-search"));
+	frames.clearSearchHighlights();
+	assert.equal(marks.has("folio-search"), false);
+	frames.highlight(context.chapter, ranges);
+	assert.match(style.textContent, /\/ 1\)/);
 });

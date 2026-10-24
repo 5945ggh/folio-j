@@ -608,7 +608,7 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 			await until(() => !!preview(), "Preview must open before expanding");
 			const expand = [
 				...container.querySelectorAll<HTMLButtonElement>("button"),
-			].find((node) => node.textContent === "展开阅读");
+			].find((node) => node.textContent === "展开");
 			check(expand, "Record preview needs expand control");
 			expand.click();
 			await until(
@@ -634,7 +634,7 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 			).textContent;
 			const collapse = [
 				...container.querySelectorAll<HTMLButtonElement>("button"),
-			].find((node) => node.textContent === "返回预览");
+			].find((node) => node.textContent === "收起");
 			check(collapse, "Expanded record needs its return-to-preview action");
 			collapse.click();
 			await until(

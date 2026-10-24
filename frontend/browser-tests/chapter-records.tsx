@@ -760,18 +760,36 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		const markdown = () =>
 			h.container.querySelector<HTMLElement>(".reader-study-preview-markdown");
 		await h.until(
-			() => markdown()?.dataset.clipped === "true",
-			"Overflowing compact explanation must report actual clipping",
+			() => markdown()?.textContent?.includes("完整讲解终点。") === true,
+			"Chapter learning segment must load the complete explanation",
 		);
 		check(
 			h.container.querySelector(".reader-study-preview-analysis-heading h3")
-				?.textContent === "讲解预览" &&
-				getComputedStyle(markdown() as HTMLElement).maskImage.includes(
-					"linear-gradient",
-				) &&
-				(markdown()?.scrollHeight ?? 0) > (markdown()?.clientHeight ?? 0) + 1,
-			"Compact explanation must show preview heading and fade only on overflow",
+				?.textContent === "讲解" &&
+				!markdown()?.hasAttribute("data-clipped") &&
+				getComputedStyle(markdown() as HTMLElement).maskImage === "none" &&
+				getComputedStyle(markdown() as HTMLElement).maxHeight === "none",
+			"Chapter explanation must display in full without a preview heading or fade",
 		);
+		const chapterBody = h.container.querySelector<HTMLElement>(
+			".reader-record-body",
+		);
+		const chapterEnding = markdown()?.querySelector(
+			".analysis-markdown:last-child > :last-child",
+		);
+		check(
+			chapterBody &&
+				chapterEnding &&
+				chapterBody.scrollHeight > chapterBody.clientHeight,
+			"Chapter learning segment needs a scrollable body for its full explanation",
+		);
+		chapterBody.scrollTop = chapterBody.scrollHeight;
+		await h.until(() => {
+			const ending = chapterEnding.getBoundingClientRect();
+			const body = chapterBody.getBoundingClientRect();
+			return ending.top >= body.top && ending.bottom <= body.bottom + 1;
+		}, "Chapter explanation ending must be visible after scrolling to the bottom");
+		chapterBody.scrollTop = 0;
 		const open = h.container.querySelector<HTMLElement>(
 			".reader-study-preview-open",
 		);
@@ -806,7 +824,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() =>
 				markdown()?.textContent?.includes("短讲解正文。") === true &&
 				!markdown()?.hasAttribute("data-clipped"),
-			"Short explanation must remove clipping after switching from long explanation",
+			"Chapter explanation switch must retain full display",
 		);
 		check(
 			getComputedStyle(markdown() as HTMLElement).maskImage === "none" &&
@@ -816,8 +834,53 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		picker.value = "preview-long";
 		picker.dispatchEvent(new Event("change", { bubbles: true }));
 		await h.until(
-			() => markdown()?.dataset.clipped === "true",
-			"Switching back must restore long explanation clipping",
+			() =>
+				markdown()?.textContent?.includes("完整讲解终点。") === true &&
+				!markdown()?.hasAttribute("data-clipped"),
+			"Switching back must retain the complete chapter explanation",
+		);
+		check(
+			!h.container.querySelector(
+				".reader-chapter-records > header .reader-study-preview-actions [aria-expanded]",
+			),
+			"Chapter record header must omit expand and collapse actions",
+		);
+		button("关闭阅读记录").click();
+		await h.until(
+			() => !h.container.querySelector(".reader-chapter-records"),
+			"Chapter list must close before testing contextual preview expansion",
+		);
+		const overlapLeaf = doc.querySelector('[data-locator-leaf="1"]');
+		check(
+			overlapLeaf?.firstChild,
+			"Fixture needs overlapping segment and translation source",
+		);
+		const tapRange = doc.createRange();
+		tapRange.setStart(overlapLeaf.firstChild, 1);
+		tapRange.setEnd(overlapLeaf.firstChild, 2);
+		const tapOverlap = () => {
+			const tapRect = tapRange.getBoundingClientRect();
+			for (const type of ["pointerdown", "pointerup"])
+				overlapLeaf.dispatchEvent(
+					new PointerEvent(type, {
+						bubbles: true,
+						cancelable: true,
+						pointerId: 1,
+						isPrimary: true,
+						pointerType: "mouse",
+						button: 0,
+						clientX: tapRect.left + tapRect.width / 2,
+						clientY: tapRect.top + tapRect.height / 2,
+					}),
+				);
+		};
+		tapOverlap();
+		await h.until(
+			() =>
+				h.container.querySelector(".reader-record-title strong")
+					?.textContent === "此处记录" &&
+				markdown()?.dataset.clipped === "true",
+			"Contextual record must open the long explanation preview",
 		);
 		const dragHeader = h.container.querySelector<HTMLElement>(
 			".reader-chapter-records > header",
@@ -842,7 +905,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		const manualPosition = h.container.querySelector<HTMLElement>(
 			".reader-chapter-records",
 		)?.style.left;
-		button("展开阅读").click();
+		button("展开").click();
 		await h.until(
 			() => !!h.container.querySelector(".reader-chapter-records.expanded"),
 			"Preview must expand for full explanation reading",
@@ -884,7 +947,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				endingBounds.bottom <= bodyBounds.bottom + 1,
 			"Explanation ending must be visible when scrolled to the bottom",
 		);
-		button("返回预览").click();
+		button("收起").click();
 		await h.until(
 			() =>
 				!h.container.querySelector(".reader-chapter-records.expanded") &&
@@ -892,7 +955,9 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			"Return must restore the compact explanation preview",
 		);
 		check(
-			picker.value === "preview-long" &&
+			h.container.querySelector<HTMLSelectElement>(
+				".reader-study-preview-analysis select",
+			)?.value === "preview-long" &&
 				h.container
 					.querySelector('[role="tab"][aria-label="学习片段"]')
 					?.getAttribute("aria-selected") === "true" &&
@@ -1033,30 +1098,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => !h.container.querySelector('[role="tab"]'),
 			"Chapter record panel must close before selecting fresh source",
 		);
-		const overlapLeaf = doc.querySelector('[data-locator-leaf="1"]');
-		check(
-			overlapLeaf?.firstChild,
-			"Fixture needs overlapping segment and translation source",
-		);
-		const tapRange = doc.createRange();
-		tapRange.setStart(overlapLeaf.firstChild, 1);
-		tapRange.setEnd(overlapLeaf.firstChild, 2);
-		const tapRect = tapRange.getBoundingClientRect();
-		const tapOverlap = () => {
-			for (const type of ["pointerdown", "pointerup"])
-				overlapLeaf.dispatchEvent(
-					new PointerEvent(type, {
-						bubbles: true,
-						cancelable: true,
-						pointerId: 1,
-						isPrimary: true,
-						pointerType: "mouse",
-						button: 0,
-						clientX: tapRect.left + tapRect.width / 2,
-						clientY: tapRect.top + tapRect.height / 2,
-					}),
-				);
-		};
+
 		tapOverlap();
 		await h.until(
 			() => h.container.querySelectorAll('[role="tab"]').length === 2,
@@ -1275,7 +1317,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => !h.container.querySelector('[aria-label="选区操作"]'),
 			"Clearing the regression selection must restore native record tapping",
 		);
-		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: clean record rows, minute dates, right-side segment action, measured long/short clipping, full-height reading reaches ending, return preserves segment/analysis/tab/manual position, close icon, selection→chapter record→selection shares edited context with floating host kept mounted, two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
+		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: chapter header without expand/collapse, clean record rows, minute dates, right-side segment action, measured long/short clipping, full-height reading reaches ending, return preserves segment/analysis/tab/manual position, close icon, selection→chapter record→selection shares edited context with floating host kept mounted, two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
 	} finally {
 		if (!preview) dispose();
 	}

@@ -300,13 +300,15 @@ export function ChapterRecords(props: Props) {
 					<strong id={`${id}-title`}>{fixed ? "本章记录" : "此处记录"}</strong>
 				</div>
 				<div className="reader-study-preview-actions">
-					<button
-						type="button"
-						aria-expanded={expanded}
-						onClick={expanded ? props.onCollapse : props.onExpand}
-					>
-						{expanded ? "返回预览" : "展开阅读"}
-					</button>
+					{!fixed && (
+						<button
+							type="button"
+							aria-expanded={expanded}
+							onClick={expanded ? props.onCollapse : props.onExpand}
+						>
+							{expanded ? "收起" : "展开"}
+						</button>
+					)}
 					<button type="button" aria-label="关闭阅读记录" onClick={onClose}>
 						×
 					</button>

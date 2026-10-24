@@ -67,6 +67,7 @@ import {
 } from "./dom";
 import { createFocusController, isReaderFrameTarget } from "./focus";
 import { READER_EXIT_MS, useReaderPresence } from "./motion";
+import { NavigationHighlightLifetime } from "./navigation-highlight";
 import { cacheSavedPosition, registerPositionWriter } from "./persistence";
 import {
 	chapterProgress,
@@ -358,6 +359,17 @@ function Reader({
 				}
 			: null,
 	);
+	const navigationHighlight = useRef<NavigationHighlightLifetime | null>(null);
+	if (!navigationHighlight.current)
+		navigationHighlight.current = new NavigationHighlightLifetime(
+			() => {
+				if (highlight.current?.kind === "search") highlight.current = null;
+				frames.current.clearSearchHighlights();
+			},
+			undefined,
+			{ opacity: (value) => frames.current.setSearchHighlightOpacity(value) },
+		);
+	useEffect(() => () => navigationHighlight.current?.dispose(), []);
 	const latest = useRef({
 		panels,
 		chapterId,
@@ -1038,6 +1050,7 @@ function Reader({
 				return;
 			frames.current.finishInlineMotion();
 			// Sample before granting input so a prior programmatic move cannot count.
+			navigationHighlight.current?.clear();
 			if (sampleJumpReading()) jumpReading.current.input(performance.now());
 		},
 		[sampleJumpReading],
@@ -1218,6 +1231,8 @@ function Reader({
 					receipt.complete({ anchor, located, error: navigationFailure });
 				}
 				setPresented(true);
+				if (located && highlight.current?.kind === "search")
+					navigationHighlight.current?.presented();
 				frames.current.refreshStudyGeometry();
 				observe();
 			};
@@ -1310,6 +1325,7 @@ function Reader({
 			key: readKey,
 			wheel: readWheel,
 			touch: recordReadingInput,
+			interaction: recordReadingInput,
 			image: (partIndex, imageId) => {
 				setInitialImage({
 					requestId: ++galleryTicket.current,
@@ -1393,11 +1409,13 @@ function Reader({
 						: root.scrollTop;
 				return Number.isFinite(offset) && Math.abs(offset) <= 1;
 			},
-			loadChapter: (id) =>
-				client.fetchQuery({
+			loadChapter: (id) => {
+				navigationHighlight.current?.clear(true);
+				return client.fetchQuery({
 					queryKey: materialKeys.chapter(book.id, id),
 					queryFn: () => getChapter(book.id, id),
-				}),
+				});
+			},
 			saveDeparture: (anchor) => {
 				queue.current?.enqueue(anchor);
 			},
@@ -1432,6 +1450,9 @@ function Reader({
 								],
 							}
 						: null;
+				if (highlight.current?.kind === "search")
+					navigationHighlight.current?.replace();
+				else navigationHighlight.current?.clear(true);
 				setOriginError(null);
 				generation.current++;
 				layout.current.invalidateSurface();
@@ -1571,6 +1592,7 @@ function Reader({
 					bookUi,
 				);
 			}
+			frames.current.refreshSearchHighlightForeground();
 		};
 		try {
 			frames.current.finishInlineMotion();

@@ -162,7 +162,7 @@ export function StudyPreview({
 	};
 	useLayoutEffect(() => {
 		const node = analysisPreview.current;
-		if (!document || !node || expanded || inactive) {
+		if (!document || !node || fixed || expanded || inactive) {
 			setPreviewClipped(false);
 			return;
 		}
@@ -173,7 +173,7 @@ export function StudyPreview({
 		observer.observe(node);
 		for (const child of node.children) observer.observe(child);
 		return () => observer.disconnect();
-	}, [document, expanded, inactive]);
+	}, [document, fixed, expanded, inactive]);
 
 	return (
 		// biome-ignore lint/a11y/useAriaPropsSupportedByRole: both dialog and the named embedded region support labels.
@@ -204,10 +204,10 @@ export function StudyPreview({
 						<button
 							type="button"
 							onClick={expanded ? onCollapse : onExpand}
-							aria-label={expanded ? "返回学习片段预览" : "展开学习片段预览"}
+							aria-label={expanded ? "收起学习片段预览" : "展开学习片段预览"}
 							aria-expanded={expanded}
 						>
-							{expanded ? "返回预览" : "展开阅读"}
+							{expanded ? "收起" : "展开"}
 						</button>
 						<button
 							type="button"
@@ -334,7 +334,7 @@ export function StudyPreview({
 								aria-label="已保存讲解"
 							>
 								<div className="reader-study-preview-analysis-heading">
-									<h3>{expanded ? "讲解" : "讲解预览"}</h3>
+									<h3>{fixed || expanded ? "讲解" : "讲解预览"}</h3>
 									{analysisItems.length > 1 || analyses.hasNextPage ? (
 										<>
 											<label

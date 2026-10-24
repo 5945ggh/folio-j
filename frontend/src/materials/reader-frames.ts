@@ -6,7 +6,13 @@ import {
 	projectPart,
 } from "./dom.ts";
 import { isReaderFrameTarget, registerReaderFrameTargets } from "./focus.ts";
-import { prepareHighlights, projectedBaseRanges } from "./highlight.ts";
+import {
+	clearSearchHighlights,
+	prepareHighlights,
+	projectedBaseRanges,
+	refreshSearchHighlightForeground,
+	setSearchHighlightOpacity,
+} from "./highlight.ts";
 import { InlineTranslation } from "./inline-translation.ts";
 import { currentSurface } from "./position.ts";
 import type { BookUiPreferences } from "./preferences.ts";
@@ -90,6 +96,7 @@ type FrameContext = {
 	key: (event: KeyboardEvent) => void;
 	wheel: (event: WheelEvent) => void;
 	touch: (event: TouchEvent) => void;
+	interaction?: (event: Event) => void;
 	image: (part: number, image: number) => void;
 	ready: (generation: number, index: number) => void;
 	error: (error: Error) => void;
@@ -253,6 +260,7 @@ export class ReaderFrames {
 				projectedBaseRanges(frame.doc, projection, start, end);
 		}
 	}
+	private searchHighlightOpacity = 1;
 	private readonly frames = new Map<number, ReaderFrame>();
 	private readonly elements = new Map<number, HTMLIFrameElement>();
 	private readonly validity = new Map<number, () => boolean>();
@@ -271,6 +279,7 @@ export class ReaderFrames {
 		else this.elements.delete(index);
 	}
 	clear() {
+		this.searchHighlightOpacity = 1;
 		this.inlineTranslation.clear(false);
 		this.flowMotion.clear();
 		this.study.clear();
@@ -340,6 +349,20 @@ export class ReaderFrames {
 			paint.push(prepareHighlights(frame.doc, frame.projection, intervals));
 		}
 		for (const commit of paint) commit();
+		this.setSearchHighlightOpacity(this.searchHighlightOpacity);
+	}
+	setSearchHighlightOpacity(value: number): void {
+		this.searchHighlightOpacity = value;
+		for (const frame of this.frames.values())
+			setSearchHighlightOpacity(frame.doc, value);
+	}
+	clearSearchHighlights(): void {
+		this.searchHighlightOpacity = 1;
+		for (const frame of this.frames.values()) clearSearchHighlights(frame.doc);
+	}
+	refreshSearchHighlightForeground(): void {
+		for (const frame of this.frames.values())
+			refreshSearchHighlightForeground(frame.doc);
 	}
 	update(
 		chapter: Chapter,
@@ -391,6 +414,7 @@ export class ReaderFrames {
 				frame.rubyApplied = true;
 			}
 		}
+		this.refreshSearchHighlightForeground();
 		this.inlineTranslation.refresh();
 		this.study.geometryChanged();
 	}
@@ -486,9 +510,20 @@ export class ReaderFrames {
 				const frame = this.frames.get(index);
 				if (frame) copyReaderSelection(doc, frame.projection, event);
 			};
-			const selectionchange = () => {
-				if (valid() && !doc.getSelection()?.isCollapsed)
-					this.finishInlineMotion();
+			const pointerdown = (event: PointerEvent) => {
+				if (valid() && isReaderFrameTarget(doc, event.target))
+					context.interaction?.(event);
+			};
+			const selectionchange = (event: Event) => {
+				if (!valid()) return;
+				const selection = doc.getSelection();
+				if (!selection || selection.isCollapsed) return;
+				this.finishInlineMotion();
+				if (
+					isReaderFrameTarget(doc, selection.anchorNode) &&
+					isReaderFrameTarget(doc, selection.focusNode)
+				)
+					context.interaction?.(event);
 			};
 			const wheel = (event: WheelEvent) => {
 				if (valid() && isReaderFrameTarget(doc, event.target))
@@ -507,6 +542,7 @@ export class ReaderFrames {
 				}
 			};
 			doc.addEventListener("keydown", keydown);
+			doc.addEventListener("pointerdown", pointerdown);
 			doc.addEventListener("copy", copy);
 			doc.addEventListener("selectionchange", selectionchange);
 			doc.addEventListener("wheel", wheel, { passive: false });
@@ -515,10 +551,12 @@ export class ReaderFrames {
 			let studyCleanup = () => {};
 			const resourceCleanups: (() => void)[] = [];
 			const cleanup = () => {
+				clearSearchHighlights(doc, true);
 				studyCleanup();
 				for (const settle of resourceCleanups) settle();
 				unbind?.();
 				doc.removeEventListener("keydown", keydown);
+				doc.removeEventListener("pointerdown", pointerdown);
 				doc.removeEventListener("copy", copy);
 				doc.removeEventListener("selectionchange", selectionchange);
 				doc.removeEventListener("wheel", wheel);

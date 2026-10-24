@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Projection } from "./dom.ts";
-import { highlightRange } from "./highlight.ts";
+import { clearSearchHighlights, highlightRange } from "./highlight.ts";
 
 function harness(supported = true) {
 	class TestRange {
@@ -85,6 +85,32 @@ test("NFC range boundaries project decomposed source text without changing origi
 		{ start: [p.entries[0]?.node, 0], end: [p.entries[1]?.node, 2] },
 	]);
 	assert.equal(p.raw, "か\u3099くせい");
+});
+test("clearing navigation feedback is idempotent and preserves all persistent record marks", () => {
+	const h = harness();
+	highlightRange(h.doc, projection(["原文"]), 0, 2);
+	const persistent = [
+		"folio-study",
+		"folio-study-active",
+		"folio-translation",
+		"folio-translation-active",
+	];
+	const feedback = h.marks.get("folio-search");
+	assert.ok(feedback);
+	for (const name of persistent) h.marks.set(name, feedback);
+	let removed = 0;
+	Object.assign(h.style, { remove: () => removed++ });
+	clearSearchHighlights(h.doc);
+	clearSearchHighlights(h.doc);
+	assert.equal(h.marks.has("folio-search"), false);
+	assert.deepEqual([...h.marks.keys()], persistent);
+	assert.equal(removed, 0);
+	clearSearchHighlights(h.doc, true);
+	assert.equal(removed, 1);
+	assert.doesNotThrow(() => clearSearchHighlights(harness(false).doc, true));
+	assert.doesNotThrow(() =>
+		clearSearchHighlights({ defaultView: null } as Document),
+	);
 });
 test("missing mapping and unsupported highlights report honest errors without painting guessed text", () => {
 	const p = projection(["原文"]);
@@ -201,4 +227,60 @@ test("coverage subtraction keeps ruby locator nodes separate and preserves exact
 		],
 	);
 	assert.equal(p.raw, "甲𠮷か\u3099乙");
+});
+
+test("navigation fade changes only search paint, preserves fading opacity on reflow, and restores original foreground", async () => {
+	const { setSearchHighlightOpacity } = await import("./highlight.ts");
+	const h = harness();
+	const p = projection(["原文"]);
+	highlightRange(h.doc, p, 0, 2);
+	const marker = h.marks.get("folio-search");
+	assert.ok(marker);
+	h.marks.set("folio-study", marker);
+	h.marks.set("folio-translation", marker);
+	setSearchHighlightOpacity(h.doc, 0.5);
+	assert.match(h.style.textContent, /background:rgb\(233 203 105 \/ 0.5\)/);
+	assert.match(h.style.textContent, /#171717 50%,#282828/);
+	highlightRange(h.doc, p, 0, 2);
+	assert.match(h.style.textContent, /\/ 0.5\)/, "reflow does not brighten");
+	setSearchHighlightOpacity(h.doc, 0);
+	assert.match(h.style.textContent, /#171717 0%,#282828/);
+	assert.ok(
+		h.marks.has("folio-search"),
+		"registry survives until final expiry",
+	);
+	assert.equal(h.marks.get("folio-study"), marker);
+	assert.equal(h.marks.get("folio-translation"), marker);
+	clearSearchHighlights(h.doc);
+	highlightRange(h.doc, p, 0, 2);
+	assert.match(h.style.textContent, /\/ 1\)/, "a new target starts bright");
+	assert.equal(p.raw, "原文");
+});
+
+test("fade captures source foreground and tracks presentation-only theme switches", async () => {
+	const { setSearchHighlightOpacity, refreshSearchHighlightForeground } =
+		await import("./highlight.ts");
+	const h = harness();
+	let foreground = "rgb(229, 229, 229)";
+	Object.assign(h.doc, { body: {} });
+	Object.assign(h.doc.defaultView ?? {}, {
+		getComputedStyle: () => ({ color: foreground }),
+	});
+	const p = projection(["原文"]);
+	highlightRange(h.doc, p, 0, 2);
+	setSearchHighlightOpacity(h.doc, 0.5);
+	assert.match(h.style.textContent, /#171717 50%,rgb\(229, 229, 229\)/);
+	const marker = h.marks.get("folio-search");
+	foreground = "rgb(40, 40, 40)";
+	refreshSearchHighlightForeground(h.doc);
+	assert.match(h.style.textContent, /#171717 50%,rgb\(40, 40, 40\)/);
+	assert.equal(
+		h.marks.get("folio-search"),
+		marker,
+		"theme changes do not reproject the target",
+	);
+	foreground = "rgb(229, 229, 229)";
+	highlightRange(h.doc, p, 0, 2);
+	assert.match(h.style.textContent, /#171717 50%,rgb\(229, 229, 229\)/);
+	assert.doesNotMatch(h.style.textContent, /currentColor/);
 });

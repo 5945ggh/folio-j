@@ -5,6 +5,8 @@
 > 横排段尾译文、宽屏记录浮窗拖动停驻及开合性能修复已提交 `87a217e`，工程、全量浏览器及独立复核通过；后续开合卡顿已修复，长章节回归约束每次开合只进行一次整章重排；见[本轮验收](text-study/INLINE_PREVIEW_ACCEPTANCE.md#段尾译文与可拖动记录浮窗2026-10-24)。
 > 段尾译文平滑开合已提交，用户试读确认效果；译文与阅读区真实高度、padding、透明度同步变化，保留页边浮窗交接、快速反向、原文位置与长章性能，作者变换布局安全回退；见[提交前复核](text-study/INLINE_PREVIEW_ACCEPTANCE.md#译文开合提交前复核2026-10-24)。
 > 页边点击清选区、正文／页边分别定位和翻译卡片精简已提交 `58ffe61`，工程、全量浏览器及独立审查通过；见[本轮验收](text-study/INLINE_PREVIEW_ACCEPTANCE.md#页边点击入口定位与翻译卡片2026-10-24)。
+> 学习片段预览往返与记录列表精简已提交 `2d06a38`：完整阅读侧栏支持“收起”回到预览，保留目标、类型标签、片段／讲解选择与临时手动位置；本章记录讲解完整展示并支持滚动，此处记录的紧凑讲解按实际截断渐隐，操作前置、保存信息底部折叠；片段列表去除提示和 ID 后缀，时间精简到分钟，翻译列表仅显示原文与译文。工程、联合浏览器验收与独立复核通过，见[调整范围](text-study/INLINE_PREVIEW_ACCEPTANCE.md#记录列表与学习片段预览调整2026-10-24)与[联合验收](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#本章记录与学习片段联合验收2026-10-24)。
+> 翻译保存入口与临时定位高亮已分批提交至 `7c70d67`：Reader 新建统一从正文划选进入，草稿可预填并编辑／清空匹配译文，创建时原子留存关联收据；翻译详情保留打开已关联片段。返回原处与书内搜索的临时高亮稳定显示 2.5 秒后以 260ms 淡出，减少动态效果跳过动画，重排不续期。工程、联合浏览器验收与独立复核通过，见[联合验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#本章记录与学习片段联合验收2026-10-24)及[提交清单](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#记录与保存调整分批提交2026-10-24)。
 > 产品范围以 [PRD.md](../PRD.md) 为准，领域含义以 [GLOSSARY.md](../GLOSSARY.md) 为准，技术方案以 [TECH_STACK.md](../TECH_STACK.md) 为准。
 > 本文件汇总当前能力、实现缺口和阶段验收；产品规则链接至负责规范。
 > 阅读跳转深化已提交，工程及浏览器验收已通过；证据见[本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)。
@@ -20,6 +22,7 @@
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定；旧资料由增量迁移补齐保护 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
 | 设置与模型接入 | 已提交、工程验收通过 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；顶部分类、统一编辑弹窗、分组原子保存、草稿保护与验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](archived/settings-refresh/ACCEPTANCE.md) |
 | 阅读翻译与设备朗读 | 已提交，工程、全量浏览器及独立复审通过 | 选区翻译、持久找回、原子采用、版本冲突保护；本章记录分片段／翻译，同出处成功译文归并标记、重叠入口合并，后台完成自动刷新；卡片适应横竖排与窄屏，朗读结束后原条保留并切换重播，声音语速就地调整；真实模型质量与设备声音待实测，外部 TTS 后置 | [方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)、[验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md) |
+| 正文划选保存译文与临时定位高亮 | 已提交，工程、联合浏览器验收及独立复核通过 | 翻译详情移除新建及独立采用入口；正文草稿按确切位置及整体边缘空白规则匹配成功译文，一次预填并保护编辑／清空与冻结提交；原子创建采用收据；搜索及返回原处临时强调共用生命周期与淡出 | [联合验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#本章记录与学习片段联合验收2026-10-24)、[PRD 4.8](../PRD.md#48-阅读翻译与设备朗读) |
 | 翻译会话状态归属 | 已提交 `8f6ce79`，工程、全量浏览器及独立复核通过 | 同目标双入口共用草稿和固定请求，历史选择分别保存；集中生成门禁、原请求核实、recent 重做与 Reader 生命周期 | [本轮验收](archived/TRANSLATION_SESSION_REFACTOR_ACCEPTANCE.md) |
 | 片段讨论 | 已提交，面板调整通过工程、浏览器及独立复审 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；单行标题、可展开引用、助手全宽消息及独立设置浮层；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[界面调整验收](text-study/SEGMENT_UI_ACCEPTANCE.md) |
 | 持久讲解 | 已提交，工程与浏览器验收通过 | 直接编写／粘贴 Markdown 保存，统一记录用户保存；当前全文修订、冲突保稿与同请求核实；多份 Analysis、不可变 Revision／Section；AI 快捷生成、块编辑与审核沿用原流程 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
@@ -41,7 +44,7 @@
 | 全量注音 | 已提交、工程验收通过 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](archived/full-ruby/ACCEPTANCE.md) |
 | 阅读器正文复制 | 已提交，工程与实际复制粘贴验证通过 | 从当前正文投影提取所选字符，去除原书与自动注音，保留换行；纯文本复制不改变选区或注音显示 | [复制验收](text-study/READER_COPY_ACCEPTANCE.md) |
 | EPUB 学习衔接 | C1／C2、阅读体验调整及保存表单优化已提交，工程与浏览器验收通过 | 原生选区保存与完整回读；自动语境保守整理后计预算，只读出处显示当前材料及逻辑章位置；正文细线、真实留白页边入口与固定完整本章列表，两项显示偏好独立；保存表单支持双侧清空与显式重新摘录；材料对话和 Occurrence 继续后置 | [C1 验收](text-study/C1_ACCEPTANCE.md)、[C2 验收](text-study/C2_ACCEPTANCE.md)、[原阅读标记验收](text-study/READER_MARKS_ACCEPTANCE.md)、[阅读体验记录](text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单验收](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
-| 阅读器原处预览 | 已提交，页边原生滚动定位、重复点击收起及卡片精简已通过工程与浏览器验收 | 单击可见标记直接紧凑回看，多片段先选；原文引用置顶，读取已有译文及多篇讲解，展开侧栏、收起继续阅读；页边入口随原文同步滚动，再次点击同一入口收起；保存信息与打开片段同排，原生划选保留 | [原处预览验收](text-study/INLINE_PREVIEW_ACCEPTANCE.md) |
+| 阅读器原处预览 | 已提交，工程、联合浏览器验收及独立复核通过 | 单击可见标记直接紧凑回看，多片段先选，读取已有译文及多篇讲解；完整侧栏返回预览保留选择与手动位置；操作行前置，保存信息在底部折叠；页边入口随原文同步滚动，再次点击同一入口收起，原生划选保留 | [原处预览验收](text-study/INLINE_PREVIEW_ACCEPTANCE.md) |
 | 文本分析与书籍统计 | 工程与浏览器验收通过 | 普通文本输入、完整分析资产读取与 EPUB 章节适配分开；详情独立展示词次／词种／汉字及覆盖曲线，有界缓存且不触发阅读打开或分词准备 | [B1 验收](text-study/B1_ACCEPTANCE.md)、[B2 验收](text-study/B2_ACCEPTANCE.md) |
 | 学习条目与积累库 | 未实现 | 尚无 Occurrence 持久化、候选工具、整理操作或积累库页面；生产字段、定位、anchor 与恢复契约待落实 | [PRD F5／F6](../PRD.md#f5-学习条目创建与整理)、[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md) |
 

@@ -2,6 +2,29 @@ import type { Projection } from "./dom";
 import { rawOffset } from "./position.ts";
 import { subtractMarkIntervals } from "./record-mark-ranges.ts";
 
+const searchOpacity = new WeakMap<Document, number>();
+const searchForeground = new WeakMap<Document, string>();
+
+/** Highlight pseudo-elements are repainted per frame rather than relying on CSS transitions. */
+export function setSearchHighlightOpacity(doc: Document, value: number): void {
+	const opacity = Math.min(1, Math.max(0, value));
+	searchOpacity.set(doc, opacity);
+	const style = doc.getElementById("folio-search-style");
+	if (style)
+		style.textContent = `::highlight(folio-search){background:rgb(233 203 105 / ${opacity});color:color-mix(in srgb,#171717 ${opacity * 100}%,${searchForeground.get(doc) ?? "#282828"});}`;
+}
+
+/** Theme presentation can change without reprojecting the active source range. */
+export function refreshSearchHighlightForeground(doc: Document): void {
+	const view = doc.defaultView as
+		| (Window & { CSS?: { highlights?: Map<string, unknown> } })
+		| null;
+	if (!view?.CSS?.highlights?.has("folio-search")) return;
+	if (doc.body && view.getComputedStyle)
+		searchForeground.set(doc, view.getComputedStyle(doc.body).color);
+	setSearchHighlightOpacity(doc, searchOpacity.get(doc) ?? 1);
+}
+
 /** CSS Highlight paints existing ranges; locator leaves and native selections stay intact. */
 function projectedRanges(
 	doc: Document,
@@ -72,8 +95,12 @@ export function prepareHighlights(
 			style.id = "folio-search-style";
 			doc.head.append(style);
 		}
-		style.textContent =
-			"::highlight(folio-search){background:#e9cb69;color:#171717;}";
+		// Chromium resolves nested highlight currentColor to the highlight itself.
+		// Capture the actual source color once per projection, including theme reflows.
+		const source = ranges[0]?.startContainer?.parentElement ?? doc.body;
+		if (source && view.getComputedStyle)
+			searchForeground.set(doc, view.getComputedStyle(source).color);
+		setSearchHighlightOpacity(doc, searchOpacity.get(doc) ?? 1);
 	};
 }
 
@@ -85,6 +112,20 @@ export function highlightRange(
 	end: number,
 ): void {
 	prepareHighlights(doc, projection, [{ start, end }])();
+}
+
+/** Navigation feedback ends independently of persistent study and translation marks. */
+export function clearSearchHighlights(
+	doc: Document,
+	removeStyle = false,
+): void {
+	const view = doc.defaultView as
+		| (Window & { CSS?: { highlights?: Map<string, unknown> } })
+		| null;
+	view?.CSS?.highlights?.delete("folio-search");
+	searchOpacity.delete(doc);
+	searchForeground.delete(doc);
+	if (removeStyle) doc.getElementById("folio-search-style")?.remove?.();
 }
 
 /** Split at locator text nodes so annotations never join study decoration or hit geometry. */

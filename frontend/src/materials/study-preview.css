@@ -349,7 +349,9 @@
 	flex: 1;
 	padding: 22px;
 }
-.reader-r1 .reader-study-preview.expanded .reader-study-preview-markdown {
+.reader-r1
+	.reader-study-preview:is(.fixed, .expanded)
+	.reader-study-preview-markdown {
 	max-height: none;
 	overflow: visible;
 	mask-image: none;

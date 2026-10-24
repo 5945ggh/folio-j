@@ -8,6 +8,7 @@ import type { StudyTarget } from "../src/materials/study-api";
 import "../src/styles.css";
 import { analysisReading } from "./analysis-reading";
 import { chapterRecords } from "./chapter-records";
+import { navigationFeedback } from "./navigation-feedback";
 import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
 import { readingAidsRegression } from "./reading-aids";
@@ -369,9 +370,9 @@ async function clearStudyContext() {
 try {
 	const suite = new URLSearchParams(location.search).get("suite");
 	const lines =
-		suite === "record-saving"
+		suite === "record-saving" || suite === "navigation-feedback"
 			? [
-					await recordSaving(
+					await (suite === "record-saving" ? recordSaving : navigationFeedback)(
 						{
 							container,
 							check,
