@@ -23,14 +23,16 @@
 .reader-record-tabs {
 	display: flex;
 	gap: 4px;
-	padding: 7px 12px;
+	padding: 3px 12px;
 	border-bottom: 1px solid var(--reader-line);
 	flex-shrink: 0;
 }
-.reader-record-tabs button {
+.reader-r1 .reader-record-tabs button {
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
+	padding: 3px 7px;
+	line-height: 1.5;
 	font-size: 12px;
 }
 .reader-record-tabs button[aria-selected="true"] {
@@ -58,10 +60,27 @@
 .reader-r1 .reader-study-preview.embedded .reader-study-preview-content {
 	overflow: visible;
 }
+.reader-r1
+	.reader-chapter-records
+	> .reader-study-preview-header
+	> .reader-record-title {
+	flex-direction: row;
+	align-items: center;
+	gap: 5px;
+}
 .reader-r1 .reader-record-back {
 	align-self: flex-start;
 	margin: 6px 6px 0;
 	font-size: 12px;
+}
+.reader-r1 .reader-record-title > .reader-record-back {
+	align-self: auto;
+	width: 26px;
+	height: 26px;
+	margin: 0;
+	padding: 0;
+	font-size: 17px;
+	line-height: 1;
 }
 .reader-record-translations {
 	padding: 12px;

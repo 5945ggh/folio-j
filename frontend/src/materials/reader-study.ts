@@ -1,6 +1,7 @@
 import type { Chapter } from "./api.ts";
 import { type Projection, visibleContentRect } from "./dom.ts";
 import {
+	captureSelectionGuard,
 	distance,
 	FOCUS_TIMING,
 	isReaderFrameTarget,
@@ -37,6 +38,7 @@ export type StudyMarkHit = {
 	translationIds?: string[];
 	anchor: ScreenAnchor;
 	fixed?: boolean;
+	anchorPlacement?: "text" | "margin-left" | "margin-right" | "margin-bottom";
 };
 export type StudyBinding = {
 	materialId: string;
@@ -102,16 +104,24 @@ function bounds(ranges: readonly Range[]): ScreenAnchor | null {
 	return result;
 }
 
-/** Protect every visible line/column of a hit mark without broadening its character hit test. */
+/** Anchor to the clicked line/column while the full target remains highlighted. */
 function visibleMarkAnchor(
 	frame: StudyFrame,
 	ranges: readonly Range[],
+	hit: DOMRect,
+	vertical: boolean,
 ): ScreenAnchor | null {
 	const viewport = frame.viewport?.getBoundingClientRect();
 	const view = frame.element.ownerDocument?.defaultView;
 	let result: ScreenAnchor | null = null;
 	for (const range of ranges) {
 		for (const rect of Array.from(range.getClientRects())) {
+			if (
+				vertical
+					? rect.left >= hit.right || rect.right <= hit.left
+					: rect.top >= hit.bottom || rect.bottom <= hit.top
+			)
+				continue;
 			const visible = visibleContentRect(
 				frame.doc,
 				rect,
@@ -246,12 +256,14 @@ export class ReaderStudy {
 		this.binding?.onSelection(null);
 		this.binding?.onMarks(null);
 	}
-	clearSelection(): void {
+	clearSelection(): boolean {
+		const hadSelection = this.hasSelection();
 		for (const frame of this.frames.values()) {
 			frame.cancel();
 			if (this.current(frame)) frame.doc.getSelection()?.removeAllRanges();
 		}
 		this.binding?.onSelection(null);
+		return hadSelection;
 	}
 	geometryChanged(refresh = true): void {
 		this.hits.clear();
@@ -502,6 +514,10 @@ export class ReaderStudy {
 							const anchor = visibleMarkAnchor(
 								frame,
 								ids.flatMap((mark) => mark.ranges),
+								rect,
+								doc.defaultView
+									?.getComputedStyle?.(node.parentElement ?? doc.body)
+									.writingMode?.startsWith("vertical") ?? false,
 							);
 							return anchor
 								? {
@@ -582,8 +598,13 @@ export class ReaderStudy {
 		let disposed = false;
 		let pointer = false,
 			keyActive = false;
-		let tap: { point: Point; time: number; id: number; moved: boolean } | null =
-			null;
+		let tap: {
+			point: Point;
+			time: number;
+			id: number;
+			moved: boolean;
+			selection: ReturnType<typeof captureSelectionGuard>;
+		} | null = null;
 		const cancelSelection = () => {
 			if (selectionTimer !== null) clearTimeout(selectionTimer);
 			selectionTimer = null;
@@ -646,12 +667,17 @@ export class ReaderStudy {
 				return;
 			cancelSelection();
 			pointer = true;
-			if (!modified(event) && !this.hasSelection())
+			if (!modified(event))
 				tap = {
 					point: point(event),
 					time: event.timeStamp,
 					id: event.pointerId,
 					moved: false,
+					selection: captureSelectionGuard(
+						[...this.frames.values()]
+							.filter((item) => this.current(item))
+							.map((item) => item.doc),
+					),
 				};
 			this.binding?.onSelection(null);
 		};
@@ -677,7 +703,7 @@ export class ReaderStudy {
 				event.button !== 0 ||
 				event.isPrimary === false ||
 				modified(event) ||
-				this.hasSelection() ||
+				candidate.selection.hasNewSelection() ||
 				keyActive ||
 				!originalTarget(event) ||
 				!isReaderFrameTarget(input.doc, event.target) ||
@@ -688,6 +714,12 @@ export class ReaderStudy {
 				)
 			)
 				return;
+			if (candidate.selection.hadSelection) {
+				this.clearSelection();
+				this.binding?.onBackgroundTap?.();
+				event.preventDefault();
+				return;
+			}
 			let hit: StudyMarkHit | null = null;
 			try {
 				hit = this.markAt(frame, event);
@@ -700,7 +732,7 @@ export class ReaderStudy {
 			} else if (this.binding?.onBackgroundTap?.()) event.preventDefault();
 		};
 		const selectionChanged = () => {
-			if (selected(input.doc)) tap = null;
+			if (tap?.selection.hasNewSelection()) tap = null;
 			if (this.current(frame)) schedule();
 		};
 		const keydown = (raw: Event) => {

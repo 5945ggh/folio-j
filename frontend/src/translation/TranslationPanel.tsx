@@ -10,7 +10,7 @@ import {
 import { Link } from "react-router";
 import { chapterTranslationsKey } from "../materials/chapter-translations-query";
 import type { ScreenAnchor } from "../materials/reader-study";
-import type { StudyTarget } from "../materials/study-api";
+import type { MaterialProvenance, StudyTarget } from "../materials/study-api";
 import { InlineError } from "../Shared";
 import { SpeechControls } from "../speech";
 import { getSpeechController } from "../speech/browser";
@@ -68,7 +68,13 @@ function ResultConfiguration({ result }: { result: TranslationResult }) {
 	);
 }
 
-function TranslationOriginal({ text }: { text: string }) {
+function TranslationOriginal({
+	text,
+	reference,
+}: {
+	text: string;
+	reference: MaterialProvenance;
+}) {
 	const [expanded, setExpanded] = useState(false);
 	const [clipped, setClipped] = useState(false);
 	const original = useRef<HTMLQuoteElement>(null);
@@ -87,6 +93,15 @@ function TranslationOriginal({ text }: { text: string }) {
 			<blockquote ref={original} lang="ja">
 				{text}
 			</blockquote>
+			<SpeechControls
+				compact
+				iconOnly
+				target={{
+					id: translationTargetKey(reference),
+					text,
+					label: "译文对应原文",
+				}}
+			/>
 			{(clipped || expanded) && (
 				<button
 					type="button"
@@ -120,7 +135,10 @@ function ResultView({
 	const [adoptionOpened, setAdoptionOpened] = useState(false);
 	return (
 		<>
-			<TranslationOriginal text={result.text} />
+			<TranslationOriginal
+				text={result.text}
+				reference={result.material_provenance}
+			/>
 
 			{adoptionOpened && (
 				<div hidden={!saving}>
@@ -447,7 +465,6 @@ export function TranslationPanel({
 		choiceGeneration.current++;
 		session?.browseHistory();
 	};
-	const speechReference = result.data?.material_provenance ?? target?.reference;
 	return (
 		<section
 			ref={element}
@@ -459,6 +476,7 @@ export function TranslationPanel({
 			data-reader-tool=""
 			onKeyDown={(event) => {
 				if (
+					!embedded &&
 					event.key === "Escape" &&
 					!event.defaultPrevented &&
 					!event.nativeEvent.isComposing
@@ -469,28 +487,12 @@ export function TranslationPanel({
 				}
 			}}
 		>
-			<header>
-				{embedded ? (
-					<button type="button" onClick={onClose}>
-						← 返回翻译列表
-					</button>
-				) : (
+			{!embedded && (
+				<header>
 					<h2 id="translation-heading" ref={heading} tabIndex={-1}>
 						{target ? "选区翻译" : "最近翻译"}
 					</h2>
-				)}
-				<div className="translation-header-actions">
-					{speechReference && (
-						<SpeechControls
-							compact
-							target={{
-								id: translationTargetKey(speechReference),
-								text: result.data?.text ?? targetText(speechReference),
-								label: "译文对应原文",
-							}}
-						/>
-					)}
-					{!embedded && (
+					<div className="translation-header-actions">
 						<button
 							type="button"
 							aria-label="关闭翻译（任务继续）"
@@ -498,9 +500,9 @@ export function TranslationPanel({
 						>
 							×
 						</button>
-					)}
-				</div>
-			</header>
+					</div>
+				</header>
+			)}
 			<div ref={content} className="translation-content">
 				{(history.isPending || (identity.isPending && !!target)) && (
 					<p role="status">正在找回译文与任务…</p>
@@ -567,7 +569,10 @@ export function TranslationPanel({
 				{target && (
 					<>
 						{!result.data && (
-							<TranslationOriginal text={targetText(target.reference)} />
+							<TranslationOriginal
+								text={targetText(target.reference)}
+								reference={target.reference}
+							/>
 						)}
 						<details>
 							<summary>
@@ -709,7 +714,10 @@ export function TranslationPanel({
 						{currentTask.error && <p>{currentTask.error}</p>}
 						{!target && (!activeTranslation(currentTask) || uncertain) && (
 							<>
-								<TranslationOriginal text={currentTask.text} />
+								<TranslationOriginal
+									text={currentTask.text}
+									reference={currentTask.material_provenance}
+								/>
 								<details>
 									<summary>任务实际语境</summary>
 									<p>{currentTask.context_before || "（无前文）"}</p>

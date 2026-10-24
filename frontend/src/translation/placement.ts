@@ -1,5 +1,11 @@
 import type { ScreenAnchor } from "../materials/reader-study";
 
+export type AnchorPlacement =
+	| "text"
+	| "margin-left"
+	| "margin-right"
+	| "margin-bottom";
+
 /** Place short reading help beside its target, reserving the reader's playback/navigation area. */
 export function translationCardPosition(
 	anchor: ScreenAnchor | null,
@@ -7,6 +13,7 @@ export function translationCardPosition(
 	size: { width: number; height: number },
 	direction: "horizontal-tb" | "vertical-rl" = "horizontal-tb",
 	bottomInset = 76,
+	anchorPlacement: AnchorPlacement = "text",
 ) {
 	const margin = 12;
 	const ceiling = viewport.height < 500 ? margin : 64;
@@ -29,8 +36,8 @@ export function translationCardPosition(
 		!anchor ||
 		anchor.right <= 0 ||
 		anchor.left >= viewport.width ||
-		anchor.bottom <= ceiling ||
-		anchor.top >= floor
+		anchor.bottom <= (anchorPlacement === "text" ? ceiling : 0) ||
+		anchor.top >= (anchorPlacement === "text" ? floor : viewport.height)
 	)
 		return {
 			left: right,
@@ -39,7 +46,9 @@ export function translationCardPosition(
 		};
 	const leftSpace = anchor.left - margin - 8;
 	const rightSpace = viewport.width - margin - anchor.right - 8;
-	const side = () => {
+	const side = (preferRight = false) => {
+		if (preferRight && rightSpace >= size.width)
+			return { left: anchor.right + 8, top: clampTop(anchor.top), maxHeight };
 		if (leftSpace >= size.width)
 			return {
 				left: anchor.left - size.width - 8,
@@ -50,21 +59,28 @@ export function translationCardPosition(
 			return { left: anchor.right + 8, top: clampTop(anchor.top), maxHeight };
 		return null;
 	};
-	if (direction === "vertical-rl") {
-		const beside = side();
+	if (
+		anchorPlacement === "margin-left" ||
+		anchorPlacement === "margin-right" ||
+		(anchorPlacement === "text" && direction === "vertical-rl")
+	) {
+		const beside = side(anchorPlacement === "margin-right");
 		if (beside) return beside;
 	}
-	const below = Math.max(0, floor - anchor.bottom - 8);
-	const above = Math.max(0, anchor.top - ceiling - 8);
-	const useBelow = below >= Math.min(height, 240) || below >= above;
+	const belowEdge = Math.max(ceiling, anchor.bottom + 8);
+	const aboveEdge = Math.min(floor, anchor.top - 8);
+	const below = Math.max(0, floor - belowEdge);
+	const above = Math.max(0, aboveEdge - ceiling);
+	const useBelow =
+		anchorPlacement === "margin-bottom"
+			? above < Math.min(height, 180) && below > above
+			: below >= Math.min(height, 240) || below >= above;
 	const available = useBelow ? below : above;
 	if (available >= Math.min(height, 180)) {
 		const limit = Math.min(maxHeight, available);
 		return {
 			left: clampLeft((anchor.left + anchor.right - size.width) / 2),
-			top: useBelow
-				? anchor.bottom + 8
-				: anchor.top - 8 - Math.min(size.height, limit),
+			top: useBelow ? belowEdge : aboveEdge - Math.min(size.height, limit),
 			maxHeight: limit,
 		};
 	}

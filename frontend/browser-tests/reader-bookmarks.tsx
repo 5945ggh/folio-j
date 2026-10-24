@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { components } from "../src/api/schema";
+import { FOCUS_TIMING } from "../src/materials/focus";
 
 type Schema = components["schemas"];
 type Harness = {
@@ -385,6 +386,30 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 					.map((node) => node.getAttribute("aria-expanded"))
 					.join(",")})`,
 			);
+			const triggerBounds = first().getBoundingClientRect();
+			const panelBounds = find<HTMLElement>(
+				".reader-chapter-records",
+			).getBoundingClientRect();
+			if (writing_mode === "horizontal-tb") {
+				const outwardRight = triggerBounds.left > frameCenter();
+				const outwardFits = outwardRight
+					? innerWidth - triggerBounds.right - 20 >= panelBounds.width
+					: triggerBounds.left - 20 >= panelBounds.width;
+				const expectRight = outwardFits ? outwardRight : !outwardRight;
+				check(
+					Math.abs(
+						expectRight
+							? panelBounds.left - triggerBounds.right - 8
+							: triggerBounds.left - panelBounds.right - 8,
+					) < 1,
+					"Margin preview must use the real button edge, preferring the outside then the available inside",
+				);
+			} else {
+				check(
+					Math.abs(triggerBounds.top - panelBounds.bottom - 8) < 1,
+					`Bottom-margin preview must sit above the real trigger when outside has no space: trigger=${JSON.stringify(triggerBounds.toJSON())}, panel=${JSON.stringify(panelBounds.toJSON())}`,
+				);
+			}
 			first().click();
 			await until(
 				() => !preview() && first().getAttribute("aria-expanded") === "false",
@@ -426,6 +451,166 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 				"Grouped bookmark must toggle closed",
 			);
 			const frame = find<HTMLIFrameElement>("iframe.material-part");
+			function frameCenter() {
+				const bounds = find<HTMLIFrameElement>(
+					"iframe.material-part",
+				).getBoundingClientRect();
+				return (bounds.left + bounds.right) / 2;
+			}
+			const doc = frame.contentDocument;
+			check(doc, "Reader needs a real same-origin document");
+			const native = doc.getSelection();
+			const plainLeaf = doc.querySelector('[data-locator-leaf="0"]');
+			check(native && plainLeaf, "Fixture needs unmarked selectable source");
+			const nativeRange = doc.createRange();
+			nativeRange.selectNodeContents(plainLeaf);
+			const selectOriginal = async () => {
+				native.removeAllRanges();
+				native.addRange(nativeRange);
+				doc.dispatchEvent(new Event("selectionchange"));
+				await until(
+					() => !!container.querySelector('[aria-label="选区操作"]'),
+					"Native iframe selection must show its action toolbar",
+				);
+			};
+			const point = viewport.getBoundingClientRect();
+			const sendPointer = (
+				target: Element,
+				type: string,
+				overrides: PointerEventInit = {},
+			) =>
+				target.dispatchEvent(
+					new PointerEvent(type, {
+						bubbles: true,
+						cancelable: true,
+						pointerId: 1,
+						isPrimary: true,
+						pointerType: "mouse",
+						button: 0,
+						clientX: point.left + 2,
+						clientY: point.top + 2,
+						...overrides,
+					}),
+				);
+			const tap = (target: Element, options: PointerEventInit = {}) => {
+				sendPointer(target, "pointerdown", options);
+				sendPointer(target, "pointerup", options);
+			};
+			const settleTap = async () => {
+				await new Promise((resolve) =>
+					setTimeout(resolve, FOCUS_TIMING.clickDelay + 16),
+				);
+			};
+			const tools = () => find<HTMLElement>(".reader-r1").dataset.toolsVisible;
+			await selectOriginal();
+			tap(first());
+			check(
+				native.toString() === paragraphs[0],
+				"Record control pointer gestures must preserve their selected source target",
+			);
+			tap(viewport, { shiftKey: true });
+			check(!native.isCollapsed, "Modified margin tap must preserve selection");
+			sendPointer(viewport, "pointerdown");
+			sendPointer(viewport, "pointermove", {
+				clientX: point.left + 20,
+				buttons: 1,
+			});
+			sendPointer(viewport, "pointerup", { clientX: point.left + 20 });
+			check(!native.isCollapsed, "Margin drag must preserve native selection");
+			sendPointer(viewport, "pointerdown");
+			await new Promise((resolve) =>
+				setTimeout(resolve, FOCUS_TIMING.longPress + 16),
+			);
+			sendPointer(viewport, "pointerup");
+			check(
+				!native.isCollapsed,
+				"Margin long press must preserve native selection",
+			);
+			const visibleBeforeDismiss = tools();
+			tap(viewport);
+			await until(
+				() =>
+					native.isCollapsed &&
+					!container.querySelector('[aria-label="选区操作"]'),
+				"A plain outer-margin tap must clear iframe selection and its toolbar",
+			);
+			await settleTap();
+			check(
+				tools() === visibleBeforeDismiss,
+				"Selection dismissal must consume the tap without toggling reader tools",
+			);
+			await selectOriginal();
+			const originalBounds = nativeRange.getBoundingClientRect();
+			const originalPoint = {
+				clientX: (originalBounds.left + originalBounds.right) / 2,
+				clientY: (originalBounds.top + originalBounds.bottom) / 2,
+			};
+			tap(plainLeaf, originalPoint);
+			await until(
+				() =>
+					native.isCollapsed &&
+					!container.querySelector('[aria-label="选区操作"]'),
+				"A plain iframe-body tap must clear native selection and its toolbar",
+			);
+			first().click();
+			await until(
+				() => !!preview(),
+				"Compact preview must open before a body tap",
+			);
+			const bodyTools = tools();
+			tap(plainLeaf, originalPoint);
+			await until(
+				() => !preview(),
+				"Plain iframe-body tap must close a compact preview",
+			);
+			await settleTap();
+			check(
+				tools() === bodyTools,
+				"Body preview dismissal must consume the tap without toggling tools",
+			);
+			first().click();
+			await until(
+				() => !!preview(),
+				"Compact preview must open before dismissing it",
+			);
+			const compactTools = tools();
+			tap(viewport);
+			await until(
+				() => !preview(),
+				"Plain margin tap must close a compact preview",
+			);
+			await settleTap();
+			check(
+				tools() === compactTools,
+				"Compact preview dismissal must consume one tap",
+			);
+			first().click();
+			await until(() => !!preview(), "Preview must open before expanding");
+			const expand = [
+				...container.querySelectorAll<HTMLButtonElement>("button"),
+			].find((node) => node.textContent === "展开阅读");
+			check(expand, "Record preview needs expand control");
+			expand.click();
+			await until(
+				() => !!container.querySelector(".reader-chapter-records.expanded"),
+				"Preview must expand",
+			);
+			tap(viewport);
+			await settleTap();
+			check(
+				!!container.querySelector(".reader-chapter-records.expanded"),
+				"Plain margin tap must retain an expanded record sidebar",
+			);
+			click("关闭阅读记录");
+			click("本章记录");
+			await until(() => !!preview(), "Fixed chapter record panel must open");
+			tap(viewport);
+			await settleTap();
+			check(
+				!!preview(),
+				"Plain margin tap must retain the fixed chapter record panel",
+			);
+			click("关闭阅读记录");
 			const scrollBookmark = first();
 			const before = scrollBookmark.getBoundingClientRect();
 			const frameBefore = frame.getBoundingClientRect();

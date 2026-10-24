@@ -477,3 +477,87 @@ test("root background callback consumes only ordinary root taps and prevents a s
 	assert.equal(calls, count);
 	controller.dispose();
 });
+
+for (const mode of [
+	"unchanged",
+	"collapsed",
+	"new-selection",
+	"drag",
+	"long-press",
+	"modifier",
+	"control",
+] as const) {
+	test(`root background tap with an existing frame selection: ${mode}`, (t) => {
+		t.mock.timers.enable({ apis: ["setTimeout", "Date"] });
+		let selection = "existing";
+		const makeDoc = () =>
+			Object.assign(new EventTarget(), {
+				querySelectorAll: () => [],
+				getSelection: () => ({
+					isCollapsed: !selection,
+					toString: () => selection,
+				}),
+				activeElement: null,
+				body: null,
+				defaultView: null,
+				hidden: false,
+			});
+		const doc = makeDoc(),
+			frameDoc = makeDoc();
+		const root = Object.assign(new EventTarget(), {
+			ownerDocument: doc,
+			getBoundingClientRect: () => ({ left: 0, top: 0 }),
+		});
+		let calls = 0;
+		const controller = createFocusController({
+			root: root as unknown as HTMLElement,
+			onVisibilityChange: () => {},
+			onBackgroundTap: () => {
+				calls++;
+				selection = "";
+				return true;
+			},
+		});
+		controller.bindFrame(
+			frameDoc as unknown as Document,
+			{
+				getBoundingClientRect: () => ({ left: 0, top: 0 }),
+			} as HTMLIFrameElement,
+		);
+		const pointer = (type: string, props = {}) => {
+			const event = new Event(type, { cancelable: true });
+			Object.assign(event, {
+				clientX: 5,
+				clientY: 5,
+				pointerId: 1,
+				button: 0,
+				isPrimary: true,
+				...props,
+			});
+			if (mode === "control")
+				Object.defineProperty(event, "target", {
+					value: { nodeType: 1, closest: () => ({}) },
+				});
+			root.dispatchEvent(event);
+			return event;
+		};
+		pointer("pointerdown", mode === "modifier" ? { shiftKey: true } : {});
+		if (mode === "collapsed") {
+			selection = "";
+			frameDoc.dispatchEvent(new Event("selectionchange"));
+		}
+		if (mode === "new-selection") {
+			selection = "new";
+			frameDoc.dispatchEvent(new Event("selectionchange"));
+		}
+		if (mode === "drag") pointer("pointermove", { clientX: 20 });
+		if (mode === "long-press") t.mock.timers.tick(FOCUS_TIMING.longPress);
+		const up = pointer("pointerup");
+		t.mock.timers.tick(FOCUS_TIMING.clickDelay);
+		const consumed = mode === "unchanged" || mode === "collapsed";
+		assert.equal(calls, consumed ? 1 : 0);
+		assert.equal(up.defaultPrevented, consumed);
+		assert.equal(controller.visible, true);
+		controller.dispose();
+	});
+}

@@ -10,7 +10,10 @@ import { InlineError } from "../Shared";
 import { getSpeechController } from "../speech/browser";
 import type { AdoptionSession } from "../translation/AdoptTranslation";
 import type { TranslationResult } from "../translation/api";
-import { translationCardPosition } from "../translation/placement";
+import {
+	type AnchorPlacement,
+	translationCardPosition,
+} from "../translation/placement";
 import type { TranslationSessions } from "../translation/session";
 import { TranslationPanel } from "../translation/TranslationPanel";
 import type { Chapter } from "./api";
@@ -22,6 +25,7 @@ type Props = Omit<StudyPreviewProps, "onEmphasize" | "embedded"> & {
 	chapter: Chapter;
 	sourceId: string;
 	direction: "horizontal-tb" | "vertical-rl";
+	anchorPlacement?: AnchorPlacement;
 	translations: readonly ChapterTranslation[];
 	translationsLoading: boolean;
 	translationsError: Error | null;
@@ -44,6 +48,7 @@ export function ChapterRecords(props: Props) {
 		translations,
 		chapter,
 		direction,
+		anchorPlacement = "text",
 		onClose,
 		onEmphasize,
 	} = props;
@@ -58,6 +63,7 @@ export function ChapterRecords(props: Props) {
 				? translations[0]?.identity_sha256
 				: selectedId),
 	);
+	const canReturn = !!selected && selectedId != null;
 	const element = useRef<HTMLDivElement>(null);
 	const nextFocus = useRef<"detail" | string | null>(null);
 	const body = useRef<HTMLDivElement>(null);
@@ -71,6 +77,11 @@ export function ChapterRecords(props: Props) {
 	);
 	const [position, setPosition] =
 		useState<ReturnType<typeof translationCardPosition>>();
+	const returnToList = () => {
+		if (!selected || !canReturn) return;
+		nextFocus.current = selected.identity_sha256;
+		setSelectedId(null);
+	};
 	useLayoutEffect(() => {
 		const destination = nextFocus.current;
 		if (!destination) return;
@@ -78,7 +89,7 @@ export function ChapterRecords(props: Props) {
 		const button =
 			destination === "detail"
 				? element.current?.querySelector<HTMLButtonElement>(
-						".translation-card.embedded > header button",
+						".reader-record-back",
 					)
 				: [
 						...(element.current?.querySelectorAll<HTMLButtonElement>(
@@ -114,6 +125,7 @@ export function ChapterRecords(props: Props) {
 					},
 					direction,
 					bottomInset,
+					fixed || expanded ? "text" : anchorPlacement,
 				),
 			);
 		};
@@ -130,7 +142,15 @@ export function ChapterRecords(props: Props) {
 			observer.disconnect();
 			window.removeEventListener("resize", measure);
 		};
-	}, [anchor, fixed, expanded, inactive, direction, speechState]);
+	}, [
+		anchor,
+		fixed,
+		expanded,
+		inactive,
+		direction,
+		anchorPlacement,
+		speechState,
+	]);
 	useEffect(() => {
 		if (tab !== "translation") return;
 		callbacks.current.onEmphasize(
@@ -163,12 +183,26 @@ export function ChapterRecords(props: Props) {
 				) {
 					event.preventDefault();
 					event.stopPropagation();
-					onClose();
+					if (tab === "translation" && canReturn) returnToList();
+					else onClose();
 				}
 			}}
 		>
 			<header className="reader-study-preview-header">
-				<strong id={`${id}-title`}>{fixed ? "本章记录" : "此处记录"}</strong>
+				<div className="reader-record-title">
+					{tab === "translation" && canReturn && (
+						<button
+							type="button"
+							className="reader-record-back"
+							aria-label="返回翻译列表"
+							title="返回翻译列表"
+							onClick={returnToList}
+						>
+							<span aria-hidden="true">←</span>
+						</button>
+					)}
+					<strong id={`${id}-title`}>{fixed ? "本章记录" : "此处记录"}</strong>
+				</div>
 				<div className="reader-study-preview-actions">
 					<button
 						type="button"
@@ -254,10 +288,7 @@ export function ChapterRecords(props: Props) {
 							onSaved={props.onSaved}
 							onOpenSegment={props.onOpen}
 							onBackToOrigin={props.onBackToOrigin}
-							onClose={() => {
-								nextFocus.current = selected.identity_sha256;
-								setSelectedId(null);
-							}}
+							onClose={onClose}
 						/>
 					) : (
 						<div className="reader-record-translations">

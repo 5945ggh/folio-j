@@ -34,6 +34,16 @@
 	opacity: 0.55;
 	cursor: not-allowed;
 }
+.device-speech > .device-speech-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	min-height: 28px;
+	padding: 4px;
+	border: 0;
+	text-decoration: none;
+}
 .device-speech button:hover:not(:disabled),
 .device-speech-popover > button:hover {
 	background: color-mix(in srgb, var(--speech-fg) 6%, var(--speech-bg));

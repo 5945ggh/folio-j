@@ -75,11 +75,16 @@
 	color: var(--reader-fg, #252526);
 }
 .translation-original {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 28px;
+	column-gap: 6px;
 	margin: 0 0 14px;
 	color: var(--reader-muted, #74777b);
 	font-size: 12px;
 }
 .translation-original blockquote {
+	grid-column: 1;
+	grid-row: 1;
 	margin: 0;
 	white-space: pre-wrap;
 	display: -webkit-box;
@@ -90,12 +95,27 @@
 .translation-original[data-expanded] blockquote {
 	display: block;
 }
-.translation-original button {
+.translation-original > button {
+	grid-column: 1 / -1;
+	justify-self: start;
 	border: 0;
 	padding: 3px 0;
 	font-size: 11px;
 	text-decoration: underline;
 	text-underline-offset: 3px;
+}
+.translation-original > .device-speech {
+	display: contents;
+}
+.translation-original .device-speech-icon {
+	grid-column: 2;
+	grid-row: 1;
+	align-self: start;
+}
+.translation-original .device-speech-message {
+	grid-column: 1 / -1;
+	flex-wrap: wrap;
+	white-space: normal;
 }
 .translation-card .translation-output {
 	margin: 0 0 12px;

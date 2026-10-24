@@ -566,17 +566,60 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		);
 		await h.until(
 			() =>
-				document.activeElement?.textContent?.includes("返回翻译列表") ===
-					true &&
+				document.activeElement?.getAttribute("aria-label") === "返回翻译列表" &&
 				h.container
-					.querySelector(".translation-card")
+					.querySelector(".reader-chapter-records > header")
 					?.contains(document.activeElement) === true,
-			"Keyboard activation of a translation row must move focus into its details return control",
+			"Keyboard activation of a translation row must focus its outer-header return control",
 		);
 		await new Promise<void>((resolve) =>
 			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
 		);
 		containedPanel();
+		const backBounds = button("返回翻译列表").getBoundingClientRect();
+		const heading = h.container.querySelector<HTMLElement>(
+			".reader-chapter-records > header strong",
+		);
+		check(
+			heading,
+			"Record header must retain its title next to the return arrow",
+		);
+		const headingBounds = heading.getBoundingClientRect();
+		check(
+			Math.abs(
+				(backBounds.top + backBounds.bottom) / 2 -
+					(headingBounds.top + headingBounds.bottom) / 2,
+			) <= 3,
+			"Outer-header return arrow and record title must share one visual row",
+		);
+		check(
+			!h.container.querySelector(".translation-card.embedded > header"),
+			"Embedded translation details must share the record header without an extra toolbar",
+		);
+		const original = h.container.querySelector(".translation-original");
+		check(
+			original?.querySelector('[aria-label="朗读原文"][title="朗读原文"]'),
+			"Original source must host its accessible speech icon",
+		);
+		document.activeElement?.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "Escape",
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
+		await h.until(
+			() =>
+				document.activeElement?.matches(".reader-record-translation") ===
+					true && document.activeElement.textContent === firstRowText,
+			"Escape from listed translation details must return and restore row focus",
+		);
+		(document.activeElement as HTMLButtonElement).click();
+		await h.until(
+			() =>
+				document.activeElement?.getAttribute("aria-label") === "返回翻译列表",
+			"Reopening the focused row must restore detail-header focus",
+		);
 		const history = [...h.container.querySelectorAll("details")].find((node) =>
 			node.querySelector("summary")?.textContent?.includes("历史翻译"),
 		);
@@ -607,7 +650,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			generated.length === 0,
 			"Reading latest or historical records must never generate",
 		);
-		const backToList = button("← 返回翻译列表");
+		const backToList = button("返回翻译列表");
 		backToList.focus();
 		backToList.click();
 		await h.until(
@@ -655,7 +698,14 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => h.container.textContent?.includes("保存的片段译文。") ?? false,
 			"Shared entry must expose existing learning segment",
 		);
-		button("翻译").click();
+		button("学习片段").focus();
+		button("学习片段").dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "End",
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
 		await h.until(
 			() =>
 				h.container
@@ -663,10 +713,24 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 					?.textContent?.includes(first.translation) ?? false,
 			"Shared entry translation tab must expose latest result",
 		);
-		button("关闭阅读记录").click();
+		check(
+			!h.container.querySelector('[aria-label="返回翻译列表"]'),
+			"A single direct source translation must not offer a return to a list",
+		);
+		check(
+			document.activeElement === button("翻译"),
+			"End key on the segment tab must select and focus the translation tab",
+		);
+		h.container.querySelector(".translation-card.embedded")?.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "Escape",
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
 		await h.until(
 			() => !h.container.querySelector('[role="tab"]'),
-			"Shared entry must close before selecting new source",
+			"Escape from single direct details must close the record entry",
 		);
 		const freshLeaf = doc.querySelector('[data-locator-leaf="4"]');
 		check(freshLeaf, "Fixture needs unrecorded source paragraph");
@@ -813,7 +877,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => embeddedEditor.value === "真实阅读器共享语境",
 			"Embedded context edit must render",
 		);
-		button("← 返回翻译列表").click();
+		button("返回翻译列表").click();
 		button("本章记录").click();
 		await h.until(
 			() => !h.container.querySelector('[role="tab"]'),

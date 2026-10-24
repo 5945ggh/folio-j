@@ -243,18 +243,29 @@ function SpeechSettingsPopover({ showRate = false }: { showRate?: boolean }) {
 export function SpeechControls({
 	target,
 	compact = false,
+	iconOnly = false,
 }: {
 	target: SpeechTarget;
 	compact?: boolean;
+	iconOnly?: boolean;
 }) {
 	const { state, controller } = useDeviceSpeech();
 	const reason = speechUnavailableReason(state);
 	const action = speechTargetAction(state, target);
 	const error = reason ?? (action !== "play" ? state.error : null);
+	const label =
+		action === "stop"
+			? "停止朗读"
+			: action === "replay"
+				? "重播原文"
+				: "朗读原文";
 	return (
 		<div className="device-speech" data-compact={compact || undefined}>
 			<button
 				type="button"
+				className={iconOnly ? "device-speech-icon" : undefined}
+				aria-label={iconOnly ? label : undefined}
+				title={iconOnly ? label : undefined}
 				disabled={action !== "stop" && (!!reason || !target.text.trim())}
 				onClick={() => {
 					if (action === "stop") controller.stop();
@@ -262,11 +273,38 @@ export function SpeechControls({
 					else controller.play(target);
 				}}
 			>
-				{action === "stop"
-					? "停止朗读"
-					: action === "replay"
-						? "重播原文"
-						: "朗读原文"}
+				{iconOnly ? (
+					<svg
+						viewBox="0 0 24 24"
+						width="17"
+						height="17"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="1.7"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						aria-hidden="true"
+					>
+						{action === "stop" ? (
+							<rect
+								x="6"
+								y="6"
+								width="12"
+								height="12"
+								rx="1"
+								fill="currentColor"
+								stroke="none"
+							/>
+						) : (
+							<>
+								<path d="m11 4-6 5H2v6h3l6 5V4Z" />
+								<path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14" />
+							</>
+						)}
+					</svg>
+				) : (
+					label
+				)}
 			</button>
 			{error && (
 				<div className="device-speech-message">

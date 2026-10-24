@@ -56,6 +56,37 @@ export function isReaderFrameTarget(
 		node?.nodeType === 1 ? (node as Element) : node?.parentElement;
 	return Boolean(candidate && originalFrameTargets.get(doc)?.has(candidate));
 }
+/** Snapshot native endpoints before a gesture; a newly formed selection keeps browser ownership. */
+export function captureSelectionGuard(documents: Iterable<Document>) {
+	const snapshot = (doc: Document) => {
+		const selection = doc.getSelection();
+		return selection && !selection.isCollapsed
+			? ([
+					selection.anchorNode,
+					selection.anchorOffset,
+					selection.focusNode,
+					selection.focusOffset,
+					selection.toString(),
+				] as const)
+			: null;
+	};
+	const initial = [...documents].map((doc) => ({
+		doc,
+		selection: snapshot(doc),
+	}));
+	return {
+		hadSelection: initial.some(({ selection }) => selection !== null),
+		hasNewSelection: () =>
+			initial.some(({ doc, selection }) => {
+				const current = snapshot(doc);
+				return (
+					current !== null &&
+					(selection === null ||
+						current.some((value, index) => value !== selection[index]))
+				);
+			}),
+	};
+}
 export type FocusOptions = {
 	root: HTMLElement;
 	focus?: boolean;
@@ -65,6 +96,7 @@ export type FocusOptions = {
 	onTabReveal?: (event: KeyboardEvent, wasHidden: boolean) => void;
 	hasOverlay?: () => boolean;
 	onEscapeOverlay?: () => boolean;
+	/** Ordinary outer-background tap; return true after dismissing transient reader UI. */
 	onBackgroundTap?: () => boolean;
 };
 /** Bind every loaded same-origin frame; dispose its binding before replacing the document. */
@@ -76,8 +108,13 @@ export function createFocusController(options: FocusOptions) {
 	let pressed = false;
 	let hovered: Element | null = null;
 	let lastPoint: Point | null = null;
-	let down: { point: Point; time: number; id: number; moved: boolean } | null =
-		null;
+	let down: {
+		point: Point;
+		time: number;
+		id: number;
+		moved: boolean;
+		selection: ReturnType<typeof captureSelectionGuard>;
+	} | null = null;
 	let idle: ReturnType<typeof setTimeout> | undefined;
 	let click: ReturnType<typeof setTimeout> | undefined;
 	const docs = new Set<Document>([options.root.ownerDocument]);
@@ -170,7 +207,7 @@ export function createFocusController(options: FocusOptions) {
 			clearTimeout(click);
 			down =
 				!e.defaultPrevented &&
-				!selected() &&
+				(!selected() || (!frame && options.onBackgroundTap)) &&
 				e.isPrimary !== false &&
 				e.button === 0 &&
 				!e.altKey &&
@@ -178,7 +215,13 @@ export function createFocusController(options: FocusOptions) {
 				!e.metaKey &&
 				!e.shiftKey &&
 				!element(e)?.closest(CONTROL)
-					? { point: point(e), time: Date.now(), id: e.pointerId, moved: false }
+					? {
+							point: point(e),
+							time: Date.now(),
+							id: e.pointerId,
+							moved: false,
+							selection: captureSelectionGuard(docs),
+						}
 					: null;
 			refresh();
 		});
@@ -217,10 +260,13 @@ export function createFocusController(options: FocusOptions) {
 				!e.metaKey &&
 				!e.shiftKey &&
 				ordinaryTap(candidate.point, point(e), Date.now() - candidate.time) &&
-				!selected() &&
+				!candidate.selection.hasNewSelection() &&
 				!element(e)?.closest(CONTROL)
 			) {
-				if (!frame && options.onBackgroundTap?.()) {
+				if (
+					!frame &&
+					(options.onBackgroundTap?.() || candidate.selection.hadSelection)
+				) {
 					e.preventDefault();
 					refresh();
 					return;
@@ -314,6 +360,7 @@ export function createFocusController(options: FocusOptions) {
 			queueMicrotask(refresh);
 		});
 		const selection = () => {
+			if (down?.selection.hasNewSelection()) down = null;
 			if (selected()) clearTimeout(click);
 			refresh();
 		};

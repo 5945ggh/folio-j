@@ -386,6 +386,12 @@ function Reader({
 		frames.current.emphasizeStudyMark(null);
 		return true;
 	}, []);
+	const dismissReadingBackground = useCallback(() => {
+		const hadToolbar = latest.current.selectionActive;
+		const clearedSelection = frames.current.clearStudySelection();
+		const closedPreview = closeCompactPreview();
+		return hadToolbar || clearedSelection || closedPreview;
+	}, [closeCompactPreview]);
 	const setUiPreference = useCallback((next: ReaderUiPreferences) => {
 		setUi(next);
 		setStorageFailed(!writeReaderUiPreferences(next));
@@ -485,7 +491,7 @@ function Reader({
 			root: shell.current,
 			focus: readReaderUiPreferences().focus,
 			onVisibilityChange: setToolsVisible,
-			onBackgroundTap: closeCompactPreview,
+			onBackgroundTap: dismissReadingBackground,
 			onTabReveal: (event, wasHidden) => {
 				flushSync(() => setToolsVisible(true));
 				const selectionButton = document.getElementById(
@@ -570,7 +576,7 @@ function Reader({
 			focus.dispose();
 			controller.current = null;
 		};
-	}, [closePanel, closeCompactPreview, setUiPreference]);
+	}, [closePanel, dismissReadingBackground, setUiPreference]);
 	useEffect(() => {
 		controller.current?.setFocus(ui.focus);
 	}, [ui.focus]);
@@ -651,7 +657,7 @@ function Reader({
 			markTrigger.current = trigger;
 			previewEmphasis.current = null;
 			frames.current.emphasizeStudyMark(null);
-			setSelection(null);
+			frames.current.clearStudySelection();
 			setPanels((current) =>
 				current.right === "study"
 					? closeReaderPanel(current, "right")
@@ -700,7 +706,7 @@ function Reader({
 					previewEmphasis.current = null;
 				}
 			},
-			onBackgroundTap: closeCompactPreview,
+			onBackgroundTap: dismissReadingBackground,
 		});
 	});
 	const hitRecords = useMemo(
@@ -1769,32 +1775,19 @@ function Reader({
 									}
 									const root = container.current;
 									if (!root) return;
-									const outer = root.getBoundingClientRect();
 									const view = readingViewport(root, getComputedStyle(root));
-									const dx = outer.left + root.clientLeft - root.scrollLeft;
-									const dy = outer.top + root.clientTop - root.scrollTop;
+									const anchor = event.currentTarget.getBoundingClientRect();
 									openMarkHit(
 										{
 											segmentIds: entry.segmentIds,
 											translationIds: entry.translationIds,
-											anchor: {
-												left: Math.min(
-													view.right,
-													Math.max(view.left, entry.anchor.left + dx),
-												),
-												right: Math.max(
-													view.left,
-													Math.min(view.right, entry.anchor.right + dx),
-												),
-												top: Math.min(
-													view.bottom,
-													Math.max(view.top, entry.anchor.top + dy),
-												),
-												bottom: Math.max(
-													view.top,
-													Math.min(view.bottom, entry.anchor.bottom + dy),
-												),
-											},
+											anchor,
+											anchorPlacement:
+												settings.writing_mode === "vertical-rl"
+													? "margin-bottom"
+													: anchor.left >= view.right
+														? "margin-right"
+														: "margin-left",
 										},
 										event.currentTarget,
 									);
@@ -2097,6 +2090,7 @@ function Reader({
 					<ChapterRecords
 						key={previewSerial}
 						anchor={markHit.anchor}
+						anchorPlacement={markHit.anchorPlacement}
 						fixed={markHit.fixed}
 						loading={marks.loading}
 						items={visibleHitItems}

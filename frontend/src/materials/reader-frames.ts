@@ -117,8 +117,8 @@ export class ReaderFrames {
 	refreshStudyGeometry(): void {
 		this.study.refresh();
 	}
-	clearStudySelection(): void {
-		this.study.clearSelection();
+	clearStudySelection(): boolean {
+		return this.study.clearSelection();
 	}
 	private freshProjection(index: number, chapter: Chapter): Projection {
 		const frame = this.frames.get(index),

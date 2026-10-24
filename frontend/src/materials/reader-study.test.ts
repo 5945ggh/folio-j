@@ -881,7 +881,7 @@ test("disposing an old frame twice cannot remove replacement mark hit data", () 
 	assert.equal(h.callbacks.marks.filter(Boolean).length, 1);
 });
 
-test("a selection in another current frame takes priority over marked taps", () => {
+test("an existing selection in another current frame is cleared without opening a mark", () => {
 	const h = harness(),
 		other = harness();
 	h.study.mount({
@@ -898,7 +898,8 @@ test("a selection in another current frame takes priority over marked taps", () 
 	h.study.setMarks(h.chapter, [h.mark("a", 0, 4)], true, "white");
 	other.selection();
 	h.event("pointerdown");
-	assert.equal(h.event("pointerup").defaultPrevented, false);
+	assert.equal(h.event("pointerup").defaultPrevented, true);
+	assert.equal(other.doc.getSelection(), null);
 	assert.equal(h.callbacks.marks.filter(Boolean).length, 0);
 });
 
@@ -967,8 +968,14 @@ for (const marked of [true, false]) {
 }
 
 for (const vertical of [false, true]) {
-	test(`${vertical ? "vertical columns" : "two lines"} anchor protects every visible hit range while gaps remain unclickable`, () => {
+	test(`${vertical ? "vertical columns" : "two lines"} anchor uses the clicked line or column while gaps remain unclickable`, () => {
 		const h = harness();
+		Object.assign(h.doc.defaultView, {
+			getComputedStyle: (element: Element) => ({
+				writingMode:
+					element === h.leaf && vertical ? "vertical-rl" : "horizontal-tb",
+			}),
+		});
 		h.setRects((start, end) =>
 			Array.from({ length: end - start }, (_, index) => {
 				const offset = start + index;
@@ -1002,9 +1009,9 @@ for (const vertical of [false, true]) {
 		assert.deepEqual(h.callbacks.marks.at(-1), {
 			segmentIds: ["a", "b"],
 			anchor: {
-				left: 100,
+				left: vertical ? 130 : 100,
 				right: vertical ? 150 : 120,
-				top: 200,
+				top: vertical ? 200 : 230,
 				bottom: vertical ? 220 : 250,
 			},
 		});
@@ -1066,3 +1073,81 @@ test("ordinary scrolling does not measure or republish bookmark geometry", () =>
 	assert.equal(measures, 0);
 	assert.equal(entries.length, publications);
 });
+
+for (const collapsed of [false, true]) {
+	test(`ordinary body tap clears an existing ${collapsed ? "naturally collapsed" : "retained"} selection and consumes the tap`, () => {
+		const h = harness();
+		h.study.setMarks(h.chapter, [h.mark("a", 0, 4)], true, "white");
+		let dismissals = 0;
+		h.study.bind({
+			...h.binding,
+			onBackgroundTap: () => {
+				dismissals++;
+				return false;
+			},
+		});
+		h.selection();
+		h.event("pointerdown");
+		if (collapsed) {
+			h.doc.getSelection()?.removeAllRanges();
+			h.event("selectionchange");
+		}
+		assert.equal(h.event("pointerup").defaultPrevented, true);
+		assert.equal(h.doc.getSelection(), null);
+		assert.equal(h.callbacks.selection.at(-1), null);
+		assert.equal(h.callbacks.marks.filter(Boolean).length, 0);
+		assert.equal(dismissals, 1);
+	});
+}
+
+test("clearSelection reports whether a current native selection was removed", () => {
+	const h = harness();
+	assert.equal(h.study.clearSelection(), false);
+	h.selection();
+	assert.equal(h.study.clearSelection(), true);
+	assert.equal(h.study.clearSelection(), false);
+});
+
+for (const mode of [
+	"new-selection",
+	"drag",
+	"long-press",
+	"modifier",
+	"extension",
+] as const) {
+	test(`an existing body selection survives ${mode}`, () => {
+		const h = harness();
+		h.study.setMarks(h.chapter, [h.mark("a", 0, 4)], true, "white");
+		let dismissals = 0;
+		h.study.bind({
+			...h.binding,
+			onBackgroundTap: () => {
+				dismissals++;
+				return true;
+			},
+		});
+		h.selection();
+		const target =
+			mode === "extension" ? { nodeType: 1, closest: () => null } : h.leaf;
+		h.event("pointerdown", {
+			at: 0,
+			target,
+			...(mode === "modifier" ? { shiftKey: true } : {}),
+		});
+		if (mode === "new-selection") {
+			const current = h.doc.getSelection();
+			assert.ok(current);
+			Object.assign(current, { focusOffset: 3 });
+			h.event("selectionchange");
+		}
+		if (mode === "drag") h.event("pointermove", { clientX: 40 });
+		assert.equal(
+			h.event("pointerup", { target, at: mode === "long-press" ? 600 : 50 })
+				.defaultPrevented,
+			false,
+		);
+		assert.ok(h.doc.getSelection());
+		assert.equal(dismissals, 0);
+		assert.equal(h.callbacks.marks.filter(Boolean).length, 0);
+	});
+}
