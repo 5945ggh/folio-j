@@ -1,0 +1,37 @@
+docs/ARCHITECTURE.md
+  s_e16c74902fc2c1::t_4f9f8d7a8e1855 388
+docs/handovers/CR_FIXES_ACCEPTANCE.md
+  s_e16c74902fc2c1::t_4f9f8d7a8e1855 22-24
+  s_e16c74902fc2c1::t_c403f6f6c6f335 25
+backend/src/app/jobs/agent.py
+  s_e16c74902fc2c1::t_3e9bcf194c57e7 90,92,94-101
+  s_e16c74902fc2c1::t_e35277d682a0bf 7,12,30,67-78,80-86,91,108-113,138,148,167,176-182,356-357,362,364-366,369-382
+  s_e16c74902fc2c1::t_b4ca9fe1607e89 79,93,102-107
+  s_e16c74902fc2c1::t_feb76412b3fedf 87-89
+backend/src/app/jobs/runtime.py
+  s_e16c74902fc2c1::t_e35277d682a0bf 217-238,240,242
+backend/tests/test_stream_progress.py
+  s_e16c74902fc2c1::t_b4ca9fe1607e89 28,97
+  s_e16c74902fc2c1::t_91688b54415542 1-27,29-96,98-101,118-128,131-145,147-152,158
+  s_e16c74902fc2c1::t_5d79dd8f9fa859 102-117,130,146
+  s_e16c74902fc2c1::t_2361c782122504 155,159,162,164-168,180,182-185,193-194,208-260
+  s_e16c74902fc2c1::t_b1c7964789df80 129,153-154,156-157,160-161,163,169-179,181,186-192,195-207
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e16c74902fc2c1::t_d5726ee9ec9127 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1747755f328d3bd639362fcf299b25ede6f1448b",
+  "prompts": {},
+  "sessions": {
+    "s_e16c74902fc2c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d9e-7bda-7563-b0c8-1739312b12e5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
