@@ -214,16 +214,32 @@ async def _finish(  # pyright: ignore[reportUnusedFunction]
         await session.commit()
 
 
+async def execution_authorized(session: AsyncSession, job_id: str, token: str) -> bool:
+    """Check the claim and live parents without loading persisted JSON snapshots."""
+    return (
+        await session.scalar(
+            select(Job.id)
+            .join(ChatThread, ChatThread.id == Job.thread_id)
+            .join(Segment, Segment.id == ChatThread.segment_id)
+            .join(Source, Source.id == Segment.source_id)
+            .where(
+                Job.id == job_id,
+                Job.status == "running",
+                Job.execution_token == token,
+                Job.deleted_at.is_(None),
+                ChatThread.active_job_id == job_id,
+                ChatThread.deleted_at.is_(None),
+                Segment.deleted_at.is_(None),
+                Source.deleted_at.is_(None),
+            )
+        )
+    ) is not None
+
+
 async def _call_authorized(application: "FastAPI", job_id: str, token: str) -> bool:
-    """Recheck the persisted claim while stop and deletion cannot commit."""
+    """Recheck the persisted claim before dispatch or progress persistence."""
     async with application.state.session_factory() as session:
-        job = await session.get(Job, job_id)
-        if job is None or job.status != "running" or job.execution_token != token:
-            return False
-        thread = await session.get(ChatThread, job.thread_id)
-        if thread is None or not await _parents_valid(session, job, thread):
-            return False
-        return True
+        return await execution_authorized(session, job_id, token)
 
 
 async def call_authorized(application: "FastAPI", job_id: str, token: str) -> bool:

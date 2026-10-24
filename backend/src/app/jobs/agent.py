@@ -4,11 +4,12 @@ import asyncio
 import json
 import unicodedata
 from contextlib import suppress
+from time import monotonic
 from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import HTTPException
 from jinja2 import Environment
-from sqlalchemy import select, text
+from sqlalchemy import select, text, update
 
 from app.analysis_schemas import SectionOperation
 from app.chat_models import ChatMessage, ChatThread, Job
@@ -26,6 +27,7 @@ CALL_SECONDS = 180
 JOB_SECONDS = 600
 OUTPUT_CHAR_LIMIT = 200_000
 MAX_CONTEXT_CHARS = 200_000
+PROGRESS_INTERVAL_SECONDS = 0.25
 
 
 class ContextLimitError(Exception):
@@ -62,6 +64,53 @@ async def _authorized(app: "FastAPI", job_id: str, token: str) -> bool:
     return await call_authorized(app, job_id, token)
 
 
+class _StreamProgress:
+    """Keep the latest aggregate per invocation and bound durable progress writes."""
+
+    def __init__(self, app: "FastAPI", job_id: str, token: str, key: str | None) -> None:
+        self.app = app
+        self.job_id = job_id
+        self.token = token
+        self.key = key
+        self.latest: str | None = None
+        self.persisted: str | None = None
+        self.last_write: float | None = None
+        self.closed = False
+        self.lock = asyncio.Lock()
+
+    async def __call__(self, value: str) -> None:
+        if self.closed:
+            return
+        if len(value) > OUTPUT_CHAR_LIMIT:
+            raise OutputLimitError()
+        self.latest = redact_credential(value, self.key) or ""
+        await self.flush_due()
+
+    async def flush_due(self) -> None:
+        await self.flush(force=False)
+
+    async def flush(self, *, force: bool = True) -> None:
+        async with self.lock:
+            if not force and (
+                self.closed
+                or (
+                    self.last_write is not None
+                    and monotonic() - self.last_write < PROGRESS_INTERVAL_SECONDS
+                )
+            ):
+                return
+            value = self.latest
+            if value is None or value == self.persisted:
+                return
+            await _progress(self.app, self.job_id, self.token, value)
+            self.persisted = value
+            self.last_write = monotonic()
+
+    async def close(self) -> None:
+        self.closed = True
+        await self.flush()
+
+
 async def _invoke(
     app: "FastAPI",
     job_id: str,
@@ -86,6 +135,7 @@ async def _invoke(
             await finalize_stop(app, job_id)
             raise asyncio.CancelledError()
         entered = asyncio.Event()
+        progress = _StreamProgress(app, job_id, token, key)
 
         async def call() -> adapters.ToolTurn:
             entered.set()
@@ -95,7 +145,7 @@ async def _invoke(
                 messages=messages,
                 tools=tools,
                 tool_choice=tool_choice,
-                on_progress=lambda value: _progress(app, job_id, token, value),
+                on_progress=progress,
             )
 
         task = asyncio.create_task(call())
@@ -114,6 +164,7 @@ async def _invoke(
                 if loop.time() >= deadline:
                     task.cancel()
                     raise TimeoutError()
+                await progress.flush_due()
                 await asyncio.wait({task}, timeout=0.05)
             if not await _authorized(app, job_id, token):
                 from app.jobs.runtime import finalize_stop
@@ -122,10 +173,13 @@ async def _invoke(
                 raise asyncio.CancelledError()
             return task.result()
         finally:
-            if not task.done():
-                task.cancel()
-                with suppress(BaseException):
-                    await task
+            try:
+                await progress.close()
+            finally:
+                if not task.done():
+                    task.cancel()
+                    with suppress(BaseException):
+                        await task
     except asyncio.CancelledError:
         from app.jobs.runtime import finalize_stop
 
@@ -299,28 +353,33 @@ async def _terminate(
 
 
 async def _progress(app: "FastAPI", job_id: str, token: str, text_value: str) -> None:
+    from app.jobs.runtime import execution_authorized
+
     if len(text_value) > OUTPUT_CHAR_LIMIT:
         raise OutputLimitError()
     async with app.state.session_factory() as session:
         await session.execute(text("BEGIN IMMEDIATE"))
-        job = await session.get(Job, job_id)
-        if job is None or job.status != "running" or job.execution_token != token:
+        if not await execution_authorized(session, job_id, token):
             return
-        assistant = await session.scalar(
-            select(ChatMessage).where(ChatMessage.job_id == job_id, ChatMessage.role == "assistant")
-        )
-        if assistant is None:
-            return
-        assistant.content = text_value
-        assistant.updated_at = now()
-        run = await session.scalar(
-            select(Run)
-            .where(Run.job_id == job_id, Run.status == "running")
+        run_id = await session.scalar(
+            select(Run.id)
+            .where(Run.job_id == job_id, Run.status == "running", Run.deleted_at.is_(None))
             .order_by(Run.created_at.desc(), Run.id.desc())
         )
-        if run is not None:
-            run.output_text = text_value
-        job.version += 1
+        await session.execute(
+            update(ChatMessage)
+            .where(
+                ChatMessage.job_id == job_id,
+                ChatMessage.role == "assistant",
+                ChatMessage.deleted_at.is_(None),
+            )
+            .values(content=text_value, updated_at=now())
+        )
+        if run_id is not None:
+            await session.execute(
+                update(Run).where(Run.id == run_id).values(output_text=text_value)
+            )
+        await session.execute(update(Job).where(Job.id == job_id).values(version=Job.version + 1))
         await session.commit()
 
 
