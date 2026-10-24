@@ -1,0 +1,61 @@
+docs/ARCHITECTURE.md
+  s_e16c74902fc2c1::t_4f9f8d7a8e1855 266-267
+backend/tests/test_chat_api.py
+  s_e16c74902fc2c1::t_bf99ea576a0394 458,461-486,490-493,499-502,504-509,512-515,519-527,530,533-535,558-566,570-572,582-584,589-613
+  s_e16c74902fc2c1::t_3717b5c2c2ecd4 447-450,487-489,494-498,503,510-511,540,551-554
+  s_e16c74902fc2c1::t_5112bc5ec62958 459-460
+  s_e16c74902fc2c1::t_c286144edf2d17 444-446,451-457,516-518,528-529,531-532,536-539,541-550,555-557,567-569,573-581,585-588
+docs/handovers/CR_FIXES_ACCEPTANCE.md
+  s_e16c74902fc2c1::t_c403f6f6c6f335 29
+  s_e16c74902fc2c1::t_4f9f8d7a8e1855 26-28
+frontend/src/chat/api.ts
+  s_e16c74902fc2c1::t_bf99ea576a0394 79-83
+  s_e16c74902fc2c1::t_b4ca9fe1607e89 73
+frontend/src/chat/Workbench.tsx
+  s_e16c74902fc2c1::t_b4ca9fe1607e89 195,198,203-204,208-209,216,463-482,710-716
+  s_e16c74902fc2c1::t_bf99ea576a0394 212-213,215,243-253,321,338,388,462
+  s_e16c74902fc2c1::t_8b9a352a45d9bb 717-718
+frontend/scripts/test-browser.mjs
+  s_e16c74902fc2c1::t_3717b5c2c2ecd4 45
+frontend/browser-tests/workbench-history.tsx
+  s_e16c74902fc2c1::t_3717b5c2c2ecd4 3,5-8,10-24,29,34-42,45-47,51,58-64,105,110,115,124-125,137-138,148-149,187,191
+  s_e16c74902fc2c1::t_5112bc5ec62958 2,9,72-73,76,183-186
+  s_e16c74902fc2c1::t_bf99ea576a0394 1,4,25-28,30-33,43-44,48-50,54-57,65-71,74-75,77-104,106-109,111-114,116-123,126-136,139-147,150-182,188-190
+  s_e16c74902fc2c1::t_20474492844014 52-53
+frontend/browser-tests/main.tsx
+  s_e16c74902fc2c1::t_bf99ea576a0394 21,468
+  s_e16c74902fc2c1::t_3717b5c2c2ecd4 456,467
+  s_e16c74902fc2c1::t_9325de9c458451 455,469
+frontend/browser-tests/workbench.tsx
+  s_e16c74902fc2c1::t_3717b5c2c2ecd4 9,32,64,75
+  s_e16c74902fc2c1::t_bf99ea576a0394 257-260
+  s_e16c74902fc2c1::t_b4ca9fe1607e89 252-256,261-262
+backend/openapi.json
+  s_e16c74902fc2c1::t_ade5df3e3a0c89 2482-2515,2563-2572,3516-3533,9809-9839
+backend/src/app/api/chat.py
+  s_e16c74902fc2c1::t_5cac29d1d542f7 3,63-64,66-68
+backend/src/app/chat_schemas.py
+  s_e16c74902fc2c1::t_2c4e3880243634 98-113,124
+backend/src/app/services/chat.py
+  s_e16c74902fc2c1::t_0418a97b4d8109 10,18,22,164-165,376-381,384-406,408-434
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e16c74902fc2c1::t_81e0a28020e32c 3
+frontend/src/api/schema.d.ts
+  s_e16c74902fc2c1::t_eb1ad233f8bb4e 2053-2060,2081,2402-2408,5948-5949
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2bfe35ea942f400490e606b546f6fbb1c2a830be",
+  "prompts": {},
+  "sessions": {
+    "s_e16c74902fc2c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d9e-7bda-7563-b0c8-1739312b12e5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
