@@ -617,12 +617,22 @@ export async function inlineRecords(
 	const expand = [
 		...current.querySelectorAll<HTMLButtonElement>("button"),
 	].find((node) => node.textContent?.trim() === "展开");
-	check(expand, "Header expand control must remain usable");
-	expand.click();
-	await h.until(
-		() => card()?.classList.contains("expanded") === true,
-		"Header expand control must expand without dragging",
-	);
+	if (innerWidth <= 600) {
+		check(
+			!expand &&
+				current.querySelector(".reader-record-title strong")?.textContent ===
+					"本章记录" &&
+				!current.classList.contains("expanded"),
+			"Narrow chapter entry must retain its fixed chapter panel without offering floating-card expansion",
+		);
+	} else {
+		check(expand, "Floating header expand control must remain usable");
+		expand.click();
+		await h.until(
+			() => card()?.classList.contains("expanded") === true,
+			"Header expand control must expand without dragging",
+		);
+	}
 	check(
 		card()?.querySelector<HTMLElement>("[data-reader-card-drag-handle]")
 			?.dataset.readerCardDraggable === "false",

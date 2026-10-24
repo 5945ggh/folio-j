@@ -1,5 +1,6 @@
 import "./materials/reader-refresh.css";
 import "./segments/layout.css";
+import "./segments/segment-speech.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	type CSSProperties,
@@ -216,6 +217,7 @@ export function SegmentDetail() {
 	);
 	const [workspaceWidth, setWorkspaceWidth] = useState(0);
 	const workspaceRef = useRef<HTMLDivElement>(null);
+	const speechDockRef = useRef<HTMLDivElement>(null);
 	const conversationRef = useRef<HTMLElement>(null);
 	const resizeStart = useRef<{
 		pointerId: number;
@@ -290,6 +292,21 @@ export function SegmentDetail() {
 			setWorkspaceWidth(workspaceRef.current?.clientWidth ?? 0);
 		});
 		observer.observe(workspaceRef.current);
+		return () => observer.disconnect();
+	}, [segment.isSuccess]);
+	useLayoutEffect(() => {
+		const workspace = workspaceRef.current;
+		const dock = speechDockRef.current;
+		if (!segment.isSuccess || !workspace || !dock) return;
+		const updateHeight = () => {
+			workspace.style.setProperty(
+				"--segment-speech-height",
+				`${dock.getBoundingClientRect().height}px`,
+			);
+		};
+		updateHeight();
+		const observer = new ResizeObserver(updateHeight);
+		observer.observe(dock);
 		return () => observer.disconnect();
 	}, [segment.isSuccess]);
 	useEffect(() => {
@@ -461,6 +478,8 @@ export function SegmentDetail() {
 								<SegmentMaterialOrigin segment={current} />
 								<OriginalCard
 									segment={current}
+									sourceQuery={source}
+									interactive={!(compact && chatOpen)}
 									returnFocusId={
 										compact && chatOpen
 											? "segment-discussion-toggle"
@@ -476,7 +495,6 @@ export function SegmentDetail() {
 										);
 									}}
 								/>
-								<SpeechPlaybackBar />
 								<section
 									ref={analysisRef}
 									id="segment-analyses"
@@ -527,6 +545,9 @@ export function SegmentDetail() {
 								</section>
 							</div>
 						</section>
+						<div className="segment-speech-dock" ref={speechDockRef}>
+							<SpeechPlaybackBar />
+						</div>
 						<aside
 							id="segment-conversation"
 							className="segment-conversation"

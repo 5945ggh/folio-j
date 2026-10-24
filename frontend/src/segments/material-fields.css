@@ -14,14 +14,22 @@
 .segment-data-group legend,
 .segment-group-title {
 	padding: 0;
-	font-size: 13px;
-	font-weight: 600;
 	color: var(--text, #292c2e);
+	font-size: 13px;
+	font-weight: 650;
+	letter-spacing: 0.02em;
 }
 .segment-data-group legend {
 	float: left;
 	width: 100%;
 	margin-bottom: 2px;
+}
+.segment-data-form .field {
+	color: var(--text-soft, #565d66);
+	font-weight: 500;
+}
+.segment-data-form textarea[lang="ja"] {
+	font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
 }
 .segment-context-editor summary {
 	color: var(--muted, #737b80);
@@ -36,20 +44,24 @@
 	align-items: center;
 	gap: 10px;
 	margin-bottom: 10px;
-	font-size: 12px;
+	color: var(--text-soft, #565d66);
+	font-size: 11px;
 	font-weight: 600;
+	letter-spacing: 0.12em;
 }
 .segment-fixed-heading small {
 	color: var(--muted, #737b80);
 	font-weight: 400;
+	letter-spacing: normal;
 }
 .segment-fixed-text {
 	max-height: 132px;
 	overflow: auto;
-	padding: 10px 12px;
-	border-left: 2px solid var(--border, #dce1e4);
-	font-size: 15px;
-	line-height: 1.8;
+	padding: 10px 14px;
+	border-left: 2px solid #dcdee3;
+	font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+	font-size: 17px;
+	line-height: 1.9;
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
 }

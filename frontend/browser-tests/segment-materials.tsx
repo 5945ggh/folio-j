@@ -530,7 +530,10 @@ async function segmentContentAggregation(
 			throw new Error(`Unexpected aggregation request ${path}`);
 		});
 		const dispose = await mount(
-			<div className="app-shell segment-study-shell">
+			<div
+				className="app-shell segment-study-shell"
+				style={{ gridTemplateColumns: "minmax(0, 1fr)" }}
+			>
 				<div style={{ width: preview ? 760 : 320, maxWidth: "100%" }}>
 					<div id="segment-overlays" />
 					<OriginalCard segment={segment} onEdit={() => {}} />

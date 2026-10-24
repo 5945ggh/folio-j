@@ -1,10 +1,13 @@
 .app-shell.segment-study-shell .segment-original-card {
 	display: block;
 	width: 100%;
-	padding: 20px 24px;
-	border: 1px solid var(--border);
-	border-radius: 10px;
-	background: var(--sidebar);
+	padding: 22px 26px;
+	border: 1px solid #dcdee3;
+	border-radius: 12px;
+	background: var(--surface);
+	box-shadow:
+		0 1px 2px rgb(34 40 48 / 5%),
+		0 12px 32px -16px rgb(34 40 48 / 12%);
 	color: var(--text);
 	text-align: left;
 }
@@ -21,7 +24,6 @@
 .app-shell.segment-study-shell .segment-original-header .device-speech-message {
 	white-space: normal;
 }
-.app-shell.segment-study-shell .segment-original-label,
 .app-shell.segment-study-shell .segment-original-footer {
 	color: var(--muted);
 	font-size: 12px;
@@ -31,6 +33,9 @@
 	display: grid;
 	gap: 10px;
 	margin: 12px 0 16px;
+	/* The saved Japanese passage reads in the book's own mincho voice, matching
+	   the reader's serif option instead of the surrounding UI sans. */
+	font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
 	font-weight: 400;
 	text-align: left;
 }
@@ -40,8 +45,8 @@
 	-webkit-box-orient: vertical;
 	overflow: hidden;
 	margin: 0;
-	font-size: 20px;
-	line-height: 1.8;
+	font-size: 22px;
+	line-height: 1.9;
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
 }
@@ -50,8 +55,8 @@
 	flex-direction: column;
 	max-height: 3.6em;
 	overflow: hidden;
-	color: #646972;
-	font-size: 15px;
+	color: var(--faint);
+	font-size: 13px;
 	line-height: 1.8;
 	white-space: normal;
 	overflow-wrap: anywhere;
@@ -64,6 +69,10 @@
 }
 .app-shell.segment-study-shell .segment-original-label {
 	margin: 0;
+	color: var(--text-soft);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.12em;
 }
 
 .app-shell.segment-study-shell .segment-original-footer {
@@ -139,9 +148,10 @@
 }
 .app-shell.segment-study-shell .segment-material-field h4 {
 	margin: 0 0 8px;
-	color: var(--muted);
-	font-size: 12px;
-	font-weight: 500;
+	color: var(--text-soft);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.12em;
 }
 .app-shell.segment-study-shell
 	.segment-material-dialog
@@ -157,6 +167,7 @@
 	.segment-material-dialog
 	.segment-material-field
 	p[lang="ja"] {
+	font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
 	font-size: 17px;
 }
 .app-shell.segment-study-shell .segment-material-dialog .segment-material-date {
@@ -170,13 +181,13 @@
 }
 @media (max-width: 720px) {
 	.app-shell.segment-study-shell .segment-original-card {
-		padding: 16px;
+		padding: 18px;
 	}
 	.app-shell.segment-study-shell .segment-original-focus {
-		font-size: 18px;
+		font-size: 19px;
 	}
 	.app-shell.segment-study-shell .segment-context-line {
-		font-size: 14px;
+		font-size: 12px;
 	}
 	.app-shell.segment-study-shell .segment-material-dialog {
 		max-height: calc(100dvh - 32px);

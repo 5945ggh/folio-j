@@ -2,6 +2,11 @@
 	--sidebar-width: 0px;
 	--accent: #111;
 	--text: #26282d;
+	/* Reading column uses a four-step gray ladder so the Japanese original
+	   stays the only foreground subject; support text steps back in order. */
+	--text-soft: #565d66;
+	--muted: #757c86;
+	--faint: #858b94;
 	display: grid;
 	grid-template-columns: 56px minmax(0, 1fr);
 	height: 100dvh;
@@ -136,9 +141,9 @@
 	align-items: center;
 	gap: 10px;
 	min-width: 0;
-	margin-bottom: 18px;
-	color: var(--muted);
-	font-size: 12px;
+	margin-bottom: 14px;
+	color: var(--faint);
+	font-size: 11px;
 }
 .app-shell.segment-study-shell
 	.segment-reader-inner
@@ -151,17 +156,17 @@
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	color: inherit;
-	font-size: 14px;
+	font-size: inherit;
 	text-decoration: none;
 }
 .app-shell.segment-study-shell .segment-identity a:hover {
-	color: var(--accent);
+	color: var(--text-soft);
 	text-decoration: underline;
 }
 .app-shell.segment-study-shell .segment-analyses {
-	margin-top: 28px;
-	padding-top: 0;
-	border: 0;
+	margin-top: 40px;
+	padding-top: 26px;
+	border-top: 1px solid var(--border);
 }
 .app-shell.segment-study-shell .segment-conversation {
 	display: flex;
@@ -298,7 +303,7 @@
 	background: #2b2b2b;
 }
 .app-shell.segment-study-shell .button.secondary {
-	color: #535963;
+	color: var(--text-soft);
 }
 .app-shell.segment-study-shell .button.secondary:hover:not(:disabled),
 .app-shell.segment-study-shell .chat-new-button:hover {
@@ -308,7 +313,7 @@
 .app-shell.segment-study-shell .chat-new-button,
 .app-shell.segment-study-shell .chat-config summary span:last-child,
 .app-shell.segment-study-shell .chat-additional summary span {
-	color: #535963;
+	color: var(--text-soft);
 }
 .app-shell.segment-study-shell :focus-visible {
 	outline-color: #747982;

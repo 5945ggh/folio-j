@@ -22,10 +22,12 @@ const local: DeviceVoice = {
 	lang: "ja-JP",
 	localService: true,
 };
-function fixture(initial: DeviceVoice[] = [remote, local]) {
+function fixture(initial: DeviceVoice[] = [remote, local], pausable = false) {
 	let voices = initial;
 	let changed = () => {};
 	let cancels = 0;
+	let pauses = 0;
+	let resumes = 0;
 	const calls: Parameters<SpeechAdapter["speak"]>[0][] = [];
 	const adapter: SpeechAdapter = {
 		getVoices: () => voices,
@@ -38,6 +40,16 @@ function fixture(initial: DeviceVoice[] = [remote, local]) {
 		cancel() {
 			cancels++;
 		},
+		...(pausable
+			? {
+					pause() {
+						pauses++;
+					},
+					resume() {
+						resumes++;
+					},
+				}
+			: {}),
 		speak(input) {
 			calls.push(input);
 		},
@@ -53,6 +65,12 @@ function fixture(initial: DeviceVoice[] = [remote, local]) {
 		calls,
 		get cancels() {
 			return cancels;
+		},
+		get pauses() {
+			return pauses;
+		},
+		get resumes() {
+			return resumes;
 		},
 		voices(next: DeviceVoice[]) {
 			voices = next;
@@ -300,4 +318,110 @@ test("播放时声音消失仍保留当前目标的停止动作", () => {
 	assert.equal(f.controller.getSnapshot().status, "stopped");
 	f.call(0).onError("late");
 	assert.equal(f.controller.getSnapshot().error, null);
+});
+
+test("暂停与继续调用设备方法，不重建朗读，也不应用待生效偏好", () => {
+	const f = fixture(undefined, true);
+	assert.equal(f.controller.getSnapshot().pauseSupported, true);
+	f.controller.play(target);
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), target), "stop");
+	f.call(0).onStart();
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), target), "pause");
+	f.controller.pause();
+	assert.equal(f.pauses, 1);
+	assert.equal(f.controller.getSnapshot().status, "paused");
+	assert.equal(
+		speechTargetAction(f.controller.getSnapshot(), target),
+		"resume",
+	);
+	f.controller.setRate(0.6);
+	f.controller.setVoice(remote);
+	f.voices([]);
+	f.controller.resume();
+	assert.equal(f.resumes, 1);
+	assert.equal(f.controller.getSnapshot().status, "speaking");
+	assert.equal(f.calls.length, 1);
+	assert.equal(f.call(0).rate, 1);
+	assert.equal(f.call(0).voice, local);
+});
+
+test("暂停/继续只接受对应播放状态，迟到事件不逆转最新意图", () => {
+	const f = fixture(undefined, true);
+	f.controller.pause();
+	f.controller.resume();
+	f.controller.play(target);
+	f.controller.pause();
+	assert.equal(f.pauses, 0);
+	f.call(0).onStart();
+	f.controller.pause();
+	f.controller.pause();
+	assert.equal(f.pauses, 1);
+	f.call(0).onStart();
+	assert.equal(f.controller.getSnapshot().status, "paused");
+	f.controller.resume();
+	f.controller.resume();
+	assert.equal(f.resumes, 1);
+	f.call(0).onPause();
+	assert.equal(f.controller.getSnapshot().status, "speaking");
+	f.controller.pause();
+	f.call(0).onResume();
+	assert.equal(f.controller.getSnapshot().status, "paused");
+	f.controller.stop();
+	f.call(0).onPause();
+	f.call(0).onResume();
+	assert.equal(f.controller.getSnapshot().status, "stopped");
+	assert.equal(
+		speechTargetAction(f.controller.getSnapshot(), target),
+		"replay",
+	);
+});
+
+test("暂停后重播、换目标与离页清除暂停并隔离旧事件", () => {
+	const f = fixture(undefined, true);
+	f.controller.play(target);
+	f.call(0).onStart();
+	f.controller.pause();
+	f.controller.setRate(0.7);
+	f.controller.replay();
+	assert.equal(f.call(1).rate, 0.7);
+	assert.equal(f.controller.getSnapshot().status, "starting");
+	f.call(0).onResume();
+	assert.equal(f.controller.getSnapshot().status, "starting");
+	f.call(1).onStart();
+	f.controller.pause();
+	const other = { id: "b", text: "別の原文" };
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), other), "play");
+	f.controller.play(other);
+	f.call(1).onPause();
+	assert.equal(f.controller.getSnapshot().target?.id, "b");
+	f.call(2).onStart();
+	f.controller.pause();
+	f.controller.dismiss();
+	f.call(2).onResume();
+	assert.equal(f.controller.getSnapshot().status, "idle");
+	assert.equal(f.controller.getSnapshot().target, null);
+});
+
+test("不支持暂停的适配器沿用停止，不伪造暂停状态", () => {
+	const f = fixture();
+	assert.equal(f.controller.getSnapshot().pauseSupported, false);
+	f.controller.play(target);
+	f.call(0).onStart();
+	f.controller.pause();
+	assert.equal(f.controller.getSnapshot().status, "speaking");
+	assert.equal(speechTargetAction(f.controller.getSnapshot(), target), "stop");
+});
+
+test("设备暂停实际结束朗读时按真实终态显示重播", () => {
+	const f = fixture(undefined, true);
+	f.controller.play(target);
+	f.call(0).onStart();
+	f.controller.pause();
+	f.call(0).onEnd();
+	f.call(0).onPause();
+	assert.equal(f.controller.getSnapshot().status, "ended");
+	assert.equal(
+		speechTargetAction(f.controller.getSnapshot(), target),
+		"replay",
+	);
 });

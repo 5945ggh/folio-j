@@ -1,0 +1,41 @@
+.app-shell.segment-study-shell .segment-reader,
+.app-shell.segment-study-shell .segment-speech-dock {
+	grid-area: 1 / 1;
+}
+
+.app-shell.segment-study-shell .segment-speech-dock {
+	z-index: 4;
+	align-self: end;
+	display: flex;
+	justify-content: center;
+	min-width: 0;
+	padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+	pointer-events: none;
+}
+
+.app-shell.segment-study-shell .segment-speech-dock:empty {
+	display: none;
+}
+
+.app-shell.segment-study-shell .segment-speech-dock > .device-speech-bar {
+	margin: 0;
+	box-shadow: 0 3px 14px #00000014;
+	pointer-events: auto;
+}
+
+.app-shell.segment-study-shell
+	.segment-workspace:has(.segment-speech-dock > .device-speech-bar)
+	.segment-reader {
+	padding-bottom: calc(var(--segment-speech-height, 0px) + 32px);
+	scroll-padding-bottom: var(--segment-speech-height, 0px);
+}
+
+@media (max-width: 999px) {
+	/* The dock stays outside the hidden/inert reader when discussion is open.
+	   Reserve its measured height below the whole discussion, including input. */
+	.app-shell.segment-study-shell
+		.segment-workspace:has(.segment-speech-dock > .device-speech-bar)
+		.segment-conversation {
+		bottom: var(--segment-speech-height, 0px);
+	}
+}

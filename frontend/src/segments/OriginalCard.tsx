@@ -5,6 +5,7 @@ import { SegmentMaterialOrigin } from "../materials/SegmentMaterialOrigin";
 import { ConfirmDialog, dateLabel } from "../Shared";
 import { SpeechControls } from "../speech";
 import { SegmentTranslations } from "../translation/SegmentTranslations";
+import { SegmentShare, type ShareSourceQuery } from "./SegmentShare";
 import "./material-fields.css";
 import "./original-card.css";
 
@@ -28,10 +29,16 @@ function Field({
 /** Context is a preview of saved fields; the popup keeps every character readable. */
 export function OriginalCard({
 	segment,
+	sourceTitle,
+	sourceQuery,
+	interactive = true,
 	onEdit,
 	returnFocusId = "segment-original-trigger",
 }: {
 	segment: Segment;
+	sourceTitle?: string;
+	sourceQuery?: ShareSourceQuery;
+	interactive?: boolean;
 	onEdit: () => void;
 	returnFocusId?: string;
 }) {
@@ -82,26 +89,24 @@ export function OriginalCard({
 					segmentId={segment.id}
 					translation={segment.translation}
 				/>
-				<button
-					id="segment-original-trigger"
-					type="button"
-					className="segment-original-footer"
-					aria-haspopup="dialog"
-					onClick={() => setOpen(true)}
-				>
-					<span>查看完整原文与资料</span>
-					<svg
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="1.5"
-						aria-hidden="true"
+				<div className="segment-original-actions">
+					<button
+						id="segment-original-trigger"
+						type="button"
+						className="segment-original-footer"
+						aria-haspopup="dialog"
+						onClick={() => setOpen(true)}
 					>
-						<path d="M14 4h6v6M20 4l-9 9M10 4H4v16h16v-6" />
-					</svg>
-				</button>
+						查看完整原文与资料
+					</button>
+					<SegmentShare
+						key={segment.id}
+						segment={segment}
+						sourceTitle={sourceTitle}
+						sourceQuery={sourceQuery}
+						interactive={interactive}
+					/>
+				</div>
 			</div>
 			{open &&
 				overlayHost &&

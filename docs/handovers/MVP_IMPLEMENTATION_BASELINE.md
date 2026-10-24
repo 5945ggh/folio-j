@@ -12,6 +12,8 @@
 > 阅读跳转深化已提交，工程及浏览器验收已通过；证据见[本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)。
 > 阅读翻译与设备朗读、片段资料与讨论面板、阅读器正文复制已提交 `7f1c44d`。提交前问题已修复，工程、全量浏览器与独立复审通过；证据见[阅读辅助联合验收](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-23提交前审查修复与联合验收)。
 > 翻译卡片、朗读控制、本章记录与正文翻译标记已分批提交，界面集成提交为 `3ec616e`；2026-10-24 通过工程、全量浏览器及独立复审，见[交互调整](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-23-翻译卡片与朗读控制交互调整)与[本章记录验收](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-24-本章记录与正文翻译标记)。
+> 片段复制分享、片段页底部朗读浮层及共享迷你播放器调整已提交 `8b945c8`，浏览器回归修复已提交 `9d55e2e`。来源首次加载保护、双出处失败短屏操作、适度加深的前后文灰阶均通过工程、全量浏览器与独立复审；真实设备行为仍需试用。见[提交前联合验收](text-study/SEGMENT_UI_ACCEPTANCE.md#提交前修复与联合验收2026-10-24)。
+> 设备语速存在用户复核异常：Chrome 中多种音色修改语速并从头重播后，听感仍无变化；目前只验证了参数传递，根因与实际变速效果未确认。调查记录见[Chrome 语速问题](text-study/SEGMENT_UI_ACCEPTANCE.md#chrome-语速问题调查)。
 
 当前能力与缺口见下表，产品边界见 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护。
 
@@ -21,7 +23,7 @@
 | --- | --- | --- | --- |
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定；旧资料由增量迁移补齐保护 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](text-study/A2_ACCEPTANCE.md) |
 | 设置与模型接入 | 已提交、工程验收通过 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；顶部分类、统一编辑弹窗、分组原子保存、草稿保护与验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](archived/settings-refresh/ACCEPTANCE.md) |
-| 阅读翻译与设备朗读 | 已提交，工程、全量浏览器及独立复审通过 | 选区翻译、持久找回、原子采用、版本冲突保护；本章记录分片段／翻译，同出处成功译文归并标记、重叠入口合并，后台完成自动刷新；卡片适应横竖排与窄屏，朗读结束后原条保留并切换重播，声音语速就地调整；真实模型质量与设备声音待实测，外部 TTS 后置 | [方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)、[验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md) |
+| 阅读翻译与设备朗读 | 已提交，工程、全量浏览器及独立复审通过 | 选区翻译、持久找回、原子采用、版本冲突保护；本章记录分片段／翻译，同出处成功译文归并标记、重叠入口合并，后台完成自动刷新；卡片适应横竖排与窄屏，设备支持时可暂停／继续，结束后原条保留并切换重播，声音语速就地调整；真实模型质量与设备声音待实测，外部 TTS 后置 | [方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)、[验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)、[播放器联合验收](text-study/SEGMENT_UI_ACCEPTANCE.md#提交前修复与联合验收2026-10-24) |
 | 正文划选保存译文与临时定位高亮 | 已提交，工程、联合浏览器验收及独立复核通过 | 翻译详情移除新建及独立采用入口；正文草稿按确切位置及整体边缘空白规则匹配成功译文，一次预填并保护编辑／清空与冻结提交；原子创建采用收据；搜索及返回原处临时强调共用生命周期与淡出 | [联合验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#本章记录与学习片段联合验收2026-10-24)、[PRD 4.8](../PRD.md#48-阅读翻译与设备朗读) |
 | 翻译会话状态归属 | 已提交 `8f6ce79`，工程、全量浏览器及独立复核通过 | 同目标双入口共用草稿和固定请求，历史选择分别保存；集中生成门禁、原请求核实、recent 重做与 Reader 生命周期 | [本轮验收](archived/TRANSLATION_SESSION_REFACTOR_ACCEPTANCE.md) |
 | 片段讨论 | 已提交，面板调整通过工程、浏览器及独立复审 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；单行标题、可展开引用、助手全宽消息及独立设置浮层；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[界面调整验收](text-study/SEGMENT_UI_ACCEPTANCE.md) |

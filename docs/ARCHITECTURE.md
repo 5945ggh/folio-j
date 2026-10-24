@@ -400,6 +400,8 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 ### 4.8 阅读翻译与设备朗读
 
+设备朗读由前端共享控制器管理目标快照与偏好，播放器及声音浮层供 Reader 和 Segment 复用。暂停／继续调用设备适配器并复用当前 utterance；取消、换目标、重播及离页递增代次隔离迟到事件。浏览器取消可能保留全局暂停状态，适配器取消后及新 utterance 入队后检查并恢复，避免重播挂起；偏好只用于下次新播放，恢复当前 utterance 不重新解析。纯逻辑和假设备测试覆盖该状态协调，实际设备表现以实测为准。
+
 产品行为由 [PRD 4.8](PRD.md#48-阅读翻译与设备朗读)维护。`0006_translations` 增量建立 translation_settings、translation_tasks、translation_results、translation_adoptions 四表；有数据时拒绝有损降级，不改既有 Provider、模型或 Segment 身份。累计现行 28 张业务表，空库与升级检查覆盖 ORM 一致性。
 
 `services/translations.py` 提供独立任务生命周期，不借用 chat_jobs 或虚构线程。目标复用精确材料出处值，受理时 prepare／写事务 recheck 并固定原文、实际语境、方案修订、Provider／模型配置、模板及凭据内部引用。请求身份全局唯一，同键异文或路径材料身份不同返回冲突／无效请求。历史按材料分页，可用规范出处摘要筛选；成功结果引用不可变任务输入，正文不原地修改。

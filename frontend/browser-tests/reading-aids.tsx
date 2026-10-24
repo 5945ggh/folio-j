@@ -599,14 +599,13 @@ export async function readingAidsRegression(
 		const voice = popover.querySelector<HTMLSelectElement>(
 			"select:not([aria-label])",
 		);
-		const rate = popover.querySelector<HTMLSelectElement>(
-			'select[aria-label^="朗读语速"]',
+		const rate = popover.querySelector<HTMLInputElement>(
+			'input[type="range"][aria-label="朗读语速"]',
 		);
 		check(voice && rate, "In-place voice and rate controls must be accessible");
 		voice.value = "1";
 		voice.dispatchEvent(new Event("change", { bubbles: true }));
-		rate.value = "1.2";
-		rate.dispatchEvent(new Event("change", { bubbles: true }));
+		h.inputValue(rate, "1.2");
 		rate.dispatchEvent(
 			new KeyboardEvent("keydown", {
 				key: "Escape",

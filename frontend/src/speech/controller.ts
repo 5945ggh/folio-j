@@ -9,9 +9,17 @@ export type VoicePreference = Pick<DeviceVoice, "voiceURI" | "name" | "lang">;
 export type SpeechPreferences = { voice: VoicePreference | null; rate: number };
 export type SpeechState = {
 	supported: boolean;
+	pauseSupported: boolean;
 	voices: DeviceVoice[];
 	preferences: SpeechPreferences;
-	status: "idle" | "starting" | "speaking" | "stopped" | "ended" | "error";
+	status:
+		| "idle"
+		| "starting"
+		| "speaking"
+		| "paused"
+		| "stopped"
+		| "ended"
+		| "error";
 	target: SpeechTarget | null;
 	error: string | null;
 };
@@ -19,11 +27,15 @@ export interface SpeechAdapter {
 	getVoices(): DeviceVoice[];
 	onVoicesChanged(listener: () => void): () => void;
 	cancel(): void;
+	pause?(): void;
+	resume?(): void;
 	speak(input: {
 		text: string;
 		voice: DeviceVoice;
 		rate: number;
 		onStart(): void;
+		onPause(): void;
+		onResume(): void;
 		onEnd(): void;
 		onError(error: string): void;
 	}): void;
@@ -99,10 +111,12 @@ export function speechUnavailableReason(state: SpeechState): string | null {
 export function speechTargetAction(
 	state: SpeechState,
 	target: SpeechTarget,
-): "play" | "stop" | "replay" {
+): "play" | "stop" | "pause" | "resume" | "replay" {
 	const current =
 		state.target?.id === target.id && state.target.text === target.text;
 	if (!current) return "play";
+	if (state.status === "paused") return "resume";
+	if (state.status === "speaking" && state.pauseSupported) return "pause";
 	return state.status === "starting" || state.status === "speaking"
 		? "stop"
 		: "replay";
@@ -114,6 +128,7 @@ export function createSpeechController(
 ) {
 	let state: SpeechState = {
 		supported: !!adapter,
+		pauseSupported: !!(adapter?.pause && adapter.resume),
 		voices: [],
 		preferences: readSpeechPreferences(storage),
 		status: "idle",
@@ -121,6 +136,7 @@ export function createSpeechController(
 		error: null,
 	};
 	let generation = 0;
+	let pauseRequested = false;
 	const listeners = new Set<() => void>();
 	const update = (next: Partial<SpeechState>) => {
 		state = { ...state, ...next };
@@ -148,12 +164,17 @@ export function createSpeechController(
 	};
 	const stop = () => {
 		generation++;
+		pauseRequested = false;
 		try {
 			adapter?.cancel();
 		} catch {
 			/* Events are invalidated even if the browser cannot cancel. */
 		}
-		if (state.status === "starting" || state.status === "speaking")
+		if (
+			state.status === "starting" ||
+			state.status === "speaking" ||
+			state.status === "paused"
+		)
 			update({ status: "stopped", error: null });
 	};
 	const play = (target: SpeechTarget) => {
@@ -178,7 +199,14 @@ export function createSpeechController(
 				text: target.text,
 				voice,
 				rate: state.preferences.rate,
-				onStart: () => event({ status: "speaking" }),
+				onStart: () =>
+					event({ status: pauseRequested ? "paused" : "speaking" }),
+				onPause: () => {
+					if (pauseRequested) event({ status: "paused" });
+				},
+				onResume: () => {
+					if (!pauseRequested) event({ status: "speaking" });
+				},
 				onEnd: () => {
 					event({ status: "ended" });
 					if (current === generation) generation++;
@@ -212,6 +240,36 @@ export function createSpeechController(
 		refresh,
 		play,
 		stop,
+		pause() {
+			if (state.status !== "speaking" || !state.pauseSupported) return;
+			const current = generation;
+			pauseRequested = true;
+			try {
+				adapter?.pause?.();
+				if (current === generation) update({ status: "paused" });
+			} catch {
+				stop();
+				update({
+					status: "error",
+					error: "设备未能暂停朗读，请重播或关闭后重试。",
+				});
+			}
+		},
+		resume() {
+			if (state.status !== "paused" || !state.pauseSupported) return;
+			const current = generation;
+			pauseRequested = false;
+			try {
+				adapter?.resume?.();
+				if (current === generation) update({ status: "speaking" });
+			} catch {
+				stop();
+				update({
+					status: "error",
+					error: "设备未能继续朗读，请重播或关闭后重试。",
+				});
+			}
+		},
 		dismiss() {
 			stop();
 			update({ target: null, status: "idle", error: null });

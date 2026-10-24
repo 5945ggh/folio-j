@@ -962,12 +962,15 @@ async function savedAnalysisFocus(h: BrowserHarness) {
 			);
 			action("自己编写").click();
 			await until(
-				() => !!container.querySelector("dialog[open] form"),
+				() => !!container.querySelector(".analysis-editor-dialog[open] form"),
 				"Manual choice must open the real analysis editor",
 			);
 		};
 		await open();
-		action("取消", container.querySelector("dialog") ?? container).click();
+		action(
+			"取消",
+			container.querySelector(".analysis-editor-dialog[open]") ?? container,
+		).click();
 		await until(
 			() =>
 				!container.querySelector("dialog[open]") &&
@@ -976,10 +979,12 @@ async function savedAnalysisFocus(h: BrowserHarness) {
 		);
 		check(posts === 0, "Cancelling manual creation must not save a draft");
 		await open();
-		const titleField =
-			container.querySelector<HTMLInputElement>("dialog input");
-		const source =
-			container.querySelector<HTMLTextAreaElement>("dialog textarea");
+		const titleField = container.querySelector<HTMLInputElement>(
+			".analysis-editor-dialog[open] input",
+		);
+		const source = container.querySelector<HTMLTextAreaElement>(
+			".analysis-editor-dialog[open] textarea",
+		);
 		check(
 			titleField && source,
 			"Real manual editor must expose title and original Markdown inputs",
@@ -989,11 +994,13 @@ async function savedAnalysisFocus(h: BrowserHarness) {
 		await until(
 			() =>
 				!container.querySelector<HTMLButtonElement>(
-					"dialog button[type='submit']",
+					".analysis-editor-dialog[open] button[type='submit']",
 				)?.disabled,
 			"Explicit manual draft must become savable",
 		);
-		container.querySelector<HTMLFormElement>("dialog form")?.requestSubmit();
+		container
+			.querySelector<HTMLFormElement>(".analysis-editor-dialog[open] form")
+			?.requestSubmit();
 		await until(
 			() =>
 				posts === 1 &&

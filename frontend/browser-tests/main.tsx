@@ -14,6 +14,7 @@ import { readerClipboard } from "./reader-clipboard";
 import { readingAidsRegression } from "./reading-aids";
 import { recordSaving } from "./record-saving";
 import { segmentMaterials } from "./segment-materials";
+import { segmentShareRegression } from "./segment-share";
 import { themeRegression } from "./theme";
 import { translationRegression } from "./translation";
 import { workbenchRegression } from "./workbench";
@@ -452,13 +453,16 @@ try {
 									]
 								: suite === "workbench" ||
 										suite === "segment-materials" ||
-										suite === "analysis-reading"
+										suite === "analysis-reading" ||
+										suite === "segment-share"
 									? [
-											await (suite === "analysis-reading"
-												? analysisReading
-												: suite === "segment-materials"
-													? segmentMaterials
-													: workbenchRegression)({
+											await (suite === "segment-share"
+												? segmentShareRegression
+												: suite === "analysis-reading"
+													? analysisReading
+													: suite === "segment-materials"
+														? segmentMaterials
+														: workbenchRegression)({
 												container,
 												check,
 												until,

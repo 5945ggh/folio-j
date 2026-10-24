@@ -2,28 +2,26 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 10px 16px;
+	gap: 8px 14px;
 	min-width: 0;
 	max-width: 100%;
-	padding: 12px 14px;
-	border: 1px solid var(--border, #e5e7eb);
-	border-radius: 10px;
-	background: transparent;
+	padding: 0 0 2px;
 	color: var(--muted, #737b80);
 	font-size: 12px;
-	line-height: 1.7;
+	line-height: 1.6;
 }
 
 .segment-material-origin-identity {
 	display: flex;
 	flex: 1 1 12rem;
 	align-items: center;
-	gap: 10px;
+	gap: 9px;
 	min-width: 0;
 }
 
 .segment-material-origin-identity > svg {
 	flex: none;
+	color: var(--faint, #a6acb4);
 }
 
 .segment-material-origin-text {
@@ -39,12 +37,12 @@
 }
 
 .segment-material-origin .segment-material-origin-title {
-	color: var(--text, #292c2e);
+	color: var(--text-soft, #565d66);
 	font-size: 13px;
 }
 
 .segment-material-origin .segment-material-origin-chapter {
-	font-size: 12px;
+	font-size: 11px;
 }
 
 .segment-material-origin .segment-material-origin-status {
@@ -59,5 +57,5 @@
 	flex: none;
 	margin-inline-start: auto;
 	padding-block: 3px;
-	font-size: 12px;
+	font-size: 11px;
 }
