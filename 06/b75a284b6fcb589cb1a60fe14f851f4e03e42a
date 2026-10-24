@@ -1,0 +1,31 @@
+docs/ARCHITECTURE.md
+  s_7a32b3aa8a3cbb::t_728851eb8cf2f5 417-421
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_7a32b3aa8a3cbb::t_bead913a7e6c69 20
+docs/handovers/archived/TRANSLATION_SESSION_REFACTOR_ACCEPTANCE.md
+  s_7a32b3aa8a3cbb::t_dd7ff8d88db72e 51,57
+  s_7a32b3aa8a3cbb::t_ed90420431681d 1-50,52-56,58-61
+docs/handovers/README.md
+  s_7a32b3aa8a3cbb::t_d463b77bdb6027 34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "06b75a284b6fcb589cb1a60fe14f851f4e03e42a",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_7a32b3aa8a3cbb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16995-3b86-7870-a74a-5e11065a8ff4",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
