@@ -1,0 +1,40 @@
+backend/openapi.json
+  s_eb44868f0c0200::t_227d2ec4154d35 4047-4057
+backend/src/app/services/sources.py
+  s_eb44868f0c0200::t_3010c052713c3f 405-407
+backend/src/app/services/material_provenance.py
+  s_eb44868f0c0200::t_2ad5e28d961967 79-81,114-116,118-127,456-478
+  s_eb44868f0c0200::t_8268a3c402e878 40
+  s_eb44868f0c0200::t_3010c052713c3f 37,72-78,82-113,117,128-137,385-386,399-414,422-425,479
+  s_eb44868f0c0200::t_e812b0d5f86b2b 426-429,438-440,480-483
+backend/tests/test_translation_prefill.py
+  s_eb44868f0c0200::t_5bfa67f5810f3d 12-13,195-240
+  s_eb44868f0c0200::t_16f2bbcf84862f 18,22,182-188
+  s_eb44868f0c0200::t_2ad5e28d961967 1-10,14-16,19-20,23-172,189-194
+  s_eb44868f0c0200::t_7592370f65b8b6 11,17,21,173-181
+backend/src/app/schemas.py
+  s_eb44868f0c0200::t_3010c052713c3f 103,125-126
+frontend/src/api/schema.d.ts
+  s_eb44868f0c0200::t_8df2af28c16ccf 2602-2603
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "148f9056658a2e933146c554b133923028daa927",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_eb44868f0c0200": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16c79-d382-72b0-b54d-48d23b70cfa0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
