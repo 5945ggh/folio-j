@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import html
 import importlib.util
 import io
+import json
 import unicodedata
 from html.parser import HTMLParser
 from pathlib import Path
@@ -169,6 +171,100 @@ def test_output_budget_is_enforced_incrementally(
     monkeypatch.setattr(epub, "MAX_PRODUCT_BYTES", 200)
     with pytest.raises(epub.EpubError, match="安全大小限制"):
         epub.compile_epub_bytes(publication(tmp_path))
+
+
+@pytest.mark.parametrize(
+    "field", ["book-title", "resource-title", "chapter-title", "attributes", "warnings"]
+)
+def test_complete_product_budget_counts_metadata_and_json_escaping(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, field: str
+) -> None:
+    # Quotes/backslashes expand in JSON; non-ASCII metadata remains UTF-8.
+    label = '章"\\' * 2500
+    nav = (
+        f'<li><a href="chapter1.xhtml">{html.escape(label)}</a></li>'
+        if field == "chapter-title"
+        else None
+    )
+    raw = publication(tmp_path, nav=nav, body="<p>本文</p>")
+    with ZipFile(io.BytesIO(raw)) as archive:
+        files = {name: archive.read(name) for name in archive.namelist()}
+    if field == "book-title":
+        files["OEBPS/package.opf"] = (
+            files["OEBPS/package.opf"]
+            .replace(b"</metadata>", f"<title>{html.escape(label)}</title></metadata>".encode())
+            .replace(b"<dc:title>", b"<other>")
+            .replace(b"</dc:title>", b"</other>")
+        )
+    elif field == "resource-title":
+        files["OEBPS/chapter1.xhtml"] = (
+            f"<html><head><title>{html.escape(label)}</title></head><body><p>本文</p></body></html>"
+        ).encode()
+    elif field == "attributes":
+        files["OEBPS/chapter1.xhtml"] = (
+            f'<html class="{html.escape(label, quote=True)}"><body><p>本文</p></body></html>'
+        ).encode()
+    elif field == "warnings":
+        files["OEBPS/nav.xhtml"] = (
+            '<html xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol>'
+            f'<li><a href="missing.xhtml">{html.escape(label)}</a></li>'
+            "</ol></nav></body></html>"
+        ).encode()
+        files["OEBPS/package.opf"] = files["OEBPS/package.opf"].replace(
+            b"</manifest>",
+            b'<item id="nav" href="nav.xhtml" properties="nav" '
+            b'media-type="application/xhtml+xml"/></manifest>',
+        )
+    output = io.BytesIO()
+    with ZipFile(output, "w") as archive:
+        for name, payload in files.items():
+            archive.writestr(name, payload)
+    monkeypatch.setattr(epub, "MAX_PRODUCT_BYTES", 12000)
+    with pytest.raises(epub.EpubError, match="安全大小限制"):
+        epub.compile_epub_bytes(output.getvalue())
+
+
+def test_product_budget_stops_before_building_all_repeated_titles(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw = publication(tmp_path, body="<p>本文</p>")
+    with ZipFile(io.BytesIO(raw)) as archive:
+        files = {name: archive.read(name) for name in archive.namelist()}
+    files["OEBPS/chapter1.xhtml"] = (
+        "<html><head><title>" + "t" * 3000 + "</title></head><body><p>本文</p></body></html>"
+    ).encode()
+    files["OEBPS/package.opf"] = files["OEBPS/package.opf"].replace(
+        b'<itemref idref="c1"/>', b'<itemref idref="c1"/>' * 30
+    )
+    output = io.BytesIO()
+    with ZipFile(output, "w") as archive:
+        for name, payload in files.items():
+            archive.writestr(name, payload)
+    monkeypatch.setattr(epub, "MAX_PRODUCT_BYTES", 12000)
+    calls = 0
+    sanitize = epub.sanitize_xhtml
+
+    def counted(*args: Any, **kwargs: Any) -> tuple[str, str, list[str]]:
+        nonlocal calls
+        calls += 1
+        return sanitize(*args, **kwargs)
+
+    monkeypatch.setattr(epub, "sanitize_xhtml", counted)
+    with pytest.raises(epub.EpubError, match="安全大小限制"):
+        epub.compile_epub_bytes(output.getvalue())
+    assert calls < 10, "reject during resource construction, before all copies or final JSON"
+
+
+def test_json_budget_matches_complete_compiled_product(tmp_path: Path) -> None:
+    book = epub.compile_epub_bytes(publication(tmp_path, body='<p title="&quot;">が\\\t本</p>'))
+    budget = [0]
+    epub._spend_json(budget, book.model_dump())  # pyright: ignore[reportPrivateUsage]
+    assert budget[0] == len(book.model_dump_json().encode())
+    metadata: dict[str, object] = {"quoted": '"\\\n\x00章' * 1000, "empty": [], "number": 42}
+    budget = [0]
+    epub._spend_json(budget, metadata)  # pyright: ignore[reportPrivateUsage]
+    encoded = json.dumps(metadata, ensure_ascii=False, separators=(",", ":")).encode()
+    assert budget[0] == len(encoded)
 
 
 def test_real_volume_eight_chapters_offline() -> None:

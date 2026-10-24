@@ -11,6 +11,7 @@ import posixpath
 import re
 import unicodedata
 import zipfile
+from collections.abc import Iterable
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, cast
@@ -154,6 +155,45 @@ def _spend(budget: list[int], amount: int) -> None:
         raise EpubLimitError("编译产物超过安全大小限制")
 
 
+def _spend_json(budget: list[int], value: Any) -> None:
+    """Count compact UTF-8 JSON without allocating the complete serialized value."""
+    if isinstance(value, str):
+        _spend(budget, 2)
+        for start in range(0, len(value), 4096):
+            encoded = json.dumps(value[start : start + 4096], ensure_ascii=False)
+            _spend(budget, len(encoded.encode()) - 2)
+    elif isinstance(value, dict):
+        values = cast(dict[str, Any], value)
+        _spend(budget, 2 + max(0, len(values) - 1) + len(values))
+        for key, item in values.items():
+            _spend_json(budget, key)
+            _spend_json(budget, item)
+    elif isinstance(value, list):
+        values_list = cast(list[Any], value)
+        _spend(budget, 2 + max(0, len(values_list) - 1))
+        for item in values_list:
+            _spend_json(budget, item)
+    else:
+        _spend(budget, len(json.dumps(value).encode()))
+
+
+class _BudgetedWarnings(list[str]):
+    """Account each warning before retaining it, including optional-resource paths."""
+
+    def __init__(self, budget: list[int]) -> None:
+        super().__init__()
+        self.budget = budget
+
+    def append(self, value: str) -> None:
+        _spend(self.budget, int(bool(self)))
+        _spend_json(self.budget, value)
+        super().append(value)
+
+    def extend(self, values: Iterable[str]) -> None:
+        for value in values:
+            self.append(value)
+
+
 def _label(element: ET.Element) -> str:
     def text(node: ET.Element) -> str:
         if _tag(node) in {"rt", "rp"}:
@@ -223,7 +263,7 @@ def sanitize_xhtml(
     body = next((el for el in root.iter() if _tag(el) == "body"), root)
     leaves: list[str] = []
     image_count = [0]
-    warnings: list[str] = []
+    warnings: list[str] = _BudgetedWarnings(budget)
 
     def leaf(value: str | None, annotation: bool = False) -> str:
         if not value:
@@ -359,6 +399,8 @@ def _inline_css(
                 budget,
             )
             return f"@media {media} {{\n{expanded}\n}}" if media else expanded
+        except EpubLimitError:
+            raise
         except (EpubError, KeyError, UnicodeError) as exc:
             warnings.append(f"Skipped CSS import in {href}: {target} ({exc})")
             return ""
@@ -422,7 +464,18 @@ def _compile_legacy(path: Path | io.BytesIO) -> dict[str, object]:
         )
         resources: list[dict[str, object]] = []
         product_budget = [0]
-        warnings: list[str] = []
+        output_budget = [0]
+        _spend_json(
+            output_budget,
+            {
+                "contract": CONTRACT,
+                "title": title,
+                "warnings": [],
+                "resources": [],
+                "materialVersion": "0" * 64,
+            },
+        )
+        warnings: list[str] = _BudgetedWarnings(output_budget)
         spine = [el for el in package.iter() if _tag(el) == "itemref"]
         if spine and all(
             "rendition:layout-pre-paginated" in el.attrib.get("properties", "").split()
@@ -461,6 +514,8 @@ def _compile_legacy(path: Path | io.BytesIO) -> dict[str, object]:
                             warnings,
                             (css_path,),
                         )
+                    except EpubLimitError:
+                        raise
                     except (EpubError, KeyError, UnicodeError):
                         warnings.append(f"Skipped unavailable stylesheet in {href}")
                 if style is not None:
@@ -470,24 +525,25 @@ def _compile_legacy(path: Path | io.BytesIO) -> dict[str, object]:
                 (el.text for el in document.iter() if _tag(el) == "title" and el.text),
                 href,
             )
-            resources.append(
-                {
-                    "id": item.attrib["id"],
-                    "href": href,
-                    "title": resource_title,
-                    "text": text,
-                    "html": fragment,
-                    "css": "\n".join(styles),
-                    "htmlAttributes": _presentation_attributes(document),
-                    "bodyAttributes": _presentation_attributes(
-                        next(
-                            (el for el in document.iter() if _tag(el) == "body"),
-                            document,
-                        )
-                    ),
-                    "textSha256": hashlib.sha256(text.encode()).hexdigest(),
-                }
-            )
+            resource: dict[str, object] = {
+                "id": item.attrib["id"],
+                "href": href,
+                "title": resource_title,
+                "text": text,
+                "html": fragment,
+                "css": "\n".join(styles),
+                "htmlAttributes": _presentation_attributes(document),
+                "bodyAttributes": _presentation_attributes(
+                    next(
+                        (el for el in document.iter() if _tag(el) == "body"),
+                        document,
+                    )
+                ),
+                "textSha256": hashlib.sha256(text.encode()).hexdigest(),
+            }
+            _spend(output_budget, int(bool(resources)))
+            _spend_json(output_budget, resource)
+            resources.append(resource)
     except (KeyError, StopIteration) as exc:
         raise EpubError(f"Incomplete EPUB package: {exc}") from exc
     if not resources:
@@ -603,6 +659,8 @@ def _toc(
             if entries:
                 return entries
             warnings.append("EPUB nav 目录没有有效链接，尝试 NCX。")
+        except EpubLimitError:
+            raise
         except (EpubError, KeyError, StopIteration):
             warnings.append("EPUB nav 目录无法读取，尝试 NCX。")
     spine = next((el for el in package.iter() if _tag(el) == "spine"), None)
@@ -643,6 +701,8 @@ def _toc(
 
             walk_ncx(document, 0)
             return entries
+        except EpubLimitError:
+            raise
         except (EpubError, KeyError):
             warnings.append("EPUB NCX 目录无法读取。")
     return []
@@ -671,7 +731,23 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
         package_path = _resolve(
             "", next(el.attrib["full-path"] for el in container.iter() if _tag(el) == "rootfile")
         )
-        warnings = cast(list[str], list(legacy["warnings"]))
+        output_budget = [0]
+        _spend_json(
+            output_budget,
+            {
+                "contract": CONTRACT,
+                "title": legacy["title"],
+                "warnings": [],
+                "resources": [],
+                "chapters": [],
+                "product_sha256": "0" * 64,
+            },
+        )
+        for index, resource in enumerate(resources):
+            _spend(output_budget, int(index > 0))
+            _spend_json(output_budget, resource.model_dump())
+        warnings = _BudgetedWarnings(output_budget)
+        warnings.extend(legacy["warnings"])
         entries = _toc(files, package_path, _xml(files[package_path]), warnings)
         if len({resource.href for resource in resources}) != len(resources):
             warnings.append("spine 重复资源保留全部出现位置；目录目标定位到首次出现。")
@@ -714,6 +790,8 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
                         warnings.append(f"目录目标重复或逆序，已跳过：{title}")
                         continue
                     positions.append((title or resources[index].title, level, index, token))
+                except EpubLimitError:
+                    raise
                 except (EpubError, KeyError, StopIteration):
                     warnings.append(f"目录目标缺失或无效，已跳过：{title}")
             return positions
@@ -746,6 +824,16 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
                 positions[chapter_index + 1][2:]
                 if chapter_index + 1 < len(positions)
                 else (len(resources) - 1, len(parsers[-1].tokens))
+            )
+            _spend(output_budget, int(bool(chapters)))
+            _spend_json(
+                output_budget,
+                {
+                    "id": f"chapter-{chapter_index}",
+                    "title": title,
+                    "level": level,
+                    "parts": [],
+                },
             )
             parts: list[ChapterPart] = []
             for index in range(first, last + 1):
@@ -781,17 +869,18 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
                     + sum(len(raw.encode()) for _, raw in parser.contexts[start_token])
                     + 1024,
                 )
-                parts.append(
-                    ChapterPart(
-                        resource_id=resources[index].id,
-                        spine_index=index,
-                        start=start,
-                        end=end,
-                        html=parser.slice(start_token, end_token),
-                        leaf_start=leaf_start,
-                        leaf_end=leaf_end,
-                    )
+                part = ChapterPart(
+                    resource_id=resources[index].id,
+                    spine_index=index,
+                    start=start,
+                    end=end,
+                    html=parser.slice(start_token, end_token),
+                    leaf_start=leaf_start,
+                    leaf_end=leaf_end,
                 )
+                _spend(output_budget, int(bool(parts)))
+                _spend_json(output_budget, part.model_dump())
+                parts.append(part)
             chapters.append(
                 CompiledChapter(
                     id=f"chapter-{chapter_index}", title=title, level=level, parts=parts
@@ -812,6 +901,8 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
                 ).hexdigest()
             }
         )
+    except EpubLimitError as exc:
+        raise EpubLimitError(f"无法导入 EPUB：{exc}") from exc
     except EpubError as exc:
         raise EpubError(f"无法导入 EPUB：{exc}") from exc
     except (KeyError, StopIteration, ValueError, RecursionError) as exc:
