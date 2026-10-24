@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, cast
 
-from sqlalchemy import and_, func, or_, select, text
+from sqlalchemy import and_, case, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chat_models import ChatMessage, ChatThread, Job
@@ -15,9 +15,11 @@ from app.chat_schemas import (
     JobCreate,
     JobDecision,
     JobResponse,
+    MessageJobSummary,
     MessagePage,
     MessageResponse,
     ModelSnapshotResponse,
+    RetryInput,
     RunSummary,
     ThreadCreate,
     ThreadPage,
@@ -159,8 +161,8 @@ async def job_response(session: AsyncSession, job: Job) -> JobResponse:
         )
     )
     runs = (
-        await session.scalars(
-            select(Run)
+        await session.execute(
+            select(Run.id, Run.status, Run.purpose)
             .where(Run.job_id == job.id, Run.deleted_at.is_(None))
             .order_by(Run.created_at, Run.id)
         )
@@ -371,29 +373,65 @@ async def list_threads(
 
 
 async def list_messages(
-    session: AsyncSession, thread_id: str, after_ordinal: int, limit: int
+    session: AsyncSession,
+    thread_id: str,
+    after_ordinal: int,
+    limit: int,
+    direction: Literal["forward", "backward"] = "forward",
+    before_ordinal: int | None = None,
 ) -> MessagePage:
     await require_thread(session, thread_id)
-    items = list(
-        (
-            await session.scalars(
-                select(ChatMessage)
-                .where(
-                    ChatMessage.thread_id == thread_id,
-                    ChatMessage.ordinal > after_ordinal,
-                    ChatMessage.deleted_at.is_(None),
-                )
-                .order_by(ChatMessage.ordinal)
-                .limit(limit + 1)
+    failed = ChatMessage.status.in_(("failed", "interrupted"))
+    # Select only public facts inside the JSON snapshots, never their potentially
+    # large model/tool histories. One bounded query serves every message in a page.
+    query = (
+        select(
+            ChatMessage,
+            Job.execution_state["artifacts"].label("artifacts"),
+            Job.error,
+            case((failed, Job.input_snapshot["question"].as_string())).label("question"),
+            case((failed, Job.input_snapshot["additional_instructions"].as_string())).label(
+                "additional_instructions"
+            ),
+        )
+        .outerjoin(
+            Job,
+            and_(
+                Job.id == ChatMessage.job_id,
+                Job.thread_id == ChatMessage.thread_id,
+                Job.deleted_at.is_(None),
+                ChatMessage.role == "assistant",
+            ),
+        )
+        .where(ChatMessage.thread_id == thread_id, ChatMessage.deleted_at.is_(None))
+    )
+    if direction == "backward":
+        if before_ordinal is not None:
+            query = query.where(ChatMessage.ordinal < before_ordinal)
+        query = query.order_by(ChatMessage.ordinal.desc())
+    else:
+        query = query.where(ChatMessage.ordinal > after_ordinal).order_by(ChatMessage.ordinal)
+    rows = list((await session.execute(query.limit(limit + 1))).all())
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+    cursor = rows[-1][0].ordinal if has_more else None
+    if direction == "backward":
+        rows.reverse()
+    items: list[MessageResponse] = []
+    for message, artifacts, error, question, additional in rows:
+        item = message_response(message)
+        if message.role == "assistant":
+            item.job_summary = MessageJobSummary(
+                artifacts=artifacts or [],
+                error=error,
+                retry=(
+                    RetryInput(question=question, additional_instructions=additional or "")
+                    if question is not None
+                    else None
+                ),
             )
-        ).all()
-    )
-    has_more = len(items) > limit
-    items = items[:limit]
-    return MessagePage(
-        items=[message_response(item) for item in items],
-        next_cursor=items[-1].ordinal if has_more else None,
-    )
+        items.append(item)
+    return MessagePage(items=items, next_cursor=cursor)
 
 
 async def accept_job(

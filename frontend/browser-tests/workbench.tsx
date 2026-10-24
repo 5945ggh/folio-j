@@ -6,7 +6,7 @@ import { materialSegment } from "./segment-materials";
 
 type Schema = components["schemas"];
 const timestamp = "2026-10-23T00:00:00Z";
-const settings: Schema["SettingsResponse"] = {
+export const settings: Schema["SettingsResponse"] = {
 	defaults: {
 		analysis_model_id: "model",
 		chat_model_id: "model",
@@ -29,7 +29,7 @@ const settings: Schema["SettingsResponse"] = {
 		},
 	],
 };
-const provider: Schema["ProviderResponse"] = {
+export const provider: Schema["ProviderResponse"] = {
 	id: "provider",
 	name: "离线提供商",
 	protocol: "responses",
@@ -61,7 +61,7 @@ const provider: Schema["ProviderResponse"] = {
 		text_verification: null,
 	})),
 };
-const makeThread = (): Thread => ({
+export const makeThread = (): Thread => ({
 	id: "thread",
 	segment_id: "segment",
 	display_title: "回归讨论",
@@ -72,7 +72,7 @@ const makeThread = (): Thread => ({
 	created_at: timestamp,
 	updated_at: timestamp,
 });
-function makeJob(status: Job["status"]): Job {
+export function makeJob(status: Job["status"]): Job {
 	return {
 		id: "job",
 		thread_id: "thread",
@@ -249,7 +249,17 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 									created_at: timestamp,
 									updated_at: timestamp,
 								},
-								job.assistant_message,
+								{
+									...job.assistant_message,
+									job_summary: {
+										artifacts: job.artifacts,
+										error: job.error,
+										retry: {
+											question: job.question,
+											additional_instructions: job.additional_instructions,
+										},
+									},
+								},
 							]
 						: [],
 					next_cursor: null,

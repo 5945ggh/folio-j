@@ -441,3 +441,173 @@ async def test_accept_rejects_current_credential_in_inputs_without_partial_write
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT count(*) FROM chat_jobs").fetchone()[0] == 0
         assert connection.execute("SELECT count(*) FROM runs").fetchone()[0] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("conversation_size", [1, 40])
+async def test_history_page_projects_job_facts_without_loading_large_snapshots(
+    tmp_path: Path, conversation_size: int
+) -> None:
+    from sqlalchemy import event
+
+    database = tmp_path / "history-projection.db"
+    async with chat_client(database) as (client, app):
+        seed = await seed_chat(client)
+        accepted = await accept(client, seed)
+        with sqlite3.connect(database) as connection:
+            connection.execute(
+                "UPDATE chat_jobs SET status='failed', error='保留的失败原因', "
+                "execution_state=?, input_snapshot=? WHERE id=?",
+                (
+                    json.dumps(
+                        {
+                            "artifacts": [
+                                {"analysis_id": "saved-analysis", "revision_id": "old-revision"}
+                            ],
+                            "messages": ["large-private-state" * 10000],
+                        }
+                    ),
+                    json.dumps(
+                        {
+                            "question": "原问题",
+                            "additional_instructions": "补充要求",
+                            "messages": ["large-private-input" * 10000],
+                        }
+                    ),
+                    accepted["id"],
+                ),
+            )
+            connection.execute(
+                "UPDATE chat_messages SET status='failed' WHERE job_id=? AND role='assistant'",
+                (accepted["id"],),
+            )
+            connection.execute(
+                "UPDATE chat_threads SET active_job_id=NULL WHERE id=?", (seed["thread"]["id"],)
+            )
+        with sqlite3.connect(database) as connection:
+            connection.row_factory = sqlite3.Row
+            job_row = dict(connection.execute("SELECT * FROM chat_jobs").fetchone())
+            message_rows = [
+                dict(row)
+                for row in connection.execute("SELECT * FROM chat_messages ORDER BY ordinal")
+            ]
+            for index in range(1, conversation_size):
+                identity = f"history-job-{index}"
+                job_row.update(id=identity, request_id=str(uuid4()))
+                columns = ", ".join(job_row)
+                placeholders = ", ".join("?" for _ in job_row)
+                connection.execute(
+                    f"INSERT INTO chat_jobs ({columns}) VALUES ({placeholders})",
+                    tuple(job_row.values()),
+                )
+                for message in message_rows:
+                    copy = {
+                        **message,
+                        "id": f"history-message-{index}-{message['role']}",
+                        "job_id": identity,
+                        "ordinal": index * 2 + message["ordinal"],
+                    }
+                    columns = ", ".join(copy)
+                    placeholders = ", ".join("?" for _ in copy)
+                    connection.execute(
+                        f"INSERT INTO chat_messages ({columns}) VALUES ({placeholders})",
+                        tuple(copy.values()),
+                    )
+        statements: list[str] = []
+        async with app.state.session_factory() as session:
+            engine = session.bind.sync_engine
+
+        def capture(
+            _connection: object,
+            _cursor: object,
+            statement: str,
+            _parameters: object,
+            _context: object,
+            _many: bool,
+        ) -> None:
+            if statement.lstrip().upper().startswith("SELECT"):
+                statements.append(statement)
+
+        event.listen(engine, "before_cursor_execute", capture)
+        try:
+            response = await client.get(
+                f"/api/threads/{seed['thread']['id']}/messages", params={"limit": 100}
+            )
+        finally:
+            event.remove(engine, "before_cursor_execute", capture)
+        assert response.status_code == 200, response.text
+        messages = response.json()["items"]
+        assert len(messages) == conversation_size * 2
+        summary = messages[1]["job_summary"]
+        assert summary == {
+            "artifacts": [{"analysis_id": "saved-analysis", "revision_id": "old-revision"}],
+            "error": "保留的失败原因",
+            "retry": {"question": "原问题", "additional_instructions": "补充要求"},
+        }
+        assert messages[0]["job_summary"] is None
+        assert len(statements) == 2, statements
+        # JSON paths may be selected; complete Job / Run columns must not be transferred.
+        projection = statements[-1].split("FROM")[0]
+        assert "JSON_EXTRACT(chat_jobs.execution_state," in projection
+        assert projection.count("chat_jobs.execution_state") == 1
+        assert "JSON_EXTRACT(chat_jobs.input_snapshot," in projection
+        assert projection.count("chat_jobs.input_snapshot") == 2
+        assert "model_snapshot" not in projection and "request_payload" not in projection
+        assert not any("FROM runs" in statement for statement in statements)
+        assert "large-private" not in response.text
+        statements.clear()
+        event.listen(engine, "before_cursor_execute", capture)
+        try:
+            detail = await client.get(f"/api/jobs/{accepted['id']}")
+        finally:
+            event.remove(engine, "before_cursor_execute", capture)
+        assert detail.status_code == 200, detail.text
+        run_query = next(statement for statement in statements if "FROM runs" in statement)
+        assert run_query.split("FROM")[0].strip() == "SELECT runs.id, runs.status, runs.purpose"
+
+
+@pytest.mark.asyncio
+async def test_backward_history_starts_at_latest_and_preserves_forward_cursor(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "history-pages.db"
+    async with chat_client(database) as (client, _app):
+        seed = await seed_chat(client)
+        await accept(client, seed)
+        endpoint = f"/api/threads/{seed['thread']['id']}/messages"
+        latest = await client.get(endpoint, params={"direction": "backward", "limit": 1})
+        assert latest.status_code == 200, latest.text
+        assert [item["ordinal"] for item in latest.json()["items"]] == [2]
+        assert latest.json()["next_cursor"] == 2
+        older = await client.get(
+            endpoint, params={"direction": "backward", "before_ordinal": 2, "limit": 1}
+        )
+        assert [item["ordinal"] for item in older.json()["items"]] == [1]
+        assert older.json()["next_cursor"] is None
+        forward = await client.get(endpoint, params={"after_ordinal": 1, "limit": 1})
+        assert [item["ordinal"] for item in forward.json()["items"]] == [2]
+        # New messages do not move an existing older-page boundary. A refresh
+        # starts from the newest page and derives each subsequent boundary anew.
+        with sqlite3.connect(database) as connection:
+            connection.execute("UPDATE chat_jobs SET status='succeeded'")
+            connection.execute("UPDATE chat_threads SET active_job_id=NULL")
+        seed["thread"] = (await client.get(f"/api/threads/{seed['thread']['id']}")).json()
+        await accept(client, seed)
+        older_after_append = await client.get(
+            endpoint, params={"direction": "backward", "before_ordinal": 2}
+        )
+        assert [item["ordinal"] for item in older_after_append.json()["items"]] == [1]
+        refreshed = (
+            await client.get(endpoint, params={"direction": "backward", "limit": 2})
+        ).json()
+        previous = (
+            await client.get(
+                endpoint,
+                params={
+                    "direction": "backward",
+                    "before_ordinal": refreshed["next_cursor"],
+                    "limit": 2,
+                },
+            )
+        ).json()
+        assert [item["ordinal"] for item in previous["items"] + refreshed["items"]] == [1, 2, 3, 4]

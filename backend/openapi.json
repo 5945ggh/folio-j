@@ -2479,6 +2479,40 @@
         "title": "MaterialUsageResponse",
         "type": "object"
       },
+      "MessageJobSummary": {
+        "properties": {
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/ArtifactResponse"
+            },
+            "title": "Artifacts",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "retry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetryInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "MessageJobSummary",
+        "type": "object"
+      },
       "MessagePage": {
         "properties": {
           "items": {
@@ -2525,6 +2559,16 @@
           "job_id": {
             "title": "Job Id",
             "type": "string"
+          },
+          "job_summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessageJobSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "ordinal": {
             "title": "Ordinal",
@@ -3467,6 +3511,24 @@
           }
         },
         "title": "ReadingSettings",
+        "type": "object"
+      },
+      "RetryInput": {
+        "properties": {
+          "additional_instructions": {
+            "title": "Additional Instructions",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "additional_instructions"
+        ],
+        "title": "RetryInput",
         "type": "object"
       },
       "ReviewProposal": {
@@ -9743,6 +9805,37 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "forward",
+              "enum": [
+                "forward",
+                "backward"
+              ],
+              "title": "Direction",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before_ordinal",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before Ordinal"
             }
           }
         ],

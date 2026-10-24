@@ -18,6 +18,7 @@ import { segmentShareRegression } from "./segment-share";
 import { themeRegression } from "./theme";
 import { translationRegression } from "./translation";
 import { workbenchRegression } from "./workbench";
+import { workbenchHistory } from "./workbench-history";
 
 const result = document.querySelector<HTMLPreElement>("#result");
 const container = document.querySelector<HTMLDivElement>("#root");
@@ -451,7 +452,8 @@ try {
 											},
 										}),
 									]
-								: suite === "workbench" ||
+								: suite === "workbench-history" ||
+										suite === "workbench" ||
 										suite === "segment-materials" ||
 										suite === "analysis-reading" ||
 										suite === "segment-share"
@@ -462,7 +464,9 @@ try {
 													? analysisReading
 													: suite === "segment-materials"
 														? segmentMaterials
-														: workbenchRegression)({
+														: suite === "workbench-history"
+															? workbenchHistory
+															: workbenchRegression)({
 												container,
 												check,
 												until,

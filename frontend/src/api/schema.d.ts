@@ -2050,6 +2050,14 @@ export interface components {
              */
             updated_at: string;
         };
+        /** MessageJobSummary */
+        MessageJobSummary: {
+            /** Artifacts */
+            artifacts?: components["schemas"]["ArtifactResponse"][];
+            /** Error */
+            error?: string | null;
+            retry?: components["schemas"]["RetryInput"] | null;
+        };
         /** MessagePage */
         MessagePage: {
             /** Items */
@@ -2070,6 +2078,7 @@ export interface components {
             id: string;
             /** Job Id */
             job_id: string;
+            job_summary?: components["schemas"]["MessageJobSummary"] | null;
             /** Ordinal */
             ordinal: number;
             /**
@@ -2389,6 +2398,13 @@ export interface components {
              * @enum {string}
              */
             writing_mode: "horizontal-tb" | "vertical-rl";
+        };
+        /** RetryInput */
+        RetryInput: {
+            /** Additional Instructions */
+            additional_instructions: string;
+            /** Question */
+            question: string;
         };
         /** ReviewProposal */
         ReviewProposal: {
@@ -5929,6 +5945,8 @@ export interface operations {
             query?: {
                 after_ordinal?: number;
                 limit?: number;
+                direction?: "forward" | "backward";
+                before_ordinal?: number | null;
             };
             header?: never;
             path: {

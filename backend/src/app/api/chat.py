@@ -1,6 +1,6 @@
 """Thin routes for persisted segment conversations."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,8 +60,12 @@ async def list_messages(
     session: Session,
     after_ordinal: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    direction: Literal["forward", "backward"] = "forward",
+    before_ordinal: Annotated[int | None, Query(ge=1)] = None,
 ) -> MessagePage:
-    return await service.list_messages(session, thread_id, after_ordinal, limit)
+    return await service.list_messages(
+        session, thread_id, after_ordinal, limit, direction, before_ordinal
+    )
 
 
 @router.post(

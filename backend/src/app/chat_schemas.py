@@ -95,6 +95,22 @@ class ThreadPage(BaseModel):
     next_cursor: str | None
 
 
+class ArtifactResponse(BaseModel):
+    analysis_id: str
+    revision_id: str
+
+
+class RetryInput(BaseModel):
+    question: str
+    additional_instructions: str
+
+
+class MessageJobSummary(BaseModel):
+    artifacts: list[ArtifactResponse] = Field(default_factory=lambda: list[ArtifactResponse]())
+    error: str | None = None
+    retry: RetryInput | None = None
+
+
 class MessageResponse(BaseModel):
     id: str
     thread_id: str
@@ -105,6 +121,7 @@ class MessageResponse(BaseModel):
     content: str
     created_at: datetime
     updated_at: datetime
+    job_summary: MessageJobSummary | None = None
 
 
 class MessagePage(BaseModel):
@@ -124,11 +141,6 @@ class ModelSnapshotResponse(BaseModel):
     max_output_tokens: int | None
     reasoning_effort: str | None
     stream: bool
-
-
-class ArtifactResponse(BaseModel):
-    analysis_id: str
-    revision_id: str
 
 
 class RunSummary(BaseModel):

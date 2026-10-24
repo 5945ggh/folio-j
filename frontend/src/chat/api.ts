@@ -70,13 +70,17 @@ export async function patchThread(
 	return requireData(data, error, response.status);
 }
 
-export async function listMessages(threadId: string, afterOrdinal: number) {
+export async function listMessages(threadId: string, beforeOrdinal?: number) {
 	const { data, error, response } = await api.GET(
 		"/api/threads/{thread_id}/messages",
 		{
 			params: {
 				path: { thread_id: threadId },
-				query: { after_ordinal: afterOrdinal, limit: 50 },
+				query: {
+					direction: "backward",
+					before_ordinal: beforeOrdinal,
+					limit: 50,
+				},
 			},
 		},
 	);

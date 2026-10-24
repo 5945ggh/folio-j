@@ -192,36 +192,28 @@ function jobLabel(job: Job): string {
 }
 
 function FailedJob({
-	jobId,
+	summary,
 	onRetry,
 }: {
-	jobId: string;
+	summary?: Message["job_summary"];
 	onRetry: (draft: Draft) => void;
 }) {
-	const client = useQueryClient();
-	const job = useQuery({
-		queryKey: chatKeys.job(jobId),
-		queryFn: async () => {
-			const fresh = await getJob(jobId);
-			return freshestJob(client.getQueryData<Job>(chatKeys.job(jobId)), fresh);
-		},
-	});
 	return (
 		<div className="chat-failure-detail">
-			{job.data?.error && <p role="alert">{job.data.error}</p>}
-			{job.isError && <InlineError error={job.error} />}
-			{job.data && (
+			{summary?.error && <p role="alert">{summary.error}</p>}
+			{summary?.retry && (
 				<button
 					className="button secondary"
 					type="button"
-					onClick={() =>
+					onClick={() => {
+						if (!summary.retry) return;
 						onRetry(
 							visibleDraft({
-								question: job.data.question,
-								additional: job.data.additional_instructions,
+								question: summary.retry.question,
+								additional: summary.retry.additional_instructions,
 							}),
-						)
-					}
+						);
+					}}
 				>
 					把原问题放回输入框
 				</button>
@@ -241,29 +233,24 @@ function MessageItem({
 	onRetry: (draft: Draft) => void;
 	onOpenArtifact: (analysisId: string, revisionId: string, job?: Job) => void;
 }) {
-	const client = useQueryClient();
 	const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">(
 		"idle",
 	);
-	const savedJob = useQuery({
-		queryKey: chatKeys.job(message.job_id),
-		queryFn: async () => {
-			const fresh = await getJob(message.job_id);
-			return freshestJob(
-				client.getQueryData<Job>(chatKeys.job(message.job_id)),
-				fresh,
-			);
-		},
-		enabled:
-			message.role === "assistant" &&
-			!["pending", "streaming"].includes(message.status) &&
-			activeJob?.assistant_message.id !== message.id,
-		staleTime: 30_000,
-	});
 	const current =
 		activeJob?.assistant_message.id === message.id
 			? activeJob.assistant_message
 			: message;
+	const summary =
+		activeJob?.assistant_message.id === message.id
+			? {
+					artifacts: activeJob.artifacts,
+					error: activeJob.error,
+					retry: {
+						question: activeJob.question,
+						additional_instructions: activeJob.additional_instructions,
+					},
+				}
+			: message.job_summary;
 	return (
 		<article
 			className={`chat-message ${current.role}`}
@@ -331,10 +318,7 @@ function MessageItem({
 				</div>
 			)}
 			{current.role === "assistant" &&
-				(activeJob?.assistant_message.id === current.id
-					? activeJob
-					: savedJob.data
-				)?.artifacts?.map((artifact) =>
+				summary?.artifacts?.map((artifact) =>
 					artifact.analysis_id && artifact.revision_id ? (
 						<button
 							key={`${artifact.analysis_id}-${artifact.revision_id}`}
@@ -351,7 +335,7 @@ function MessageItem({
 				)}
 			{current.role === "assistant" &&
 				(current.status === "failed" || current.status === "interrupted") && (
-					<FailedJob jobId={current.job_id} onRetry={onRetry} />
+					<FailedJob summary={summary} onRetry={onRetry} />
 				)}
 		</article>
 	);
@@ -401,13 +385,9 @@ function ThreadPanel({
 		queryKey: chatKeys.messages(threadId),
 		enabled: thread.isSuccess,
 		queryFn: ({ pageParam }) => listMessages(threadId, pageParam),
-		initialPageParam: 0,
+		initialPageParam: undefined as number | undefined,
 		getNextPageParam: (page) => page.next_cursor ?? undefined,
 	});
-	useEffect(() => {
-		if (history.hasNextPage && !history.isFetchingNextPage)
-			void history.fetchNextPage();
-	}, [history.hasNextPage, history.isFetchingNextPage, history.fetchNextPage]);
 	const [recentJobId, setRecentJobId] = useState<string | null>(null);
 	const jobId = thread.data?.active_job_id ?? recentJobId;
 	const active = useQuery({
@@ -479,14 +459,27 @@ function ThreadPanel({
 		Boolean(active.data && !isTerminalJob(active.data)) ||
 		Boolean(pending) ||
 		sending;
-	const messages = history.data?.pages.flatMap((page) => page.items) ?? [];
-	const visibleMessages =
-		active.data &&
-		!messages.some((m) => m.id === active.data.assistant_message.id)
-			? [...messages, active.data.assistant_message].sort(
-					(a, b) => a.ordinal - b.ordinal,
-				)
-			: messages;
+	const messages = [...(history.data?.pages ?? [])]
+		.reverse()
+		.flatMap((page) => page.items);
+	const visibleMessages = [...messages];
+	if (active.data) {
+		const job = active.data;
+		if (!messages.some((message) => message.id === job.user_message_id)) {
+			visibleMessages.push({
+				...job.assistant_message,
+				id: job.user_message_id,
+				ordinal: job.assistant_message.ordinal - 1,
+				role: "user",
+				status: "complete",
+				content: job.question,
+				job_summary: null,
+			});
+		}
+		if (!messages.some((message) => message.id === job.assistant_message.id))
+			visibleMessages.push(job.assistant_message);
+		visibleMessages.sort((a, b) => a.ordinal - b.ordinal);
+	}
 	const review = describeReview(proposal, reviewBase.data);
 	const acceptSubmission = useCallback(
 		(accepted: Job, input: JobInput) =>
@@ -714,22 +707,21 @@ function ThreadPanel({
 			<section className="chat-history" aria-label="讨论历史">
 				{history.isPending && <p className="loading">正在加载历史…</p>}
 				{history.isError && <InlineError error={history.error} />}
-				{history.isFetchingNextPage && (
-					<p className="loading">正在加载更早的消息…</p>
+				{history.hasNextPage && (
+					<button
+						type="button"
+						className="button secondary"
+						disabled={history.isFetchingNextPage}
+						onClick={() => void history.fetchNextPage()}
+					>
+						{history.isFetchingNextPage ? "正在加载…" : "加载更早消息"}
+					</button>
 				)}
 				{visibleMessages.length === 0 && !history.isPending && (
 					<p className="chat-empty">
 						围绕这段原文提出第一个问题，讨论会保存在本线程。
 					</p>
 				)}
-				{active.data &&
-					!messages.some(
-						(message) => message.id === active.data.user_message_id,
-					) && (
-						<article className="chat-message user" aria-label="你的消息">
-							<p className="chat-message-content">{active.data.question}</p>
-						</article>
-					)}
 				{visibleMessages.map((message) => (
 					<MessageItem
 						key={message.id}
