@@ -1,0 +1,52 @@
+README.md
+  h_c735ec7f46d14b 5-6
+  h_c735ec7f46d14b 7
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_dcb9f7ed51211b::t_ba2630c178116d 16
+  s_f538034b366642::t_995f2a148c1de9 15,26
+docs/handovers/text-study/SEGMENT_UI_ACCEPTANCE.md
+  s_dcb9f7ed51211b::t_c0708fe27552eb 141-151
+  s_de5de4d47d6adb::t_df46215972a871 152-166
+  s_dcb9f7ed51211b::t_c1e2b798d0ca58 134-140
+  s_de5de4d47d6adb::t_3f0b97802a2923 167-174
+  s_de5de4d47d6adb::t_eb19cfc5ce89ed 175
+  s_f538034b366642::t_995f2a148c1de9 176-189
+  s_dcb9f7ed51211b::t_b01df788ece297 123-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e09b575a466463ef533ac628d088704d8d94ed34",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_dcb9f7ed51211b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d15-5cf3-7a20-be9f-bd8d787e1cd1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_de5de4d47d6adb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d38-ad0e-7b61-bdcd-19c4280c7579",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_f538034b366642": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16d6c-03c2-78d0-ae70-86223a9946f0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
