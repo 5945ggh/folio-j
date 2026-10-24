@@ -1,0 +1,45 @@
+docs/handovers/archived/frontend-refresh/FUTURE_NOTES.md
+  s_1b1b292001f6d8::t_e342b15122f675 1-126
+docs/handovers/archived/library-a1/ACCEPTANCE.md
+  s_1b1b292001f6d8::t_e342b15122f675 3-4,27,31,37-41
+docs/handovers/TEST_QUALITY_ACCEPTANCE.md
+  s_1b1b292001f6d8::t_82e064121aaf28 56-57
+.gitignore
+  s_1b1b292001f6d8::t_82e064121aaf28 61
+docs/handovers/archived/sources-s2/PLAN.md
+  s_1b1b292001f6d8::t_82e064121aaf28 21
+docs/handovers/archived/sources-s2/ACCEPTANCE.md
+  s_1b1b292001f6d8::t_e342b15122f675 3-4,15,21,27,37-38,40,45-46,50,52,56,64,68
+docs/handovers/archived/frontend-refresh/PLAN.md
+  s_1b1b292001f6d8::t_82e064121aaf28 5
+docs/PRODUCT_DIRECTION.md
+  s_1b1b292001f6d8::t_82e064121aaf28 159
+docs/handovers/README.md
+  s_1b1b292001f6d8::t_82e064121aaf28 18-19,29
+docs/handovers/archived/frontend-refresh/ACCEPTANCE.md
+  s_1b1b292001f6d8::t_e342b15122f675 3-4,59-65
+docs/handovers/archived/LOCAL_EVIDENCE.md
+  s_1b1b292001f6d8::t_b1a11d1779d735 28-37
+  s_1b1b292001f6d8::t_82e064121aaf28 1-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8f00693429d1059804ab3ab2b3653fc3abc81507",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_1b1b292001f6d8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16bb2-996b-7ad2-abb7-1525ac33dcab",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
