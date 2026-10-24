@@ -202,6 +202,30 @@ export class ReaderStudy {
 	} | null = null;
 	private emphasized: MarkTarget | null = null;
 	private readonly hits = new Map<number, MarkRanges[]>();
+	private preservingPreview = false;
+	private readonly layoutScroll = new Map<
+		HTMLElement,
+		{ left: number; top: number }
+	>();
+	private readonly restoredScrollEvents = new WeakSet<Event>();
+	/** Inline output changes geometry without dismissing a record the user just opened. */
+	preservePreviewDuringLayout(update: () => void): void {
+		const previous = this.preservingPreview;
+		this.preservingPreview = true;
+		try {
+			update();
+		} finally {
+			this.preservingPreview = previous;
+			for (const frame of this.frames.values()) {
+				const viewport = frame.viewport;
+				if (viewport && this.current(frame))
+					this.layoutScroll.set(viewport, {
+						left: viewport.scrollLeft,
+						top: viewport.scrollTop,
+					});
+			}
+		}
+	}
 	bind(binding: StudyBinding | null): void {
 		const changed =
 			binding?.materialId !== this.binding?.materialId ||
@@ -209,6 +233,7 @@ export class ReaderStudy {
 			binding?.chapterId !== this.binding?.chapterId;
 		this.binding = binding;
 		if (changed) {
+			this.layoutScroll.clear();
 			this.hits.clear();
 			this.emphasized = null;
 			for (const frame of this.frames.values()) {
@@ -248,6 +273,7 @@ export class ReaderStudy {
 		this.binding?.onMarks(null);
 	}
 	clear(): void {
+		this.layoutScroll.clear();
 		this.hits.clear();
 		this.emphasized = null;
 		for (const frame of this.frames.values()) frame.dispose();
@@ -267,10 +293,10 @@ export class ReaderStudy {
 	}
 	geometryChanged(refresh = true): void {
 		this.hits.clear();
-		this.emphasized = null;
+		if (!this.preservingPreview) this.emphasized = null;
 		for (const frame of this.frames.values()) frame.cancel();
 		this.binding?.onSelection(null);
-		this.binding?.onMarks(null);
+		if (!this.preservingPreview) this.binding?.onMarks(null);
 		this.binding?.onEntries?.([]);
 		for (const frame of this.frames.values()) clearStudyHighlights(frame.doc);
 		if (refresh) this.refresh();
@@ -756,8 +782,26 @@ export class ReaderStudy {
 				schedule();
 			}
 		};
-		const scroll = () => {
+		const scroll = (event: Event) => {
 			if (!this.current(frame)) return;
+			if (this.restoredScrollEvents.has(event)) return;
+			const viewport = input.viewport;
+			const expected = viewport ? this.layoutScroll.get(viewport) : undefined;
+			// Restoration can emit a scroll event even when its final pixel offset is
+			// unchanged. Native wheel/touch input and a different offset still dismiss.
+			if (
+				event.type === "scroll" &&
+				viewport &&
+				expected &&
+				viewport.scrollLeft === expected.left &&
+				viewport.scrollTop === expected.top
+			) {
+				this.layoutScroll.delete(viewport);
+				// Every mounted frame listens to the same viewport event.
+				this.restoredScrollEvents.add(event);
+				return;
+			}
+			if (viewport) this.layoutScroll.delete(viewport);
 			cancel();
 			this.binding?.onSelection(null);
 			this.dismissMarks();

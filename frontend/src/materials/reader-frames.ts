@@ -15,6 +15,7 @@ import {
 	normalizeFrameImages,
 } from "./presentation.ts";
 import { copyReaderSelection } from "./reader-clipboard.ts";
+import { ReaderFlowMotion } from "./reader-flow-motion.ts";
 import {
 	captureNativeSelection,
 	type ReaderHighlightRange,
@@ -97,14 +98,37 @@ type FrameContext = {
 /** Owns iframe lifetime and exact native-selection/reference projection. */
 export class ReaderFrames {
 	private readonly study = new ReaderStudy();
-	private readonly inlineTranslation = new InlineTranslation();
+	private root: () => HTMLElement | null = () => null;
+	private readonly flowMotion = new ReaderFlowMotion(
+		() => this.frames.values(),
+		() => this.root(),
+	);
+	private readonly inlineTranslation = new InlineTranslation(() =>
+		this.flowMotion.beforeRemove(),
+	);
+	private measuringInlineLayout = false;
+	get inlineMotionRunning(): boolean {
+		return !this.measuringInlineLayout && this.flowMotion.running;
+	}
+	finishInlineMotion(): void {
+		if (this.inlineTranslation.closing) this.inlineTranslation.clear();
+		else this.inlineTranslation.restoreNatural();
+		this.flowMotion.clear();
+	}
+	inlineMarginsChanged(): void {
+		this.flowMotion.marginsChanged();
+	}
 	setInlineTranslation(
 		chapter: Chapter,
 		value: { reference: MaterialProvenance; text: string } | null,
 		mutate: (update: () => void) => void,
 	): boolean {
 		if (!value) {
-			this.inlineTranslation.hide(mutate);
+			const node = this.inlineTranslation.element;
+			if (this.inlineTranslation.hide(mutate) && node) {
+				this.flowMotion.collapse(node, this.inlineTranslation.fullHeight);
+				this.flowMotion.synchronize(this.inlineTranslation.animations);
+			}
 			return true;
 		}
 		try {
@@ -127,14 +151,24 @@ export class ReaderFrames {
 			const frame = this.frames.get(final.index),
 				valid = this.validity.get(final.index);
 			if (!frame || !valid) throw new Error("正文尚未显示。");
-			return this.inlineTranslation.set(
-				frame.doc,
-				final.projection,
-				final.end,
-				value.text,
-				mutate,
-				valid,
+			const show = () =>
+				this.inlineTranslation.set(
+					frame.doc,
+					final.projection,
+					final.end,
+					value.text,
+					mutate,
+					valid,
+				);
+			if (this.inlineTranslation.isShowing(frame.doc, final.end, value.text))
+				return show();
+			this.inlineTranslation.prepareReopen();
+			const result = this.flowMotion.change(
+				show,
+				() => this.inlineTranslation.growth,
 			);
+			this.flowMotion.synchronize(this.inlineTranslation.animations);
+			return result;
 		} catch {
 			this.inlineTranslation.clear();
 			return false;
@@ -150,16 +184,29 @@ export class ReaderFrames {
 		theme: "white" | "black",
 		margins = false,
 	): void {
-		this.study.setMarks(chapter, marks, visible, theme, margins);
+		this.flowMotion.measure(() =>
+			this.study.setMarks(chapter, marks, visible, theme, margins),
+		);
 	}
 	emphasizeStudyMark(id: string | null, kind: StudyMarkKind = "segment"): void {
-		this.study.emphasize(id, kind);
+		this.flowMotion.measure(() => this.study.emphasize(id, kind));
 	}
 	invalidateStudyGeometry(): void {
 		this.study.geometryChanged(false);
 	}
 	refreshStudyGeometry(): void {
-		this.study.refresh();
+		this.flowMotion.measure(() => this.study.refresh());
+	}
+	preserveStudyPreviewDuringLayout(update: () => void): void {
+		const previous = this.measuringInlineLayout;
+		this.measuringInlineLayout = true;
+		try {
+			this.flowMotion.measure(() =>
+				this.study.preservePreviewDuringLayout(update),
+			);
+		} finally {
+			this.measuringInlineLayout = previous;
+		}
 	}
 	clearStudySelection(): boolean {
 		return this.study.clearSelection();
@@ -225,6 +272,7 @@ export class ReaderFrames {
 	}
 	clear() {
 		this.inlineTranslation.clear(false);
+		this.flowMotion.clear();
 		this.study.clear();
 		for (const frame of this.frames.values()) {
 			frame.cleanup();
@@ -239,6 +287,7 @@ export class ReaderFrames {
 		versionId: string,
 		chapter: Chapter,
 	): StudyTarget {
+		this.finishInlineMotion();
 		const selected = [...this.frames].filter(([, frame]) => {
 			const selection = frame.doc.getSelection();
 			return selection && !selection.isCollapsed;
@@ -299,6 +348,8 @@ export class ReaderFrames {
 		bookUi: BookUiPreferences,
 		readings: ReadingsResponse | undefined,
 	) {
+		this.flowMotion.clear();
+		if (this.inlineTranslation.closing) this.inlineTranslation.clear(false);
 		if (settings.writing_mode !== "horizontal-tb")
 			this.inlineTranslation.clear(false);
 		for (const [index, frame] of this.frames) {
@@ -349,6 +400,7 @@ export class ReaderFrames {
 		token: number,
 		context: FrameContext,
 	) {
+		this.root = context.root;
 		const doc = element.contentDocument;
 		let loaded = false;
 		const valid = () =>
@@ -370,6 +422,7 @@ export class ReaderFrames {
 		if (!resource) return;
 		try {
 			this.inlineTranslation.clear(false);
+			this.flowMotion.clear();
 			applyDocumentSettings(doc, context.current().settings);
 			let projection = projectPart(
 				doc,
@@ -433,6 +486,10 @@ export class ReaderFrames {
 				const frame = this.frames.get(index);
 				if (frame) copyReaderSelection(doc, frame.projection, event);
 			};
+			const selectionchange = () => {
+				if (valid() && !doc.getSelection()?.isCollapsed)
+					this.finishInlineMotion();
+			};
 			const wheel = (event: WheelEvent) => {
 				if (valid() && isReaderFrameTarget(doc, event.target))
 					context.wheel(event);
@@ -451,6 +508,7 @@ export class ReaderFrames {
 			};
 			doc.addEventListener("keydown", keydown);
 			doc.addEventListener("copy", copy);
+			doc.addEventListener("selectionchange", selectionchange);
 			doc.addEventListener("wheel", wheel, { passive: false });
 			doc.addEventListener("touchmove", touchmove, { passive: true });
 			doc.addEventListener("click", click);
@@ -462,6 +520,7 @@ export class ReaderFrames {
 				unbind?.();
 				doc.removeEventListener("keydown", keydown);
 				doc.removeEventListener("copy", copy);
+				doc.removeEventListener("selectionchange", selectionchange);
 				doc.removeEventListener("wheel", wheel);
 				doc.removeEventListener("touchmove", touchmove);
 				doc.removeEventListener("click", click);

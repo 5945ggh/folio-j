@@ -924,6 +924,7 @@ function Reader({
 	}, []);
 	const capture = useCallback((): Position | null => {
 		const root = container.current;
+		if (frames.current.inlineMotionRunning) return null;
 		if (!root || !chapter.data || !layout.current.canSample(viewportSize(root)))
 			return null;
 		const vertical = settings.writing_mode === "vertical-rl";
@@ -1032,6 +1033,7 @@ function Reader({
 				!isReaderFrameTarget(target.ownerDocument, target)
 			)
 				return;
+			frames.current.finishInlineMotion();
 			// Sample before granting input so a prior programmatic move cannot count.
 			if (sampleJumpReading()) jumpReading.current.input(performance.now());
 		},
@@ -1080,7 +1082,7 @@ function Reader({
 	}, []);
 	const observe = useCallback(() => {
 		const root = container.current;
-		if (!root) return;
+		if (!root || frames.current.inlineMotionRunning) return;
 		const anchor = layout.current.observe(
 			viewportSize(root),
 			capture,
@@ -1235,44 +1237,46 @@ function Reader({
 				update();
 				return;
 			}
-			const anchor = capture();
-			const screenTop = () => {
-				if (!anchor) return null;
-				const frame = frames.current.get(anchor.part_index);
-				const part = data.parts[anchor.part_index];
-				if (!frame || !part) return null;
-				const rect =
-					anchor.kind === "text"
-						? textRect(
-								frame.doc,
-								frame.projection,
-								(anchor.offset ?? part.start) - part.start,
-								false,
-							)
-						: frame.doc
-								.querySelector<HTMLElement>(
-									`[data-epub-image="${anchor.image_id}"]`,
+			frames.current.preserveStudyPreviewDuringLayout(() => {
+				const anchor = capture();
+				const screenTop = () => {
+					if (!anchor) return null;
+					const frame = frames.current.get(anchor.part_index);
+					const part = data.parts[anchor.part_index];
+					if (!frame || !part) return null;
+					const rect =
+						anchor.kind === "text"
+							? textRect(
+									frame.doc,
+									frame.projection,
+									(anchor.offset ?? part.start) - part.start,
+									false,
 								)
-								?.getBoundingClientRect();
-				return rect
-					? frame.element.getBoundingClientRect().top + rect.top
-					: null;
-			};
-			const before = screenTop();
-			jumpReading.current.pause();
-			let applied = false;
-			layout.current.reflow(() => {
-				applied = true;
-				update();
+							: frame.doc
+									.querySelector<HTMLElement>(
+										`[data-epub-image="${anchor.image_id}"]`,
+									)
+									?.getBoundingClientRect();
+					return rect
+						? frame.element.getBoundingClientRect().top + rect.top
+						: null;
+				};
+				const before = screenTop();
+				jumpReading.current.pause();
+				let applied = false;
+				layout.current.reflow(() => {
+					applied = true;
+					update();
+				});
+				if (!applied) {
+					update();
+					return;
+				}
+				const after = screenTop();
+				if (before !== null && after !== null) root.scrollTop += after - before;
+				// restore() already refreshes study geometry; only resample after pixel compensation.
+				observe();
 			});
-			if (!applied) {
-				update();
-				return;
-			}
-			const after = screenTop();
-			if (before !== null && after !== null) root.scrollTop += after - before;
-			// restore() already refreshes study geometry; only resample after pixel compensation.
-			observe();
 		},
 		[capture, chapter.data, observe],
 	);
@@ -1330,6 +1334,7 @@ function Reader({
 			lastHeight = root.clientHeight;
 		const resize = () => {
 			if (root !== container.current || !alive.current) return;
+			frames.current.finishInlineMotion();
 			setTranslationAnchor(null);
 			const width = root.clientWidth,
 				height = root.clientHeight;
@@ -1565,6 +1570,7 @@ function Reader({
 			}
 		};
 		try {
+			frames.current.finishInlineMotion();
 			layout.current.commit(
 				{
 					generation: generation.current,
@@ -1678,7 +1684,12 @@ function Reader({
 		closeInlineTranslation,
 		openMarkHit,
 	]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: wait for React to commit the updated margin coordinates.
+	useLayoutEffect(() => {
+		frames.current.inlineMarginsChanged();
+	}, [marginEntries]);
 	const leave = () => {
+		frames.current.finishInlineMotion();
 		layout.current.cancelSave();
 		const anchor = layout.current.presentedAnchor(capture);
 		if (anchor) {

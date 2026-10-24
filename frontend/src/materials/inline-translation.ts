@@ -1,10 +1,31 @@
 import type { Projection } from "./dom.ts";
 import { registerReaderFrameTargets } from "./focus.ts";
 import { rawOffset } from "./position.ts";
+import {
+	INLINE_MOTION_EASING,
+	INLINE_MOTION_MS,
+} from "./reader-flow-motion.ts";
 
 type Mutate = (update: () => void) => void;
-const FADE_MS = 160;
 const generated = new WeakMap<Document, Set<HTMLElement>>();
+type ClosingGeometry = {
+	height: number;
+	opacity: string;
+	clip: string;
+	paddingTop: string;
+	paddingBottom: string;
+};
+function geometry(node: HTMLElement): ClosingGeometry {
+	const css = node.ownerDocument.defaultView?.getComputedStyle(node);
+	return {
+		height: node.getBoundingClientRect().height,
+		opacity: css?.opacity || ".8",
+		clip: css?.clipPath || "inset(0 0 0% 0)",
+		paddingTop: css?.paddingTop || "0px",
+		paddingBottom: css?.paddingBottom || "0px",
+	};
+}
+const sizeTransition = `opacity ${INLINE_MOTION_MS}ms ${INLINE_MOTION_EASING}, height ${INLINE_MOTION_MS}ms ${INLINE_MOTION_EASING}, padding-top ${INLINE_MOTION_MS}ms ${INLINE_MOTION_EASING}, padding-bottom ${INLINE_MOTION_MS}ms ${INLINE_MOTION_EASING}`;
 function translationFontSize(doc: Document): string {
 	const body = Number.parseFloat(
 		doc.defaultView?.getComputedStyle(doc.body).fontSize ?? "",
@@ -47,10 +68,20 @@ function insertion(doc: Document, projection: Projection, end: number) {
 	);
 	if (!entry) return null;
 	const style = (node: Element) => view.getComputedStyle(node);
+	const unchangedCoordinates = (css: CSSStyleDeclaration) =>
+		[css.transform, css.scale, css.rotate, css.perspective].every(
+			(value) => !value || value === "none",
+		) &&
+		(!css.zoom ||
+			css.zoom === "normal" ||
+			css.zoom === "100%" ||
+			Number(css.zoom) === 1);
+	if (!unchangedCoordinates(style(doc.documentElement))) return null;
 	const ordinary = (node: Element) => {
 		const css = style(node);
 		return (
 			css.writingMode === "horizontal-tb" &&
+			unchangedCoordinates(css) &&
 			/^(static|relative)$/.test(css.position) &&
 			css.float === "none" &&
 			(css.columnCount === "auto" || css.columnCount === "1") &&
@@ -144,6 +175,89 @@ function insertion(doc: Document, projection: Projection, end: number) {
 
 /** Owns one noncanonical paragraph, its animation, and removal. Original DOM is never moved or wrapped. */
 export class InlineTranslation {
+	private readonly beforeRemove: () => void;
+	constructor(beforeRemove = () => {}) {
+		this.beforeRemove = beforeRemove;
+	}
+	get element(): HTMLElement | null {
+		return this.active?.node ?? null;
+	}
+	get closing(): boolean {
+		return this.active?.closing ?? false;
+	}
+	isShowing(doc: Document, end: number, text: string): boolean {
+		return !!(
+			this.active?.doc === doc &&
+			this.active.end === end &&
+			this.active.text === text &&
+			this.active.node.isConnected &&
+			!this.active.closing
+		);
+	}
+	get animations(): Animation[] {
+		return this.active?.node.getAnimations?.() ?? [];
+	}
+	get fullHeight(): number {
+		return (
+			this.active?.expanded?.height ??
+			this.active?.node.getBoundingClientRect().height ??
+			0
+		);
+	}
+	get growth(): {
+		node: HTMLElement;
+		fromHeight: number;
+		fullHeight: number;
+	} | null {
+		const active = this.active;
+		return active?.expanded && active.growingFrom !== null && !active.closing
+			? {
+					node: active.node,
+					fromHeight: active.growingFrom,
+					fullHeight: active.expanded.height,
+				}
+			: null;
+	}
+	/** Capture before the flow controller releases a closing height effect. */
+	prepareReopen(): void {
+		if (this.active?.closing)
+			this.active.reopening = geometry(this.active.node);
+	}
+	restoreNatural(): void {
+		const active = this.active;
+		if (!active || active.closing) return;
+		active.growingFrom = null;
+		active.node.style.setProperty("transition", "none", "important");
+		active.node.style.setProperty("height", "auto", "important");
+		active.node.style.setProperty("padding-top", ".35em", "important");
+		active.node.style.setProperty("padding-bottom", ".65em", "important");
+		active.node.style.setProperty("opacity", ".8", "important");
+		active.node.style.setProperty("clip-path", "inset(0 0 0% 0)", "important");
+		active.expanded = geometry(active.node);
+	}
+	private grow(
+		node: HTMLElement,
+		from: ClosingGeometry,
+		full: ClosingGeometry,
+	): void {
+		const view = node.ownerDocument.defaultView;
+		if (!view || view.matchMedia("(prefers-reduced-motion: reduce)").matches)
+			return;
+		if (this.active) this.active.growingFrom = from.height;
+		node.style.setProperty("transition", "none", "important");
+		node.style.setProperty("height", `${from.height}px`, "important");
+		node.style.setProperty("padding-top", from.paddingTop, "important");
+		node.style.setProperty("padding-bottom", from.paddingBottom, "important");
+		node.style.setProperty("opacity", from.opacity, "important");
+		node.style.setProperty("clip-path", "inset(0 0 0% 0)", "important");
+		void view.getComputedStyle(node).height;
+		node.style.setProperty("transition", sizeTransition, "important");
+		node.style.setProperty("height", `${full.height}px`, "important");
+		node.style.setProperty("padding-top", full.paddingTop, "important");
+		node.style.setProperty("padding-bottom", full.paddingBottom, "important");
+		node.style.setProperty("opacity", ".8", "important");
+		void view.getComputedStyle(node).height;
+	}
 	private active: {
 		doc: Document;
 		node: HTMLElement;
@@ -152,9 +266,12 @@ export class InlineTranslation {
 		text: string;
 		mutate: Mutate;
 		valid: () => boolean;
-		animation: number | null;
+		stopWaiting: () => void;
 		closeTimer: ReturnType<typeof setTimeout> | null;
 		closing: boolean;
+		expanded: ClosingGeometry | null;
+		reopening: ClosingGeometry | null;
+		growingFrom: number | null;
 	} | null = null;
 	set(
 		doc: Document,
@@ -168,12 +285,23 @@ export class InlineTranslation {
 			this.active?.doc === doc &&
 			this.active.end === end &&
 			this.active.text === text &&
-			!this.active.closing &&
 			this.active.node.isConnected &&
 			valid()
 		) {
 			this.active.mutate = mutate;
 			this.active.valid = valid;
+			if (this.active.closing) {
+				const active = this.active;
+				const from = active.reopening ?? geometry(active.node);
+				if (active.closeTimer !== null) clearTimeout(active.closeTimer);
+				active.closeTimer = null;
+				active.stopWaiting();
+				active.closing = false;
+				active.reopening = null;
+				mutate(() => this.restoreNatural());
+				active.expanded = geometry(active.node);
+				this.grow(active.node, from, active.expanded);
+			}
 			return true;
 		}
 		this.clear();
@@ -217,6 +345,7 @@ export class InlineTranslation {
 			border: "0",
 			background: "transparent",
 			opacity: ".8",
+			"clip-path": "inset(0 0 0% 0)",
 			overflow: "hidden",
 			"pointer-events": "auto",
 			transition: "none",
@@ -240,59 +369,57 @@ export class InlineTranslation {
 			text,
 			mutate,
 			valid,
-			animation: null as number | null,
+			stopWaiting: () => {},
 			closeTimer: null as ReturnType<typeof setTimeout> | null,
 			closing: false,
+			expanded: null as ClosingGeometry | null,
+			reopening: null as ClosingGeometry | null,
+			growingFrom: null as number | null,
 		};
 		this.active = active;
 		const view = doc.defaultView;
 		const animate =
 			!!view?.requestAnimationFrame &&
 			!view.matchMedia("(prefers-reduced-motion: reduce)").matches;
-		if (animate) {
-			node.style.setProperty("opacity", "0", "important");
-			node.style.setProperty(
-				"transition",
-				`opacity ${FADE_MS}ms ease`,
-				"important",
-			);
-		}
-		// Reserve final geometry once. Opacity feedback never re-enters chapter layout.
+		if (animate) node.style.setProperty("opacity", "0", "important");
+		// One expanded measurement gives the iframe its target; native CSS handles intermediate sizes.
 		mutate(() => target.parent.insertBefore(node, target.before));
-		if (animate && view) {
-			// Commit the initial opacity before changing the transition target.
-			void view.getComputedStyle(node).opacity;
-			active.animation = view.requestAnimationFrame(() => {
-				if (this.active !== active) return;
-				active.animation = null;
-				if (!valid() || !node.isConnected) {
-					this.clear(false);
-					return;
-				}
-				node.style.setProperty("opacity", ".8", "important");
-			});
-		}
+		active.expanded = geometry(node);
+		if (animate)
+			this.grow(
+				node,
+				{
+					...active.expanded,
+					height: 0,
+					opacity: "0",
+					paddingTop: "0px",
+					paddingBottom: "0px",
+				},
+				active.expanded,
+			);
 		return true;
 	}
 	refresh(): void {
 		const active = this.active;
 		if (active) {
+			this.restoreNatural();
 			active.node.style.setProperty(
 				"font-size",
 				translationFontSize(active.doc),
 				"important",
 			);
 			paragraphSpacing(active.doc, active.node, active.paragraph);
+			active.expanded = geometry(active.node);
 		}
 	}
-	hide(mutate: Mutate): void {
+	hide(mutate: Mutate): boolean {
 		const active = this.active;
-		if (!active) return;
+		if (!active) return false;
 		active.mutate = mutate;
-		if (active.closing) return;
+		if (active.closing) return false;
 		if (!active.valid()) {
 			this.clear(false);
-			return;
+			return false;
 		}
 		const view = active.doc.defaultView;
 		if (
@@ -300,29 +427,51 @@ export class InlineTranslation {
 			view.matchMedia("(prefers-reduced-motion: reduce)").matches
 		) {
 			this.clear();
-			return;
+			return false;
 		}
-		if (active.animation !== null) view.cancelAnimationFrame(active.animation);
-		active.animation = null;
 		active.closing = true;
+		active.growingFrom = null;
+		const from = geometry(active.node);
+		active.expanded ??= from;
+		active.reopening = null;
+		active.node.style.setProperty("transition", "none", "important");
+		active.node.style.setProperty("opacity", from.opacity, "important");
+		active.node.style.setProperty("clip-path", from.clip, "important");
+		active.node.style.setProperty("height", `${from.height}px`, "important");
+		active.node.style.setProperty("padding-top", from.paddingTop, "important");
 		active.node.style.setProperty(
-			"transition",
-			`opacity ${FADE_MS}ms ease`,
+			"padding-bottom",
+			from.paddingBottom,
 			"important",
 		);
+		void view.getComputedStyle(active.node).height;
+		active.node.style.setProperty("transition", sizeTransition, "important");
 		active.node.style.setProperty("opacity", "0", "important");
-		// Keep the paragraph's occupied height while fading; remove with one stable reflow.
-		active.closeTimer = setTimeout(() => {
-			if (this.active === active) this.clear();
-		}, FADE_MS);
+		active.node.style.setProperty("height", "0px", "important");
+		active.node.style.setProperty("padding-top", "0px", "important");
+		active.node.style.setProperty("padding-bottom", "0px", "important");
+		void view.getComputedStyle(active.node).opacity;
+		const fade = this.animations.find(
+			(animation) =>
+				(animation as CSSTransition).transitionProperty === "opacity",
+		);
+		const finish = () => {
+			if (this.active === active && active.closing) this.clear();
+		};
+		fade?.addEventListener("finish", finish, { once: true });
+		active.stopWaiting = () => fade?.removeEventListener("finish", finish);
+		// Height and padding contract during the fade; removal only disposes the empty box.
+		// The deadline is a fallback for a detached/non-rendered document, not another animation stage.
+		active.closeTimer = setTimeout(finish, INLINE_MOTION_MS + (fade ? 50 : 0));
+		return true;
 	}
 	clear(reflow = true): void {
 		const active = this.active;
 		if (!active) return;
 		this.active = null;
-		if (active.animation !== null)
-			active.doc.defaultView?.cancelAnimationFrame(active.animation);
+		active.stopWaiting();
 		if (active.closeTimer !== null) clearTimeout(active.closeTimer);
+		this.beforeRemove();
 		generated.get(active.doc)?.delete(active.node);
 		if (reflow) active.mutate(() => active.node.remove());
 		else active.node.remove();

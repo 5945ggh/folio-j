@@ -1,6 +1,14 @@
 import type { components } from "../src/api/schema";
 import { projectPart } from "../src/materials/dom";
+import { INLINE_MOTION_MS } from "../src/materials/reader-flow-motion";
+import { ReaderLayout } from "../src/materials/reader-layout";
 import type { BrowserHarness } from "./harness";
+import {
+	animationFrames,
+	readerAnimations,
+	settleInline,
+} from "./inline-animation";
+import { inlineMotionFixture } from "./inline-motion-fixture";
 
 /** Real iframe regressions; fixture fetch mocking is shared with chapter-records. */
 export async function inlineRecords(
@@ -81,12 +89,11 @@ export async function inlineRecords(
 			) <= 1,
 			"Opening translation must preserve source paragraph screen Y",
 		);
-		await h.until(
-			() =>
-				!inline()
-					?.getAnimations()
-					.some((animation) => animation.playState === "running"),
-			"Inline opening animation must settle",
+		await settleInline(
+			h,
+			doc,
+			() => inline()?.textContent === first.translation,
+			"Inline opening geometry and opacity must settle",
 		);
 		check(
 			(inline()?.getBoundingClientRect().top ?? 0) -
@@ -184,18 +191,283 @@ export async function inlineRecords(
 		);
 		tap(2, 5);
 		await h.until(() => !inline(), "Second target must toggle closed");
+		const settled = (expected: string | null, message: string) =>
+			settleInline(
+				h,
+				doc,
+				() =>
+					expected === null ? !inline() : inline()?.textContent === expected,
+				message,
+			);
+		const protectOriginals = () =>
+			check(
+				originals.every(
+					(node, index) =>
+						node.isConnected && node.innerHTML === originalMarkup[index],
+				),
+				"Interrupted animations must preserve every original node and markup",
+			);
+		const guardOldTimers = async (expected: HTMLElement | null) => {
+			const started = performance.now();
+			// Observe beyond the former close timer without imposing a frame-time budget.
+			while (performance.now() - started < INLINE_MOTION_MS + 150) {
+				await animationFrames(1);
+				check(
+					inline() === expected,
+					"An obsolete close timer must not remove or replace the current output",
+				);
+			}
+			check(
+				doc.querySelectorAll("[data-reader-inline-translation]").length ===
+					(expected ? 1 : 0),
+				"Interrupted motion must leave the final single output only",
+			);
+			check(
+				readerAnimations(h.container, [doc]).length === 0,
+				"Interrupted motion must leave no animation effects",
+			);
+			protectOriginals();
+		};
 		tap(2, 5);
-		await h.until(
-			() => inline()?.textContent === first.translation,
-			"Saved target must reopen before repeated tapping",
+		await settled(
+			first.translation,
+			"Saved target must reopen before reversal",
+		);
+		const reused = inline();
+		check(reused, "Reversal requires an existing output");
+		tap(2, 5);
+		await animationFrames(3);
+		tap(2, 5);
+		if (!matchMedia("(prefers-reduced-motion: reduce)").matches)
+			check(
+				inline() === reused,
+				"Reopening during close must reuse the same translation node",
+			);
+		await settled(
+			first.translation,
+			"Close-to-open reversal must settle expanded",
+		);
+		await guardOldTimers(inline());
+		tap(2, 5);
+		await animationFrames(2);
+		tap(2, 5);
+		await animationFrames(3);
+		tap(2, 5);
+		await settled(
+			null,
+			"RAF-spaced rapid reversals must settle in final collapsed state",
+		);
+		await guardOldTimers(null);
+		check(
+			Math.abs(
+				(originals[2]?.getBoundingClientRect().top ?? 0) - followingTop,
+			) <= 1,
+			"Rapid close must remove the exact translation placeholder",
+		);
+		tap(3, 5);
+		await animationFrames(3);
+		tap(2, 5);
+		await animationFrames(2);
+		tap(3, 5);
+		await settled(
+			cross.translation,
+			"Switching targets during motion must settle at final target",
+		);
+		check(
+			inline()?.previousElementSibling === originals[3],
+			"Interrupted target switch must retain correct insertion point",
+		);
+		await guardOldTimers(inline());
+		tap(3, 5);
+		await settled(null, "Cross target must close before scroll cancellation");
+		tap(3, 5);
+		await animationFrames(3);
+		tap(2, 5);
+		await animationFrames(2);
+		tap(2, 5);
+		await settled(
+			null,
+			"Closing a replacement target during its opening must settle collapsed",
+		);
+		await guardOldTimers(null);
+		check(
+			Math.abs(
+				(originals[2]?.getBoundingClientRect().top ?? 0) - followingTop,
+			) <= 1,
+			"Closing an animating replacement must restore the exact original placeholder",
 		);
 		tap(2, 5);
-		tap(2, 5);
-		tap(2, 5);
-		await h.until(
-			() => !inline(),
-			"Rapid repeated taps must settle in the final collapsed state",
+		await animationFrames(3);
+		viewport.scrollTop = 150;
+		viewport.dispatchEvent(new Event("scroll"));
+		await settled(
+			first.translation,
+			"Scrolling during opening must preserve final output",
 		);
+		await guardOldTimers(inline());
+		viewport.scrollTop = 0;
+		viewport.dispatchEvent(new Event("scroll"));
+		await frames();
+		tap(2, 5);
+		await animationFrames(3);
+		const nativeWheel = (
+			window as unknown as {
+				browserPointer: (
+					events: {
+						type: string;
+						x: number;
+						y: number;
+						deltaX: number;
+						deltaY: number;
+					}[],
+				) => Promise<void>;
+			}
+		).browserPointer;
+		check(nativeWheel, "Runner must expose trusted native wheel dispatch");
+		const observe = ReaderLayout.prototype.observe;
+		let observed = 0;
+		ReaderLayout.prototype.observe = function (...args) {
+			observed++;
+			return observe.apply(this, args);
+		};
+		try {
+			const bounds = viewport.getBoundingClientRect();
+			await nativeWheel([
+				{
+					type: "mouseWheel",
+					x: bounds.left + bounds.width / 2,
+					y: bounds.top + Math.min(300, bounds.height / 2),
+					deltaX: 0,
+					deltaY: 120,
+				},
+			]);
+			await h.until(
+				() => viewport.scrollTop > 0,
+				"Trusted wheel during closing must scroll the reader",
+			);
+			await settled(
+				null,
+				"Trusted wheel must finish closing and cancel effects",
+			);
+			check(
+				observed > 0,
+				"Trusted wheel must resume canonical ReaderLayout.observe sampling after cancellation",
+			);
+			await guardOldTimers(null);
+		} finally {
+			ReaderLayout.prototype.observe = observe;
+		}
+		viewport.scrollTop = 0;
+		viewport.dispatchEvent(new Event("scroll"));
+		await frames();
+		await settled(
+			null,
+			"Scroll cancellation must retain correct close behavior",
+		);
+		check(
+			Math.abs(
+				(originals[2]?.getBoundingClientRect().top ?? 0) - followingTop,
+			) <= 1,
+			"Scrolling during motion must not leave a placeholder",
+		);
+		await inlineMotionFixture(h);
+		if (innerWidth > 600) {
+			const singleMargin = () => {
+				const marker = [
+					...h.container.querySelectorAll<HTMLButtonElement>(
+						".reader-study-margin",
+					),
+				].find(
+					(node) => node.getAttribute("aria-label") === "查看此处 1 条记录",
+				);
+				check(
+					marker,
+					"Inline-to-margin regression needs a single saved translation",
+				);
+				return marker;
+			};
+			for (const duringClose of [false, true]) {
+				viewport.scrollTop = duringClose ? 160 : 0;
+				viewport.dispatchEvent(new Event("scroll"));
+				await frames();
+				tap(2, 5);
+				await settled(
+					first.translation,
+					"Inline output must settle before margin handoff",
+				);
+				if (duringClose) {
+					tap(2, 5);
+					await animationFrames(2);
+				}
+				const marker = singleMargin();
+				const markerTop = marker.getBoundingClientRect().top;
+				marker.click();
+				await h.until(
+					() => !!card()?.textContent?.includes(first.translation),
+					"Page margin must open the saved translation while inline output closes",
+				);
+				const opened = card();
+				check(opened, "Margin handoff requires an open record preview");
+				const panelTop = opened.getBoundingClientRect().top;
+				await settled(
+					null,
+					"Inline output must finish closing after margin handoff",
+				);
+				await animationFrames(3);
+				check(
+					card() === opened && opened.textContent?.includes(first.translation),
+					"Inline removal and reflow must preserve the opened margin preview and its content",
+				);
+				check(
+					Math.abs(singleMargin().getBoundingClientRect().top - markerTop) <=
+						1 && Math.abs(opened.getBoundingClientRect().top - panelTop) <= 1,
+					`Inline removal must preserve the margin entrance and preview anchor position: ${JSON.stringify({ duringClose, markerTop, markerAfter: singleMargin().getBoundingClientRect().top, panelTop, panelAfter: opened.getBoundingClientRect().top, scroll: viewport.scrollTop })}`,
+				);
+				singleMargin().click();
+				await h.until(
+					() => !card(),
+					"Repeated margin click must still close its preview",
+				);
+			}
+			for (const dismiss of ["repeat", "background", "wheel"]) {
+				tap(2, 5);
+				await settled(
+					first.translation,
+					"Inline output must reopen before explicit dismissal",
+				);
+				const marker = singleMargin();
+				marker.click();
+				await h.until(
+					() => !!card(),
+					"Margin preview must open before explicit dismissal",
+				);
+				if (dismiss === "repeat") marker.click();
+				else if (dismiss === "background") tap(5, 5);
+				else {
+					const bounds = viewport.getBoundingClientRect();
+					await nativeWheel([
+						{
+							type: "mouseWheel",
+							x: bounds.left + bounds.width / 2,
+							y: bounds.top + Math.min(300, bounds.height / 2),
+							deltaX: 0,
+							deltaY: 120,
+						},
+					]);
+				}
+				await settled(
+					null,
+					"Inline close must finish after explicit preview dismissal",
+				);
+				check(
+					!card(),
+					`Inline completion must respect ${dismiss} dismissal during closing`,
+				);
+			}
+			viewport.scrollTop = 0;
+			viewport.dispatchEvent(new Event("scroll"));
+			await frames();
+		}
 	}
 	if (innerWidth > 600) {
 		await h.until(
@@ -394,6 +666,62 @@ export async function inlineRecords(
 			),
 			"Font reflow must preserve original nodes and markup",
 		);
+		await settleInline(
+			h,
+			doc,
+			() => inline()?.textContent === first.translation,
+			"Font change during opening must settle final output",
+		);
+		const outputAfterFont = inline();
+		await animationFrames(3);
+		tap(2, 5);
+		await animationFrames(3);
+		h.inputValue(font, "25");
+		await h.until(
+			() =>
+				doc.documentElement.style.fontSize === "25px" ||
+				doc.body.style.fontSize === "25px",
+			"Font change must interrupt closing",
+		);
+		await settleInline(
+			h,
+			doc,
+			() => !inline(),
+			"Font change during closing must remove output and effects",
+		);
+		check(
+			!outputAfterFont?.isConnected,
+			"Font cancellation must dispose the old closing output",
+		);
+		const sourceAfterFont = originals[1];
+		const followingAfterFont = originals[2];
+		check(
+			sourceAfterFont && followingAfterFont,
+			"Font fixture needs adjacent original paragraphs",
+		);
+		check(
+			Math.abs(
+				followingAfterFont.getBoundingClientRect().top -
+					sourceAfterFont.getBoundingClientRect().bottom -
+					Number.parseFloat(getComputedStyle(sourceAfterFont).marginBottom),
+			) <= 1,
+			"Font cancellation must restore exact original paragraph spacing",
+		);
+		tap(2, 5);
+		await animationFrames(3);
+		await settleInline(
+			h,
+			doc,
+			() => inline()?.textContent === first.translation,
+			"Output must finish before preparing direction recovery anchor",
+		);
+		viewport.scrollTop = 400;
+		viewport.dispatchEvent(new Event("scroll"));
+		await animationFrames(5);
+		check(
+			viewport.scrollTop > 100,
+			"Direction recovery must start below chapter beginning after font reflow",
+		);
 		const select = find<HTMLSelectElement>('select[aria-label="文字方向"]');
 		select.value = "vertical-rl";
 		select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -417,6 +745,22 @@ export async function inlineRecords(
 		);
 		click("关闭阅读设置");
 	}
+	if (
+		direction === "horizontal-tb" &&
+		getComputedStyle(doc.body).writingMode === "horizontal-tb"
+	) {
+		if (inline()) {
+			tap(2, 5);
+			await settleInline(
+				h,
+				doc,
+				() => !inline(),
+				"Output must close before chapter interruption",
+			);
+		}
+		tap(2, 5);
+		await animationFrames(3);
+	}
 	click("下一章");
 	await h.until(
 		() => !!h.container.querySelector('.reader-viewport[aria-label="第二章"]'),
@@ -429,5 +773,13 @@ export async function inlineRecords(
 				?.contentDocument?.querySelector("[data-reader-inline-translation]"),
 		"Chapter switch must clear floating and inline records",
 	);
-	return `inline records ${direction} ${innerWidth}px: complete saved result, whole paragraphs, cross-paragraph insertion, canonical copy/projection, toggle/replacement/scroll persistence, margin fallback, title drag/pinned target switch, narrow disabled`;
+	const chapterDisposed = performance.now();
+	while (performance.now() - chapterDisposed < INLINE_MOTION_MS + 150)
+		await animationFrames(1);
+	check(
+		!doc.querySelector("[data-reader-inline-translation]") &&
+			readerAnimations(h.container, [doc]).length === 0,
+		"Chapter cancellation must leave no old output or animation effects after old timers expire",
+	);
+	return `inline records ${direction} ${innerWidth}px: complete saved result, whole paragraphs, cross-paragraph insertion, canonical copy/projection, toggle/replacement/scroll persistence, margin fallback, title drag/pinned target switch, narrow disabled, RAF-spaced reversal/target switch/scroll/font/chapter cancellation, br-only/image geometry and author-style restoration, inline-to-margin preview handoff and explicit dismissal`;
 }
