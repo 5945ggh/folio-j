@@ -11,7 +11,8 @@ import posixpath
 import re
 import unicodedata
 import zipfile
-from collections.abc import Iterable
+from bisect import bisect_left
+from collections.abc import Iterable, Iterator
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, cast
@@ -23,6 +24,7 @@ from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter, Compile
 
 CONTRACT = "epub-reading-v1"
 MAX_PRODUCT_BYTES = 64 * 1024 * 1024
+MAX_NFC_BOUNDARY_PROBES = 8
 RULES = (
     "xml-xhtml;allowlist-v1;block-end-newline;raw-leaves-global-NFC;rt-rp-excluded;"
     "isolated-fixed-raster-v1;css-import-v1;document-attributes-v1;toc-ranges-v1"
@@ -562,10 +564,62 @@ def _compile_legacy(path: Path | io.BytesIO) -> dict[str, object]:
     return result
 
 
+def _canonical_units(value: str) -> Iterator[tuple[str, int]]:
+    """Yield canonical NFD units with their original codepoint positions."""
+    pending: list[tuple[str, int]] = []
+    for index, character in enumerate(value):
+        for unit in unicodedata.normalize("NFD", character):
+            if not unicodedata.combining(unit):
+                yield from sorted(pending, key=lambda item: unicodedata.combining(item[0]))
+                pending.clear()
+                yield unit, index
+            else:
+                pending.append((unit, index))
+    yield from sorted(pending, key=lambda item: unicodedata.combining(item[0]))
+
+
+def _locator_boundaries(raw_leaves: list[str], text: str) -> list[int | None]:
+    """Index safe NFC offsets; the globally normalized text remains authoritative.
+
+    Canonical NFD streams are identical before/after NFC. Stable alignment maps
+    each normalized codepoint to its original contributors, including Hangul
+    and reordered marks. A leaf boundary is safe exactly when every preceding
+    output contributor precedes it and every following contributor follows it.
+    No independently normalized leaf is used as the published locator text.
+    """
+    raw = "".join(raw_leaves)
+    boundaries = [0]
+    for leaf in raw_leaves:
+        boundaries.append(boundaries[-1] + len(leaf))
+    if raw == text:
+        return list(boundaries)
+    first = [len(raw)] * len(text)
+    last = [-1] * len(text)
+    for (unit, source), (normalized_unit, target) in zip(
+        _canonical_units(raw), _canonical_units(text), strict=True
+    ):
+        if unit != normalized_unit:
+            raise EpubError("正文 NFC 索引不一致")
+        first[target] = min(first[target], source)
+        last[target] = max(last[target], source)
+    # Reuse the contributor arrays for cumulative bounds rather than retaining
+    # two additional arrays proportional to the resource's codepoint count.
+    for index in range(1, len(text)):
+        last[index] = max(last[index - 1], last[index])
+    first.append(len(raw))
+    for index in range(len(text) - 1, -1, -1):
+        first[index] = min(first[index + 1], first[index])
+    offsets: list[int | None] = []
+    for boundary in boundaries:
+        offset = bisect_left(last, boundary)
+        offsets.append(offset if first[offset] >= boundary else None)
+    return offsets
+
+
 class _FragmentParser(HTMLParser):
     """Split safe markup at original IDs while retaining ancestor context."""
 
-    def __init__(self, markup: str) -> None:
+    def __init__(self, markup: str, text: str) -> None:
         super().__init__(convert_charrefs=False)
         self.tokens: list[str] = []
         self.contexts: list[list[tuple[str, str]]] = []
@@ -574,6 +628,45 @@ class _FragmentParser(HTMLParser):
         self.leaves: list[tuple[int, int]] = []
         self.feed(markup)
         self.contexts.append(list(self.stack))
+        self.leaf_tokens = [token for token, _ in self.leaves]
+        self.raw_leaves = [
+            html.unescape(value)
+            for value in re.findall(
+                r'<span data-locator-leaf="\d+">(.*?)</span>', markup, re.DOTALL
+            )
+        ]
+        self.raw = "".join(self.raw_leaves)
+        self.text = text
+        self.already_nfc = self.raw == text
+        self.raw_offsets = [0]
+        for leaf in self.raw_leaves:
+            self.raw_offsets.append(self.raw_offsets[-1] + len(leaf))
+        self.offset_cache: dict[int, int | None] = {}
+        self.offsets: list[int | None] | None = None
+
+    def leaf_boundary(self, token: int) -> int:
+        return bisect_left(self.leaf_tokens, token)
+
+    def locator_offset(self, boundary: int) -> int | None:
+        if self.already_nfc:
+            return self.raw_offsets[boundary]
+        if boundary == 0:
+            return 0
+        if boundary == len(self.raw_leaves):
+            return len(self.text)
+        if self.offsets is not None:
+            return self.offsets[boundary]
+        if boundary not in self.offset_cache:
+            if len(self.offset_cache) >= MAX_NFC_BOUNDARY_PROBES:
+                # Dense TOCs amortize the full codepoint map. Sparse TOCs use
+                # bounded C-level normalization passes regardless of leaf count.
+                self.offsets = _locator_boundaries(self.raw_leaves, self.text)
+                return self.offsets[boundary]
+            position = self.raw_offsets[boundary]
+            left = unicodedata.normalize("NFC", self.raw[:position])
+            right = unicodedata.normalize("NFC", self.raw[position:])
+            self.offset_cache[boundary] = len(left) if left + right == self.text else None
+        return self.offset_cache[boundary]
 
     def _append(self, value: str) -> None:
         self.contexts.append(list(self.stack))
@@ -751,7 +844,14 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
         entries = _toc(files, package_path, _xml(files[package_path]), warnings)
         if len({resource.href for resource in resources}) != len(resources):
             warnings.append("spine 重复资源保留全部出现位置；目录目标定位到首次出现。")
-        parsers = [_FragmentParser(resource.html) for resource in resources]
+        parser_by_href: dict[str, _FragmentParser] = {}
+        first_by_href: dict[str, int] = {}
+        parsers: list[_FragmentParser] = []
+        for index, resource in enumerate(resources):
+            if resource.href not in parser_by_href:
+                parser_by_href[resource.href] = _FragmentParser(resource.html, resource.text)
+                first_by_href[resource.href] = index
+            parsers.append(parser_by_href[resource.href])
 
         def resolve_entries(
             candidates: list[tuple[str, str, int]],
@@ -761,28 +861,11 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
                 base, url = target.split("\0", 1)
                 try:
                     href = _resolve(base, url)
-                    index = next(i for i, resource in enumerate(resources) if resource.href == href)
+                    index = first_by_href[href]
                     fragment = unquote(urlsplit(url).fragment)
                     token = parsers[index].ids[fragment] if fragment else 0
-                    leaf_boundary = next(
-                        (
-                            leaf
-                            for token_index, leaf in parsers[index].leaves
-                            if token_index >= token
-                        ),
-                        len(parsers[index].leaves),
-                    )
-                    raw = re.findall(
-                        r'<span data-locator-leaf="\d+">(.*?)</span>',
-                        resources[index].html,
-                        re.DOTALL,
-                    )
-                    left = html.unescape("".join(raw[:leaf_boundary]))
-                    right = html.unescape("".join(raw[leaf_boundary:]))
-                    if (
-                        unicodedata.normalize("NFC", left) + unicodedata.normalize("NFC", right)
-                        != resources[index].text
-                    ):
+                    leaf_boundary = parsers[index].leaf_boundary(token)
+                    if parsers[index].locator_offset(leaf_boundary) is None:
                         warnings.append(f"目录边界跨越 NFC 组合字符，已跳过：{title}")
                         continue
                     position = (index, token)
@@ -842,27 +925,12 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
                 end_token = last_token if index == last else len(parser.tokens)
                 if start_token == end_token:
                     continue
-                leaf_start = next(
-                    (leaf for token, leaf in parser.leaves if token >= start_token),
-                    len(parser.leaves),
-                )
-                leaf_end = next(
-                    (leaf for token, leaf in parser.leaves if token >= end_token),
-                    len(parser.leaves),
-                )
-                raw_leaves = re.findall(
-                    r'<span data-locator-leaf="\d+">(.*?)</span>', resources[index].html, re.DOTALL
-                )
-                start = len(
-                    unicodedata.normalize(
-                        "NFC", "".join(html.unescape(value) for value in raw_leaves[:leaf_start])
-                    )
-                )
-                end = len(
-                    unicodedata.normalize(
-                        "NFC", "".join(html.unescape(value) for value in raw_leaves[:leaf_end])
-                    )
-                )
+                leaf_start = parser.leaf_boundary(start_token)
+                leaf_end = parser.leaf_boundary(end_token)
+                start = parser.locator_offset(leaf_start)
+                end = parser.locator_offset(leaf_end)
+                if start is None or end is None:
+                    raise EpubError("章节边界跨越 NFC 组合字符")
                 _spend(
                     part_budget,
                     sum(len(value.encode()) for value in parser.tokens[start_token:end_token])

@@ -9,10 +9,12 @@ import json
 import unicodedata
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from zipfile import ZipFile
 
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from app.services import epub
 
@@ -122,6 +124,26 @@ def test_nav_nested_fragments_no_lost_or_duplicate_content(tmp_path: Path) -> No
     ]
     assert "duplicate-two" not in book.chapters[0].parts[0].html
     assert "duplicate-two" in book.chapters[1].parts[0].html
+    assert_partition(book)
+
+
+def test_indexed_parts_keep_exact_markup_and_resource_offsets(tmp_path: Path) -> None:
+    body = '<p>前<span id="split">が&amp;後</span></p>'
+    nav = (
+        '<li><a href="chapter1.xhtml">前</a></li>'
+        '<li><a href="chapter1.xhtml#split">後</a></li>'
+        '<li><a href="chapter2.xhtml">次</a></li>'
+    )
+    book = epub.compile_epub_bytes(publication(tmp_path, nav, body=body))
+    first = book.chapters[0].parts[0]
+    second = book.chapters[1].parts[0]
+    assert (first.start, first.end, first.leaf_start, first.leaf_end) == (0, 1, 0, 1)
+    assert (second.start, second.end, second.leaf_start, second.leaf_end) == (1, 5, 1, 3)
+    assert first.html == '<p><span data-locator-leaf="0">前</span></p>'
+    assert second.html == (
+        '<p><span id="split"><span data-locator-leaf="1">が&amp;後</span></span></p>'
+        '<span data-locator-leaf="2">\n</span>'
+    )
     assert_partition(book)
 
 
@@ -265,6 +287,127 @@ def test_json_budget_matches_complete_compiled_product(tmp_path: Path) -> None:
     epub._spend_json(budget, metadata)  # pyright: ignore[reportPrivateUsage]
     encoded = json.dumps(metadata, ensure_ascii=False, separators=(",", ":")).encode()
     assert budget[0] == len(encoded)
+
+
+@pytest.mark.parametrize("combining", [False, True])
+def test_many_toc_entries_only_scan_and_normalize_resource_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, combining: bool
+) -> None:
+    count = 80
+    text = "か<span>\u3099</span>" + "あ" * 198 if combining else "あ" * 200
+    body = "".join(f'<p id="p{i}">{text}</p>' for i in range(count))
+    nav = "".join(f'<li><a href="chapter1.xhtml#p{i}">{i}</a></li>' for i in range(count))
+    normalize = unicodedata.normalize
+    findall = epub.re.findall
+    normalized_chars = 0
+    scanned_chars = 0
+
+    def counted_normalize(form: Literal["NFC", "NFD", "NFKC", "NFKD"], text: str) -> str:
+        nonlocal normalized_chars
+        normalized_chars += len(text)
+        return normalize(form, text)
+
+    def counted_findall(pattern: str, text: str, flags: int = 0) -> list[str]:
+        nonlocal scanned_chars
+        if "data-locator-leaf" in pattern:
+            scanned_chars += len(text)
+        return findall(pattern, text, flags)
+
+    monkeypatch.setattr(unicodedata, "normalize", counted_normalize)
+    monkeypatch.setattr(epub.re, "findall", counted_findall)
+    book = epub.compile_epub_bytes(publication(tmp_path, nav, body=body))
+    markup_size = sum(len(resource.html) for resource in book.resources)
+    text_size = sum(len(resource.text) for resource in book.resources)
+    assert scanned_chars <= markup_size, "at most one locator extraction per resource"
+    assert normalized_chars <= 16 * text_size, "normalization work must not scale with TOC size"
+    assert [chapter.title for chapter in book.chapters] == [str(i) for i in range(count)]
+    assert_partition(book)
+
+
+@pytest.mark.parametrize("leaf_count", [2, 80])
+def test_sparse_toc_does_not_decompose_each_codepoint_of_non_nfc_resource(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, leaf_count: int
+) -> None:
+    body = (
+        "<p>"
+        + "".join(f'<span id="b{i}">{"a" * 1000}</span>' for i in range(leaf_count))
+        + "か<span>\u3099後</span></p>"
+    )
+    nav = (
+        '<li><a href="chapter1.xhtml">前</a></li>'
+        f'<li><a href="chapter1.xhtml#b{leaf_count // 2}">後</a></li>'
+        '<li><a href="chapter2.xhtml">次</a></li>'
+    )
+    normalize = unicodedata.normalize
+    calls = 0
+
+    def counted_normalize(form: Literal["NFC", "NFD", "NFKC", "NFKD"], text: str) -> str:
+        nonlocal calls
+        calls += 1
+        return normalize(form, text)
+
+    monkeypatch.setattr(unicodedata, "normalize", counted_normalize)
+    book = epub.compile_epub_bytes(publication(tmp_path, nav, body=body))
+    assert calls <= 20, "sparse requested boundaries must use a bounded number of stdlib passes"
+    assert [chapter.title for chapter in book.chapters] == ["前", "後", "次"]
+    assert_partition(book)
+
+
+@pytest.mark.parametrize(
+    "leaves",
+    [
+        ["ᄀ", "ᅡ", "ᆨ", "後"],
+        ["\u0301", "\u0327", "a", "後"],
+        ["a", "\u0315", "\u0300", "\u0327", "後"],
+        ["á", "\u0327", "\u0301", "後"],
+        ["\u0f73", "\u0f71", "後"],
+        [*["a"] * 10, "ᄀ", "ᅡ", "ᆨ", "\u0315", "\u0300", "後"],
+    ],
+)
+def test_leaf_boundaries_match_global_nfc_oracle(tmp_path: Path, leaves: list[str]) -> None:
+    assert_leaf_boundary_oracle(tmp_path, leaves)
+
+
+def assert_leaf_boundary_oracle(tmp_path: Path, leaves: list[str]) -> None:
+    raw = "".join(leaves) + "\n"
+    normalized = unicodedata.normalize("NFC", raw)
+    body = (
+        "<p>"
+        + "".join(f'<span id="b{i}">{html.escape(value)}</span>' for i, value in enumerate(leaves))
+        + "</p>"
+    )
+    nav = "".join(f'<li><a href="chapter1.xhtml#b{i}">{i}</a></li>' for i in range(len(leaves)))
+    book = epub.compile_epub_bytes(publication(tmp_path, nav, body=body))
+    starts: dict[str, int] = {}
+    prefix = ""
+    for index, value in enumerate(leaves):
+        if (
+            unicodedata.normalize("NFC", prefix) + unicodedata.normalize("NFC", raw[len(prefix) :])
+            == normalized
+        ):
+            starts[str(index)] = len(unicodedata.normalize("NFC", prefix))
+        prefix += value
+    assert [chapter.title for chapter in book.chapters] == ["前置内容", *starts]
+    assert [chapter.parts[0].start for chapter in book.chapters[1:]] == list(starts.values())
+    assert_partition(book)
+
+
+@settings(max_examples=60, deadline=None)
+@given(
+    st.lists(
+        st.sampled_from(
+            ["a", "か", "が", "ᄀ", "ᅡ", "ᆨ", "\u0300", "\u0315", "\u0327", "\u3099", "\u0f73", "&"]
+        ),
+        min_size=1,
+        max_size=16,
+    )
+)
+def test_generated_leaf_boundaries_match_global_nfc_oracle(leaves: list[str]) -> None:
+    # A private temporary directory avoids Hypothesis fixture lifetime ambiguity.
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as directory:
+        assert_leaf_boundary_oracle(Path(directory), leaves)
 
 
 def test_real_volume_eight_chapters_offline() -> None:
