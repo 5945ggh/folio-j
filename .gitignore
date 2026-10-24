@@ -49,6 +49,7 @@ coverage/
 # Local agent/runtime state
 .omx/
 .codex/
+/.zcode/
 /.agents/*
 !/.agents/skills/
 /.agents/skills/*
