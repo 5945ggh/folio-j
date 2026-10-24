@@ -580,10 +580,10 @@ async def execute_agent_job(
     if isinstance(proposal, dict) and decision in {"approve", "reject"}:
         try:
             instructions = state.get("decision_instructions", "")
-            if decision == "approve" and not instructions:
+            if decision == "approve":
                 output = await _apply(app, job_id, token, segment_id, proposal)
-            elif decision == "approve":
-                output = {"status": "revision_requested", "additional_instructions": instructions}
+                if output.get("status") == "saved" and instructions:
+                    output["additional_instructions"] = instructions
             else:
                 output = {"status": "rejected", "additional_instructions": instructions}
         except (HTTPException, ValueError) as exc:

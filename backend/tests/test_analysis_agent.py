@@ -433,7 +433,7 @@ async def test_full_access_edit_preserves_old_revision_and_read_tool_is_bounded(
 
 
 @pytest.mark.asyncio
-async def test_review_approve_reject_and_revision_request_are_exact_and_idempotent(
+async def test_review_approve_reject_and_followup_are_exact_and_idempotent(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -519,11 +519,11 @@ async def test_review_approve_reject_and_revision_request_are_exact_and_idempote
         ]
 
         seed = await refreshed(client, seed)
-        scripted_turn(
+        captured = scripted_turn(
             monkeypatch,
             [
                 ("", [call("delete_analysis_section", reject_args, "call_rev")], True),
-                ("收到补充要求，我会重新提案。", [], True),
+                ("已删除获批节，后续修改需要重新提案。", [], True),
             ],
         )
         revise_job = await accept(client, seed, question="重新考虑删节，先审核")
@@ -539,9 +539,24 @@ async def test_review_approve_reject_and_revision_request_are_exact_and_idempote
         )
         assert decision.status_code == 200
         await runtime.execute_job(app, revise_job["id"])
-        assert (await client.get(f"/api/analyses/{detail['id']}")).json()["revision_id"] == current[
-            "revision_id"
-        ]
+        updated = (await client.get(f"/api/analyses/{detail['id']}")).json()
+        assert updated["revision_id"] != current["revision_id"]
+        assert all(row["uid"] != sid for row in updated["sections"])
+        feedback = json.loads(captured[-1]["messages"][-1]["content"])
+        assert feedback["status"] == "saved"
+        assert feedback["revision_id"] == updated["revision_id"]
+        assert feedback["additional_instructions"] == "先保留，改写内容"
+        replay = await client.post(
+            f"/api/jobs/{revise_job['id']}/decision",
+            json={
+                "expected_version": waiting["version"],
+                "decision": "approve",
+                "additional_instructions": "先保留，改写内容",
+            },
+        )
+        assert replay.status_code == 200
+        await runtime.execute_job(app, revise_job["id"])
+        assert (await client.get(f"/api/analyses/{detail['id']}")).json() == updated
 
 
 @pytest.mark.asyncio
@@ -688,8 +703,9 @@ async def test_reviewed_preamble_preview_matches_saved_empty_and_no_h2_documents
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("instructions", ["", "保存后继续说明用法"])
 async def test_approved_review_rechecks_an_expired_base_revision(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, instructions: str
 ) -> None:
     async with chat_client(tmp_path / "expired-review.db") as (client, app):
         seed = await seed_chat(client)
@@ -701,7 +717,7 @@ async def test_approved_review_rechecks_an_expired_base_revision(
             "sid": sid,
             "title": "审核标题",
         }
-        scripted_turn(
+        captured = scripted_turn(
             monkeypatch,
             [
                 ("", [call("update_analysis_section", args)], True),
@@ -725,13 +741,20 @@ async def test_approved_review_rechecks_an_expired_base_revision(
             await session.commit()
         approved = await client.post(
             f"/api/jobs/{job['id']}/decision",
-            json={"expected_version": waiting["version"], "decision": "approve"},
+            json={
+                "expected_version": waiting["version"],
+                "decision": "approve",
+                "additional_instructions": instructions,
+            },
         )
         assert approved.status_code == 200
         await runtime.execute_job(app, job["id"])
         completed = (await client.get(f"/api/jobs/{job['id']}")).json()
         assert completed["status"] == "succeeded"
         assert completed["artifacts"] == []
+        feedback = json.loads(captured[-1]["messages"][-1]["content"])
+        assert "error" in feedback
+        assert "additional_instructions" not in feedback
         current = (await client.get(f"/api/analyses/{document['id']}")).json()
         assert current["revision_id"] == external.revision_id
 
