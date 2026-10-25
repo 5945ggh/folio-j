@@ -10,7 +10,7 @@
 
 升级前停止使用目标库的服务，制作 SQLite 一致性备份，并同时备份对应凭据目录。数据库使用 WAL 模式，不要在服务仍写入时只复制主数据库文件。恢复时保持数据库与凭据目录配套；改名或换路径时，凭据目录也须对应新的数据库文件名。
 
-## 当前迁移链
+## 当前迁移基线
 
 从空库运行以下命令即可建立完整 schema 并应用后续迁移：
 
@@ -18,23 +18,14 @@
 just migrate
 ```
 
-当前初始基线为 `0001_initial`。已在这条迁移链上的数据库，备份后运行相同命令应用后续迁移；`just dev` 和 `just start` 也会先执行该命令。
+当前仅有初始基线 `0001_schema_baseline`，直接建立完整 28 表；原有开发期六个 revision 已合并，不再支持逐步升级或降级。新编号与旧 `0001_initial` 不同，避免旧库被误认为已达到当前结构。`just dev` 和 `just start` 仍先执行 `just migrate`，不自动删除数据库或执行 stamp。
 
-迁移及降级约束由[架构中的领域模型](ARCHITECTURE.md#3-领域模型)维护。其中，`0002_lock_analysis_segments` 为已有历史讲解的未锁片段固定当前原文，保留原文与历史修订，降级不解除锁定；`0003_material_soft_delete` 保留存量资料并支持材料独立删除，存在已删材料时拒绝降级。后续迁移同样需按各自的数据保留约束处理。
+从本基线开始保存需保留的数据后，备份并运行相同命令应用后续增量迁移。显式降级到 base 会删除全部应用表；迁移事务、外键校验及边界见[架构](ARCHITECTURE.md#3-领域模型)，本轮结构等价与验证见[迁移验收](handovers/DATABASE_MIGRATION_ACCEPTANCE.md)。
 
 第一版发布前且数据可丢弃时，允许重整初始迁移；开始保存需保留的日常数据或发布第一版后，采用严格增量迁移。工程约束见 [AGENTS.md](../AGENTS.md#硬性规则)。
 
 ## 旧开发数据库与备份
 
-2026-10-20 的迁移基线整理移除了原有 12 个开发期 revision，新迁移链不再支持从旧中间 revision 自动升级。历史过程见[基线整理验收](handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md)。
+2026-10-20 曾整理早期 12 个开发 revision，过程见[历史验收](handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md)。2026-10-25 再将后续六个开发 revision 收敛为当前完整初始基线，过程见[当前验收](handovers/DATABASE_MIGRATION_ACCEPTANCE.md)。
 
-保留旧库时，先停止使用该库的服务并制作一致性备份，同时保留对应凭据目录。仅对已经到达旧完整 head `0012_material_metadata`，且与新基线的表、字段、索引、约束和默认值核验等价的库，可在确认目标数据库路径后，从仓库根目录执行一次：
-
-```sh
-uv run --directory backend alembic stamp --purge 0001_initial
-just migrate
-```
-
-`stamp` 只将版本记录对齐到初始基线，不补表、不修复结构。随后运行 `just migrate` 才会应用 `0002_lock_analysis_segments` 等后续迁移。不要直接 stamp 到 head，否则会跳过后续迁移的数据保护。
-
-结构不等价的库不能直接 stamp，应先用旧版本代码升级到完整旧 head 并重新核验，或在保留所需数据后另建新库。恢复旧备份也遵循相同步骤，不能把恢复后的旧版本记录直接视为新基线。
+旧 `0001_initial` 至 `0006_translations` 版本标签会明确报未找到 revision，不会自动重建或修改数据。可丢弃旧开发库时，先停止使用目标库的应用并保留备份，再显式删除已确认的数据库及其 `-wal`、`-shm` 文件，运行 `just migrate` 重建；需要保留数据时使用对应历史代码和配套备份。当前本机开发库经完整结构等价验证、备份后做过一次显式版本对齐，这不是应用启动或普通升级的通用处理路径。
