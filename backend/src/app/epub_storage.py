@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.epub_schemas import CompiledBook
 from app.services.epub import MAX_PRODUCT_BYTES
 
-_MAGIC = b"FJEPUB\x01"
+_MAGIC = b"FJEPUB\x02"
 _IMAGE = re.compile(r"data:image/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+={0,2}")
 _Fragment = str | Annotated[int, Field(strict=True, ge=0)]
 
@@ -21,7 +21,6 @@ class _StoredBook(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     book: CompiledBook
-    resource_html: list[list[_Fragment]]
     chapter_html: list[list[list[_Fragment]]]
     images: list[str]
 
@@ -72,11 +71,9 @@ def encode(book: CompiledBook) -> bytes:
         pieces.append(markup[end:])
         return pieces
 
-    resource_html = [split(resource.html) for resource in book.resources]
     chapter_html = [[split(part.html) for part in chapter.parts] for chapter in book.chapters]
     skeleton = book.model_copy(
         update={
-            "resources": [r.model_copy(update={"html": ""}) for r in book.resources],
             "chapters": [
                 chapter.model_copy(
                     update={"parts": [p.model_copy(update={"html": ""}) for p in chapter.parts]}
@@ -86,9 +83,7 @@ def encode(book: CompiledBook) -> bytes:
         }
     )
     stored = (
-        _StoredBook(
-            book=skeleton, resource_html=resource_html, chapter_html=chapter_html, images=images
-        )
+        _StoredBook(book=skeleton, chapter_html=chapter_html, images=images)
         .model_dump_json()
         .encode()
     )
@@ -103,14 +98,12 @@ def decode(payload: bytes) -> CompiledBook:
         raise ValueError("编译包存储版本不受支持")
     stored = _StoredBook.model_validate_json(_inflate(payload[len(_MAGIC) :]))
     book = stored.book
-    if len(stored.resource_html) != len(book.resources) or len(stored.chapter_html) != len(
-        book.chapters
-    ):
-        raise ValueError("编译包 HTML 数量与资源或章节不一致")
+    if len(stored.chapter_html) != len(book.chapters):
+        raise ValueError("编译包 HTML 数量与章节不一致")
     for chapter, parts in zip(book.chapters, stored.chapter_html, strict=True):
         if len(parts) != len(chapter.parts):
             raise ValueError("编译包 HTML 数量与章节片段不一致")
-    if any(r.html for r in book.resources) or any(p.html for c in book.chapters for p in c.parts):
+    if any(p.html for c in book.chapters for p in c.parts):
         raise ValueError("编译包骨架含重复 HTML")
     if any(not _valid_image(image) for image in stored.images):
         raise ValueError("编译包图片池无效")
@@ -121,11 +114,7 @@ def decode(payload: bytes) -> CompiledBook:
     if budget > MAX_PRODUCT_BYTES:
         raise ValueError("编译包还原结果超过解码预算")
     image_sizes = [len(image) for image in stored.images]
-    all_html = [
-        *stored.resource_html,
-        *(parts for chapter in stored.chapter_html for parts in chapter),
-    ]
-    for pieces in all_html:
+    for pieces in (parts for chapter in stored.chapter_html for parts in chapter):
         for piece in pieces:
             if isinstance(piece, str):
                 budget += len(json.dumps(piece, ensure_ascii=False).encode()) - 2
@@ -143,10 +132,6 @@ def decode(payload: bytes) -> CompiledBook:
 
     return book.model_copy(
         update={
-            "resources": [
-                resource.model_copy(update={"html": restore(parts)})
-                for resource, parts in zip(book.resources, stored.resource_html, strict=True)
-            ],
             "chapters": [
                 chapter.model_copy(
                     update={

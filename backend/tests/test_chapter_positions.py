@@ -286,14 +286,9 @@ def mixed_compiled(data: bytes) -> CompiledBook:
         '<span data-locator-leaf="9">後文</span>'
     )
     text = "章外の前置き文前文𠮷&漢字後文"
-    prefix = "".join(
-        f'<span data-locator-leaf="{index}">{character}</span>'
-        for index, character in enumerate(text[:7])
-    )
     resource = book.resources[0].model_copy(
         update={
             "text": text,
-            "html": prefix + markup,
             "text_sha256": hashlib.sha256(text.encode()).hexdigest(),
         }
     )
@@ -366,7 +361,7 @@ def test_image_progress_normalizes_the_complete_raw_prefix(image_id: int, expect
         '<img data-epub-image="9"><span data-locator-leaf="3">後</span>'
         '<img data-epub-image="12">'
     )
-    resource = book.resources[0].model_copy(update={"text": "é漢後", "html": markup})
+    resource = book.resources[0].model_copy(update={"text": "é漢後"})
     part = book.chapters[0].parts[0].model_copy(update={"html": markup, "leaf_end": 4})
     chapter = book.chapters[0].model_copy(update={"parts": [part]})
     book = book.model_copy(update={"resources": [resource], "chapters": [chapter]})

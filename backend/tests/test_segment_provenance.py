@@ -29,7 +29,6 @@ def compiled_provenance(_data: bytes) -> CompiledBook:
             href=f"{resource_id}.xhtml",
             title=resource_id,
             text=text,
-            html=f"<p>{text}</p>",
             css="",
             html_attributes={},
             body_attributes={},

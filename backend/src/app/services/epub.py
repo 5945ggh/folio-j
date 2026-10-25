@@ -23,12 +23,13 @@ from xml.parsers import expat
 
 from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter, CompiledResource
 
-CONTRACT = "epub-reading-v1"
+CONTRACT = "epub-reading-v2"
 MAX_PRODUCT_BYTES = 64 * 1024 * 1024
 MAX_NFC_BOUNDARY_PROBES = 8
 RULES = (
     "xml-xhtml;allowlist-v1;block-end-newline;raw-leaves-global-NFC;rt-rp-excluded;"
-    "isolated-fixed-raster-v1;css-import-v1;document-attributes-v1;toc-ranges-v1"
+    "isolated-fixed-raster-v1;css-import-v1;document-attributes-v1;toc-ranges-v1;"
+    "chapter-html-only-v2"
 )
 
 ALLOWED = frozenset(
@@ -419,13 +420,14 @@ def _inline_css(
 
 @dataclass(frozen=True)
 class _Publication:
-    """One validated archive and its typed resources share the final output budget."""
+    """Validated resources and temporary HTML used only while building chapters."""
 
     files: dict[str, bytes]
     package_path: str
     package: ET.Element
     title: str
     resources: list[CompiledResource]
+    resource_html: list[str]
     warnings: _BudgetedWarnings
     output_budget: list[int]
 
@@ -488,6 +490,7 @@ def _prepare_publication(data: bytes) -> _Publication:
             "EPUB",
         )
         resources: list[CompiledResource] = []
+        resource_html: list[str] = []
         product_budget = [0]
         output_budget = [0]
         _spend_json(
@@ -556,7 +559,6 @@ def _prepare_publication(data: bytes) -> _Publication:
                 href=href,
                 title=resource_title,
                 text=text,
-                html=fragment,
                 css="\n".join(styles),
                 html_attributes=_presentation_attributes(document),
                 body_attributes=_presentation_attributes(
@@ -570,11 +572,14 @@ def _prepare_publication(data: bytes) -> _Publication:
             _spend(output_budget, int(bool(resources)))
             _spend_json(output_budget, resource.model_dump())
             resources.append(resource)
+            resource_html.append(fragment)
     except (KeyError, StopIteration) as exc:
         raise EpubError(f"Incomplete EPUB package: {exc}") from exc
     if not resources:
         raise EpubError("EPUB has no readable spine resources")
-    return _Publication(files, package_path, package, title, resources, warnings, output_budget)
+    return _Publication(
+        files, package_path, package, title, resources, resource_html, warnings, output_budget
+    )
 
 
 def _canonical_units(value: str) -> Iterator[tuple[str, int]]:
@@ -826,9 +831,11 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
         parser_by_href: dict[str, _FragmentParser] = {}
         first_by_href: dict[str, int] = {}
         parsers: list[_FragmentParser] = []
-        for index, resource in enumerate(resources):
+        for index, (resource, markup) in enumerate(
+            zip(resources, publication.resource_html, strict=True)
+        ):
             if resource.href not in parser_by_href:
-                parser_by_href[resource.href] = _FragmentParser(resource.html, resource.text)
+                parser_by_href[resource.href] = _FragmentParser(markup, resource.text)
                 first_by_href[resource.href] = index
             parsers.append(parser_by_href[resource.href])
 
@@ -874,10 +881,8 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
             positions.insert(0, ("前置内容", 0, 0, 0))
         part_budget = [
             sum(
-                len(resource.html.encode())
-                + len(resource.css.encode())
-                + len(resource.text.encode())
-                for resource in resources
+                len(markup.encode()) + len(resource.css.encode()) + len(resource.text.encode())
+                for resource, markup in zip(resources, publication.resource_html, strict=True)
             )
         ]
         chapters: list[CompiledChapter] = []
@@ -956,7 +961,7 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
         raise EpubError(f"EPUB 内容无效或不受支持：{exc}") from exc
 
 
-# Stable compatibility surface for the offline CLI and pre-extraction regression suite.
+# Stable pure-function test surface for XML, CSS and presentation rules.
 parse_xml = _xml
 inline_css = _inline_css
 presentation_attributes = _presentation_attributes

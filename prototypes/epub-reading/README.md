@@ -8,7 +8,7 @@
 frontend/node_modules/.bin/vite prototypes/epub-reading --host 127.0.0.1 --port 5178
 ```
 
-打开终端显示的本地地址。选择内置样书，或通过「打开本地编译 JSON」读取 `epub-spike-v1` 文件。内置样书列表来自 `public/books/index.json`，数组项为 `{ "title": "标题", "path": "./books/文件.json" }`。编译与样书生成说明见样书目录和阶段交接文档。
+打开终端显示的本地地址。选择内置样书，或通过「打开本地编译 JSON」读取已保存的历史 `epub-spike-v1` 文件。内置样书列表来自 `public/books/index.json`，数组项为 `{ "title": "标题", "path": "./books/文件.json" }`。静态 JSON 保留切片 0 的完整资源 HTML 契约；生产编译器现只保存章节 HTML，旧实验导出 CLI 已退役，不再为本实验生成新 JSON。样书来源见 [fixtures](fixtures/README.md)。
 
 ## 操作与验收
 

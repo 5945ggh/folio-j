@@ -379,6 +379,7 @@
         "type": "object"
       },
       "ChapterPart": {
+        "additionalProperties": false,
         "properties": {
           "end": {
             "title": "End",

@@ -16,7 +16,7 @@ from app import epub_storage
 from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter, CompiledResource
 from app.services.epub import compile_epub_bytes
 
-MAGIC = b"FJEPUB\x01"
+MAGIC = b"FJEPUB\x02"
 
 
 def make_book(image: bytes | None = None, *, title: str = "が・日本語𠮷📚") -> CompiledBook:
@@ -39,14 +39,13 @@ def make_book(image: bytes | None = None, *, title: str = "が・日本語𠮷�
         href="OEBPS/日本語.xhtml",
         title=title,
         text=text,
-        html=fragment,
         css='p::before { content: "__EPUB_IMAGE_0__"; }',
         html_attributes={"lang": "ja"},
         body_attributes={"class": "vertical"},
         text_sha256=hashlib.sha256(text.encode()).hexdigest(),
     )
     return CompiledBook(
-        contract="epub-v1",
+        contract="epub-reading-v2",
         title=title,
         warnings=[marker],
         resources=[resource, resource.model_copy()],
@@ -103,7 +102,7 @@ def test_complete_logical_book_roundtrips_without_mutating_the_input() -> None:
     assert book.model_dump_json() == before
     assert restored.chapters[1].parts[0].spine_index == 1
     assert restored.resources[0].text == "が\n日本語𠮷📚\n"
-    assert 'data-locator-leaf="1">\u3099' in restored.resources[0].html
+    assert 'data-locator-leaf="1">\u3099' in restored.chapters[0].parts[0].html
     assert restored.product_sha256 == book.product_sha256
 
 
@@ -128,7 +127,10 @@ def test_real_compiler_outputs_keep_their_exact_logical_snapshot(fixture: str) -
 def test_repeated_large_image_is_stored_once_instead_of_deflate_window_repetition() -> None:
     book = make_book(large_image())
     encoded = epub_storage.encode(book)
-    assert len(encoded) < len(legacy_payload(book)) * 0.4
+    envelope = json.loads(zlib.decompress(encoded[len(MAGIC) :]))
+    assert len(envelope["images"]) == 1
+    assert all(0 in chapter[0] for chapter in envelope["chapter_html"])
+    assert len(encoded) < len(legacy_payload(book)) * 0.6
     assert epub_storage.decode(encoded).model_dump_json() == book.model_dump_json()
 
 
@@ -169,13 +171,13 @@ def test_invalid_input_raises_value_error(payload: bytes) -> None:
 def test_unknown_storage_version_is_rejected() -> None:
     payload, _ = _pooled_envelope()
     with pytest.raises(ValueError):
-        epub_storage.decode(b"FJEPUB\x02" + payload[len(MAGIC) :])
+        epub_storage.decode(b"FJEPUB\xff" + payload[len(MAGIC) :])
 
 
 @pytest.mark.parametrize("reference", [-1, True, False, 0.0, 0.5, None, {}, [], 1000000])
 def test_invalid_pooled_references_are_rejected(reference: object) -> None:
     _, envelope = _pooled_envelope()
-    envelope["resource_html"][0] = [reference]
+    envelope["chapter_html"][0][0] = [reference]
     with pytest.raises(ValueError):
         epub_storage.decode(_pack_envelope(envelope))
 
@@ -183,11 +185,12 @@ def test_invalid_pooled_references_are_rejected(reference: object) -> None:
 @pytest.mark.parametrize(
     "damage",
     [
-        "missing_resource",
-        "extra_resource",
+        "resource_html",
+        "empty_resource_html_field",
         "missing_chapter",
         "extra_part",
         "nonempty_resource_html",
+        "empty_removed_resource_html",
         "nonempty_part_html",
         "nonstring_image",
         "nonimage_uri",
@@ -196,16 +199,18 @@ def test_invalid_pooled_references_are_rejected(reference: object) -> None:
 )
 def test_malformed_storage_envelopes_are_rejected(damage: str) -> None:
     _, envelope = _pooled_envelope()
-    if damage == "missing_resource":
-        envelope["resource_html"].pop()
-    elif damage == "extra_resource":
-        envelope["resource_html"].append([])
+    if damage == "resource_html":
+        envelope["resource_html"] = [["hidden resource HTML"]]
+    elif damage == "empty_resource_html_field":
+        envelope["resource_html"] = []
     elif damage == "missing_chapter":
         envelope["chapter_html"].pop()
     elif damage == "extra_part":
         envelope["chapter_html"][0].append([])
-    elif damage == "nonempty_resource_html":
-        envelope["book"]["resources"][0]["html"] = "hidden content"
+    elif damage in {"nonempty_resource_html", "empty_removed_resource_html"}:
+        envelope["book"]["resources"][0]["html"] = (
+            "hidden content" if damage == "nonempty_resource_html" else ""
+        )
     elif damage == "nonempty_part_html":
         envelope["book"]["chapters"][0]["parts"][0]["html"] = "hidden content"
     elif damage == "nonstring_image":
@@ -289,7 +294,6 @@ def test_oversized_metadata_is_rejected_even_without_html_to_restore(
     else:
         book = book.model_copy(
             update={
-                "resources": [r.model_copy(update={"html": ""}) for r in book.resources],
                 "chapters": [
                     c.model_copy(
                         update={"parts": [p.model_copy(update={"html": ""}) for p in c.parts]}
@@ -313,3 +317,18 @@ def test_arbitrary_unicode_and_marker_text_is_never_interpreted_as_a_reference(t
     assert (
         epub_storage.decode(epub_storage.encode(book)).model_dump_json() == book.model_dump_json()
     )
+
+
+def test_new_storage_has_only_chapter_html_and_rejects_old_version() -> None:
+    root = Path(__file__).resolve().parents[2]
+    book = compile_epub_bytes(
+        (root / "prototypes/epub-reading/fixtures/synthetic-reading.epub").read_bytes()
+    )
+    payload = epub_storage.encode(book)
+    assert payload.startswith(b"FJEPUB\x02")
+    envelope = json.loads(zlib.decompress(payload[7:]))
+    assert "resource_html" not in envelope
+    assert all("html" not in item for item in envelope["book"]["resources"])
+    assert envelope["chapter_html"]
+    with pytest.raises(ValueError):
+        epub_storage.decode(b"FJEPUB\x01" + payload[7:])

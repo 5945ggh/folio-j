@@ -36,7 +36,6 @@ def compiled(_data: bytes) -> CompiledBook:
                 href="text.xhtml",
                 title="章",
                 text="日本語",
-                html='<p>日本語</p><img data-epub-image="0">',
                 css="",
                 html_attributes={},
                 body_attributes={},

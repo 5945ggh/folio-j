@@ -8,7 +8,7 @@
 
 主代理确定隔离范围、共用编译／定位契约、规范同步并操作浏览器验收；原生子代理分别实现编译器、阅读界面、独立样书与测试，再由独立 CR 子代理审查、实现代理修复、CR 复审。所有子代理使用 `gpt-6.1-sol`。
 
-- [编译器](../../../../scripts/epub_spike.py)：标准库 ZIP／XML 编译到受控 JSON，不接生产 API、数据库或模型。
+- 当时的 `scripts/epub_spike.py` 编译器以标准库 ZIP／XML 生成受控 JSON，不接生产 API、数据库或模型。该旧实验导出 CLI 后于 2026-10-25 退役，静态样书及定位实验保留；现行编译契约见[架构](../../../ARCHITECTURE.md#31-实体)。
 - [阅读实验](../../../../prototypes/epub-reading/README.md)：现有 Vite 承载，独立 iframe 阅读面、布局／样式对照、引用捕获与恢复、浏览器 DOM 自检。
 - [样书及来源](../../../../prototypes/epub-reading/fixtures/README.md)：原创可重建 EPUB、用户提供的第 8 卷，以及 LearningJ 中第 1 卷的本机兼容检查。
 - [切片 1 草图](../../epub-reading/SLICE_1_DRAFT.md)：schema／API、发布原子性、文件生命周期及需要确认的入口／恢复／删除行为。
