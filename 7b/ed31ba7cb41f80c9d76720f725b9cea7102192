@@ -1,0 +1,66 @@
+prototypes/epub-reading/README.md
+  s_2c0cdd7424ad2d::t_21ef510a70fc79 11
+backend/tests/test_chapter_positions.py
+  s_2c0cdd7424ad2d::t_1d2fd38d009d25 364
+docs/handovers/epub-reading/README.md
+  s_2c0cdd7424ad2d::t_21ef510a70fc79 17
+backend/openapi.json
+  s_2c0cdd7424ad2d::t_a53e4cafcbcc2e 382
+backend/tests/test_epub_compiler.py
+  s_2c0cdd7424ad2d::t_17dbab3b9d001b 732-808
+  s_2c0cdd7424ad2d::t_58a71bf7a0d6ac 19,21,716-731
+  s_2c0cdd7424ad2d::t_1d2fd38d009d25 98-106,112-114,126-128,334,505-506,508,535,583,633-635,638,640-644
+docs/ARCHITECTURE.md
+  s_2c0cdd7424ad2d::t_b3fd1e18b2142b 114,116,118-120
+docs/UPGRADING.md
+  s_2c0cdd7424ad2d::t_b3fd1e18b2142b 15
+backend/src/app/epub_schemas.py
+  s_2c0cdd7424ad2d::t_44b3976bf0c749 7
+docs/handovers/archived/epub-reading/SLICE_0_ACCEPTANCE.md
+  s_2c0cdd7424ad2d::t_21ef510a70fc79 11
+backend/src/app/services/epub.py
+  s_2c0cdd7424ad2d::t_aae8fb7f8dd5cd 423,834-836,838
+  s_2c0cdd7424ad2d::t_21ef510a70fc79 964
+  s_2c0cdd7424ad2d::t_2c6262e84bac9f 884
+  s_2c0cdd7424ad2d::t_44b3976bf0c749 26,31-32,430,493,575,580-582,885
+backend/src/app/epub_storage.py
+  s_2c0cdd7424ad2d::t_55a8426b44815c 15,86,101-102,106,117
+backend/tests/test_epub_storage.py
+  s_2c0cdd7424ad2d::t_1d2fd38d009d25 19,48,105,133,174,180,188-189,202-205
+  s_2c0cdd7424ad2d::t_17dbab3b9d001b 130-132,193,210-213
+  s_2c0cdd7424ad2d::t_58a71bf7a0d6ac 320-334
+prototypes/epub-reading/fixtures/README.md
+  s_2c0cdd7424ad2d::t_21ef510a70fc79 5,16
+docs/TECH_STACK.md
+  s_2c0cdd7424ad2d::t_b3fd1e18b2142b 40
+  s_2c0cdd7424ad2d::t_6cfc061d7c9a23 42
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_2c0cdd7424ad2d::t_b8e0bb9c61209f 46
+docs/handovers/README.md
+  s_2c0cdd7424ad2d::t_b3fd1e18b2142b 9
+docs/handovers/EPUB_STORAGE_ACCEPTANCE.md
+  s_2c0cdd7424ad2d::t_7d50c14b093009 117-120
+  s_2c0cdd7424ad2d::t_6cfc061d7c9a23 95,110,112-114
+  s_2c0cdd7424ad2d::t_049ffcab07a2d4 78-94,96-109,111,115-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7bed31ba7cb41f80c9d76720f725b9cea7102192",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_2c0cdd7424ad2d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16ea8-ee74-7c01-b30f-51528afe0ddd",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
