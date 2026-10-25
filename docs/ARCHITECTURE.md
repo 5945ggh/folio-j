@@ -551,6 +551,8 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 
 当前前端按页面及 `catalog`／`materials`／`chat`／`analysis`／`settings` 模块组织。API 类型在 `api/schema.d.ts` 生成，各模块 `api.ts` 封装调用，TanStack Query 维护查询与 mutation；讨论推进见 `chat/discussion.ts`，阅读位置队列见 `materials/persistence.ts`。后台状态由轮询读取。
 
+默认素材库同步加载，阅读器、片段、来源、书籍详情与设置页面通过模块顶层 `React.lazy` 按路由加载，公共依赖和样式由 Vite 自动拆分。阅读器的加载／错误边界位于 `RetainedRoute` 内部，跟随原有保活实例；其他页面的错误边界按 pathname 重置，查询参数变化保留组件身份。等待时显示加载状态，代码加载失败提供重新加载入口；现有导航、位置与草稿规则由各页面继续维护。构建和冷加载比较见[路由加载验收](handovers/ROUTE_LOADING_ACCEPTANCE.md)。
+
 ## 7. 当前仓库目录
 
 ```text

@@ -52,6 +52,9 @@ try {
 	const url = `http://127.0.0.1:${address.port}/browser-tests/`;
 	console.log(`Browser regression page: ${url}`);
 	for (const [width, height, query] of [
+		[1280, 900, "?suite=route-loading"],
+		[390, 900, "?suite=route-loading"],
+		[1280, 900, "?suite=route-loading&direction=vertical-rl"],
 		[1280, 900, "?suite=reader-session"],
 		[390, 900, "?suite=reader-session"],
 		[1280, 900, "?suite=reader-session&direction=vertical-rl"],

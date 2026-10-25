@@ -15,6 +15,7 @@ import { readerClipboard } from "./reader-clipboard";
 import { readerSession } from "./reader-session";
 import { readingAidsRegression } from "./reading-aids";
 import { recordSaving } from "./record-saving";
+import { routeLoading } from "./route-loading";
 import { segmentMaterials } from "./segment-materials";
 import { segmentShareRegression } from "./segment-share";
 import { themeRegression } from "./theme";
@@ -486,11 +487,15 @@ try {
 												},
 											}),
 										]
-									: suite === "reader-bookmarks" || suite === "reader-session"
+									: suite === "reader-bookmarks" ||
+											suite === "reader-session" ||
+											suite === "route-loading"
 										? [
-												await (suite === "reader-session"
-													? readerSession
-													: readerBookmarks)({
+												await (suite === "route-loading"
+													? routeLoading
+													: suite === "reader-session"
+														? readerSession
+														: readerBookmarks)({
 													container,
 													check,
 													until,

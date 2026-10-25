@@ -142,20 +142,33 @@ type Measurement = {
 const round = (value: number) => Math.round(value * 10) / 10;
 
 /** Strict offline DOM measurements: fixture response durations are not network latency. */
-export async function readerSession(h: BrowserHarness) {
+export async function readerSession(h: BrowserHarness, realApp = false) {
 	const params = new URLSearchParams(location.search);
 	const retained = !params.has("baseline");
 	const preview = params.has("preview");
 	const vertical = params.get("direction") === "vertical-rl";
 	const check: BrowserHarness["check"] = h.check;
-	const { MaterialReader } = await import("../src/materials/MaterialReader");
-	const { RetainedRoute } = await import("../src/navigation/RetainedRoute");
+	const { MaterialReader } = realApp
+		? { MaterialReader: null }
+		: await import("../src/materials/MaterialReader");
+	const { RetainedRoute } = realApp
+		? { RetainedRoute: null }
+		: await import("../src/navigation/RetainedRoute");
+	const App = realApp ? (await import("../src/App")).App : null;
+	const segmentSelector = realApp
+		? ".segment-workspace"
+		: "[data-segment-page]";
 	let navigate: ReturnType<typeof useNavigate> | undefined;
 	function TestRoutes() {
 		const routeNavigate = useNavigate();
 		useEffect(() => {
 			navigate = routeNavigate;
 		}, [routeNavigate]);
+		if (App) return <App />;
+		check(
+			MaterialReader && RetainedRoute,
+			"Reader fixture components must load",
+		);
 		return (
 			<>
 				{retained && (
@@ -260,6 +273,27 @@ export async function readerSession(h: BrowserHarness) {
 				created_at: timestamp,
 				updated_at: timestamp,
 			} satisfies Schema["SourceResponse"];
+		else if (realApp && path === "/api/segments/saved")
+			data = {
+				id: "saved",
+				source_id: "source",
+				text: targetText,
+				text_sha256: hash,
+				context_before: "",
+				context_after: "",
+				translation: "",
+				transcription: "",
+				source_ref: "",
+				note: "",
+				revision: 1,
+				text_locked_at: timestamp,
+				created_at: timestamp,
+				updated_at: timestamp,
+				material_provenance: reference,
+			} satisfies Schema["SegmentResponse"];
+		else if (realApp && path === "/api/segments/saved/analyses") data = [];
+		else if (realApp && path === "/api/segments/saved/translation-results")
+			data = [];
 		else if (path.endsWith("/material-provenance"))
 			data = {
 				segment_id: "saved",
@@ -458,7 +492,7 @@ export async function readerSession(h: BrowserHarness) {
 		const go = navigate;
 		go("/segments/saved");
 		await h.until(
-			() => !!h.container.querySelector("[data-segment-page]"),
+			() => !!h.container.querySelector(segmentSelector),
 			"Segment route must mount",
 		);
 		if (retained) {
@@ -592,7 +626,7 @@ export async function readerSession(h: BrowserHarness) {
 			const plainReturnUsage = usageReads;
 			go("/segments/saved");
 			await h.until(
-				() => !!h.container.querySelector("[data-segment-page]"),
+				() => !!h.container.querySelector(segmentSelector),
 				"Plain return scenario must pause the reader",
 			);
 			go(`/materials/${materialId}`);
@@ -619,6 +653,42 @@ export async function readerSession(h: BrowserHarness) {
 					) < 2,
 				"Returning without ?segment must preserve the prior reading position",
 			);
+			if (realApp) {
+				const beforeForwardUsage = usageReads;
+				go(-1);
+				await h.until(
+					() => !!h.container.querySelector(segmentSelector),
+					"History back must reopen the actual Segment route",
+				);
+				check(
+					previous.every(
+						(frame, index) =>
+							frame.isConnected &&
+							frame.contentDocument === documents[index] &&
+							frame.getClientRects().length === 0,
+					),
+					"History back must pause the same reader documents",
+				);
+				go(1);
+				await h.until(
+					() =>
+						usageReads > beforeForwardUsage &&
+						frames().length === 3 &&
+						frames().every(
+							(frame, index) =>
+								frame === previous[index] &&
+								frame.contentDocument === documents[index] &&
+								!!frame.getClientRects().length,
+						) &&
+						Math.abs(
+							(vertical ? viewport.scrollLeft : viewport.scrollTop) -
+								scrollBeforePlainReturn,
+						) < 2,
+					"History forward must resume the same documents and reading position",
+				);
+			}
+		}
+		if (retained && !preview && !realApp) {
 			go("/sources/source");
 			await h.until(
 				() => !!h.container.querySelector("[data-source-page]"),
@@ -684,7 +754,7 @@ export async function readerSession(h: BrowserHarness) {
 			try {
 				go("/segments/saved");
 				await h.until(
-					() => !!h.container.querySelector("[data-segment-page]") && !!expire,
+					() => !!h.container.querySelector(segmentSelector) && !!expire,
 					"Pausing must schedule a bounded ten-minute expiry",
 				);
 				check(expire, "Retained reader must have an expiry callback");
@@ -726,7 +796,7 @@ export async function readerSession(h: BrowserHarness) {
 				const staleFrames = frames();
 				go("/segments/saved");
 				await h.until(
-					() => !!h.container.querySelector("[data-segment-page]"),
+					() => !!h.container.querySelector(segmentSelector),
 					"Failure scenario must pause on Segment route",
 				);
 				materialUnavailable = failure === "material missing";
@@ -769,7 +839,7 @@ export async function readerSession(h: BrowserHarness) {
 			const oldVersionFrames = frames();
 			go("/segments/saved");
 			await h.until(
-				() => !!h.container.querySelector("[data-segment-page]"),
+				() => !!h.container.querySelector(segmentSelector),
 				"Version regression must pause reader",
 			);
 			changedVersion = true;
