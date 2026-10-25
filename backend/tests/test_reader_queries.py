@@ -169,8 +169,7 @@ async def test_full_search_images_gates_and_read_only(
 
 
 def test_query_scope_and_empty(monkeypatch: pytest.MonkeyPatch) -> None:
-    import zlib
-
+    from app.epub_storage import encode
     from app.material_models import Material
     from app.services.reader_queries import scan_illustrations, scan_search
 
@@ -210,9 +209,7 @@ def test_query_scope_and_empty(monkeypatch: pytest.MonkeyPatch) -> None:
     material = Material(
         id="m",
         version_id="v",
-        compiled_bundle=zlib.compress(
-            book.model_copy(update={"chapters": chapters}).model_dump_json().encode(),
-        ),
+        compiled_bundle=encode(book.model_copy(update={"chapters": chapters})),
     )
     assert scan_search(material, ".*]", 0, 40).total == 0  # Cannot cross a chapter boundary.
     assert scan_illustrations(material, 0, 40).total == 0

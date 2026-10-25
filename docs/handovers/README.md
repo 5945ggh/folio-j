@@ -6,6 +6,7 @@
 
 当前交付、提交状态与验收结论汇总见 [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)。本节保留未完成阶段的安排与配套验收；目录、封面、书籍编辑及阅读器的现行接口由[架构](../ARCHITECTURE.md)维护。
 
+- EPUB 编译包空间优化：[无损图片去重与单格式验收](EPUB_STORAGE_ACCEPTANCE.md)，当前开发库边界见[升级与备份](../UPGRADING.md#epub-存储格式与开发库重建)。
 - 数据库迁移整理：[完整初始基线验收](DATABASE_MIGRATION_ACCEPTANCE.md)，当前迁移入口与旧库边界见[升级与备份](../UPGRADING.md#当前迁移基线)。
 
 - 文本处理与学习资料调整：架构解耦、人工保存与独立回看、统计和精确出处；见[实施计划](text-study/PLAN.md)、[验收样例](text-study/TEST_MATRIX.md)、[S0 收口](text-study/S0_ACCEPTANCE.md)、[B1 验收](text-study/B1_ACCEPTANCE.md)及[B2 验收](text-study/B2_ACCEPTANCE.md)。A 线证据见[独立回看](text-study/A1_ACCEPTANCE.md)与[人工资料](text-study/A2_ACCEPTANCE.md)，C 线见[C1](text-study/C1_ACCEPTANCE.md)、[C2](text-study/C2_ACCEPTANCE.md)、[阅读体验](text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md)与[原处预览](text-study/INLINE_PREVIEW_ACCEPTANCE.md)验收；当前状态汇总至实施基线。

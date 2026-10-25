@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import html
 import importlib.util
 import io
@@ -10,7 +11,7 @@ import unicodedata
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Literal
-from zipfile import ZipFile
+from zipfile import ZipFile, ZipInfo
 
 import pytest
 from hypothesis import given, settings
@@ -609,3 +610,88 @@ def test_css_import_cycles_remote_and_unsupported_syntax_warn() -> None:
     assert any("External package resource is unsupported" in warning for warning in warnings)
     assert any("Unsupported CSS import syntax" in warning for warning in warnings)
     assert css.strip() == ""
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("synthetic-reading", "dbdfc98b26db16a729f5006fec058f56b214f3a69675ff8094cddb482752bf27"),
+        ("synthetic-vertical", "5250a79e3f3722397ada4a38458c8b070f1734d3db768d3e403d9b3378fe24c7"),
+        ("synthetic-malicious", "3f56e3ccca93892cc7a22a01bb26b97a16d83be0935e4ad573ec41bb7b69bc02"),
+    ],
+)
+def test_complete_public_fixture_outputs_keep_identity(name: str, expected: str) -> None:
+    raw = (ROOT / "prototypes/epub-reading/fixtures" / f"{name}.epub").read_bytes()
+    compiled = epub.compile_epub_bytes(raw).model_dump_json().encode()
+    # Includes full HTML, image bytes, warnings, chapter ranges and product identity.
+    assert hashlib.sha256(compiled).hexdigest() == expected
+
+
+def test_archive_is_opened_once_and_each_member_read_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw = publication(tmp_path)
+    opened = 0
+    reads: dict[str, int] = {}
+
+    class ObservedZip(ZipFile):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            nonlocal opened
+            opened += 1
+            super().__init__(*args, **kwargs)
+
+        def read(self, name: str | ZipInfo, pwd: bytes | None = None) -> bytes:
+            key = name.filename if isinstance(name, ZipInfo) else name
+            reads[key] = reads.get(key, 0) + 1
+            return super().read(name, pwd)
+
+    monkeypatch.setattr(epub.zipfile, "ZipFile", ObservedZip)
+    epub.compile_epub_bytes(raw)
+    assert opened == 1
+    assert reads and all(count == 1 for count in reads.values())
+
+
+@pytest.mark.parametrize(
+    "limit", ["entries", "expanded", "member", "ratio", "encrypted", "path", "duplicate", "drm"]
+)
+def test_archive_limits_reject_metadata_before_member_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, limit: str
+) -> None:
+    raw = publication(tmp_path)
+    entries = [ZipInfo("safe.xhtml")]
+    entries[0].file_size = 1
+    entries[0].compress_size = 1
+    if limit == "entries":
+        entries *= 5001
+    elif limit == "expanded":
+        entries[0].file_size = 16 * 1024 * 1024
+        entries[0].compress_size = entries[0].file_size
+        entries *= 9
+    elif limit == "member":
+        entries[0].file_size = 16 * 1024 * 1024 + 1
+        entries[0].compress_size = entries[0].file_size
+    elif limit == "ratio":
+        entries[0].file_size = 201
+    elif limit == "encrypted":
+        entries[0].flag_bits = 1
+    elif limit == "path":
+        entries[0].filename = "../escape"
+    elif limit == "duplicate":
+        entries *= 2
+    else:
+        entries[0].filename = "META-INF/encryption.xml"
+
+    first = ZipInfo("first.xhtml")
+    first.file_size = first.compress_size = 1
+    entries.insert(0, first)
+
+    def metadata(_archive: ZipFile) -> list[ZipInfo]:
+        return entries
+
+    def unexpected_read(*_args: Any, **_kwargs: Any) -> bytes:
+        raise AssertionError("Unsafe ZIP metadata must be rejected before reading members")
+
+    monkeypatch.setattr(ZipFile, "infolist", metadata)
+    monkeypatch.setattr(ZipFile, "read", unexpected_read)
+    with pytest.raises(epub.EpubError, match="limit|Encrypted|Unsafe|Duplicate"):
+        epub.compile_epub_bytes(raw)

@@ -4,7 +4,6 @@ import asyncio
 import hashlib
 import json
 import unicodedata
-import zlib
 from dataclasses import dataclass
 from typing import cast
 
@@ -14,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.epub_schemas import CompiledBook, CompiledResource
+from app.epub_storage import decode as decode_epub
 from app.ids import new_ulid
 from app.material_models import Material
 from app.models import Segment, SegmentMaterialProvenance, Source
@@ -273,8 +273,8 @@ def _validate_bundle(
     reference: MaterialProvenance,
 ) -> tuple[MaterialProvenance, str, str, list[ProvenancePart]]:
     try:
-        book = CompiledBook.model_validate_json(zlib.decompress(material.compiled_bundle))
-    except (ValueError, zlib.error) as exc:
+        book = decode_epub(material.compiled_bundle)
+    except ValueError as exc:
         raise ProvenanceError("材料版本产物不可用", snapshot=True) from exc
     if book.product_sha256 != material.product_sha256 or book.contract != material.contract_version:
         raise ProvenanceError("材料版本产物身份不匹配", snapshot=True)
@@ -623,7 +623,7 @@ def chapter_location(
 
 
 def _prepared_location(prepared: PreparedReference) -> tuple[str | None, str | None]:
-    book = CompiledBook.model_validate_json(zlib.decompress(prepared.compiled_bundle))
+    book = decode_epub(prepared.compiled_bundle)
     chapter = next((item for item in book.chapters if item.id == prepared.chapter_id), None)
     chapter_title = chapter.title if chapter is not None and chapter.title.strip() else None
     return chapter_title, chapter_location(book, prepared.chapter_id, prepared.parts)

@@ -1,7 +1,6 @@
 """Keyset scanning with strict snapshots, one book decode and fresh visibility gates."""
 
 import asyncio
-import zlib
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -9,7 +8,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.epub_schemas import CompiledBook
+from app.epub_storage import decode as decode_epub
 from app.material_models import Material
 from app.material_segment_schemas import MaterialChapterSegment, MaterialChapterSegmentsResponse
 from app.models import Segment, SegmentMaterialProvenance
@@ -96,8 +95,8 @@ def validate_page(
 ) -> dict[str, tuple[MaterialChapterSegment | None, bool]]:
     """Decode once outside any database transaction, then validate each fixed candidate."""
     try:
-        book = CompiledBook.model_validate_json(zlib.decompress(identity.compiled_bundle))
-    except (ValueError, zlib.error) as exc:
+        book = decode_epub(identity.compiled_bundle)
+    except ValueError as exc:
         raise failure("material_unavailable", "材料版本产物不可用，请重新打开材料。", 409) from exc
     if book.product_sha256 != identity.product_sha256 or book.contract != identity.contract_version:
         raise failure("material_unavailable", "材料版本产物身份不匹配。", 409)

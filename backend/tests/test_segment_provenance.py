@@ -5,7 +5,6 @@ import hashlib
 import json
 import sqlite3
 import threading
-import zlib
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -16,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from test_source_segment import api_client
 
 from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter, CompiledResource
+from app.epub_storage import encode
 from app.provenance_schemas import MaterialProvenance, ProvenancePart
 from app.services import material_provenance as provenance_service
 
@@ -477,9 +477,7 @@ async def test_unavailable_material_returns_explicit_status_and_preserves_text(
             connection.execute(
                 "UPDATE materials SET compiled_bundle=? WHERE id=?",
                 (
-                    b"broken"
-                    if corruption == "bundle"
-                    else zlib.compress(book.model_dump_json().encode()),
+                    b"broken" if corruption == "bundle" else encode(book),
                     material["id"],
                 ),
             )
