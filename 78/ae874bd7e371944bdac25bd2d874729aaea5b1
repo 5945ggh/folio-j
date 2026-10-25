@@ -1,0 +1,52 @@
+docs/handovers/DATABASE_MIGRATION_ACCEPTANCE.md
+  s_2c0cdd7424ad2d::t_266e51c0b5beb9 28-32
+  s_2c0cdd7424ad2d::t_836ff636847ccf 1-27,33-34
+docs/ARCHITECTURE.md
+  s_2c0cdd7424ad2d::t_836ff636847ccf 70-72,418,460
+backend/alembic/env.py
+  s_2c0cdd7424ad2d::t_712fada503e4e0 31-41
+docs/handovers/README.md
+  s_2c0cdd7424ad2d::t_836ff636847ccf 9
+  s_2c0cdd7424ad2d::t_6f4f8e44ab3a97 10
+docs/UPGRADING.md
+  s_2c0cdd7424ad2d::t_836ff636847ccf 13,21,23,29
+  s_2c0cdd7424ad2d::t_97b1b3a06dcbb6 31
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_2c0cdd7424ad2d::t_836ff636847ccf 33
+  s_e89db2e208751a::t_dc6866c2ba0b1e 7,34
+backend/alembic/versions/0001_schema_baseline.py
+  s_2c0cdd7424ad2d::t_712fada503e4e0 1-586
+backend/tests/test_migrations.py
+  s_2c0cdd7424ad2d::t_dc03f7f9a5799a 1,12,32,36-129,136,139-141,144-146,153,158,160-176,180-193,204,207-208,210-215,218-219,221-222,224-227,229,231,235-246,249,252-260,264,268,271-283,286,289-290,292,296,299-305,308-310,312-313,315-323
+  s_2c0cdd7424ad2d::t_a5b49cccbf3c54 177-179
+  s_2c0cdd7424ad2d::t_2b1ddd9a2d1757 13-22,196-199
+  s_2c0cdd7424ad2d::t_a1df063a87c7b4 194-195
+docs/handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md
+  s_2c0cdd7424ad2d::t_64175c114470f0 7
+docs/TECH_STACK.md
+  s_2c0cdd7424ad2d::t_836ff636847ccf 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "78ae874bd7e371944bdac25bd2d874729aaea5b1",
+  "prompts": {},
+  "sessions": {
+    "s_2c0cdd7424ad2d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16ea8-ee74-7c01-b30f-51528afe0ddd",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_e89db2e208751a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a172a8-85c7-73c1-a349-85d90454b05b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
