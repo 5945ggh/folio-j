@@ -1,0 +1,41 @@
+docs/ARCHITECTURE.md
+  s_44c7fe28aa74a4::t_554d3bef076f1c 554-555
+docs/DEVELOPMENT.md
+  s_44c7fe28aa74a4::t_15b3dc414a88b7 51-56
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_44c7fe28aa74a4::t_51c9d0312afb04 3-4
+docs/handovers/README.md
+  s_44c7fe28aa74a4::t_0ad9df58e1cca5 14
+docs/handovers/ROUTE_LOADING_ACCEPTANCE.md
+  s_44c7fe28aa74a4::t_abbf3eacbe80f5 1-50
+frontend/browser-tests/main.tsx
+  s_44c7fe28aa74a4::t_404d6b8d1b7924 18,490-492,494-498
+frontend/browser-tests/reader-session.tsx
+  s_44c7fe28aa74a4::t_96c3555c136bcf 145,151-160,167-171,276-296,495,629,656-691,757,799,842
+frontend/browser-tests/route-loading.tsx
+  s_44c7fe28aa74a4::t_0defafdec30be5 1-254
+frontend/scripts/measure-loading.mjs
+  s_44c7fe28aa74a4::t_0add7b6159ab86 1-263
+frontend/scripts/test-browser.mjs
+  s_44c7fe28aa74a4::t_1f0f6940dfa028 55-57
+frontend/src/App.tsx
+  s_44c7fe28aa74a4::t_b89979a39fe11a 1-9,11,14-38,51,58-60,62-89
+frontend/src/navigation/PageBoundary.tsx
+  s_44c7fe28aa74a4::t_4fd0ab9e1e89f9 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "497d9ed703fee67d32b47f8a99e9a0674ceb87ea",
+  "prompts": {},
+  "sessions": {
+    "s_44c7fe28aa74a4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17119-3653-7ca2-8ef4-9b56cdf8847d",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
