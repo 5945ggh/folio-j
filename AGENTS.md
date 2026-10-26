@@ -6,7 +6,7 @@
 
 一个围绕日语原版内容的个人学习辅助系统，支持阅读、独立学习资料与按需讨论。当前交付状态、实现缺口与验收依据集中见 [MVP 实施基线](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
-用户围绕 Source 下的 Material 阅读原文，围绕 Segment 保存和回看独立讲解，并按需要讨论；人工资料保存与 AI 生成共用内容保护规则，工作台不拥有学习内容。人工入口与材料出处按[文本与资料计划](docs/handovers/text-study/PLAN.md)实施，当前是否可用以实施基线为准。不要求先有完整解析才能讨论，也不强制经过独立 AI 提取阶段。后续 Occurrence 关联原文与具体讲解版本；具体入口、读取权限与成果写入以 PRD 为准。
+用户围绕 Source 下的 Material 阅读原文，围绕 Segment 保存和回看独立讲解，并按需要讨论；人工资料保存与 AI 生成共用内容保护规则，工作台不拥有学习内容。人工入口与材料出处遵循 [PRD](docs/PRD.md)，既有实施安排见[文本与资料历史计划](docs/handovers/archived/text-study/PLAN.md)，当前是否可用以实施基线为准。不要求先有完整解析才能讨论，也不强制经过独立 AI 提取阶段。后续 Occurrence 关联原文与具体讲解版本；具体入口、读取权限与成果写入以 PRD 为准。
 
 文档入口见 [`docs/README.md`](docs/README.md)。开发任务先读以下长期规范，并按当前阶段查阅 [`docs/handovers/README.md`](docs/handovers/README.md)：
 
@@ -22,6 +22,24 @@
 维护项目文档时，先读项目级 skill [文档维护原则](.agents/skills/document-maintenance/SKILL.md)与[文档写作风格](.agents/skills/document-writing-style/SKILL.md)。前者规定信息归属与更新流程，后者规定直接、准确、简明的表达方式。
 
 根 [README](README.md) 面向首次访问者，保留产品介绍、当前能力摘要和快速开始。[使用指南](docs/USAGE.md)维护日常操作与配置，[开发指南](docs/DEVELOPMENT.md)维护环境、命令与快照，[升级与备份](docs/UPGRADING.md)维护数据保护和旧库处理。修改这些内容时更新对应指南与入口链接；完整交付状态仍由实施基线维护。
+
+## 检索顺序与资料效力
+
+- 定位实现先搜索生产代码、prompt 和相关测试；确认产品行为查 PRD、GLOSSARY、ARCHITECTURE、INFORMATION_ARCHITECTURE，确认当前交付查实施基线。先按任务限定目录，再扩大范围。
+- 日常全文搜索默认排除 `docs/handovers/archived/`、`references/` 和 `prototypes/`。它们分别保存历史交接、研究材料与隔离实验；查决定依据、历史验收、研究或原型时，显式指定相应目录。引用结果时说明当时的版本、范围和限制，不直接当作当前要求。
+- 未归档资料也要按文档职责和段落状态判断；阶段方案与验收矩阵中可能保留旧交互，现行规则以负责规范为准。测试、fixture、生成 API 契约、锁文件及仍在使用的阶段设计保持可搜索。
+
+[.rgignore](.rgignore) 仅配置 ripgrep 的检索排除项；依赖、构建、缓存与临时产物沿用 `.gitignore`，不重复维护。常用方式：
+
+```bash
+rg -n '关键词' backend/src frontend/src backend/prompts  # 定位生产实现
+rg -n '关键词' docs                                     # 查现行文档及活动资料
+rg -n '关键词' docs/handovers/archived                   # 显式查历史
+rg -n '关键词' references prototypes                    # 显式查研究或实验
+rg --no-ignore-dot -n '关键词' docs                      # 必要时连同归档查找
+```
+
+显式指定被排除目录仍可搜索；`--no-ignore-dot` 可取消 `.rgignore`／`.ignore` 规则，继续遵循 `.gitignore`。普通 `grep`、`git grep` 与编辑器索引需各自限定范围，不能假定它们读取 `.rgignore`。文件读取、文档链接检查和 Git 跟踪不受此检索配置影响。
 
 ## 常用命令
 

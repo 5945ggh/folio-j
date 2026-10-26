@@ -1,0 +1,6 @@
+# 历史交接仅在查验依据时显式搜索。
+/docs/handovers/archived/
+
+# 研究材料与隔离原型按任务显式搜索，避免混入生产实现定位。
+/references/
+/prototypes/

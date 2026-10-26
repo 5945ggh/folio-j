@@ -8,13 +8,13 @@
 | 如何准备开发环境、执行检查和生成快照 | [开发指南](DEVELOPMENT.md) | 依赖版本、开发命令、API 生成与快照工具 |
 | 如何保留数据、升级和恢复旧库 | [升级与备份](UPGRADING.md) | 数据与凭据备份、迁移入口、旧开发库处理边界 |
 | 为什么做、长期怎样演进 | [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) | 动机、取舍与待验证设想；方向不自动成为实施要求 |
-| 文本处理与学习资料如何解耦 | [文本与资料实施计划](handovers/text-study/PLAN.md) | 文本接口、人工讲解、独立回看、统计与精确出处的切片和依赖；S0 与 A／B 线验收、后续 C 线范围 |
+| 文本处理与学习资料如何解耦 | [文本分析与统计契约](ARCHITECTURE.md#314-文本分析与统计契约)、[文本与资料历史计划](handovers/archived/text-study/PLAN.md) | 现行契约由架构与 PRD 维护；历史计划保留切片依赖、实施依据与验收入口，当前交付状态见实施基线 |
 | EPUB 阅读与学习衔接如何继续推进 | [EPUB 原生阅读阶段](handovers/epub-reading/README.md) | 切片顺序、准备条件，以及注音、选区学习、材料对话和讲解形成的边界 |
 | 目录、书籍管理、阅读器和注音有哪些现行契约 | [架构](ARCHITECTURE.md#31-实体)、[阅读与导航](INFORMATION_ARCHITECTURE.md) | 服务接口、缓存与发布机制、页面操作及状态恢复；验收限制从实施基线查找 |
-| 首轮承诺什么行为、哪些决定未定 | [PRD.md](PRD.md) | 范围、用户行为、验收与 `[TBD-xx]`；P0 不表示已经交付 |
+| 首轮承诺什么行为、哪些决定未定 | [PRD.md](PRD.md) | 范围、产品行为、内容保护、验收与 `[TBD-xx]`；决定依据链接原始方案和验收，P0 不表示已经交付 |
 | 名词指什么、身份与引用如何区分 | [GLOSSARY.md](GLOSSARY.md) | 定义、不变式、词表和反例；完整操作流程引用 PRD |
 | 系统如何保证已确认行为 | [ARCHITECTURE.md](ARCHITECTURE.md) | 模型、执行校验、事务与恢复机制；未来草图明确标识 |
-| 当前内容如何找到、打开、参照与返回 | [INFORMATION_ARCHITECTURE.md](INFORMATION_ARCHITECTURE.md) | 页面职责、导航、URL 定位与临时 UI 状态 |
+| 当前内容如何找到、打开、参照与返回，界面怎样操作和呈现 | [INFORMATION_ARCHITECTURE.md](INFORMATION_ARCHITECTURE.md) | 页面职责、路由、焦点与快捷键、临时 UI 状态及具体表现参数 |
 | 选了哪些技术、为什么 | [TECH_STACK.md](TECH_STACK.md) | 选型、采用状态、分发及明确不选的方案；执行细节引用架构 |
 | 已做到哪里、首轮还缺什么 | [MVP 实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md) | 当前交付与提交状态、实现差额、未落实契约与验收入口 |
 | 当时做过什么、证据和限制是什么 | [阶段归档](handovers/README.md#archived)、[研究材料](../references/README.md) | 已完成阶段的计划、接口快照与原始验收；实验依据不覆盖现行规范 |

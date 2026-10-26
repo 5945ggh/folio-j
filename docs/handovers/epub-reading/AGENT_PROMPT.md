@@ -4,7 +4,7 @@
 
 请接手 `/Users/ningcc/Products/folio-j` 的 EPUB 原生阅读阶段，作为主代理负责范围、契约、任务派遣与集成验收。
 
-先读仓库 AGENTS 和[文档导航](../../README.md)，再读 MVP 实施基线、本目录的[阶段安排](README.md)、[材料定位基线](MATERIAL_BASELINE.md)、[架构](../../ARCHITECTURE.md)与[文本和资料计划](../text-study/PLAN.md)。开始工作时核对当前分支及未提交改动，沿用已有实现并保留其他任务的修改。
+先读仓库 AGENTS 和[文档导航](../../README.md)，再读 MVP 实施基线、本目录的[阶段安排](README.md)、[材料定位基线](MATERIAL_BASELINE.md)、[架构](../../ARCHITECTURE.md)与[文本和资料计划](../archived/text-study/PLAN.md)。开始工作时核对当前分支及未提交改动，沿用已有实现并保留其他任务的修改。
 
 ## 接手动作
 

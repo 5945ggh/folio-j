@@ -1,6 +1,6 @@
 # 文本与资料调整验收样例
 
-2026-10-20，S0 固定验收输入与预期。规则见 [PRD](../../PRD.md)、[架构](../../ARCHITECTURE.md)；切片和范围见[计划](PLAN.md)。这些是测试要求，不表示已通过；各切片实际结果见对应验收记录；B1／B2 之后推进 A1／A2，C 样例保留至对应实现。
+2026-10-20，S0 固定验收输入与预期。规则见 [PRD](../../PRD.md)、[架构](../../ARCHITECTURE.md)；切片和范围见[计划](../archived/text-study/PLAN.md)。这些是测试要求，不表示已通过；各切片实际结果见对应验收记录；B1／B2 之后推进 A1／A2，C 样例保留至对应实现。
 
 ## B1 行为基线
 
@@ -47,7 +47,7 @@
 
 ## C2 自动预装语境固定验收场景
 
-C1／C2 的固定验收场景；原实施结果见 [C2 验收](C2_ACCEPTANCE.md)，后续调整见[阅读体验记录](READING_EXPERIENCE_ACCEPTANCE.md)与[保存表单验收](SEGMENT_SAVE_FORM_ACCEPTANCE.md)。产品规则以 [PRD 4.7](../../PRD.md#47-当前-epub-阶段安排)为准；这里固定输入与观察项。未另说明时，自动预装开启，前／后各至多 3 句、200 Unicode 码点；`【】` 仅标记目标选区，不属于正文。
+C1／C2 的固定验收场景；原实施结果见 [C2 验收](../archived/text-study/C2_ACCEPTANCE.md)，后续调整见[阅读体验记录](../archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md)与[保存表单验收](../archived/text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md)。产品规则以 [PRD 4.7](../../PRD.md#47-当前-epub-阶段安排)为准；这里固定输入与观察项。未另说明时，自动预装开启，前／后各至多 3 句、200 Unicode 码点；`【】` 仅标记目标选区，不属于正文。
 
 | 编号 | 固定输入／操作 | 应证明的结果 |
 | --- | --- | --- |
@@ -87,4 +87,4 @@ C1／C2 的固定验收场景；原实施结果见 [C2 验收](C2_ACCEPTANCE.md)
 | 普通、重复 spine、跨 part 与 NFC 出处显示 | 总长 10 起点 0／3→0%／30%，总长 3 起点 1→33%；长 10 资源重复两次，第二次起点 3→65%。跨 part 只取第一段起点；跨 NFC 组合边界省略百分比 |
 | 改名、删除、错误版本与快照失配 | display 读取当前可靠名称；全部验证成功才附章位置，否则只保留可靠材料名和原状态，不补造 0%；source_ref 不变且显示为出处补充／出处说明 |
 
-本轮证据见[阅读体验记录](READING_EXPERIENCE_ACCEPTANCE.md)；[原阅读标记验收](READER_MARKS_ACCEPTANCE.md)保留当时行为、数字与限制。
+本轮证据见[阅读体验记录](../archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md)；[原阅读标记验收](../archived/text-study/READER_MARKS_ACCEPTANCE.md)保留当时行为、数字与限制。

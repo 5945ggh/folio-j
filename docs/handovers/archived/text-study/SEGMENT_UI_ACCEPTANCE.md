@@ -1,6 +1,6 @@
 # 片段资料与讨论面板调整验收
 
-日期：2026-10-23。交付状态由[实施基线](../MVP_IMPLEMENTATION_BASELINE.md)维护，页面行为见[阅读与导航](../../INFORMATION_ARCHITECTURE.md#讲解浏览人工保存与按需讨论)。
+日期：2026-10-23。交付状态由[实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)维护，页面行为见[阅读与导航](../../../INFORMATION_ARCHITECTURE.md#讲解浏览人工保存与按需讨论)。
 
 ## 范围与实施顺序
 

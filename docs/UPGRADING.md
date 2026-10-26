@@ -16,7 +16,7 @@
 
 旧开发数据可丢弃时，先停止使用目标库的应用并保留原始 EPUB，再显式删除已确认的数据库及其 `-wal`、`-shm` 文件；配套凭据目录随已放弃的模型设置一并清理。随后运行 `just migrate` 从空库建立当前 schema，重新导入 EPUB 并配置模型。重新导入会创建新的材料、版本及阅读位置；讲解、讨论、译文与其他学习数据不会由原 EPUB 恢复。应用启动和日常迁移不会自动删库。
 
-已有历史备份保留对应的历史格式，需要使用生成备份时的代码读取；不能仅通过 Alembic stamp 使旧编译包变成新格式。数据需要保留时，继续使用对应代码和配套凭据，不直接执行开发库重建。当前格式及本轮验证见[存储验收](handovers/EPUB_STORAGE_ACCEPTANCE.md)。
+已有历史备份保留对应的历史格式，需要使用生成备份时的代码读取；不能仅通过 Alembic stamp 使旧编译包变成新格式。数据需要保留时，继续使用对应代码和配套凭据，不直接执行开发库重建。当前格式及本轮验证见[存储验收](handovers/archived/EPUB_STORAGE_ACCEPTANCE.md)。
 
 ## 当前迁移基线
 
@@ -28,12 +28,12 @@ just migrate
 
 当前仅有初始基线 `0001_schema_baseline`，直接建立完整 28 表；原有开发期六个 revision 已合并，不再支持逐步升级或降级。新编号与旧 `0001_initial` 不同，避免旧库被误认为已达到当前结构。`just dev` 和 `just start` 仍先执行 `just migrate`，不自动删除数据库或执行 stamp。
 
-从本基线开始保存需保留的数据后，备份并运行相同命令应用后续增量迁移。显式降级到 base 会删除全部应用表；迁移事务、外键校验及边界见[架构](ARCHITECTURE.md#3-领域模型)，本轮结构等价与验证见[迁移验收](handovers/DATABASE_MIGRATION_ACCEPTANCE.md)。
+从本基线开始保存需保留的数据后，备份并运行相同命令应用后续增量迁移。显式降级到 base 会删除全部应用表；迁移事务、外键校验及边界见[架构](ARCHITECTURE.md#3-领域模型)，本轮结构等价与验证见[迁移验收](handovers/archived/DATABASE_MIGRATION_ACCEPTANCE.md)。
 
 第一版发布前且数据可丢弃时，允许重整初始迁移；开始保存需保留的日常数据或发布第一版后，采用严格增量迁移。工程约束见 [AGENTS.md](../AGENTS.md#硬性规则)。
 
 ## 旧开发数据库与备份
 
-2026-10-20 曾整理早期 12 个开发 revision，过程见[历史验收](handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md)。2026-10-25 再将后续六个开发 revision 收敛为当前完整初始基线，过程见[当前验收](handovers/DATABASE_MIGRATION_ACCEPTANCE.md)。
+2026-10-20 曾整理早期 12 个开发 revision，过程见[历史验收](handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md)。2026-10-25 再将后续六个开发 revision 收敛为当前完整初始基线，过程见[当前验收](handovers/archived/DATABASE_MIGRATION_ACCEPTANCE.md)。
 
 旧 `0001_initial` 至 `0006_translations` 版本标签会明确报未找到 revision，不会自动重建或修改数据。可丢弃旧开发库时按前节显式重建；需要保留数据时使用对应历史代码和配套备份。当前本机开发库经完整结构等价验证、备份后做过一次显式版本对齐，这不是应用启动或普通升级的通用处理路径。

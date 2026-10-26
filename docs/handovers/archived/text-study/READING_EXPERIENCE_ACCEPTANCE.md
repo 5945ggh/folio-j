@@ -8,7 +8,7 @@
 
 独立交互审查发现并修复四项：作者容器裁剪及不可见文字仍可能产生入口、最后候选删除后的空面板状态、原生／React Escape 处理次序、重排完成后的入口几何刷新。复审相关五文件 34 项通过；后续补上面板退出后留白重测与无滚动重排回归。
 
-自动预装使用 Unicode White_Space 整理两侧副本，保留原文分句和目标坐标。计费按整理后 NFC 码点；句间空白不产生假截断。固定输入与精确预期见 [C2_EXACT_CASES](C2_EXACT_CASES.md) 和 [JSON fixture](fixtures/c2-context-cases.json)。
+自动预装使用 Unicode White_Space 整理两侧副本，保留原文分句和目标坐标。计费按整理后 NFC 码点；句间空白不产生假截断。固定输入与精确预期见 [C2_EXACT_CASES](../../text-study/C2_EXACT_CASES.md) 和 [JSON fixture](../../text-study/fixtures/c2-context-cases.json)。
 
 出处由已有解析接口提供 display；正常为当前材料名、已验证章名与章内约 N%。分母是按 part／spine 顺序连接后整体 NFC 的章正文长度，重复 spine 每次计入；第一段起点前缀的 NFC 长度为分子，向下取整，非空目标为 0–99%。NFC 起点不可分时省略百分比；失败只显示可靠材料名和原状态。source_ref 独立保留为出处补充／出处说明。
 

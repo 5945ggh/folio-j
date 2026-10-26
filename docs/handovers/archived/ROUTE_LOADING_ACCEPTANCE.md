@@ -14,7 +14,7 @@
 
 同机使用相同锁定依赖，先保存起点的生产构建，再构建优化版本。环境为 macOS、Node 26.10.0、pnpm 10.34.5、Chrome 155.0.8059.85、React 19.3.0、Vite 8.3.1。
 
-测量脚本见 [`measure-loading.mjs`](../../frontend/scripts/measure-loading.mjs)。两份生产构建交替运行，每条路由各五次；每次使用新浏览器上下文、禁用 HTTP 缓存，1280×900、无 CPU 或网络限速。本机静态服务器不启用传输压缩，API 使用空素材库和固定学习设置夹具。响应体大小不包含 HTTP 头；时间为导航开始至目标 DOM 可用的中位数：素材库以空库导入入口出现为准，设置以学习背景输入框出现为准。
+测量脚本见 [`measure-loading.mjs`](../../../frontend/scripts/measure-loading.mjs)。两份生产构建交替运行，每条路由各五次；每次使用新浏览器上下文、禁用 HTTP 缓存，1280×900、无 CPU 或网络限速。本机静态服务器不启用传输压缩，API 使用空素材库和固定学习设置夹具。响应体大小不包含 HTTP 头；时间为导航开始至目标 DOM 可用的中位数：素材库以空库导入入口出现为准，设置以学习背景输入框出现为准。
 
 | 指标 | 优化前 | 优化后 |
 | --- | ---: | ---: |
@@ -41,11 +41,11 @@
 
 `just lint`、`just test`、`just build`、完整 `just test-browser`、`just check-docs` 和 `git diff --check` 通过。后端 672 通过、1 跳过，前端 602 通过；跳过项为既有测试。完整浏览器 58 组通过，后续补充的加载边界与分类切换回归又单独跑完三组；没有真实网络、模型或用户数据写入。
 
-本机原始记录保存在 gitignore 的私有证据目录：[冷加载样本](../../data/acceptance-evidence/route-loading-20261025/loading-comparison.json)、[生产分包故障注入](../../data/acceptance-evidence/route-loading-20261025/chunk-check.log)、[完整浏览器](../../data/acceptance-evidence/route-loading-20261025/browser.log)、[最终边界回归](../../data/acceptance-evidence/route-loading-20261025/route-loading-final.log) 和[工程测试](../../data/acceptance-evidence/route-loading-20261025/test.log)。隔离工作树通过既有私有证据目录的链接核验文档引用，不复制或连接用户数据库。
+本机原始记录保存在 gitignore 的私有证据目录：[冷加载样本](../../../data/acceptance-evidence/route-loading-20261025/loading-comparison.json)、[生产分包故障注入](../../../data/acceptance-evidence/route-loading-20261025/chunk-check.log)、[完整浏览器](../../../data/acceptance-evidence/route-loading-20261025/browser.log)、[最终边界回归](../../../data/acceptance-evidence/route-loading-20261025/route-loading-final.log) 和[工程测试](../../../data/acceptance-evidence/route-loading-20261025/test.log)。隔离工作树通过既有私有证据目录的链接核验文档引用，不复制或连接用户数据库。
 
 ## 合入前复核（2026-10-25）
 
-在托管工作树重新执行完整 `just check`，lint、类型检查、后端 672 通过／1 跳过、前端 602 通过、生产构建、文档链接及最终 58 组浏览器回归全部通过；最终浏览器运行包含加载边界故障和设置分类草稿保护。日志见[合入前完整检查](../../data/acceptance-evidence/route-loading-20261025/merge-check.log)。
+在托管工作树重新执行完整 `just check`，lint、类型检查、后端 672 通过／1 跳过、前端 602 通过、生产构建、文档链接及最终 58 组浏览器回归全部通过；最终浏览器运行包含加载边界故障和设置分类草稿保护。日志见[合入前完整检查](../../../data/acceptance-evidence/route-loading-20261025/merge-check.log)。
 
 提交范围只含路由加载、相关测试、测量脚本和配套文档；后端、EPUB 存储、数据库和依赖保持提交起点的版本。首次直达设置的已测等待代价沿用上文记录。
 
@@ -57,4 +57,4 @@
 
 隔离工作树的 `just lint`、`just test`、`just build`、`just check-docs` 和完整 `just test-browser` 通过：后端 742 通过、1 跳过，前端 611 通过，浏览器 73 组通过。完整浏览器首轮被修复时的热更新中断，最终在稳定源码上重新跑完。应用浏览器中实际观察到第 350 段精确返回、日语正文／注音、片段标记与工具栏正常呈现。环境为 macOS、Python 3.11.14、Node 26.10.0；Node 24、实体触屏及其他浏览器引擎未单独复测。未调用真实模型，也未连接用户数据库。
 
-原始记录：[静态检查](../../data/acceptance-evidence/docs-review-20261027/lint.log)、[后端与前端测试](../../data/acceptance-evidence/docs-review-20261027/test.log)、[生产构建](../../data/acceptance-evidence/docs-review-20261027/build.log)、[完整浏览器回归](../../data/acceptance-evidence/docs-review-20261027/browser.log)。本次未纳入原工作区并行进行的前端优化及其后续文档更新。
+原始记录：[静态检查](../../../data/acceptance-evidence/docs-review-20261027/lint.log)、[后端与前端测试](../../../data/acceptance-evidence/docs-review-20261027/test.log)、[生产构建](../../../data/acceptance-evidence/docs-review-20261027/build.log)、[完整浏览器回归](../../../data/acceptance-evidence/docs-review-20261027/browser.log)。本次未纳入原工作区并行进行的前端优化及其后续文档更新。

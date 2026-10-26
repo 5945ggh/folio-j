@@ -1,25 +1,49 @@
 # 阶段性交接
 
-本目录保存当前实施基线和阶段指导；阶段任务完成或被新决策取代后移入 [archived/](archived/)。长期规范见 [文档导航](../README.md)，产品行为以 [PRD](../PRD.md) 为准。归档材料保存历史上下文，不能据此恢复过时的产品需求。
+本目录保存当前实施基线、后续阶段指导和仍在使用的规则参考；已完成计划、接口快照与验收证据统一见 [Archived](#archived)。长期规范见 [文档导航](../README.md)，产品行为以 [PRD](../PRD.md) 为准。历史材料保留当时的范围与取舍，现行要求从负责规范查阅。
 
 ## 阶段资料
 
-当前交付、提交状态与验收结论汇总见 [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)。本节保留未完成阶段的安排与配套验收；目录、封面、书籍编辑及阅读器的现行接口由[架构](../ARCHITECTURE.md)维护。
+- [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：汇总当前能力、实现缺口和验收入口；目录、封面、书籍编辑及阅读器的现行接口由[架构](../ARCHITECTURE.md)维护。
+- [EPUB 原生阅读阶段](epub-reading/README.md)：维护后续切片的顺序与准备条件，区分已完成的基础阅读／学习衔接和后续材料对话／讲解形成。
+- [C2 精确验收样例与实施门禁](text-study/C2_EXACT_CASES.md)：仍在使用的 `context-sentences-v1` 句界、取文与截断规则，及对应固定数据；实施门禁记录保留历史意义。
+- [文本与资料调整验收样例](text-study/TEST_MATRIX.md)：保留可核算统计和跨切片回归要求；阅读标记部分含旧交互预期，现行行为见[阅读与导航](../INFORMATION_ARCHITECTURE.md#片段标记与页边入口)。样例不表示已经通过，实际结果从实施基线进入对应验收。
+- [阅读翻译、译文留存与设备朗读方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)：保留 2026-10-23 的获批范围、资源限制候选与尚未收口的后续设计；后续入口已有调整，现行行为见 [PRD 4.8](../PRD.md#48-阅读翻译与设备朗读)。
 
-- EPUB 编译包空间优化：[图片去重、章节 HTML 单格式与验收](EPUB_STORAGE_ACCEPTANCE.md)，当前开发库边界见[升级与备份](../UPGRADING.md#epub-存储格式与开发库重建)。
-- 数据库迁移整理：[完整初始基线验收](DATABASE_MIGRATION_ACCEPTANCE.md)，当前迁移入口与旧库边界见[升级与备份](../UPGRADING.md#当前迁移基线)。
+后三份资料混合现行规则、固定样例与未决设计，暂留活动区；其历史日期与阶段假设不构成当前交付状态。已完成实施计划与验收从下方归档查阅。
 
-- 文本处理与学习资料调整：架构解耦、人工保存与独立回看、统计和精确出处；见[实施计划](text-study/PLAN.md)、[验收样例](text-study/TEST_MATRIX.md)、[S0 收口](text-study/S0_ACCEPTANCE.md)、[B1 验收](text-study/B1_ACCEPTANCE.md)及[B2 验收](text-study/B2_ACCEPTANCE.md)。A 线证据见[独立回看](text-study/A1_ACCEPTANCE.md)与[人工资料](text-study/A2_ACCEPTANCE.md)，C 线见[C1](text-study/C1_ACCEPTANCE.md)、[C2](text-study/C2_ACCEPTANCE.md)、[阅读体验](text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单](text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md)与[原处预览](text-study/INLINE_PREVIEW_ACCEPTANCE.md)验收；当前状态汇总至实施基线。
-- [阅读翻译、译文留存与设备朗读方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)：2026-10-23 已确认行为并授权实施，覆盖成功译文找回、转为 Segment、Provider 与设置调整；资源上限保留为待实测候选，[验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)记录离线及浏览器证据，交付状态见实施基线。
-- [EPUB 原生阅读阶段](epub-reading/README.md)：组织导入、基础阅读、注音、选区学习、材料对话和讲解形成的切片顺序与准备条件。
-- [材料独立删除验收](MATERIAL_DELETION_ACCEPTANCE.md)：只删材料、保留来源与学习积累的增量迁移、工程检查、独立审查和隔离浏览器验证。
-- [EPUB 导入书卡反馈验收](EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md)：提交立即关闭弹窗、共享准备状态、失败重试和删除竞态保护。
-- [阅读会话保留与加载测量](text-study/READER_SESSION_ACCEPTANCE.md)：最近一本书的短期保留、恢复核验、学习状态刷新、历史基线比较及验证范围。
-- [路由加载验收](ROUTE_LOADING_ACCEPTANCE.md)：保守页面拆包、真实路由的保活／定位／草稿回归、生产冷加载比较与首次异步页面等待。
+## 历史计划与近期验收
 
-- [本轮 CR 修复验收](CR_FIXES_ACCEPTANCE.md)：EPUB 资源预算与编译性能、聊天运行正确性、历史查询与渲染回归。
+已完成阶段的计划、接口快照与验收统一在 [Archived](#archived) 索引。计划中的原始交互、旧接口和检查结论按其日期及验证范围理解，后续变化以实施基线和负责规范为准。
 
 ## Archived
+
+归档文件保存在 [archived/](archived/)，下方按已完成范围和工程目标索引。
+
+### 本批归档
+
+2026-10-26 将 25 份已完成资料归档：文本与资料调整的 15 份验收和 2 份计划移至 `archived/text-study/`，7 份工程验收移至 `archived/`，切片 1 历史契约移至 `archived/epub-reading/`。相关截图和测量证据随记录保留，原有验收事实及限制不变。2026-10-27 主分支整合后，补充归档路由加载验收及本次整合复核。
+
+| 已完成范围 | 计划或历史契约 | 验收证据 |
+| --- | --- | --- |
+| 文本处理、统计与人工资料 | [文本与资料历史计划](archived/text-study/PLAN.md) | [S0 收口](archived/text-study/S0_ACCEPTANCE.md)、[B1 文本分析](archived/text-study/B1_ACCEPTANCE.md)、[B2 统计](archived/text-study/B2_ACCEPTANCE.md)、[A1 独立回看](archived/text-study/A1_ACCEPTANCE.md)、[A2 人工资料](archived/text-study/A2_ACCEPTANCE.md) |
+| 精确出处与阅读体验 | [阅读体验计划](archived/text-study/READING_EXPERIENCE_PLAN.md) | [C1 出处](archived/text-study/C1_ACCEPTANCE.md)、[C2 选区与资料往返](archived/text-study/C2_ACCEPTANCE.md)、[阅读标记](archived/text-study/READER_MARKS_ACCEPTANCE.md)、[阅读体验](archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单](archived/text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
+| 原处预览与阅读会话 | — | [原处预览](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md)、[会话保留与加载测量](archived/text-study/READER_SESSION_ACCEPTANCE.md)：最近一本书的短期保留、恢复核验、学习状态刷新与历史基线比较 |
+| 阅读辅助与片段资料 | 方案仍在上方阶段资料中维护 | [翻译与设备朗读验收及限制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)、[片段资料与操作](archived/text-study/SEGMENT_UI_ACCEPTANCE.md)、[阅读器正文复制](archived/text-study/READER_COPY_ACCEPTANCE.md) |
+| EPUB 基础阅读切片 1 | [历史实施契约](archived/epub-reading/SLICE_1_DRAFT.md) | [切片 1 验收](archived/epub-reading/SLICE_1_ACCEPTANCE.md)；导入反馈、材料删除、注音与恢复随后已有调整 |
+
+| 工程验收 | 记录范围与现行入口 |
+| --- | --- |
+| [EPUB 编译包空间优化](archived/EPUB_STORAGE_ACCEPTANCE.md) | 图片去重、章节 HTML 单格式及验收；当前开发库边界见[升级与备份](../UPGRADING.md#epub-存储格式与开发库重建) |
+| [数据库迁移整理](archived/DATABASE_MIGRATION_ACCEPTANCE.md) | 完整初始基线及结构等价验证；当前迁移入口与旧库边界见[升级与备份](../UPGRADING.md#当前迁移基线) |
+| [材料独立删除](archived/MATERIAL_DELETION_ACCEPTANCE.md) | 只删材料、保留来源与学习积累的增量迁移、工程检查、独立审查和隔离浏览器验证 |
+| [EPUB 导入书卡反馈](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md) | 提交立即关闭弹窗、共享准备状态、失败重试和删除竞态保护 |
+| [CR 修复](archived/CR_FIXES_ACCEPTANCE.md) | EPUB 资源预算与编译性能、聊天运行正确性、历史查询与渲染回归 |
+| [UI 深浅主题适配](archived/READER_THEME_ACCEPTANCE.md) | 公共页面与 Reader 主题、内容及控件配色的修复与验证 |
+| [路由代码按需加载](archived/ROUTE_LOADING_ACCEPTANCE.md) | 页面拆包、真实路由的保活／定位／草稿回归、历史冷加载比较及主分支整合复核 |
+| [测试质量整改](archived/TEST_QUALITY_ACCEPTANCE.md) | 凭据脱敏、故障注入、持久化和独立浏览器回归；保留原有验证限制 |
+
+### 既有归档
 
 2026-10-20 将以下已完成阶段移入归档，保留当时的计划、接口快照、验收数字、用户反馈与未验证项。书籍管理、S2 的用户使用验收待项继续由[实施基线](MVP_IMPLEMENTATION_BASELINE.md)维护。归档接口中的旧默认值、旧迁移编号和当时的能力限制仅用于理解历史。
 

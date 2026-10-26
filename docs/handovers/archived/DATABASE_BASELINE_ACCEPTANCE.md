@@ -4,7 +4,7 @@
 
 ## 实现与范围
 
-- 将 12 个开发期 revision 合并为固定 DDL 的 `0001_initial`，直接建立完整 22 张业务表及其索引、约束和 SQL 默认值；保留 Alembic 环境、模板和 `just migrate`。该脚本随后在 2026-10-25 再次合并，现行实现见[迁移基线验收](../DATABASE_MIGRATION_ACCEPTANCE.md)。
+- 将 12 个开发期 revision 合并为固定 DDL 的 `0001_initial`，直接建立完整 22 张业务表及其索引、约束和 SQL 默认值；保留 Alembic 环境、模板和 `just migrate`。该脚本随后在 2026-10-25 再次合并，现行实现见[迁移基线验收](DATABASE_MIGRATION_ACCEPTANCE.md)。
 - 清理 7 个历史升级测试文件；保留并强化[空库建库](../../../backend/tests/test_migrations.py)、[数据库业务约束](../../../backend/tests/test_database_contract.py)和[片段删除回归](../../../backend/tests/test_source_deletion.py)。活动任务包含等待审核状态，同 Job 允许多 Run，模型身份保持唯一。
 - 产品行为、API、TBD 与依赖均未变更。历史阶段资料中的旧迁移编号与回填结论保留。
 

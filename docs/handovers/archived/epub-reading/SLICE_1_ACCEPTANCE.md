@@ -22,7 +22,7 @@
 - 增量迁移 `0007_materials` 保留已有 Source／Segment 等内容，覆盖空库与从 `0006_analysis_execution` 升级；未重建日常学习库。
 - OpenAPI 与前端客户端已重新生成。前端服务端 DTO 均取生成类型，数据读取／mutation 经 TanStack Query。没有新增依赖、模型调用或权限扩展；没有关闭既有 TBD。
 
-主要实现：[EPUB 编译](../../../../backend/src/app/services/epub.py)、[材料服务](../../../../backend/src/app/services/materials.py)、[阅读页](../../../../frontend/src/materials/MaterialReader.tsx)、[位置与保存](../../../../frontend/src/materials/position.ts)。正式契约见[切片 1 契约](../../epub-reading/SLICE_1_DRAFT.md)。
+主要实现：[EPUB 编译](../../../../backend/src/app/services/epub.py)、[材料服务](../../../../backend/src/app/services/materials.py)、[阅读页](../../../../frontend/src/materials/MaterialReader.tsx)、[位置与保存](../../../../frontend/src/materials/position.ts)。正式契约见[切片 1 契约](SLICE_1_DRAFT.md)。
 
 ## 浏览器验收
 

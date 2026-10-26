@@ -11,11 +11,11 @@
 ## 实现与检查入口
 
 - 凭据：真实 SDK 搭配 MockTransport，检查两种协议的流式／非流式工具参数、协议历史与原始响应；临时 SQLite 验证执行状态及后续调用历史。测试凭据均为合成值。
-- 自动调度：[test_worker_dispatch.py](../../backend/tests/test_worker_dispatch.py) 通过 API 受理、等待审核、批准和观察终态，不直接调用 worker；设置验证也通过正常 API 自动执行。
-- 竞争等待：[race_helpers.py](../../backend/tests/race_helpers.py) 回收暂停任务，各调用方限制整个竞争场景的执行时间，早期失败保留原异常。
+- 自动调度：[test_worker_dispatch.py](../../../backend/tests/test_worker_dispatch.py) 通过 API 受理、等待审核、批准和观察终态，不直接调用 worker；设置验证也通过正常 API 自动执行。
+- 竞争等待：[race_helpers.py](../../../backend/tests/race_helpers.py) 回收暂停任务，各调用方限制整个竞争场景的执行时间，早期失败保留原异常。
 - EPUB：独立 HTMLParser 提取实际 locator 原文并做 NFC，与码点范围比较；真实上传产物继续用于跨节点、非 BMP 搜索。并发导入要求两请求都进入编译后再发布，核对身份和实际复用事实。
 - 排序与高亮：核对材料实际 ID 顺序、同时间次序和空值位置；高亮核对最终注册的全部独立 Range 端点。
-- 浏览器：[browser-tests](../../frontend/browser-tests/index.html) 挂载真实 MaterialsPage 和 StudySegmentPanel。`just test-browser` 自动启动本地 Vite、创建临时 Chrome profile 并回收；模拟 API 之外的 fetch 被拒绝，Vite 的 API 入口也拦截未模拟请求。
+- 浏览器：[browser-tests](../../../frontend/browser-tests/index.html) 挂载真实 MaterialsPage 和 StudySegmentPanel。`just test-browser` 自动启动本地 Vite、创建临时 Chrome profile 并回收；模拟 API 之外的 fetch 被拒绝，Vite 的 API 入口也拦截未模拟请求。
 
 ## 故障注入证据
 
@@ -54,4 +54,4 @@
 
 - 提交隔离检查发现：纯 Git 快照缺少历史验收文档引用的 `temp/` 证据文件，完整文档链接检查依赖本地保留的这些资产；本轮新增文档和链接不依赖该目录。
 
-2026-10-24 补记：仍被链接引用的历史证据及封面调查 JSON 已迁至 gitignored `data/acceptance-evidence/`，原链接同步更新；纯 Git 快照仍不包含这些私有资产。保留范围见[本机证据保留说明](archived/LOCAL_EVIDENCE.md)。
+2026-10-24 补记：仍被链接引用的历史证据及封面调查 JSON 已迁至 gitignored `data/acceptance-evidence/`，原链接同步更新；纯 Git 快照仍不包含这些私有资产。保留范围见[本机证据保留说明](LOCAL_EVIDENCE.md)。

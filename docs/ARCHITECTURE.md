@@ -69,7 +69,7 @@ Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在�
 
 数据库生命周期由应用 lifespan 管理。`0001_schema_baseline` 以固定 Alembic DDL 从空库直接建立当前 28 张业务表及其字段、服务器默认值、外键、CHECK 和索引，包括材料软删除与活跃材料部分唯一索引、精确出处、语境设置及翻译表；版本脚本不导入运行时 ORM，也不调用自动建表。旧开发阶段的回填、批量重建及中间 revision 已移除，历史编号与当时的数据保护事实保留在阶段验收中。
 
-迁移与应用读取同一配置的数据库路径，连接始终启用外键。迁移使用显式 `BEGIN IMMEDIATE` 与事务性 DDL，提交前执行全库 `foreign_key_check`；执行或校验失败会回滚 DDL、数据及版本记录。初始基线支持显式完整降级到 base，该操作删除全部应用表，包含自引用历史的降级回归已通过。`just dev`／`just start` 先执行迁移，不自动删库或修改版本标签。需保留日常数据或发布第一版后继续维护增量升级路径；旧开发库边界见[升级与备份](UPGRADING.md#当前迁移基线)，等价性及本机对齐证据见[迁移基线验收](handovers/DATABASE_MIGRATION_ACCEPTANCE.md)。
+迁移与应用读取同一配置的数据库路径，连接始终启用外键。迁移使用显式 `BEGIN IMMEDIATE` 与事务性 DDL，提交前执行全库 `foreign_key_check`；执行或校验失败会回滚 DDL、数据及版本记录。初始基线支持显式完整降级到 base，该操作删除全部应用表，包含自引用历史的降级回归已通过。`just dev`／`just start` 先执行迁移，不自动删库或修改版本标签。需保留日常数据或发布第一版后继续维护增量升级路径；旧开发库边界见[升级与备份](UPGRADING.md#当前迁移基线)，等价性及本机对齐证据见[迁移基线验收](handovers/archived/DATABASE_MIGRATION_ACCEPTANCE.md)。
 
 ### 3.1 实体
 
@@ -101,7 +101,7 @@ Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profi
 
 Occurrence整理行为见[PRD F5](PRD.md#f5-学习条目创建与整理)。存储契约保留pending／learning／reference及独立的软删除编码（待定），不得用dismissed混合忽略与删除。出处引用具体不可变修订，整理或再次调用不能迁移历史引用。创建来源、引用约束及删除保留策略仍须在实现前落实。
 
-预留、不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`。`materials` 与 `reading_positions` 保存 EPUB 材料与全书阅读位置；原始字节、不可变编译包和版本身份由 Material 承载，资源与逻辑章节在版本包内表达，不为每个逻辑层单建表。发布、删除与恢复约束见本节；初次导入切片的设计及验收证据见[历史契约](handovers/epub-reading/SLICE_1_DRAFT.md)与[EPUB 阶段入口](handovers/epub-reading/README.md)。
+预留、不建表的实体：`ReviewItem`、`KnowledgeCluster`、`Lexeme`。`materials` 与 `reading_positions` 保存 EPUB 材料与全书阅读位置；原始字节、不可变编译包和版本身份由 Material 承载，资源与逻辑章节在版本包内表达，不为每个逻辑层单建表。发布、删除与恢复约束见本节；初次导入切片的设计及验收证据见[历史契约](handovers/archived/epub-reading/SLICE_1_DRAFT.md)与[EPUB 阶段入口](handovers/epub-reading/README.md)。
 
 EPUB 已确定的不变式：原始素材字节不可变，材料归属 Source；处理版本保存规则、实际产物与摘要，版本内资源保留原始 spine 身份。引用绑定具体版本、资源、Unicode 码点半开范围及原文快照；正文全局 NFC，ruby 的 `rt`／`rp` 不参与偏移，布局与分词不影响身份。DOM 使用 UTF-16，适配器必须转换并核对正文，不能逐节点规范化后直接相加；不能校验的引用明确失败。材料文本投影与第 4.3 节 Analysis 规范化器分别执行各自契约，不改变后者的可复原保证。具体隔离试验、范围限制和证据见 [EPUB 阶段入口](handovers/epub-reading/README.md)；持久化、删除及权限不由试验自动定案。
 
@@ -121,7 +121,7 @@ EPUB 已确定的不变式：原始素材字节不可变，材料归属 Source�
 
 编译包的物理编码由 `epub_storage.encode/decode` 集中维护，只采用 `FJEPUB` 和版本字节 `2` 标识的图片池格式。其 zlib JSON 保存资源元数据和正文、空章节 HTML 骨架、章节片段及共享图片池，不含 `resource_html`；无图书籍使用空池，小图书籍也采用同一格式。章节片段中的相同图片 data URI 按原字符串共享，严格整数引用与普通文本片段分开，解码后完整还原章节原字符串，不转码图片、不改正文和位置。编码只进行一次 zlib 压缩。
 
-存储 envelope 解压上限为 128 MiB，为片段结构开销留出有界空间；逻辑 JSON 编码与还原仍各限 64 MiB。解码检查格式版本、整条压缩流、章／part 数量、空骨架及引用类型／范围，先检查骨架逻辑大小，再累计全书 JSON 转义后的片段字节数，重复图片引用在拼接 HTML 前逐次计入预算。v1 图片池包、旧裸 zlib 包、无版本 JSON、未知版本及含冗余 `resource_html` 的 envelope 均拒绝，不设转换或回退。阅读、出处、翻译、片段和统计共用该 interface；章节 HTTP 响应本就不含完整资源 HTML，本次不改变该响应结构，注音资产沿用原格式。开发库重建与历史数据边界见[升级与备份](UPGRADING.md#epub-存储格式与开发库重建)，收益与验证范围见[存储验收](handovers/EPUB_STORAGE_ACCEPTANCE.md)。
+存储 envelope 解压上限为 128 MiB，为片段结构开销留出有界空间；逻辑 JSON 编码与还原仍各限 64 MiB。解码检查格式版本、整条压缩流、章／part 数量、空骨架及引用类型／范围，先检查骨架逻辑大小，再累计全书 JSON 转义后的片段字节数，重复图片引用在拼接 HTML 前逐次计入预算。v1 图片池包、旧裸 zlib 包、无版本 JSON、未知版本及含冗余 `resource_html` 的 envelope 均拒绝，不设转换或回退。阅读、出处、翻译、片段和统计共用该 interface；章节 HTTP 响应本就不含完整资源 HTML，本次不改变该响应结构，注音资产沿用原格式。开发库重建与历史数据边界见[升级与备份](UPGRADING.md#epub-存储格式与开发库重建)，收益与验证范围见[存储验收](handovers/archived/EPUB_STORAGE_ACCEPTANCE.md)。
 
 `DELETE /api/materials/{material_id}` 在短写事务中核对所属 Source 存活，设置 Material.deleted_at 并清理该材料的托管副本和派生阅读数据，成功返回 204。保留 id、source_id、title、源字节摘要、版本身份及创建／删除时间等出处依据；original_bytes 与 compiled_bundle 清为空 BLOB，warnings 清空，仅已删除材料允许缺少内容。活跃材料及其已发布内容仍保持不可变。删除该材料的全书／章节位置、使用状态、自动／自定义封面、分词当前指针与全部分词代次；先删指针后删代次，清理与删除标记同事务提交，失败全部回滚。重复删除补齐清理后仍返回 204，不存在或所属 Source 已删除返回 404。该操作不调用 Source／Segment 级联删除，不中断保留片段的任务。首版无恢复、移动或一并删除积累参数。
 
@@ -238,7 +238,7 @@ GET `/api/materials/{material_id}/statistics` 接受明确的 version_id 和可�
 
 `StatisticsRuntime` 由每次应用 lifespan 创建，保存冻结结果的 JSON bytes，LRU 默认上限 128 条／8 MiB，计算并发 2、在途含等待任务最多 16；超大单结果返回但不缓存，失败不缓存。请求取消不取消同键共享计算；关闭时排空实际线程再释放数据库。每次读取及完成后使用新短会话核验可见性，缓存不能绕过 Source 删除。缺省代次在请求开始固定，途中切换仍返回原代次身份，下次读取采用新指针。
 
-前端 `catalog/BookStatistics.tsx` 在详情信息后独立加载；查询键包含材料、版本和可选代次，与目录／元信息查询分离。重新进入或显式刷新读取当前结果，普通信息编辑不重新请求统计。加载、失败、无代次与零词次分别显示，错误不继续展示缓存中的旧正文；说明区呈现实际分词配置和规则版本。纯逻辑测试、缓存竞争和浏览器证据见[B2 验收](handovers/text-study/B2_ACCEPTANCE.md)。
+前端 `catalog/BookStatistics.tsx` 在详情信息后独立加载；查询键包含材料、版本和可选代次，与目录／元信息查询分离。重新进入或显式刷新读取当前结果，普通信息编辑不重新请求统计。加载、失败、无代次与零词次分别显示，错误不继续展示缓存中的旧正文；说明区呈现实际分词配置和规则版本。纯逻辑测试、缓存竞争和浏览器证据见[B2 验收](handovers/archived/text-study/B2_ACCEPTANCE.md)。
 
 ### 3.2 关系
 
@@ -287,7 +287,7 @@ erDiagram
 
 消息历史默认保留正向 `after_ordinal` 分页；`direction=backward` 配合可选 `before_ordinal` 从最近消息向前读取，页内始终按 ordinal 升序。助手消息附带 `job_summary`，仅包含成果引用、错误与失败重试输入；页查询投影所需 JSON 字段，不载入完整调用历史。前端首屏取最近50条，再由用户按需加载更早消息。
 
-公开接口包括片段Analysis列表、指定Analysis／Revision读取、删除影响与用户删除，以及Job的具体审核决定。生成／局部写入经Job执行，未提供绕过审核的公开编辑端点。实际字段以生成的OpenAPI和版本化工具模板为准；Occurrence尚未实现，见[2C验收记录](handovers/archived/STAGE_2C_ANALYSIS_TOOLS.md)。
+公开接口包括片段Analysis列表、指定Analysis／Revision读取、删除影响与用户删除，以及Job的具体审核决定。AI生成与Section写入经Job执行及工具审核；用户人工创建与全文修订使用第5节的业务接口，不启动Job或工具审核。实际字段以生成的OpenAPI和版本化工具模板为准；Occurrence尚未实现，见[2C验收记录](handovers/archived/STAGE_2C_ANALYSIS_TOOLS.md)。
 
 ## 4. 模块设计
 
@@ -474,7 +474,7 @@ Reader 的章节翻译 query 完成全部分页后发布标记；阅读页独立
 - 原文固定触发包括首次 AI 受理、首次讲解保存和首次精确出处创建；失败人工保存不固定，删除成果不解锁。新库由对应业务写入建立保护，历史开发回填不再参与初始迁移。全文无显式块映射时新分配 Section 身份，旧修订及引用保留。
 - C1 中，Segment 可选材料出处与 Material 属于同一活跃 Source，保存版本及有序局部范围、exact 和独立的 spine 出现定位。首版限制同章连续目标；验证后合并同资源／同出现的相邻范围，身份比较不包含 prefix／suffix 或章节。按范围拼接后整体 NFC 生成 Segment 原文，出处与片段创建及原文固定原子完成并可幂等核实。
 - C2 预装语境沿用 Segment 的可编辑前后文字段，不纳入目标范围或出处身份；用户可修改、清空，输入快照继续记录任务受理时的实际内容。前端在不可变章节正文、part 范围及 spine 出现位置上验证目标并建立原句界，再整理两侧副本；不依赖 iframe 显示文字或分词代次，不调用模型。副本按 Unicode White_Space 整理边缘及纯空白行，CRLF 转 LF，内部最多保留一个空行，保留句内空格与非空白字符；合并整理后的整体 NFC 码点数参与近端优先的双预算，只有切开有内容的句／残部才标截断。精确坐标、exact、摘要、已存内容及历史输入不变。预算纯逻辑与注音技术分块分别维护，默认值和用户行为集中见 [PRD 4.7](PRD.md#47-当前-epub-阶段安排)；学习偏好通过独立的 `segment_context_settings` 单例、GET／PUT `/api/settings/segment-context` 保存；PUT 携带 expected_revision，冲突为 409，保留草稿。五项配置独立于模型参数，预算为 0–100000 的严格整数，默认值由 PRD 维护。
-- 资料读取及定位解析执行严格版本、范围和快照校验；不以阅读恢复容错替代精确引用，不按同文静默换绑。解析不依赖分词，实际阅读仍经过现有准备门禁。完整接口和验证案例见[实施计划](handovers/text-study/PLAN.md)及[样例矩阵](handovers/text-study/TEST_MATRIX.md)。
+- 资料读取及定位解析执行严格版本、范围和快照校验；不以阅读恢复容错替代精确引用，不按同文静默换绑。解析不依赖分词，实际阅读仍经过现有准备门禁。完整接口和验证案例见[实施计划](handovers/archived/text-study/PLAN.md)及[样例矩阵](handovers/text-study/TEST_MATRIX.md)。
 
 C1 出处契约版本为 `1`，组装规则为 `concat-nfc-v1`；最多 64 段、100000 码点快照，识别用 prefix／suffix 各 64 码点，候选最多 20 条。POST 创建带 UUID request_id，响应丢失以完整原请求核实；同键异文 409。GET 出处返回 resolved、none、material_deleted、version_unavailable、snapshot_mismatch 或 invalid_reference；历史目标仍由可见 Segment 保留。校验在写锁外进行，短事务内复查祖先、材料及完整不可变产物身份后提交。
 
@@ -547,7 +547,7 @@ A1 中，`analysis/AnalysisPanel.tsx` 只承担持久讲解读取与删除，`An
 
 返回原处与书内搜索使用同一临时定位高亮生命周期，精确目标稳定呈现约 2.5 秒后进入 260ms 淡出。`NavigationHighlightLifetime` 驱动每帧背景透明度与前景色恢复，完成后清理目标和 CSS Highlight 注册；不依赖伪元素的普通 CSS transition。正文输入提前淡出，新导航、切章或离页立即清理；减少动态效果时跳过淡出。ReaderFrames 保留当前透明度用于重排，旧定时器和动画按代次隔离；重排不续期、不变亮、不复活已清理目标，永久学习／翻译标记不受影响。
 
-C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑协调集中在保存流程中。首次结果按字段编辑状态合并，清空视作修改；更换目标、取消或离页使旧结果失效。默认配置变化不覆盖当前草稿，重新取文须由用户明确发起，并保留已改内容供选择替换；重开或选用已有片段不触发资料覆盖。语境取文失败保留可保存的目标，精确出处校验失败仍阻止创建。详见[切片计划](handovers/text-study/PLAN.md#10-c2-阅读选区与资料往返)。
+C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑协调集中在保存流程中。首次结果按字段编辑状态合并，清空视作修改；更换目标、取消或离页使旧结果失效。默认配置变化不覆盖当前草稿，重新取文须由用户明确发起，并保留已改内容供选择替换；重开或选用已有片段不触发资料覆盖。语境取文失败保留可保存的目标，精确出处校验失败仍阻止创建。详见[切片计划](handovers/archived/text-study/PLAN.md#10-c2-阅读选区与资料往返)。
 
 片段页采用独立滚动区域，普通入口默认阅读、讨论按需展开；原文与讲解同时参照，讲解列表不自动选择第一份文档。讲解、确切修订和讨论目标通过查询参数定位，指定对象须核对当前Segment归属。返回来处与查看所属Source分开。具体导航与当前/未来边界见[阅读与导航](INFORMATION_ARCHITECTURE.md)。
 
@@ -567,7 +567,7 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 
 当前前端按页面及 `catalog`／`materials`／`chat`／`analysis`／`settings` 模块组织。API 类型在 `api/schema.d.ts` 生成，各模块 `api.ts` 封装调用，TanStack Query 维护查询与 mutation；讨论推进见 `chat/discussion.ts`，阅读位置队列见 `materials/persistence.ts`。后台状态由轮询读取。
 
-默认素材库同步加载，阅读会话宿主、片段、来源、书籍详情与设置页面通过模块顶层 `React.lazy` 按路由加载，公共依赖和样式由 Vite 自动拆分。阅读与片段路径共用稳定的 `PageBoundary` 和 `ReaderSessionHost`，挂载判定沿用 Router 的 `matchRoutes`；真实 DataRouter 注册页面路由，宿主显式接收当前阅读入口并维护保活实例。其他页面的错误边界按 pathname 重置，查询参数变化保留组件身份。等待时显示加载状态，代码加载失败提供重新加载入口；现有导航、位置与草稿规则由各页面继续维护。构建和冷加载比较见[路由加载验收](handovers/ROUTE_LOADING_ACCEPTANCE.md)。
+默认素材库同步加载，阅读会话宿主、片段、来源、书籍详情与设置页面通过模块顶层 `React.lazy` 按路由加载，公共依赖和样式由 Vite 自动拆分。阅读与片段路径共用稳定的 `PageBoundary` 和 `ReaderSessionHost`，挂载判定沿用 Router 的 `matchRoutes`；真实 DataRouter 注册页面路由，宿主显式接收当前阅读入口并维护保活实例。其他页面的错误边界按 pathname 重置，查询参数变化保留组件身份。等待时显示加载状态，代码加载失败提供重新加载入口；现有导航、位置与草稿规则由各页面继续维护。构建和冷加载比较见[路由加载验收](handovers/archived/ROUTE_LOADING_ACCEPTANCE.md)。
 
 ## 7. 当前仓库目录
 
@@ -612,7 +612,7 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 
 ## 8. 测试策略
 
-当前`just test`运行后端pytest与前端Node.js纯逻辑测试；`just test-browser`通过隔离 Chrome 执行真实组件与布局回归，并纳入`just check`。浏览器测试使用本地 Vite 与模拟 API，不启动模型或访问用户数据库；缺少 Chrome 时明确失败，可用`CHROME_BIN`指定可执行文件。整改方法及验证边界见[测试质量验收](handovers/TEST_QUALITY_ACCEPTANCE.md)。现有覆盖见[`backend/tests/`](../backend/tests/)；下列Occurrence／提取规则是未来实现的验收要求，不能作为当前通过证据。
+当前`just test`运行后端pytest与前端Node.js纯逻辑测试；`just test-browser`通过隔离 Chrome 执行真实组件与布局回归，并纳入`just check`。浏览器测试使用本地 Vite 与模拟 API，不启动模型或访问用户数据库；缺少 Chrome 时明确失败，可用`CHROME_BIN`指定可执行文件。整改方法及验证边界见[测试质量验收](handovers/archived/TEST_QUALITY_ACCEPTANCE.md)。现有覆盖见[`backend/tests/`](../backend/tests/)；下列Occurrence／提取规则是未来实现的验收要求，不能作为当前通过证据。
 
 - **规范化器**：单元测试加 hypothesis 性质测试（R1、R2、R3），并覆盖边界用例：没有 h2、代码块中的 `#`、Setext 标题、结尾没有换行、CRLF 换行。
 - **提取校验（未来）**：纯函数测试，覆盖 surface 定位、不连续片段、非法 handle 等情况。
