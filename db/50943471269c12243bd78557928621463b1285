@@ -1,0 +1,105 @@
+.rgignore
+  s_79029af9f6b52b::t_fb8fa21fcae184 1-6
+AGENTS.md
+  s_79029af9f6b52b::t_a6496dda656cb4 9,26-43
+README.md
+  s_79029af9f6b52b::t_82c2a51ab7ce70 3,5-7,9,11,13,15,17-26,28,30,34-36,38-40,44-51,53-57,61,64,68,71,73-77,81-83,85-87,91-101,103,105-109,111,113,115
+docs/ARCHITECTURE.md
+  s_79029af9f6b52b::t_05265d912021a7 72,104,124,241,290,477,550,570,615
+docs/DEVELOPMENT.md
+  s_79029af9f6b52b::t_6d58c4937417d1 49,55
+docs/GLOSSARY.md
+  s_79029af9f6b52b::t_5ed73f79039f13 10,22
+docs/INFORMATION_ARCHITECTURE.md
+  s_79029af9f6b52b::t_32d45015fe5fed 3,12,29-31,37-39,41,45,55,79-80,85-86,89-117,119,121,123,125-130,142,193-209,211,213,215-217,227,231-233,237-249,251,253
+docs/PRD.md
+  s_79029af9f6b52b::t_57a00cd33f3f5b 6-8,89,91,93,95,97,99,101,103,105,117,119,139,141,143,147,149,151,169-197,215,217,219,221,223,227-244,263,267,271,275,279,283,287,299,303,307,372-373,412,421,423,446-448,457,459,507,513,517-550,584
+docs/PRODUCT_DIRECTION.md
+  s_79029af9f6b52b::t_88454f183f8514 71
+docs/README.md
+  s_79029af9f6b52b::t_3076faf63e58ac 11,14,17
+docs/TECH_STACK.md
+  s_79029af9f6b52b::t_e552e28ce20ea9 40
+docs/UPGRADING.md
+  s_79029af9f6b52b::t_315ead53fccd90 19,31,37
+docs/USAGE.md
+  s_79029af9f6b52b::t_96961c331a6669 19-29,33-34,45-53
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_79029af9f6b52b::t_00ef895549e28f 3-4,6,12-14,16-22,24,26-27,31-33,41-44,49-50,72,74-83,85,93
+docs/handovers/README.md
+  s_79029af9f6b52b::t_76a4ae4b3a17d9 3,7-11,13,15,17,21-47
+docs/handovers/archived/CR_FIXES_ACCEPTANCE.md
+  s_79029af9f6b52b::t_09a87e9bc1ff3d 9,13,17,21,25,29,33
+docs/handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md
+  s_79029af9f6b52b::t_b70774a1a34092 7
+docs/handovers/archived/DATABASE_MIGRATION_ACCEPTANCE.md
+  s_79029af9f6b52b::t_2e9aad1dac3905 34
+docs/handovers/archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md
+  s_79029af9f6b52b::t_3218e002e9be02 3
+docs/handovers/archived/EPUB_STORAGE_ACCEPTANCE.md
+  s_79029af9f6b52b::t_aa7a6891fc8c49 41
+docs/handovers/archived/MATERIAL_DELETION_ACCEPTANCE.md
+  s_79029af9f6b52b::t_a81df290506219 3
+docs/handovers/archived/ROUTE_LOADING_ACCEPTANCE.md
+  s_79029af9f6b52b::t_8bbf4d90645d7b 17,44,48,60
+docs/handovers/archived/TEST_QUALITY_ACCEPTANCE.md
+  s_79029af9f6b52b::t_3fc6906bac8779 14-15,18,57
+docs/handovers/archived/epub-reading/CHAPTER_RESEARCH.md
+  s_79029af9f6b52b::t_05367c6b000445 5
+docs/handovers/archived/epub-reading/SLICE_0_ACCEPTANCE.md
+  s_79029af9f6b52b::t_6c3ad127bd2fe4 14,72
+docs/handovers/archived/epub-reading/SLICE_1_ACCEPTANCE.md
+  s_79029af9f6b52b::t_bed2beec463f6d 25
+docs/handovers/archived/epub-reading/SLICE_1_DRAFT.md
+  s_79029af9f6b52b::t_8b9c35a22c5fe9 3,9,58,64
+docs/handovers/archived/text-study/C1_ACCEPTANCE.md
+  s_79029af9f6b52b::t_52686b83e961d2 20
+docs/handovers/archived/text-study/C2_ACCEPTANCE.md
+  s_79029af9f6b52b::t_88f77765ddad7a 7
+docs/handovers/archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md
+  s_79029af9f6b52b::t_aa705121e8b140 68,90,110,130,146,160
+docs/handovers/archived/text-study/PLAN.md
+  s_79029af9f6b52b::t_c2231c4951f5b4 3-5,25,29-35,68,193,213,217,233
+docs/handovers/archived/text-study/READER_COPY_ACCEPTANCE.md
+  s_79029af9f6b52b::t_0ad4eb2b7ea027 3
+docs/handovers/archived/text-study/READER_MARKS_ACCEPTANCE.md
+  s_79029af9f6b52b::t_39d5d2b4e2e462 3
+docs/handovers/archived/text-study/READER_SESSION_ACCEPTANCE.md
+  s_79029af9f6b52b::t_06b6523cd8509c 32
+docs/handovers/archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md
+  s_79029af9f6b52b::t_c96fd4838934c3 11
+docs/handovers/archived/text-study/READING_EXPERIENCE_PLAN.md
+  s_79029af9f6b52b::t_0abf63075e2160 3-4
+docs/handovers/archived/text-study/S0_ACCEPTANCE.md
+  s_79029af9f6b52b::t_fc31d20358cd91 5
+docs/handovers/archived/text-study/SEGMENT_UI_ACCEPTANCE.md
+  s_79029af9f6b52b::t_e82d695649e438 3
+docs/handovers/archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md
+  s_79029af9f6b52b::t_07f4670ef5c335 3,158
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_79029af9f6b52b::t_f7d9fcc9a7aef5 7
+docs/handovers/epub-reading/MATERIAL_BASELINE.md
+  s_79029af9f6b52b::t_4dc92c06e8ac42 3,20,39,81,105
+docs/handovers/epub-reading/README.md
+  s_79029af9f6b52b::t_1cffdf1b6939cd 12,16-23,42,63,99,101-102
+docs/handovers/text-study/TEST_MATRIX.md
+  s_79029af9f6b52b::t_5eccc1d073e8f1 3,50,90
+docs/handovers/text-study/TRANSLATION_AND_SPEECH_PLAN.md
+  s_79029af9f6b52b::t_51491fd3deb697 4-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "db50943471269c12243bd78557928621463b1285",
+  "prompts": {},
+  "sessions": {
+    "s_79029af9f6b52b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a178e5-ad4f-7352-ac7e-b3684a6b9d82",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
