@@ -52,9 +52,18 @@ try {
 	const url = `http://127.0.0.1:${address.port}/browser-tests/`;
 	console.log(`Browser regression page: ${url}`);
 	for (const [width, height, query] of [
+		[1280, 900, "?suite=catalog-overview"],
+		[390, 900, "?suite=catalog-overview"],
+		[320, 900, "?suite=catalog-overview"],
+		[1280, 900, "?suite=catalog-reuse"],
+		[390, 900, "?suite=catalog-reuse"],
+		[320, 900, "?suite=catalog-reuse"],
 		[1280, 900, "?suite=catalog-toolbar"],
 		[390, 900, "?suite=catalog-toolbar"],
 		[320, 900, "?suite=catalog-toolbar"],
+		[1280, 900, "?suite=material-import"],
+		[390, 900, "?suite=material-import"],
+		[1280, 900, "?suite=material-import&reduced-motion"],
 		[1280, 900, "?suite=route-motion"],
 		[390, 900, "?suite=route-motion"],
 		[1280, 900, "?suite=route-motion&reduced-motion"],

@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
 import { api } from "../api/client";
 import {
 	listSources,
@@ -10,9 +9,9 @@ import {
 	type SourceFields,
 } from "../content";
 import { SourceForm } from "../Forms";
-import { importMaterial, materialKeys } from "../materials/api";
 import { ConfirmDialog, InlineError } from "../Shared";
 import { catalogKeys } from "./api";
+import { useMaterialImport } from "./ImportCards";
 import { Icon } from "./LibraryTools";
 export function ImportDialog({
 	sourceId,
@@ -22,26 +21,21 @@ export function ImportDialog({
 	close: () => void;
 }) {
 	const client = useQueryClient();
-	const navigate = useNavigate();
-	const location = useLocation();
 	const sourceSelectId = useId();
 	const sourceSelect = useRef<HTMLSelectElement>(null);
 	const sourceView = useRef<HTMLDivElement>(null);
 	const initialView = useRef(true);
 	const mounted = useRef(true);
 	const dismissed = useRef(false);
-	const transition = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const dismiss = () => {
 		if (create.isPending) return;
 		dismissed.current = true;
-		if (transition.current) clearTimeout(transition.current);
 		close();
 	};
 	useEffect(() => {
 		mounted.current = true;
 		return () => {
 			mounted.current = false;
-			if (transition.current) clearTimeout(transition.current);
 		};
 	}, []);
 	const [selected, setSelected] = useState(sourceId ?? "");
@@ -76,31 +70,9 @@ export function ImportDialog({
 			}
 		},
 	});
-	const upload = useMutation({
-		mutationFn: () => {
-			if (!file || !selected) throw new Error("请选择 EPUB 文件和所属来源。");
-			return importMaterial(selected, file);
-		},
-		onSuccess: ({ material, reused }) => {
-			void client.invalidateQueries({ queryKey: catalogKeys.all });
-			void client.invalidateQueries({ queryKey: materialKeys.list(selected) });
-			void client.invalidateQueries({ queryKey: queries.source(selected) });
-			if (mounted.current && !dismissed.current)
-				transition.current = setTimeout(() => {
-					if (!mounted.current || dismissed.current) return;
-					navigate(`/materials/${material.id}`, {
-						state: {
-							materialReused: reused,
-							returnTo: {
-								to: `${location.pathname}${location.search}`,
-								label: sourceId ? "来源" : "素材库",
-							},
-						},
-					});
-				}, 320);
-		},
-	});
-	const importing = upload.isPending || upload.isSuccess;
+	const upload = useMaterialImport();
+	const importing = upload.isPending;
+	const submitted = useRef(false);
 	const returnToImport = () => {
 		if (!create.isPending) setNewSource(false);
 	};
@@ -188,36 +160,20 @@ export function ImportDialog({
 						</select>
 					</div>
 					{sources.isError && <InlineError error={sources.error} />}
-					<InlineError error={upload.error} />
-					{importing && (
-						<div className="import-progress" role="status">
-							<span
-								aria-hidden="true"
-								className="import-preparation-indicator"
-							/>
-							<div>
-								<p>
-									{upload.isSuccess
-										? "书籍已准备好，正在打开…"
-										: "正在准备书籍和注音，请稍候。"}
-								</p>
-								{upload.isPending && <small>关闭后仍会继续导入。</small>}
-							</div>
-						</div>
-					)}
 				</div>
 				<div className="actions">
 					<button
 						className="button primary"
 						type="button"
 						disabled={!file || !selected || importing}
-						onClick={() => upload.mutate()}
+						onClick={() => {
+							if (!file || !selected || submitted.current) return;
+							submitted.current = true;
+							upload.mutate({ sourceId: selected, file });
+							dismiss();
+						}}
 					>
-						{upload.isPending
-							? "正在导入…"
-							: upload.isSuccess
-								? "正在打开…"
-								: "导入并阅读"}
+						导入
 					</button>
 					<button
 						type="button"

@@ -13,6 +13,7 @@
 - [阅读翻译、译文留存与设备朗读方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)：2026-10-23 已确认行为并授权实施，覆盖成功译文找回、转为 Segment、Provider 与设置调整；资源上限保留为待实测候选，[验收与限制](text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)记录离线及浏览器证据，交付状态见实施基线。
 - [EPUB 原生阅读阶段](epub-reading/README.md)：组织导入、基础阅读、注音、选区学习、材料对话和讲解形成的切片顺序与准备条件。
 - [材料独立删除验收](MATERIAL_DELETION_ACCEPTANCE.md)：只删材料、保留来源与学习积累的增量迁移、工程检查、独立审查和隔离浏览器验证。
+- [EPUB 导入书卡反馈验收](EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md)：提交立即关闭弹窗、共享准备状态、失败重试和删除竞态保护。
 - [阅读会话保留与加载测量](text-study/READER_SESSION_ACCEPTANCE.md)：最近一本书的短期保留、恢复核验、学习状态刷新、历史基线比较及验证范围。
 
 - [本轮 CR 修复验收](CR_FIXES_ACCEPTANCE.md)：EPUB 资源预算与编译性能、聊天运行正确性、历史查询与渲染回归。

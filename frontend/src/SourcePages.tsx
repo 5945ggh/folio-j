@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { api } from "./api/client";
 import { catalogKeys, catalogSources, type SourceQuery } from "./catalog/api";
 import { readPreference, savePreference } from "./catalog/hooks";
+import { forgetSourceImports } from "./catalog/import-state";
 import { Icon } from "./catalog/LibraryTools";
 import { SourceDirectory } from "./catalog/SourceDirectory";
 import { SourceSpace } from "./catalog/SourceSpace";
@@ -572,6 +573,7 @@ export function SourceDetail() {
 							source={source.data}
 							close={() => setDeleting(false)}
 							deleted={() => {
+								forgetSourceImports(client, id);
 								void client.invalidateQueries({ queryKey: queries.sources });
 								void client.invalidateQueries({ queryKey: queries.source(id) });
 								void client.invalidateQueries({ queryKey: catalogKeys.all });

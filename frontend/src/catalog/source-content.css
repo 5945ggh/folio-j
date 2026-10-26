@@ -146,6 +146,24 @@
 	width: 23px;
 	height: 23px;
 }
+.overview-books .book-import-card > div:first-child {
+	display: grid;
+	grid-template-columns: 55px minmax(0, 1fr);
+	align-items: center;
+	gap: 12px;
+}
+.overview-books
+	.book-import-card
+	:is(.book-import-status, .inline-error, .book-import-actions) {
+	margin-left: 67px;
+}
+.overview-books .book-import-overlay {
+	padding: 8px;
+}
+.overview-books .import-preparation-indicator {
+	width: 16px;
+	height: 16px;
+}
 .overview-books .book-actions {
 	position: absolute;
 	right: -6px;

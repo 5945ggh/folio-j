@@ -26,6 +26,7 @@ import {
 	useCatalogState,
 	useSourceContentLocation,
 } from "./hooks";
+import { useImportTasks } from "./ImportCards";
 import { ImportDialog } from "./ImportDialog";
 import { Icon } from "./LibraryTools";
 import { sourceListState } from "./presentation";
@@ -58,6 +59,12 @@ function SourceBooks({
 		queryKey: catalogKeys.books(query),
 		queryFn: () => catalogBooks(query),
 	});
+	const renderedBooks = books.isSuccess ? books.data.items : [];
+	const imports = useImportTasks(
+		renderedBooks,
+		source.id,
+		books.isSuccess && !books.isFetching && !expanded,
+	);
 	useEffect(() => {
 		if (
 			editing !== null ||
@@ -82,7 +89,7 @@ function SourceBooks({
 				) ?? container
 			)?.focus();
 	});
-	const empty = books.isSuccess && books.data.total === 0;
+	const empty = books.isSuccess && books.data.total === 0 && !imports.length;
 	useCatalogScroll(
 		books.isSuccess && !expanded,
 		`source-materials-${source.id}`,
@@ -127,6 +134,15 @@ function SourceBooks({
 					</div>
 				</div>
 			)}
+			{(imports.length > 0 || renderedBooks.length > 0) && (
+				<BookGrid
+					books={renderedBooks}
+					imports={imports}
+					returnLabel={source.title}
+					onEdit={setEditing}
+					onDelete={setDeleting}
+				/>
+			)}
 			{books.isPending ? (
 				<p role="status">正在加载素材…</p>
 			) : books.isError ? (
@@ -160,14 +176,7 @@ function SourceBooks({
 						</button>
 					</div>
 				</div>
-			) : (
-				<BookGrid
-					books={books.data.items}
-					returnLabel={source.title}
-					onEdit={setEditing}
-					onDelete={setDeleting}
-				/>
-			)}
+			) : null}
 			{expanded && (
 				<ConfirmDialog
 					className="scoped-material-dialog"

@@ -12,8 +12,11 @@ import type { StudyTarget } from "../src/materials/study-api";
 import "../src/styles.css";
 import { analysisReading } from "./analysis-reading";
 import { analysisRename } from "./analysis-rename";
+import { overviewImportRegression } from "./catalog-overview";
+import { reusedImportRegression } from "./catalog-reuse";
 import { catalogToolbarRegression } from "./catalog-toolbar";
 import { chapterRecords } from "./chapter-records";
+import { materialImport } from "./material-import";
 import { navigationFeedback } from "./navigation-feedback";
 import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
@@ -389,6 +392,8 @@ async function clearStudyContext() {
 try {
 	const suite = new URLSearchParams(location.search).get("suite");
 	const standalone = new Map([
+		["catalog-overview", overviewImportRegression],
+		["catalog-reuse", reusedImportRegression],
 		["catalog-toolbar", catalogToolbarRegression],
 		["record-saving", recordSaving],
 		["navigation-feedback", navigationFeedback],
@@ -480,21 +485,33 @@ try {
 									suite === "segment-materials" ||
 									suite === "analysis-reading" ||
 									suite === "analysis-rename" ||
+									suite === "material-import" ||
 									suite === "segment-share"
 								? [
-										await (suite === "segment-share"
-											? segmentShareRegression
-											: suite === "analysis-rename"
-												? analysisRename
-												: suite === "analysis-reading"
-													? analysisReading
-													: suite === "segment-materials"
-														? segmentMaterials
-														: suite === "workbench-history"
-															? workbenchHistory
-															: suite === "workbench-render"
-																? workbenchRender
-																: workbenchRegression)({
+										await (suite === "material-import"
+											? (h: Parameters<typeof materialImport>[0]) =>
+													materialImport(
+														h,
+														new URLSearchParams(location.search).get(
+															"preview",
+														) ||
+															new URLSearchParams(location.search).has(
+																"preview",
+															),
+													)
+											: suite === "segment-share"
+												? segmentShareRegression
+												: suite === "analysis-rename"
+													? analysisRename
+													: suite === "analysis-reading"
+														? analysisReading
+														: suite === "segment-materials"
+															? segmentMaterials
+															: suite === "workbench-history"
+																? workbenchHistory
+																: suite === "workbench-render"
+																	? workbenchRender
+																	: workbenchRegression)({
 											container,
 											check,
 											until,
