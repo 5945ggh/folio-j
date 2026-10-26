@@ -60,6 +60,5 @@ just check-assets # 验证保留的实验和静态原型
 - [阶段性交接](handovers/README.md)：当前实施基线、后续安排与归档任务。
 - [研究材料](../references/README.md)：可复核的原句、解析示例、提取和阅读实验。
 - [第一阶段：素材与片段管理](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)：该阶段已交付范围、接口和验收记录。
-- [工作台视觉基线](../prototypes/reading-native/VISUAL_BASELINE.md)：正式界面的风格与布局参考；具体交互按实际功能设计，原型中的模拟行为不替代 PRD。
 
 实验和原型保留各自的历史边界，不能据此恢复过时的产品需求。

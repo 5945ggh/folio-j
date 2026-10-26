@@ -56,7 +56,6 @@ just snapshot   # Repomix 在 .snapshots/ 生成带时间戳的 XML 仓库快照
 
 - **子代理模型与思考强度**：调用 Codex 原生子代理时，必须显式指定 `model="gpt-6.1-sol"` 和 `reasoning_effort`，思考强度从 `medium`、`high`、`xhigh` 中选择。显式指定该模型但省略思考强度时，实际使用模型默认的 `low` 思考强度。
 - **PRD 版本**：审订期间不随每次编辑递增文档版本号，待最终收口时统一调整。
-- **视觉参考**：`prototypes/reading-native` 提供风格与布局思路；具体交互按真实功能设计，不照搬模拟行为，产品边界以 PRD 为准。
 - **分支与协作**：默认使用稳定 `main` 加短期 `codex/*` 功能分支，不额外维护长期 `develop`。主代理负责范围、契约、派遣和集成验收，开发与测试子代理分工；并行任务明确文件所有权，完成检查后再集成。
 - **Python**：完整的类型注解，pyright 以 strict 模式通过；Pydantic v2；SQLAlchemy 2.0 的 `Mapped` 风格；全链路 async（数据库操作使用 aiosqlite）。
 - **TypeScript**：strict 模式；服务端数据一律通过 TanStack Query 获取；UI 组件优先使用 shadcn/ui。
