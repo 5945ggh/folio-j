@@ -1,0 +1,59 @@
+frontend/src/SourcePages.tsx
+  h_c735ec7f46d14b 199
+frontend/src/catalog/library-a1.css
+  s_10405214dc231b::t_324ff8a00ec2eb 407
+  s_996b76e3631a84::t_4231b31346bc2e 126,132,421-431
+  s_10405214dc231b::t_4d5be3b7accd04 406,408
+  s_996b76e3631a84::t_6fcb4d44d1695d 11,13,57-63,107-114,116-125,127-131,133-151,153,155-157,159-167,169-175,177-178,180-192,194-232,409
+frontend/browser-tests/catalog-toolbar.tsx
+  s_996b76e3631a84::t_a8c1bfaabae556 1-46,50-56,60-82,87-103,108-125,130-137,142-155,159-169,172-176,184,189,193-196,205-207,212-218
+  s_996b76e3631a84::t_f6764566f87e4a 47-49,57-59,83-86,104-107,126-129,138-141,156-158,170-171,177-183,185-188,190-192,197-204,208-211
+frontend/browser-tests/main.tsx
+  s_996b76e3631a84::t_d38e202c726a7e 15,392
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_996b76e3631a84::t_cd4316f34d7af3 9
+  s_996b76e3631a84::t_7ff3cde9acf794 10
+frontend/src/catalog/LibraryTools.tsx
+  s_10405214dc231b::t_4d5be3b7accd04 121-126
+  s_996b76e3631a84::t_50cdbb322b24f0 32,42-44,49,53-54,56-62,66-85,131-148,209-223,226-230,236
+docs/PRD.md
+  s_10405214dc231b::t_4d5be3b7accd04 89
+frontend/scripts/test-browser.mjs
+  s_996b76e3631a84::t_d38e202c726a7e 55-57
+frontend/src/catalog/Controls.tsx
+  s_10405214dc231b::t_c7cebd4024f681 30,44
+  s_10405214dc231b::t_4d5be3b7accd04 24,29,31,33,35,37,40,60-62,65-66
+frontend/src/catalog/Books.tsx
+  s_996b76e3631a84::t_f48d45d1885d31 492-493
+frontend/src/catalog/SourceDirectory.tsx
+  s_996b76e3631a84::t_90ff4f2e338307 8,62,76-91,117-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "426baea48103ce586c03502057292bde24b5a87b",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_10405214dc231b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17353-39e9-7741-8544-1204d9ccb8b2",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_996b76e3631a84": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17362-013d-7681-aba7-b4b6eb3def99",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
