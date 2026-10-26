@@ -1,0 +1,36 @@
+justfile
+  s_3082006ed8ba24::t_df0aee5b01d79f 73
+docs/handovers/archived/STAGE_2B_ASYNC_QA.md
+  s_3082006ed8ba24::t_5174906226ca04 232
+docs/ARCHITECTURE.md
+  s_996b76e3631a84::t_346d2678956ef7 546
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "79c11bccf1d9538070dc1c9f3a6acf68c320fa35",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_3082006ed8ba24": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1735d-95c2-7a11-b8fd-0720f213d5d4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_996b76e3631a84": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17362-013d-7681-aba7-b4b6eb3def99",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
