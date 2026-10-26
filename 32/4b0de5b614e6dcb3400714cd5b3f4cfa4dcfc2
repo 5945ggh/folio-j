@@ -1,0 +1,173 @@
+docs/ARCHITECTURE.md
+  s_79029af9f6b52b::t_c3cf05d591cf40 70-72,112-115,118-125,179,181,185-186,432,474,552,570
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_79029af9f6b52b::t_95e04a54492a69 5-6,9-14,17,43-44,56
+README.md
+  s_79029af9f6b52b::t_c9b2e559577e16 3,5,7,9,11,13,15,17,19-25,27-33,35-36,41-48,50-53,56,60-69,72
+backend/alembic/env.py
+  s_79029af9f6b52b::t_23fe0ca4f19139 31-41
+backend/alembic/versions/0001_schema_baseline.py
+  s_79029af9f6b52b::t_97ccc519dfec3b 1,3,6,15,132,141-147,456-556,559-564
+backend/openapi.json
+  s_79029af9f6b52b::t_e536e18425d577 382
+backend/src/app/epub_schemas.py
+  s_79029af9f6b52b::t_f04097e6c5732e 7
+backend/src/app/epub_storage.py
+  s_79029af9f6b52b::t_e7905fe5df4f9d 1-83,85-88,90-92,95-147
+backend/src/app/services/chapter_translations.py
+  s_79029af9f6b52b::t_833897f39fc914 13,123-124
+backend/src/app/services/epub.py
+  s_79029af9f6b52b::t_cfb314ef2a66c6 1,16,26,31-32,149,421-436,439,443,456,458-463,466-470,492-493,503-504,507,557-564,570-571,573,575,580-582,825-828,834-836,838,871,884-885,943,964
+backend/src/app/services/material_provenance.py
+  s_79029af9f6b52b::t_c68d03c379a863 16,276-277,626
+backend/src/app/services/material_segments.py
+  s_79029af9f6b52b::t_ec563b12e6e308 11,98-99
+backend/src/app/services/materials.py
+  s_79029af9f6b52b::t_369abcdf9c49d6 14-15,50,201
+backend/src/app/services/statistics.py
+  s_79029af9f6b52b::t_9e91b10e4fcf34 11,131,136,148,169
+backend/tests/test_chapter_positions.py
+  s_79029af9f6b52b::t_89736061e1d559 364
+backend/tests/test_epub_compiler.py
+  s_79029af9f6b52b::t_29c584c0f60e99 5,14,19,21,98-106,112-114,126-128,334,505-506,508,535,583,628-808
+backend/tests/test_epub_storage.py
+  s_79029af9f6b52b::t_97830d2b024eeb 1-334
+backend/tests/test_material_chapter_segments.py
+  s_79029af9f6b52b::t_375fec24a206e5 23,104,106,109,111,402
+backend/tests/test_materials.py
+  s_79029af9f6b52b::t_5dd6bafbcc6256 4,6,9,12-13,19,218-242,254-260,285-356
+backend/tests/test_migrations.py
+  s_79029af9f6b52b::t_8f97311bad5429 1,12-22,32,36-129,136,139-141,144-146,153,158,160-199,204,207-208,210-215,218-219,221-222,224-227,229,231,235-246,249,252-260,264,268,271-283,286,289-290,292,296,299-305,308-310,312-313,315-323
+backend/tests/test_reader_queries.py
+  s_79029af9f6b52b::t_76f18e33be149a 172,212
+backend/tests/test_segment_provenance.py
+  s_79029af9f6b52b::t_216fafb92d11d3 18,479
+docs/DEVELOPMENT.md
+  s_79029af9f6b52b::t_65f6b80950a901 9
+docs/INFORMATION_ARCHITECTURE.md
+  s_79029af9f6b52b::t_aba1e199204da2 27,29-31
+docs/PRD.md
+  s_79029af9f6b52b::t_d6df810d806443 89,95,512
+docs/TECH_STACK.md
+  s_79029af9f6b52b::t_3320f15e3df64a 25,40-42
+docs/UPGRADING.md
+  s_79029af9f6b52b::t_7d29a8da1da3e5 13-21,29,31,37,39
+docs/USAGE.md
+  s_79029af9f6b52b::t_0f5fc5c7aa314b 7-9
+docs/handovers/DATABASE_MIGRATION_ACCEPTANCE.md
+  s_79029af9f6b52b::t_6a122c1a06d4b5 1-34
+docs/handovers/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md
+  s_79029af9f6b52b::t_923ed20e01f181 1-49
+docs/handovers/EPUB_STORAGE_ACCEPTANCE.md
+  s_79029af9f6b52b::t_03675cae55a1c3 1-120
+docs/handovers/README.md
+  s_79029af9f6b52b::t_7653503942079d 9-11,16
+docs/handovers/ROUTE_LOADING_ACCEPTANCE.md
+  s_79029af9f6b52b::t_649d53bc434ccb 51-60
+docs/handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md
+  s_79029af9f6b52b::t_9819f70a8d38c5 7
+docs/handovers/archived/STAGE_2B_ASYNC_QA.md
+  s_79029af9f6b52b::t_e0684a3cdb6886 232
+docs/handovers/archived/epub-reading/SLICE_0_ACCEPTANCE.md
+  s_79029af9f6b52b::t_17ef7176512e28 11
+docs/handovers/epub-reading/README.md
+  s_79029af9f6b52b::t_09676c59fec33a 17
+docs/handovers/text-study/READER_SESSION_ACCEPTANCE.md
+  s_79029af9f6b52b::t_70e455dfc473b7 56-76
+frontend/browser-tests/catalog-overview.tsx
+  s_79029af9f6b52b::t_b455bbfe1977cb 1-344
+frontend/browser-tests/catalog-reuse.tsx
+  s_79029af9f6b52b::t_a3427b55376705 1-597
+frontend/browser-tests/catalog-toolbar.tsx
+  s_79029af9f6b52b::t_f16b0e786a346f 1-218
+frontend/browser-tests/harness.ts
+  s_79029af9f6b52b::t_fcd10add08479a 2,16
+frontend/browser-tests/main.tsx
+  s_79029af9f6b52b::t_0d0904d9280479 5-9,15-17,19,27,100-105,109-114,395-420,422-429,431,433,435-444,446-447,449,451,455,457-467,471,473-480,482,484-491,493-504,517-531,542-567,576-579
+frontend/browser-tests/material-import.tsx
+  s_79029af9f6b52b::t_a38b79154595c2 1-543
+frontend/browser-tests/reader-session.tsx
+  s_79029af9f6b52b::t_7d65e3198843c2 2-9,152-156,165-166,171-173,175-176,180-194,197,199,212-217,503-517,525-548,748-849,1020-1097,1099-1102,1105
+frontend/browser-tests/route-loading.tsx
+  s_79029af9f6b52b::t_c70d97f54e759c 84-85,87,153,155,189-194
+frontend/browser-tests/route-motion.tsx
+  s_79029af9f6b52b::t_b2ad39d9ae58b8 1-482
+frontend/browser-tests/translation-toolbar.tsx
+  s_79029af9f6b52b::t_39fd16bf380156 17
+frontend/scripts/test-browser.mjs
+  s_79029af9f6b52b::t_e5fba08b67bbf3 58-72
+frontend/src/App.tsx
+  s_79029af9f6b52b::t_5ef0f24bb1627c 3,5,7,16-18,53-56,59,61,63,65,70-96
+frontend/src/SourcePages.tsx
+  s_79029af9f6b52b::t_b5ab58871aa330 7,200,576
+frontend/src/catalog/Books.tsx
+  s_79029af9f6b52b::t_26dfbbee81a8a4 37-38,327,333,337,384-389,445-446,479-487,501-502,514-515,536
+frontend/src/catalog/Controls.tsx
+  s_79029af9f6b52b::t_b4dd169ae1bfaa 24,29-31,33,35,37,40,44,60-62,65-66
+frontend/src/catalog/ImportCards.tsx
+  s_79029af9f6b52b::t_24fbb7f8fe7635 1-151
+frontend/src/catalog/ImportDialog.tsx
+  s_79029af9f6b52b::t_de5c2c5b6bb73e 14,73-75,169-174,176
+frontend/src/catalog/LibraryTools.tsx
+  s_79029af9f6b52b::t_9551acc6963b5f 32,42-44,49,53-54,56-62,66-85,121-126,131-148,209-223,226-230,236
+frontend/src/catalog/SourceDirectory.tsx
+  s_79029af9f6b52b::t_6bee54721e8dd1 8,62,76-91,117-119
+frontend/src/catalog/SourceOverview.tsx
+  s_79029af9f6b52b::t_900c2cdb3ed86a 20,84-89,126-130,159,161-162,173-181
+frontend/src/catalog/SourceViews.tsx
+  s_79029af9f6b52b::t_ac90164d3d0aa3 29,62-67,92,137-145,179
+frontend/src/catalog/book-deletion.ts
+  s_79029af9f6b52b::t_96da52b40dfb37 2,10
+frontend/src/catalog/import-cards.css
+  s_79029af9f6b52b::t_c78572735147ef 1-54
+frontend/src/catalog/import-state.test.ts
+  s_79029af9f6b52b::t_1539f648ae4879 1-280
+frontend/src/catalog/import-state.ts
+  s_79029af9f6b52b::t_13ae1a6bb14f1b 1-143
+frontend/src/catalog/library-a1.css
+  s_79029af9f6b52b::t_4ef3a274d77f1a 11,13,57-63,107-126,128-144,146-153,155-157,159-167,169-175,177-187,189-192,194-232,296-304,406-409,421-431
+frontend/src/catalog/source-content.css
+  s_79029af9f6b52b::t_7c61e44b825aee 149-166
+frontend/src/main.tsx
+  s_79029af9f6b52b::t_f47ef7399e8ae8 4,16-18
+frontend/src/materials/MaterialReader.tsx
+  s_79029af9f6b52b::t_ac3a7afa0ae438 13-19,23,31,177,186,1928,1972-1976,2089-2091,2691,2862,2896-2898,2906-2922,2925-2926
+frontend/src/materials/ReaderPanels.tsx
+  s_79029af9f6b52b::t_44beadceb58bfc 4
+frontend/src/materials/ReaderSessionHost.tsx
+  s_79029af9f6b52b::t_b2f1d626860fa6 1-2,7-12,14,16-17,19-25,29,51,57,72
+frontend/src/materials/StudyPreview.tsx
+  s_79029af9f6b52b::t_5abf884e209ab9 7
+frontend/src/materials/reader-r1.css
+  s_79029af9f6b52b::t_66f7989bb33822 564-602,604-608
+frontend/src/navigation/view-activity.tsx
+  s_79029af9f6b52b::t_569cc6153da7ff 1-22
+frontend/src/translation/TranslationPanel.tsx
+  s_79029af9f6b52b::t_7e080093e50a87 22
+frontend/src/translation/session-react.ts
+  s_79029af9f6b52b::t_fc5e64cccd8ebe 8
+justfile
+  s_79029af9f6b52b::t_505131248562fc 73
+prototypes/epub-reading/README.md
+  s_79029af9f6b52b::t_d2086085f4e757 11
+prototypes/epub-reading/fixtures/README.md
+  s_79029af9f6b52b::t_eb4986a964f5f9 5,16
+scripts/run.py
+  s_79029af9f6b52b::t_6fa291805e1797 57-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "324b0de5b614e6dcb3400714cd5b3f4cfa4dcfc2",
+  "prompts": {},
+  "sessions": {
+    "s_79029af9f6b52b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a178e5-ad4f-7352-ac7e-b3684a6b9d82",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
