@@ -10,10 +10,17 @@ import {
 	useState,
 } from "react";
 import { flushSync } from "react-dom";
-import { Link, useLocation, useNavigate, useParams } from "react-router";
+import {
+	Link,
+	type Location,
+	useLocation,
+	useNavigate,
+	useParams,
+} from "react-router";
 import { Icon as CatalogIcon } from "../catalog/LibraryTools";
 import { getSource, queries, RequestError, type Segment } from "../content";
 import {
+	type ReturnDestination,
 	returnDestination,
 	returnState,
 	updateSegmentLocation,
@@ -21,7 +28,7 @@ import {
 import {
 	useViewActivity,
 	ViewActivityProvider,
-} from "../navigation/RetainedRoute";
+} from "../navigation/view-activity";
 import { InlineError } from "../Shared";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "../speech";
 import { getSpeechController } from "../speech/browser";
@@ -167,6 +174,7 @@ type InlineTranslationRequest = {
 };
 function Reader({
 	book,
+	returnTo,
 	notice,
 	readingsSummary,
 	initialOrigin,
@@ -175,6 +183,7 @@ function Reader({
 	positionWriter,
 }: {
 	book: Material;
+	returnTo: ReturnDestination;
 	sessionToken: string;
 	discard: { current: boolean };
 	positionWriter: ReaderPositionWriter;
@@ -200,7 +209,6 @@ function Reader({
 	const translationSessions = useTranslationSessions();
 	const client = useQueryClient();
 	const readingGeneration = readingsSummary.generation_id;
-	const location = useLocation();
 	const navigate = useNavigate();
 	const initialAnchor = initialOrigin
 		? originPosition(initialOrigin, book.reading_position?.settings ?? defaults)
@@ -229,10 +237,6 @@ function Reader({
 		kind: "created" | "existing";
 		serial: number;
 	} | null>(null);
-	const returnTo = returnDestination(location.state, {
-		to: "/materials",
-		label: "素材库",
-	});
 	const source = useQuery({
 		queryKey: queries.source(book.source_id),
 		enabled: active,
@@ -1921,6 +1925,7 @@ function Reader({
 		<main
 			ref={shell}
 			className="reader-r1"
+			data-presented={presented}
 			data-theme={theme}
 			data-tools-visible={toolsVisible}
 			data-left-open={!!panels.left}
@@ -1964,7 +1969,11 @@ function Reader({
 					<p>
 						<span className="reader-heading-chapter">
 							{chapter.data?.title ??
-								(chapter.isError ? "章节暂不可用" : "正在打开章节…")}
+								(chapter.isError ? (
+									"章节暂不可用"
+								) : (
+									<span className="reader-pending-message">正在打开章节…</span>
+								))}
 						</span>
 						<span className="reader-heading-progress">
 							{progress === null
@@ -2077,7 +2086,9 @@ function Reader({
 			</div>
 			{chapter.isPending ||
 			(bookUi.rubyScope === "all" && readings.isPending) ? (
-				<div className="reader-loading">正在打开章节…</div>
+				<div className="reader-loading reader-pending-message" role="status">
+					正在打开章节…
+				</div>
 			) : chapter.isError ||
 				(bookUi.rubyScope === "all" && readings.isError) ? (
 				<div className="reader-loading">
@@ -2677,10 +2688,9 @@ function Reader({
 	);
 }
 
-function MaterialOpening({ id }: { id: string }) {
+function MaterialOpening({ id, location }: { id: string; location: Location }) {
 	const host = useViewActivity();
 	const client = useQueryClient();
-	const location = useLocation();
 	const navigate = useNavigate();
 	const segmentId = new URLSearchParams(location.search).get("segment");
 	const [retry, setRetry] = useState(0);
@@ -2849,6 +2859,7 @@ function MaterialOpening({ id }: { id: string }) {
 						<Reader
 							key={`${readerSessionIdentity({ materialId: id, versionId: session.book.version_id, generationId: session.summary.generation_id })}:${session.serial}`}
 							book={session.book}
+							returnTo={back}
 							readingsSummary={session.summary}
 							initialOrigin={session.origin}
 							sessionToken={session.token}
@@ -2882,7 +2893,9 @@ function MaterialOpening({ id }: { id: string }) {
 								</button>
 							</>
 						) : (
-							<p>正在打开书籍…</p>
+							<p className="reader-pending-message" role="status">
+								正在打开书籍…
+							</p>
 						)}
 					</div>
 				</main>
@@ -2890,7 +2903,25 @@ function MaterialOpening({ id }: { id: string }) {
 		</>
 	);
 }
+export type ReaderSessionEntry = { materialId: string; location: Location };
+
+export function MaterialReaderSession({
+	entry,
+}: {
+	entry: ReaderSessionEntry;
+}) {
+	return (
+		<MaterialOpening
+			key={entry.materialId}
+			id={entry.materialId}
+			location={entry.location}
+		/>
+	);
+}
+
+/** Route adapter for independently mounted readers; the app uses ReaderSessionHost. */
 export function MaterialReader() {
 	const { id = "" } = useParams();
-	return <MaterialOpening key={id} id={id} />;
+	const location = useLocation();
+	return <MaterialReaderSession entry={{ materialId: id, location }} />;
 }

@@ -172,11 +172,13 @@ Source 目录提供材料、未删除片段与讲解的真实计数，概览仅�
 
 ### 3.1.2 阅读器 R1.1 呈现与只读派生查询
 
-前端 `navigation/RetainedRoute` 保留一个匹配路由的 DOM 与冻结的路由上下文，统一提供 active／activation 生命周期；纯 `retained-session` module 负责身份替换、恢复代次和暂离十分钟的租期，过期检查同时覆盖定时淘汰和直接返回。当前只接入材料阅读器与片段页往返，打开其他材料替换旧实例，离开适用路由释放。缓存只存在当前标签页内存，不持久化书籍正文，也不增加依赖。后续入口可复用宿主与生命周期，分别维护自己的可用性核验和失效规则。
+前端 `materials/ReaderSessionHost.tsx` 从真实 location 识别当前材料，保留最近一个阅读会话，并在片段页暂停该会话。纯 `navigation/retained-session` 策略负责身份替换、恢复代次和暂离十分钟的租期，过期检查同时覆盖定时淘汰和直接返回。打开其他材料替换旧实例，离开适用路由释放。缓存只存在当前标签页内存，不持久化书籍正文，也不增加依赖。
 
-宿主只冻结组件路由的 location／params；Data router 的 loader／action 不属于保留范围，嵌套 `Routes location` 的导航类型按 Router 行为显示为 POP，依赖 PUSH／REPLACE 的后续入口须单独传递其策略。接入视图须用 `useViewActivity` 停止隐藏期间的输入、布局及查询副作用；最终卸载仍执行资源清理。保留状态不替代 TanStack Query 的服务端数据缓存。
+宿主将稳定的 `{ materialId, location }` entry 显式传给 `MaterialReaderSession`；`MaterialOpening` 消费入口 location，Reader 接收已校验的 `returnTo`。`MaterialReader` 仅为独立路由挂载保留薄适配，导航由真实 Data Router 处理，宿主不构造嵌套 `Routes` 或冻结 Router context。`navigation/view-activity.tsx` 提供 `ViewActivityProvider` 与 `useViewActivity`，统一传递 active／activation 生命周期；接入视图据此停止隐藏期间的输入、布局及查询副作用，最终卸载仍执行资源清理。保留状态不替代 TanStack Query 的服务端数据缓存。
 
 Reader 暂停时保留 iframe 与正文投影，停用输入、重排与位置采样，完成离开前稳定锚点的串行写入。恢复协调先等待写入队列，再读取材料与片段出处并核验注音代次；同身份复用现有 DOM，版本、代次或外部位置修订变化时安全重建，失效不展示旧正文。返回刷新当前学习标记、译文及相关资料，有 `segment` 参数时通过既有精确校验与导航定位原文，不通过更改 React key 重建整页。真正淘汰才清理 frames 与监听；读取失败和重试保留目标。
+
+阅读页在现有 `presented` 稳定呈现信号后执行 240ms 轻淡入，标题独立上移 8px；正文视口和 iframe 不做动画位移，保留定位及浮卡坐标。书卡按压反馈独立保留，进入阅读器使用普通导航，不捕获加载页快照或延长数据加载。书籍与章节的加载文案延后 150ms 显示，就绪即移除；错误与返回入口即时可用。减少动态效果时关闭入场动画，保留加载提示防闪延迟。保留会话再次显示时可重播轻入场，租期与恢复核验不变。
 
 搜索与图库按不可变编译包派生，不新增领域实体、持久索引或数据库表，不改变原字节、正文、版本及产物摘要。DTO 见 [OpenAPI](../backend/openapi.json)；浏览器兼容与历史成本观测见[阅读器验收](handovers/archived/reader-r1/ACCEPTANCE.md)和[历史 API 记录](handovers/archived/reader-r1/API.md#本机只读查询成本记录)。服务层在线程中执行解压、扫描、HTML 解析与图片解码；当前无派生缓存，每次非空搜索／图库请求仍解析有界全书包。每个请求核验 Material、所属 Source 和必填 version_id；缺失／不可见返回 404、查询版本不符返回 409、参数错误返回 422，不改变位置写入的版本／范围错误 422 契约。
 

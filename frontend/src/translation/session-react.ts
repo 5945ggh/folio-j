@@ -5,7 +5,7 @@ import {
 	translationActivityKey,
 } from "../materials/chapter-translations-query";
 import type { MaterialProvenance } from "../materials/study-api";
-import { useViewActivity } from "../navigation/RetainedRoute";
+import { useViewActivity } from "../navigation/view-activity";
 import {
 	createTranslation,
 	getTranslationHistory,

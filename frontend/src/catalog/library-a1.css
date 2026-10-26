@@ -188,6 +188,15 @@
 .book-main-link:hover .book-cover {
 	border-color: #b8c6db;
 }
+/* Pressing a cover confirms the click before the route motion takes over. */
+@media (prefers-reduced-motion: no-preference) {
+	.book-cover {
+		transition: transform 120ms ease-out;
+	}
+	.book-main-link:active .book-cover {
+		transform: scale(0.972);
+	}
+}
 .book-cover-placeholder {
 	width: 100%;
 	height: 100%;

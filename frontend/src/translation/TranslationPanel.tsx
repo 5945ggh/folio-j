@@ -19,7 +19,7 @@ import { useReaderSessionRefresh } from "../materials/reader-session-query";
 import type { ScreenAnchor } from "../materials/reader-study";
 import type { MaterialProvenance, StudyTarget } from "../materials/study-api";
 import { useReaderCardDrag } from "../materials/use-reader-card-drag";
-import { useViewActivity } from "../navigation/RetainedRoute";
+import { useViewActivity } from "../navigation/view-activity";
 import { InlineError } from "../Shared";
 import { SpeechControls } from "../speech";
 import { getSpeechController } from "../speech/browser";
