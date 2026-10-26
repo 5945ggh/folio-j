@@ -1,0 +1,39 @@
+scripts/run.py
+  s_ba09e3ee5b4d0c::t_8ed8564694fe44 57-60
+docs/DEVELOPMENT.md
+  s_ba09e3ee5b4d0c::t_107289f3e921df 9
+README.md
+  s_ba09e3ee5b4d0c::t_1bd0a1d3e75b7c 5,15,24-25,27-32,60,62,64-66,68
+  s_ba09e3ee5b4d0c::t_06f9a539569ef9 7,9,11,13
+  s_ba09e3ee5b4d0c::t_107289f3e921df 35,42-48,50-52
+  s_ba09e3ee5b4d0c::t_3c37ed0f33fb92 56,72
+  h_c735ec7f46d14b 3,61,63,67
+  s_ba09e3ee5b4d0c::t_3bbdfb2359f0d5 21-23
+  s_ba09e3ee5b4d0c::t_7c30067fa38185 33
+  s_ba09e3ee5b4d0c::t_f6bade131d1505 36
+  s_ba09e3ee5b4d0c::t_c61d40905cf21e 41
+  s_ba09e3ee5b4d0c::t_4c07a48931bc60 53
+  s_ba09e3ee5b4d0c::t_e5a2e46b367ac9 69
+  s_ba09e3ee5b4d0c::t_20f15860a3b939 17,19-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "965acd8a6b2e2e49a8735c83d140e5c495aa77ec",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_ba09e3ee5b4d0c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17312-b328-7d81-ba11-61558797b641",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
