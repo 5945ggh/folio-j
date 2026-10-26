@@ -1,4 +1,4 @@
-"""Isolated stdlib EPUB → controlled reading JSON experiment (not production ingest)."""
+"""Bounded stdlib EPUB compilation with immutable resource-local reading identity."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ import unicodedata
 import zipfile
 from bisect import bisect_left
 from collections.abc import Iterable, Iterator
+from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, cast
@@ -22,12 +23,13 @@ from xml.parsers import expat
 
 from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter, CompiledResource
 
-CONTRACT = "epub-reading-v1"
+CONTRACT = "epub-reading-v2"
 MAX_PRODUCT_BYTES = 64 * 1024 * 1024
 MAX_NFC_BOUNDARY_PROBES = 8
 RULES = (
     "xml-xhtml;allowlist-v1;block-end-newline;raw-leaves-global-NFC;rt-rp-excluded;"
-    "isolated-fixed-raster-v1;css-import-v1;document-attributes-v1;toc-ranges-v1"
+    "isolated-fixed-raster-v1;css-import-v1;document-attributes-v1;toc-ranges-v1;"
+    "chapter-html-only-v2"
 )
 
 ALLOWED = frozenset(
@@ -144,7 +146,7 @@ IMAGE_TYPES = {
 
 
 class EpubError(ValueError):
-    """Unsupported or unsafe experimental input."""
+    """Unsupported or unsafe EPUB input."""
 
 
 class EpubLimitError(EpubError):
@@ -416,14 +418,29 @@ def _inline_css(
     return expanded
 
 
-def _compile_legacy(path: Path | io.BytesIO) -> dict[str, object]:
-    """Compile a reflowable, unencrypted EPUB without extracting ZIP entries."""
+@dataclass(frozen=True)
+class _Publication:
+    """Validated resources and temporary HTML used only while building chapters."""
+
+    files: dict[str, bytes]
+    package_path: str
+    package: ET.Element
+    title: str
+    resources: list[CompiledResource]
+    resource_html: list[str]
+    warnings: _BudgetedWarnings
+    output_budget: list[int]
+
+
+def _read_archive(data: bytes) -> dict[str, bytes]:
+    """Validate ZIP metadata before reading each local member once, without extraction."""
     files: dict[str, bytes] = {}
     try:
-        with zipfile.ZipFile(path) as archive:
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
             infos = archive.infolist()
             if len(infos) > 5000 or sum(info.file_size for info in infos) > 128 * 1024 * 1024:
                 raise EpubError("Archive exceeds entry count or expanded size limit")
+            names: set[str] = set()
             for info in infos:
                 name = info.filename
                 if name.startswith("/") or "\\" in name or ".." in name.split("/"):
@@ -436,13 +453,21 @@ def _compile_legacy(path: Path | io.BytesIO) -> dict[str, object]:
                 ):
                     raise EpubError("Archive member exceeds expansion limits")
                 if not info.is_dir():
-                    if name in files:
+                    if name in names:
                         raise EpubError(f"Duplicate ZIP entry: {name}")
-                    files[name] = archive.read(info)
+                    names.add(name)
+            if "META-INF/encryption.xml" in names:
+                raise EpubError("Encrypted/DRM or font-obfuscated EPUB is unsupported")
+            for info in infos:
+                if not info.is_dir():
+                    files[info.filename] = archive.read(info)
     except (zipfile.BadZipFile, OSError) as exc:
         raise EpubError(f"Cannot read EPUB: {exc}") from exc
-    if "META-INF/encryption.xml" in files:
-        raise EpubError("Encrypted/DRM or font-obfuscated EPUB is unsupported")
+    return files
+
+
+def _prepare_publication(data: bytes) -> _Publication:
+    files = _read_archive(data)
     try:
         container = _xml(files["META-INF/container.xml"])
         package_path = next(
@@ -464,7 +489,8 @@ def _compile_legacy(path: Path | io.BytesIO) -> dict[str, object]:
             (el.text for el in package.iter() if _tag(el) == "title" and el.text),
             "EPUB",
         )
-        resources: list[dict[str, object]] = []
+        resources: list[CompiledResource] = []
+        resource_html: list[str] = []
         product_budget = [0]
         output_budget = [0]
         _spend_json(
@@ -474,10 +500,11 @@ def _compile_legacy(path: Path | io.BytesIO) -> dict[str, object]:
                 "title": title,
                 "warnings": [],
                 "resources": [],
-                "materialVersion": "0" * 64,
+                "chapters": [],
+                "product_sha256": "0" * 64,
             },
         )
-        warnings: list[str] = _BudgetedWarnings(output_budget)
+        warnings = _BudgetedWarnings(output_budget)
         spine = [el for el in package.iter() if _tag(el) == "itemref"]
         if spine and all(
             "rendition:layout-pre-paginated" in el.attrib.get("properties", "").split()
@@ -527,41 +554,32 @@ def _compile_legacy(path: Path | io.BytesIO) -> dict[str, object]:
                 (el.text for el in document.iter() if _tag(el) == "title" and el.text),
                 href,
             )
-            resource: dict[str, object] = {
-                "id": item.attrib["id"],
-                "href": href,
-                "title": resource_title,
-                "text": text,
-                "html": fragment,
-                "css": "\n".join(styles),
-                "htmlAttributes": _presentation_attributes(document),
-                "bodyAttributes": _presentation_attributes(
+            resource = CompiledResource(
+                id=item.attrib["id"],
+                href=href,
+                title=resource_title,
+                text=text,
+                css="\n".join(styles),
+                html_attributes=_presentation_attributes(document),
+                body_attributes=_presentation_attributes(
                     next(
                         (el for el in document.iter() if _tag(el) == "body"),
                         document,
                     )
                 ),
-                "textSha256": hashlib.sha256(text.encode()).hexdigest(),
-            }
+                text_sha256=hashlib.sha256(text.encode()).hexdigest(),
+            )
             _spend(output_budget, int(bool(resources)))
-            _spend_json(output_budget, resource)
+            _spend_json(output_budget, resource.model_dump())
             resources.append(resource)
+            resource_html.append(fragment)
     except (KeyError, StopIteration) as exc:
         raise EpubError(f"Incomplete EPUB package: {exc}") from exc
     if not resources:
         raise EpubError("EPUB has no readable spine resources")
-    result: dict[str, object] = {
-        "contract": CONTRACT,
-        "title": title,
-        "warnings": warnings,
-        "resources": resources,
-    }
-    digest = hashlib.sha256(RULES.encode())
-    for name, payload in sorted(files.items()):
-        digest.update(name.encode() + b"\0" + hashlib.sha256(payload).digest())
-    digest.update(json.dumps(result, ensure_ascii=False, sort_keys=True).encode())
-    result["materialVersion"] = digest.hexdigest()
-    return result
+    return _Publication(
+        files, package_path, package, title, resources, resource_html, warnings, output_budget
+    )
 
 
 def _canonical_units(value: str) -> Iterator[tuple[str, int]]:
@@ -804,52 +822,20 @@ def _toc(
 def compile_epub_bytes(data: bytes) -> CompiledBook:
     """Compile bytes without extraction, network access or mutable source identity."""
     try:
-        legacy = cast(dict[str, Any], _compile_legacy(io.BytesIO(data)))
-        resources = [
-            CompiledResource.model_validate(
-                {
-                    **resource,
-                    "html_attributes": resource["htmlAttributes"],
-                    "body_attributes": resource["bodyAttributes"],
-                    "text_sha256": resource["textSha256"],
-                }
-            )
-            for resource in legacy["resources"]
-        ]
-        with zipfile.ZipFile(io.BytesIO(data)) as archive:
-            files = {
-                name: archive.read(name) for name in archive.namelist() if not name.endswith("/")
-            }
-        container = _xml(files["META-INF/container.xml"])
-        package_path = _resolve(
-            "", next(el.attrib["full-path"] for el in container.iter() if _tag(el) == "rootfile")
-        )
-        output_budget = [0]
-        _spend_json(
-            output_budget,
-            {
-                "contract": CONTRACT,
-                "title": legacy["title"],
-                "warnings": [],
-                "resources": [],
-                "chapters": [],
-                "product_sha256": "0" * 64,
-            },
-        )
-        for index, resource in enumerate(resources):
-            _spend(output_budget, int(index > 0))
-            _spend_json(output_budget, resource.model_dump())
-        warnings = _BudgetedWarnings(output_budget)
-        warnings.extend(legacy["warnings"])
-        entries = _toc(files, package_path, _xml(files[package_path]), warnings)
+        publication = _prepare_publication(data)
+        files, resources = publication.files, publication.resources
+        output_budget, warnings = publication.output_budget, publication.warnings
+        entries = _toc(files, publication.package_path, publication.package, warnings)
         if len({resource.href for resource in resources}) != len(resources):
             warnings.append("spine 重复资源保留全部出现位置；目录目标定位到首次出现。")
         parser_by_href: dict[str, _FragmentParser] = {}
         first_by_href: dict[str, int] = {}
         parsers: list[_FragmentParser] = []
-        for index, resource in enumerate(resources):
+        for index, (resource, markup) in enumerate(
+            zip(resources, publication.resource_html, strict=True)
+        ):
             if resource.href not in parser_by_href:
-                parser_by_href[resource.href] = _FragmentParser(resource.html, resource.text)
+                parser_by_href[resource.href] = _FragmentParser(markup, resource.text)
                 first_by_href[resource.href] = index
             parsers.append(parser_by_href[resource.href])
 
@@ -882,7 +868,7 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
         positions = resolve_entries(entries)
         if not positions:
             fallback_entries = _toc(
-                files, package_path, _xml(files[package_path]), warnings, skip_nav=True
+                files, publication.package_path, publication.package, warnings, skip_nav=True
             )
             if fallback_entries and fallback_entries != entries:
                 warnings.append("nav 目录没有有效正文目标，尝试 NCX。")
@@ -895,10 +881,8 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
             positions.insert(0, ("前置内容", 0, 0, 0))
         part_budget = [
             sum(
-                len(resource.html.encode())
-                + len(resource.css.encode())
-                + len(resource.text.encode())
-                for resource in resources
+                len(markup.encode()) + len(resource.css.encode()) + len(resource.text.encode())
+                for resource, markup in zip(resources, publication.resource_html, strict=True)
             )
         ]
         chapters: list[CompiledChapter] = []
@@ -956,7 +940,7 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
             )
         book = CompiledBook(
             contract=CONTRACT,
-            title=str(legacy["title"]),
+            title=publication.title,
             warnings=warnings,
             resources=resources,
             chapters=chapters,
@@ -977,7 +961,7 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
         raise EpubError(f"EPUB 内容无效或不受支持：{exc}") from exc
 
 
-# Stable compatibility surface for the offline CLI and pre-extraction regression suite.
+# Stable pure-function test surface for XML, CSS and presentation rules.
 parse_xml = _xml
 inline_css = _inline_css
 presentation_attributes = _presentation_attributes

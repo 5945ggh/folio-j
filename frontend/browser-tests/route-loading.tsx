@@ -81,9 +81,10 @@ async function pageBoundaryFallbacks(h: BrowserHarness) {
 
 /** Exercise the product route tree, including lazy boundaries, with offline APIs. */
 export async function routeLoading(h: BrowserHarness) {
-	const readerResult = await readerSession(h, true);
+	// Start at the actual trailing-slash URL and switch both forms without rebuilding frames.
+	const readerResult = await readerSession(h, true, true);
 	// main.tsx installs fetch before importing this product route tree.
-	const { App } = await import("../src/App");
+	const { App, appRoutes } = await import("../src/App");
 	const check: BrowserHarness["check"] = h.check;
 	const find = <T extends Element>(selector: string): T => {
 		const element = h.container.querySelector<T>(selector);
@@ -149,8 +150,9 @@ export async function routeLoading(h: BrowserHarness) {
 	localStorage.clear();
 	let dispose = await h.mount(
 		<App />,
-		"*",
+		"/",
 		"/segments/segment?thread=thread&chat=1",
+		appRoutes,
 	);
 	try {
 		await h.until(
@@ -184,7 +186,12 @@ export async function routeLoading(h: BrowserHarness) {
 		dispose();
 	}
 
-	dispose = await h.mount(<App />, "*", "/settings?section=learning");
+	dispose = await h.mount(
+		<App />,
+		"/",
+		"/settings?section=learning",
+		appRoutes,
+	);
 	try {
 		await h.until(
 			() => !!h.container.querySelector("#learning-settings-form textarea"),

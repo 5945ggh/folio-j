@@ -28,27 +28,17 @@ target_metadata = _models.Base.metadata
 
 
 def do_run_migrations(connection: Connection) -> None:
-    # Rebuilding referenced SQLite tables requires FK checks to be suspended on
-    # this dedicated connection, outside the migration transaction. Validate all
-    # retained relationships before committing; normal application engines keep FK ON.
-    connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
-    connection.commit()
-    try:
-        with connection.begin():
-            # sqlite3 otherwise delays BEGIN until DML, leaving earlier DDL
-            # outside the rollback boundary even with transactional_ddl=True.
-            connection.exec_driver_sql("BEGIN IMMEDIATE")
-            context.configure(
-                connection=connection, target_metadata=target_metadata, transactional_ddl=True
-            )
-            with context.begin_transaction():
-                context.run_migrations()
-                if connection.exec_driver_sql("PRAGMA foreign_key_check").first() is not None:
-                    raise RuntimeError("迁移后的外键校验失败，已回滚迁移")
-    finally:
-        connection.rollback()
-        connection.exec_driver_sql("PRAGMA foreign_keys=ON")
-        connection.commit()
+    with connection.begin():
+        # sqlite3 otherwise delays BEGIN until DML, leaving earlier DDL
+        # outside the rollback boundary even with transactional_ddl=True.
+        connection.exec_driver_sql("BEGIN IMMEDIATE")
+        context.configure(
+            connection=connection, target_metadata=target_metadata, transactional_ddl=True
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+            if connection.exec_driver_sql("PRAGMA foreign_key_check").first() is not None:
+                raise RuntimeError("迁移后的外键校验失败，已回滚迁移")
 
 
 async def run_migrations_online() -> None:

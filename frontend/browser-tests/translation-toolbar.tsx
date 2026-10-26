@@ -14,7 +14,7 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 		"../src/translation/session-react"
 	);
 	const { ViewActivityProvider } = await import(
-		"../src/navigation/RetainedRoute"
+		"../src/navigation/view-activity"
 	);
 	const check: BrowserHarness["check"] = h.check;
 	const reference: components["schemas"]["MaterialProvenance"] = {

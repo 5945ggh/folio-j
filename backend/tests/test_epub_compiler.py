@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import html
 import importlib.util
 import io
@@ -10,12 +11,14 @@ import unicodedata
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Literal
-from zipfile import ZipFile
+from zipfile import ZipFile, ZipInfo
 
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from pydantic import ValidationError
 
+from app.epub_schemas import CompiledResource
 from app.services import epub
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -92,13 +95,23 @@ def publication(
     return output.getvalue()
 
 
+def resource_markup(book: epub.CompiledBook, spine_index: int) -> str:
+    return "".join(
+        part.html
+        for chapter in book.chapters
+        for part in chapter.parts
+        if part.spine_index == spine_index
+    )
+
+
 def assert_partition(book: epub.CompiledBook) -> None:
     for index, resource in enumerate(book.resources):
-        rendered = LocatorText(resource.html)
-        assert rendered.normalized() == resource.text
         parts = [
             part for chapter in book.chapters for part in chapter.parts if part.spine_index == index
         ]
+        if not parts:
+            assert resource.text == ""
+            continue
         assert parts[0].start == 0 and parts[-1].end == len(resource.text)
         assert all(a.end == b.start for a, b in zip(parts, parts[1:], strict=False))
         assert "".join(resource.text[part.start : part.end] for part in parts) == resource.text
@@ -110,7 +123,9 @@ def assert_partition(book: epub.CompiledBook) -> None:
             assert projection.leaves == list(range(part.leaf_start, part.leaf_end))
             leaves.extend(projection.leaves)
             raw_text.extend(projection.text)
-        assert leaves == rendered.leaves == list(range(len(rendered.leaves)))
+        assert leaves == list(range(parts[-1].leaf_end))
+        assert parts[0].leaf_start == 0
+        assert all(a.leaf_end == b.leaf_start for a, b in zip(parts, parts[1:], strict=False))
         assert unicodedata.normalize("NFC", "".join(raw_text)) == resource.text
 
 
@@ -316,7 +331,7 @@ def test_many_toc_entries_only_scan_and_normalize_resource_once(
     monkeypatch.setattr(unicodedata, "normalize", counted_normalize)
     monkeypatch.setattr(epub.re, "findall", counted_findall)
     book = epub.compile_epub_bytes(publication(tmp_path, nav, body=body))
-    markup_size = sum(len(resource.html) for resource in book.resources)
+    markup_size = sum(len(part.html) for chapter in book.chapters for part in chapter.parts)
     text_size = sum(len(resource.text) for resource in book.resources)
     assert scanned_chars <= markup_size, "at most one locator extraction per resource"
     assert normalized_chars <= 16 * text_size, "normalization work must not scale with TOC size"
@@ -487,9 +502,10 @@ def test_projection_keeps_base_entities_blocks_and_global_nfc(tmp_path: Path) ->
     assert resource.text == (
         "第一章\n漢字 & 本。\n同じ言葉。\n同じ言葉。\nがと𠮷、👩\u200d💻。\n前\n後\nＡ①\n"
     )
-    assert "<ruby>" in resource.html and "<rt>かんじ</rt>" in resource.html
+    markup = resource_markup(book, 0)
+    assert "<ruby>" in markup and "<rt>かんじ</rt>" in markup
     assert "かんじ" not in resource.text
-    assert "data:image/png;base64," in resource.html
+    assert "data:image/png;base64," in markup
     # NFKC is deliberately not used; fullwidth/compatibility source characters survive.
     assert "Ａ①" in resource.text
 
@@ -516,7 +532,7 @@ def test_author_styles_do_not_enter_projection(tmp_path: Path) -> None:
 def test_publication_active_and_remote_content_is_isolated(tmp_path: Path) -> None:
     book = compile_fixture(tmp_path, malicious=True)
     resource = book.resources[0]
-    markup = resource.html
+    markup = resource_markup(book, 0)
     for forbidden in ("<script", "<iframe", "onclick", "javascript:", "example.invalid", "../../"):
         assert forbidden not in markup
     assert "秘密" not in resource.text
@@ -564,7 +580,7 @@ def test_image_only_fixed_spine_page_in_reflowable_book(tmp_path: Path) -> None:
             archive.writestr(name, data)
     book = epub.compile_epub_bytes(path.read_bytes())
     assert book.resources[0].text.strip() == ""
-    assert "<img" in book.resources[0].html
+    assert "<img" in resource_markup(book, 0)
     assert book.warnings
 
 
@@ -609,3 +625,184 @@ def test_css_import_cycles_remote_and_unsupported_syntax_warn() -> None:
     assert any("External package resource is unsupported" in warning for warning in warnings)
     assert any("Unsupported CSS import syntax" in warning for warning in warnings)
     assert css.strip() == ""
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("synthetic-reading", "014f87e7da839135a4f53e2d4d51d02048730b6da722be08f5102396803fdcbe"),
+        ("synthetic-vertical", "5d5146ba1640d1cdbc3b49b79213af627e69c5b7730d41baf76701d582921a0e"),
+        ("synthetic-malicious", "7137482b97a2b44b181c9a60595523c0ed8f87d16d68bb0d8bb052fa5dceba0e"),
+    ],
+)
+def test_public_fixture_reading_snapshot_is_unchanged(name: str, expected: str) -> None:
+    raw = (ROOT / "prototypes/epub-reading/fixtures" / f"{name}.epub").read_bytes()
+    snapshot = epub.compile_epub_bytes(raw).model_dump(exclude={"contract", "product_sha256"})
+    # Frozen against v1 before implementation: all reading data survives removal of resource HTML.
+    for resource in snapshot["resources"]:
+        resource.pop("html", None)
+    compiled = json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")).encode()
+    assert hashlib.sha256(compiled).hexdigest() == expected
+
+
+def test_archive_is_opened_once_and_each_member_read_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw = publication(tmp_path)
+    opened = 0
+    reads: dict[str, int] = {}
+
+    class ObservedZip(ZipFile):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            nonlocal opened
+            opened += 1
+            super().__init__(*args, **kwargs)
+
+        def read(self, name: str | ZipInfo, pwd: bytes | None = None) -> bytes:
+            key = name.filename if isinstance(name, ZipInfo) else name
+            reads[key] = reads.get(key, 0) + 1
+            return super().read(name, pwd)
+
+    monkeypatch.setattr(epub.zipfile, "ZipFile", ObservedZip)
+    epub.compile_epub_bytes(raw)
+    assert opened == 1
+    assert reads and all(count == 1 for count in reads.values())
+
+
+@pytest.mark.parametrize(
+    "limit", ["entries", "expanded", "member", "ratio", "encrypted", "path", "duplicate", "drm"]
+)
+def test_archive_limits_reject_metadata_before_member_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, limit: str
+) -> None:
+    raw = publication(tmp_path)
+    entries = [ZipInfo("safe.xhtml")]
+    entries[0].file_size = 1
+    entries[0].compress_size = 1
+    if limit == "entries":
+        entries *= 5001
+    elif limit == "expanded":
+        entries[0].file_size = 16 * 1024 * 1024
+        entries[0].compress_size = entries[0].file_size
+        entries *= 9
+    elif limit == "member":
+        entries[0].file_size = 16 * 1024 * 1024 + 1
+        entries[0].compress_size = entries[0].file_size
+    elif limit == "ratio":
+        entries[0].file_size = 201
+    elif limit == "encrypted":
+        entries[0].flag_bits = 1
+    elif limit == "path":
+        entries[0].filename = "../escape"
+    elif limit == "duplicate":
+        entries *= 2
+    else:
+        entries[0].filename = "META-INF/encryption.xml"
+
+    first = ZipInfo("first.xhtml")
+    first.file_size = first.compress_size = 1
+    entries.insert(0, first)
+
+    def metadata(_archive: ZipFile) -> list[ZipInfo]:
+        return entries
+
+    def unexpected_read(*_args: Any, **_kwargs: Any) -> bytes:
+        raise AssertionError("Unsafe ZIP metadata must be rejected before reading members")
+
+    monkeypatch.setattr(ZipFile, "infolist", metadata)
+    monkeypatch.setattr(ZipFile, "read", unexpected_read)
+    with pytest.raises(epub.EpubError, match="limit|Encrypted|Unsafe|Duplicate"):
+        epub.compile_epub_bytes(raw)
+
+
+def test_compiled_contract_contains_only_chapter_html(tmp_path: Path) -> None:
+    book = compile_fixture(tmp_path)
+    assert book.contract == "epub-reading-v2"
+    assert "html" not in CompiledResource.model_fields
+    assert all("html" not in item for item in book.model_dump()["resources"])
+    assert any(part.html for chapter in book.chapters for part in chapter.parts)
+
+
+@pytest.mark.parametrize("markup", ["", "<p>redundant full resource HTML</p>"])
+def test_compiled_resource_rejects_removed_html_field(tmp_path: Path, markup: str) -> None:
+    resource = compile_fixture(tmp_path).resources[0].model_dump()
+    resource["html"] = markup
+    with pytest.raises(ValidationError, match="html"):
+        CompiledResource.model_validate(resource)
+
+
+@pytest.mark.parametrize("body", ["", "<p/>", '<div><span id="empty"/></div>'])
+def test_empty_spine_bodies_keep_metadata_without_locator_text(tmp_path: Path, body: str) -> None:
+    raw = publication(tmp_path, body=body)
+    with ZipFile(io.BytesIO(raw)) as archive:
+        files = {name: archive.read(name) for name in archive.namelist()}
+    files["OEBPS/chapter2.xhtml"] = f"<html><body>{body}</body></html>".encode()
+    output = io.BytesIO()
+    with ZipFile(output, "w") as archive:
+        for name, data in files.items():
+            archive.writestr(name, data)
+    book = epub.compile_epub_bytes(output.getvalue())
+    assert len(book.resources) == 2
+    assert all(resource.text == "" for resource in book.resources)
+    assert [chapter.id for chapter in book.chapters] == ["chapter-0", "chapter-1"]
+    assert_partition(book)
+
+
+def test_image_only_resource_retains_all_images_without_text(tmp_path: Path) -> None:
+    body = '<div><img src="images/pixel.png"/><img src="images/pixel.png"/></div>'
+    book = epub.compile_epub_bytes(publication(tmp_path, body=body))
+    assert book.resources[0].text == ""
+    markup = resource_markup(book, 0)
+    assert markup.count("<img") == 2
+    assert 'data-epub-image="0"' in markup
+    assert 'data-epub-image="1"' in markup
+    assert_partition(book)
+
+
+def test_adjacent_image_toc_cuts_share_text_offset_and_keep_trailing_content(
+    tmp_path: Path,
+) -> None:
+    body = (
+        '<span>前</span><img id="one" src="images/pixel.png"/>'
+        '<img id="two" src="images/pixel.png"/>'
+        '<span id="tail">後</span><span id="last-empty"/>'
+    )
+    nav = (
+        '<li><a href="chapter1.xhtml">前</a></li>'
+        '<li><a href="chapter1.xhtml#one">絵一</a></li>'
+        '<li><a href="chapter1.xhtml#two">絵二</a></li>'
+        '<li><a href="chapter1.xhtml#tail">末尾</a></li>'
+        '<li><a href="chapter2.xhtml">次</a></li>'
+    )
+    book = epub.compile_epub_bytes(publication(tmp_path, nav, body=body))
+    assert [chapter.title for chapter in book.chapters] == ["前", "絵一", "絵二", "末尾", "次"]
+    one, two, tail = (book.chapters[index].parts[0] for index in (1, 2, 3))
+    assert one.start == one.end == two.start == two.end == tail.start == 1
+    assert 'data-epub-image="0"' in one.html and 'data-epub-image="1"' not in one.html
+    assert 'data-epub-image="1"' in two.html and 'data-epub-image="0"' not in two.html
+    assert 'id="last-empty"' in tail.html
+    assert LocatorText(tail.html).normalized() == book.resources[0].text[tail.start : tail.end]
+    assert_partition(book)
+
+
+def test_empty_markup_still_consumes_compilation_safety_budget(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw = publication(tmp_path, body='<span class="empty"/>' * 1000)
+    monkeypatch.setattr(epub, "MAX_PRODUCT_BYTES", 4000)
+    with pytest.raises(epub.EpubError, match="安全大小限制"):
+        epub.compile_epub_bytes(raw)
+
+
+def test_sanitizer_preserves_source_markup_without_persisted_resource_html() -> None:
+    source = (
+        "<html><body><p>か<span>゙</span>&amp;<ruby>漢<rt>かん</rt></ruby></p>"
+        '<script>秘密</script><iframe src="https://invalid.test"/></body></html>'
+    ).encode()
+    markup, text, _warnings = epub.sanitize_xhtml(source, "chapter.xhtml", {})
+    assert text == "が&漢\n"
+    assert '<span data-locator-leaf="0">か</span>' in markup
+    assert "<rt>かん</rt>" in markup
+    assert "<script" not in markup and "<iframe" not in markup
+    assert "秘密" not in text and "かん" not in text
+    assert LocatorText(markup).normalized() == text

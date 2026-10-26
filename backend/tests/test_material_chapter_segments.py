@@ -5,7 +5,6 @@ import hashlib
 import json
 import sqlite3
 import threading
-import zlib
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -21,6 +20,7 @@ from test_segment_provenance import (
 from test_source_segment import api_client
 
 from app.epub_schemas import CompiledBook
+from app.epub_storage import encode
 from app.material_segment_schemas import MaterialChapterSegment
 from app.services import material_segments
 
@@ -101,14 +101,14 @@ async def test_pages_scan_all_segments_without_twenty_item_truncation(
         assert next_empty.json()["next_cursor"] == other_chapter[1]
 
         calls = 0
-        decompress = material_segments.zlib.decompress
+        decode = material_segments.decode_epub
 
-        def count_decode(data: bytes) -> bytes:
+        def count_decode(data: bytes) -> CompiledBook:
             nonlocal calls
             calls += 1
-            return decompress(data)
+            return decode(data)
 
-        monkeypatch.setattr(material_segments.zlib, "decompress", count_decode)
+        monkeypatch.setattr(material_segments, "decode_epub", count_decode)
         page = await client.get(endpoint(material), params=params)
         assert page.status_code == 200, page.text
         assert calls == 1
@@ -399,9 +399,7 @@ async def test_corrupt_material_cannot_emit_exact_markers(
                 connection.execute(
                     "UPDATE materials SET compiled_bundle=? WHERE id=?",
                     (
-                        b"broken"
-                        if corruption == "bundle"
-                        else zlib.compress(book.model_dump_json().encode()),
+                        b"broken" if corruption == "bundle" else encode(book),
                         material["id"],
                     ),
                 )

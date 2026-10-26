@@ -1,20 +1,21 @@
 import { lazy } from "react";
 import {
+	createRoutesFromElements,
 	Link,
+	matchRoutes,
 	Navigate,
+	Outlet,
 	Route,
-	Routes,
 	useLocation,
 	useParams,
 } from "react-router";
 import { MaterialsPage } from "./catalog/MaterialsPage";
 import { PageBoundary } from "./navigation/PageBoundary";
-import { RetainedRoute } from "./navigation/RetainedRoute";
 import { Shell } from "./Shared";
 
-const MaterialReader = lazy(() =>
-	import("./materials/MaterialReader").then((page) => ({
-		default: page.MaterialReader,
+const ReaderSessionHost = lazy(() =>
+	import("./materials/ReaderSessionHost").then((page) => ({
+		default: page.ReaderSessionHost,
 	})),
 );
 const SegmentDetail = lazy(() =>
@@ -49,44 +50,47 @@ function SegmentRoute() {
 
 export function App() {
 	const { pathname } = useLocation();
+	const sessionRoute = matchRoutes(
+		[{ path: "/materials/:id" }, { path: "/segments/:id" }],
+		pathname,
+	);
 	return (
 		<>
-			<RetainedRoute
-				path="/materials/:id"
-				retainOn={(location) => /^\/segments\/[^/]+$/.test(location.pathname)}
-			>
+			{sessionRoute && (
 				<PageBoundary>
-					<MaterialReader />
+					<ReaderSessionHost />
 				</PageBoundary>
-			</RetainedRoute>
+			)}
 			<PageBoundary key={pathname}>
-				<Routes>
-					<Route
-						path="/"
-						element={<Navigate to="/materials?type=book" replace />}
-					/>
-					<Route path="/materials" element={<MaterialsPage />} />
-					<Route path="/sources" element={<SourceIndex />} />
-					<Route path="/sources/:id" element={<SourceRoute />} />
-					<Route path="/materials/:id/details" element={<BookDetailsPage />} />
-					<Route path="/materials/:id" element={null} />
-					<Route path="/segments/:id" element={<SegmentRoute />} />
-					<Route path="/settings" element={<SettingsPage />} />
-					<Route
-						path="*"
-						element={
-							<Shell>
-								<div className="state-card">
-									<h1>页面不存在</h1>
-									<Link className="button secondary" to="/sources">
-										返回来源目录
-									</Link>
-								</div>
-							</Shell>
-						}
-					/>
-				</Routes>
+				<Outlet />
 			</PageBoundary>
 		</>
 	);
 }
+
+// Register pages with the data router so Link/useNavigate options reach it.
+export const appRoutes = createRoutesFromElements(
+	<>
+		<Route index element={<Navigate to="/materials?type=book" replace />} />
+		<Route path="/materials" element={<MaterialsPage />} />
+		<Route path="/sources" element={<SourceIndex />} />
+		<Route path="/sources/:id" element={<SourceRoute />} />
+		<Route path="/materials/:id/details" element={<BookDetailsPage />} />
+		<Route path="/materials/:id" element={null} />
+		<Route path="/segments/:id" element={<SegmentRoute />} />
+		<Route path="/settings" element={<SettingsPage />} />
+		<Route
+			path="*"
+			element={
+				<Shell>
+					<div className="state-card">
+						<h1>页面不存在</h1>
+						<Link className="button secondary" to="/sources">
+							返回来源目录
+						</Link>
+					</div>
+				</Shell>
+			}
+		/>
+	</>,
+);

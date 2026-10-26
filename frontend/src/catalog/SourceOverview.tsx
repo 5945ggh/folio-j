@@ -17,6 +17,7 @@ import { BookDeleteDialog } from "./BookDeleteDialog";
 import { BookEditDialog } from "./BookEditDialog";
 import { BookCard } from "./Books";
 import { useCatalogScroll } from "./hooks";
+import { ImportCards, useImportTasks } from "./ImportCards";
 import { ImportDialog } from "./ImportDialog";
 import { Icon } from "./LibraryTools";
 import { analysisDestination } from "./state";
@@ -80,6 +81,12 @@ export function SourceOverview({
 		queryKey: catalogKeys.books(bookQuery),
 		queryFn: () => catalogBooks(bookQuery),
 	});
+	const renderedBooks = books.isSuccess ? books.data.items : [];
+	const imports = useImportTasks(
+		renderedBooks,
+		source.id,
+		books.isSuccess && !books.isFetching,
+	);
 	useEffect(() => {
 		if (
 			editing !== null ||
@@ -116,7 +123,11 @@ export function SourceOverview({
 		segments.isSuccess &&
 		analyses.data.total === 0 &&
 		segments.data.total === 0;
-	const empty = emptyLearning && books.isSuccess && books.data.total === 0;
+	const empty =
+		emptyLearning &&
+		books.isSuccess &&
+		books.data.total === 0 &&
+		imports.length === 0;
 	const note = source.note && (
 		<section className="overview-note">
 			<h2>来源备注</h2>
@@ -145,17 +156,10 @@ export function SourceOverview({
 					查看全部
 				</button>
 			</div>
-			{books.isPending ? (
-				<p role="status">正在加载素材…</p>
-			) : books.isError ? (
-				<Retry error={books.error} retry={() => void books.refetch()} />
-			) : books.data.total === 0 ? (
-				<p className="overview-empty-hint">
-					没有完整素材，也可以保留和阅读这里的片段。
-				</p>
-			) : (
+			{(imports.length > 0 || renderedBooks.length > 0) && (
 				<div className="overview-books">
-					{books.data.items.map((book) => (
+					<ImportCards tasks={imports} returnLabel={source.title} />
+					{renderedBooks.map((book) => (
 						<BookCard
 							key={book.id}
 							book={book}
@@ -166,6 +170,15 @@ export function SourceOverview({
 					))}
 				</div>
 			)}
+			{books.isPending ? (
+				<p role="status">正在加载素材…</p>
+			) : books.isError ? (
+				<Retry error={books.error} retry={() => void books.refetch()} />
+			) : books.data.total === 0 && imports.length === 0 ? (
+				<p className="overview-empty-hint">
+					没有完整素材，也可以保留和阅读这里的片段。
+				</p>
+			) : null}
 			<button
 				type="button"
 				className="source-text-button overview-import"

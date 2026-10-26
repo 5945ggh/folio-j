@@ -5,7 +5,7 @@ import { InlineError } from "../Shared";
 import { catalogKeys, catalogSources, type SourceQuery } from "./api";
 import { Pagination } from "./Controls";
 import { useCatalogScroll, useCatalogState } from "./hooks";
-import { Icon } from "./LibraryTools";
+import { Icon, Tool } from "./LibraryTools";
 import { lastCatalogPage, sourceOverviewDestination } from "./state";
 
 export function SourceDirectory({
@@ -21,7 +21,6 @@ export function SourceDirectory({
 	const search = useRef<HTMLInputElement>(null);
 	const searchButton = useRef<HTMLButtonElement>(null);
 	const searchId = useId();
-	const sortId = useId();
 	const query: SourceQuery = {
 		q: state.q,
 		sort: state.sort as SourceQuery["sort"],
@@ -60,17 +59,7 @@ export function SourceDirectory({
 					>
 						<Icon name="search" />
 					</button>
-					<button
-						className="library-icon"
-						type="button"
-						title="来源排序"
-						aria-label="来源排序"
-						popoverTarget={sortId}
-					>
-						<Icon name="sort" />
-					</button>
-					<div id={sortId} popover="auto" className="library-popover s2-sort">
-						<strong>来源排序</strong>
+					<Tool name="sort" label="来源排序">
 						<label>
 							排序依据
 							<select
@@ -84,19 +73,22 @@ export function SourceDirectory({
 								<option value="updated_at">更新时间</option>
 							</select>
 						</label>
-						<label>
-							排序方向
-							<select
-								value={state.order}
-								onChange={(e) =>
-									change({ order: e.target.value as typeof state.order })
-								}
-							>
-								<option value="asc">升序</option>
-								<option value="desc">降序</option>
-							</select>
-						</label>
-					</div>
+						<div className="library-sort-direction-field">
+							<span>排序方向</span>
+							<fieldset className="library-sort-direction">
+								{(["asc", "desc"] as const).map((order) => (
+									<button
+										key={order}
+										type="button"
+										aria-pressed={state.order === order}
+										onClick={() => change({ order })}
+									>
+										{order === "asc" ? "升序" : "降序"}
+									</button>
+								))}
+							</fieldset>
+						</div>
+					</Tool>
 					<button
 						className="library-icon"
 						type="button"
@@ -122,7 +114,9 @@ export function SourceDirectory({
 						value={state.q}
 						onChange={(e) => change({ q: e.target.value })}
 						onKeyDown={(event) => {
-							if (event.key !== "Escape") return;
+							if (event.key !== "Escape" || event.nativeEvent.isComposing) {
+								return;
+							}
 							event.preventDefault();
 							event.stopPropagation();
 							setSearching(false);

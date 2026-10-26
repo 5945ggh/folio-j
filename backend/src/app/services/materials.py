@@ -3,7 +3,6 @@
 import asyncio
 import hashlib
 import re
-import zlib
 from datetime import datetime
 
 from fastapi import HTTPException, Request
@@ -12,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
 from app.epub_schemas import CompiledBook
+from app.epub_storage import decode as decode_epub
+from app.epub_storage import encode as encode_epub
 from app.ids import new_ulid
 from app.material_models import (
     ChapterReadingPosition,
@@ -46,7 +47,7 @@ MAX_UPLOAD_BYTES = 32 * 1024 * 1024
 
 
 def bundle(material: Material) -> CompiledBook:
-    return CompiledBook.model_validate_json(zlib.decompress(material.compiled_bundle))
+    return decode_epub(material.compiled_bundle)
 
 
 async def require_material(
@@ -197,7 +198,7 @@ async def import_material(
     except EpubError as exc:
         raise HTTPException(422, str(exc)) from exc
     generated = await readings.build(text_resources(book))
-    compiled = await asyncio.to_thread(lambda: zlib.compress(book.model_dump_json().encode()))
+    compiled = await asyncio.to_thread(encode_epub, book)
     try:
         await begin_write(session)
         await require_source(session, source_id)

@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { forgetDeletedMaterialImports } from "./import-state.ts";
 
 /** Cancel before eviction so a late reader response cannot restore deleted text. */
 export async function refreshAfterBookDeletion(
@@ -6,6 +7,7 @@ export async function refreshAfterBookDeletion(
 	materialId: string,
 	sourceId: string,
 ): Promise<void> {
+	forgetDeletedMaterialImports(client, materialId);
 	const materialQueries = [
 		["materials", materialId],
 		["book-details", materialId],

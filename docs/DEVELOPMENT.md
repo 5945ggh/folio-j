@@ -6,7 +6,7 @@
 
 ## 环境准备
 
-准备 Python 3.11、Node.js 24、uv、pnpm 10 和 just。
+准备 Python 3.11、Node.js 24、uv 和 pnpm 10。开发命令通过 `just` 统一调用，建议安装 `just`；仅试用应用可按[快速开始](../README.md#快速开始)中的直接命令运行。
 
 Python 默认版本同时固定在根目录的 [.python-version](../.python-version) 和 [backend/.python-version](../backend/.python-version)，确保 `uv --project backend` 及后端目录内的命令使用同一版本。Python 包最低支持 3.11，Node 版本见 [.nvmrc](../.nvmrc)。依赖分别锁定在 [backend/uv.lock](../backend/uv.lock) 和 [frontend/pnpm-lock.yaml](../frontend/pnpm-lock.yaml)。
 
@@ -66,6 +66,5 @@ just check-assets # 验证保留的实验和静态原型
 - [阶段性交接](handovers/README.md)：当前实施基线、后续安排与归档任务。
 - [研究材料](../references/README.md)：可复核的原句、解析示例、提取和阅读实验。
 - [第一阶段：素材与片段管理](handovers/archived/STAGE_1_SOURCE_SEGMENT.md)：该阶段已交付范围、接口和验收记录。
-- [工作台视觉基线](../prototypes/reading-native/VISUAL_BASELINE.md)：正式界面的风格与布局参考；具体交互按实际功能设计，原型中的模拟行为不替代 PRD。
 
 实验和原型保留各自的历史边界，不能据此恢复过时的产品需求。

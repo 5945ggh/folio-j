@@ -1,16 +1,22 @@
 """Offline managed EPUB atomicity, ownership and position contracts."""
 
 import asyncio
+import base64
 import hashlib
+import random
 import sqlite3
 import threading
+import zlib
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
+from zipfile import ZipFile
 
 import pytest
 from test_source_segment import api_client
 
 from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter, CompiledResource
+from app.epub_storage import decode as decode_epub
 from app.services.epub import EpubError
 
 FIXTURE = (
@@ -30,7 +36,6 @@ def compiled(_data: bytes) -> CompiledBook:
                 href="text.xhtml",
                 title="章",
                 text="日本語",
-                html='<p>日本語</p><img data-epub-image="0">',
                 css="",
                 html_attributes={},
                 body_attributes={},
@@ -210,8 +215,31 @@ async def test_late_import_is_rejected_after_source_deletion(
 async def test_real_epub_upload_and_bounded_request(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    fixture = FIXTURE
-    async with api_client(tmp_path / "real.db") as client:
+    # A valid RGB PNG exceeds the deflate window, making pooled image storage useful.
+    def png_chunk(kind: bytes, data: bytes) -> bytes:
+        return (
+            len(data).to_bytes(4, "big") + kind + data + zlib.crc32(kind + data).to_bytes(4, "big")
+        )
+
+    pixels = random.Random(20261025).randbytes(160 * 160 * 3)
+    scanlines = b"".join(
+        b"\x00" + pixels[start : start + 480] for start in range(0, len(pixels), 480)
+    )
+    image_bytes = (
+        b"\x89PNG\r\n\x1a\n"
+        + png_chunk(b"IHDR", (160).to_bytes(4, "big") * 2 + b"\x08\x02\x00\x00\x00")
+        + png_chunk(b"IDAT", zlib.compress(scanlines))
+        + png_chunk(b"IEND", b"")
+    )
+    fixture = tmp_path / "large-image.epub"
+    with ZipFile(FIXTURE) as source, ZipFile(fixture, "w") as target:
+        for item in source.infolist():
+            target.writestr(
+                item,
+                image_bytes if item.filename == "OEBPS/images/pixel.png" else source.read(item),
+            )
+    database = tmp_path / "real.db"
+    async with api_client(database) as client:
         sid = (await client.post("/api/sources", json={"title": "本"})).json()["id"]
         url = f"/api/sources/{sid}/materials"
         invalid = await client.post(
@@ -223,6 +251,13 @@ async def test_real_epub_upload_and_bounded_request(
         )
         assert uploaded.status_code == 200, uploaded.text
         material = uploaded.json()["material"]
+        with sqlite3.connect(database) as connection:
+            stored = connection.execute(
+                "SELECT compiled_bundle FROM materials WHERE id=?", (material["id"],)
+            ).fetchone()
+        assert stored is not None
+        logical = decode_epub(stored[0])
+        assert len(stored[0]) < len(zlib.compress(logical.model_dump_json().encode()))
         assert material["chapters"]
         chapter = await client.get(
             f"/api/materials/{material['id']}/chapters/{material['chapters'][0]['id']}"
@@ -246,6 +281,78 @@ async def test_real_epub_upload_and_bounded_request(
         assert part["resource_id"] == match["resource_id"]
         assert part["spine_index"] == match["spine_index"]
         assert part["start"] <= match["start"] < match["end"] <= part["end"]
+
+        # Images survive the stored bundle and keep their chapter/position identities.
+        material_url = f"/api/materials/{material['id']}"
+        version = {"version_id": material["version_id"]}
+        illustrations = await client.get(material_url + "/illustrations", params=version)
+        assert illustrations.status_code == 200, illustrations.text
+        assert illustrations.json()["total"] == 1
+        image = illustrations.json()["items"][0]
+        image_part = payload["parts"][image["part_index"]]
+        assert image["chapter_id"] == payload["id"]
+        assert image["resource_id"] == image_part["resource_id"]
+        content = await client.get(image["content_url"])
+        assert content.status_code == 200
+        with ZipFile(fixture) as archive:
+            assert content.content == archive.read("OEBPS/images/pixel.png")
+        assert (
+            f"data:image/png;base64,{base64.b64encode(content.content).decode()}"
+            in (image_part["html"])
+        )
+        assert f'data-epub-image="{image["image_id"]}"' in image_part["html"]
+        position = await client.put(
+            material_url + "/reading-position",
+            json={
+                "expected_revision": 0,
+                **version,
+                "chapter_id": image["chapter_id"],
+                "part_index": image["part_index"],
+                "resource_id": image["resource_id"],
+                "kind": "image",
+                "image_id": image["image_id"],
+                "image_progress": 0.5,
+            },
+        )
+        assert position.status_code == 200, position.text
+        assert position.json()["image_id"] == image["image_id"]
+        statistics = await client.get(material_url + "/statistics", params=version)
+        assert statistics.status_code == 200, statistics.text
+        assert statistics.json()["text"]["character_count"] > 0
+        assert statistics.json()["lexical"]["counted_token_count"] > 0
+        assert statistics.json()["version_id"] == material["version_id"]
+        segment = await client.post(
+            f"/api/sources/{sid}/segments",
+            json={
+                "request_id": str(uuid4()),
+                "material_provenance": {
+                    "contract_version": "1",
+                    "material_id": material["id"],
+                    **version,
+                    "ranges": [
+                        {
+                            "resource_id": match["resource_id"],
+                            "spine_index": match["spine_index"],
+                            "start": match["start"],
+                            "end": match["end"],
+                            "exact": query,
+                            "text_sha256": resource["text_sha256"],
+                        }
+                    ],
+                },
+            },
+        )
+        assert segment.status_code == 201, segment.text
+        assert segment.json()["text"] == query
+        resolved = await client.get(f"/api/segments/{segment.json()['id']}/material-provenance")
+        assert resolved.status_code == 200, resolved.text
+        assert resolved.json()["status"] == "resolved"
+        assert resolved.json()["chapter_id"] == match["chapter_id"]
+        markers = await client.get(
+            material_url + f"/chapters/{match['chapter_id']}/segments", params=version
+        )
+        assert markers.status_code == 200, markers.text
+        assert [item["segment_id"] for item in markers.json()["items"]] == [segment.json()["id"]]
 
         def unexpected(_data: bytes) -> CompiledBook:
             raise AssertionError("Duplicate uploads must reuse the published bundle")

@@ -15,7 +15,6 @@ def main() -> int:
     paths.extend(sorted((ROOT / "docs").rglob("*.md")))
     paths.extend(sorted((ROOT / "references").rglob("README.md")))
     paths.extend(sorted((ROOT / "prototypes").rglob("README.md")))
-    paths.extend(sorted((ROOT / "prototypes").rglob("VISUAL_BASELINE.md")))
     errors: list[str] = []
     count = 0
     for path in paths:

@@ -34,6 +34,8 @@ import {
 	useCatalogScroll,
 	useCatalogState,
 } from "./hooks";
+import { ImportCards, useImportTasks } from "./ImportCards";
+import type { ImportTask } from "./import-state";
 import { Icon, LibraryTools } from "./LibraryTools";
 import { bookListState, cardWidth } from "./presentation";
 import { lastCatalogPage } from "./state";
@@ -322,14 +324,17 @@ export function BookGrid({
 	returnLabel,
 	onEdit,
 	onDelete,
+	imports = [],
 }: {
 	books: readonly Book[];
 	returnLabel: string;
 	onEdit: (id: string) => void;
 	onDelete: (book: Book) => void;
+	imports?: readonly ImportTask[];
 }) {
 	return (
 		<div className="book-grid">
+			<ImportCards tasks={imports} returnLabel={returnLabel} />
 			{books.map((book) => (
 				<BookCard
 					key={book.id}
@@ -376,6 +381,12 @@ export function BookCatalog({
 		queryKey: catalogKeys.books(query),
 		queryFn: () => catalogBooks(query),
 	});
+	const renderedBooks = books.isSuccess ? books.data.items : [];
+	const imports = useImportTasks(
+		renderedBooks,
+		sourceId,
+		books.isSuccess && !books.isFetching,
+	);
 	useEffect(() => {
 		if (
 			editing !== null ||
@@ -431,7 +442,8 @@ export function BookCatalog({
 				state.page,
 			)
 		: null;
-	const trueEmpty = books.isSuccess && !books.isFetching && view === "empty";
+	const trueEmpty =
+		books.isSuccess && !books.isFetching && view === "empty" && !imports.length;
 	return (
 		<>
 			{add ? (
@@ -464,6 +476,15 @@ export function BookCatalog({
 				ref={scroll}
 				className={internal ? "dialog-scroll" : "catalog-body"}
 			>
+				{(imports.length > 0 || renderedBooks.length > 0) && (
+					<BookGrid
+						books={renderedBooks}
+						imports={imports}
+						returnLabel={sourceId ? "来源书籍窗口" : "素材库"}
+						onEdit={setEditing}
+						onDelete={setDeleting}
+					/>
+				)}
 				{books.isPending || (books.isFetching && view === "empty") ? (
 					<p role="status">正在加载书籍…</p>
 				) : books.isError ? (
@@ -477,7 +498,8 @@ export function BookCatalog({
 							重试
 						</button>
 					</>
-				) : trueEmpty && add ? (
+				) : imports.length &&
+					books.data.items.length === 0 ? null : trueEmpty && add ? (
 					<button
 						id="library-empty-import"
 						type="button"
@@ -489,8 +511,8 @@ export function BookCatalog({
 						}}
 					>
 						<Icon name="book" />
-						<span className="library-empty-title">这里，留给下一本好书。</span>
-						<span>点击这片区域，开始导入 EPUB</span>
+						<span className="library-empty-title">留下一本好书</span>
+						<span>点击这片区域，导入 EPUB</span>
 					</button>
 				) : books.data.items.length === 0 ? (
 					<div className="empty-state">
@@ -511,14 +533,7 @@ export function BookCatalog({
 							</button>
 						)}
 					</div>
-				) : (
-					<BookGrid
-						books={books.data.items}
-						returnLabel={sourceId ? "来源书籍窗口" : "素材库"}
-						onEdit={setEditing}
-						onDelete={setDeleting}
-					/>
-				)}
+				) : null}
 				{books.data && (
 					<Pagination
 						page={state.page}

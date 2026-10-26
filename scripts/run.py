@@ -54,7 +54,10 @@ def main() -> int:
     signal.signal(signal.SIGTERM, request_stop)
     mode = sys.argv[1]
     if mode == "start" and not (ROOT / "frontend/dist/index.html").is_file():
-        print("缺少前端构建，请先执行 just build。", file=sys.stderr)
+        print(
+            "缺少前端构建，请先执行 pnpm --dir frontend build（或 just build）。",
+            file=sys.stderr,
+        )
         return 1
 
     command = [

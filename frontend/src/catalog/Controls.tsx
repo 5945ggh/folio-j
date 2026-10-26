@@ -21,25 +21,27 @@ export function Tabs({
 }: {
 	id: string;
 	label: string;
-	items: readonly { value: string; label: string }[];
+	items: readonly { value: string; label: string; disabled?: boolean }[];
 	value: string;
 	onChange: (value: string) => void;
 }) {
 	function keydown(event: KeyboardEvent<HTMLDivElement>) {
-		const current = items.findIndex((item) => item.value === value);
+		const enabled = items.filter((item) => !item.disabled);
+		if (enabled.length === 0) return;
+		const current = enabled.findIndex((item) => item.value === value);
 		let next = current;
-		if (event.key === "ArrowRight") next = (current + 1) % items.length;
+		if (event.key === "ArrowRight") next = (current + 1) % enabled.length;
 		else if (event.key === "ArrowLeft")
-			next = (current + items.length - 1) % items.length;
+			next = (current + enabled.length - 1) % enabled.length;
 		else if (event.key === "Home") next = 0;
-		else if (event.key === "End") next = items.length - 1;
+		else if (event.key === "End") next = enabled.length - 1;
 		else return;
 		event.preventDefault();
-		const item = items[next];
+		const item = enabled[next];
 		if (!item) return;
 		onChange(item.value);
 		event.currentTarget
-			.querySelectorAll<HTMLButtonElement>("[role=tab]")
+			.querySelectorAll<HTMLButtonElement>("[role=tab]:not(:disabled)")
 			[next]?.focus();
 	}
 	return (
@@ -55,9 +57,13 @@ export function Tabs({
 					id={`${id}-tab-${item.value}`}
 					role="tab"
 					aria-selected={value === item.value}
-					aria-controls={`${id}-panel-${item.value}`}
+					aria-controls={
+						item.disabled ? undefined : `${id}-panel-${item.value}`
+					}
 					tabIndex={value === item.value ? 0 : -1}
 					type="button"
+					disabled={item.disabled}
+					title={item.disabled ? "暂未开放" : undefined}
 					onClick={() => onChange(item.value)}
 				>
 					{item.label}

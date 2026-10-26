@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { RouteObject } from "react-router";
 
 export type BrowserHarness = {
 	container: HTMLElement;
@@ -12,6 +13,7 @@ export type BrowserHarness = {
 		content: ReactNode,
 		path?: string,
 		initialEntry?: string,
+		children?: RouteObject[],
 	) => Promise<() => void>;
 	mock: (handler: (request: Request) => Promise<Response>) => void;
 };

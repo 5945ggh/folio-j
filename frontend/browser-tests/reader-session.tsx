@@ -1,5 +1,12 @@
 import { useEffect } from "react";
-import { Route, Routes, useNavigate } from "react-router";
+import {
+	type Location,
+	Route,
+	Routes,
+	useLocation,
+	useNavigate,
+	useNavigationType,
+} from "react-router";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
 
@@ -142,7 +149,11 @@ type Measurement = {
 const round = (value: number) => Math.round(value * 10) / 10;
 
 /** Strict offline DOM measurements: fixture response durations are not network latency. */
-export async function readerSession(h: BrowserHarness, realApp = false) {
+export async function readerSession(
+	h: BrowserHarness,
+	realApp = false,
+	initialTrailingSlash = false,
+) {
 	const params = new URLSearchParams(location.search);
 	const retained = !params.has("baseline");
 	const preview = params.has("preview");
@@ -151,39 +162,41 @@ export async function readerSession(h: BrowserHarness, realApp = false) {
 	const { MaterialReader } = realApp
 		? { MaterialReader: null }
 		: await import("../src/materials/MaterialReader");
-	const { RetainedRoute } = realApp
-		? { RetainedRoute: null }
-		: await import("../src/navigation/RetainedRoute");
-	const App = realApp ? (await import("../src/App")).App : null;
+	// The historical measurement replaces MaterialReader in memory and has no session export.
+	const production = retained || realApp ? await import("../src/App") : null;
 	const segmentSelector = realApp
 		? ".segment-workspace"
 		: "[data-segment-page]";
 	let navigate: ReturnType<typeof useNavigate> | undefined;
-	function TestRoutes() {
+	let entry: Location | undefined;
+	const entries: Array<{ location: Location; action: string }> = [];
+	function Navigator() {
 		const routeNavigate = useNavigate();
+		const routeLocation = useLocation();
+		const action = useNavigationType();
 		useEffect(() => {
 			navigate = routeNavigate;
 		}, [routeNavigate]);
-		if (App) return <App />;
-		check(
-			MaterialReader && RetainedRoute,
-			"Reader fixture components must load",
-		);
+		useEffect(() => {
+			entry = routeLocation;
+			entries.push({ location: routeLocation, action });
+		}, [routeLocation, action]);
+		return null;
+	}
+	function TestRoutes() {
+		if (production)
+			return (
+				<>
+					<Navigator />
+					<production.App />
+				</>
+			);
+		check(MaterialReader, "Reader fixture component must load");
 		return (
 			<>
-				{retained && (
-					<RetainedRoute
-						path="/materials/:id"
-						retainOn={(location) => /^\/segments\//.test(location.pathname)}
-					>
-						<MaterialReader />
-					</RetainedRoute>
-				)}
+				<Navigator />
 				<Routes>
-					<Route
-						path="/materials/:id"
-						element={retained ? null : <MaterialReader />}
-					/>
+					<Route path="/materials/:id" element={<MaterialReader />} />
 					<Route
 						path="/sources/:id"
 						element={<main data-source-page="">来源占位页</main>}
@@ -196,6 +209,12 @@ export async function readerSession(h: BrowserHarness, realApp = false) {
 			</>
 		);
 	}
+	const warnings: string[] = [];
+	const originalWarn = console.warn;
+	console.warn = (...args: unknown[]) => {
+		warnings.push(args.map(String).join(" "));
+		originalWarn(...args);
+	};
 	localStorage.clear();
 	localStorage.setItem("folio-reader-ui-v1", JSON.stringify({ focus: false }));
 	localStorage.setItem(
@@ -481,8 +500,21 @@ export async function readerSession(h: BrowserHarness, realApp = false) {
 	};
 	const dispose = await h.mount(
 		<TestRoutes />,
-		"*",
-		`/materials/${materialId}`,
+		retained ? "/" : "*",
+		`/materials/${materialId}${initialTrailingSlash ? "/" : ""}`,
+		production?.appRoutes.map((route) => {
+			if (route.path === "/sources/:id")
+				return {
+					...route,
+					element: <main data-source-page="">来源占位页</main>,
+				};
+			if (!realApp && route.path === "/segments/:id")
+				return {
+					...route,
+					element: <main data-segment-page="">片段学习占位页</main>,
+				};
+			return route;
+		}),
 	);
 	try {
 		await measure("cold open");
@@ -490,6 +522,30 @@ export async function readerSession(h: BrowserHarness, realApp = false) {
 		const documents = previous.map((frame) => frame.contentDocument);
 		check(navigate, "Test route navigator must be ready");
 		const go = navigate;
+		if (initialTrailingSlash) {
+			check(
+				entry?.pathname === `/materials/${materialId}/` &&
+					previous.length === 3,
+				"The actual App trailing-slash reader URL must load all reading frames",
+			);
+			for (const suffix of ["", "/"]) {
+				go(`/materials/${materialId}${suffix}`);
+				await h.until(
+					() => entry?.pathname === `/materials/${materialId}${suffix}`,
+					"Switching reader URL trailing slash must finish navigation",
+				);
+				check(
+					frames().length === 3 &&
+						frames().every(
+							(frame, index) =>
+								frame === previous[index] &&
+								frame.contentDocument === documents[index] &&
+								!!frame.getClientRects().length,
+						),
+					"Trailing-slash URL changes must preserve visible iframe and Document identities",
+				);
+			}
+		}
 		go("/segments/saved");
 		await h.until(
 			() => !!h.container.querySelector(segmentSelector),
@@ -689,6 +745,108 @@ export async function readerSession(h: BrowserHarness, realApp = false) {
 			}
 		}
 		if (retained && !preview && !realApp) {
+			// POP uses the same production DataRouter as PUSH; both directions retain the surface.
+			go("/segments/saved");
+			await h.until(
+				() => entry?.pathname === "/segments/saved",
+				"History scenario must enter Segment",
+			);
+			go(-1);
+			await h.until(
+				() =>
+					entry?.pathname === `/materials/${materialId}` &&
+					frames().length === 3 &&
+					frames().every((frame) => !!frame.getClientRects().length),
+				"History back must resume the reader",
+			);
+			go(1);
+			await h.until(
+				() =>
+					entry?.pathname === "/segments/saved" &&
+					previous.every((frame) => frame.getClientRects().length === 0),
+				"History forward must pause the same reader",
+			);
+			go(-1);
+			await h.until(
+				() =>
+					entry?.pathname === `/materials/${materialId}` &&
+					previous.every((frame) => !!frame.getClientRects().length),
+				"A second history back must resume the retained surface",
+			);
+			check(
+				frames().every(
+					(frame, index) =>
+						frame === previous[index] &&
+						frame.contentDocument === documents[index],
+				),
+				"History back/forward must preserve all iframe and Document identities",
+			);
+			const queryRequestIndex = requestTimings.length;
+			const queryReturn = "/sources/source?from=same-book";
+			go(`/materials/${materialId}?segment=saved&entry=same-book`, {
+				state: { returnTo: { to: queryReturn, label: "来源" } },
+			});
+			await h.until(
+				() =>
+					entry?.search === "?segment=saved&entry=same-book" &&
+					requestTimings
+						.slice(queryRequestIndex)
+						.some((item) => item.path.endsWith("/material-provenance")) &&
+					previous.every((frame) => !!frame.getClientRects().length),
+				"Active same-book query entry must validate its new Segment target",
+			);
+			const queryBack = h.container.querySelector<HTMLAnchorElement>(
+				'.reader-r1 a[aria-label="返回来源"]',
+			);
+			check(
+				queryBack?.getAttribute("href") === queryReturn,
+				"Active same-book entry must update its return state",
+			);
+			check(
+				frames().every(
+					(frame, index) =>
+						frame === previous[index] &&
+						frame.contentDocument === documents[index],
+				),
+				"Active same-book query changes must reuse the existing reading surface",
+			);
+			const stateRequestIndex = requestTimings.length;
+			const stateReturn = "/sources/source?from=state-only";
+			go(`/materials/${materialId}?segment=saved&entry=same-book`, {
+				replace: true,
+				state: { returnTo: { to: stateReturn, label: "更新来源" } },
+			});
+			await h.until(
+				() =>
+					h.container
+						.querySelector<HTMLAnchorElement>(
+							'.reader-r1 a[aria-label="返回更新来源"]',
+						)
+						?.getAttribute("href") === stateReturn,
+				"State-only replace must update the reader return label and destination",
+			);
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			);
+			check(
+				frames().every(
+					(frame, index) =>
+						frame === previous[index] &&
+						frame.contentDocument === documents[index] &&
+						!!frame.getClientRects().length,
+				),
+				"State-only replace must preserve visible iframe and Document identities",
+			);
+			check(
+				!requestTimings
+					.slice(stateRequestIndex)
+					.some(
+						(item) =>
+							item.path === `/api/materials/${materialId}` ||
+							item.path.endsWith("/readings/prepare"),
+					),
+				"State-only replace must not reopen or revalidate the reading session",
+			);
 			go("/sources/source");
 			await h.until(
 				() => !!h.container.querySelector("[data-source-page]"),
@@ -859,9 +1017,92 @@ export async function readerSession(h: BrowserHarness, realApp = false) {
 					),
 				"A changed material version must reopen with fresh iframe documents",
 			);
+			go("/sources/source");
+			await h.until(
+				() => !!h.container.querySelector("[data-source-page]"),
+				"Import entry scenario must start after disposing the previous session",
+			);
+			const importEntryIndex = entries.length;
+			const importReturn = "/sources/source?from=import";
+			go(`/materials/${materialId}?entry=import`, {
+				state: {
+					materialImported: true,
+					materialReused: false,
+					returnTo: { to: importReturn, label: "导入来源" },
+				},
+			});
+			await h.until(
+				() =>
+					entry?.search === "?entry=import" &&
+					entry.state &&
+					!("materialImported" in entry.state) &&
+					!("materialReused" in entry.state) &&
+					frames().length === 3 &&
+					frames().every((frame) => !!frame.getClientRects().length),
+				"Import entry must consume transient state and present normally",
+			);
+			const stableEntryCount = entries.length;
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			check(
+				entries.length === stableEntryCount &&
+					entries
+						.slice(importEntryIndex)
+						.filter((item) => item.action === "REPLACE").length === 1,
+				"Import state must be replaced exactly once without a navigation loop",
+			);
+			const openBookInfo = async () => {
+				const info = h.container.querySelector<HTMLButtonElement>(
+					'button[aria-label="书籍信息"]',
+				);
+				check(info, "Reader must expose book information");
+				info.click();
+				await h.until(
+					() => !!h.container.querySelector(".reader-book-info"),
+					"Book information panel must open",
+				);
+			};
+			await openBookInfo();
+			check(
+				h.container.textContent?.includes("已新导入书籍。"),
+				"Import notice must survive its transient route-state replacement",
+			);
+			const importBack = h.container.querySelector<HTMLAnchorElement>(
+				'.reader-r1 a[aria-label="返回导入来源"]',
+			);
+			check(
+				importBack?.getAttribute("href") === importReturn,
+				"Import-state replace must preserve its explicit return destination",
+			);
+			importBack.click();
+			await h.until(
+				() =>
+					entry?.pathname === "/sources/source" &&
+					entry.search === "?from=import" &&
+					!!h.container.querySelector("[data-source-page]"),
+				"Consumed import entry must return to the requested source query",
+			);
+			go(-1);
+			await h.until(
+				() =>
+					entry?.pathname === `/materials/${materialId}` &&
+					entry.search === "?entry=import" &&
+					frames().length === 3 &&
+					frames().every((frame) => !!frame.getClientRects().length),
+				"History back after import return must reopen the consumed entry",
+			);
+			await openBookInfo();
+			check(
+				!h.container.textContent?.includes("已新导入书籍。"),
+				"History must not replay a consumed import notice",
+			);
 		}
+		check(
+			!retained || warnings.length === 0,
+			`Shared reader session routes must not emit warnings: ${warnings.join("\n")}`,
+		);
 		return `reader session (${retained ? "retained" : "baseline"}; 400 paragraphs, 3 iframes, 400 ruby tokens; offline fixture responses, real DOM clock; viewport ${innerWidth}x${innerHeight})\n${JSON.stringify(measurements, null, 2)}\n?segment exact paragraph 350 visible; canonical projection preserved`;
 	} finally {
+		console.warn = originalWarn;
 		observing = false;
 		if (!preview) dispose();
 	}

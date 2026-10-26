@@ -1,9 +1,9 @@
-"""Create the complete pre-release schema from an empty database.
+"""Create the complete application schema from an empty database.
 
-Revision ID: 0001_initial
+Revision ID: 0001_schema_baseline
 Revises:
 
-Development revisions were consolidated; this fixed schema does not import ORM models.
+This fixed DDL baseline does not import runtime models or replay development backfills.
 """
 
 from collections.abc import Sequence
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "0001_initial"
+revision: str = "0001_schema_baseline"
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -129,15 +129,22 @@ def upgrade() -> None:
         sa.Column("compiled_bundle", sa.LargeBinary(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("metadata_revision", sa.Integer(), server_default=sa.text("'0'"), nullable=False),
+        sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(
             ["source_id"],
             ["sources.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("source_id", "source_sha256", name="uq_material_source_bytes"),
         sa.UniqueConstraint("version_id"),
     )
     op.create_index("ix_materials_source_id", "materials", ["source_id"], unique=False)
+    op.create_index(
+        "uq_material_source_bytes",
+        "materials",
+        ["source_id", "source_sha256"],
+        unique=True,
+        sqlite_where=sa.text("deleted_at IS NULL"),
+    )
     op.create_table(
         "provider_models",
         sa.Column("id", sa.String(length=26), nullable=False),
@@ -446,8 +453,115 @@ def upgrade() -> None:
         "uq_chat_message_ordinal", "chat_messages", ["thread_id", "ordinal"], unique=True
     )
 
+    op.create_table(
+        "segment_material_provenance",
+        sa.Column("segment_id", sa.String(26), sa.ForeignKey("segments.id"), primary_key=True),
+        sa.Column("source_id", sa.String(26), sa.ForeignKey("sources.id"), nullable=False),
+        sa.Column("material_id", sa.String(26), sa.ForeignKey("materials.id"), nullable=False),
+        sa.Column("version_id", sa.String(26), nullable=False),
+        sa.Column("payload", sa.Text(), nullable=False),
+        sa.Column("identity_sha256", sa.String(64), nullable=False),
+        sa.Column("request_id", sa.String(36), nullable=False),
+        sa.Column("request_payload", sa.Text(), nullable=False),
+        sa.Column("assembly_rule", sa.String(40), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.UniqueConstraint("source_id", "request_id", name="uq_segment_provenance_request"),
+    )
+    op.create_index(
+        "ix_segment_material_provenance_identity_sha256",
+        "segment_material_provenance",
+        ["identity_sha256"],
+    )
+
+    op.create_table(
+        "segment_context_settings",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("enabled", sa.Boolean(), nullable=False),
+        sa.Column("before_sentences", sa.Integer(), nullable=False),
+        sa.Column("after_sentences", sa.Integer(), nullable=False),
+        sa.Column("before_characters", sa.Integer(), nullable=False),
+        sa.Column("after_characters", sa.Integer(), nullable=False),
+        sa.Column("revision", sa.Integer(), nullable=False),
+        sa.CheckConstraint("id = 1", name="ck_segment_context_singleton"),
+        sa.CheckConstraint("revision >= 0", name="ck_segment_context_revision"),
+        sa.CheckConstraint(
+            "before_sentences BETWEEN 0 AND 100000", name="ck_segment_context_before_sentences"
+        ),
+        sa.CheckConstraint(
+            "after_sentences BETWEEN 0 AND 100000", name="ck_segment_context_after_sentences"
+        ),
+        sa.CheckConstraint(
+            "before_characters BETWEEN 0 AND 100000", name="ck_segment_context_before_characters"
+        ),
+        sa.CheckConstraint(
+            "after_characters BETWEEN 0 AND 100000", name="ck_segment_context_after_characters"
+        ),
+    )
+
+    op.create_table(
+        "translation_settings",
+        sa.Column("id", sa.String(26), primary_key=True),
+        sa.Column("revision", sa.Integer(), nullable=False),
+        sa.Column("payload", sa.Text(), nullable=False),
+    )
+    op.create_table(
+        "translation_tasks",
+        sa.Column("id", sa.String(26), primary_key=True),
+        sa.Column("request_id", sa.String(36), nullable=False, unique=True),
+        sa.Column("request_payload", sa.Text(), nullable=False),
+        sa.Column("source_id", sa.String(26), sa.ForeignKey("sources.id"), nullable=False),
+        sa.Column("material_id", sa.String(26), sa.ForeignKey("materials.id"), nullable=False),
+        sa.Column("identity_sha256", sa.String(64), nullable=False),
+        sa.Column("payload", sa.Text(), nullable=False),
+        sa.Column("status", sa.String(20), nullable=False),
+        sa.Column("token", sa.String(26)),
+        sa.Column("result_id", sa.String(26)),
+        sa.Column("run_id", sa.String(26)),
+        sa.Column("error", sa.Text()),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+    )
+    op.create_index("ix_translation_tasks_source_id", "translation_tasks", ["source_id"])
+    op.create_index("ix_translation_tasks_material_id", "translation_tasks", ["material_id"])
+    op.create_index(
+        "ix_translation_tasks_identity_sha256", "translation_tasks", ["identity_sha256"]
+    )
+    op.create_index("ix_translation_tasks_status", "translation_tasks", ["status"])
+    op.create_table(
+        "translation_results",
+        sa.Column("id", sa.String(26), primary_key=True),
+        sa.Column(
+            "task_id",
+            sa.String(26),
+            sa.ForeignKey("translation_tasks.id"),
+            nullable=False,
+            unique=True,
+        ),
+        sa.Column("translation", sa.Text(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+    )
+    op.create_table(
+        "translation_adoptions",
+        sa.Column("id", sa.String(26), primary_key=True),
+        sa.Column("request_id", sa.String(36), nullable=False, unique=True),
+        sa.Column("request_payload", sa.Text(), nullable=False),
+        sa.Column("adopted_payload", sa.Text(), nullable=False),
+        sa.Column(
+            "result_id", sa.String(26), sa.ForeignKey("translation_results.id"), nullable=False
+        ),
+        sa.Column("segment_id", sa.String(26), sa.ForeignKey("segments.id"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+    )
+    op.create_index("ix_translation_adoptions_result_id", "translation_adoptions", ["result_id"])
+    op.create_index("ix_translation_adoptions_segment_id", "translation_adoptions", ["segment_id"])
+
 
 def downgrade() -> None:
+    op.drop_table("translation_adoptions")
+    op.drop_table("translation_results")
+    op.drop_table("translation_tasks")
+    op.drop_table("translation_settings")
+    op.drop_table("segment_context_settings")
+    op.drop_table("segment_material_provenance")
     op.drop_table("chat_messages")
     op.drop_table("analysis_sections")
     op.drop_table("material_readings_current")

@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Icon as CatalogIcon } from "../catalog/LibraryTools";
-import { useViewActivity } from "../navigation/RetainedRoute";
+import { useViewActivity } from "../navigation/view-activity";
 import {
 	type Illustration,
 	listIllustrations,

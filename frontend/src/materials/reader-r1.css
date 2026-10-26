@@ -561,7 +561,51 @@
 .reader-r1 [data-tooltip]:focus-visible::after {
 	transition-delay: 0ms;
 }
+/* Delay only the hint; ready content, errors and navigation never wait. */
+.reader-pending-message {
+	animation: reader-loading-reveal 0s linear 150ms both;
+}
+@keyframes reader-loading-reveal {
+	from {
+		visibility: hidden;
+	}
+	to {
+		visibility: visible;
+	}
+}
+@media (prefers-reduced-motion: no-preference) {
+	/* Animate the live, restored Reader rather than a loading-page snapshot. */
+	.reader-r1[data-presented="true"] {
+		animation: reader-page-enter 240ms ease-out;
+	}
+	.reader-r1[data-presented="true"] .reader-heading {
+		animation: reader-title-enter 240ms ease-out;
+	}
+}
+@keyframes reader-page-enter {
+	from {
+		opacity: 0.8;
+	}
+	to {
+		opacity: 1;
+	}
+}
+@keyframes reader-title-enter {
+	from {
+		opacity: 0.8;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
 @media (prefers-reduced-motion: reduce) {
+	::view-transition-group(*),
+	::view-transition-old(*),
+	::view-transition-new(*) {
+		animation: none;
+	}
 	.reader-r1 [data-reader-panel-side],
 	.reader-r1 button,
 	.reader-r1 [role="tab"],

@@ -4,7 +4,7 @@ import { analysisKeys, getAnalysis, listAnalyses } from "../analysis/api";
 import { Markdown } from "../analysis/Markdown";
 import { analysisPresentation } from "../analysis/presentation";
 import { getSegment, queries } from "../content";
-import { useViewActivity } from "../navigation/RetainedRoute";
+import { useViewActivity } from "../navigation/view-activity";
 import { useReaderSessionRefresh } from "./reader-session-query";
 import type { ScreenAnchor } from "./reader-study";
 import type { ChapterSegment } from "./study-api";

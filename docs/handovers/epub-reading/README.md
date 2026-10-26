@@ -14,7 +14,7 @@
 | 本文 | 准备条件、开发顺序、分工与每个切片的验收 |
 | [架构](../../ARCHITECTURE.md) | 现行材料存储、API、原子托管、阅读恢复与注音机制 |
 | [切片 1 契约快照](SLICE_1_DRAFT.md) | 保留基础阅读切片的实施范围与工程取舍；现行规则由架构维护 |
-| [隔离试验](../../../prototypes/epub-reading/README.md) | 可运行样书、编译命令、浏览器自检与已知限制 |
+| [隔离试验](../../../prototypes/epub-reading/README.md) | 历史静态样书、浏览器自检与已知限制；旧实验导出 CLI 已退役 |
 | [切片 0 验收](../archived/epub-reading/SLICE_0_ACCEPTANCE.md) | 实际样书、定位／渲染取舍、测试／CR／浏览器证据及待确认体验范围 |
 | [章节与阅读调查](../archived/epub-reading/CHAPTER_RESEARCH.md) | 用户反馈、LearningJ 可借鉴边界、第 8 卷实际组章例子及标准依据 |
 | [切片 1 验收](../archived/epub-reading/SLICE_1_ACCEPTANCE.md) | 正式页面、迁移／API、真实样书与恢复、CR 修复和最终检查 |

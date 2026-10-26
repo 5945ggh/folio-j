@@ -53,3 +53,24 @@
 浏览器回归通过真实 `ViewActivityProvider` 暂停、恢复两次，覆盖浮卡与嵌入面板、主动面板与共享任务的跟随面板，以及新结果延迟、503、重试成功和第二次恢复核验失败。修复前已复现“新结果读取完成前保留旧译文”的断言失败，修复后宽窄屏定向回归通过。实际打开 503 预览时，原文、已留存译文与读取失败提示同时可见，版本快捷入口保持禁用。测试使用离线接口夹具，未调用真实模型；未触及 TBD。
 
 提交前最终检查通过：`just lint`、`just test`（后端 673 项、前端 602 项）、`just build`、`just check-docs`、`git diff --check`，以及包含新增回归的 55 组完整离线浏览器场景。独立复审未发现阻塞问题；构建仍有既有大 chunk 提示。
+
+
+## 2026-10-25 阅读会话宿主局部调整
+
+本轮保留一个阅读会话、暂离十分钟租期和材料／版本／注音代次／位置修订核验，将路由适配与会话视图分开。删除 `navigation/RetainedRoute.tsx`，活动生命周期移至 `navigation/view-activity.tsx`；`materials/ReaderSessionHost.tsx` 读取真实 location、识别材料并在片段页保留会话，将稳定的 `{ materialId, location }` entry 显式交给 `MaterialReaderSession`。`MaterialOpening` 接收入口 location，Reader 接收已校验的 `returnTo`，`MaterialReader` 仅保留独立路由挂载适配。导航继续由真实 Data Router 处理，宿主不构造嵌套 `Routes` 或冻结 Router context。无新增依赖、schema 或生成接口变更，未触及 TBD。
+
+测试先将会话场景接入共享生产 `App`／`appRoutes`。旧实现运行 `BROWSER_TEST_SUITE=route-motion BROWSER_TEST_QUERY='?suite=route-motion' npm run test:browser` 退出码为 1，无 warning 断言失败，报错为 `Shared App routes must not emit warnings: You rendered descendant <Routes> ... at '/' ... parent route path has no trailing '*'`。本轮以该失败基线核对 warning 消除，回归普通／精确返回、iframe／Document 复用、暂停输入、入口 state replace、换书、超时、失效、版本变化及原生过渡。
+
+已确认检查通过：`just lint`（282 个文件，类型检查零错误）、`just test`（后端 743 项、前端 607 项）和 `just build`；构建仍有既有大 chunk 提示。独立生产代码复审通过。定向离线浏览器验证通过：reader-session 的 1280 横排、390 横排、1280 竖排三组，route-motion 的 1280、390、减少动态效果三组，以及 `ae44fc8` 历史基线的 1280／390 两组。
+
+入口 state-only replace 的三组定向回归通过：保持 pathname／search，只更新 `returnTo` 时，iframe／Document 身份保持，材料 GET 与 reading prepare 请求均不增加。实际浏览器打开本地素材库中的《星の道》并进入阅读器，正文及工具栏正常显示，开发日志中的 warning／error 均为空。
+
+最终 `just test-browser` 退出码为 0，58 组完整离线浏览器场景通过，包含最终入口 state-only replace 断言。首轮运行受热重载中断，固定源码后重跑通过。`just check-docs` 与 `git diff --check` 通过。以上历史测量与通过结论仍对应各自记录的实现和日期；本轮未重新测量性能，不新增性能改善结论。
+
+## 2026-10-25 阅读页进入动画试用
+
+按用户反馈保留书卡 120ms 按压反馈，将封面拉伸及加载页快照改为真实阅读页的轻入场。Reader 沿用现有 `presented` 信号，在 iframe 与定位恢复完成后播放 240ms 透明度 0.8→1 的轻淡入，标题另做 8px→0 位移；正文视口和 iframe 不变换。书卡、详情和导入使用普通导航，移除封面命名 helper、浏览器 API 检测与导入成功后 320ms 等待。书籍、章节及标题中的加载提示仅文案延后 150ms，内容就绪即移除，错误和返回入口不延迟。减少动态效果关闭入场动画；保留会话再次显示可重播轻动画。
+
+先在旧实现复现“book card: opening loading text must be hidden before 150ms”失败。更新后的共享生产路由回归通过 1280、390 和减少动态效果三组，验证快／慢及缓存入口、真实 CSS 动画的时长与标题位移、动画期间正文和 iframe 矩形稳定、提示 149ms 隐藏／150ms 可见、书籍和章节错误即时显示，以及返回查询保留。独立复审未发现阻塞问题。
+
+`just lint`、`just test`（后端 743、前端 602 项）、`just build`、`just check-docs` 与 `git diff --check` 通过，`just test-browser` 的 58 组完整离线浏览器场景通过。原浏览器视图过渡 helper 已删除，其 5 项单测随之移除，入场行为由真实页面浏览器回归覆盖。实际打开本地《星の道》，正文与工具栏正常显示，开发日志无 warning／error。动画手感等待用户试用；未新增依赖或 TBD 决策，不作性能改善结论。

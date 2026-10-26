@@ -48,3 +48,13 @@
 在托管工作树重新执行完整 `just check`，lint、类型检查、后端 672 通过／1 跳过、前端 602 通过、生产构建、文档链接及最终 58 组浏览器回归全部通过；最终浏览器运行包含加载边界故障和设置分类草稿保护。日志见[合入前完整检查](../../data/acceptance-evidence/route-loading-20261025/merge-check.log)。
 
 提交范围只含路由加载、相关测试、测量脚本和配套文档；后端、EPUB 存储、数据库和依赖保持提交起点的版本。首次直达设置的已测等待代价沿用上文记录。
+
+## 主分支整合复核（2026-10-27）
+
+整合 `main` 的路由按需加载（`497d9ed`）与 EPUB／阅读会话分支（`0ff35f6`），保留双方提交历史。生产页面继续注册到 DataRouter；`ReaderSessionHost` 通过模块顶层 lazy 加载，阅读与片段路径共用稳定的加载／错误边界。页面匹配使用 Router 的 `matchRoutes`，避免尾斜杠直达时空白。其他页面继续按 pathname 重置错误边界。
+
+真实 App 回归覆盖尾斜杠冷启动、普通／尾斜杠地址切换、片段往返及历史前进后退，核对三个 iframe 与 Document 身份、阅读位置、讨论草稿和设置离页保护。双方目录、导入、阅读动画和会话失效场景均保留。独立复核发现的尾斜杠问题已修复，新回归可捕获原错误。
+
+隔离工作树的 `just lint`、`just test`、`just build`、`just check-docs` 和完整 `just test-browser` 通过：后端 742 通过、1 跳过，前端 611 通过，浏览器 73 组通过。完整浏览器首轮被修复时的热更新中断，最终在稳定源码上重新跑完。应用浏览器中实际观察到第 350 段精确返回、日语正文／注音、片段标记与工具栏正常呈现。环境为 macOS、Python 3.11.14、Node 26.10.0；Node 24、实体触屏及其他浏览器引擎未单独复测。未调用真实模型，也未连接用户数据库。
+
+原始记录：[静态检查](../../data/acceptance-evidence/docs-review-20261027/lint.log)、[后端与前端测试](../../data/acceptance-evidence/docs-review-20261027/test.log)、[生产构建](../../data/acceptance-evidence/docs-review-20261027/build.log)、[完整浏览器回归](../../data/acceptance-evidence/docs-review-20261027/browser.log)。本次未纳入原工作区并行进行的前端优化及其后续文档更新。

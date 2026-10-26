@@ -2,14 +2,13 @@
 
 import asyncio
 import unicodedata
-import zlib
 from dataclasses import dataclass
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.epub_schemas import CompiledBook
+from app.epub_storage import decode as decode_epub
 from app.material_models import Material, MaterialReadingsCurrent, MaterialReadingsGeneration
 from app.models import Source
 from app.nlp.assets import decode
@@ -129,12 +128,12 @@ async def _bundle(factory: SessionFactory, identity: StatisticsInput) -> bytes:
 
 
 def _text_result(bundle: bytes) -> bytes:
-    book = CompiledBook.model_validate_json(zlib.decompress(bundle))
+    book = decode_epub(bundle)
     return compute_text(text_resources(book)).model_dump_json().encode()
 
 
 def _lexical_result(bundle: bytes, payload: bytes, configuration: str) -> bytes:
-    book = CompiledBook.model_validate_json(zlib.decompress(bundle))
+    book = decode_epub(bundle)
     inputs = text_resources(book)
     decoded = decode(payload, inputs)
     if decoded.configuration != configuration:
@@ -146,7 +145,7 @@ async def _text(factory: SessionFactory, identity: StatisticsInput) -> bytes:
     bundle = await _bundle(factory, identity)
     try:
         return await asyncio.to_thread(_text_result, bundle)
-    except (ValueError, zlib.error) as exc:
+    except ValueError as exc:
         raise HTTPException(503, "正文统计失败，请重试") from exc
 
 
@@ -167,7 +166,7 @@ async def _lexical(factory: SessionFactory, identity: StatisticsInput) -> bytes:
     assert identity.configuration is not None
     try:
         return await asyncio.to_thread(_lexical_result, bundle, payload, identity.configuration)
-    except (ValueError, zlib.error) as exc:
+    except ValueError as exc:
         raise HTTPException(503, "词法统计失败，请重试") from exc
 
 

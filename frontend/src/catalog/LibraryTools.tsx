@@ -29,7 +29,7 @@ export function Icon({
 		</svg>
 	);
 }
-function Tool({
+export function Tool({
 	label,
 	name,
 	children,
@@ -39,18 +39,50 @@ function Tool({
 	children: ReactNode;
 }) {
 	const id = useId();
+	const trigger = useRef<HTMLButtonElement>(null);
+	const keyboardOpen = useRef(false);
+	const [open, setOpen] = useState(false);
 	return (
 		<span className="library-tool">
 			<button
 				type="button"
+				ref={trigger}
 				className="library-icon"
 				aria-label={label}
 				title={label}
+				aria-expanded={open}
+				aria-controls={id}
 				popoverTarget={id}
+				onPointerDown={() => {
+					keyboardOpen.current = false;
+				}}
+				onKeyDown={(event) => {
+					if (event.key === "Enter" || event.key === " ")
+						keyboardOpen.current = true;
+				}}
 			>
 				<Icon name={name} />
 			</button>
-			<div id={id} popover="auto" className="library-popover">
+			<div
+				id={id}
+				popover="auto"
+				className="library-popover library-panel"
+				role="dialog"
+				aria-label={label}
+				onToggle={(event) => {
+					const opening = event.newState === "open";
+					setOpen(opening);
+					if (!opening) return;
+					const box = trigger.current?.getBoundingClientRect();
+					if (!box) return;
+					const panel = event.currentTarget;
+					panel.style.top = `${Math.max(12, Math.min(box.bottom + 8, window.innerHeight - panel.offsetHeight - 12))}px`;
+					panel.style.right = `${Math.max(12, Math.min(window.innerWidth - box.right, window.innerWidth - panel.offsetWidth - 12))}px`;
+					if (keyboardOpen.current)
+						panel.querySelector<HTMLElement>("select, input")?.focus();
+					keyboardOpen.current = false;
+				}}
+			>
 				<strong>{label}</strong>
 				{children}
 			</div>
@@ -86,11 +118,34 @@ export function LibraryTools({
 				<Tabs
 					id="material-type"
 					label="素材类型"
-					items={[{ value: "book", label: "书籍" }]}
+					items={[
+						{ value: "book", label: "书籍" },
+						{ value: "comic", label: "漫画", disabled: true },
+						{ value: "audiobook", label: "有声书", disabled: true },
+						{ value: "video", label: "视频", disabled: true },
+					]}
 					value="book"
 					onChange={() => {}}
 				/>
 				<div className="library-tools">
+					{searching && (
+						<input
+							id="library-search"
+							ref={search}
+							type="search"
+							className="library-search-input"
+							aria-label="搜索书名或来源"
+							placeholder="搜索书名或来源…"
+							value={state.q}
+							onChange={(e) => change({ q: e.target.value })}
+							onKeyDown={(event) => {
+								if (event.key === "Escape" && !event.nativeEvent.isComposing) {
+									setSearching(false);
+									searchButton.current?.focus();
+								}
+							}}
+						/>
+					)}
 					<div className="library-tool-group">
 						<button
 							className="library-icon"
@@ -151,27 +206,34 @@ export function LibraryTools({
 									<option value="last_opened_at">最近打开</option>
 								</select>
 							</label>
-							<label>
-								排序方向
-								<select
-									value={state.order}
-									onChange={(e) =>
-										change({ order: e.target.value as CatalogState["order"] })
-									}
-								>
-									<option value="asc">升序</option>
-									<option value="desc">降序</option>
-								</select>
-							</label>
+							<div className="library-sort-direction-field">
+								<span>排序方向</span>
+								<fieldset className="library-sort-direction">
+									{(["asc", "desc"] as const).map((order) => (
+										<button
+											key={order}
+											type="button"
+											aria-pressed={state.order === order}
+											onClick={() => change({ order })}
+										>
+											{order === "asc" ? "升序" : "降序"}
+										</button>
+									))}
+								</fieldset>
+							</div>
 						</Tool>
 						<Tool name="size" label="卡片大小">
-							<label>
-								宽度 {size}px
+							<label className="library-size-field">
+								<span className="library-size-row">
+									宽度
+									<span className="library-size-value">{size}px</span>
+								</span>
 								<input
 									type="range"
 									min="140"
 									max="280"
 									value={size}
+									aria-label="卡片宽度"
 									onChange={(e) => setSize(Number(e.target.value))}
 								/>
 							</label>
@@ -197,31 +259,6 @@ export function LibraryTools({
 					)}
 				</div>
 			</header>
-			{searching && (
-				<div className="library-search-row">
-					<label>
-						搜索书名或来源
-						<input
-							id="library-search"
-							type="search"
-							ref={search}
-							value={state.q}
-							onChange={(e) => change({ q: e.target.value })}
-							placeholder="搜索书名或来源…"
-						/>
-					</label>
-					<button
-						type="button"
-						className="library-clear"
-						onClick={() => {
-							setSearching(false);
-							searchButton.current?.focus();
-						}}
-					>
-						收起
-					</button>
-				</div>
-			)}
 			{(state.q || state.status || state.source_id) && (
 				<div className="library-chips">
 					{state.q && (

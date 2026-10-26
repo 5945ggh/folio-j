@@ -70,11 +70,9 @@ gen-api:
 migrate:
     uv run --directory backend alembic upgrade head
 
-# 验证保留的实验与静态视觉原型。
+# 验证保留的实验与样书资产。
 check-assets:
     node --test prototypes/epub-reading/locator.test.mjs
-    node --check prototypes/reading-native/app.js
-    node --test prototypes/reading-native/verify.mjs
     node references/occurrence_anchor_pilot/reading-experiment/parser-test.mjs
     uv run --project backend python references/occurrence_anchor_pilot/batch-01/validate.py
 

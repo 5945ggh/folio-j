@@ -1,0 +1,54 @@
+.book-import-card .book-cover {
+	position: relative;
+}
+.book-import-overlay {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: flex-end;
+	justify-content: flex-end;
+	padding: 16px;
+	background: #ffffff99;
+	border-radius: inherit;
+}
+.import-preparation-indicator {
+	display: inline-block;
+	width: 26px;
+	height: 26px;
+	border: 2px solid #727985;
+	border-right-color: transparent;
+	border-radius: 50%;
+	animation: import-card-preparing 1s linear infinite;
+}
+.book-import-status {
+	margin: 8px 0 0;
+	color: var(--muted);
+	font-size: 12px;
+}
+.book-import-card .inline-error {
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+.book-import-actions {
+	display: flex;
+	gap: 12px;
+	margin-top: 10px;
+}
+.book-import-actions button {
+	padding: 3px 0;
+	border: 0;
+	background: transparent;
+	color: var(--muted);
+	font-size: 12px;
+	cursor: pointer;
+}
+@keyframes import-card-preparing {
+	to {
+		transform: rotate(360deg);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.import-preparation-indicator {
+		animation: none;
+	}
+}

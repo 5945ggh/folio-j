@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class EpubModel(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
 
 class CompiledResource(EpubModel):
@@ -12,7 +12,6 @@ class CompiledResource(EpubModel):
     href: str
     title: str
     text: str
-    html: str
     css: str
     html_attributes: dict[str, str]
     body_attributes: dict[str, str]

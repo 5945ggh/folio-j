@@ -3,7 +3,6 @@
 import asyncio
 import base64
 import binascii
-import zlib
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -11,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.epub_schemas import CompiledBook
+from app.epub_storage import decode as decode_epub
 from app.provenance_schemas import MaterialProvenance, ProvenancePart
 from app.services.material_provenance import (
     ProvenanceError,
@@ -121,8 +120,8 @@ def validate_candidates(
     identity: MaterialIdentity, chapter_id: str, rows: list[Candidate]
 ) -> dict[str, tuple[Validated | None, bool]]:
     try:
-        book = CompiledBook.model_validate_json(zlib.decompress(identity.compiled_bundle))
-    except (ValueError, zlib.error) as exc:
+        book = decode_epub(identity.compiled_bundle)
+    except ValueError as exc:
         raise failure("material_unavailable", "材料版本产物不可用，请重新打开材料。", 409) from exc
     if book.product_sha256 != identity.product_sha256 or book.contract != identity.contract_version:
         raise failure("material_unavailable", "材料版本产物身份不匹配。", 409)
