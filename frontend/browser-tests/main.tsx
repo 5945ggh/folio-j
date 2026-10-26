@@ -12,6 +12,7 @@ import type { StudyTarget } from "../src/materials/study-api";
 import "../src/styles.css";
 import { analysisReading } from "./analysis-reading";
 import { analysisRename } from "./analysis-rename";
+import { catalogToolbarRegression } from "./catalog-toolbar";
 import { chapterRecords } from "./chapter-records";
 import { navigationFeedback } from "./navigation-feedback";
 import { readerBookmarks } from "./reader-bookmarks";
@@ -388,6 +389,7 @@ async function clearStudyContext() {
 try {
 	const suite = new URLSearchParams(location.search).get("suite");
 	const standalone = new Map([
+		["catalog-toolbar", catalogToolbarRegression],
 		["record-saving", recordSaving],
 		["navigation-feedback", navigationFeedback],
 		["route-motion", routeMotion],

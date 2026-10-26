@@ -489,8 +489,8 @@ export function BookCatalog({
 						}}
 					>
 						<Icon name="book" />
-						<span className="library-empty-title">这里，留给下一本好书。</span>
-						<span>点击这片区域，开始导入 EPUB</span>
+						<span className="library-empty-title">留下一本好书</span>
+						<span>点击这片区域，导入 EPUB</span>
 					</button>
 				) : books.data.items.length === 0 ? (
 					<div className="empty-state">

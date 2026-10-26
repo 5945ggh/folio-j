@@ -196,7 +196,7 @@ export function SourceIndex() {
 			) : !target.data ? (
 				<div className="s2-welcome">
 					<h1>从一份来源开始</h1>
-					<p>在来源栏新建来源，便可导入书籍或手动添加片段。</p>
+					<p>在来源栏新建来源，便可导入素材或手动添加片段</p>
 				</div>
 			) : null}
 		</SourceFrame>

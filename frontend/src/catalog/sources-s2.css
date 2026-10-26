@@ -71,10 +71,6 @@
 	width: 16px;
 	height: 16px;
 }
-.s2-tools .library-icon[aria-expanded="true"] {
-	background: #e9edf2;
-	color: #232832;
-}
 .s2-source-search {
 	padding: 0 12px 10px;
 }
@@ -209,9 +205,6 @@
 .s2-source-menu button:focus-visible {
 	background: #edf1f6;
 }
-.s2-sort {
-	inset: 64px auto auto calc(var(--sidebar-width) + 80px);
-}
 .sources-s2 .s2-source-reveal {
 	display: none;
 }
@@ -265,9 +258,6 @@
 		display: inline-flex;
 		margin-bottom: 18px;
 		font-size: 12px;
-	}
-	.s2-sort {
-		left: 60px;
 	}
 }
 @media (max-width: 720px) {
