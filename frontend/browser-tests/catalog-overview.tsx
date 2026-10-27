@@ -160,6 +160,15 @@ export async function overviewImportRegression(
 			container.querySelector(".source-welcome") ? "导入素材" : "导入书籍",
 		).click();
 		await until(() => !!dialog(), "Overview import dialog must open");
+		// The modal opens before its independent sources query necessarily settles.
+		// A controlled native select has no value until the matching option exists.
+		await until(
+			() =>
+				!!dialog()
+					?.querySelector<HTMLSelectElement>("select")
+					?.querySelector(`option[value="${source.id}"]`),
+			"Overview import must load its source option before checking the lock",
+		);
 		const picker =
 			dialog()?.querySelector<HTMLInputElement>('input[type="file"]');
 		check(picker, "Missing file picker");
