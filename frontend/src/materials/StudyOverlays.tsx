@@ -9,6 +9,28 @@ import type { ScreenAnchor } from "./reader-study";
 import { studyOverlayPosition } from "./study-overlays";
 import "./study-overlays.css";
 
+function ToolIcon({ name }: { name: "translate" | "speak" | "save" }) {
+	const path = {
+		translate: "m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1m10 20-5-10-5 10M14 18h6",
+		speak:
+			"M11 5 6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14",
+		save: "M6 4h12v16l-6-4-6 4z",
+	}[name];
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<path d={path} />
+		</svg>
+	);
+}
+
 function AnchoredStudyTool({
 	anchor,
 	label,
@@ -102,6 +124,7 @@ export function SelectionToolbar({
 					onMouseDown={(event) => event.preventDefault()}
 					onClick={onTranslate}
 				>
+					<ToolIcon name="translate" />
 					翻译
 				</button>
 			)}
@@ -111,26 +134,22 @@ export function SelectionToolbar({
 					onMouseDown={(event) => event.preventDefault()}
 					onClick={onSpeak}
 				>
+					<ToolIcon name="speak" />
 					朗读
 				</button>
 			)}
+			<span className="reader-tool-divider" aria-hidden="true" />
 			<button
 				id="reader-selection-save"
 				type="button"
+				className="primary"
 				aria-label="保存为学习片段"
 				data-tooltip="保存为学习片段"
 				onMouseDown={(event) => event.preventDefault()}
 				onClick={onSave}
 			>
+				<ToolIcon name="save" />
 				保存
-			</button>
-			<button
-				type="button"
-				aria-label="关闭选区工具栏"
-				onMouseDown={(event) => event.preventDefault()}
-				onClick={onClose}
-			>
-				×
 			</button>
 		</AnchoredStudyTool>
 	);

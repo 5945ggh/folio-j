@@ -106,12 +106,17 @@ import {
 } from "./preferences";
 import { applyFramePresentation } from "./presentation";
 import { ReaderIcon, ReaderPanel, ReaderSettings } from "./ReaderControls";
-import { ReaderGalleryPanel, ReaderNavigationPanel } from "./ReaderPanels";
+import {
+	ReaderDirectImageViewer,
+	ReaderGalleryPanel,
+	ReaderNavigationPanel,
+} from "./ReaderPanels";
 import {
 	type ReaderFrame as Frame,
 	partDocument,
 	ReaderFrames,
 } from "./reader-frames";
+import { ReaderImageCache } from "./reader-image-cache";
 import { ReaderLayout } from "./reader-layout";
 import {
 	ReaderNavigation,
@@ -350,16 +355,31 @@ function Reader({
 	const theme = resolveReaderTheme(ui.theme, systemDark);
 	const [storageFailed, setStorageFailed] = useState(false);
 	const jumpReading = useRef(new JumpReadingSession());
-	const [initialImage, setInitialImage] = useState<
+	const [directImage, setDirectImage] = useState<
 		| {
 				chapterId: string;
 				partIndex: number;
 				imageId: number;
 				requestId: number;
+				source: { src: string; alt: string };
 		  }
 		| undefined
 	>();
+	const [imageCache] = useState(() => new ReaderImageCache());
+	const cacheCloseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+		undefined,
+	);
+	useEffect(() => {
+		if (cacheCloseTimer.current) clearTimeout(cacheCloseTimer.current);
+		return () => {
+			cacheCloseTimer.current = setTimeout(() => imageCache.close(), 0);
+		};
+	}, [imageCache]);
 	const galleryTicket = useRef(0);
+	const [galleryRequest, setGalleryRequest] = useState<{
+		ordinal: number;
+		requestId: number;
+	}>();
 	const navigation = useRef(new ReaderNavigation(jumpReading.current));
 	const [navigationState, setNavigationState] = useState(
 		navigation.current.state,
@@ -409,6 +429,7 @@ function Reader({
 		theme,
 		bookUi,
 		settings,
+		directImage,
 		presented,
 		ui,
 		selectionActive: selection !== null,
@@ -430,6 +451,7 @@ function Reader({
 		theme,
 		bookUi,
 		settings,
+		directImage,
 		presented,
 		ui,
 		selectionActive: selection !== null,
@@ -531,9 +553,7 @@ function Reader({
 				event.key !== "Escape" ||
 				event.isComposing ||
 				event.defaultPrevented ||
-				!viewerEscape.current ||
-				(latest.current.compactPanels &&
-					latest.current.panels.activeSide !== "right")
+				!viewerEscape.current
 			)
 				return;
 			const target = event.target as Node | null;
@@ -573,6 +593,8 @@ function Reader({
 			onBackgroundTap: dismissReadingBackground,
 			onTabReveal: (event, wasHidden) => {
 				flushSync(() => setToolsVisible(true));
+				if ((event.target as Element | null)?.closest?.('[aria-modal="true"]'))
+					return;
 				const selectionButton = document.getElementById(
 					"reader-selection-save",
 				);
@@ -606,10 +628,15 @@ function Reader({
 				setUiPreference({ ...latest.current.ui, focus: enabled }),
 			hasOverlay: () =>
 				latest.current.studyActive ||
+				latest.current.directImage !== undefined ||
 				latest.current.panels.left !== null ||
 				latest.current.panels.right !== null ||
 				!latest.current.presented,
 			onEscapeOverlay: () => {
+				if (viewerEscape.current) {
+					viewerEscape.current();
+					return true;
+				}
 				if (latest.current.selectionActive) {
 					setSelection(null);
 					return true;
@@ -635,14 +662,6 @@ function Reader({
 							: current,
 					);
 					markTrigger.current?.focus({ preventScroll: true });
-					return true;
-				}
-				if (
-					viewerEscape.current &&
-					(!latest.current.compactPanels ||
-						latest.current.panels.activeSide === "right")
-				) {
-					viewerEscape.current();
 					return true;
 				}
 				if (latest.current.panels.activeSide) {
@@ -1386,14 +1405,17 @@ function Reader({
 			wheel: readWheel,
 			touch: recordReadingInput,
 			interaction: recordReadingInput,
-			image: (partIndex, imageId) => {
-				setInitialImage({
+			image: (partIndex, imageId, source) => {
+				jumpReading.current.pause();
+				invalidateNavigation();
+				controller.current?.show();
+				setDirectImage({
 					requestId: ++galleryTicket.current,
 					chapterId,
 					partIndex,
 					imageId,
+					source,
 				});
-				selectPanel("gallery");
 			},
 			ready: (token, index) => layout.current.resourcesReady(token, index),
 			error: (failure) =>
@@ -1945,7 +1967,7 @@ function Reader({
 			style={
 				{
 					"--reader-width": `${bookUi.width}px`,
-					"--reader-toolbar-opacity": `${100 - ui.toolbarTransparency}%`,
+					"--reader-toolbar-opacity": `${ui.toolbarOpacity}%`,
 					"--reader-motion-duration": `${READER_EXIT_MS}ms`,
 				} as CSSProperties
 			}
@@ -2292,7 +2314,9 @@ function Reader({
 						data-tooltip="插图库"
 						aria-expanded={panels.right === "gallery"}
 						onClick={() => {
-							if (panels.right !== "gallery") setInitialImage(undefined);
+							if (panels.right !== "gallery") {
+								setGalleryRequest(undefined);
+							}
 							selectPanel("gallery", true);
 						}}
 					>
@@ -2596,12 +2620,13 @@ function Reader({
 			)}
 			{rightView.value === "gallery" && (
 				<ReaderGalleryPanel
-					key={`${book.id}-${book.version_id}-${initialImage?.requestId ?? "gallery"}`}
+					key={`${book.id}-${book.version_id}-${galleryRequest?.requestId ?? "list"}`}
 					materialId={book.id}
 					versionId={book.version_id}
+					imageCache={imageCache}
 					bookTitle={book.title}
 					settings={settings}
-					initialImage={initialImage}
+					initialOrdinal={galleryRequest?.ordinal}
 					closing={rightView.exiting}
 					inactive={
 						!active ||
@@ -2619,6 +2644,35 @@ function Reader({
 							"right",
 						)
 					}
+				/>
+			)}
+			{directImage && (
+				<ReaderDirectImageViewer
+					key={directImage.requestId}
+					materialId={book.id}
+					versionId={book.version_id}
+					imageCache={imageCache}
+					settings={settings}
+					target={directImage}
+					inactive={!active}
+					navigationError={navigationError}
+					onViewerEscape={registerViewerEscape}
+					onClose={() => {
+						invalidateNavigation();
+						setDirectImage(undefined);
+					}}
+					onOpenGallery={(ordinal) => {
+						setDirectImage(undefined);
+						setGalleryRequest({ ordinal, requestId: ++galleryTicket.current });
+						selectPanel("gallery");
+					}}
+					onNavigate={(target) => {
+						void navigation.current
+							.navigate({ type: "position", target })
+							.then((success) => {
+								if (success) setDirectImage(undefined);
+							});
+					}}
 				/>
 			)}
 			{rightView.value === "info" && (

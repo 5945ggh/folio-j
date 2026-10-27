@@ -20,6 +20,7 @@ import { materialImport } from "./material-import";
 import { navigationFeedback } from "./navigation-feedback";
 import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
+import { readerImages } from "./reader-images";
 import { readerSession } from "./reader-session";
 import { readingAidsRegression } from "./reading-aids";
 import { recordSaving } from "./record-saving";
@@ -393,6 +394,8 @@ async function clearStudyContext() {
 try {
 	const suite = new URLSearchParams(location.search).get("suite");
 	const standalone = new Map([
+		["reader-images", readerImages],
+		["reader-image-performance", readerImages],
 		["catalog-overview", overviewImportRegression],
 		["catalog-reuse", reusedImportRegression],
 		["catalog-toolbar", catalogToolbarRegression],

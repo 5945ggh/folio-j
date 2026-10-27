@@ -16,7 +16,7 @@ test("UI preferences validate enums and bounded values without adding API settin
 	assert.deepEqual(normalizeReaderUi({ theme: "soft", focus: false }), {
 		theme: "white",
 		focus: false,
-		toolbarTransparency: DEFAULT_READER_UI.toolbarTransparency,
+		toolbarOpacity: DEFAULT_READER_UI.toolbarOpacity,
 		marks: { studySegmentUnderlines: true, studySegmentMargins: true },
 	});
 	assert.deepEqual(
@@ -68,26 +68,43 @@ test("broken or inaccessible browser storage does not block reading", () => {
 	assert.deepEqual(readReaderUiPreferences(inaccessible), DEFAULT_READER_UI);
 });
 
-test("toolbar transparency restores legacy defaults and validates the full range", () => {
+test("toolbar opacity validates the full range and converts legacy transparency values", () => {
 	assert.equal(
-		normalizeReaderUi({ theme: "white", focus: false }).toolbarTransparency,
-		DEFAULT_READER_UI.toolbarTransparency,
+		normalizeReaderUi({ theme: "white", focus: false }).toolbarOpacity,
+		DEFAULT_READER_UI.toolbarOpacity,
 	);
-	for (const toolbarTransparency of [0, 20, 55, 100]) {
+	for (const toolbarOpacity of [0, 20, 55, 100]) {
 		assert.equal(
-			normalizeReaderUi({ toolbarTransparency }).toolbarTransparency,
-			toolbarTransparency,
+			normalizeReaderUi({ toolbarOpacity }).toolbarOpacity,
+			toolbarOpacity,
 		);
 	}
-	for (const toolbarTransparency of [-1, 101, NaN, Infinity, "20", null]) {
+	for (const toolbarOpacity of [-1, 101, NaN, Infinity, "20", null]) {
 		assert.equal(
-			normalizeReaderUi({ toolbarTransparency }).toolbarTransparency,
-			DEFAULT_READER_UI.toolbarTransparency,
+			normalizeReaderUi({ toolbarOpacity }).toolbarOpacity,
+			DEFAULT_READER_UI.toolbarOpacity,
 		);
 	}
+	// Legacy toolbarTransparency stored 100 − opacity on the same 0–100 scale.
+	for (const [legacy, expected] of [
+		[0, 100],
+		[20, 80],
+		[55, 45],
+		[100, 0],
+	]) {
+		assert.equal(
+			normalizeReaderUi({ toolbarTransparency: legacy }).toolbarOpacity,
+			expected,
+		);
+	}
+	assert.equal(
+		normalizeReaderUi({ toolbarOpacity: 30, toolbarTransparency: 90 })
+			.toolbarOpacity,
+		30,
+	);
 });
 
-test("toolbar transparency persists with cross-book UI preferences and resets to defaults", () => {
+test("toolbar opacity persists with cross-book UI preferences and resets to defaults", () => {
 	const values = new Map<string, string>();
 	const store = {
 		getItem: (key: string) => values.get(key) ?? null,
@@ -95,7 +112,7 @@ test("toolbar transparency persists with cross-book UI preferences and resets to
 			values.set(key, value);
 		},
 	};
-	const preference = { ...DEFAULT_READER_UI, toolbarTransparency: 65 };
+	const preference = { ...DEFAULT_READER_UI, toolbarOpacity: 65 };
 	assert.equal(writeReaderUiPreferences(preference, store), true);
 	assert.deepEqual(readReaderUiPreferences(store), preference);
 	assert.deepEqual(readBookUiPreferences("a", "v", store), DEFAULT_BOOK_UI);

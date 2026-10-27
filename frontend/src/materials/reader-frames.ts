@@ -98,7 +98,11 @@ type FrameContext = {
 	wheel: (event: WheelEvent) => void;
 	touch: (event: TouchEvent) => void;
 	interaction?: (event: Event) => void;
-	image: (part: number, image: number) => void;
+	image: (
+		part: number,
+		image: number,
+		source: { src: string; alt: string },
+	) => void;
 	ready: (generation: number, index: number) => void;
 	error: (error: Error) => void;
 };
@@ -503,6 +507,39 @@ export class ReaderFrames {
 				context.current().bookUi,
 			);
 			const unbind = context.bindFocus(doc, element);
+			const trustedImages = new WeakMap<
+				Element,
+				{ id: number; src: string; alt: string }
+			>();
+			if (part.html?.includes("data-epub-image")) {
+				const template = document.createElement("template");
+				template.innerHTML = part.html;
+				const originals = new Map<number, { src: string; alt: string }>();
+				for (const node of template.content.querySelectorAll<HTMLImageElement>(
+					"img[data-epub-image]",
+				)) {
+					const id = Number(node.getAttribute("data-epub-image"));
+					const src = node.getAttribute("src") ?? "";
+					if (
+						Number.isSafeInteger(id) &&
+						id >= 0 &&
+						/^data:image\/(?:png|jpeg|gif|webp);base64,/.test(src)
+					)
+						originals.set(id, { src, alt: node.getAttribute("alt") ?? "" });
+				}
+				for (const node of doc.querySelectorAll<HTMLImageElement>(
+					"img[data-epub-image]",
+				)) {
+					const id = Number(node.getAttribute("data-epub-image"));
+					const original = originals.get(id);
+					if (
+						original &&
+						node.getAttribute("src") === original.src &&
+						isReaderFrameTarget(doc, node)
+					)
+						trustedImages.set(node, { id, ...original });
+				}
+			}
 			const keydown = (event: KeyboardEvent) => {
 				if (context.active?.() !== false && valid()) context.key(event);
 			};
@@ -550,9 +587,13 @@ export class ReaderFrames {
 				if (context.active?.() === false || !valid()) return;
 				const target = event.target as Element | null;
 				const image = target?.closest("img[data-epub-image]");
-				if (image && !event.defaultPrevented) {
+				const trusted = image ? trustedImages.get(image) : undefined;
+				if (trusted && !event.defaultPrevented) {
 					event.preventDefault();
-					context.image(index, Number(image.getAttribute("data-epub-image")));
+					context.image(index, trusted.id, {
+						src: trusted.src,
+						alt: trusted.alt,
+					});
 				}
 			};
 			doc.addEventListener("keydown", keydown);

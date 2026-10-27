@@ -27,10 +27,14 @@ export function applyFramePresentation(
 	// Important declarations in the first layer beat author CSS, including its
 	// own layers. Compiled EPUBs omit inline styles; keep layout rules outside
 	// this layer and in their existing source order.
+	// Selection tints mirror --reader-selection-bg in reader-r1.css.
+	const selectionBg =
+		theme === "black" ? "rgba(122, 158, 224, 0.4)" : "rgba(93, 132, 206, 0.32)";
 	themeStyle.textContent = `@layer folio-reader-theme {
 		html, body { color: ${theme === "black" ? "#e5e5e5" : "#282828"} !important; background-color: ${theme === "black" ? "#191919" : "#fff"} !important; }
 		body :not(img):not(svg):not(svg *) { color: inherit !important; background-color: transparent !important; }
 		html, body, body :not(img):not(svg):not(svg *) { background-image: none !important; -webkit-text-fill-color: currentColor !important; text-shadow: none !important; }
+		::selection { background-color: ${selectionBg} !important; }
 	}`;
 	doc.head.prepend(themeStyle);
 	let style = doc.getElementById(

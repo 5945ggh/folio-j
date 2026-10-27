@@ -6872,6 +6872,83 @@
         "summary": "Get Illustrations"
       }
     },
+    "/api/materials/{material_id}/illustrations/locate": {
+      "get": {
+        "operationId": "locateMaterialIllustration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chapter_id",
+            "required": true,
+            "schema": {
+              "title": "Chapter Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "part_index",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Part Index",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "image_id",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Image Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialIllustrationsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Locate Illustration"
+      }
+    },
     "/api/materials/{material_id}/illustrations/{ordinal}/content": {
       "get": {
         "operationId": "getMaterialIllustrationContent",

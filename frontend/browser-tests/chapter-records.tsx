@@ -1357,11 +1357,12 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		if (!inlineSuite) {
 			button("阅读设置").click();
 			await h.until(
-				() => !!h.container.querySelector('select[aria-label="文字方向"]'),
+				() =>
+					!!h.container.querySelector('fieldset[aria-label="文字方向"] button'),
 				"Reader settings must finish opening",
 			);
-			const writing = h.container.querySelector<HTMLSelectElement>(
-				'select[aria-label="文字方向"]',
+			const writing = h.container.querySelector<HTMLFieldSetElement>(
+				'fieldset[aria-label="文字方向"]',
 			);
 			check(writing, "Reader settings must expose writing direction");
 			for (const mode of [
@@ -1370,8 +1371,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				"horizontal-tb",
 				direction,
 			]) {
-				writing.value = mode;
-				writing.dispatchEvent(new Event("change", { bubbles: true }));
+				button(mode === "horizontal-tb" ? "横排" : "竖排", writing).click();
 				await h.until(
 					() =>
 						doc.defaultView?.getComputedStyle(doc.body).writingMode === mode &&

@@ -64,7 +64,7 @@ EPUB 编译使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义编�
 | E2E | 暂不引入 | 由 coding agent 自带的浏览器能力做界面验证；以后需要再加 Playwright |
 | 包管理 | pnpm | Node 使用当前 LTS 版本 |
 
-Reader 继续使用无脚本、同源隔离 iframe，保留 CSP／sandbox；工具事件由父应用适配。搜索高亮采用 DOM Range／CSS Highlight，不改正文定位叶子；图库与大图使用非模态局部面板，保留正文交互、Escape 层级和关闭焦点恢复。展示层轻量动画支持减少动态效果偏好，不改变正文布局与位置保存。主题与阅读偏好在 Reader 作用域及浏览器 Storage 内校验，失败退回内存；浏览器及扩展兼容性的实际验证范围见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。
+Reader 继续使用无脚本、同源隔离 iframe，保留 CSP／sandbox；工具事件由父应用适配。搜索高亮采用 DOM Range／CSS Highlight，不改正文定位叶子；图库使用非模态局部面板，图片查看器使用独立模态覆盖层，保留 Escape 层级和关闭焦点恢复。展示层轻量动画支持减少动态效果偏好，不改变正文布局与位置保存。主题与阅读偏好在 Reader 作用域及浏览器 Storage 内校验，失败退回内存；浏览器及扩展兼容性的实际验证范围见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
 ## 3. 模型接入（BYOK）
 

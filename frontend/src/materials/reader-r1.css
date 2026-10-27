@@ -7,6 +7,7 @@
 	--reader-error: #a3443e;
 	--reader-selected-bg: #eaf0fc;
 	--reader-selected-fg: #365b9f;
+	--reader-selection-bg: rgba(93, 132, 206, 0.32);
 	--reader-toolbar-opacity: 80%;
 	--reader-top-space: 82px;
 	--reader-bottom-space: calc(80px + env(safe-area-inset-bottom, 0px));
@@ -33,6 +34,7 @@
 	--reader-error: #ef9a9a;
 	--reader-selected-bg: #293951;
 	--reader-selected-fg: #c5d8ff;
+	--reader-selection-bg: rgba(122, 158, 224, 0.4);
 	color-scheme: dark;
 }
 .reader-r1 button,
@@ -87,6 +89,10 @@
 .reader-r1 :focus-visible {
 	outline: 2px solid #6d8dd0;
 	outline-offset: 2px;
+}
+/* Keep frame content (presentation.ts) and reader chrome tints in step. */
+.reader-r1 ::selection {
+	background: var(--reader-selection-bg);
 }
 .reader-chrome {
 	position: absolute;
@@ -310,9 +316,45 @@
 	border-bottom: 1px solid var(--reader-line);
 }
 .reader-panel-body legend {
-	font-size: 11px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	width: 100%;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--reader-fg);
+	margin-bottom: 12px;
+}
+.reader-panel-body legend .reader-scope {
+	flex: none;
+	font-size: 10px;
+	font-weight: 400;
+	line-height: 1;
 	color: var(--reader-muted);
-	margin-bottom: 16px;
+	border: 1px solid var(--reader-line);
+	border-radius: 4px;
+	padding: 3px 6px;
+}
+.reader-panel-body .reader-options {
+	display: flex;
+	gap: 5px;
+	min-inline-size: 0;
+	border: 0;
+	padding: 0;
+	margin: 0;
+}
+.reader-panel-body .reader-field {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 16px 0;
+}
+.reader-panel-body .reader-field > span {
+	flex: none;
+}
+.reader-panel-body .reader-field .reader-options {
+	flex: 1;
 }
 .reader-panel-body label {
 	display: flex;
@@ -332,10 +374,6 @@
 	width: 100%;
 	accent-color: #5c7bb8;
 }
-.reader-options {
-	display: flex;
-	gap: 5px;
-}
 .reader-r1 .reader-options > button {
 	flex: 1;
 	border-color: var(--reader-line);
@@ -352,6 +390,11 @@
 }
 .reader-panel-body output {
 	color: var(--reader-muted);
+}
+.reader-panel-body .reader-reset {
+	width: 100%;
+	border-color: var(--reader-line);
+	padding-block: 10px;
 }
 .reader-toc {
 	padding: 0;

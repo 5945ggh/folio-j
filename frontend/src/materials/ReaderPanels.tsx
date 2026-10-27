@@ -5,6 +5,7 @@ import { useViewActivity } from "../navigation/view-activity";
 import {
 	type Illustration,
 	listIllustrations,
+	locateIllustration,
 	type Material,
 	type Position,
 	type Settings,
@@ -12,6 +13,8 @@ import {
 } from "./api";
 import { restoreReaderPanelFocus, useReaderPresence } from "./motion";
 import { ReaderIcon } from "./ReaderControls";
+import { copyReaderImage, downloadReaderImage } from "./reader-image-actions";
+import type { ReaderImageCache } from "./reader-image-cache";
 import {
 	fitImageSize,
 	normalizeReaderQuery,
@@ -36,10 +39,12 @@ type PanelProps = {
 		highlight?: { start: number; end: number },
 	) => void;
 };
+type ImagePanelProps = PanelProps & { imageCache: ReaderImageCache };
 export type ReaderImageTarget = {
 	chapterId: string;
 	partIndex: number;
 	imageId: number;
+	source: { src: string; alt: string };
 };
 
 /** Non-modal tools leave the reading surface and Reader toolbar available. */
@@ -74,6 +79,25 @@ function ReaderQueryPanel({
 		const node = ref.current;
 		const previous = document.activeElement;
 		const keydown = (event: KeyboardEvent) => {
+			if (imageViewer && event.key === "Tab" && node) {
+				const focusable = Array.from(
+					node.querySelectorAll<HTMLElement>(
+						"button:not(:disabled), a[href], [tabindex]:not([tabindex='-1'])",
+					),
+				);
+				if (!focusable.length) return;
+				const first = focusable[0];
+				const last = focusable[focusable.length - 1];
+				if (!first || !last) return;
+				if (event.shiftKey && document.activeElement === first) {
+					event.preventDefault();
+					last.focus();
+				} else if (!event.shiftKey && document.activeElement === last) {
+					event.preventDefault();
+					first.focus();
+				}
+				return;
+			}
 			if (event.key !== "Escape" || event.isComposing) return;
 			event.preventDefault();
 			event.stopPropagation();
@@ -89,17 +113,17 @@ function ReaderQueryPanel({
 			node?.removeEventListener("keydown", keydown);
 			if (node) restoreReaderPanelFocus(node, previous);
 		};
-	}, [active, inactive, closing]);
+	}, [active, inactive, closing, imageViewer]);
 	return (
 		<section
 			ref={ref}
 			role="dialog"
-			aria-modal="false"
+			aria-modal={imageViewer ? "true" : "false"}
 			data-exiting={closing}
 			inert={inactive || closing}
 			aria-hidden={inactive || closing || undefined}
 			data-reader-tool
-			data-reader-panel-side={wide ? "right" : "left"}
+			data-reader-panel-side={imageViewer ? undefined : wide ? "right" : "left"}
 			className={`reader-query-dialog ${wide ? "reader-query-wide" : "reader-query-side"} ${imageViewer ? "reader-query-image-viewer" : ""} ${subtitle ? "reader-query-with-subtitle" : ""} ${fixedContent ? "reader-query-navigation" : ""}`}
 			aria-labelledby={label}
 		>
@@ -446,14 +470,20 @@ function ReaderSearchContent(props: PanelProps & { active: boolean }) {
 
 function IllustrationImage({
 	item,
+	cache,
 	large = false,
 	zoom = 1,
 	onOpen,
+	onZoom,
+	onBackground,
 }: {
 	item: Illustration;
+	cache: ReaderImageCache;
 	large?: boolean;
 	zoom?: number;
 	onOpen?: () => void;
+	onZoom?: (value: number) => void;
+	onBackground?: () => void;
 }) {
 	const activity = useViewActivity();
 	const [requested, setRequested] = useState(
@@ -461,9 +491,18 @@ function IllustrationImage({
 	);
 	const [failed, setFailed] = useState(false);
 	const [attempt, setAttempt] = useState(0);
+	const [loaded, setLoaded] = useState<{ key: string; url: string }>();
 	const [natural, setNatural] = useState({ width: 1, height: 1 });
 	const [available, setAvailable] = useState({ width: 600, height: 600 });
 	const stage = useRef<HTMLDivElement>(null);
+	const pointers = useRef(new Map<number, { x: number; y: number }>());
+	const pinch = useRef<{ distance: number; zoom: number } | null>(null);
+	const backgroundTap = useRef<{
+		id: number;
+		x: number;
+		y: number;
+		moved: boolean;
+	} | null>(null);
 	useEffect(() => {
 		if (!activity.active || requested || large || !stage.current) return;
 		const node = stage.current;
@@ -495,6 +534,32 @@ function IllustrationImage({
 		observer.observe(node);
 		return () => observer.disconnect();
 	}, [activity.active, large]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: retry starts a fresh byte request.
+	useEffect(() => {
+		const src = item.content_url;
+		if (!activity.active || !requested || src.startsWith("data:")) return;
+		const controller = new AbortController();
+		let objectUrl: string | undefined;
+		void cache.get(src, controller.signal).then(
+			(blob) => {
+				if (controller.signal.aborted) return;
+				objectUrl = URL.createObjectURL(blob);
+				setLoaded({ key: src, url: objectUrl });
+			},
+			() => {
+				if (!controller.signal.aborted) setFailed(true);
+			},
+		);
+		return () => {
+			controller.abort();
+			if (objectUrl) {
+				URL.revokeObjectURL(objectUrl);
+				setLoaded((previous) =>
+					previous?.url === objectUrl ? undefined : previous,
+				);
+			}
+		};
+	}, [activity.active, requested, item.content_url, cache, attempt]);
 	const size = fitImageSize(
 		natural.width,
 		natural.height,
@@ -506,6 +571,108 @@ function IllustrationImage({
 		<div
 			ref={stage}
 			className={large ? "reader-image-stage" : "reader-gallery-image"}
+			onPointerDown={
+				large
+					? (event) => {
+							if ((event.target as Element).closest("button, a, input")) return;
+							if (event.pointerType === "mouse" && event.button !== 0) return;
+							const target = event.target as Element;
+							if (
+								pointers.current.size === 0 &&
+								(target === event.currentTarget ||
+									target.classList.contains("reader-image-canvas"))
+							)
+								backgroundTap.current = {
+									id: event.pointerId,
+									x: event.clientX,
+									y: event.clientY,
+									moved: false,
+								};
+							else backgroundTap.current = null;
+							event.currentTarget.setPointerCapture(event.pointerId);
+							pointers.current.set(event.pointerId, {
+								x: event.clientX,
+								y: event.clientY,
+							});
+							const points = [...pointers.current.values()];
+							if (points.length === 2 && points[0] && points[1])
+								pinch.current = {
+									distance: Math.hypot(
+										points[0].x - points[1].x,
+										points[0].y - points[1].y,
+									),
+									zoom,
+								};
+						}
+					: undefined
+			}
+			onPointerMove={
+				large
+					? (event) => {
+							const previous = pointers.current.get(event.pointerId);
+							if (!previous) return;
+							if (
+								backgroundTap.current?.id === event.pointerId &&
+								Math.hypot(
+									event.clientX - backgroundTap.current.x,
+									event.clientY - backgroundTap.current.y,
+								) > 5
+							)
+								backgroundTap.current.moved = true;
+							pointers.current.set(event.pointerId, {
+								x: event.clientX,
+								y: event.clientY,
+							});
+							const points = [...pointers.current.values()];
+							if (
+								points.length === 2 &&
+								points[0] &&
+								points[1] &&
+								pinch.current?.distance
+							) {
+								const distance = Math.hypot(
+									points[0].x - points[1].x,
+									points[0].y - points[1].y,
+								);
+								onZoom?.(
+									Math.max(
+										0.5,
+										Math.min(
+											4,
+											(pinch.current.zoom * distance) / pinch.current.distance,
+										),
+									),
+								);
+							} else if (points.length === 1) {
+								event.currentTarget.scrollLeft -= event.clientX - previous.x;
+								event.currentTarget.scrollTop -= event.clientY - previous.y;
+							}
+						}
+					: undefined
+			}
+			onPointerUp={
+				large
+					? (event) => {
+							if (
+								backgroundTap.current?.id === event.pointerId &&
+								!backgroundTap.current.moved
+							)
+								onBackground?.();
+							backgroundTap.current = null;
+							pointers.current.delete(event.pointerId);
+							pinch.current = null;
+						}
+					: undefined
+			}
+			onPointerCancel={
+				large
+					? (event) => {
+							backgroundTap.current = null;
+							pointers.current.delete(event.pointerId);
+							pinch.current = null;
+						}
+					: undefined
+			}
 		>
 			{failed ? (
 				<div className="reader-query-error">
@@ -513,6 +680,7 @@ function IllustrationImage({
 					<button
 						type="button"
 						onClick={() => {
+							cache.delete(item.content_url);
 							setFailed(false);
 							setAttempt((value) => value + 1);
 						}}
@@ -534,12 +702,19 @@ function IllustrationImage({
 							: undefined
 					}
 				>
-					{requested ? (
+					{requested &&
+					(item.content_url.startsWith("data:") ||
+						loaded?.key === item.content_url) ? (
 						<img
 							key={attempt}
-							src={`${item.content_url}${item.content_url.includes("?") ? "&" : "?"}reader_attempt=${attempt}`}
+							src={
+								item.content_url.startsWith("data:")
+									? item.content_url
+									: loaded?.url
+							}
 							loading={large ? "eager" : "lazy"}
 							decoding="async"
+							draggable={false}
 							alt={item.alt || `插图 ${item.ordinal + 1}`}
 							onError={() => setFailed(true)}
 							onLoad={(event) =>
@@ -575,17 +750,38 @@ function ImageViewer({
 	props,
 	onOrdinal,
 	onClose,
+	onOpenGallery,
+	initialSource,
+	lookupError,
+	onRetryLookup,
 	closing = false,
 }: {
-	ordinal: number;
-	total: number;
-	props: PanelProps;
+	ordinal: number | null;
+	total: number | null;
+	props: ImagePanelProps;
 	onOrdinal: (ordinal: number) => void;
 	onClose: () => void;
+	onOpenGallery?: (ordinal: number) => void;
+	initialSource?: { src: string; alt: string };
+	lookupError?: boolean;
+	onRetryLookup?: () => void;
 	closing?: boolean;
 }) {
 	const activity = useViewActivity();
 	const [zoom, setZoom] = useState(1);
+	const [feedback, setFeedback] = useState("");
+	const actionController = useRef<AbortController | null>(null);
+	const actionIdentity = initialSource?.src ?? ordinal;
+	// biome-ignore lint/correctness/useExhaustiveDependencies: changing images cancels the previous image's pending operations.
+	useEffect(() => {
+		if (closing || props.closing) return;
+		const controller = new AbortController();
+		actionController.current = controller;
+		return () => {
+			controller.abort();
+			actionController.current = null;
+		};
+	}, [actionIdentity, closing, props.closing]);
 	const closeRef = useRef(onClose);
 	closeRef.current = onClose;
 	useEffect(() => {
@@ -593,6 +789,8 @@ function ImageViewer({
 		props.onViewerEscape?.(() => closeRef.current());
 		return () => props.onViewerEscape?.(null);
 	}, [props.onViewerEscape, props.closing, closing]);
+	const cachedItem =
+		ordinal === null ? undefined : props.imageCache.item(ordinal);
 	const image = useQuery({
 		queryKey: [
 			"materials",
@@ -601,129 +799,338 @@ function ImageViewer({
 			"illustration",
 			ordinal,
 		],
-		enabled: activity.active,
-		queryFn: ({ signal }) =>
-			listIllustrations(props.materialId, props.versionId, ordinal, 1, signal),
+		enabled: activity.active && ordinal !== null && !cachedItem,
+		queryFn: async ({ signal }) => {
+			if (ordinal === null) throw new Error("图片尚未定位");
+			const page = await listIllustrations(
+				props.materialId,
+				props.versionId,
+				ordinal,
+				1,
+				signal,
+			);
+			signal.throwIfAborted();
+			props.imageCache.remember(page.items, page.total);
+			return page;
+		},
 		retry: false,
+		gcTime: 0,
 	});
-	const item = image.data?.items[0];
+	const item = cachedItem ?? image.data?.items[0];
+	const displayItem: Illustration | undefined = initialSource
+		? {
+				ordinal: ordinal ?? -1,
+				chapter_id: item?.chapter_id ?? "",
+				chapter_title: item?.chapter_title ?? "",
+				part_index: item?.part_index ?? 0,
+				spine_index: item?.spine_index ?? 0,
+				resource_id: item?.resource_id ?? "",
+				image_id: item?.image_id ?? 0,
+				alt: initialSource.alt,
+				content_url: initialSource.src,
+			}
+		: item;
 
 	return (
-		<ReaderQueryPanel
-			title={`插图 ${ordinal + 1} / ${total}`}
-			wide
-			imageViewer
-			inactive={props.inactive}
-			closing={closing || props.closing}
-			onClose={onClose}
+		<div
+			className="reader-image-overlay"
+			data-exiting={closing || props.closing}
 		>
-			<div className="reader-image-controls">
-				<span>{item?.chapter_title}</span>
-				<div>
-					<button type="button" onClick={() => setZoom(1)}>
-						适合窗口
-					</button>
-					<button
-						type="button"
-						aria-label="缩小"
-						title="缩小"
-						disabled={zoom <= 0.5}
-						onClick={() => setZoom((value) => Math.max(0.5, value - 0.25))}
-					>
-						−
-					</button>
-					<output>{Math.round(zoom * 100)}%</output>
-					<button
-						type="button"
-						aria-label="放大"
-						title="放大"
-						disabled={zoom >= 4}
-						onClick={() => setZoom((value) => Math.min(4, value + 0.25))}
-					>
-						＋
-					</button>
-					<button
-						type="button"
-						disabled={!item}
-						onClick={() => {
-							if (item)
-								props.onNavigate({
-									version_id: props.versionId,
-									chapter_id: item.chapter_id,
-									part_index: item.part_index,
-									resource_id: item.resource_id,
-									kind: "image",
-									image_id: item.image_id,
-									image_progress: 0,
-									at_chapter_end: false,
-									settings: props.settings,
-								});
-						}}
-					>
-						前往书中位置
-					</button>
-				</div>
-			</div>
-			<NavigationFailure
-				error={props.navigationError}
-				retryHint="请再次点击“前往书中位置”重试；浏览插图不会移动正文。"
+			<button
+				type="button"
+				className="reader-image-backdrop"
+				aria-label="关闭图片查看器"
+				tabIndex={-1}
+				onClick={onClose}
 			/>
-			{image.isPending && <p className="reader-query-status">正在加载插图…</p>}
-			{image.isError && (
-				<div className="reader-query-error" role="alert">
-					无法读取插图。
+			<ReaderQueryPanel
+				title={
+					ordinal === null || total === null
+						? "查看插图"
+						: `插图 ${ordinal + 1} / ${total}`
+				}
+				wide
+				imageViewer
+				inactive={props.inactive}
+				closing={closing || props.closing}
+				onClose={onClose}
+			>
+				<div className="reader-image-controls">
+					<span>{item?.chapter_title}</span>
+					<div>
+						<button type="button" onClick={() => setZoom(1)}>
+							适合窗口
+						</button>
+						<button
+							type="button"
+							aria-label="缩小"
+							title="缩小"
+							disabled={zoom <= 0.5}
+							onClick={() => setZoom((value) => Math.max(0.5, value - 0.25))}
+						>
+							−
+						</button>
+						<output>{Math.round(zoom * 100)}%</output>
+						<button
+							type="button"
+							aria-label="放大"
+							title="放大"
+							disabled={zoom >= 4}
+							onClick={() => setZoom((value) => Math.min(4, value + 0.25))}
+						>
+							＋
+						</button>
+						<button
+							type="button"
+							disabled={!displayItem}
+							onClick={() => {
+								if (!displayItem || !actionController.current) return;
+								const signal = actionController.current.signal;
+								setFeedback("");
+								void copyReaderImage(
+									props.imageCache,
+									displayItem.content_url,
+									signal,
+								).then(
+									() => {
+										if (!signal.aborted) setFeedback("图片已复制");
+									},
+									() => {
+										if (!signal.aborted)
+											setFeedback("复制失败，请检查浏览器权限或下载图片。");
+									},
+								);
+							}}
+						>
+							复制图片
+						</button>
+						<button
+							type="button"
+							disabled={!displayItem}
+							onClick={() => {
+								if (!displayItem || !actionController.current) return;
+								const signal = actionController.current.signal;
+								setFeedback("");
+								void downloadReaderImage(
+									props.imageCache,
+									displayItem.content_url,
+									ordinal,
+									signal,
+								).then(
+									() => {
+										if (!signal.aborted) setFeedback("正在下载图片");
+									},
+									() => {
+										if (!signal.aborted) setFeedback("下载失败，请重试。");
+									},
+								);
+							}}
+						>
+							下载
+						</button>
+						{onOpenGallery && (
+							<button
+								type="button"
+								disabled={!item || ordinal === null}
+								onClick={() => {
+									if (ordinal !== null) onOpenGallery(ordinal);
+								}}
+							>
+								在图库中查看
+							</button>
+						)}
+						<button
+							type="button"
+							disabled={!item}
+							onClick={() => {
+								if (item)
+									props.onNavigate({
+										version_id: props.versionId,
+										chapter_id: item.chapter_id,
+										part_index: item.part_index,
+										resource_id: item.resource_id,
+										kind: "image",
+										image_id: item.image_id,
+										image_progress: 0,
+										at_chapter_end: false,
+										settings: props.settings,
+									});
+							}}
+						>
+							前往书中位置
+						</button>
+					</div>
+				</div>
+				{feedback && (
+					<p className="reader-image-feedback" role="status">
+						{feedback}
+					</p>
+				)}
+				<NavigationFailure
+					error={props.navigationError}
+					retryHint="请再次点击“前往书中位置”重试；浏览插图不会移动正文。"
+				/>
+				{lookupError && (
+					<div role="alert" className="reader-query-error">
+						无法定位该插图。
+						<button type="button" onClick={onRetryLookup}>
+							重试
+						</button>
+					</div>
+				)}
+				{!displayItem && image.isPending && (
+					<p className="reader-query-status">正在加载插图…</p>
+				)}
+				{!displayItem && image.isError && (
+					<div className="reader-query-error" role="alert">
+						无法读取插图。
+						<button
+							type="button"
+							onClick={() => {
+								void image.refetch();
+							}}
+						>
+							重试
+						</button>
+					</div>
+				)}
+				{displayItem && (
+					<IllustrationImage
+						key={initialSource ? "original" : displayItem.ordinal}
+						item={displayItem}
+						cache={props.imageCache}
+						large
+						zoom={zoom}
+						onZoom={setZoom}
+						onBackground={onClose}
+					/>
+				)}
+				<div className="reader-image-navigation">
 					<button
 						type="button"
+						disabled={ordinal === null || ordinal === 0}
 						onClick={() => {
-							void image.refetch();
+							actionController.current?.abort();
+							setFeedback("");
+							setZoom(1);
+							if (ordinal !== null) onOrdinal(ordinal - 1);
 						}}
+						aria-label="上一张插图"
+						title="上一张插图"
 					>
-						重试
+						‹
+					</button>
+					<button
+						type="button"
+						disabled={
+							ordinal === null || total === null || ordinal >= total - 1
+						}
+						onClick={() => {
+							actionController.current?.abort();
+							setFeedback("");
+							setZoom(1);
+							if (ordinal !== null) onOrdinal(ordinal + 1);
+						}}
+						aria-label="下一张插图"
+						title="下一张插图"
+					>
+						›
 					</button>
 				</div>
-			)}
-			{item && (
-				<IllustrationImage key={item.ordinal} item={item} large zoom={zoom} />
-			)}
-			<div className="reader-image-navigation">
-				<button
-					type="button"
-					disabled={ordinal === 0}
-					onClick={() => {
-						setZoom(1);
-						onOrdinal(ordinal - 1);
-					}}
-					aria-label="上一张插图"
-					title="上一张插图"
-				>
-					‹
-				</button>
-				<button
-					type="button"
-					disabled={ordinal >= total - 1}
-					onClick={() => {
-						setZoom(1);
-						onOrdinal(ordinal + 1);
-					}}
-					aria-label="下一张插图"
-					title="下一张插图"
-				>
-					›
-				</button>
-			</div>
-		</ReaderQueryPanel>
+			</ReaderQueryPanel>
+		</div>
+	);
+}
+
+export function ReaderDirectImageViewer(
+	props: ImagePanelProps & {
+		target: ReaderImageTarget;
+		onOpenGallery: (ordinal: number) => void;
+	},
+) {
+	const activity = useViewActivity();
+	const [ordinal, setOrdinal] = useState<number | null>(null);
+	const locate = useQuery({
+		queryKey: [
+			"materials",
+			props.materialId,
+			props.versionId,
+			"find-illustration",
+			props.target.chapterId,
+			props.target.partIndex,
+			props.target.imageId,
+		],
+		enabled: activity.active,
+		initialData: () =>
+			props.imageCache.locate(
+				props.target.chapterId,
+				props.target.partIndex,
+				props.target.imageId,
+			),
+		staleTime: Infinity,
+		gcTime: 0,
+		queryFn: async ({ signal }) => {
+			const page = await locateIllustration(
+				props.materialId,
+				props.versionId,
+				props.target.chapterId,
+				props.target.partIndex,
+				props.target.imageId,
+				signal,
+			);
+			const item = page.items[0];
+			signal.throwIfAborted();
+			if (!item) throw new Error("该图已不可用");
+			props.imageCache.remember([item], page.total);
+			return { item, total: page.total };
+		},
+		retry: false,
+	});
+	useEffect(() => {
+		if (locate.data)
+			props.imageCache.rememberSource(
+				locate.data.item.content_url,
+				props.target.source.src,
+			);
+	}, [locate.data, props.imageCache, props.target.source.src]);
+	return (
+		<ImageViewer
+			ordinal={ordinal ?? locate.data?.item.ordinal ?? null}
+			total={locate.data?.total ?? null}
+			props={props}
+			initialSource={
+				ordinal === null || ordinal === locate.data?.item.ordinal
+					? props.target.source
+					: undefined
+			}
+			lookupError={locate.isError && ordinal === null}
+			onRetryLookup={() => {
+				void locate.refetch();
+			}}
+			onOrdinal={setOrdinal}
+			onClose={props.onClose}
+			onOpenGallery={props.onOpenGallery}
+		/>
 	);
 }
 
 export function ReaderGalleryPanel(
-	props: PanelProps & { bookTitle?: string; initialImage?: ReaderImageTarget },
+	props: ImagePanelProps & {
+		bookTitle?: string;
+		initialOrdinal?: number;
+	},
 ) {
 	const activity = useViewActivity();
-	const [offset, setOffset] = useState(0);
+	const [offset, setOffset] = useState(
+		() =>
+			Math.floor((props.initialOrdinal ?? 0) / READER_QUERY_PAGE_SIZE) *
+			READER_QUERY_PAGE_SIZE,
+	);
 	const [ordinal, setOrdinal] = useState<number | null>(null);
+	const grid = useRef<HTMLDivElement>(null);
+	const highlightedScrolled = useRef(false);
+	const [highlighted, setHighlighted] = useState(props.initialOrdinal);
 	const imageView = useReaderPresence(ordinal);
-	const [initialHandled, setInitialHandled] = useState(false);
-	const initial = props.initialImage;
 	const gallery = useQuery({
 		enabled: activity.active,
 		queryKey: [
@@ -733,62 +1140,39 @@ export function ReaderGalleryPanel(
 			"illustrations",
 			offset,
 		],
-		queryFn: ({ signal }) =>
-			listIllustrations(
+		queryFn: async ({ signal }) => {
+			const page = await listIllustrations(
 				props.materialId,
 				props.versionId,
 				offset,
 				READER_QUERY_PAGE_SIZE,
 				signal,
-			),
-		retry: false,
-	});
-	const locate = useQuery({
-		queryKey: [
-			"materials",
-			props.materialId,
-			props.versionId,
-			"find-illustration",
-			initial?.chapterId,
-			initial?.partIndex,
-			initial?.imageId,
-		],
-		enabled: activity.active && !!initial && !initialHandled,
-		queryFn: async ({ signal }) => {
-			let cursor = 0;
-			while (!signal.aborted) {
-				const page = await listIllustrations(
-					props.materialId,
-					props.versionId,
-					cursor,
-					READER_QUERY_PAGE_SIZE,
-					signal,
-				);
-				const found = page.items.find(
-					(item) =>
-						item.chapter_id === initial?.chapterId &&
-						item.part_index === initial.partIndex &&
-						item.image_id === initial.imageId,
-				);
-				if (found) return { ordinal: found.ordinal, total: page.total };
-				cursor += page.items.length;
-				if (!page.items.length || cursor >= page.total)
-					throw new Error("该图已不可用");
-			}
-			throw new Error("已取消图片定位");
+			);
+			signal.throwIfAborted();
+			props.imageCache.remember(page.items, page.total);
+			return page;
 		},
 		retry: false,
 	});
+	const total = gallery.data?.total ?? 0;
 	useEffect(() => {
-		if (!locate.data || initialHandled) return;
-		setOrdinal(locate.data.ordinal);
-		setOffset(
-			Math.floor(locate.data.ordinal / READER_QUERY_PAGE_SIZE) *
-				READER_QUERY_PAGE_SIZE,
+		if (
+			highlightedScrolled.current ||
+			highlighted === undefined ||
+			!gallery.data ||
+			ordinal !== null
+		)
+			return;
+		const card = grid.current?.querySelector<HTMLElement>(
+			`[data-illustration-ordinal="${highlighted}"]`,
 		);
-		setInitialHandled(true);
-	}, [locate.data, initialHandled]);
-	const total = gallery.data?.total ?? locate.data?.total ?? 0;
+		if (!card) return;
+		highlightedScrolled.current = true;
+		card.scrollIntoView({ block: "nearest" });
+		card
+			?.querySelector<HTMLButtonElement>(".reader-gallery-open")
+			?.focus({ preventScroll: true });
+	}, [gallery.data, highlighted, ordinal]);
 	return (
 		<>
 			<ReaderQueryPanel
@@ -800,7 +1184,7 @@ export function ReaderGalleryPanel(
 				subtitle={
 					<>
 						<span lang="ja">{props.bookTitle}</span> · 按书中顺序 ·{" "}
-						{gallery.data || locate.data
+						{gallery.data
 							? `${total} 张`
 							: gallery.isError
 								? "清单暂不可用"
@@ -831,32 +1215,22 @@ export function ReaderGalleryPanel(
 						</button>
 					</div>
 				)}
-				{initial && !initialHandled && locate.isPending && (
-					<p className="reader-query-status">正在定位书中插图…</p>
-				)}
-				{!initialHandled && locate.isError && (
-					<div role="alert" className="reader-query-error">
-						无法定位该插图。
-						<button
-							type="button"
-							onClick={() => {
-								void locate.refetch();
-							}}
-						>
-							重试
-						</button>
-					</div>
-				)}
 				{gallery.data?.total === 0 && (
 					<p className="reader-query-status">本书暂无可查看插图</p>
 				)}
-				<div className="reader-gallery-grid">
+				<div className="reader-gallery-grid" ref={grid}>
 					{gallery.data?.items.map((item) => (
-						<div key={item.ordinal} className="reader-gallery-card">
+						<div
+							key={item.ordinal}
+							className="reader-gallery-card"
+							data-illustration-ordinal={item.ordinal}
+							data-selected={highlighted === item.ordinal || undefined}
+						>
 							<IllustrationImage
 								item={item}
+								cache={props.imageCache}
 								onOpen={() => {
-									setInitialHandled(true);
+									setHighlighted(undefined);
 									props.onCancelNavigation?.();
 									setOrdinal(item.ordinal);
 								}}
@@ -865,7 +1239,7 @@ export function ReaderGalleryPanel(
 								type="button"
 								className="reader-gallery-open"
 								onClick={() => {
-									setInitialHandled(true);
+									setHighlighted(undefined);
 									props.onCancelNavigation?.();
 									setOrdinal(item.ordinal);
 								}}
@@ -887,7 +1261,6 @@ export function ReaderGalleryPanel(
 							type="button"
 							disabled={offset === 0 || gallery.isFetching}
 							onClick={() => {
-								setInitialHandled(true);
 								props.onCancelNavigation?.();
 								setOffset((value) =>
 									Math.max(0, value - READER_QUERY_PAGE_SIZE),
@@ -906,7 +1279,6 @@ export function ReaderGalleryPanel(
 								offset + READER_QUERY_PAGE_SIZE >= total || gallery.isFetching
 							}
 							onClick={() => {
-								setInitialHandled(true);
 								props.onCancelNavigation?.();
 								setOffset((value) => value + READER_QUERY_PAGE_SIZE);
 							}}
@@ -923,12 +1295,10 @@ export function ReaderGalleryPanel(
 					total={total}
 					props={props}
 					onOrdinal={(next) => {
-						setInitialHandled(true);
 						props.onCancelNavigation?.();
 						setOrdinal(next);
 					}}
 					onClose={() => {
-						setInitialHandled(true);
 						props.onCancelNavigation?.();
 						setOrdinal(null);
 					}}

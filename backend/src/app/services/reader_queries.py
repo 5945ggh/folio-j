@@ -177,6 +177,38 @@ def scan_illustrations(
     )
 
 
+def scan_illustration_location(
+    material: Material, chapter_id: str, part_index: int, image_id: int
+) -> MaterialIllustrationsResponse:
+    found: MaterialIllustrationItem | None = None
+    total = 0
+    for ordinal, (chapter, index, part, candidate, alt, _) in enumerate(_images(bundle(material))):
+        total += 1
+        if chapter.id == chapter_id and index == part_index and candidate == image_id:
+            found = MaterialIllustrationItem(
+                ordinal=ordinal,
+                chapter_id=chapter.id,
+                chapter_title=chapter.title,
+                part_index=index,
+                spine_index=part.spine_index,
+                resource_id=part.resource_id,
+                image_id=candidate,
+                alt=alt,
+                content_url=f"/api/materials/{quote(material.id, safe='')}/illustrations/"
+                f"{ordinal}/content?version_id={quote(material.version_id, safe='')}",
+            )
+    if found is None:
+        raise HTTPException(404, "该图已不可用")
+    return MaterialIllustrationsResponse(
+        material_id=material.id,
+        version_id=material.version_id,
+        total=total,
+        offset=found.ordinal,
+        limit=1,
+        items=[found],
+    )
+
+
 async def illustrations(
     session: AsyncSession,
     material_id: str,
@@ -186,6 +218,20 @@ async def illustrations(
 ) -> MaterialIllustrationsResponse:
     material = await _material(session, material_id, version_id)
     return await asyncio.to_thread(scan_illustrations, material, offset, limit)
+
+
+async def locate_illustration(
+    session: AsyncSession,
+    material_id: str,
+    version_id: str,
+    chapter_id: str,
+    part_index: int,
+    image_id: int,
+) -> MaterialIllustrationsResponse:
+    material = await _material(session, material_id, version_id)
+    return await asyncio.to_thread(
+        scan_illustration_location, material, chapter_id, part_index, image_id
+    )
 
 
 def _content(material: Material, ordinal: int) -> tuple[bytes, str]:

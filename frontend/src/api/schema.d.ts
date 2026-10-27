@@ -296,6 +296,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/illustrations/locate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Locate Illustration */
+        get: operations["locateMaterialIllustration"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/materials/{material_id}/illustrations/{ordinal}/content": {
         parameters: {
             query?: never;
@@ -3899,6 +3916,42 @@ export interface operations {
                 version_id: string;
                 offset?: number;
                 limit?: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialIllustrationsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    locateMaterialIllustration: {
+        parameters: {
+            query: {
+                version_id: string;
+                chapter_id: string;
+                part_index: number;
+                image_id: number;
             };
             header?: never;
             path: {

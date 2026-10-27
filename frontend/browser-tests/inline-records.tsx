@@ -658,7 +658,8 @@ export async function inlineRecords(
 		const originalFrame = find<HTMLIFrameElement>("iframe.material-part");
 		click("阅读设置");
 		await h.until(
-			() => !!h.container.querySelector('select[aria-label="文字方向"]'),
+			() =>
+				!!h.container.querySelector('fieldset[aria-label="文字方向"] button'),
 			"Direction setting must open",
 		);
 		const font = find<HTMLInputElement>('input[aria-label="字号"]');
@@ -732,9 +733,13 @@ export async function inlineRecords(
 			viewport.scrollTop > 100,
 			"Direction recovery must start below chapter beginning after font reflow",
 		);
-		const select = find<HTMLSelectElement>('select[aria-label="文字方向"]');
-		select.value = "vertical-rl";
-		select.dispatchEvent(new Event("change", { bubbles: true }));
+		const vertical = [
+			...find(
+				'fieldset[aria-label="文字方向"]',
+			).querySelectorAll<HTMLButtonElement>("button"),
+		].find((button) => button.textContent?.trim() === "竖排");
+		check(vertical, "Direction setting must expose vertical layout button");
+		vertical.click();
 		await h.until(
 			() =>
 				getComputedStyle(doc.body).writingMode === "vertical-rl" && !inline(),

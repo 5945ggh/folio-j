@@ -188,13 +188,17 @@ Reader 暂停时保留 iframe 与正文投影，停用输入、重排与位置�
 
 `GET /api/materials/{material_id}/search` 的 q 默认空、输入至多 160 码点，服务去两端空白并 NFC；空白查询返回空页且不解压扫描。搜索与 `GET .../illustrations` 共用 offset 默认 0 且非负、limit 默认 40 且范围 1–100。搜索按章节／part／spine 顺序扫描资源局部正文，排除 rt／rp 与 UI 标题；重复和重叠字面命中均保留。同资源同 spine 的连续 part 可衔接，不跨章、资源或 spine 出现拼接；命中归 start 所在 part，保留资源码点半开范围与前后各至多 40 码点摘录，不能把 start 当作摘录偏移或 UTF-16 索引。分页只保留请求页并统计完整范围，不构造全量命中数组。
 
-图库按已清洗 part HTML 顺序保留每个有效图片出现项，包括重复图与纯图片章。ordinal 为版本内从零开始的清单序号，不能跨版本引用；导航仍核对 chapter／part／resource／image_id。清单保留原始 alt、不虚构宽高、不携带全图 base64；`GET .../illustrations/{ordinal}/content` 仅按需读取包内带 data-epub-image 的 PNG／JPEG／GIF／WebP，不接受任意路径、ZIP 成员或远程 URL，不提供 SVG。编码与字节受 64 MiB 编译预算约束；编码超限返回 413，解码、MIME 签名或字节校验失败返回 422，出现项不存在返回 404。签名核对不保证浏览器完整解码成功。响应 MIME 与识别类型一致，带 nosniff 和 private, no-store；封面的 4 MiB 专用预算不套用正文图片。GET 均不写 Run、usage 或 reading_positions。
+`GET .../illustrations/locate` 按 version、chapter、part 和 image_id 一次扫描得到精确出现项及总数；版本或材料失效仍分别返回 409 或 404。图库按已清洗 part HTML 顺序保留每个有效图片出现项，包括重复图与纯图片章。ordinal 为版本内从零开始的清单序号，不能跨版本引用；导航仍核对 chapter／part／resource／image_id。清单保留原始 alt、不虚构宽高、不携带全图 base64；`GET .../illustrations/{ordinal}/content` 仅按需读取包内带 data-epub-image 的 PNG／JPEG／GIF／WebP，不接受任意路径、ZIP 成员或远程 URL，不提供 SVG。编码与字节受 64 MiB 编译预算约束；编码超限返回 413，解码、MIME 签名或字节校验失败返回 422，出现项不存在返回 404。签名核对不保证浏览器完整解码成功。响应 MIME 与识别类型一致，带 nosniff 和 private, no-store；封面的 4 MiB 专用预算不套用正文图片。GET 均不写 Run、usage 或 reading_positions。
 
-Reader 使用独立外壳与专属 token，保留每 part 的无脚本同源 sandbox iframe 和正文投影。父应用绑定并注销有效 frame 事件；跨 frame 指针坐标转换到阅读视口。工具临时可见性与专注偏好独立，面板与大图阻止静置隐藏；阅读工具面板非模态，不设置正文 inert 或圈定焦点。工具切换递增导航票据，旧定位不能覆盖新意图；目录／搜索同一面板保留查询状态，工具栏只留一个导航入口，两种页签状态均按同一工具开关。左右面板分别持有状态；同侧切换及各侧关闭互不清除另一侧的查询／图库状态，导航完成仅关闭发起侧。正文视口延伸至底部，侧栏底部留12px并采用完整圆角；导航书名／阅读信息／页签为固定区域，内容有独立滚动容器。窄屏保留两侧状态，将被覆盖的一侧暂时移出交互与可访问树；浮动工具栏按内容宽度覆盖，章内进度在工具栏内部，工具栏外区域不阻断正文／面板交互。大图作为图库兄弟层呈现，跨 iframe Escape 优先关闭大图；用户主动选图、翻页或关闭时隔离初始插图定位的迟到结果。主题／ruby 原地呈现；几何设置沿用稳定锚点、有效代次恢复与串行 revision 写队列。搜索高亮使用 DOM Range 与 CSS Highlight，不改定位叶子；重复 spine 按实际出现位置核验，跨 part 范围按其资源局部映射处理。
+Reader 使用独立外壳与专属 token，保留每 part 的无脚本同源 sandbox iframe 和正文投影。父应用绑定并注销有效 frame 事件；跨 frame 指针坐标转换到阅读视口。工具临时可见性与专注偏好独立，面板与图片查看器阻止静置隐藏；阅读工具面板非模态，不设置正文 inert 或圈定焦点。工具切换递增导航票据，旧定位不能覆盖新意图；目录／搜索同一面板保留查询状态，工具栏只留一个导航入口，两种页签状态均按同一工具开关。左右面板分别持有状态；同侧切换及各侧关闭互不清除另一侧的查询／图库状态，导航完成仅关闭发起侧。正文视口延伸至底部，侧栏底部留12px并采用完整圆角；导航书名／阅读信息／页签为固定区域，内容有独立滚动容器。窄屏保留两侧状态，将被覆盖的一侧暂时移出交互与可访问树；浮动工具栏按内容宽度覆盖，章内进度在工具栏内部，工具栏外区域不阻断正文／面板交互。主题／ruby 原地呈现；几何设置沿用稳定锚点、有效代次恢复与串行 revision 写队列。搜索高亮使用 DOM Range 与 CSS Highlight，不改定位叶子；重复 spine 按实际出现位置核验，跨 part 范围按其资源局部映射处理。
 
-TanStack Query key 包含材料／版本／查询／分页，输入法组合期间不发中间查询；新输入立即隔离旧结果，约 200ms 后请求。面板卸载和材料切换取消可取消请求，迟到响应仅归属原查询缓存，不重新打开面板。图库仅显示当前有界页，正文图点击按需检索轻量清单后打开大图；浏览不写正文位置，明确前往才进入共享原点及正常保存链路。新增 UI 偏好经枚举／范围校验后保存在浏览器，不混入严格位置 DTO。跨书键 `folio-reader-ui-v1` 保存 theme（system／white／black，默认 system）、focus（默认 true）及工具栏透明度；旧 soft 主题映射 white。逐材料版本键 `folio-reader-book-ui-v1:<编码 material_id>:<编码 version_id>` 保存 font（mincho／gothic，默认 mincho）、ruby（show／on-demand／hide，默认 show）、rubyScope（original／all，默认 original）与 width（有限数值 560–1040，默认 760）。损坏值逐字段回默认，Storage 不可用或写失败时内存继续可读，不承诺跨设备同步。
+图片查看器由正文与图库共用，独立于工具面板尺寸和图库滚动。查看器保存入口来源与当前图片出现项，正文入口不隐式打开图库；关闭后正文位置及原有工具状态保留，图库入口关闭后回到原图库页和滚动位置。查看器使用模态覆盖层，背景虚化、压暗并暂停交互，焦点留在查看器内；关闭后恢复入口焦点。缩放与拖动只改变查看器内图像几何，切图重置为适合窗口；“在图库中查看”按当前 ordinal 切到对应有界页并突出出现项，不导航正文。复制图片通过浏览器剪贴板写入图片表示，下载从可信正文源或受控 content URL 读取原图并保留 MIME 与文件格式；这些操作不改编译包或位置。正文点击直接使用从不可变章节 HTML 绑定的可信图片源显示，后台定位完成后启用序号、切图和图库定位；定位失败保留当前图片并允许重试。frame 有效性和原始节点映射隔离扩展注入及后续 DOM 属性改写。跨 iframe Escape 优先关闭查看器；选图、翻页、关闭或材料切换均隔离迟到的初始定位与图片操作结果。
 
-`toolbarTransparency` 同样为跨书浏览器偏好，读取缺失、非数值或超出 0–100 的旧值时回退默认 20。Reader 通过 CSS 变量将透明度转换为背景 alpha，标题栏与工具栏共用随主题变化的背景色及 backdrop blur；文字和图标不使用整体 opacity。该偏好只更新外壳呈现，不触发正文重排或位置写入。
+图片缓存由 Reader 会话持有，保存最多 400 个出现项、32 MiB 原图 Blob 和按字符串长度保守计费最多 16 MiB 的可信正文源关联；超预算原图可查看但不驻留；超关联预算的正文源不缓存关联，图库按需读取。解码像素与在途请求不计入缓存预算。已关联的正文源与通过精确定位核验的图库 URL 共用字节，复制、下载及缩略图复用；同图多次出现仍保留各自位置。并发同图请求共享，取消一个等待者不取消其他等待者；会话释放时撤销对象 URL、清除缓存。返回保留会话先核验材料可见性与版本。
+
+TanStack Query key 包含材料／版本／查询／分页，输入法组合期间不发中间查询；新输入立即隔离旧结果，约 200ms 后请求。面板卸载和材料切换取消可取消请求，迟到响应仅归属原查询缓存，不重新打开面板。图库仅显示当前有界页，正文图点击按确切章节／part／image_id 解析当前版本内的图片出现项；查看器与图库使用相同身份及受控内容接口。浏览不写正文位置，明确前往才进入共享原点及正常保存链路。新增 UI 偏好经枚举／范围校验后保存在浏览器，不混入严格位置 DTO。跨书键 `folio-reader-ui-v1` 保存 theme（system／white／black，默认 system）、focus（默认 true）及工具栏不透明度；旧 soft 主题映射 white。逐材料版本键 `folio-reader-book-ui-v1:<编码 material_id>:<编码 version_id>` 保存 font（mincho／gothic，默认 mincho）、ruby（show／on-demand／hide，默认 show）、rubyScope（original／all，默认 original）与 width（有限数值 560–1040，默认 760）。损坏值逐字段回默认，Storage 不可用或写失败时内存继续可读，不承诺跨设备同步。
+
+`toolbarOpacity` 为跨书浏览器偏好，范围 0–100，默认 80；有效新值优先，缺失或无效时将有效旧 `toolbarTransparency` 按 `100 − 旧值` 迁移，两者均无效时回默认。Reader 通过 CSS 变量设置背景 alpha，标题栏与工具栏共用随主题变化的背景色及 backdrop blur；文字和图标不使用整体 opacity。该偏好只更新外壳呈现，不触发正文重排或位置写入。
 
 横排滚动容器从屏幕顶部延伸到底部，上 padding 为桌面 82px／窄屏 78px，下 padding 为 80px 加安全区；首尾留白随正文滚动，标题栏背景模糊为 3px。`viewport.ts` 的 `readingViewport` 按实际 padding 返回无遮挡阅读边缘与尺寸，供锚点采样／恢复、图片尺寸和翻页步长共用；布局恢复仍按物理 client size 判断稳定。竖排使用零 padding，并以相同上下间距限定容器，保证每列可读。位置仍保存正文码点或图片锚点，留白不进入定位正文与章内比例。
 
@@ -514,6 +518,7 @@ C1 出处契约版本为 `1`，组装规则为 `concat-nfc-v1`；最多 64 段�
 /materials/{material_id}/reading-position
 /materials/{material_id}/readings, /materials/{material_id}/readings/prepare
 /materials/{material_id}/search, /materials/{material_id}/illustrations
+/materials/{material_id}/illustrations/locate
 /materials/{material_id}/illustrations/{ordinal}/content
 /materials/{material_id}/usage, /materials/{material_id}/opened
 /materials/{material_id}/cover, /catalog/sources

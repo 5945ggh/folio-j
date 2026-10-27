@@ -127,6 +127,25 @@ async def test_full_search_images_gates_and_read_only(
         assert [item["ordinal"] for item in images["items"]] == [0, 1, 2, 3]
         assert images["items"][0]["alt"] == "絵 & 図"
         assert images["items"][3]["chapter_id"] == "c3"
+        located = await client.get(
+            url + "/illustrations/locate",
+            params={**version, "chapter_id": "c2", "part_index": 0, "image_id": 0},
+        )
+        assert located.status_code == 200
+        assert located.json()["total"] == 4
+        assert located.json()["items"] == [images["items"][2]]
+        assert (
+            await client.get(
+                url + "/illustrations/locate",
+                params={**version, "chapter_id": "c1", "part_index": 0, "image_id": 99},
+            )
+        ).status_code == 404
+        assert (
+            await client.get(
+                url + "/illustrations/locate",
+                params={"version_id": "wrong", "chapter_id": "c1", "part_index": 0, "image_id": 0},
+            )
+        ).status_code == 409
         page = (
             await client.get(
                 url + "/illustrations",
@@ -164,6 +183,12 @@ async def test_full_search_images_gates_and_read_only(
             assert connection.execute("SELECT count(*) FROM runs").fetchone() == (0,)
             assert connection.execute("SELECT count(*) FROM material_usage").fetchone() == (0,)
         assert (await client.delete(f"/api/sources/{sid}")).status_code == 204
+        assert (
+            await client.get(
+                url + "/illustrations/locate",
+                params={**version, "chapter_id": "c1", "part_index": 0, "image_id": 0},
+            )
+        ).status_code == 404
         for route in ("/search", "/illustrations", "/illustrations/0/content"):
             assert (await client.get(url + route, params=version)).status_code == 404
 

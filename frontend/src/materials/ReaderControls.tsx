@@ -99,8 +99,11 @@ export function ReaderSettings({
 			onClose={onClose}
 		>
 			<fieldset>
-				<legend>纸面</legend>
-				<div className="reader-options">
+				<legend>
+					纸面
+					<span className="reader-scope">全局</span>
+				</legend>
+				<fieldset className="reader-options" aria-label="纸面主题">
 					{(["white", "black", "system"] as const).map((v, i) => (
 						<button
 							key={v}
@@ -111,64 +114,68 @@ export function ReaderSettings({
 							{["白", "黑", "跟随系统"][i]}
 						</button>
 					))}
-				</div>
+				</fieldset>
 			</fieldset>
 			<fieldset>
-				<legend>工具栏</legend>
+				<legend>
+					工具栏
+					<span className="reader-scope">全局</span>
+				</legend>
 				<label>
-					背景透明度 <output>{ui.toolbarTransparency}%</output>
+					不透明度 <output>{ui.toolbarOpacity}%</output>
 					<input
-						aria-label="工具栏背景透明度"
-						aria-valuetext={`${ui.toolbarTransparency}%`}
-						aria-describedby="reader-toolbar-transparency-hint"
+						aria-label="工具栏背景不透明度"
+						aria-valuetext={`${ui.toolbarOpacity}%`}
+						aria-describedby="reader-toolbar-opacity-hint"
 						type="range"
 						min="0"
 						max="100"
 						step="5"
-						value={ui.toolbarTransparency}
+						value={ui.toolbarOpacity}
 						onChange={(e) =>
-							onUi({ ...ui, toolbarTransparency: Number(e.target.value) })
+							onUi({ ...ui, toolbarOpacity: Number(e.target.value) })
 						}
 					/>
 				</label>
-				<p id="reader-toolbar-transparency-hint">
-					同时调整顶部标题栏与底部工具栏背景；0% 不透明，100% 完全透明。
+				<p id="reader-toolbar-opacity-hint">
+					同时调整顶部标题栏与底部工具栏背景；0% 完全透明，100% 不透明。
 				</p>
 			</fieldset>
 			<fieldset>
-				<legend>排版</legend>
-				<label>
-					文字方向
-					<select
-						aria-label="文字方向"
-						value={settings.writing_mode}
-						onChange={(e) =>
-							onSettings({
-								...settings,
-								writing_mode: e.target.value as Settings["writing_mode"],
-							})
-						}
-					>
-						<option value="horizontal-tb">横排</option>
-						<option value="vertical-rl">竖排</option>
-					</select>
-				</label>
-				<label>
-					字体
-					<select
-						aria-label="字体"
-						value={bookUi.font}
-						onChange={(e) =>
-							onBookUi({
-								...bookUi,
-								font: e.target.value as BookUiPreferences["font"],
-							})
-						}
-					>
-						<option value="mincho">明朝体</option>
-						<option value="gothic">黑体</option>
-					</select>
-				</label>
+				<legend>
+					排版
+					<span className="reader-scope">本书</span>
+				</legend>
+				<div className="reader-field">
+					<span>文字方向</span>
+					<fieldset className="reader-options" aria-label="文字方向">
+						{(["horizontal-tb", "vertical-rl"] as const).map((v, i) => (
+							<button
+								key={v}
+								type="button"
+								aria-pressed={settings.writing_mode === v}
+								onClick={() => onSettings({ ...settings, writing_mode: v })}
+							>
+								{["横排", "竖排"][i]}
+							</button>
+						))}
+					</fieldset>
+				</div>
+				<div className="reader-field">
+					<span>字体</span>
+					<fieldset className="reader-options" aria-label="字体">
+						{(["mincho", "gothic"] as const).map((v, i) => (
+							<button
+								key={v}
+								type="button"
+								aria-pressed={bookUi.font === v}
+								onClick={() => onBookUi({ ...bookUi, font: v })}
+							>
+								{["明朝体", "黑体"][i]}
+							</button>
+						))}
+					</fieldset>
+				</div>
 				<label>
 					字号 <output>{settings.font_size}px</output>
 					<input
@@ -216,33 +223,39 @@ export function ReaderSettings({
 				)}
 			</fieldset>
 			<fieldset>
-				<legend>注音范围</legend>
-				<div className="reader-options">
-					{(["original", "all"] as const).map((scope, i) => (
-						<button
-							key={scope}
-							type="button"
-							aria-pressed={(bookUi.rubyScope ?? "original") === scope}
-							onClick={() => onBookUi({ ...bookUi, rubyScope: scope })}
-						>
-							{["原书", "全量"][i]}
-						</button>
-					))}
+				<legend>
+					注音
+					<span className="reader-scope">本书</span>
+				</legend>
+				<div className="reader-field">
+					<span>范围</span>
+					<fieldset className="reader-options" aria-label="注音范围">
+						{(["original", "all"] as const).map((scope, i) => (
+							<button
+								key={scope}
+								type="button"
+								aria-pressed={(bookUi.rubyScope ?? "original") === scope}
+								onClick={() => onBookUi({ ...bookUi, rubyScope: scope })}
+							>
+								{["原书", "全量"][i]}
+							</button>
+						))}
+					</fieldset>
 				</div>
-			</fieldset>
-			<fieldset>
-				<legend>注音显示</legend>
-				<div className="reader-options">
-					{(["show", "on-demand", "hide"] as const).map((v, i) => (
-						<button
-							key={v}
-							type="button"
-							aria-pressed={bookUi.ruby === v}
-							onClick={() => onBookUi({ ...bookUi, ruby: v })}
-						>
-							{["显示", "按需", "隐藏"][i]}
-						</button>
-					))}
+				<div className="reader-field">
+					<span>显示</span>
+					<fieldset className="reader-options" aria-label="注音显示">
+						{(["show", "on-demand", "hide"] as const).map((v, i) => (
+							<button
+								key={v}
+								type="button"
+								aria-pressed={bookUi.ruby === v}
+								onClick={() => onBookUi({ ...bookUi, ruby: v })}
+							>
+								{["显示", "按需", "隐藏"][i]}
+							</button>
+						))}
+					</fieldset>
 				</div>
 				<p>
 					原书注音优先；全量补充未标注的汉字。按需时可悬停、轻点、选中或按 R
@@ -250,11 +263,12 @@ export function ReaderSettings({
 				</p>
 			</fieldset>
 			<fieldset>
-				<legend>正文标记</legend>
-				<label className="reader-focus-label">
-					<span>
-						阅读记录下划线<small>在所有书籍中生效</small>
-					</span>
+				<legend>
+					正文标记
+					<span className="reader-scope">全局</span>
+				</legend>
+				<label>
+					<span>阅读记录下划线</span>
 					<input
 						type="checkbox"
 						aria-label="显示阅读记录下划线"
@@ -270,10 +284,8 @@ export function ReaderSettings({
 						}
 					/>
 				</label>
-				<label className="reader-focus-label">
-					<span>
-						阅读记录页边入口<small>在所有书籍中生效</small>
-					</span>
+				<label>
+					<span>阅读记录页边入口</span>
 					<input
 						type="checkbox"
 						aria-label="显示阅读记录页边入口"
@@ -293,22 +305,26 @@ export function ReaderSettings({
 					实线表示学习片段，虚线表示翻译；重叠处保留实线。页边空间不足时使用“本章记录”。隐藏标记不删除记录。
 				</p>
 			</fieldset>
-			<label className="reader-focus-label">
-				<span>
-					专注阅读<small>静置后自动隐藏工具</small>
-				</span>
-				<input
-					type="checkbox"
-					aria-label="专注阅读"
-					checked={ui.focus}
-					onChange={(e) => onUi({ ...ui, focus: e.target.checked })}
-				/>
-			</label>
-			<p>
-				单击未标记正文收起，再次单击、移动鼠标或按 Tab
-				唤出。方向键、空格和滚动不会唤出工具。
-			</p>
-			<button type="button" onClick={onReset}>
+			<fieldset>
+				<legend>
+					专注阅读
+					<span className="reader-scope">全局</span>
+				</legend>
+				<label>
+					<span>静置后自动隐藏工具</span>
+					<input
+						type="checkbox"
+						aria-label="专注阅读"
+						checked={ui.focus}
+						onChange={(e) => onUi({ ...ui, focus: e.target.checked })}
+					/>
+				</label>
+				<p>
+					单击未标记正文收起，再次单击、移动鼠标或按 Tab
+					唤出。方向键、空格和滚动不会唤出工具。
+				</p>
+			</fieldset>
+			<button type="button" className="reader-reset" onClick={onReset}>
 				恢复阅读设置默认值
 			</button>
 		</ReaderPanel>

@@ -144,6 +144,32 @@ export async function listIllustrations(
 	return requireData(data, error, response.status);
 }
 
+export async function locateIllustration(
+	id: string,
+	versionId: string,
+	chapterId: string,
+	partIndex: number,
+	imageId: number,
+	signal?: AbortSignal,
+) {
+	const { data, error, response } = await api.GET(
+		"/api/materials/{material_id}/illustrations/locate",
+		{
+			params: {
+				path: { material_id: id },
+				query: {
+					version_id: versionId,
+					chapter_id: chapterId,
+					part_index: partIndex,
+					image_id: imageId,
+				},
+			},
+			signal,
+		},
+	);
+	return requireData(data, error, response.status);
+}
+
 export type ReadingsSummary = components["schemas"]["MaterialReadingsSummary"];
 export type ReadingsResponse =
 	components["schemas"]["MaterialReadingsResponse"];

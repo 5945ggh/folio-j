@@ -174,6 +174,24 @@ async def get_illustrations(
 
 
 @router.get(
+    "/materials/{material_id}/illustrations/locate",
+    response_model=MaterialIllustrationsResponse,
+    operation_id="locateMaterialIllustration",
+)
+async def locate_illustration(
+    material_id: str,
+    session: Session,
+    version_id: str,
+    chapter_id: str,
+    part_index: Annotated[int, Query(ge=0)],
+    image_id: Annotated[int, Query(ge=0)],
+) -> MaterialIllustrationsResponse:
+    return await reader_queries.locate_illustration(
+        session, material_id, version_id, chapter_id, part_index, image_id
+    )
+
+
+@router.get(
     "/materials/{material_id}/illustrations/{ordinal}/content",
     operation_id="getMaterialIllustrationContent",
     responses={

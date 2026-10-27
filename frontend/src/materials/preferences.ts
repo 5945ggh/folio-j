@@ -4,7 +4,7 @@ export type ReaderRuby = "show" | "on-demand" | "hide";
 export type ReaderUiPreferences = {
 	theme: ReaderTheme;
 	focus: boolean;
-	toolbarTransparency: number;
+	toolbarOpacity: number;
 	marks: { studySegmentUnderlines: boolean; studySegmentMargins: boolean };
 };
 export type BookUiPreferences = {
@@ -16,7 +16,7 @@ export type BookUiPreferences = {
 export const DEFAULT_READER_UI: ReaderUiPreferences = {
 	theme: "system",
 	focus: true,
-	toolbarTransparency: 20,
+	toolbarOpacity: 80,
 	marks: { studySegmentUnderlines: true, studySegmentMargins: true },
 };
 export const DEFAULT_BOOK_UI: BookUiPreferences = {
@@ -49,6 +49,13 @@ function load(
 		return {};
 	}
 }
+const boundedPercent = (input: unknown): number | null =>
+	typeof input === "number" &&
+	Number.isFinite(input) &&
+	input >= 0 &&
+	input <= 100
+		? input
+		: null;
 export function normalizeReaderUi(
 	value: Record<string, unknown>,
 ): ReaderUiPreferences {
@@ -58,6 +65,8 @@ export function normalizeReaderUi(
 		!Array.isArray(value.marks)
 			? (value.marks as Record<string, unknown>)
 			: {};
+	// toolbarOpacity replaced toolbarTransparency on the same 0–100 scale, inverted.
+	const legacyTransparency = boundedPercent(value.toolbarTransparency);
 	return {
 		marks: {
 			studySegmentUnderlines:
@@ -80,13 +89,11 @@ export function normalizeReaderUi(
 					? "white"
 					: "system",
 		focus: typeof value.focus === "boolean" ? value.focus : true,
-		toolbarTransparency:
-			typeof value.toolbarTransparency === "number" &&
-			Number.isFinite(value.toolbarTransparency) &&
-			value.toolbarTransparency >= 0 &&
-			value.toolbarTransparency <= 100
-				? value.toolbarTransparency
-				: DEFAULT_READER_UI.toolbarTransparency,
+		toolbarOpacity:
+			boundedPercent(value.toolbarOpacity) ??
+			(legacyTransparency !== null
+				? 100 - legacyTransparency
+				: DEFAULT_READER_UI.toolbarOpacity),
 	};
 }
 export function normalizeBookUi(
