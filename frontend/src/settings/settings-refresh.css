@@ -3,9 +3,10 @@
 	padding: 0 0 64px;
 }
 .settings-page {
-	--settings-line: #e7e9ed;
-	--settings-blue: #326bd1;
-	--settings-muted: #717782;
+	--settings-line: light-dark(#e7e9ed, var(--color-border));
+	--settings-blue: light-dark(#326bd1, var(--color-accent));
+	--settings-muted: light-dark(#717782, var(--color-text-muted));
+	--settings-primary: light-dark(#326bd1, var(--color-accent-solid));
 	font-size: 14px;
 }
 .settings-page .settings-topbar {
@@ -82,7 +83,7 @@
 	padding: 0;
 	border: 1px solid var(--settings-line);
 	border-radius: 10px;
-	background: white;
+	background: var(--color-surface);
 }
 .settings-page fieldset {
 	min-width: 0;
@@ -130,7 +131,7 @@
 	border: 1px solid var(--settings-line);
 	border-radius: 7px;
 	color: inherit;
-	background: white;
+	background: var(--color-surface);
 	font: inherit;
 	font-size: 13px;
 }
@@ -160,7 +161,7 @@
 }
 .settings-page .settings-control:focus-visible,
 .settings-page .settings-field :is(input, select, textarea):focus-visible {
-	outline: 2px solid #adc7f2;
+	outline: 2px solid var(--color-focus);
 	outline-offset: 1px;
 	border-color: var(--settings-blue);
 }
@@ -199,21 +200,21 @@
 }
 .settings-page .settings-button.secondary {
 	border-color: var(--settings-line);
-	background: white;
+	background: var(--color-surface);
 }
 .settings-page .settings-button.primary {
-	background: var(--settings-blue);
-	color: white;
+	background: var(--settings-primary);
+	color: var(--color-text-on-accent);
 }
 .settings-page .settings-button.danger {
-	color: #b44b45;
+	color: var(--color-danger);
 }
 .settings-page .settings-button:hover:not(:disabled) {
 	filter: brightness(0.96);
 }
 .settings-page .settings-button:focus-visible,
 .settings-page .settings-tabs a:focus-visible {
-	outline: 2px solid #adc7f2;
+	outline: 2px solid var(--color-focus);
 	outline-offset: 3px;
 }
 .settings-page .settings-button:disabled {
@@ -238,7 +239,7 @@
 	padding: 1px 5px;
 	margin-left: 6px;
 	border-radius: 4px;
-	background: #edf3ff;
+	background: var(--color-accent-soft);
 	color: var(--settings-blue);
 	font-size: 11px;
 }
@@ -280,7 +281,7 @@
 	padding: 20px;
 }
 .settings-page .settings-permission:has(input:checked) {
-	background: #edf3ff;
+	background: var(--color-accent-soft);
 }
 .settings-page .settings-permission strong {
 	font-size: 13px;
@@ -314,13 +315,13 @@
 	padding: 24px;
 	border: 1px solid var(--settings-line);
 	border-radius: 12px;
-	background: white;
-	color: #292d35;
-	box-shadow: 0 12px 45px #20293820;
+	background: var(--color-surface);
+	color: var(--color-text);
+	box-shadow: 0 12px 45px light-dark(#20293820, var(--color-shadow));
 	font-size: 14px;
 }
 .settings-page .settings-dialog::backdrop {
-	background: #20273538;
+	background: light-dark(#20273538, var(--color-overlay));
 }
 .settings-page .settings-dialog-heading h2,
 .settings-page .settings-dialog > h2 {
@@ -430,4 +431,9 @@
 	.settings-page .settings-dialog {
 		padding: 20px;
 	}
+}
+
+.settings-page .settings-appearance-note {
+	margin: 0;
+	padding: 0 16px 16px;
 }

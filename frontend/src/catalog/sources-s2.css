@@ -13,8 +13,8 @@
 	position: relative;
 	min-width: 0;
 	min-height: 0;
-	background: #f9fafb;
-	border-right: 1px solid var(--border);
+	background: var(--color-surface-subtle);
+	border-right: 1px solid var(--color-border);
 }
 .s2-source-resizer {
 	position: absolute;
@@ -37,7 +37,7 @@
 }
 .s2-source-resizer:hover::after,
 .s2-source-resizer:focus-visible::after {
-	background: #b8c7dc;
+	background: var(--color-accent-border);
 }
 .s2-source-resizer:focus-visible {
 	outline: none;
@@ -80,16 +80,20 @@
 	width: 100%;
 	height: 32px;
 	padding: 5px 10px;
-	border: 1px solid #dce1e7;
+	border: 1px solid var(--color-border);
 	border-radius: 7px;
-	background: #fff;
+	background: var(--color-surface);
 	color: inherit;
 	font-size: 13px;
 	line-height: 20px;
 }
 .s2-source-search input:focus {
-	border-color: #9bb5d3;
-	outline: 2px solid #2168d41a;
+	border-color: var(--color-focus);
+	outline: 2px solid
+		light-dark(
+			#2168d41a,
+			color-mix(in srgb, var(--color-focus) 25%, transparent)
+		);
 	outline-offset: 0;
 }
 .s2-source-scroll {
@@ -109,11 +113,11 @@
 	color: inherit;
 }
 .s2-source-row:hover {
-	background: #f0f2f5;
+	background: var(--color-surface-hover);
 }
 .s2-source-row.selected {
-	background: #eaf0fb;
-	color: #35567f;
+	background: var(--color-surface-active);
+	color: var(--color-accent);
 }
 .s2-source-row strong {
 	font-size: 13px;
@@ -124,7 +128,7 @@
 }
 .s2-source-row span {
 	font-size: 11px;
-	color: var(--muted);
+	color: var(--color-text-muted);
 }
 .s2-directory .catalog-pagination {
 	padding: 10px 12px;
@@ -132,14 +136,14 @@
 	gap: 6px;
 	flex-wrap: wrap;
 	font-size: 11px;
-	border-top: 1px solid var(--border);
+	border-top: 1px solid var(--color-border);
 }
 .s2-directory .catalog-pagination .button {
 	padding: 4px 8px;
 	font-size: 11px;
 }
 .s2-directory-empty {
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 13px;
 	padding: 15px 8px;
 }
@@ -147,7 +151,7 @@
 	align-self: flex-start;
 	max-width: calc(100% - 24px);
 	margin: 0 12px 6px;
-	background: #eaf0fb;
+	background: var(--color-surface-active);
 	border: 0;
 	padding: 5px 8px;
 	border-radius: 5px;
@@ -178,7 +182,7 @@
 	overflow-wrap: anywhere;
 }
 .s2-source-heading p {
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 13px;
 	margin: 7px 0 0;
 	white-space: pre-wrap;
@@ -203,7 +207,7 @@
 }
 .s2-source-menu button:hover,
 .s2-source-menu button:focus-visible {
-	background: #edf1f6;
+	background: var(--color-surface-hover);
 }
 .sources-s2 .s2-source-reveal {
 	display: none;
@@ -220,7 +224,7 @@
 	font-size: 24px;
 }
 .s2-welcome p {
-	color: var(--muted);
+	color: var(--color-text-muted);
 	line-height: 1.8;
 }
 .s2-source-drawer {
@@ -280,11 +284,11 @@
 	gap: 2px;
 	padding: 3px;
 	border-radius: 8px;
-	background: #f0f1f4;
+	background: var(--color-surface-muted);
 	margin-bottom: 20px;
 }
 .sources-s2 .source-view-panel {
-	border-top: 1px solid var(--border);
+	border-top: 1px solid var(--color-border);
 	padding-top: 24px;
 }
 .sources-s2 .source-view-panel[hidden] {
@@ -299,5 +303,5 @@
 .s2-directory > .catalog-count {
 	margin: 0;
 	padding: 12px 20px;
-	border-top: 1px solid var(--border);
+	border-top: 1px solid var(--color-border);
 }

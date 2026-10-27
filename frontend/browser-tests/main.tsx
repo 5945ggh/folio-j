@@ -12,6 +12,7 @@ import type { StudyTarget } from "../src/materials/study-api";
 import "../src/styles.css";
 import { analysisReading } from "./analysis-reading";
 import { analysisRename } from "./analysis-rename";
+import { appTheme } from "./app-theme";
 import { overviewImportRegression } from "./catalog-overview";
 import { reusedImportRegression } from "./catalog-reuse";
 import { catalogToolbarRegression } from "./catalog-toolbar";
@@ -394,6 +395,7 @@ async function clearStudyContext() {
 try {
 	const suite = new URLSearchParams(location.search).get("suite");
 	const standalone = new Map([
+		["app-theme", appTheme],
 		["reader-images", readerImages],
 		["reader-image-performance", readerImages],
 		["catalog-overview", overviewImportRegression],

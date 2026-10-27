@@ -158,7 +158,10 @@
 	background: var(--surface);
 	color: var(--text, inherit);
 	box-shadow: 0 8px 24px
-		color-mix(in srgb, var(--text, #26282d) 12%, transparent);
+		light-dark(
+			color-mix(in srgb, var(--text, #26282d) 12%, transparent),
+			var(--color-shadow)
+		);
 }
 
 .app-shell.segment-study-shell .analysis-document-menu button {

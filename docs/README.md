@@ -14,6 +14,7 @@
 | 首轮承诺什么行为、哪些决定未定 | [PRD.md](PRD.md) | 范围、产品行为、内容保护、验收与 `[TBD-xx]`；决定依据链接原始方案和验收，P0 不表示已经交付 |
 | 名词指什么、身份与引用如何区分 | [GLOSSARY.md](GLOSSARY.md) | 定义、不变式、词表和反例；完整操作流程引用 PRD |
 | 系统如何保证已确认行为 | [ARCHITECTURE.md](ARCHITECTURE.md) | 模型、执行校验、事务与恢复机制；未来草图明确标识 |
+| 视觉基线、应用主题与阅读配色如何维护 | [设计系统](DESIGN_SYSTEM.md) | 现有视觉、颜色作用域与语义变量使用规则；实际色值由代码维护 |
 | 当前内容如何找到、打开、参照与返回，界面怎样操作和呈现 | [INFORMATION_ARCHITECTURE.md](INFORMATION_ARCHITECTURE.md) | 页面职责、路由、焦点与快捷键、临时 UI 状态及具体表现参数 |
 | 选了哪些技术、为什么 | [TECH_STACK.md](TECH_STACK.md) | 选型、采用状态、分发及明确不选的方案；执行细节引用架构 |
 | 已做到哪里、首轮还缺什么 | [MVP 实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md) | 当前交付与提交状态、实现差额、未落实契约与验收入口 |

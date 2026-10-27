@@ -18,8 +18,8 @@
 	padding: 5px 8px;
 	border: 0;
 	border-radius: 4px;
-	background: white;
-	color: #424954;
+	background: var(--color-surface);
+	color: var(--color-text-secondary);
 	font-size: 12px;
 	line-height: 20px;
 	text-align: left;
@@ -27,24 +27,24 @@
 }
 .book-menu button:hover,
 .book-menu button:focus-visible {
-	background: #eaf1fc;
+	background: var(--color-surface-active);
 }
 .book-menu button[aria-checked="true"] {
-	color: #2168d4;
+	color: var(--color-accent);
 }
 .book-menu button:disabled {
-	color: #969ba5;
+	color: var(--color-text-disabled);
 	cursor: default;
 	background: transparent;
 }
 .book-menu hr {
 	border: 0;
-	border-top: 1px solid #e8eaf0;
+	border-top: 1px solid var(--color-border-subtle);
 	margin: 4px 3px;
 }
 .book-menu small {
 	font-size: 11px;
-	color: #858d9b;
+	color: var(--color-text-muted);
 	white-space: nowrap;
 }
 .book-menu-meta {

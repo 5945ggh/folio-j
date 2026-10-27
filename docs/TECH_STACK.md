@@ -53,7 +53,7 @@ EPUB 编译使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义编�
 |---|---|---|
 | 构建 | Vite | 纯 SPA；**不用 Next.js**：不需要 SSR，而且会增加打包与部署的复杂度 |
 | 语言与框架 | TypeScript（strict）+ React | |
-| 样式与组件 | Tailwind CSS 已采用；shadcn/ui 预留 | 当前无已引入的 shadcn 组件；选用时将组件源码复制进仓库 |
+| 样式与组件 | Tailwind CSS、原生 CSS 语义变量与 `light-dark()` 已采用；shadcn/ui 预留 | 颜色由局部 `color-scheme` 解析，规则见[设计系统](DESIGN_SYSTEM.md)；当前无已引入的 shadcn 组件 |
 | 服务端状态 | TanStack Query | 所有 API 数据都经由它获取和缓存 |
 | 本地 UI 状态 | React 组件 state；Zustand 预留，未安装 | 能用组件 state 解决的就不引入 |
 | 路由 | React Router（library 的 Data router）`[TBD-13]` | RouterProvider 承载现有组件路由，供设置草稿使用 useBlocker；不使用 framework 模式，服务端数据仍由 TanStack Query 管理 |
@@ -64,7 +64,7 @@ EPUB 编译使用标准库 ZIP／XML／HTML 处理与已有 Pydantic 定义编�
 | E2E | 暂不引入 | 由 coding agent 自带的浏览器能力做界面验证；以后需要再加 Playwright |
 | 包管理 | pnpm | Node 使用当前 LTS 版本 |
 
-Reader 继续使用无脚本、同源隔离 iframe，保留 CSP／sandbox；工具事件由父应用适配。搜索高亮采用 DOM Range／CSS Highlight，不改正文定位叶子；图库使用非模态局部面板，图片查看器使用独立模态覆盖层，保留 Escape 层级和关闭焦点恢复。展示层轻量动画支持减少动态效果偏好，不改变正文布局与位置保存。主题与阅读偏好在 Reader 作用域及浏览器 Storage 内校验，失败退回内存；浏览器及扩展兼容性的实际验证范围见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。
+Reader 继续使用无脚本、同源隔离 iframe，保留 CSP／sandbox；工具事件由父应用适配。搜索高亮采用 DOM Range／CSS Highlight，不改正文定位叶子；图库使用非模态局部面板，图片查看器使用独立模态覆盖层，保留 Escape 层级和关闭焦点恢复。展示层轻量动画支持减少动态效果偏好，不改变正文布局与位置保存。应用外观使用浏览器 Storage、`matchMedia` 与 React `useSyncExternalStore`，启动脚本提前应用颜色模式，不引入主题库。Reader 配色由单一 CSS 来源维护并桥接到 iframe；应用主题与阅读偏好分别校验，Storage 失败退回内存；浏览器及扩展兼容性的实际验证范围见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
 ## 3. 模型接入（BYOK）
 

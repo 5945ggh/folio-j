@@ -11,14 +11,14 @@
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 4px 20px;
-	background: white;
+	background: var(--color-surface);
 }
 .library-toolbar .catalog-tabs {
 	flex: none;
 	display: flex;
 	gap: 2px;
 	border: 0;
-	background: #f0f1f4;
+	background: var(--color-surface-muted);
 	padding: 3px;
 	border-radius: 8px;
 }
@@ -34,7 +34,7 @@
 	gap: 3px;
 	padding: 2px 5px;
 	border-radius: 20px;
-	background: #f7f8fa;
+	background: var(--color-surface-subtle);
 }
 .library-icon {
 	display: inline-flex;
@@ -46,21 +46,21 @@
 	border: 0;
 	border-radius: 7px;
 	background: transparent;
-	color: #5b626d;
+	color: var(--color-text-secondary);
 	flex: none;
 	cursor: pointer;
 }
 .library-icon:hover {
-	background: #e9edf2;
-	color: #232832;
+	background: var(--color-surface-hover);
+	color: var(--color-text-strong);
 }
 .library-icon:focus-visible {
-	outline: 2px solid #6b94b8;
+	outline: 2px solid var(--color-focus);
 	outline-offset: -2px;
 }
 .library-icon[aria-expanded="true"] {
-	background: #e9edf2;
-	color: #232832;
+	background: var(--color-surface-hover);
+	color: var(--color-text-strong);
 }
 .library-icon svg {
 	width: 20px;
@@ -69,7 +69,7 @@
 .library-divider {
 	width: 1px;
 	height: 19px;
-	background: #e4e6ea;
+	background: var(--color-border);
 	margin: 0 4px;
 }
 .library-popover {
@@ -79,11 +79,11 @@
 	padding: 14px;
 	min-width: 210px;
 	max-width: calc(100vw - 32px);
-	border: 1px solid #e0e4ec;
-	background: white;
-	color: #26282d;
+	border: 1px solid var(--color-border);
+	background: var(--color-surface);
+	color: var(--color-text);
 	border-radius: 10px;
-	box-shadow: 0 8px 28px #19223520;
+	box-shadow: 0 8px 28px light-dark(#19223520, var(--color-shadow));
 	font-size: 13px;
 }
 .library-popover strong {
@@ -98,18 +98,18 @@
 }
 .library-popover select {
 	width: 100%;
-	background: #f7f8fa;
-	border: 1px solid #e0e4ec;
+	background: var(--color-surface-subtle);
+	border: 1px solid var(--color-border);
 	border-radius: 6px;
 	padding: 8px;
-	color: #26282d;
+	color: var(--color-text);
 }
 /* 素材库工具按钮的面板：锚定到触发按钮，比通用弹层更紧凑。 */
 .library-panel {
 	width: 240px;
 	min-width: 0;
 	padding: 12px;
-	box-shadow: 0 6px 20px #19223514;
+	box-shadow: 0 6px 20px light-dark(#19223514, var(--color-shadow));
 	opacity: 0;
 	transform: translateY(4px);
 }
@@ -137,7 +137,7 @@
 .library-panel label {
 	gap: 5px;
 	margin: 0 0 10px;
-	color: var(--muted, #686e78);
+	color: var(--color-text-muted);
 	font-size: 12px;
 }
 .library-panel label:last-child {
@@ -154,7 +154,7 @@
 	display: grid;
 	gap: 5px;
 	margin: 0;
-	color: var(--muted, #686e78);
+	color: var(--color-text-muted);
 	font-size: 12px;
 }
 .library-sort-direction {
@@ -171,12 +171,12 @@
 	border: 0;
 	border-radius: 5px;
 	background: transparent;
-	color: var(--muted, #686e78);
+	color: var(--color-text-muted);
 	font-size: 12px;
 }
 .library-sort-direction button[aria-pressed="true"] {
-	background: #f0f1f4;
-	color: #26282d;
+	background: var(--color-surface-muted);
+	color: var(--color-text);
 	font-weight: 600;
 }
 .library-size-row {
@@ -185,7 +185,7 @@
 	justify-content: space-between;
 }
 .library-size-value {
-	color: #26282d;
+	color: var(--color-text);
 	font-variant-numeric: tabular-nums;
 }
 .library-panel input[type="range"] {
@@ -196,7 +196,7 @@
 	padding: 7px 0;
 	border: 0;
 	border-radius: 2px;
-	background: #e4e7ec;
+	background: var(--color-border);
 	background-clip: content-box;
 }
 .library-panel input[type="range"]::-webkit-slider-thumb {
@@ -205,14 +205,14 @@
 	height: 14px;
 	border: 0;
 	border-radius: 50%;
-	background: #2168d4;
+	background: var(--color-accent-solid);
 }
 .library-panel input[type="range"]::-moz-range-thumb {
 	width: 14px;
 	height: 14px;
 	border: 0;
 	border-radius: 50%;
-	background: #2168d4;
+	background: var(--color-accent-solid);
 }
 .library-search-input {
 	flex: 0 1 300px;
@@ -221,12 +221,12 @@
 	padding: 0 14px;
 	border: 0;
 	border-radius: 20px;
-	background: #f7f8fa;
-	color: #26282d;
+	background: var(--color-surface-subtle);
+	color: var(--color-text);
 	font-size: 13px;
 }
 .library-search-input::placeholder {
-	color: #9198a4;
+	color: var(--color-text-faint);
 }
 .library-search-input:focus-visible {
 	outline-offset: -2px;
@@ -241,16 +241,16 @@
 	max-width: 100%;
 	overflow-wrap: anywhere;
 	font-size: 12px;
-	color: #375b92;
-	background: #f3f7fe;
-	border: 1px solid #dee7f5;
+	color: var(--color-accent);
+	background: var(--color-accent-soft);
+	border: 1px solid var(--color-accent-border);
 	padding: 5px 9px;
 	border-radius: 5px;
 }
 .library-chips .library-clear {
 	border: 0;
 	background: transparent;
-	color: #667286;
+	color: var(--color-text-muted);
 	padding: 6px;
 	cursor: pointer;
 }
@@ -274,12 +274,12 @@
 	width: 100%;
 	aspect-ratio: 408 / 570;
 	padding: 4px;
-	background: white;
-	border: 1px solid #e1e4ea;
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
 	border-radius: 9px;
 	box-shadow:
-		0 3px 8px #222c3a12,
-		0 12px 23px -16px #26324533;
+		0 3px 8px light-dark(#222c3a12, var(--color-shadow)),
+		0 12px 23px -16px light-dark(#26324533, var(--color-shadow));
 	overflow: hidden;
 }
 .book-cover img {
@@ -288,10 +288,10 @@
 	object-fit: contain;
 	display: block;
 	border-radius: 5px;
-	background: white;
+	background: #fff;
 }
 .book-main-link:hover .book-cover {
-	border-color: #b8c6db;
+	border-color: var(--color-accent-border);
 }
 /* Pressing a cover confirms the click before the route motion takes over. */
 @media (prefers-reduced-motion: no-preference) {
@@ -310,8 +310,8 @@
 	align-items: center;
 	justify-content: center;
 	gap: 12px;
-	background: #f3f4f7;
-	color: #9198a4;
+	background: var(--color-surface-muted);
+	color: var(--color-text-faint);
 	border-radius: 5px;
 	font-size: 11px;
 }
@@ -332,7 +332,7 @@
 	min-height: 24px;
 }
 .book-main-link:hover .book-title {
-	color: #2168d4;
+	color: var(--color-accent);
 }
 .book-actions {
 	display: flex;
@@ -342,10 +342,10 @@
 .book-menu-trigger {
 	width: 28px;
 	height: 28px;
-	color: #7d8490;
+	color: var(--color-text-muted);
 }
 .catalog-count {
-	color: var(--muted, #686e78);
+	color: var(--color-text-muted);
 	font-size: 11px;
 	margin-top: 24px;
 }
@@ -358,25 +358,25 @@
 	align-items: center;
 	justify-content: center;
 	gap: 11px;
-	border: 1px dashed #cbd3df;
+	border: 1px dashed var(--color-border-strong);
 	border-radius: 12px;
-	background: #fafbfd;
-	color: #798494;
+	background: var(--color-surface-subtle);
+	color: var(--color-text-muted);
 	cursor: pointer;
 	font-size: 13px;
 }
 .library-empty-import:hover {
-	border-color: #83a4d5;
-	background: #f5f8fe;
+	border-color: var(--color-accent-border);
+	background: var(--color-accent-soft);
 }
 .library-empty-import svg {
 	width: 36px;
 	height: 36px;
-	color: #93a1b7;
+	color: var(--color-text-faint);
 	margin-bottom: 9px;
 }
 .library-empty-title {
-	color: #424954;
+	color: var(--color-text-secondary);
 	font-size: 17px;
 	font-weight: 500;
 	line-height: 1.55;
@@ -397,14 +397,14 @@
 	border-radius: 5px;
 }
 .app-shell.library-a1 .catalog-tabs button[aria-selected="true"] {
-	color: #26282d;
+	color: var(--color-text);
 	font-weight: 600;
 	border-bottom: 0;
-	background: white;
-	box-shadow: 0 1px 3px #1820331c;
+	background: var(--color-surface);
+	box-shadow: 0 1px 3px light-dark(#1820331c, var(--color-shadow));
 }
 .app-shell.library-a1 .catalog-tabs button:disabled {
-	color: #727b89;
+	color: var(--color-text-disabled);
 	cursor: not-allowed;
 }
 @media (max-width: 720px) {

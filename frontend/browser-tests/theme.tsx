@@ -4,6 +4,7 @@ import { DEFAULT_BOOK_UI, READER_UI_KEY } from "../src/materials/preferences";
 import { applyFramePresentation } from "../src/materials/presentation";
 import { partDocument } from "../src/materials/reader-frames";
 import type { StudyTarget } from "../src/materials/study-api";
+import { startAppTheme } from "../src/theme/browser";
 import type { BrowserHarness } from "./harness";
 import "../src/materials/reader-r1.css";
 import "../src/materials/reader-refresh.css";
@@ -146,6 +147,7 @@ export async function themeRegression(h: BrowserHarness) {
 		"Runner must emulate the requested system theme",
 	);
 	localStorage.clear();
+	const appTheme = startAppTheme();
 	const synthesis = new EventTarget();
 	Object.assign(synthesis, {
 		getVoices: () => [],
@@ -443,56 +445,61 @@ export async function themeRegression(h: BrowserHarness) {
 			}
 		});
 	}
-	await run("public Shell remains light", async () => {
-		localStorage.setItem(READER_UI_KEY, JSON.stringify({ theme: "black" }));
-		const dispose = await h.mount(
-			<Shell>
-				<p className="catalog-count">共 12 项</p>
-				<div className="segment-conversation">
-					<div className="chat-thread">
-						<span className="chat-thread-meta">
-							<time>2026-10-23</time>
-							<span>3 条消息</span>
-						</span>
+	for (const mode of ["light", "dark"] as const) {
+		appTheme.select(mode);
+		await run(`public Shell ${mode} is independent of Reader`, async () => {
+			localStorage.setItem(READER_UI_KEY, JSON.stringify({ theme: "black" }));
+			const dispose = await h.mount(
+				<Shell>
+					<p className="catalog-count">共 12 项</p>
+					<div className="segment-conversation">
+						<div className="chat-thread">
+							<span className="chat-thread-meta">
+								<time>2026-10-23</time>
+								<span>3 条消息</span>
+							</span>
+						</div>
+						<p className="chat-empty">暂无讨论</p>
 					</div>
-					<p className="chat-empty">暂无讨论</p>
-				</div>
-				<form className="editor-card">
-					<label className="field">
-						名称
-						<input defaultValue="本の名前" />
-						<small>输入用于识别的名称</small>
-					</label>
-					<p className="field-help">可稍后修改</p>
-				</form>
-			</Shell>,
-		);
-		try {
-			await h.until(
-				() => !!h.container.querySelector(".app-shell"),
-				"Shell not rendered",
+					<form className="editor-card">
+						<label className="field">
+							名称
+							<input defaultValue="本の名前" />
+							<small>输入用于识别的名称</small>
+						</label>
+						<p className="field-help">可稍后修改</p>
+					</form>
+				</Shell>,
 			);
-			check(
-				computed(node(".app-shell")).colorScheme === "light",
-				"Public Shell must force light controls under dark system/Reader preference",
-			);
-			check(
-				luminance(background(node(".page-content"))) > 0.85,
-				"Public Shell background must remain light",
-			);
-			for (const selector of [
-				".catalog-count",
-				".chat-thread-meta time",
-				".chat-thread-meta span",
-				".field small",
-				".field-help",
-				".chat-empty",
-			])
-				contrast(node(selector), `public ${selector}`);
-		} finally {
-			dispose();
-		}
-	});
+			try {
+				await h.until(
+					() => !!h.container.querySelector(".app-shell"),
+					"Shell not rendered",
+				);
+				check(
+					computed(node(".app-shell")).colorScheme === mode,
+					"Public Shell controls must follow the application preference",
+				);
+				check(
+					luminance(background(node(".page-content"))) < 0.1 ===
+						(mode === "dark"),
+					"Public Shell background must follow the application preference",
+				);
+				for (const selector of [
+					".catalog-count",
+					".chat-thread-meta time",
+					".chat-thread-meta span",
+					".field small",
+					".field-help",
+					".chat-empty",
+				])
+					contrast(node(selector), `public ${selector}`);
+			} finally {
+				dispose();
+			}
+		});
+	}
+	appTheme.select("system");
 	await run("author iframe cascade and identity", async () => {
 		const part = chapter.parts[0],
 			resource = chapter.resources[0];
@@ -508,7 +515,11 @@ export async function themeRegression(h: BrowserHarness) {
 			{ ...resource, css },
 			settings,
 		);
-		h.container.append(frame);
+		const reader = document.createElement("div");
+		reader.className = "reader-r1";
+		reader.dataset.theme = "white";
+		reader.append(frame);
+		h.container.append(reader);
 		let cleanup = noop;
 		try {
 			await h.until(
@@ -523,6 +534,7 @@ export async function themeRegression(h: BrowserHarness) {
 			const imageMarkup = node("img", doc).outerHTML;
 			const svgMarkup = node("svg", doc).outerHTML;
 			for (const theme of ["white", "black", "white", "black"] as const) {
+				reader.dataset.theme = theme;
 				cleanup();
 				cleanup = applyFramePresentation(doc, theme, DEFAULT_BOOK_UI);
 				check(
@@ -566,7 +578,7 @@ export async function themeRegression(h: BrowserHarness) {
 			}
 		} finally {
 			cleanup();
-			frame.remove();
+			reader.remove();
 		}
 	});
 	await run("MaterialReader follows emulated system", async () => {

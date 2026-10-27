@@ -8,11 +8,11 @@
 	max-height: calc(100dvh - 160px);
 	overflow: auto;
 	overscroll-behavior: contain;
-	border: 1px solid var(--reader-line, #e6e8eb);
+	border: 1px solid var(--reader-line, var(--color-border));
 	border-radius: 12px;
-	background: var(--reader-bg, #fff);
-	color: var(--reader-fg, #252526);
-	box-shadow: 0 8px 32px #0002;
+	background: var(--reader-bg, var(--color-surface));
+	color: var(--reader-fg, var(--color-text-strong));
+	box-shadow: 0 8px 32px light-dark(#0002, var(--color-shadow));
 	font:
 		13px / 1.65 system-ui,
 		sans-serif;
@@ -34,8 +34,8 @@
 	z-index: 1;
 	justify-content: space-between;
 	padding: 8px 9px 8px 16px;
-	border-bottom: 1px solid var(--reader-line, #e6e8eb);
-	background: var(--reader-bg, #fff);
+	border-bottom: 1px solid var(--reader-line, var(--color-border));
+	background: var(--reader-bg, var(--color-surface));
 }
 .translation-card h2 {
 	margin-right: auto;
@@ -82,7 +82,7 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	color: var(--reader-muted, #74777b);
+	color: var(--reader-muted, var(--color-text-muted));
 	font-size: 11px;
 	white-space: nowrap;
 }
@@ -113,29 +113,29 @@
 	cursor: pointer;
 }
 .translation-card :where(button) {
-	border: 1px solid var(--reader-line, #e6e8eb);
+	border: 1px solid var(--reader-line, var(--color-border));
 	border-radius: 6px;
 	background: transparent;
 	color: inherit;
 	padding: 6px 9px;
 }
 .translation-card button:hover {
-	background: var(--reader-soft, #f6f7f8);
+	background: var(--reader-soft, var(--color-surface-hover));
 }
 .translation-card button:disabled {
 	opacity: 0.5;
 	cursor: default;
 }
 .translation-card button[aria-pressed="true"] {
-	background: var(--reader-soft, #f6f7f8);
-	color: var(--reader-fg, #252526);
+	background: var(--reader-soft, var(--color-surface-hover));
+	color: var(--reader-fg, var(--color-text-strong));
 }
 .translation-original {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) 28px;
 	column-gap: 6px;
 	margin: 0 0 14px;
-	color: var(--reader-muted, #74777b);
+	color: var(--reader-muted, var(--color-text-muted));
 	font-size: 12px;
 }
 .translation-original blockquote {
@@ -195,7 +195,7 @@
 	border: 0;
 	padding: 3px 0 3px 6px;
 	font-size: 12px;
-	color: var(--reader-muted, #74777b);
+	color: var(--reader-muted, var(--color-text-muted));
 }
 .translation-result-view[aria-busy="true"] .translation-output {
 	opacity: 0.65;
@@ -203,14 +203,14 @@
 .translation-card small,
 .translation-card summary {
 	font-size: 12px;
-	color: var(--reader-muted, #74777b);
+	color: var(--reader-muted, var(--color-text-muted));
 }
 .translation-card details {
 	margin: 12px 0 0;
 }
 .translation-content > details {
 	padding-top: 12px;
-	border-top: 1px solid var(--reader-line, #e6e8eb);
+	border-top: 1px solid var(--reader-line, var(--color-border));
 }
 .translation-card summary {
 	cursor: pointer;
@@ -235,9 +235,9 @@
 	width: 100%;
 	min-width: 0;
 	box-sizing: border-box;
-	background: var(--reader-bg, #fff);
-	color: var(--reader-fg, #252526);
-	border: 1px solid var(--reader-line, #e6e8eb);
+	background: var(--reader-bg, var(--color-surface));
+	color: var(--reader-fg, var(--color-text-strong));
+	border: 1px solid var(--reader-line, var(--color-border));
 	border-radius: 6px;
 	padding: 7px;
 }
@@ -266,24 +266,24 @@
 	margin-top: 12px;
 }
 .translation-actions > button:first-child {
-	background: var(--reader-soft, #f6f7f8);
+	background: var(--reader-soft, var(--color-surface-hover));
 }
 .translation-card :focus-visible {
-	outline: 2px solid #6d8dd0;
+	outline: 2px solid var(--color-focus);
 	outline-offset: 2px;
 }
 .app-shell.segment-study-shell .segment-translation-area {
 	margin-top: 16px;
 	padding-top: 14px;
-	border-top: 1px solid var(--border);
-	color: var(--text);
+	border-top: 1px solid var(--color-border);
+	color: var(--color-text);
 	font-size: 15px;
 	line-height: 1.85;
 	overflow-wrap: anywhere;
 }
 .app-shell.segment-study-shell .segment-translation-area h3 {
 	margin: 0 0 6px;
-	color: var(--text-soft);
+	color: var(--color-text-secondary);
 	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.12em;
@@ -309,7 +309,7 @@
 }
 .segment-translations .segment-translation-hint,
 .segment-translations .segment-translation-context {
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 12px;
 }
 @media (max-width: 600px) {

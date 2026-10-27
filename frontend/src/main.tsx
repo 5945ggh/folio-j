@@ -2,10 +2,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { App, appRoutes } from "./App";
+import { startAppTheme } from "./theme/browser";
 import "./styles.css";
 import "./catalog/source-content.css";
 import "./catalog/sources-s2.css";
 import "./catalog/import-dialog.css";
+
+startAppTheme();
 
 const queryClient = new QueryClient({
 	defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },

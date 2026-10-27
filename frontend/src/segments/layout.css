@@ -1,12 +1,13 @@
 .app-shell.segment-study-shell {
 	--sidebar-width: 0px;
-	--accent: #111;
-	--text: #26282d;
+	--accent: light-dark(#111, var(--color-text-strong));
+	--accent-solid: light-dark(#111, var(--color-accent-solid));
+	--text: var(--color-text);
 	/* Reading column uses a four-step gray ladder so the Japanese original
 	   stays the only foreground subject; support text steps back in order. */
-	--text-soft: #565d66;
-	--muted: #757c86;
-	--faint: #858b94;
+	--text-soft: light-dark(#565d66, var(--color-text-secondary));
+	--muted: light-dark(#757c86, var(--color-text-muted));
+	--faint: light-dark(#858b94, var(--color-text-faint));
 	display: grid;
 	grid-template-columns: 56px minmax(0, 1fr);
 	height: 100dvh;
@@ -97,7 +98,7 @@
 	border: 1px solid var(--border);
 	border-radius: 7px;
 	background: var(--surface);
-	box-shadow: 0 8px 24px #20252c14;
+	box-shadow: 0 8px 24px light-dark(#20252c14, var(--color-shadow));
 }
 .app-shell.segment-study-shell .segment-tools-menu button {
 	display: block;
@@ -201,7 +202,7 @@
 	border-radius: 7px;
 	background: var(--surface);
 	color: inherit;
-	box-shadow: 0 8px 24px #20252c14;
+	box-shadow: 0 8px 24px light-dark(#20252c14, var(--color-shadow));
 }
 .app-shell.segment-study-shell .segment-create-menu .button {
 	justify-content: flex-start;
@@ -300,7 +301,7 @@
 
 /* Match the neutral Source controls throughout this focused workspace. */
 .app-shell.segment-study-shell .button.primary:hover:not(:disabled) {
-	background: #2b2b2b;
+	background: light-dark(#2b2b2b, var(--color-accent-hover));
 }
 .app-shell.segment-study-shell .button.secondary {
 	color: var(--text-soft);
@@ -308,7 +309,7 @@
 .app-shell.segment-study-shell .button.secondary:hover:not(:disabled),
 .app-shell.segment-study-shell .chat-new-button:hover {
 	background: var(--sidebar);
-	border-color: #d4d6da;
+	border-color: light-dark(#d4d6da, var(--color-border));
 }
 .app-shell.segment-study-shell .chat-new-button,
 .app-shell.segment-study-shell .chat-config summary span:last-child,
@@ -316,18 +317,18 @@
 	color: var(--text-soft);
 }
 .app-shell.segment-study-shell :focus-visible {
-	outline-color: #747982;
+	outline-color: light-dark(#747982, var(--color-focus));
 }
 .app-shell.segment-study-shell .conversation-resizer:hover::before,
 .app-shell.segment-study-shell .conversation-resizer:focus-visible::before {
-	background: #d4d6da;
+	background: light-dark(#d4d6da, var(--color-border-strong));
 }
 .app-shell.segment-study-shell .conversation-resizer:hover::after,
 .app-shell.segment-study-shell .conversation-resizer:focus-visible::after {
-	background: #747982;
+	background: light-dark(#747982, var(--color-focus));
 }
 .app-shell.segment-study-shell .chat-artifact-button {
 	border-color: var(--border);
 	background: var(--sidebar);
-	color: #535963;
+	color: light-dark(#535963, var(--color-text-secondary));
 }

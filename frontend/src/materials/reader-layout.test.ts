@@ -104,6 +104,8 @@ test("paint-only changes and late readings leave stable geometry unmeasured", ()
 			{ ...surface },
 			() => events.push("paint"),
 			() => assert.fail("layout update"),
+			() =>
+				assert.fail("paint-only updates must preserve running inline motion"),
 		);
 	assert.deepEqual(events, ["paint", "paint", "paint"]);
 	assert.equal(layout.canSample(size), true);
@@ -346,4 +348,66 @@ test("failed complete reference projection keeps pending target and never sample
 	assert.equal(completed, 1);
 	assert.equal(layout.canSample(size), true);
 	layout.cancelSave();
+});
+
+test("geometry commits stabilize old inline motion before capturing and replacing the surface", () => {
+	const { layout, surface, events } = fixture();
+	let moving = true;
+	layout.commit(
+		{
+			...surface,
+			geometry: "new-font",
+			capture: () => {
+				events.push("capture");
+				assert.equal(
+					moving,
+					false,
+					"Anchor sampling requires settled visual geometry",
+				);
+				return 777;
+			},
+			restore: (anchor) => {
+				events.push("restore");
+				assert.equal(
+					anchor,
+					777,
+					"Font reflow restores the current source rather than an earlier fallback",
+				);
+				return () => events.push("restored");
+			},
+		},
+		() => assert.fail("Geometry changes must not use the paint path"),
+		() => events.push("update"),
+		() => {
+			events.push("stabilize");
+			// Finishing a closing output can itself reflow the old surface.
+			layout.reflow();
+			assert.deepEqual(events, [
+				"stabilize",
+				"capture",
+				"resize",
+				"restore",
+				"restored",
+			]);
+			moving = false;
+			events.push("stabilized");
+		},
+	);
+	assert.deepEqual(events, [
+		"stabilize",
+		"capture",
+		"resize",
+		"restore",
+		"restored",
+		"stabilized",
+		"capture",
+		"update",
+		"resize",
+		"restore",
+		"restored",
+	]);
+	// Inline output changes use ordinary reflow and retain their own animation lifecycle.
+	events.length = 0;
+	layout.reflow();
+	assert.deepEqual(events, ["capture", "resize", "restore", "restored"]);
 });

@@ -17,6 +17,7 @@ import { InlineTranslation } from "./inline-translation.ts";
 import { currentSurface } from "./position.ts";
 import type { BookUiPreferences } from "./preferences.ts";
 import {
+	applyFramePalette,
 	applyFramePresentation,
 	normalizeFrameImages,
 } from "./presentation.ts";
@@ -59,7 +60,7 @@ export function partDocument(
 			.map(([k, v]) => `${k}="${htmlEscape(v)}"`)
 			.join(" ");
 	// Compiled author CSS is isolated in this document; CSP prevents external resource loads.
-	return `<!doctype html><html ${attrs(resource.html_attributes)}><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; script-src 'none'; connect-src 'none'"><style>${resource.css.replace(/<\/style/gi, "&lt;/style")}</style><style>html,body{margin:0!important;padding:0!important;background:transparent!important;}body{font-size:${settings.font_size}px!important;line-height:${settings.line_height}!important;writing-mode:${settings.writing_mode}!important;color:#292b28!important;}img{max-width:100%;object-fit:contain;}ruby rt{font-size:.55em;}html[data-reader-ruby-scope="original"] ruby[data-auto-ruby]{display:contents!important;}html[data-reader-ruby-scope="original"] ruby[data-auto-ruby] rt{display:none!important;}a{pointer-events:none;}html,body{overflow:hidden!important;}</style></head><body ${attrs(resource.body_attributes)}>${part.html}</body></html>`;
+	return `<!doctype html><html ${attrs(resource.html_attributes)}><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; script-src 'none'; connect-src 'none'"><style>${resource.css.replace(/<\/style/gi, "&lt;/style")}</style><style>html,body{margin:0!important;padding:0!important;background:transparent!important;}body{font-size:${settings.font_size}px!important;line-height:${settings.line_height}!important;writing-mode:${settings.writing_mode}!important;color:var(--reader-fg)!important;}img{max-width:100%;object-fit:contain;}ruby rt{font-size:.55em;}html[data-reader-ruby-scope="original"] ruby[data-auto-ruby]{display:contents!important;}html[data-reader-ruby-scope="original"] ruby[data-auto-ruby] rt{display:none!important;}a{pointer-events:none;}html,body{overflow:hidden!important;}</style></head><body ${attrs(resource.body_attributes)}>${part.html}</body></html>`;
 }
 function applyDocumentSettings(doc: Document, settings: Settings) {
 	doc.body.style.setProperty(
@@ -369,6 +370,26 @@ export class ReaderFrames {
 		for (const frame of this.frames.values())
 			refreshSearchHighlightForeground(frame.doc);
 	}
+	/** Non-geometric preferences can change without replacing ruby event bindings. */
+	presentation(theme: "white" | "black", bookUi: BookUiPreferences): void {
+		for (const frame of this.frames.values()) {
+			applyFramePalette(frame.doc, theme);
+			const root = frame.doc.documentElement;
+			if (
+				root.dataset.readerRuby !== bookUi.ruby ||
+				root.dataset.readerRubyScope !== (bookUi.rubyScope ?? "original")
+			) {
+				frame.presentationCleanup();
+				frame.presentationCleanup = applyFramePresentation(
+					frame.doc,
+					theme,
+					bookUi,
+				);
+			}
+		}
+		this.refreshSearchHighlightForeground();
+	}
+
 	update(
 		chapter: Chapter,
 		settings: Settings,

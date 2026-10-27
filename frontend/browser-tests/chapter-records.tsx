@@ -702,18 +702,35 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			),
 			"Translation marks must use dashed underlines",
 		);
-		const solidColor =
-			/::highlight\(folio-study\)\{[^}]*text-decoration-color:(#[\da-f]{6})/i.exec(
-				markStyle,
-			)?.[1];
-		const translationColor =
-			/::highlight\(folio-translation\)\{[^}]*text-decoration-color:(#[\da-f]{8})/i.exec(
-				markStyle,
-			)?.[1];
+		const view = doc.defaultView;
+		check(view, "Record marks require a live frame");
+		const canvas = doc.createElement("canvas");
+		canvas.width = canvas.height = 1;
+		const context = canvas.getContext("2d", { willReadFrequently: true });
+		check(context, "Record mark paint parser unavailable");
+		const markColor = (name: string) => {
+			context.clearRect(0, 0, 1, 1);
+			context.fillStyle = view.getComputedStyle(
+				doc.body,
+				`::highlight(${name})`,
+			).textDecorationColor;
+			context.fillRect(0, 0, 1, 1);
+			return context.getImageData(0, 0, 1, 1).data;
+		};
+		const solidColor = markColor("folio-study");
+		const translationColor = markColor("folio-translation");
 		check(
-			solidColor &&
-				translationColor?.startsWith(solidColor) &&
-				Number.parseInt(translationColor.slice(-2), 16) < 255,
+			[0, 1, 2].every(
+				(channel) =>
+					Math.abs(
+						(solidColor[channel] ?? 0) - (translationColor[channel] ?? 0),
+					) <= 1,
+			) &&
+				(solidColor[0] ?? 0) > (solidColor[1] ?? 0) &&
+				(solidColor[0] ?? 0) > (solidColor[2] ?? 0) &&
+				solidColor[3] === 255 &&
+				(translationColor[3] ?? 0) > 0 &&
+				(translationColor[3] ?? 255) < 255,
 			"Translation dash must share the segment red with lower emphasis in each theme",
 		);
 		const tabs = [...h.container.querySelectorAll('[role="tab"]')].map(

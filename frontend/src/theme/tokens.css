@@ -1,0 +1,50 @@
+:root {
+	color-scheme: light dark;
+	--color-canvas: light-dark(#f7f8f9, #15181d);
+	--color-surface: light-dark(#fff, #1c2027);
+	--color-surface-subtle: light-dark(#fafbfc, #20252d);
+	--color-surface-muted: light-dark(#f3f4f6, #252b34);
+	--color-surface-hover: light-dark(#f3f5f8, #2b3340);
+	--color-surface-active: light-dark(#eaf0fc, #293c58);
+	--color-surface-raised: light-dark(#fff, #252b34);
+	--color-text: light-dark(#26282d, #e3e7ee);
+	--color-text-strong: light-dark(#252526, #f1f3f7);
+	--color-text-secondary: light-dark(#535c69, #bdc5d1);
+	--color-text-muted: light-dark(#686e78, #a5afbf);
+	--color-text-faint: light-dark(#92969a, #929eb1);
+	--color-text-disabled: light-dark(#aaa, #788292);
+	--color-text-on-accent: #fff;
+	--color-border: light-dark(#e6e8eb, #3a4351);
+	--color-border-subtle: light-dark(#eee, #303843);
+	--color-border-strong: light-dark(#ced4de, #586576);
+	--color-accent: light-dark(#2168d4, #8db7ff);
+	--color-accent-solid: light-dark(#2168d4, #2f72d2);
+	--color-accent-hover: light-dark(#1957b5, #2869c6);
+	--color-accent-soft: light-dark(#edf3f9, #273a54);
+	--color-accent-border: light-dark(#c9d9e9, #49698e);
+	--color-focus: light-dark(#6b94b8, #9ec1ff);
+	--color-danger: light-dark(#a8524e, #f2a19a);
+	--color-danger-solid: light-dark(#a8524e, #a84442);
+	--color-danger-hover: light-dark(#8f403c, #923b39);
+	--color-danger-soft: light-dark(#fbefea, #3c272a);
+	--color-danger-border: light-dark(#e6c9c4, #765052);
+	--color-success: light-dark(#466b53, #9bceb0);
+	--color-success-soft: light-dark(#eef5ef, #25372e);
+	--color-success-border: light-dark(#d1e3d5, #486451);
+	--color-warning: light-dark(#8e774e, #e0c188);
+	--color-warning-soft: light-dark(#fffbf4, #342e23);
+	--color-warning-border: light-dark(#e7d8b7, #6c5c3e);
+	--color-info: light-dark(#416985, #9fc4e6);
+	--color-info-soft: light-dark(#f0f5fa, #233242);
+	--color-selection: light-dark(rgb(93 132 206 / 32%), rgb(122 158 224 / 40%));
+	--color-overlay: light-dark(rgb(20 25 35 / 30%), rgb(0 0 0 / 58%));
+	--color-shadow: light-dark(rgb(20 25 35 / 12%), rgb(0 0 0 / 35%));
+}
+
+:root[data-theme="light"] {
+	color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+	color-scheme: dark;
+}

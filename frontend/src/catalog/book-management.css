@@ -35,7 +35,7 @@
 .book-edit-note {
 	font-size: 12px;
 	line-height: 1.7;
-	color: var(--muted);
+	color: var(--color-text-muted);
 }
 .app-shell.book-details-page > .page-content {
 	width: 100%;
@@ -48,8 +48,8 @@
 	align-items: center;
 	gap: 14px;
 	min-height: 64px;
-	border-bottom: 1px solid var(--border);
-	color: var(--muted);
+	border-bottom: 1px solid var(--color-border);
+	color: var(--color-text-muted);
 	font-size: 13px;
 }
 .book-details-back {
@@ -57,14 +57,14 @@
 	align-items: center;
 	gap: 8px;
 	min-height: 32px;
-	color: #424954;
+	color: var(--color-text-secondary);
 }
 .book-details-back:hover {
-	color: var(--accent);
+	color: var(--color-accent);
 }
 .book-details-toolbar-divider {
 	height: 14px;
-	border-left: 1px solid var(--border);
+	border-left: 1px solid var(--color-border);
 }
 .book-details {
 	display: grid;
@@ -81,10 +81,10 @@
 .book-details-cover {
 	height: 214px;
 	padding: 4px;
-	border: 1px solid var(--border);
+	border: 1px solid var(--color-border);
 	border-radius: 7px;
-	background: #fff;
-	box-shadow: 0 2px 6px #24334a0a;
+	background: var(--color-surface);
+	box-shadow: 0 2px 6px light-dark(#24334a0a, var(--color-shadow));
 }
 .book-details-cover img,
 .book-details-cover .book-cover-placeholder {
@@ -102,7 +102,7 @@
 }
 .book-details-summary {
 	margin: 6px 0 18px;
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 12px;
 }
 .book-details-actions {
@@ -116,21 +116,21 @@
 	justify-content: center;
 	min-height: 32px;
 	padding: 6px 11px;
-	border: 1px solid var(--border);
+	border: 1px solid var(--color-border);
 	border-radius: 6px;
-	background: #fff;
-	color: #424954;
+	background: var(--color-surface);
+	color: var(--color-text-secondary);
 	font: inherit;
 	font-size: 12px;
 	line-height: 1.4;
 }
 .book-details-action:hover {
-	background: #f6f8fb;
+	background: var(--color-surface-hover);
 }
 .book-details-action.primary {
-	border-color: var(--accent);
-	background: var(--accent);
-	color: #fff;
+	border-color: var(--color-accent-solid);
+	background: var(--color-accent-solid);
+	color: var(--color-text-on-accent);
 }
 .book-details-action.primary:hover {
 	filter: brightness(0.94);
@@ -139,26 +139,26 @@
 	display: grid;
 	grid-column: 2;
 	margin: 0;
-	border-top: 1px solid var(--border);
+	border-top: 1px solid var(--color-border);
 }
 .book-details-fields > div {
 	display: grid;
 	grid-template-columns: 80px minmax(0, 1fr);
 	gap: 16px;
 	padding: 12px 0;
-	border-bottom: 1px solid #f0f1f4;
+	border-bottom: 1px solid var(--color-border-subtle);
 	font-size: 13px;
 	line-height: 1.6;
 }
 .book-details-fields dt {
-	color: var(--muted);
+	color: var(--color-text-muted);
 }
 .book-details-fields dd {
 	margin: 0;
 	overflow-wrap: anywhere;
 }
 .book-details-fields a:hover {
-	color: var(--accent);
+	color: var(--color-accent);
 }
 @media (max-width: 640px) {
 	.app-shell.book-details-page > .page-content {

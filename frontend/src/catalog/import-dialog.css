@@ -1,14 +1,14 @@
 .confirm-card.import-dialog {
-	--accent: #111;
+	--import-primary: light-dark(#111, var(--color-accent-solid));
 	width: min(560px, calc(100vw - 32px));
 	max-height: calc(100dvh - 32px);
 	padding: 0;
 	overflow: hidden;
-	border: 1px solid var(--border);
+	border: 1px solid var(--color-border);
 	border-radius: 12px;
-	background: white;
-	color: #292d35;
-	box-shadow: 0 12px 45px #20293820;
+	background: var(--color-surface);
+	color: var(--color-text);
+	box-shadow: 0 12px 45px light-dark(#20293820, var(--color-shadow));
 }
 .confirm-card.import-dialog[open],
 .import-view:not([hidden]),
@@ -22,7 +22,7 @@
 	display: none;
 }
 .import-dialog::backdrop {
-	background: #20273538;
+	background: light-dark(#20273538, var(--color-overlay));
 }
 .import-dialog-heading {
 	flex: none;
@@ -35,7 +35,7 @@
 }
 .confirm-card.import-dialog .import-dialog-heading p {
 	margin: 8px 0 0;
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 13px;
 	line-height: 1.6;
 }
@@ -57,27 +57,27 @@
 .import-dialog .field {
 	min-width: 0;
 	gap: 9px;
-	color: #464c56;
+	color: var(--color-text-secondary);
 	font-size: 13px;
 	font-weight: 500;
 }
 .import-dialog .field input,
 .import-dialog .field textarea,
 .import-dialog .field select {
-	border-color: var(--border);
+	border-color: var(--color-border);
 	border-radius: 7px;
 	font-size: 13px;
 }
 .import-dialog .field select {
 	appearance: none;
 	padding-right: 40px;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2352565e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23858d9b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
 	background-repeat: no-repeat;
 	background-position: right 14px center;
 	background-size: 14px 14px;
 }
 .confirm-card.import-dialog :is(button, input, select, textarea):focus-visible {
-	outline: 2px solid #8a8f98;
+	outline: 2px solid var(--color-focus);
 	outline-offset: 3px;
 }
 .import-field-heading {
@@ -93,7 +93,7 @@
 	padding: 2px 0;
 	border: 0;
 	background: transparent;
-	color: var(--accent);
+	color: var(--color-accent);
 	font-size: 12px;
 }
 .import-text-button svg {
@@ -109,16 +109,16 @@
 	align-items: center;
 	gap: 14px;
 	padding: 18px 16px;
-	border: 1px solid var(--border);
+	border: 1px solid var(--color-border);
 	border-radius: 9px;
-	background: #f8f9fb;
+	background: var(--color-surface-subtle);
 	cursor: pointer;
 }
 .import-file-picker:hover:not(:has(:disabled)) {
-	border-color: var(--accent);
+	border-color: var(--color-accent);
 }
 .import-file-picker:focus-within {
-	outline: 2px solid var(--accent);
+	outline: 2px solid var(--color-accent);
 	outline-offset: 3px;
 }
 .import-file-picker:has(:disabled) {
@@ -131,10 +131,10 @@
 	width: 40px;
 	height: 46px;
 	flex: none;
-	border: 1px solid var(--border);
+	border: 1px solid var(--color-border);
 	border-radius: 7px;
-	background: white;
-	color: var(--muted);
+	background: var(--color-surface);
+	color: var(--color-text-muted);
 }
 .import-file-icon svg {
 	width: 22px;
@@ -148,19 +148,19 @@
 	min-width: 0;
 }
 .import-file-copy strong {
-	color: #303641;
+	color: var(--color-text-strong);
 	font-weight: 500;
 	line-height: 1.6;
 	overflow-wrap: anywhere;
 }
 .import-file-copy > span {
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 12px;
 	font-weight: 400;
 }
 .import-file-action {
 	flex: none;
-	color: var(--accent);
+	color: var(--color-accent);
 	font-size: 12px;
 }
 .import-dialog .actions {
@@ -169,7 +169,7 @@
 	gap: 10px;
 	margin: 0;
 	padding: 18px 24px;
-	border-top: 1px solid var(--border);
+	border-top: 1px solid var(--color-border);
 }
 .import-dialog .button {
 	min-height: 36px;
@@ -177,11 +177,16 @@
 	border-radius: 7px;
 	font-size: 13px;
 }
+.import-dialog .button.primary {
+	background: var(--import-primary);
+	border-color: var(--import-primary);
+	color: var(--color-text-on-accent);
+}
 .import-dialog .button.primary:hover:not(:disabled) {
-	background: #2b2b2b;
+	background: light-dark(#2b2b2b, var(--color-accent-hover));
 }
 .import-dialog .button.secondary {
-	color: #52565e;
+	color: var(--color-text-secondary);
 }
 .import-dialog .import-source-form > .inline-error {
 	margin: 0 24px 20px;

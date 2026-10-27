@@ -104,7 +104,6 @@ import {
 	writeBookUiPreferences,
 	writeReaderUiPreferences,
 } from "./preferences";
-import { applyFramePresentation } from "./presentation";
 import { ReaderIcon, ReaderPanel, ReaderSettings } from "./ReaderControls";
 import {
 	ReaderDirectImageViewer,
@@ -1686,19 +1685,8 @@ function Reader({
 		const root = container.current;
 		const data = chapter.data;
 		if (!root || !data) return;
-		const presentation = () => {
-			for (const frame of frames.current.values()) {
-				frame.presentationCleanup();
-				frame.presentationCleanup = applyFramePresentation(
-					frame.doc,
-					theme,
-					bookUi,
-				);
-			}
-			frames.current.refreshSearchHighlightForeground();
-		};
+
 		try {
-			frames.current.finishInlineMotion();
 			layout.current.commit(
 				{
 					generation: generation.current,
@@ -1722,11 +1710,12 @@ function Reader({
 					},
 					restore,
 				},
-				presentation,
+				() => frames.current.presentation(theme, bookUi),
 				() => {
 					jumpReading.current.pause();
 					frames.current.update(data, settings, theme, bookUi, readings.data);
 				},
+				() => frames.current.finishInlineMotion(),
 			);
 		} catch (failure) {
 			setError(failure instanceof Error ? failure : new Error(String(failure)));
@@ -1873,7 +1862,6 @@ function Reader({
 		recordMarks,
 		ui.marks.studySegmentUnderlines,
 		ui.marks.studySegmentMargins,
-		theme,
 		panels.left,
 		panels.right,
 		leftView.value,

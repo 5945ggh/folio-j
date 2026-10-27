@@ -79,14 +79,22 @@ export class ReaderLayout<A> {
 		surface: LayoutSurface<A>,
 		presentation: () => void,
 		update: () => void,
+		stabilize?: () => void,
 	): void {
+		const paintOnly =
+			this.surface?.generation === surface.generation &&
+			this.appliedGeometry === surface.geometry &&
+			!this.recovery.restoring;
+		// Settle old visual geometry before replacing the surface or sampling its anchor.
+		// Ordinary reflow() also drives inline animations and must not run this preparation.
+		if (!paintOnly) stabilize?.();
 		if (this.surface?.generation !== surface.generation) {
 			this.ready.clear();
 			this.appliedGeometry = null;
 			this.recovery.invalidate();
 		}
 		this.surface = surface;
-		if (this.appliedGeometry === surface.geometry && !this.recovery.restoring) {
+		if (paintOnly) {
 			presentation();
 			return;
 		}

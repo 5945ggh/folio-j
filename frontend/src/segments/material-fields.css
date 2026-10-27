@@ -5,7 +5,8 @@
 	margin: 0;
 	padding: 20px 0;
 	border: 0;
-	border-top: 1px solid var(--border, #e5e7eb);
+	border-top: 1px solid
+		var(--border, light-dark(#e5e7eb, var(--color-border-subtle)));
 }
 .segment-data-group:first-child {
 	padding-top: 8px;
@@ -14,7 +15,7 @@
 .segment-data-group legend,
 .segment-group-title {
 	padding: 0;
-	color: var(--text, #292c2e);
+	color: var(--text, light-dark(#292c2e, var(--color-text-strong)));
 	font-size: 13px;
 	font-weight: 650;
 	letter-spacing: 0.02em;
@@ -25,14 +26,14 @@
 	margin-bottom: 2px;
 }
 .segment-data-form .field {
-	color: var(--text-soft, #565d66);
+	color: var(--text-soft, light-dark(#565d66, var(--color-text-secondary)));
 	font-weight: 500;
 }
 .segment-data-form textarea[lang="ja"] {
 	font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
 }
 .segment-context-editor summary {
-	color: var(--muted, #737b80);
+	color: var(--muted, light-dark(#737b80, var(--color-text-muted)));
 	font-size: 12px;
 	cursor: pointer;
 }
@@ -44,13 +45,13 @@
 	align-items: center;
 	gap: 10px;
 	margin-bottom: 10px;
-	color: var(--text-soft, #565d66);
+	color: var(--text-soft, light-dark(#565d66, var(--color-text-secondary)));
 	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.12em;
 }
 .segment-fixed-heading small {
-	color: var(--muted, #737b80);
+	color: var(--muted, light-dark(#737b80, var(--color-text-muted)));
 	font-weight: 400;
 	letter-spacing: normal;
 }
@@ -58,7 +59,7 @@
 	max-height: 132px;
 	overflow: auto;
 	padding: 10px 14px;
-	border-left: 2px solid #dcdee3;
+	border-left: 2px solid light-dark(#dcdee3, var(--color-border));
 	font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
 	font-size: 17px;
 	line-height: 1.9;
@@ -70,8 +71,9 @@
 	bottom: -28px;
 	margin-top: 0;
 	padding: 14px 0 4px;
-	border-top: 1px solid var(--border, #e5e7eb);
-	background: var(--surface, #fff);
+	border-top: 1px solid
+		var(--border, light-dark(#e5e7eb, var(--color-border-subtle)));
+	background: var(--surface, var(--color-surface));
 }
 .segment-data-group .segment-material-origin p {
 	margin: 0 0 6px;
@@ -81,7 +83,8 @@
 .segment-material-group {
 	margin-top: 24px;
 	padding-top: 20px;
-	border-top: 1px solid var(--border, #e5e7eb);
+	border-top: 1px solid
+		var(--border, light-dark(#e5e7eb, var(--color-border-subtle)));
 }
 .segment-material-group:first-child {
 	border-top: 0;

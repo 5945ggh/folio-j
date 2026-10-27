@@ -8,21 +8,24 @@
 	align-items: flex-end;
 	justify-content: flex-end;
 	padding: 16px;
-	background: #ffffff99;
+	background: light-dark(
+		#ffffff99,
+		color-mix(in srgb, var(--color-surface) 65%, transparent)
+	);
 	border-radius: inherit;
 }
 .import-preparation-indicator {
 	display: inline-block;
 	width: 26px;
 	height: 26px;
-	border: 2px solid #727985;
+	border: 2px solid var(--color-text-muted);
 	border-right-color: transparent;
 	border-radius: 50%;
 	animation: import-card-preparing 1s linear infinite;
 }
 .book-import-status {
 	margin: 8px 0 0;
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 12px;
 }
 .book-import-card .inline-error {
@@ -38,7 +41,7 @@
 	padding: 3px 0;
 	border: 0;
 	background: transparent;
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 12px;
 	cursor: pointer;
 }

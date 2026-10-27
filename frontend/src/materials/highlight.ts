@@ -252,7 +252,7 @@ export function prepareStudyUnderlines(
 	doc: Document,
 	ranges: readonly Range[],
 	active: readonly Range[],
-	theme: "white" | "black",
+	_theme: "white" | "black",
 	translations: readonly Range[] = [],
 	activeTranslations: readonly Range[] = [],
 ): () => void {
@@ -294,8 +294,8 @@ export function prepareStudyUnderlines(
 			style.id = "folio-study-style";
 			doc.head.append(style);
 		}
-		const red = theme === "black" ? "#ff9993" : "#c73535";
-		const translationRed = `${red}b3`;
+		const red = "var(--reader-study)";
+		const translationRed = "var(--reader-translation)";
 		style.textContent = `::highlight(folio-study){text-decoration-line:underline;text-decoration-style:solid;text-decoration-color:${red};text-decoration-thickness:1px;text-underline-offset:2px;text-underline-position:under left;}::highlight(folio-study-active){text-decoration-line:underline;text-decoration-style:solid;text-decoration-color:${red};text-decoration-thickness:2px;text-underline-offset:2px;text-underline-position:under left;}::highlight(folio-translation){text-decoration-line:underline;text-decoration-style:dashed;text-decoration-color:${translationRed};text-decoration-thickness:1px;text-underline-offset:2px;text-underline-position:under left;}::highlight(folio-translation-active){text-decoration-line:underline;text-decoration-style:dashed;text-decoration-color:${red};text-decoration-thickness:2px;text-underline-offset:2px;text-underline-position:under left;}`;
 		if (vertical) {
 			style.textContent = style.textContent.replaceAll(

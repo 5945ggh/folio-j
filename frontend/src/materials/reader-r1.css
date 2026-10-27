@@ -1,13 +1,25 @@
 .reader-r1 {
-	--reader-bg: #fff;
-	--reader-fg: #282828;
-	--reader-muted: #6d6d6d;
-	--reader-line: #e9e9e9;
-	--reader-soft: #f6f6f6;
-	--reader-error: #a3443e;
-	--reader-selected-bg: #eaf0fc;
-	--reader-selected-fg: #365b9f;
-	--reader-selection-bg: rgba(93, 132, 206, 0.32);
+	/* Reader owns its color scheme independently of the application. */
+	--reader-bg: light-dark(#fff, #191919);
+	--reader-fg: light-dark(#282828, #e5e5e5);
+	--reader-muted: light-dark(#6d6d6d, #999);
+	--reader-line: light-dark(#e9e9e9, #393939);
+	--reader-soft: light-dark(#f6f6f6, #252525);
+	--reader-error: light-dark(#a3443e, #ef9a9a);
+	--reader-selected-bg: light-dark(#eaf0fc, #293951);
+	--reader-selected-fg: light-dark(#365b9f, #c5d8ff);
+	--reader-selection-bg: light-dark(
+		rgba(93, 132, 206, 0.32),
+		rgba(122, 158, 224, 0.4)
+	);
+	--reader-study: light-dark(#c73535, #ff9993);
+	--reader-translation: light-dark(#c73535b3, #ff9993b3);
+	--reader-error-border: light-dark(#ba6464, #ef9a9a);
+	--reader-tool-focus: light-dark(#5682b8, #9ec1ff);
+	--reader-mark-focus: light-dark(#ae4a51, #ff9993);
+	--reader-search-match: light-dark(#d4ac4a, #e2bd64);
+	--reader-focus: light-dark(#6d8dd0, #9ec1ff);
+	--reader-accent: light-dark(#5c7bb8, #9ec1ff);
 	--reader-toolbar-opacity: 80%;
 	--reader-top-space: 82px;
 	--reader-bottom-space: calc(80px + env(safe-area-inset-bottom, 0px));
@@ -26,15 +38,6 @@
 	font-family: system-ui, sans-serif;
 }
 .reader-r1[data-theme="black"] {
-	--reader-bg: #191919;
-	--reader-fg: #e5e5e5;
-	--reader-muted: #999;
-	--reader-line: #393939;
-	--reader-soft: #252525;
-	--reader-error: #ef9a9a;
-	--reader-selected-bg: #293951;
-	--reader-selected-fg: #c5d8ff;
-	--reader-selection-bg: rgba(122, 158, 224, 0.4);
 	color-scheme: dark;
 }
 .reader-r1 button,
@@ -87,7 +90,7 @@
 	text-decoration: none;
 }
 .reader-r1 :focus-visible {
-	outline: 2px solid #6d8dd0;
+	outline: 2px solid var(--reader-focus);
 	outline-offset: 2px;
 }
 /* Keep frame content (presentation.ts) and reader chrome tints in step. */
@@ -243,7 +246,7 @@
 .reader-alerts:has(.inline-error),
 .reader-alerts:has(button) {
 	background: var(--reader-bg);
-	border: 1px solid #ba6464;
+	border: 1px solid var(--reader-error-border);
 	border-radius: 8px;
 	padding: 8px;
 	pointer-events: auto;
@@ -372,7 +375,7 @@
 }
 .reader-panel-body input[type="range"] {
 	width: 100%;
-	accent-color: #5c7bb8;
+	accent-color: var(--reader-accent);
 }
 .reader-r1 .reader-options > button {
 	flex: 1;

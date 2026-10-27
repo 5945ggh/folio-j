@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router";
 import { InlineError, Shell } from "../Shared";
 import { DeviceSpeechSettings } from "../speech";
+import { AppearanceSettings } from "../theme/AppearanceSettings";
 import { TranslationSettingsSection } from "../translation/TranslationSettings";
 import { getProviders, getSettings, settingsKeys } from "./api";
 import { LearningSettings } from "./LearningSettings";
@@ -20,14 +21,17 @@ export function SettingsPage() {
 	const history = section === "history";
 	const translation = section === "translation";
 	const speech = section === "speech";
+	const appearance = section === "appearance";
 	const settings = useQuery({
 		queryKey: settingsKeys.settings,
 		queryFn: getSettings,
+		enabled: !appearance,
 	});
 	const providers = useQuery({
 		queryKey: settingsKeys.providers,
 		queryFn: getProviders,
-		enabled: !learning && !permissions && !translation && !speech,
+		enabled:
+			!learning && !permissions && !translation && !speech && !appearance,
 		refetchInterval: (query) =>
 			query.state.data?.some((provider) =>
 				provider.models.some((model) =>
@@ -55,12 +59,22 @@ export function SettingsPage() {
 					<Link
 						to="/settings"
 						aria-current={
-							!learning && !permissions && !translation && !speech
+							!learning &&
+							!permissions &&
+							!translation &&
+							!speech &&
+							!appearance
 								? "page"
 								: undefined
 						}
 					>
 						模型与服务
+					</Link>
+					<Link
+						to="/settings?section=appearance"
+						aria-current={appearance ? "page" : undefined}
+					>
+						外观
 					</Link>
 					<Link
 						to="/settings?section=permissions"
@@ -97,34 +111,38 @@ export function SettingsPage() {
 						<>
 							<div className="settings-page-head">
 								<h2>
-									{translation
-										? "翻译"
-										: speech
-											? "设备朗读"
-											: learning
-												? "学习偏好"
-												: permissions
-													? "对话与权限"
-													: "模型与服务"}
+									{appearance
+										? "外观"
+										: translation
+											? "翻译"
+											: speech
+												? "设备朗读"
+												: learning
+													? "学习偏好"
+													: permissions
+														? "对话与权限"
+														: "模型与服务"}
 								</h2>
 								<p>
-									{translation
-										? "管理独立翻译方案与语境。"
-										: speech
-											? "选择当前浏览器提供的日语声音。"
-											: learning
-												? "让讲解适合你的学习背景和阅读习惯。"
-												: permissions
-													? "设置新对话使用工具时的默认权限。"
-													: "选择任务默认模型，管理接入的模型服务。"}
+									{appearance
+										? "选择适合当前环境的颜色模式。"
+										: translation
+											? "管理独立翻译方案与语境。"
+											: speech
+												? "选择当前浏览器提供的日语声音。"
+												: learning
+													? "让讲解适合你的学习背景和阅读习惯。"
+													: permissions
+														? "设置新对话使用工具时的默认权限。"
+														: "选择任务默认模型，管理接入的模型服务。"}
 								</p>
 							</div>
-							{settings.isPending && (
+							{!appearance && settings.isPending && (
 								<p className="settings-loading" role="status">
 									正在加载设置…
 								</p>
 							)}
-							{settings.isError && (
+							{!appearance && settings.isError && (
 								<section className="settings-state">
 									<InlineError error={settings.error} />
 									<button
@@ -136,6 +154,7 @@ export function SettingsPage() {
 									</button>
 								</section>
 							)}
+							{appearance && <AppearanceSettings />}
 							{translation && <TranslationSettingsSection />}
 							{speech && <DeviceSpeechSettings />}
 							{learning && settings.data && (
@@ -144,43 +163,47 @@ export function SettingsPage() {
 							{permissions && settings.data && (
 								<PermissionSettings settings={settings.data} />
 							)}
-							{!learning && !permissions && !translation && !speech && (
-								<>
-									{providers.isPending && (
-										<p className="settings-loading" role="status">
-											正在加载模型服务…
-										</p>
-									)}
-									{providers.isError && (
-										<section className="settings-state">
-											<InlineError error={providers.error} />
-											<button
-												className="settings-button secondary"
-												type="button"
-												onClick={() => void providers.refetch()}
+							{!learning &&
+								!permissions &&
+								!translation &&
+								!speech &&
+								!appearance && (
+									<>
+										{providers.isPending && (
+											<p className="settings-loading" role="status">
+												正在加载模型服务…
+											</p>
+										)}
+										{providers.isError && (
+											<section className="settings-state">
+												<InlineError error={providers.error} />
+												<button
+													className="settings-button secondary"
+													type="button"
+													onClick={() => void providers.refetch()}
+												>
+													重试模型服务
+												</button>
+											</section>
+										)}
+										{providers.data && (
+											<ModelDefaults
+												settings={settings.data}
+												providers={providers.data}
 											>
-												重试模型服务
-											</button>
-										</section>
-									)}
-									{providers.data && (
-										<ModelDefaults
-											settings={settings.data}
-											providers={providers.data}
-										>
-											<ProviderSettings providers={providers.data} />
-											<div className="settings-tools-footer">
-												<span className="settings-hint">
-													验证按实际调用记录保留。
-												</span>
-												<Link to="/settings?section=history">
-													查看验证历史 →
-												</Link>
-											</div>
-										</ModelDefaults>
-									)}
-								</>
-							)}
+												<ProviderSettings providers={providers.data} />
+												<div className="settings-tools-footer">
+													<span className="settings-hint">
+														验证按实际调用记录保留。
+													</span>
+													<Link to="/settings?section=history">
+														查看验证历史 →
+													</Link>
+												</div>
+											</ModelDefaults>
+										)}
+									</>
+								)}
 						</>
 					)}
 				</div>

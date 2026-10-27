@@ -5,11 +5,41 @@ import {
 	snapshotReaderFrameTargets,
 } from "./focus.ts";
 import type { BookUiPreferences } from "./preferences";
+import { frameReaderPalette, type ReaderPalette } from "./reader-palette.ts";
 export const READER_FONT_FAMILIES = {
 	mincho: '"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif',
 	gothic:
 		'"Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans CJK JP", sans-serif',
 };
+/** Color-only updates preserve the native selection, layout and ruby listeners. */
+export function applyFramePalette(
+	doc: Document,
+	theme: "white" | "black",
+	palette: ReaderPalette = frameReaderPalette(doc),
+): void {
+	let style = doc.getElementById(
+		"folio-reader-theme",
+	) as HTMLStyleElement | null;
+	if (!style) {
+		style = doc.createElement("style");
+		style.id = "folio-reader-theme";
+	}
+	// The first layer's important paint rules win over compiled author CSS.
+	// Keep layout and original image/SVG colors outside this layer.
+	style.textContent = `@layer folio-reader-theme {
+		html, body { ${Object.entries(palette)
+			.map(([name, value]) => `${name}:${value}!important;`)
+			.join(
+				"",
+			)} color-scheme: ${theme === "black" ? "dark" : "light"} !important; }
+		html, body { color: var(--reader-fg) !important; background-color: var(--reader-bg) !important; }
+		body :not(img):not(svg):not(svg *) { color: inherit !important; background-color: transparent !important; }
+		html, body, body :not(img):not(svg):not(svg *) { background-image: none !important; -webkit-text-fill-color: currentColor !important; text-shadow: none !important; }
+		::selection { background-color: var(--reader-selection-bg) !important; }
+	}`;
+	doc.head.prepend(style);
+}
+
 /** Presentation only: preserve all original text/image leaves and ruby geometry. */
 export function applyFramePresentation(
 	doc: Document,
@@ -17,26 +47,7 @@ export function applyFramePresentation(
 	preferences: BookUiPreferences,
 ): () => void {
 	snapshotReaderFrameTargets(doc);
-	let themeStyle = doc.getElementById(
-		"folio-reader-theme",
-	) as HTMLStyleElement | null;
-	if (!themeStyle) {
-		themeStyle = doc.createElement("style");
-		themeStyle.id = "folio-reader-theme";
-	}
-	// Important declarations in the first layer beat author CSS, including its
-	// own layers. Compiled EPUBs omit inline styles; keep layout rules outside
-	// this layer and in their existing source order.
-	// Selection tints mirror --reader-selection-bg in reader-r1.css.
-	const selectionBg =
-		theme === "black" ? "rgba(122, 158, 224, 0.4)" : "rgba(93, 132, 206, 0.32)";
-	themeStyle.textContent = `@layer folio-reader-theme {
-		html, body { color: ${theme === "black" ? "#e5e5e5" : "#282828"} !important; background-color: ${theme === "black" ? "#191919" : "#fff"} !important; }
-		body :not(img):not(svg):not(svg *) { color: inherit !important; background-color: transparent !important; }
-		html, body, body :not(img):not(svg):not(svg *) { background-image: none !important; -webkit-text-fill-color: currentColor !important; text-shadow: none !important; }
-		::selection { background-color: ${selectionBg} !important; }
-	}`;
-	doc.head.prepend(themeStyle);
+	applyFramePalette(doc, theme);
 	let style = doc.getElementById(
 		"folio-reader-presentation",
 	) as HTMLStyleElement | null;

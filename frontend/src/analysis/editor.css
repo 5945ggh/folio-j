@@ -20,10 +20,10 @@
 }
 .analysis-editor-notice {
 	padding: 12px 14px;
-	border: 1px solid #dce4ef;
+	border: 1px solid light-dark(#dce4ef, var(--color-border-subtle));
 	border-radius: 6px;
-	background: #f6f8fb;
-	color: #46576b;
+	background: light-dark(#f6f8fb, var(--color-surface-subtle));
+	color: light-dark(#46576b, var(--color-accent));
 	font-size: 13px;
 	line-height: 1.8;
 }

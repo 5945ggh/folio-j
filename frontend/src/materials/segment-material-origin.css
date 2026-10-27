@@ -6,7 +6,7 @@
 	min-width: 0;
 	max-width: 100%;
 	padding: 0 0 2px;
-	color: var(--muted, #737b80);
+	color: light-dark(#737b80, var(--color-text-muted));
 	font-size: 12px;
 	line-height: 1.6;
 }
@@ -21,7 +21,7 @@
 
 .segment-material-origin-identity > svg {
 	flex: none;
-	color: var(--faint, #a6acb4);
+	color: light-dark(#a6acb4, var(--color-text-faint));
 }
 
 .segment-material-origin-text {
@@ -37,7 +37,7 @@
 }
 
 .segment-material-origin .segment-material-origin-title {
-	color: var(--text-soft, #565d66);
+	color: light-dark(#565d66, var(--color-text-secondary));
 	font-size: 13px;
 }
 

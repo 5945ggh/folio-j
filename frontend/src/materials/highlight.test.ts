@@ -148,10 +148,7 @@ test("repainting separate intervals in one document retains all intervals", asyn
 
 test("study decoration declares its own red color with longhands while preserving glyph color", async () => {
 	const { prepareStudyUnderlines } = await import("./highlight.ts");
-	for (const [theme, red] of [
-		["white", "#c73535"],
-		["black", "#ff9993"],
-	] as const) {
+	for (const theme of ["white", "black"] as const) {
 		const h = harness();
 		const range = h.doc.createRange();
 		prepareStudyUnderlines(h.doc, [range], [range], theme)();
@@ -165,7 +162,9 @@ test("study decoration declares its own red color with longhands while preservin
 			const declarations = rule[2] ?? "";
 			assert.match(declarations, /(?:^|;)text-decoration-line:underline;/);
 			assert.match(declarations, /(?:^|;)text-decoration-style:solid;/);
-			assert.ok(declarations.includes(`text-decoration-color:${red};`));
+			assert.ok(
+				declarations.includes("text-decoration-color:var(--reader-study);"),
+			);
 			assert.doesNotMatch(
 				declarations,
 				/(?:^|;)(?:color|background(?:-color)?):/,
@@ -180,10 +179,7 @@ test("translation decoration uses a lower emphasis dashed red in both themes and
 	const { prepareStudyUnderlines, clearStudyHighlights } = await import(
 		"./highlight.ts"
 	);
-	for (const [theme, red] of [
-		["white", "#c73535"],
-		["black", "#ff9993"],
-	] as const) {
+	for (const theme of ["white", "black"] as const) {
 		const h = harness();
 		const range = h.doc.createRange();
 		highlightRange(h.doc, projection(["原文"]), 0, 2);
@@ -195,7 +191,9 @@ test("translation decoration uses a lower emphasis dashed red in both themes and
 				/::highlight\(folio-translation\)\{([^}]+)\}/,
 			)?.[1] ?? "";
 		assert.match(normal, /text-decoration-style:dashed;/);
-		assert.ok(normal.includes(`text-decoration-color:${red}b3;`));
+		assert.ok(
+			normal.includes("text-decoration-color:var(--reader-translation);"),
+		);
 		assert.match(normal, /text-underline-position:under left;/);
 		assert.doesNotMatch(normal, /(?:^|;)(?:color|background(?:-color)?):/);
 		clearStudyHighlights(h.doc);
@@ -287,8 +285,14 @@ test("vertical record lines merge each column, respect clipping and clear when r
 		layer.children.map((node) => node.attributes.get("d")),
 		["M97.5 10V50", "M147.5 10V20", "M197.5 0V30"],
 	);
-	assert.equal(layer.children[0]?.attributes.get("stroke"), "#ff9993");
-	assert.equal(layer.children[2]?.attributes.get("stroke"), "#ff9993b3");
+	assert.equal(
+		layer.children[0]?.attributes.get("stroke"),
+		"var(--reader-study)",
+	);
+	assert.equal(
+		layer.children[2]?.attributes.get("stroke"),
+		"var(--reader-translation)",
+	);
 	assert.equal(layer.children[2]?.attributes.get("stroke-dasharray"), "3 3");
 	assert.deepEqual(h.marks.get("folio-study")?.ranges, [first, next]);
 	assert.doesNotMatch(h.style.textContent, /text-decoration-line:underline/);

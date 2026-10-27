@@ -2,12 +2,12 @@
 	display: block;
 	width: 100%;
 	padding: 22px 26px;
-	border: 1px solid #dcdee3;
+	border: 1px solid light-dark(#dcdee3, var(--color-border));
 	border-radius: 12px;
 	background: var(--surface);
 	box-shadow:
-		0 1px 2px rgb(34 40 48 / 5%),
-		0 12px 32px -16px rgb(34 40 48 / 12%);
+		0 1px 2px light-dark(rgb(34 40 48 / 5%), var(--color-shadow)),
+		0 12px 32px -16px light-dark(rgb(34 40 48 / 12%), var(--color-shadow));
 	color: var(--text);
 	text-align: left;
 }

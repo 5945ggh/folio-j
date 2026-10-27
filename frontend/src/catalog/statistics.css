@@ -3,7 +3,7 @@
 	max-width: 800px;
 	margin-top: 36px;
 	padding-top: 24px;
-	border-top: 1px solid var(--border);
+	border-top: 1px solid var(--color-border);
 }
 .book-statistics-heading {
 	display: flex;
@@ -22,7 +22,7 @@
 .book-statistics-note,
 .book-statistics-state {
 	margin: 0;
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 12px;
 	line-height: 1.8;
 }
@@ -32,26 +32,26 @@
 	gap: 1px;
 	margin: 0 0 22px;
 	overflow: hidden;
-	border: 1px solid var(--border);
+	border: 1px solid var(--color-border);
 	border-radius: 8px;
-	background: var(--border);
+	background: var(--color-border);
 }
 .book-statistics-metrics > div {
 	min-width: 0;
 	padding: 15px 16px;
-	background: #fff;
+	background: var(--color-surface);
 }
 .book-statistics-metrics > div:last-child {
 	grid-column: span 2;
 }
 .book-statistics-metrics dt {
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 11px;
 	line-height: 1.7;
 }
 .book-statistics-metrics dd {
 	margin: 5px 0 0;
-	color: #303b4b;
+	color: var(--color-text-strong);
 	font-size: 22px;
 	font-variant-numeric: tabular-nums;
 	line-height: 1.4;
@@ -60,13 +60,13 @@
 .book-statistics-chart {
 	margin: 22px 0 0;
 	padding: 18px 18px 14px;
-	border: 1px solid var(--border);
+	border: 1px solid var(--color-border);
 	border-radius: 8px;
-	background: #fff;
+	background: var(--color-surface);
 }
 .book-statistics-chart figcaption {
 	margin-bottom: 12px;
-	color: #424954;
+	color: var(--color-text-secondary);
 	font-size: 13px;
 	font-weight: 550;
 }
@@ -77,27 +77,30 @@
 	overflow: visible;
 }
 .statistics-chart-grid {
-	stroke: #e8ecf2;
+	stroke: var(--color-border-subtle);
 	stroke-width: 1;
 }
 .statistics-chart-axis {
-	fill: #747982;
+	fill: var(--color-text-muted);
 	font-size: 11px;
 	font-variant-numeric: tabular-nums;
 }
 .statistics-chart-line {
 	fill: none;
-	stroke: #4778ad;
+	stroke: light-dark(#4778ad, var(--color-accent));
 	stroke-width: 2.5;
 	stroke-linecap: round;
 	stroke-linejoin: round;
 }
 .statistics-chart-area {
-	fill: #4778ad0c;
+	fill: light-dark(
+		#4778ad0c,
+		color-mix(in srgb, var(--color-accent) 10%, transparent)
+	);
 }
 .book-statistics-axis-label {
 	margin: -5px 0 0;
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 12px;
 	text-align: center;
 }
@@ -107,7 +110,7 @@
 	gap: 8px 24px;
 	margin: 12px 0 0;
 	padding: 12px 0 0;
-	border-top: 1px solid #f0f1f4;
+	border-top: 1px solid var(--color-border-subtle);
 }
 .book-statistics-thresholds > div {
 	display: flex;
@@ -117,23 +120,23 @@
 	line-height: 1.7;
 }
 .book-statistics-thresholds dt {
-	color: var(--muted);
+	color: var(--color-text-muted);
 }
 .book-statistics-thresholds dd {
 	margin: 0;
-	color: #424954;
+	color: var(--color-text-secondary);
 	font-variant-numeric: tabular-nums;
 }
 .book-statistics-rules {
 	margin-top: 18px;
-	color: var(--muted);
+	color: var(--color-text-muted);
 	font-size: 12px;
 	line-height: 1.9;
 }
 .book-statistics-rules summary {
 	width: fit-content;
 	cursor: pointer;
-	color: #576579;
+	color: var(--color-text-secondary);
 }
 .book-statistics-rules p {
 	margin: 8px 0;

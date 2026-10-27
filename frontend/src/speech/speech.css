@@ -1,7 +1,7 @@
 :where(.device-speech, .device-speech-settings, .device-speech-popover) {
-	--speech-bg: var(--surface, #fff);
-	--speech-fg: #26282d;
-	--speech-line: var(--border, #e6e8eb);
+	--speech-bg: var(--color-surface);
+	--speech-fg: var(--color-text);
+	--speech-line: var(--color-border);
 	--speech-muted: color-mix(in srgb, var(--speech-fg) 65%, var(--speech-bg));
 	--speech-soft: color-mix(in srgb, var(--speech-fg) 5%, var(--speech-bg));
 	--speech-focus: color-mix(in srgb, var(--speech-fg) 48%, var(--speech-bg));
@@ -199,8 +199,8 @@
 	background: var(--speech-bg);
 	color: var(--speech-fg);
 	box-shadow:
-		0 10px 32px #0000000d,
-		0 2px 8px #00000005;
+		0 10px 32px light-dark(#0000000d, var(--color-shadow)),
+		0 2px 8px light-dark(#00000005, var(--color-shadow));
 	font-size: 13px;
 }
 .device-speech-popover[popover][tabindex]:focus {
@@ -220,7 +220,7 @@
 	padding: 3px 6px;
 	border-radius: 999px;
 	gap: 5px;
-	box-shadow: 0 4px 18px #0000000c;
+	box-shadow: 0 4px 18px light-dark(#0000000c, var(--color-shadow));
 }
 .device-speech-bar > .device-speech-message {
 	grid-column: 1 / -1;
@@ -339,12 +339,12 @@
 	width: 18px;
 	height: 18px;
 	margin-top: 3px;
-	border: 1px solid #0000000d;
+	border: 1px solid light-dark(#0000000d, var(--speech-line));
 	border-radius: 50%;
-	background: #fff;
+	background: light-dark(var(--color-surface), var(--color-text));
 	box-shadow:
-		0 1px 3px #0000001f,
-		0 0 0 1px #00000003;
+		0 1px 3px light-dark(#0000001f, var(--color-shadow)),
+		0 0 0 1px light-dark(#00000003, var(--color-shadow));
 }
 .device-speech-rate input[type="range"]::-moz-range-track {
 	height: 24px;
@@ -356,12 +356,12 @@
 	box-sizing: border-box;
 	width: 18px;
 	height: 18px;
-	border: 1px solid #0000000d;
+	border: 1px solid light-dark(#0000000d, var(--speech-line));
 	border-radius: 50%;
-	background: #fff;
+	background: light-dark(var(--color-surface), var(--color-text));
 	box-shadow:
-		0 1px 3px #0000001f,
-		0 0 0 1px #00000003;
+		0 1px 3px light-dark(#0000001f, var(--color-shadow)),
+		0 0 0 1px light-dark(#00000003, var(--color-shadow));
 }
 .device-speech-rate-presets {
 	display: grid;
@@ -433,7 +433,7 @@
 	transform: translateX(-50%);
 	max-width: calc(100vw - 24px);
 	margin: 0;
-	box-shadow: 0 3px 14px #00000014;
+	box-shadow: 0 3px 14px light-dark(#00000014, var(--color-shadow));
 }
 .device-speech-bar > .device-speech-settings-trigger > svg {
 	grid-area: 1 / 3;

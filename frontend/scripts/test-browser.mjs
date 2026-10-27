@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { access, mkdtemp, rm } from "node:fs/promises";
+import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,7 +20,14 @@ try {
 	server = await createServer({
 		root: frontend,
 		configFile: path.join(frontend, "vite.config.ts"),
-		server: { host: "127.0.0.1", port: 0, strictPort: false, proxy: {} },
+		server: {
+			host: "127.0.0.1",
+			port: 0,
+			strictPort: false,
+			proxy: {},
+			hmr: false,
+			watch: null,
+		},
 		plugins: [
 			{
 				name: "count-chat-markdown-renders",
@@ -52,6 +59,10 @@ try {
 	const url = `http://127.0.0.1:${address.port}/browser-tests/`;
 	console.log(`Browser regression page: ${url}`);
 	for (const [width, height, query] of [
+		[1280, 900, "?suite=app-theme&system=light"],
+		[1280, 900, "?suite=app-theme&system=dark"],
+		[390, 900, "?suite=app-theme&system=light"],
+		[390, 900, "?suite=app-theme&system=dark"],
 		[1280, 900, "?suite=route-loading"],
 		[390, 900, "?suite=route-loading"],
 		[1280, 900, "?suite=route-loading&direction=vertical-rl"],
@@ -146,9 +157,21 @@ try {
 			query !== process.env.BROWSER_TEST_QUERY
 		)
 			continue;
-		const testQuery = process.env.BROWSER_TEST_BASELINE
+		let testQuery = process.env.BROWSER_TEST_BASELINE
 			? `${query}&baseline`
 			: query;
+		if (process.env.BROWSER_TEST_PREVIEW) {
+			const preview = new URLSearchParams(testQuery);
+			preview.set("preview", "");
+			preview.set("path", process.env.BROWSER_TEST_PREVIEW);
+			if (process.env.BROWSER_TEST_PANEL)
+				preview.set("panel", process.env.BROWSER_TEST_PANEL);
+			if (process.env.BROWSER_TEST_THEME)
+				preview.set("mode", process.env.BROWSER_TEST_THEME);
+			testQuery = `?${preview}`;
+		} else if (process.env.BROWSER_TEST_SCREENSHOT_DIR) {
+			testQuery += "&capture";
+		}
 		const browser = spawn(
 			chrome,
 			[
@@ -214,6 +237,24 @@ try {
 						);
 					})();
 				}
+				if (
+					message.method === "Runtime.bindingCalled" &&
+					message.params.name === "__dispatchBrowserTheme"
+				) {
+					const { id, mode } = JSON.parse(message.params.payload);
+					void (async () => {
+						await command(
+							"Emulation.setEmulatedMedia",
+							{ features: [{ name: "prefers-color-scheme", value: mode }] },
+							message.sessionId,
+						);
+						await command(
+							"Runtime.evaluate",
+							{ expression: `window.__themeResolvers.get(${id})()` },
+							message.sessionId,
+						);
+					})();
+				}
 				const waiter = pending.get(message.id);
 				if (waiter) {
 					pending.delete(message.id);
@@ -255,7 +296,21 @@ try {
 				},
 				sessionId,
 			);
-			if (new URLSearchParams(query).get("suite") === "theme") {
+			await command(
+				"Runtime.addBinding",
+				{ name: "__dispatchBrowserTheme" },
+				sessionId,
+			);
+			await command(
+				"Page.addScriptToEvaluateOnNewDocument",
+				{
+					source: `window.__themeResolvers = new Map(); window.browserTheme = (mode) => new Promise((resolve) => { const id = window.__themeResolvers.size + 1; window.__themeResolvers.set(id, resolve); window.__dispatchBrowserTheme(JSON.stringify({id,mode})); });`,
+				},
+				sessionId,
+			);
+			if (
+				["theme", "app-theme"].includes(new URLSearchParams(query).get("suite"))
+			) {
 				await command(
 					"Emulation.setEmulatedMedia",
 					{
@@ -301,6 +356,28 @@ try {
 				throw new Error(JSON.stringify(evaluated.exceptionDetails));
 			const result = evaluated.result.value;
 			if (result.status !== "passed") throw new Error(result.text);
+			if (process.env.BROWSER_TEST_SCREENSHOT_DIR) {
+				await command(
+					"Runtime.evaluate",
+					{ expression: "document.querySelector('#result').hidden = true" },
+					sessionId,
+				);
+				const directory = path.resolve(process.env.BROWSER_TEST_SCREENSHOT_DIR);
+				await mkdir(directory, { recursive: true });
+				const parameters = new URLSearchParams(testQuery);
+				const scene = (parameters.get("path") ?? "appearance")
+					.replace(/[^a-z0-9]+/gi, "-")
+					.replace(/^-|-$/g, "");
+				const filename = `${parameters.get("suite") ?? "default"}-${width}-${parameters.get("system") ?? "system"}-${parameters.get("mode") ?? "auto"}-${scene}${parameters.get("panel") ? `-${parameters.get("panel")}` : ""}.png`;
+				const captured = await command(
+					"Page.captureScreenshot",
+					{ format: "png", captureBeyondViewport: false },
+					sessionId,
+				);
+				const destination = path.join(directory, filename);
+				await writeFile(destination, Buffer.from(captured.data, "base64"));
+				console.log(`Screenshot: ${destination}`);
+			}
 			console.log(result.text);
 		} finally {
 			clearTimeout(timeout);

@@ -18,7 +18,7 @@
 .settings-page .provider-model-list {
 	border: 1px solid var(--settings-line);
 	border-radius: 10px;
-	background: white;
+	background: var(--color-surface);
 }
 .settings-page .provider-service-summary {
 	display: grid;
@@ -38,7 +38,7 @@
 	border-radius: 0;
 }
 .settings-page .provider-service-summary:hover {
-	background: #f7f8fa;
+	background: var(--color-surface-subtle);
 }
 .settings-page .provider-service-mark {
 	display: grid;
@@ -74,7 +74,7 @@
 }
 .settings-page .provider-health.ready,
 .settings-page .provider-capability.succeeded {
-	color: #387556;
+	color: var(--color-success);
 }
 .settings-page .provider-health.busy,
 .settings-page .provider-capability.queued,
@@ -85,7 +85,7 @@
 .settings-page .provider-capability.failed,
 .settings-page .provider-capability.interrupted,
 .settings-page .provider-warning {
-	color: #b44b45;
+	color: var(--color-danger);
 }
 .settings-page .provider-service-arrow {
 	color: var(--settings-muted);
@@ -220,8 +220,8 @@
 	padding: 5px;
 	border: 1px solid var(--settings-line);
 	border-radius: 8px;
-	background: white;
-	box-shadow: 0 6px 20px #20293818;
+	background: var(--color-surface);
+	box-shadow: 0 6px 20px light-dark(#20293818, var(--color-shadow));
 }
 .settings-page .provider-action-menu-panel button {
 	width: 100%;
@@ -234,10 +234,10 @@
 	text-align: left;
 }
 .settings-page .provider-action-menu-panel button:hover:not(:disabled) {
-	background: #f7f8fa;
+	background: var(--color-surface-subtle);
 }
 .settings-page .provider-action-menu-panel button.provider-danger-text {
-	color: #b44b45;
+	color: var(--color-danger);
 }
 .settings-page .provider-model-diagnostic {
 	margin-top: 12px;

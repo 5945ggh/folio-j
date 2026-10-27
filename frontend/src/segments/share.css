@@ -40,19 +40,24 @@
 	transform: translateY(-24px);
 	overflow-x: hidden;
 	overflow-y: auto;
-	border: 1px solid rgb(255 255 255 / 75%);
+	border: 1px solid light-dark(rgb(255 255 255 / 75%), var(--color-border));
 	border-radius: 22px;
-	background: color-mix(in srgb, var(--surface, #fff) 94%, transparent);
+	background: color-mix(
+		in srgb,
+		var(--surface, var(--color-surface)) 94%,
+		transparent
+	);
 	backdrop-filter: blur(24px);
 	color: var(--text);
-	box-shadow: 0 24px 80px -16px rgb(22 28 38 / 28%);
+	box-shadow: 0 24px 80px -16px
+		light-dark(rgb(22 28 38 / 28%), var(--color-shadow));
 }
 .app-shell.segment-study-shell .segment-share-dialog[open] {
 	display: flex;
 	flex-direction: column;
 }
 .app-shell.segment-study-shell .segment-share-dialog::backdrop {
-	background: rgb(25 30 39 / 32%);
+	background: light-dark(rgb(25 30 39 / 32%), var(--color-overlay));
 	backdrop-filter: blur(3px);
 }
 .app-shell.segment-study-shell .segment-share-header {
@@ -89,7 +94,7 @@
 	color: var(--muted);
 }
 .app-shell.segment-study-shell .segment-share-close:hover {
-	background: rgb(100 110 125 / 8%);
+	background: light-dark(rgb(100 110 125 / 8%), var(--color-surface-hover));
 	color: var(--text);
 }
 .app-shell.segment-study-shell .segment-share-preview-label {
@@ -116,7 +121,7 @@
 	overscroll-behavior: contain;
 	border: 0;
 	border-radius: 12px;
-	background: rgb(118 126 141 / 5%);
+	background: light-dark(rgb(118 126 141 / 5%), var(--color-surface-hover));
 	color: var(--text);
 	font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
 	font-size: 14px;
@@ -162,8 +167,8 @@
 	display: flex;
 	flex-shrink: 0;
 	border-radius: 10px;
-	background: #27292d;
-	color: #fff;
+	background: light-dark(#27292d, var(--color-accent-solid));
+	color: var(--color-text-on-accent);
 }
 .app-shell.segment-study-shell .segment-share-main {
 	min-height: 42px;
@@ -178,14 +183,14 @@
 }
 .app-shell.segment-study-shell .segment-share-main:hover:not(:disabled),
 .app-shell.segment-study-shell .segment-share-mode:hover {
-	background: rgb(255 255 255 / 10%);
+	background: light-dark(rgb(255 255 255 / 10%), var(--color-surface-hover));
 }
 .app-shell.segment-study-shell .segment-share-mode {
 	position: relative;
 	display: grid;
 	place-items: center;
 	width: 38px;
-	border-left: 1px solid rgb(255 255 255 / 18%);
+	border-left: 1px solid light-dark(rgb(255 255 255 / 18%), var(--color-border));
 	border-radius: 0 10px 10px 0;
 }
 .app-shell.segment-study-shell .segment-share-mode select {
@@ -197,7 +202,7 @@
 	cursor: pointer;
 }
 .app-shell.segment-study-shell .segment-share-mode:has(:focus-visible) {
-	outline: 2px solid #747982;
+	outline: 2px solid light-dark(#747982, var(--color-focus));
 	outline-offset: 3px;
 }
 @media (max-width: 520px), (max-height: 500px) {

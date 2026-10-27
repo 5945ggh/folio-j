@@ -70,7 +70,7 @@
 }
 .reader-query-dialog button:focus-visible,
 .reader-query-dialog input:focus-visible {
-	outline: 2px solid #5682b8;
+	outline: 2px solid var(--reader-tool-focus);
 	outline-offset: 3px;
 }
 .reader-query-dialog button:hover:not(:disabled) {
@@ -148,7 +148,7 @@
 	overflow-wrap: anywhere;
 }
 .reader-query-hit mark {
-	background: color-mix(in srgb, #d4ac4a 32%, transparent);
+	background: color-mix(in srgb, var(--reader-search-match) 32%, transparent);
 	color: var(--reader-fg);
 	padding: 0 2px;
 	border-radius: 2px;
@@ -409,7 +409,7 @@
 	font-size: 12px;
 }
 .reader-gallery-card[data-selected="true"] {
-	outline: 2px solid #5682b8;
+	outline: 2px solid var(--reader-tool-focus);
 	outline-offset: 3px;
 	border-radius: 8px;
 }
@@ -545,7 +545,7 @@
 	left: 0;
 	width: 50%;
 	height: 2px;
-	background: #5c7bb8;
+	background: var(--reader-accent);
 	pointer-events: none;
 	transform: translateX(0);
 	transition: transform var(--reader-motion-duration, 180ms) ease-out;

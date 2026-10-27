@@ -676,6 +676,185 @@ export async function readerSession(
 			`?segment must show exact original paragraph 350, coordinate=${targetCoordinate}, viewport=${viewStart}..${viewEnd}`,
 		);
 		if (retained && !preview) {
+			// Let the existing 550ms position debounce drain before measuring paint-only changes.
+			const settlingStarted = performance.now();
+			await h.until(() => {
+				const writes = requestTimings.filter(
+					(request) =>
+						request.method === "PUT" &&
+						request.path.endsWith("/reading-position"),
+				);
+				const last = writes.at(-1);
+				return (
+					!!last?.end &&
+					performance.now() - Math.max(settlingStarted, last.end) >= 700
+				);
+			}, "Reading position writes must settle before changing the paper theme");
+			const reader = h.container.querySelector<HTMLElement>("main.reader-r1");
+			const originalTheme = reader?.dataset.theme;
+			check(
+				reader && (originalTheme === "white" || originalTheme === "black"),
+				"Reader paper theme must resolve independently",
+			);
+			const originalPreference = localStorage.getItem("folio-reader-ui-v1");
+			const frameSnapshot = frames().map((frame) => {
+				const doc = frame.contentDocument;
+				const presentation = doc?.getElementById("folio-reader-presentation");
+				check(
+					doc && presentation,
+					"Each long chapter frame must have ruby presentation",
+				);
+				return {
+					frame,
+					doc,
+					presentation,
+					leaves: [...doc.querySelectorAll("[data-locator-leaf]")],
+					ruby: [...doc.querySelectorAll("ruby, rt")],
+					css: presentation.textContent,
+				};
+			});
+			const walker = targetDoc.createTreeWalker(
+				targetLeaf,
+				NodeFilter.SHOW_TEXT,
+			);
+			let selectedText = walker.nextNode();
+			while (
+				selectedText &&
+				(!selectedText.textContent?.length ||
+					selectedText.parentElement?.closest("rt"))
+			)
+				selectedText = walker.nextNode();
+			check(
+				selectedText?.textContent?.length,
+				"Located source must have selectable text",
+			);
+			const range = targetDoc.createRange();
+			range.setStart(selectedText, 0);
+			range.setEnd(selectedText, 1);
+			const selection = targetDoc.getSelection();
+			check(selection, "Native frame selection must be available");
+			selection.removeAllRanges();
+			selection.addRange(range);
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			);
+			const scroll = vertical ? viewport.scrollLeft : viewport.scrollTop;
+			check(
+				Math.abs(scroll) > 0,
+				"Paper theme regression must run at a nonzero long-chapter scroll offset",
+			);
+			const screenCoordinate = () =>
+				vertical
+					? targetFrame.getBoundingClientRect().left +
+						targetLeaf.getBoundingClientRect().left
+					: targetFrame.getBoundingClientRect().top +
+						targetLeaf.getBoundingClientRect().top;
+			const coordinate = screenCoordinate();
+			const savedBeforeTheme = saved;
+			const presentationMutations: MutationRecord[] = [];
+			const observer = new MutationObserver((records) =>
+				presentationMutations.push(...records),
+			);
+			for (const { presentation } of frameSnapshot)
+				observer.observe(presentation, {
+					childList: true,
+					characterData: true,
+					subtree: true,
+					attributes: true,
+				});
+			const switchPreference = (value: string | null) => {
+				const oldValue = localStorage.getItem("folio-reader-ui-v1");
+				if (value === null) localStorage.removeItem("folio-reader-ui-v1");
+				else localStorage.setItem("folio-reader-ui-v1", value);
+				window.dispatchEvent(
+					new StorageEvent("storage", {
+						key: "folio-reader-ui-v1",
+						oldValue,
+						newValue: value,
+						storageArea: localStorage,
+						url: location.href,
+					}),
+				);
+			};
+			try {
+				const alternateTheme = originalTheme === "white" ? "black" : "white";
+				for (const theme of [alternateTheme, originalTheme]) {
+					const startedTheme = performance.now();
+					switchPreference(
+						theme === originalTheme
+							? originalPreference
+							: JSON.stringify({
+									...JSON.parse(originalPreference ?? "{}"),
+									theme,
+								}),
+					);
+					await h.until(
+						() => reader.dataset.theme === theme,
+						"Reader must apply cross-tab paper preference changes",
+					);
+					await h.until(
+						() => performance.now() - startedTheme >= 700,
+						"Paper repaint must leave the delayed position queue idle",
+					);
+					check(
+						frameSnapshot.every(
+							({ frame, doc, presentation, leaves, ruby, css }, index) =>
+								frames()[index] === frame &&
+								frame.contentDocument === doc &&
+								doc.getElementById("folio-reader-presentation") ===
+									presentation &&
+								presentation.textContent === css &&
+								leaves.every(
+									(leaf, leafIndex) =>
+										doc.querySelectorAll("[data-locator-leaf]")[leafIndex] ===
+										leaf,
+								) &&
+								ruby.every(
+									(node, rubyIndex) =>
+										doc.querySelectorAll("ruby, rt")[rubyIndex] === node,
+								),
+						),
+						"Paper repaint must preserve frame, original leaf, ruby and presentation identities",
+					);
+					check(
+						selection.rangeCount === 1 &&
+							!selection.isCollapsed &&
+							selection.anchorNode === selectedText &&
+							selection.anchorOffset === 0 &&
+							selection.focusNode === selectedText &&
+							selection.focusOffset === 1,
+						"Paper repaint must preserve the exact native source selection",
+					);
+					check(
+						Math.abs(
+							(vertical ? viewport.scrollLeft : viewport.scrollTop) - scroll,
+						) < 1 && Math.abs(screenCoordinate() - coordinate) < 1,
+						"Paper repaint must preserve the nonzero scroll and original source screen position",
+					);
+					const background = targetDoc.defaultView?.getComputedStyle(
+						targetDoc.body,
+					).backgroundColor;
+					check(
+						background ===
+							(theme === "black" ? "rgb(25, 25, 25)" : "rgb(255, 255, 255)"),
+						"Real iframe paper paint must follow Reader theme",
+					);
+					check(
+						presentationMutations.length === 0,
+						"Paper repaint must not rewrite or rebind ruby presentation",
+					);
+					check(
+						saved === savedBeforeTheme,
+						"Paper repaint must not enqueue extra reading-position PUTs",
+					);
+				}
+			} finally {
+				observer.disconnect();
+				switchPreference(originalPreference);
+				selection.removeAllRanges();
+			}
+		}
+		if (retained && !preview) {
 			const scrollBeforePlainReturn = vertical
 				? viewport.scrollLeft
 				: viewport.scrollTop;
@@ -1100,7 +1279,7 @@ export async function readerSession(
 			!retained || warnings.length === 0,
 			`Shared reader session routes must not emit warnings: ${warnings.join("\n")}`,
 		);
-		return `reader session (${retained ? "retained" : "baseline"}; 400 paragraphs, 3 iframes, 400 ruby tokens; offline fixture responses, real DOM clock; viewport ${innerWidth}x${innerHeight})\n${JSON.stringify(measurements, null, 2)}\n?segment exact paragraph 350 visible; canonical projection preserved`;
+		return `reader session (${retained ? "retained" : "baseline"}; 400 paragraphs, 3 iframes, 400 ruby tokens; offline fixture responses, real DOM clock; viewport ${innerWidth}x${innerHeight})\n${JSON.stringify(measurements, null, 2)}\n?segment exact paragraph 350 visible; canonical projection preserved${retained && !preview ? "; paper repaint preserves scrolled source, native selection, ruby bindings and idle position queue" : ""}`;
 	} finally {
 		console.warn = originalWarn;
 		observing = false;

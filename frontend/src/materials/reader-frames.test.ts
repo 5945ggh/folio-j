@@ -154,6 +154,25 @@ for (const change of [
 			);
 			assert.equal(keys, 1);
 			h.select();
+			const mounted = frames.get(0);
+			const rubyCleanup = mounted?.presentationCleanup;
+			frames.presentation("black", DEFAULT_BOOK_UI);
+			assert.equal(
+				frames.get(0),
+				mounted,
+				"Palette changes keep the iframe instance",
+			);
+			assert.equal(
+				mounted?.presentationCleanup,
+				rubyCleanup,
+				"Palette changes keep ruby listeners bound",
+			);
+			assert.equal(
+				h.doc.getSelection()?.isCollapsed,
+				false,
+				"Palette changes preserve native selection",
+			);
+			assert.equal(unbound, 0);
 			if (change === "dispose") frames.clear();
 			if (change === "generation") generation++;
 			if (change === "replacement")
