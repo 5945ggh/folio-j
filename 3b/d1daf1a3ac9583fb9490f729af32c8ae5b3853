@@ -1,0 +1,19 @@
+frontend/browser-tests/catalog-overview.tsx
+  s_1cfffbdffa78f2::t_10c7c3190fb16a 163-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3bd1daf1a3ac9583fb9490f729af32c8ae5b3853",
+  "prompts": {},
+  "sessions": {
+    "s_1cfffbdffa78f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17b6f-4de0-7283-8c07-4e51d3d9a888",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
