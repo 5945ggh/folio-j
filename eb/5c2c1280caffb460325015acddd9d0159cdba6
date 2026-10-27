@@ -1,0 +1,223 @@
+frontend/src/materials/reader-panels.css
+  s_1cfffbdffa78f2::t_195f92e7473e08 73,151,412,548
+docs/ARCHITECTURE.md
+  s_1cfffbdffa78f2::t_bcb5c2eed7063d 559,561-565
+  s_1cfffbdffa78f2::t_898f466b3ca60a 221
+docs/PRD.md
+  s_1cfffbdffa78f2::t_bcb5c2eed7063d 299,301,305-309
+  s_1cfffbdffa78f2::t_153e887d5acd7b 310
+frontend/src/materials/study-overlays.css
+  s_1cfffbdffa78f2::t_195f92e7473e08 56,202
+frontend/src/materials/reader-palette.test.ts
+  s_1cfffbdffa78f2::t_195f92e7473e08 1-2,7-8,32,35
+  s_1cfffbdffa78f2::t_60223e930af9ee 3-6,9-31,33-34
+docs/handovers/APPLICATION_THEME_ACCEPTANCE.md
+  s_1cfffbdffa78f2::t_8c2f40b6899254 21
+  s_1cfffbdffa78f2::t_ce53f518d40ded 52-53
+  s_1cfffbdffa78f2::t_898f466b3ca60a 35,47-48
+  s_1cfffbdffa78f2::t_fd709fbcf70797 24-33
+  s_1cfffbdffa78f2::t_5cd66a3c926740 1-2,4-17,19-20,22,34,36-46,51,54-58
+  s_1cfffbdffa78f2::t_a0b438a77e091f 3,23
+  s_1cfffbdffa78f2::t_ce3da7347feb55 18,49-50
+frontend/src/theme/tokens.css
+  s_1cfffbdffa78f2::t_6841779b201a8b 21
+  s_1cfffbdffa78f2::t_36d53f11b2d829 1-20,22-50
+frontend/browser-tests/app-theme.tsx
+  s_1cfffbdffa78f2::t_2f4cee108420ac 531,575-580
+  s_1cfffbdffa78f2::t_c3d2958d5b28fb 480-487,489-491
+  s_1cfffbdffa78f2::t_7843991f6c8ecd 478-479,488,492-493,569-572,583
+  s_1cfffbdffa78f2::t_31971bdef20ab9 151-154,276,284,288,292,573
+  s_1cfffbdffa78f2::t_c12122b4df2909 477
+  s_1cfffbdffa78f2::t_90d6b23a8e599a 15-23,25-43,46-73,76-102,105-112,115-124,127-131,134-142,147-150,155-275,277-283,285-287,289-291,293-476,494-530,532-568,574,581-582,584
+  s_1cfffbdffa78f2::t_3beb7c7b9445a7 1-14,24,44-45,74-75,103-104,113-114,125-126,132-133,143-146,585
+frontend/src/materials/MaterialReader.tsx
+  s_1cfffbdffa78f2::t_b7d560752cb724 1688,1713
+  s_1cfffbdffa78f2::t_4882d4aebe4a79 1718
+frontend/src/segments/layout.css
+  s_1cfffbdffa78f2::t_4265747aa9c9b6 3-5,8-10,101,205,312,320,324,333
+  s_1cfffbdffa78f2::t_6d5fe8543dc248 304
+  s_1cfffbdffa78f2::t_90120ca244a73c 328
+frontend/src/speech/speech.css
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 2-4,202-203,223,346-347,363-364,436
+  s_1cfffbdffa78f2::t_92bb53936023ee 342,344,359,361
+frontend/src/materials/segment-material-origin.css
+  s_1cfffbdffa78f2::t_b7d560752cb724 9,24,40
+frontend/src/segments/share.css
+  s_1cfffbdffa78f2::t_4265747aa9c9b6 43,60,97,124,170-171,186,193,205
+  s_1cfffbdffa78f2::t_0f43669a2d2fcb 45-49,52-53
+frontend/src/catalog/sources-s2.css
+  s_1cfffbdffa78f2::t_c993ed67756184 92-96
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 16-17,40,83,85,91,116,119-120,131,139,146,154,185,210,227,287,291,306
+frontend/src/styles.css
+  s_1cfffbdffa78f2::t_6841779b201a8b 343,2377-2378
+  s_1cfffbdffa78f2::t_0f43669a2d2fcb 37-38
+  s_1cfffbdffa78f2::t_29598b556c281a 714-715,723
+  s_1cfffbdffa78f2::t_4265747aa9c9b6 1,9,11-18,41,58,67-68,86,94,98,112,116,120,139,146,167,174-176,179-180,183,206,214,219,222,231,239,253,259,264,273,278,292,298,300-301,318,320-321,332,341,348,350-351,362,369-370,374,383,388,398,404,410,412,420,426-427,430,436,443,445-446,453-454,458,462,470,474,480,487,497,502,514,525,527,530,540,551,555,562,566,571,575,579,583-584,589,601,603-604,612,624,626-627,637,646-647,732-733,745,757,761-762,765-766,772,806,816,831,843,845-846,857,862,865,910,935,975,985,987,1003,1010,1030,1037,1042,1044,1047,1057,1063-1064,1073,1080,1087,1091,1102,1107,1113,1122,1125,1135,1139,1145,1153,1160,1190-1192,1198,1207,1223,1226,1232,1243,1245-1246,1254,1256,1260,1268-1269,1278,1298,1303,1309,1311,1321,1326,1338,1344,1352,1356,1400,1412,1456,1463,1496,1501,1506,1518,1529,1533,1624,1642,1648,1655,1659,1682,1692-1693,1703,1705,1707,1715,1725,1727,1737,1761,1775,1781,1786,1793-1795,1810,1823,1838,1842,1877,1882,1890,1907,1911-1912,1915,1934,1936,1992,1999,2001-2002,2023,2157,2159,2172,2179,2181,2201-2203,2206,2213,2229,2273,2286,2289-2290,2348,2486,2576,2648,2661,2664,2755,2757
+  s_1cfffbdffa78f2::t_cf33e17207206a 2374
+  s_1cfffbdffa78f2::t_6d5fe8543dc248 10,168,171,184,187,716-722,744,786-787,827,830,904,925,933,997,1312,1367-1368,1405,1409,1450-1451,1478,1482,1556,1559,1573-1574,1602,1606,1628,1706,1728,1757,1846,1991,1995,2038,2204-2205,2347
+  s_1cfffbdffa78f2::t_fdf0f5ccd26fa1 625,2212
+frontend/package.json
+  s_1cfffbdffa78f2::t_eaab35523f0e1c 12
+frontend/src/materials/highlight.test.ts
+  s_1cfffbdffa78f2::t_195f92e7473e08 151,182
+  s_1cfffbdffa78f2::t_60223e930af9ee 165-167,194-196,288-295
+frontend/src/catalog/statistics.css
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 6,25,35,37,42,48,54,63,65,69,80,84,90,103,123,127,132,139
+  s_1cfffbdffa78f2::t_c993ed67756184 96-99
+  s_1cfffbdffa78f2::t_92bb53936023ee 113
+frontend/src/segments/material-fields.css
+  s_1cfffbdffa78f2::t_0f43669a2d2fcb 8-9,74-75,86-87
+  s_1cfffbdffa78f2::t_4265747aa9c9b6 18,29,36,48,54,62,76
+docs/README.md
+  s_1cfffbdffa78f2::t_bcb5c2eed7063d 17
+docs/TECH_STACK.md
+  s_1cfffbdffa78f2::t_bcb5c2eed7063d 56,67
+frontend/src/materials/highlight.ts
+  s_1cfffbdffa78f2::t_b7d560752cb724 255,297-298
+frontend/src/theme/preference.test.ts
+  s_1cfffbdffa78f2::t_0892b5a838dbf0 43-49,75-77,103-105,115-117,125-127
+  s_1cfffbdffa78f2::t_3558921f9a9cb0 140-143,161-164
+  s_1cfffbdffa78f2::t_63a93ff02986a8 2,4,9,79,137-139,144-160,165-168
+  s_1cfffbdffa78f2::t_cccaa35ff1e09b 1,3,5-8,10-42,50-74,78,80-102,106-114,118-124,128-136,169
+frontend/browser-tests/theme.tsx
+  s_1cfffbdffa78f2::t_fcece187f03f38 7,150,448,501-502
+  s_1cfffbdffa78f2::t_0892b5a838dbf0 449-462,464-472,474-500
+  s_1cfffbdffa78f2::t_951b78a157a07f 518-522,537,581
+frontend/src/settings/settings-refresh.css
+  s_1cfffbdffa78f2::t_92bb53936023ee 6,8-9,206
+  s_1cfffbdffa78f2::t_3beb7c7b9445a7 435-437,439
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 7,86,134,164,203,207,210,217,242,284,318-319
+  s_1cfffbdffa78f2::t_8c8fa36e6b5c23 320,324,438
+frontend/src/catalog/source-content.css
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 4,11,14,46,61,67,74,78,87,95,116,180,184,192,201,212,231,243,250,255,263,275,295,305,323,327-328,351,361,369,390,394-395,415,442
+  s_1cfffbdffa78f2::t_92bb53936023ee 251-252
+frontend/src/main.tsx
+  s_1cfffbdffa78f2::t_eaab35523f0e1c 5,11
+  s_1cfffbdffa78f2::t_c8b51b7afe3a39 12
+frontend/src/materials/reader-r1.css
+  s_1cfffbdffa78f2::t_b7d560752cb724 2-10,15-16,21-22,93,378
+  s_1cfffbdffa78f2::t_60223e930af9ee 11-14
+  s_1cfffbdffa78f2::t_195f92e7473e08 17-20,249
+frontend/src/catalog/import-cards.css
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 21,28,44
+  s_1cfffbdffa78f2::t_c993ed67756184 11-14
+frontend/src/catalog/book-management.css
+  s_1cfffbdffa78f2::t_92bb53936023ee 131-133,149
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 38,51-52,60,63,67,84,86-87,105,119,121-122,128,142,154,161
+frontend/browser-tests/chapter-records.tsx
+  s_1cfffbdffa78f2::t_e0beb82af59a92 725-727
+  s_1cfffbdffa78f2::t_415232ea5e36e7 705-721,723-724,728-733
+frontend/src/materials/reader-palette.ts
+  s_1cfffbdffa78f2::t_60223e930af9ee 9-11,19-24
+  s_1cfffbdffa78f2::t_b7d560752cb724 1-8,12-18,25
+frontend/src/materials/reader-layout.ts
+  s_1cfffbdffa78f2::t_4882d4aebe4a79 82,84-90,97
+frontend/src/settings/SettingsPage.tsx
+  s_3913d71d4e08df::t_20167eddb9a36a 181
+  s_1cfffbdffa78f2::t_eaab35523f0e1c 6,24,28,33-34,62-66,73-78,114-116,128
+  s_1cfffbdffa78f2::t_0892b5a838dbf0 117-124,130
+  s_3913d71d4e08df::t_a7f64f8182efa2 166-180
+  s_1cfffbdffa78f2::t_15854766509b54 127,129,131-137,140,145,157,182-192,194-206
+frontend/src/materials/reader-layout.test.ts
+  s_1cfffbdffa78f2::t_422e095552c32a 383-391,393,398-402
+  s_1cfffbdffa78f2::t_4882d4aebe4a79 107-108,352-382,392,394-397,403-412
+  s_1cfffbdffa78f2::t_8e0d9c04330207 413
+frontend/browser-tests/main.tsx
+  s_1cfffbdffa78f2::t_3beb7c7b9445a7 15,398
+frontend/src/materials/presentation.test.ts
+  s_1cfffbdffa78f2::t_60223e930af9ee 54,59,301-302,320-323
+  s_1cfffbdffa78f2::t_195f92e7473e08 5,51,298-300,303-319,324-326
+  s_1cfffbdffa78f2::t_aeb431496da1f3 327
+frontend/src/translation/translation.css
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 11,13-15,37-38,85,116,123,130-131,138,198,206,213,238-240,269,272,278,312
+  s_1cfffbdffa78f2::t_92bb53936023ee 279,286
+frontend/src/materials/reader-frames.ts
+  s_1cfffbdffa78f2::t_60223e930af9ee 378-381,383-387
+  s_1cfffbdffa78f2::t_195f92e7473e08 63
+  s_1cfffbdffa78f2::t_b7d560752cb724 20,373-377,382,388-392
+frontend/src/catalog/import-dialog.css
+  s_1cfffbdffa78f2::t_92bb53936023ee 2,25,74,180-183
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 7,9-11,38,60,67,80,96,112,114,118,121,134,136-137,151,157,163,172,186,189
+  s_1cfffbdffa78f2::t_02cfcba4118457 184
+frontend/src/theme/browser.ts
+  s_1cfffbdffa78f2::t_7e30ca543bdbfc 1-49
+frontend/src/catalog/library-a1.css
+  s_1cfffbdffa78f2::t_92bb53936023ee 208,215,291
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 14,21,37,49,54-55,58,62-63,72,82-84,86,101-102,105,112,140,157,174,178-179,188,199,224-225,229,244-246,253,277-278,281-282,294,313-314,335,345,348,361,363-364,369-370,375,379,400,403-404,407
+frontend/src/analysis/reading.css
+  s_1cfffbdffa78f2::t_0f43669a2d2fcb 164
+  s_1cfffbdffa78f2::t_90120ca244a73c 161-163
+frontend/src/segments/segment-speech.css
+  s_1cfffbdffa78f2::t_4265747aa9c9b6 22
+docs/DESIGN_SYSTEM.md
+  s_1cfffbdffa78f2::t_c00336271e71ec 1-35
+frontend/src/materials/presentation.ts
+  s_1cfffbdffa78f2::t_60223e930af9ee 20,32-34
+  s_1cfffbdffa78f2::t_cd290f3b05495a 30-31
+  s_1cfffbdffa78f2::t_b7d560752cb724 8,14-15,18-19,23-25,27-29,35,38,40-50
+frontend/browser-tests/reader-session.tsx
+  s_1cfffbdffa78f2::t_ade914e45b6173 683-685,688-691,695-698,703-714,716-719,727,729-730,738-740,742-751,755-764,769-777,783-849
+  s_1cfffbdffa78f2::t_b8e8d175352b58 728,1282
+  s_1cfffbdffa78f2::t_04fbca8f7f245a 679-682,686-687,692-694,699-702,715,731-737,741,752-754,765-768,778-782,850-856
+  s_1cfffbdffa78f2::t_78a33c357d3432 720-726
+  s_1cfffbdffa78f2::t_412e4cb8762073 678
+frontend/src/settings/provider-settings.css
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 21,41,77,88,223-224,237,240
+frontend/scripts/test-browser.mjs
+  s_1cfffbdffa78f2::t_6479ea59b561e7 360-364
+  s_1cfffbdffa78f2::t_6920524d0280f7 240-243,246-255,299-313
+  s_1cfffbdffa78f2::t_e9e77e72d433da 23-30
+  s_1cfffbdffa78f2::t_1a10a8fff3cbd8 62-65,244-245,256-257
+  s_1cfffbdffa78f2::t_c3d2958d5b28fb 167-170,368-370,372-376
+  s_1cfffbdffa78f2::t_7843991f6c8ecd 2,160,163-166,171-174,359,365-367,371,377-380
+frontend/index.html
+  s_1cfffbdffa78f2::t_eaab35523f0e1c 8-18
+docs/USAGE.md
+  s_1cfffbdffa78f2::t_bcb5c2eed7063d 63-68
+frontend/src/theme/AppearanceSettings.tsx
+  s_1cfffbdffa78f2::t_cccaa35ff1e09b 12,14,17
+  s_1cfffbdffa78f2::t_7e30ca543bdbfc 1-11,13,15-16,18-42
+docs/handovers/README.md
+  s_3913d71d4e08df::t_ea8bac8ed3917d 8
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_1cfffbdffa78f2::t_a0b438a77e091f 3,35
+  s_1cfffbdffa78f2::t_232c7aba57ca88 36
+frontend/src/materials/reader-frames.test.ts
+  s_1cfffbdffa78f2::t_195f92e7473e08 157-159,175
+  s_1cfffbdffa78f2::t_60223e930af9ee 160-174
+frontend/src/segments/original-card.css
+  s_1cfffbdffa78f2::t_4265747aa9c9b6 5,9-10
+frontend/src/catalog/book-menu.css
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 21-22,30,33,36,42,47
+frontend/src/analysis/editor.css
+  s_1cfffbdffa78f2::t_4265747aa9c9b6 23,25-26
+frontend/src/theme/preference.ts
+  s_1cfffbdffa78f2::t_7e30ca543bdbfc 1-55,57,59-84,86-92
+  s_1cfffbdffa78f2::t_63a93ff02986a8 56,58,85
+docs/INFORMATION_ARCHITECTURE.md
+  s_1cfffbdffa78f2::t_e1c7f5388a7de8 24,50,74-76,96,145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb5c2c1280caffb460325015acddd9d0159cdba6",
+  "prompts": {},
+  "sessions": {
+    "s_1cfffbdffa78f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17b6f-4de0-7283-8c07-4e51d3d9a888",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_3913d71d4e08df": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17b62-28ae-7891-8e86-9c7384240136",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
