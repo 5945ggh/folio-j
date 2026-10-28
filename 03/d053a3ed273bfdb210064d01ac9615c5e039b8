@@ -1,0 +1,35 @@
+docs/handovers/README.md
+  s_e73a3f947fc97c::t_68b51ced5e5b2f 19-20
+docs/handovers/archived/ARCHITECTURE_RELIABILITY_ACCEPTANCE.md
+  s_e73a3f947fc97c::t_4fd229f8db03c7 1-17,19-24,31-33,35-38
+  s_e73a3f947fc97c::t_754be4d9b80714 26
+  s_e73a3f947fc97c::t_4b3f35f1c3ba57 18,25,27-30,34
+docs/ARCHITECTURE.md
+  s_e73a3f947fc97c::t_4fd229f8db03c7 181-182
+frontend/browser-tests/reader-session.tsx
+  s_e73a3f947fc97c::t_df008829c0e50d 335-344,868-895,899,904-915,941-947
+frontend/src/App.tsx
+  s_e73a3f947fc97c::t_b0680f3ab5a69a 13,53
+frontend/src/materials/ReaderSessionHost.tsx
+  s_e73a3f947fc97c::t_70c255f0f525a9 2-3,18-19,29
+frontend/src/navigation/reader-session-route.test.ts
+  s_e73a3f947fc97c::t_08cede67a6ef41 1-43
+frontend/src/navigation/reader-session-route.ts
+  s_e73a3f947fc97c::t_5e762424584aa9 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "03d053a3ed273bfdb210064d01ac9615c5e039b8",
+  "prompts": {},
+  "sessions": {
+    "s_e73a3f947fc97c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18084-5c78-70a1-b745-6b6c89870ba3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
