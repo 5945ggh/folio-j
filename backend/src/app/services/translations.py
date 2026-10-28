@@ -3,6 +3,7 @@
 import asyncio
 import json
 import unicodedata
+from functools import partial
 from typing import Any, cast
 
 from fastapi import FastAPI, HTTPException
@@ -11,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import REPO_ROOT, load_settings
 from app.ids import new_ulid
+from app.jobs.supervision import worker
 from app.llm.adapters import CallSnapshot, generate_text
 from app.material_models import Material
 from app.models import Segment, SegmentMaterialProvenance
@@ -522,14 +524,11 @@ async def recover(session: AsyncSession) -> None:
 
 
 def wake(application: FastAPI) -> None:
-    if getattr(application.state, "translation_worker_event", None):
-        application.state.translation_worker_event.set()
+    worker(application, "translation").wake()
 
 
 def cancel(application: FastAPI, task_id: str) -> None:
-    tasks: dict[str, asyncio.Task[None]] = getattr(application.state, "translation_tasks", {})
-    if task_id in tasks:
-        tasks[task_id].cancel()
+    worker(application, "translation").cancel(task_id)
 
 
 async def execute(application: FastAPI, task_id: str) -> None:
@@ -642,36 +641,42 @@ async def _execute(application: FastAPI, task_id: str) -> None:
             await session.commit()
 
 
+async def fail_task(application: FastAPI, task_id: str) -> None:
+    async with application.state.session_factory() as session:
+        await begin_write(session)
+        task = await session.get(TranslationTask, task_id)
+        if task is None or task.status not in ACTIVE:
+            return
+        task.status, task.token, task.error = "failed", None, "后台翻译异常，未自动重新调用"
+        if task.run_id:
+            run = await session.get(Run, task.run_id)
+            if run is not None and run.status in ("queued", "running"):
+                run.status, run.error, run.finished_at = "failed", task.error, utc_now()
+        await session.commit()
+
+
+async def _scan(application: FastAPI) -> None:
+    async with application.state.session_factory() as session:
+        row = await session.scalar(
+            select(TranslationTask.id)
+            .where(TranslationTask.status == "queued")
+            .order_by(TranslationTask.created_at)
+            .limit(1)
+        )
+    if row:
+        task = worker(application, "translation").submit(
+            row,
+            partial(execute, application, row),
+            partial(fail_task, application, row),
+        )
+        # User cancellation ends this task, not the translation supervisor.
+        await asyncio.gather(task, return_exceptions=True)
+        # Drain an existing queue immediately; the interval is for idle polling.
+        worker(application, "translation").wake()
+
+
 def start_worker(application: FastAPI) -> asyncio.Task[None]:
-    application.state.translation_worker_event = asyncio.Event()
-    application.state.translation_tasks = {}
-
-    async def supervise() -> None:
-        while True:
-            async with application.state.session_factory() as session:
-                row = await session.scalar(
-                    select(TranslationTask.id)
-                    .where(TranslationTask.status == "queued")
-                    .order_by(TranslationTask.created_at)
-                    .limit(1)
-                )
-            if row:
-                job = asyncio.create_task(execute(application, row))
-                application.state.translation_tasks[row] = job
-                try:
-                    await asyncio.gather(job, return_exceptions=True)
-                finally:
-                    application.state.translation_tasks.pop(row, None)
-            else:
-                application.state.translation_worker_event.clear()
-                try:
-                    await asyncio.wait_for(
-                        application.state.translation_worker_event.wait(), timeout=1
-                    )
-                except TimeoutError:
-                    pass
-
-    return asyncio.create_task(supervise())
+    return worker(application, "translation").start(partial(_scan, application), interval=1)
 
 
 async def assert_no_active(
@@ -740,7 +745,7 @@ async def delete_impact(session: AsyncSession, material_id: str) -> TranslationD
 
 
 async def cancel_revoked(application: FastAPI) -> None:
-    tasks: dict[str, asyncio.Task[None]] = getattr(application.state, "translation_tasks", {})
+    tasks = worker(application, "translation").tasks
     async with application.state.session_factory() as session:
         for task_id in list(tasks):
             row = await session.get(TranslationTask, task_id)

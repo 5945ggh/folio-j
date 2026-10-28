@@ -768,13 +768,24 @@
       "HealthResponse": {
         "properties": {
           "status": {
-            "const": "ok",
+            "enum": [
+              "ok",
+              "degraded"
+            ],
             "title": "Status",
             "type": "string"
+          },
+          "workers": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/WorkerHealth"
+            },
+            "title": "Workers",
+            "type": "object"
           }
         },
         "required": [
-          "status"
+          "status",
+          "workers"
         ],
         "title": "HealthResponse",
         "type": "object"
@@ -5742,6 +5753,60 @@
           "error"
         ],
         "title": "VerificationSummary",
+        "type": "object"
+      },
+      "WorkerHealth": {
+        "properties": {
+          "active_tasks": {
+            "title": "Active Tasks",
+            "type": "integer"
+          },
+          "failure_count": {
+            "title": "Failure Count",
+            "type": "integer"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "last_failure_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure At"
+          },
+          "status": {
+            "enum": [
+              "healthy",
+              "retrying",
+              "stopped",
+              "disabled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "active_tasks",
+          "failure_count",
+          "last_error",
+          "last_failure_at"
+        ],
+        "title": "WorkerHealth",
         "type": "object"
       }
     }

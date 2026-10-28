@@ -1447,9 +1447,13 @@ export interface components {
         HealthResponse: {
             /**
              * Status
-             * @constant
+             * @enum {string}
              */
-            status: "ok";
+            status: "ok" | "degraded";
+            /** Workers */
+            workers: {
+                [key: string]: components["schemas"]["WorkerHealth"];
+            };
         };
         /** JobCreate */
         JobCreate: {
@@ -3270,6 +3274,22 @@ export interface components {
              * @enum {string}
              */
             status: "queued" | "running" | "succeeded" | "failed" | "interrupted" | "cancelled";
+        };
+        /** WorkerHealth */
+        WorkerHealth: {
+            /** Active Tasks */
+            active_tasks: number;
+            /** Failure Count */
+            failure_count: number;
+            /** Last Error */
+            last_error: string | null;
+            /** Last Failure At */
+            last_failure_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "healthy" | "retrying" | "stopped" | "disabled";
         };
     };
     responses: never;

@@ -431,6 +431,10 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 ### 4.6 Job 与 Worker（`jobs/`）
 
+聊天、翻译和模型验证由 `jobs/supervision.py` 统一监护进程内任务。扫描异常按 250ms 起步、上限 5 秒的指数退避继续调度，唤醒信号不跳过错误退避；扫描成功后重置间隔。执行意外退出时，各业务在短事务中收尾仍活动的任务及 Run，聊天同时释放线程，保留已保存成果与待审核方案。收尾写入失败只重试本地补偿，不再次执行原任务或模型调用；同一身份在补偿结束前保持占用。用户取消补偿时清除活动故障状态，历史故障计数仍保留。关闭应用取消并等待调度、执行及补偿任务后再释放数据库。
+
+`GET /api/health` 返回总状态 `ok`／`degraded`，并分别给出聊天、翻译、验证的 `healthy`／`retrying`／`stopped`／`disabled` 状态、活动任务数、故障次数、最近异常类型和时间。启用的 worker 停止或正在补偿／重试时，总状态为 `degraded`；恢复后保留历史诊断并回到 `ok`。日志和健康响应不包含异常正文、堆栈、凭据或学习原文。健康接口继续返回 HTTP 200，调用方须读取响应状态。
+
 - 当前Job使用queued／running／waiting_review／stopping／succeeded／failed／interrupted状态；lifespan先取得同一数据库的单进程排他锁，再恢复中断状态并启动调度。调度按持久queued任务领取，问答／Analysis与2A验证共用并发上限2。2B交付时每Job一次生成、60秒调用预算；当前工具循环使用第3.5节统一预算，不新建第二套并发名额或独立重试循环。实际实现见[`jobs/runtime.py`](../backend/src/app/jobs/runtime.py)与[`jobs/agent.py`](../backend/src/app/jobs/agent.py)，2B历史边界见[归档契约](handovers/archived/STAGE_2B_ASYNC_QA.md)。
 - 调用入口和停止／来源／片段删除的提交共用短进程互斥，并在进入适配器前核对持久状态；互斥不覆盖网络等待。每次进度／终态写入检查execution_token、活动Job身份与对象未删除；停止先持久撤销token，再取消执行，收尾后释放线程。当前多个Run及已保存成果分别留存，助手消息、Job终态与线程释放由收尾事务维护，不能用2B单次调用的终态规则推断整轮成果回滚。
 - 流式进度在单次调用内聚合，持久写入间隔至少250ms，结束或异常立即刷新已有脱敏正文；每次写入仍核对持久授权，停止或删除后的缓冲与迟到回调不能落库。

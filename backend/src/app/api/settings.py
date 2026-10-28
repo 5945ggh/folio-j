@@ -1,6 +1,5 @@
 """Thin HTTP routes for settings and model verification."""
 
-import asyncio
 from pathlib import Path
 from typing import Annotated
 
@@ -171,9 +170,7 @@ async def verify_model(
 ) -> RunResponse:
     result = await service.accept_verification(session, model_id, data)
     if request.app.state.verification_worker_enabled:
-        task = asyncio.create_task(service.execute_verification(request.app, result.id))
-        request.app.state.verification_tasks.add(task)
-        task.add_done_callback(request.app.state.verification_tasks.discard)
+        service.start_verification(request.app, result.id)
     return result
 
 

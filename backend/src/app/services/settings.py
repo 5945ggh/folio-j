@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import quote
@@ -17,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chat_models import ChatThread, Job
 from app.ids import new_ulid
+from app.jobs.supervision import worker
 from app.models import Segment, Source
 from app.settings_models import Defaults, Profile, Provider, ProviderModel, Run, Style
 from app.settings_schemas import (
@@ -771,6 +773,37 @@ async def is_latest_verification(session: AsyncSession, row: Run) -> bool:
         .limit(1)
     )
     return latest_id == row.id
+
+
+def start_verification(application: "FastAPI", run_id: str) -> None:
+    worker(application, "verification").submit(
+        run_id,
+        partial(execute_verification, application, run_id),
+        partial(fail_verification, application, run_id),
+    )
+
+
+async def fail_verification(application: "FastAPI", run_id: str) -> None:
+    async with application.state.session_factory() as session:
+        await session.execute(text("BEGIN IMMEDIATE"))
+        row = await session.get(Run, run_id)
+        if row is None or row.purpose != "verification" or row.status not in ("queued", "running"):
+            return
+        row.status, row.error, row.finished_at = "failed", "后台验证异常，未自动重新调用", now()
+        model = await session.get(ProviderModel, row.provider_model_id)
+        provider = await session.get(Provider, row.provider_id)
+        if (
+            model is not None
+            and provider is not None
+            and provider.revision == row.provider_revision
+            and model.revision == row.model_revision
+            and await is_latest_verification(session, row)
+        ):
+            if row.stream:
+                model.stream_status = "failed"
+            else:
+                model.text_status = "failed"
+        await session.commit()
 
 
 async def execute_verification(application: "FastAPI", run_id: str) -> None:

@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chat_models import ChatMessage, ChatThread, Job
 from app.ids import new_ulid
+from app.jobs.supervision import worker
 from app.llm import adapters
 from app.models import Segment, Source
 from app.services.settings import now, read_credential
@@ -255,9 +257,7 @@ async def recover_chat_jobs(session: AsyncSession) -> None:
 
 
 def wake_chat_worker(application: "FastAPI") -> None:
-    event: asyncio.Event | None = getattr(application.state, "chat_worker_event", None)
-    if event is not None:
-        event.set()
+    worker(application, "chat").wake()
 
 
 def request_chat_cancel(application: "FastAPI", _job_id: str) -> None:
@@ -275,38 +275,45 @@ async def _scan(application: "FastAPI") -> None:
             )
         ).all()
         stopping = (await session.scalars(select(Job.id).where(Job.status == "stopping"))).all()
-    tasks: set[asyncio.Task[None]] = application.state.chat_tasks
-    ids: set[str] = application.state.chat_task_ids
+    background = worker(application, "chat")
     for job_id in queued:
-        if job_id in ids:
-            continue
-        ids.add(job_id)
-        task = asyncio.create_task(execute_job(application, job_id))
-        tasks.add(task)
-
-        def done(completed: asyncio.Task[None], identity: str = job_id) -> None:
-            ids.discard(identity)
-            tasks.discard(completed)
-
-        task.add_done_callback(done)
+        background.submit(
+            job_id,
+            partial(execute_job, application, job_id),
+            partial(fail_job, application, job_id),
+        )
     for job_id in stopping:
-        if job_id not in ids:
+        if job_id not in background.tasks:
             await _finalize_stop(application, job_id)
 
 
-async def _supervise(application: "FastAPI") -> None:
-    event: asyncio.Event = application.state.chat_worker_event
-    while True:
-        await _scan(application)
-        event.clear()
-        try:
-            await asyncio.wait_for(event.wait(), timeout=SCAN_SECONDS)
-        except TimeoutError:
-            pass
+async def fail_job(application: "FastAPI", job_id: str) -> None:
+    """Release an unexpectedly exited job without replaying calls or saved artifacts."""
+    async with application.state.session_factory() as session:
+        await session.execute(text("BEGIN IMMEDIATE"))
+        job = await session.get(Job, job_id)
+        if job is None or job.status not in ACTIVE:
+            return
+        stopped = job.status == "stopping"
+        finished = now()
+        job.status = "interrupted" if stopped else "failed"
+        job.error_code = "user_stopped" if stopped else "worker_failed"
+        job.error = "已停止本轮回答" if stopped else "后台执行异常，本轮已停止；已保存成果保留"
+        job.execution_token = None
+        job.finished_at = finished
+        job.version += 1
+        thread = await session.get(ChatThread, job.thread_id)
+        if thread is not None:
+            _release(thread, job)
+        assistant = await _assistant(session, job.id)
+        if assistant is not None:
+            assistant.status, assistant.updated_at = job.status, finished
+        runs = (await session.scalars(select(Run).where(Run.job_id == job.id))).all()
+        for run in runs:
+            if run.status in ("queued", "running"):
+                run.status, run.error, run.finished_at = job.status, job.error, finished
+        await session.commit()
 
 
 def start_chat_worker(application: "FastAPI") -> asyncio.Task[None]:
-    application.state.chat_worker_event = asyncio.Event()
-    application.state.chat_tasks = set()
-    application.state.chat_task_ids = set()
-    return asyncio.create_task(_supervise(application))
+    return worker(application, "chat").start(partial(_scan, application), interval=SCAN_SECONDS)
