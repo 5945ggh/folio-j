@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.catalog_schemas import ReadingStatus
-from app.material_models import MaterialCover, MaterialCustomCover, MaterialUsage
+from app.material_models import Material, MaterialCover, MaterialCustomCover, MaterialUsage
 from app.metadata_schemas import MaterialDetailsResponse, MaterialMetadataUpdate
 from app.services.covers import MAX_COVER_BYTES, cover_url, valid_static_raster
 from app.services.materials import bundle, require_material, summary
@@ -19,6 +19,16 @@ from app.services.sources import as_utc, begin_write, require_source
 async def get_details(session: AsyncSession, material_id: str) -> MaterialDetailsResponse:
     material = await require_material(session, material_id)
     book = await asyncio.to_thread(bundle, material)
+    return await _details(
+        session, material, original_title=book.title, chapter_count=len(book.chapters)
+    )
+
+
+async def _details(
+    session: AsyncSession, material: Material, *, original_title: str, chapter_count: int
+) -> MaterialDetailsResponse:
+    """Combine immutable book facts with the caller's current database snapshot."""
+    material_id = material.id
     source = await require_source(session, material.source_id)
     usage = await session.get(MaterialUsage, material_id)
     cached = await session.get(MaterialCover, material_id)
@@ -36,10 +46,20 @@ async def get_details(session: AsyncSession, material_id: str) -> MaterialDetail
         status=cast(ReadingStatus, usage.status if usage else "not_started"),
         usage_revision=usage.revision if usage else 0,
         last_opened_at=as_utc(usage.last_opened_at) if usage and usage.last_opened_at else None,
-        original_title=book.title,
-        chapter_count=len(book.chapters),
+        original_title=original_title,
+        chapter_count=chapter_count,
         metadata_revision=material.metadata_revision,
         custom_cover=custom,
+    )
+
+
+def _version_identity(material: Material) -> tuple[str, str, str, str, str]:
+    return (
+        material.source_id,
+        material.source_sha256,
+        material.version_id,
+        material.product_sha256,
+        material.contract_version,
     )
 
 
@@ -62,8 +82,19 @@ async def update_metadata(
 ) -> MaterialDetailsResponse:
     image = await asyncio.to_thread(decode_cover, data)
     try:
+        material = await require_material(session, material_id)
+        identity = _version_identity(material)
+        # Detach before rollback expires ORM state; decoding needs only immutable bytes.
+        session.expunge(material)
+        await session.rollback()
+        book = await asyncio.to_thread(bundle, material)
+        original_title, chapter_count = book.title, len(book.chapters)
+        del book, material
+
         await begin_write(session)
         material = await require_material(session, material_id, with_bundle=False)
+        if _version_identity(material) != identity:
+            raise HTTPException(409, "书籍版本已更新，请重新读取")
         if material.metadata_revision != data.expected_revision:
             raise HTTPException(409, "书籍信息已更新，请重新读取")
         material.title = data.title
@@ -79,7 +110,10 @@ async def update_metadata(
                     session.add(custom)
                 custom.media_type = data.cover.media_type
                 custom.data = image
-        details = await get_details(session, material_id)
+        await session.flush()
+        details = await _details(
+            session, material, original_title=original_title, chapter_count=chapter_count
+        )
         await session.commit()
     except BaseException:
         await session.rollback()

@@ -174,6 +174,8 @@ Source 目录提供材料、未删除片段与讲解的真实计数，概览仅�
 
 `material_usage` 与 `material_covers` 分别保存使用状态与封面缓存，缓存含规则版本和诊断。早期使用状态回填与缓存升级事实见[历史验收](handovers/archived/frontend-refresh/ACCEPTANCE.md)。Query key 包含全部条件；导入、状态、Source 和 Analysis 变更刷新受影响目录及计数，旧请求不污染新条件，失效页码回有效页。DTO 由 [OpenAPI](../backend/openapi.json)生成，业务位于 services，本节维护长期查询与写入约束。
 
+书籍信息保存先结束读事务，在写锁外解码不可变编译包、取得原书标题与章节数；进入写事务后重验来源和材料可见性、来源／原书／产物摘要／版本身份及信息修订。响应在同一事务提交前构造，完整解码不占用 SQLite 写锁。
+
 ### 3.1.2 阅读器 R1.1 呈现与只读派生查询
 
 前端 `materials/ReaderSessionHost.tsx` 从真实 location 识别当前材料，保留最近一个阅读会话，并在片段页暂停该会话。纯 `navigation/retained-session` 策略负责身份替换、恢复代次和暂离十分钟的租期，过期检查同时覆盖定时淘汰和直接返回。打开其他材料替换旧实例，离开适用路由释放。缓存只存在当前标签页内存，不持久化书籍正文，也不增加依赖。
