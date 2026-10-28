@@ -1,0 +1,75 @@
+frontend/src/settings/draft.test.ts
+  s_3913d71d4e08df::t_106ef709e7e2e5 113,133-134,140-144,153
+  s_3913d71d4e08df::t_84a49773718c61 135-139,145-152,154-157
+  s_3913d71d4e08df::t_945d6bbcbb8435 158-160
+frontend/src/settings/SettingsPage.tsx
+  s_1cfffbdffa78f2::t_0892b5a838dbf0 25-26
+  s_3913d71d4e08df::t_a7f64f8182efa2 27,36,92-97,135,183,193-201,209-222
+  s_3913d71d4e08df::t_20167eddb9a36a 61,181-182
+  s_1cfffbdffa78f2::t_eaab35523f0e1c 136,141
+  s_1cfffbdffa78f2::t_b2bd5659f28341 162-175,177-180,223-224
+docs/USAGE.md
+  s_3913d71d4e08df::t_f3b9e6cd67a6ed 71
+frontend/browser-tests/main.tsx
+  s_3913d71d4e08df::t_106ef709e7e2e5 32,399
+frontend/scripts/test-browser.mjs
+  s_3913d71d4e08df::t_106ef709e7e2e5 66-67
+docs/handovers/README.md
+  s_c125a439e05010::t_36a1c55a05e261 8
+docs/INFORMATION_ARCHITECTURE.md
+  s_1cfffbdffa78f2::t_bcb5c2eed7063d 77
+  s_3913d71d4e08df::t_f3b9e6cd67a6ed 22-23,27-29,81,87
+frontend/browser-tests/settings-models.tsx
+  s_3913d71d4e08df::t_c84d60fb54775e 101-102,104-106,223-247
+  s_3913d71d4e08df::t_84a49773718c61 93-96,112-115,119-122,130-133,135-138,140-143,149-152,156-164,166-169,171-178,180-191,196-199,202-214
+  s_3913d71d4e08df::t_05d862ef1dff7c 1,47,53,99,103,107-108,219-222,248-250
+  s_3913d71d4e08df::t_106ef709e7e2e5 2-46,48-52,54-92,97-98,100,109-111,116-118,123-129,134,139,144-148,153-155,165,170,179,192-195,200-201,215-218,251-253
+frontend/src/settings/ModelDefaults.tsx
+  s_3913d71d4e08df::t_cb9c18ca9b6b4a 2-3,59-61,119-121,134-149,190-196
+docs/handovers/SETTINGS_MODELS_ACCEPTANCE.md
+  s_3913d71d4e08df::t_ea8bac8ed3917d 1-19
+  s_c125a439e05010::t_36a1c55a05e261 20-23
+frontend/src/settings/settings-refresh.css
+  s_3913d71d4e08df::t_4de79f7b1814ae 44-61,63-76,80-87,260-262
+  s_1cfffbdffa78f2::t_a231e57e3d9b1e 62
+  s_3913d71d4e08df::t_7f553d6e23ed53 77-79
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_c125a439e05010::t_36a1c55a05e261 3,15,36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "21cf270e5729211c5535689855b0812ce6825a1a",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_1cfffbdffa78f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17b6f-4de0-7283-8c07-4e51d3d9a888",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_3913d71d4e08df": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17b62-28ae-7891-8e86-9c7384240136",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_c125a439e05010": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a181a4-d705-7e40-a04d-6b924304607d",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
