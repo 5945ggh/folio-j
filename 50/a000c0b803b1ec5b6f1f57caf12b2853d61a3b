@@ -1,0 +1,59 @@
+backend/tests/test_worker_supervision.py
+  s_e73a3f947fc97c::t_6147840b5646fc 7,16,458-502
+  s_e73a3f947fc97c::t_4a39eb5ceee399 23,148-281
+  s_e73a3f947fc97c::t_d3ef286885a9f2 43-45,287-290,331,348-351,442
+  s_e73a3f947fc97c::t_64b3f0123085b6 338-340
+  s_e73a3f947fc97c::t_09004b4b94bf7b 1-6,8-15,17-22,24-42,46-147,282-286,291-330,332-337,341-347,352-441,443-457,503-553
+frontend/src/api/schema.d.ts
+  s_e73a3f947fc97c::t_7be800d6497a0e 1450,1452-1456,3278-3292
+  s_e73a3f947fc97c::t_9abea09ca26787 3293
+backend/tests/test_health.py
+  s_e73a3f947fc97c::t_d3ef286885a9f2 1-2
+  s_e73a3f947fc97c::t_09004b4b94bf7b 5-6,18-30,40-54
+  s_e73a3f947fc97c::t_f733a45c57dd76 55-56
+backend/src/app/api/settings.py
+  s_e73a3f947fc97c::t_df94d817aacedd 173
+docs/ARCHITECTURE.md
+  s_e73a3f947fc97c::t_4fd229f8db03c7 434-436
+  s_e73a3f947fc97c::t_bcbf98ca4182a6 437
+backend/src/app/jobs/supervision.py
+  s_e73a3f947fc97c::t_4b9078585ddb3c 55
+  s_e73a3f947fc97c::t_9d0fa584190d48 1-54,56-97,101-143
+  s_e73a3f947fc97c::t_60ce35d0259851 98-100
+backend/src/app/services/settings.py
+  s_e73a3f947fc97c::t_df94d817aacedd 7,21,778-806
+  s_e73a3f947fc97c::t_78cd428c53cf3b 807-808
+backend/src/app/services/translations.py
+  s_e73a3f947fc97c::t_7be800d6497a0e 6
+  s_e73a3f947fc97c::t_a2a8c623764adf 674-675
+  s_e73a3f947fc97c::t_42c69d110823c1 15,527,531,644-655,658-673,676-679,748
+backend/openapi.json
+  s_e73a3f947fc97c::t_7be800d6497a0e 771-774,777-783,787-788,5757-5809
+  s_e73a3f947fc97c::t_73063b6a9f9c59 5810
+backend/src/app/api/health.py
+  s_e73a3f947fc97c::t_42c69d110823c1 3,5,12-13
+backend/src/app/main.py
+  s_e73a3f947fc97c::t_df94d817aacedd 23,53-61,68-69,72,90-94
+backend/src/app/services/health.py
+  s_e73a3f947fc97c::t_42c69d110823c1 3-4,11-18,21-22,26-43
+  s_e73a3f947fc97c::t_4b9078585ddb3c 9,25
+  s_e73a3f947fc97c::t_ccfc1522396a03 10
+backend/src/app/jobs/runtime.py
+  s_e73a3f947fc97c::t_df94d817aacedd 5,14,260,278,280-284,286,290-315,319
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "50a000c0b803b1ec5b6f1f57caf12b2853d61a3b",
+  "prompts": {},
+  "sessions": {
+    "s_e73a3f947fc97c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18084-5c78-70a1-b745-6b6c89870ba3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
