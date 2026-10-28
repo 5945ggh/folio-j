@@ -110,6 +110,7 @@ test("navigation protects path, category, back/forward and pending saves", () =>
 		{ ...current, pathname: "/materials" },
 		{ ...current, search: "?section=learning" },
 		{ ...current, search: "?section=history" },
+		{ ...current, search: "?section=providers" },
 	])
 		assert.equal(shouldBlockSettingsNavigation(current, next, dirty), true);
 	assert.equal(
@@ -126,6 +127,34 @@ test("navigation protects path, category, back/forward and pending saves", () =>
 			{ ...current, pathname: "/sources" },
 			[{ dirty: false, pending: false }],
 		),
+		false,
+	);
+});
+
+test("service panel drafts and pending saves protect return to default models", () => {
+	const services = {
+		pathname: "/settings",
+		search: "?section=providers",
+		hash: "",
+	};
+	const defaults = { ...services, search: "" };
+	for (const state of [
+		{ dirty: true, pending: false },
+		{ dirty: false, pending: true },
+	]) {
+		assert.equal(
+			shouldBlockSettingsNavigation(services, defaults, [state]),
+			true,
+		);
+		assert.equal(
+			shouldBlockSettingsNavigation(services, services, [state]),
+			false,
+		);
+	}
+	assert.equal(
+		shouldBlockSettingsNavigation(services, defaults, [
+			{ dirty: false, pending: false },
+		]),
 		false,
 	);
 });

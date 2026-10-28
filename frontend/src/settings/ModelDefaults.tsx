@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { type ReactNode, useRef } from "react";
+import { useRef } from "react";
+import { Link } from "react-router";
 import { InlineError } from "../Shared";
 import { type Provider, patchSettings, type Settings } from "./api";
 import {
@@ -21,11 +22,9 @@ const modelFields = (settings?: Settings): ModelFields => ({
 export function ModelDefaults({
 	settings,
 	providers,
-	children,
 }: {
 	settings?: Settings;
 	providers: Provider[];
-	children?: ReactNode;
 }) {
 	const client = useQueryClient();
 	const draft = useSettingsFields(modelFields(settings));
@@ -56,6 +55,9 @@ export function ModelDefaults({
 	});
 	const choices = providers.flatMap((provider) =>
 		provider.models.map((model) => ({ model, provider })),
+	);
+	const hasAvailableModels = choices.some(
+		({ model, provider }) => provider.enabled && model.enabled,
 	);
 	function modelSelect(
 		label: string,
@@ -114,7 +116,9 @@ export function ModelDefaults({
 						})}
 					</select>
 					{selected && (
-						<small className="settings-hint">{selected.provider.name}</small>
+						<small className="settings-hint settings-model-identity">
+							{selected.provider.name} · {selected.model.model_id}
+						</small>
 					)}
 					{unavailable && (
 						<small className="field-warning">
@@ -127,6 +131,22 @@ export function ModelDefaults({
 	}
 	return (
 		<div className="settings-model-page">
+			{!hasAvailableModels && (
+				<aside className="settings-model-guide">
+					<strong>
+						{providers.length === 0
+							? "还没有模型服务。"
+							: "还没有可用的已登记模型。"}
+					</strong>
+					<p>
+						{providers.length === 0
+							? "先添加服务并登记模型，再返回这里选择默认模型。"
+							: "请在服务管理中登记模型，或启用服务和模型，再返回这里选择。"}
+						登记不会自动选择模型，也不要求先验证。
+					</p>
+					<Link to="/settings?section=providers">前往服务管理 →</Link>
+				</aside>
+			)}
 			{settings && (
 				<section
 					className="settings-section"
@@ -158,17 +178,6 @@ export function ModelDefaults({
 							</div>
 						</fieldset>
 					</form>
-					<p className="settings-hint settings-section-note">
-						已有对话继续使用各自的模型；已接受的任务不受影响。
-					</p>
-				</section>
-			)}
-			{children}
-			{settings && (
-				<>
-					<p className="settings-hint settings-section-note">
-						条目整理功能尚未开放，已保存的模型配置会保留。
-					</p>
 					<InlineError error={save.error} />
 					<SettingsSaveBar
 						formId="model-defaults-form"
@@ -178,7 +187,13 @@ export function ModelDefaults({
 						pending={save.isPending}
 						onReset={draft.reset}
 					/>
-				</>
+					<p className="settings-hint settings-section-note">
+						已有对话继续使用各自的模型；已接受的任务不受影响。
+					</p>
+					<p className="settings-hint settings-section-note">
+						条目整理功能尚未开放，已保存的模型配置会保留。
+					</p>
+				</section>
 			)}
 		</div>
 	);

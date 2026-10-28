@@ -63,6 +63,8 @@ try {
 		[1280, 900, "?suite=app-theme&system=dark"],
 		[390, 900, "?suite=app-theme&system=light"],
 		[390, 900, "?suite=app-theme&system=dark"],
+		[1280, 900, "?suite=settings-models"],
+		[390, 900, "?suite=settings-models"],
 		[1280, 900, "?suite=route-loading"],
 		[390, 900, "?suite=route-loading"],
 		[1280, 900, "?suite=route-loading&direction=vertical-rl"],

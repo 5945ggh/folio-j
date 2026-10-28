@@ -29,6 +29,7 @@ import { routeLoading } from "./route-loading";
 import { routeMotion } from "./route-motion";
 import { segmentMaterials } from "./segment-materials";
 import { segmentShareRegression } from "./segment-share";
+import { settingsModels } from "./settings-models";
 import { themeRegression } from "./theme";
 import { translationRegression } from "./translation";
 import { workbenchRegression } from "./workbench";
@@ -395,6 +396,7 @@ async function clearStudyContext() {
 try {
 	const suite = new URLSearchParams(location.search).get("suite");
 	const standalone = new Map([
+		["settings-models", settingsModels],
 		["app-theme", appTheme],
 		["reader-images", readerImages],
 		["reader-image-performance", readerImages],
