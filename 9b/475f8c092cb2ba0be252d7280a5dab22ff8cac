@@ -1,0 +1,281 @@
+docs/ARCHITECTURE.md
+  s_05d5d962c8f69b::t_145676f790f32a 310-311
+  s_05d5d962c8f69b::t_fd726dc71aab4e 282,288,290,298,302,312,314,322,325,391,393,411,432,435,587,610
+  s_05d5d962c8f69b::t_7fd01427be882c 346
+  s_05d5d962c8f69b::t_18e88b76f89879 320
+  s_05d5d962c8f69b::t_ba67f3700215b7 304,307,309
+  s_05d5d962c8f69b::t_590a8862ac9513 326
+  s_05d5d962c8f69b::t_39fc2014df32f0 337-338
+  s_05d5d962c8f69b::t_78cfe1e78fd78e 308,324
+  s_05d5d962c8f69b::t_3ddf52f3a8badb 313
+  s_05d5d962c8f69b::t_8427e4b6f3b826 318,567
+  s_05d5d962c8f69b::t_58876b903ce70b 306
+  s_1d159d3e6c3756::t_4b57da491df348 305,319
+backend/tests/test_analysis_agent.py
+  s_05d5d962c8f69b::t_fd726dc71aab4e 1334-1335
+  s_05d5d962c8f69b::t_b635200c68cb19 122,165,309-311,354,432,638,685,717,795,946,990
+  s_05d5d962c8f69b::t_51b0c1bd9d624a 564-576,591,616
+  s_05d5d962c8f69b::t_ee557554d565f7 1231-1233,1246-1248
+  s_05d5d962c8f69b::t_f2be9040056103 166,168,272,313-322,332,335,904,906-907,1148-1230,1234-1245,1249-1324,1327,1332,1338-1339,1371,1377,1382,1387,1395-1397,1399-1402,1413,1426
+  s_05d5d962c8f69b::t_89c569fb3b62f7 9,136,148,154-162,175-182,186,189-194,196-206,209-216,218-231,271,282,1328
+  s_05d5d962c8f69b::t_3b63284034704f 594-595,619
+  s_1d159d3e6c3756::t_ccf0cf3745d161 129-132,163-164,167,169-174,245,259,263,273-274,277-281,283-285,288,292,294-296,312,325,333-334,835,844,873,877,896,915,1074,1083,1100,1325-1326,1329-1331,1333,1336-1337,1340-1370,1372-1376,1378-1381,1383-1386,1388-1394,1398,1403-1412,1414-1425,1427-1431
+backend/prompts/translation/system_v2.txt
+  s_05d5d962c8f69b::t_39fc2014df32f0 2,4,6-9,11-12,16,19-20
+  s_05d5d962c8f69b::t_59c2fdfd3bde6c 5
+  s_05d5d962c8f69b::t_198be636597b52 13,17
+backend/prompts/chat/tools_v5.json
+  s_05d5d962c8f69b::t_d8ecde31b21af1 8-225
+  s_1d159d3e6c3756::t_2b00a1c4aebf88 1-7,226-238
+backend/prompts/chat/context_profile_v1.j2
+  s_05d5d962c8f69b::t_76c055c36df3ed 1
+  s_05d5d962c8f69b::t_3f282a5a428b3d 2-13
+backend/prompts/chat/context_segment_v1.j2
+  s_05d5d962c8f69b::t_76c055c36df3ed 1
+  s_05d5d962c8f69b::t_a31f114e40d5e7 2-31
+backend/prompts/chat/system_v8.j2
+  s_05d5d962c8f69b::t_8c927069b5d8cd 1-7,11
+  s_05d5d962c8f69b::t_78cfe1e78fd78e 8-10
+  s_1d159d3e6c3756::t_47735c20b4edfa 12-19
+backend/tests/test_chat_prompt_scope.py
+  s_05d5d962c8f69b::t_68507b75d5a7a7 78,80,112-113
+  s_05d5d962c8f69b::t_51b0c1bd9d624a 58
+  s_05d5d962c8f69b::t_12b2dd34ff2f8d 104,106-107,109-110,117,120,123,174-176,178-210,216-217,228,230-242,244-282
+  s_05d5d962c8f69b::t_be850b52aebfb1 57,177,211-215,218-227,229
+  s_05d5d962c8f69b::t_3f282a5a428b3d 243
+  s_1d159d3e6c3756::t_0d1ddf607af442 60-63,68,74-75
+backend/tests/test_chat_api.py
+  s_05d5d962c8f69b::t_89c569fb3b62f7 113-115
+  s_05d5d962c8f69b::t_96deb64d75541e 106-108
+  s_05d5d962c8f69b::t_a56591b58e126c 105,109-112,116-128
+  s_05d5d962c8f69b::t_51b0c1bd9d624a 258,567
+  s_1d159d3e6c3756::t_a7a6b3dac5cedb 198,207,218
+README.md
+  s_05d5d962c8f69b::t_8427e4b6f3b826 24
+docs/GLOSSARY.md
+  s_05d5d962c8f69b::t_8427e4b6f3b826 118
+  s_05d5d962c8f69b::t_7fd01427be882c 121
+backend/tests/test_stream_progress.py
+  s_05d5d962c8f69b::t_c2375789e07a26 29,60,97,139
+docs/USAGE.md
+  s_05d5d962c8f69b::t_8427e4b6f3b826 87
+backend/src/app/chat_schemas.py
+  s_05d5d962c8f69b::t_0cc662e15735c9 14-15,61,74-75
+  s_05d5d962c8f69b::t_ef300a59736500 105-107
+  s_05d5d962c8f69b::t_5a2ea3facc6edf 9,70,72,76
+  s_1d159d3e6c3756::t_f4e7b2d342373e 108
+backend/tests/test_chat_material_provenance.py
+  s_05d5d962c8f69b::t_a21b47f391e6c3 1-217,221-248
+  s_05d5d962c8f69b::t_2bc47cde69c16f 218-220
+backend/tests/test_chat_legacy_input.py
+  s_05d5d962c8f69b::t_f7c981c859d4c3 37-56
+  s_05d5d962c8f69b::t_3a1e0c81879594 57-61,63,68,84,102-109,115,128
+  s_05d5d962c8f69b::t_c0087fa5ae1f63 20-23,28
+  s_05d5d962c8f69b::t_c48ec9bacc2dd1 1-19,24-27,29-36,62,64-67,69-83,85-101,110-114,116-127,129-131,133-170
+  s_05d5d962c8f69b::t_ac2eeb19fdc100 171-176
+  s_05d5d962c8f69b::t_8e7c0a852ca945 132
+docs/INFORMATION_ARCHITECTURE.md
+  s_05d5d962c8f69b::t_8427e4b6f3b826 159,161
+  s_05d5d962c8f69b::t_9d822823aa5046 180
+backend/prompts/chat/explanation_request_v1.j2
+  s_05d5d962c8f69b::t_ef300a59736500 1
+  s_05d5d962c8f69b::t_89c569fb3b62f7 2
+backend/prompts/default_explanation_style_v1.j2
+  s_05d5d962c8f69b::t_f50455ca53d04b 2,4
+backend/src/app/prompting.py
+  s_05d5d962c8f69b::t_e63432e742cd2c 114-116
+  s_05d5d962c8f69b::t_454fab0b8b3bba 126
+  s_05d5d962c8f69b::t_76c055c36df3ed 1-113,117-125,127-137
+docs/PRD.md
+  s_05d5d962c8f69b::t_8427e4b6f3b826 75,141,293,393,398,427,464,621,653
+  s_05d5d962c8f69b::t_3ddf52f3a8badb 347-348
+  s_05d5d962c8f69b::t_9d822823aa5046 403,461,463,516,598
+  s_05d5d962c8f69b::t_5ac767b18c201f 387
+frontend/src/segments/NewAnalysisActions.tsx
+  s_05d5d962c8f69b::t_f2936a332d1d9e 156
+  s_1d159d3e6c3756::t_b1b232dcb929ae 13,17,150,153
+docs/TECH_STACK.md
+  s_05d5d962c8f69b::t_9d822823aa5046 73,81
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_05d5d962c8f69b::t_50e2cb6a69ea46 12
+  s_1d159d3e6c3756::t_375601010d9bd4 3,19-20
+backend/src/app/jobs/agent.py
+  s_05d5d962c8f69b::t_ee557554d565f7 843
+  s_05d5d962c8f69b::t_f2be9040056103 260,276
+  s_05d5d962c8f69b::t_2dbb634ecf44f8 413,420-421,423-424,477-488,490,492,736,774-785
+  s_05d5d962c8f69b::t_c2375789e07a26 7,406,408-409,416,449-466,470-471,474
+  s_1d159d3e6c3756::t_ae7894d29cd912 404,415,417-418,425-440,443,445-448,787-790
+backend/src/app/services/context_plugins.py
+  s_05d5d962c8f69b::t_78cfe1e78fd78e 36
+  s_05d5d962c8f69b::t_76c055c36df3ed 1-35,37-41
+frontend/src/chat/discussion.ts
+  s_05d5d962c8f69b::t_5a2ea3facc6edf 4
+  s_05d5d962c8f69b::t_0cc662e15735c9 5-6
+  s_05d5d962c8f69b::t_36e059822e0418 43
+  s_1d159d3e6c3756::t_58fa0666061e02 174,215
+frontend/browser-tests/analysis-reading.tsx
+  s_05d5d962c8f69b::t_f2936a332d1d9e 337,782,810,812-813,818-819,823-824
+  s_1d159d3e6c3756::t_86e882f3b26f66 172,828
+backend/src/app/services/context_provenance.py
+  s_05d5d962c8f69b::t_a31f114e40d5e7 1-35,39-51,55-56,58-63
+  s_05d5d962c8f69b::t_10cca75ad41241 36-38,52-54,57
+frontend/browser-tests/explanation.tsx
+  s_05d5d962c8f69b::t_996c632cfae19c 219-220,223,240-248
+  s_05d5d962c8f69b::t_f2936a332d1d9e 151,214,253-254,297,314-342,358-427
+  s_05d5d962c8f69b::t_ffc6e3fd3aa467 2-145,210,213,227-234,250-251,255,257,260,262,267-268,273-274,277-295,298,310,313
+  s_05d5d962c8f69b::t_dccc73214a8abe 157,169,172-209,299,309,343,349,353,357
+  s_1d159d3e6c3756::t_dcae754d3649fd 1,146-150,152-156,158-168,170-171,211-212,215-218,221-222,224-226,235-239,249,252,256,258-259,261,263-266,269-272,275-276,296,300-308,311-312,344-348,350-352,354-356,428-504
+backend/src/app/services/context.py
+  s_05d5d962c8f69b::t_ef300a59736500 74,232
+  s_05d5d962c8f69b::t_5a2ea3facc6edf 133
+  s_05d5d962c8f69b::t_a31f114e40d5e7 13,48-49,91-108
+  s_05d5d962c8f69b::t_411fd002fc86b0 12,14,142-150,162,164,173-174,176,195
+  s_05d5d962c8f69b::t_78cfe1e78fd78e 17
+frontend/src/chat/explanation.test.ts
+  s_05d5d962c8f69b::t_ffc6e3fd3aa467 19-52,113,116,164
+  s_1d159d3e6c3756::t_57359dd6de2a3e 1-18,53-112,114-115,117-163,165-232
+backend/tests/test_context_injection.py
+  s_05d5d962c8f69b::t_1cfe7b48132746 144-150
+  s_05d5d962c8f69b::t_ec1abf73ff22ca 1-67,69-143
+  s_05d5d962c8f69b::t_58876b903ce70b 68
+backend/prompts/chat/user_v4.j2
+  s_05d5d962c8f69b::t_5a2ea3facc6edf 1
+  s_05d5d962c8f69b::t_8dd6013d24dbb0 2-3
+backend/openapi.json
+  s_05d5d962c8f69b::t_36e059822e0418 750,3541
+  s_1d159d3e6c3756::t_edf893ecd3d473 742-749,751-754,807,6095-6112
+backend/prompts/chat/history_material_v1.j2
+  s_05d5d962c8f69b::t_d736266e2eae65 2-11
+backend/prompts/context/events_v1.j2
+  s_05d5d962c8f69b::t_76c055c36df3ed 1,12,16,18
+  s_05d5d962c8f69b::t_58876b903ce70b 2-11,13-15,17,19
+backend/tests/test_chat_protocol_context.py
+  s_05d5d962c8f69b::t_51b0c1bd9d624a 97,103-104
+  s_05d5d962c8f69b::t_12b2dd34ff2f8d 105-106
+backend/prompts/chat/context_source_v1.j2
+  s_05d5d962c8f69b::t_ce7efb939c6211 2-6
+  s_05d5d962c8f69b::t_76c055c36df3ed 1
+backend/src/app/services/chat.py
+  s_05d5d962c8f69b::t_2013df2f79a6ab 464-475
+  s_05d5d962c8f69b::t_5a2ea3facc6edf 55-61,65-68,214-217,450,486
+  s_05d5d962c8f69b::t_a21b47f391e6c3 507-509
+  s_05d5d962c8f69b::t_a31f114e40d5e7 32,510,520
+  s_05d5d962c8f69b::t_ef300a59736500 15,33,62-64,69-74,555
+docs/handovers/AGENT_CONTEXT_ACCEPTANCE.md
+  s_05d5d962c8f69b::t_145676f790f32a 83-92
+  s_05d5d962c8f69b::t_523dbdee7e3adb 61-66
+  s_05d5d962c8f69b::t_f50455ca53d04b 109-114
+  s_05d5d962c8f69b::t_7a2ce438ef4234 145-146
+  s_05d5d962c8f69b::t_8dd6013d24dbb0 117-120
+  s_05d5d962c8f69b::t_da59f910f21d83 67-68
+  s_05d5d962c8f69b::t_824c6317df3df3 115-116
+  s_05d5d962c8f69b::t_1fae6a29fb03ac 139-140
+  s_05d5d962c8f69b::t_d0975ff2221078 37,39-41,43-45,51-52
+  s_05d5d962c8f69b::t_f621740147c04a 184-185
+  s_05d5d962c8f69b::t_2aab725120336b 121-122
+  s_05d5d962c8f69b::t_d736266e2eae65 135-138
+  s_05d5d962c8f69b::t_b63950d840ab95 32-34
+  s_05d5d962c8f69b::t_ba67f3700215b7 2,4-6,8-12,14-15,19,21-26
+  s_05d5d962c8f69b::t_a12785d89ce9d9 81-82
+  s_05d5d962c8f69b::t_1bfc3c66157888 93-94
+  s_05d5d962c8f69b::t_9d2ff9e1cfd4dc 133-134
+  s_05d5d962c8f69b::t_1fe8e808ee4981 69-74
+  s_05d5d962c8f69b::t_18e88b76f89879 147-152
+  s_05d5d962c8f69b::t_3fc99ee9285279 77-80
+  s_05d5d962c8f69b::t_dc25b880cbc3ab 101-102
+  s_05d5d962c8f69b::t_39fc2014df32f0 155-160
+  s_05d5d962c8f69b::t_bed72eaf663723 165-166
+  s_05d5d962c8f69b::t_590a8862ac9513 167-183
+  s_05d5d962c8f69b::t_b5b0ab178850e6 103-106
+  s_05d5d962c8f69b::t_3ba45f9a3562e4 16-18,20
+  s_05d5d962c8f69b::t_3ddf52f3a8badb 7,13,27-31,35-36
+  s_05d5d962c8f69b::t_32d61418efd24b 42,53-58
+  s_05d5d962c8f69b::t_6d8093d137d492 75-76
+  s_05d5d962c8f69b::t_5524819053e2de 107-108
+  s_05d5d962c8f69b::t_7fd01427be882c 1
+  s_05d5d962c8f69b::t_a1df4cd119e4e2 123-132
+  s_05d5d962c8f69b::t_2b59902c17a64b 141-144
+  s_05d5d962c8f69b::t_3bcb71f1709b90 153-154
+  s_05d5d962c8f69b::t_2057f2648173d8 161,164
+  s_05d5d962c8f69b::t_198be636597b52 162-163
+  s_05d5d962c8f69b::t_3f282a5a428b3d 95-100
+  s_05d5d962c8f69b::t_8da1569e264552 59-60
+  s_05d5d962c8f69b::t_5ac767b18c201f 38
+  s_05d5d962c8f69b::t_3508160b65c0a3 3,46-50
+  s_1d159d3e6c3756::t_edc0430d024d13 186-202
+backend/prompts/chat/context_style_v1.j2
+  s_05d5d962c8f69b::t_76c055c36df3ed 1,9
+  s_05d5d962c8f69b::t_b5b0ab178850e6 2-8,10-15
+backend/prompts/chat/recovered_artifacts_v1.j2
+  s_05d5d962c8f69b::t_2b59902c17a64b 2-11
+frontend/src/chat/Workbench.tsx
+  s_05d5d962c8f69b::t_f2936a332d1d9e 1381
+  s_05d5d962c8f69b::t_0cc662e15735c9 44
+  s_05d5d962c8f69b::t_5a2ea3facc6edf 54
+  s_1d159d3e6c3756::t_b2a416b22296a7 25,50,55-64,222,357-359,370-372,400,445,510,582,612,620,624,627,766-767,771,977,986,1025-1037,1074-1075,1078,1107-1228,1277,1346-1363,1372-1374,1379,1382-1383,1385,1404-1405,1410,1413-1418,1422
+backend/src/app/api/chat.py
+  s_05d5d962c8f69b::t_ef300a59736500 9,26-32
+  s_1d159d3e6c3756::t_e06d68359745b0 33-34
+backend/src/app/jobs/runtime.py
+  s_1d159d3e6c3756::t_2e0c6a54a4ef4e 15,21,27,73-84,106,122,152-153,227,229
+backend/tests/test_analysis_workflow_acceptance.py
+  s_1d159d3e6c3756::t_2d9f41368dc3c0 298-302
+backend/tests/test_chat_runtime.py
+  s_1d159d3e6c3756::t_14ece3eaf5ad3f 366,392
+backend/tests/test_tool_adapters.py
+  s_1d159d3e6c3756::t_30240fea91e52c 360
+docs/handovers/README.md
+  s_1d159d3e6c3756::t_9cbe5c9cdd9370 9
+frontend/browser-tests/main.tsx
+  s_1d159d3e6c3756::t_6babee0d6a34b5 20,490-491,500-506,508-525
+frontend/browser-tests/workbench-history.tsx
+  s_1d159d3e6c3756::t_ffb101e8d89f71 30,88,138
+frontend/browser-tests/workbench-render.tsx
+  s_1d159d3e6c3756::t_c48675a94fa37b 37,110,192
+frontend/browser-tests/workbench.tsx
+  s_1d159d3e6c3756::t_7caa50a0450abb 81,268,327,360-363,562,568,757-760,803,859-873
+frontend/scripts/test-browser.mjs
+  s_1d159d3e6c3756::t_6dabc3b6522aac 94-95
+frontend/src/SegmentPage.tsx
+  s_1d159d3e6c3756::t_971b62a68561d3 16,19,226,231,485,487,491,619
+frontend/src/analysis/artifacts.test.ts
+  s_1d159d3e6c3756::t_47f4f61befa84a 3,5,11,17,21-26,28
+frontend/src/api/schema.d.ts
+  s_1d159d3e6c3756::t_f47454ccb84a25 77-93,1436-1440,3499-3518
+frontend/src/chat/api.ts
+  s_1d159d3e6c3756::t_7a28dbe355fc27 12,128-134
+frontend/src/chat/discussion.test.ts
+  s_1d159d3e6c3756::t_9f6b8d89663e90 129-133,138,174,193,255-260,262-274,276-278
+frontend/src/chat/explanation.ts
+  s_1d159d3e6c3756::t_c289176421d580 1-92
+frontend/src/chat/lifecycle.test.ts
+  s_1d159d3e6c3756::t_997d8a1eb9e332 28
+frontend/src/chat/lifecycle.ts
+  s_1d159d3e6c3756::t_ae5e2c1107136a 5,7
+frontend/src/chat/state.test.ts
+  s_1d159d3e6c3756::t_7c31d042121b80 10,27-29,31-32,35-36,40-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9b475f8c092cb2ba0be252d7280a5dab22ff8cac",
+  "prompts": {},
+  "sessions": {
+    "s_05d5d962c8f69b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17db5-4995-7201-946a-fbc236100da2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    },
+    "s_1d159d3e6c3756": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a182a7-e397-7182-94ed-0bd52cb34a68",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
