@@ -74,6 +74,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/explanation-prompt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Explanation Prompt */
+        get: operations["getExplanationPrompt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -1416,6 +1433,11 @@ export interface components {
             /** Style Id */
             style_id: string | null;
         };
+        /** ExplanationPromptResponse */
+        ExplanationPromptResponse: {
+            /** Question */
+            question: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1431,17 +1453,6 @@ export interface components {
         };
         /** JobCreate */
         JobCreate: {
-            /**
-             * Action
-             * @default chat
-             * @enum {string}
-             */
-            action: "chat" | "generate_analysis";
-            /**
-             * Additional Instructions
-             * @default
-             */
-            additional_instructions: string;
             /** Expected Segment Revision */
             expected_segment_revision: number;
             /** Expected Thread Revision */
@@ -1479,8 +1490,6 @@ export interface components {
         JobResponse: {
             /** Active Step */
             active_step?: string | null;
-            /** Additional Instructions */
-            additional_instructions: string;
             /** Artifacts */
             artifacts?: components["schemas"]["ArtifactResponse"][];
             assistant_message: components["schemas"]["MessageResponse"];
@@ -2426,8 +2435,6 @@ export interface components {
         };
         /** RetryInput */
         RetryInput: {
-            /** Additional Instructions */
-            additional_instructions: string;
             /** Question */
             question: string;
         };
@@ -3485,6 +3492,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getExplanationPrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExplanationPromptResponse"];
                 };
             };
         };

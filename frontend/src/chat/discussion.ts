@@ -1,20 +1,14 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Job, JobInput, Thread } from "./api.ts";
 
-export type Draft = { question: string; additional: string };
+export type Draft = { question: string };
+// Two legacy 10000-character fields joined by a blank line must remain restorable.
+export const MAX_QUESTION_CHARS = 20002;
 export type PendingSubmission = { input: JobInput; uncertain: boolean };
 export type ReadingPosition = {
 	analysisId: string | null;
 	revisionId: string | null;
 };
-
-export function visibleDraft(draft: Draft): Draft {
-	if (!draft.additional) return draft;
-	return {
-		question: `${draft.question ? `${draft.question}\n\n` : ""}补充要求：\n${draft.additional}`,
-		additional: "",
-	};
-}
 
 export const terminalJobStatuses = new Set<Job["status"]>([
 	"succeeded",
@@ -46,16 +40,7 @@ export function draftAfterAcceptance(
 	current: Draft,
 	submitted: JobInput,
 ): Draft {
-	return current.question === submitted.question &&
-		current.additional === submitted.additional_instructions
-		? { question: "", additional: "" }
-		: current;
-}
-
-export function acceptedDraft(current: Draft, submitted: JobInput): Draft {
-	return submitted.action === "generate_analysis"
-		? current
-		: draftAfterAcceptance(current, submitted);
+	return current.question === submitted.question ? { question: "" } : current;
 }
 
 export function submissionMayHaveSucceeded(error: unknown): boolean {
@@ -125,13 +110,6 @@ export function readingPositionForJob(
 	return byJob[job.id] ?? byRequest[job.request_id];
 }
 
-export function generationResult(
-	job: Pick<Job, "status" | "artifacts">,
-): "saved_with_unfinished_reply" | "not_saved" | "none" {
-	if (job.status !== "failed" && job.status !== "interrupted") return "none";
-	return savedArtifact(job) ? "saved_with_unfinished_reply" : "not_saved";
-}
-
 type SubmissionApi = {
 	submit: (threadId: string, input: JobInput) => Promise<Job>;
 	findByRequest: (threadId: string, requestId: string) => Promise<Job>;
@@ -146,7 +124,6 @@ export type AcceptanceCallbacks = {
 	setDraft: (update: (current: Draft) => Draft) => void;
 	setError: (error: Error | null) => void;
 	onJobAccepted: (job: Job) => void;
-	onGenerationAccepted: (job: Job) => void;
 };
 
 export type JobCallbacks = {
@@ -194,9 +171,7 @@ export class DiscussionCoordinator {
 		callbacks.setRecentJobId(current.id);
 		callbacks.setPending(null);
 		callbacks.onJobAccepted(current);
-		if (callbacks.input.action === "generate_analysis")
-			callbacks.onGenerationAccepted(current);
-		else callbacks.setDraft((draft) => acceptedDraft(draft, callbacks.input));
+		callbacks.setDraft((draft) => draftAfterAcceptance(draft, callbacks.input));
 		callbacks.setError(null);
 		void this.client.invalidateQueries({
 			queryKey: ["chat-thread", callbacks.threadId],
@@ -237,7 +212,7 @@ export class DiscussionCoordinator {
 		void this.client.invalidateQueries({ queryKey: ["analysis"] });
 		void this.client.invalidateQueries({ queryKey: ["catalog"] });
 		const artifact = savedArtifact(current);
-		if (artifact && current.kind !== "generate_analysis")
+		if (artifact)
 			callbacks.onArtifact(artifact.analysisId, artifact.revisionId, current);
 		return { job: current, notify: true };
 	}

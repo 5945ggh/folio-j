@@ -140,13 +140,11 @@ export async function analysisReading(h: BrowserHarness) {
 		initialRevision = null,
 		segmentId = "analysis-segment",
 		disabled = false,
-		generationDisabled = false,
 	}: {
 		initialId?: string | null;
 		initialRevision?: string | null;
 		segmentId?: string;
 		disabled?: boolean;
-		generationDisabled?: boolean;
 	}) {
 		const [selection, setSelection] = useState<[string | null, string | null]>([
 			initialId,
@@ -170,9 +168,8 @@ export async function analysisReading(h: BrowserHarness) {
 						toolbarActions={
 							<NewAnalysisActions
 								disabled={disabled}
-								generationDisabled={generationDisabled}
 								onCreate={() => creates++}
-								onGenerate={() => generates++}
+								onExplain={() => generates++}
 							/>
 						}
 					/>
@@ -337,7 +334,7 @@ export async function analysisReading(h: BrowserHarness) {
 			() => !!container.querySelector(".segment-create-menu:popover-open"),
 			"Creation choices must reopen for the independent AI action",
 		);
-		button("使用 AI 生成").click();
+		button("创建 AI 讲解").click();
 		await until(
 			() =>
 				generates === before[1] + 1 &&
@@ -782,7 +779,7 @@ export async function analysisReading(h: BrowserHarness) {
 	}
 	for (const disabled of [false, true]) {
 		const before: [number, number] = [creates, generates];
-		dispose = await mount(<Reading disabled={disabled} generationDisabled />);
+		dispose = await mount(<Reading disabled={disabled} />);
 		try {
 			await until(
 				() => !!container.querySelector("#manual-analysis-create"),
@@ -810,30 +807,25 @@ export async function analysisReading(h: BrowserHarness) {
 					...container.querySelectorAll<HTMLButtonElement>(
 						".segment-create-menu button",
 					),
-				].find((node) => node.textContent?.trim() === "使用 AI 生成");
+				].find((node) => node.textContent?.trim() === "创建 AI 讲解");
 				check(
-					generate?.disabled && !button("自己编写").disabled,
-					"The generation gate must disable only the AI option",
+					generate && !generate.disabled && !button("自己编写").disabled,
+					"Available material must allow both manual writing and AI explanation",
 				);
 				button("自己编写").focus();
 				key(button("自己编写"), "ArrowDown");
 				check(
-					document.activeElement === button("自己编写"),
-					"Creation menu keyboard navigation must skip disabled AI generation",
+					document.activeElement === generate,
+					"Keyboard navigation must reach the AI explanation option",
 				);
 				generate.click();
 				check(
-					generates === before[1],
-					"Disabled AI creation must never call its callback",
-				);
-				button("自己编写").click();
-				check(
-					creates === before[0] + 1,
-					"Generation-disabled lists must still support manual creation",
+					generates === before[1] + 1,
+					"AI explanation must call its own callback once",
 				);
 			}
 			check(
-				generates === before[1] && creates === before[0] + (disabled ? 0 : 1),
+				generates === before[1] + (disabled ? 0 : 1) && creates === before[0],
 				"Creation gates must preserve independent callbacks without writes",
 			);
 		} finally {

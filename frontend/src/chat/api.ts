@@ -9,6 +9,7 @@ export type JobInput = components["schemas"]["JobCreate"];
 export type JobDecision = components["schemas"]["JobDecision"];
 
 export const chatKeys = {
+	explanationPrompt: ["chat-explanation-prompt"] as const,
 	threads: (segmentId: string) => ["chat-threads", segmentId] as const,
 	thread: (threadId: string) => ["chat-thread", threadId] as const,
 	messages: (threadId: string) => ["chat-messages", threadId] as const,
@@ -121,6 +122,13 @@ export async function decideJob(jobId: string, input: JobDecision) {
 	const { data, error, response } = await api.POST(
 		"/api/jobs/{job_id}/decision",
 		{ params: { path: { job_id: jobId } }, body: input },
+	);
+	return requireData(data, error, response.status);
+}
+
+export async function getExplanationPrompt() {
+	const { data, error, response } = await api.GET(
+		"/api/chat/explanation-prompt",
 	);
 	return requireData(data, error, response.status);
 }

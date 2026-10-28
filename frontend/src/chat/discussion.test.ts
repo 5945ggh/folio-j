@@ -9,16 +9,13 @@ import {
 	readingPositionForJob,
 	savedArtifact,
 	shouldOpenArtifact,
-	visibleDraft,
 } from "./discussion.ts";
 
 const submitted = {
-	action: "chat" as const,
 	request_id: "same-request",
 	expected_thread_revision: 1,
 	expected_segment_revision: 1,
 	question: "原问题",
-	additional_instructions: "原补充",
 	stream: true,
 };
 
@@ -129,11 +126,16 @@ test("讨论协调器在丢失受理响应后以同一 request_id 核实并刷�
 	const first = await coordinator.submit("thread-1", submitted);
 	assert.equal(first.pending?.input.request_id, "same-request");
 	assert.ok(first.pending);
+	assert.equal(first.pending.input, submitted);
+	assert.equal(
+		Object.hasOwn(first.pending.input, "additional_instructions"),
+		false,
+	);
 	const resolved = await coordinator.verify("thread-1", first.pending);
 	assert.deepEqual(requests, ["same-request"]);
 	assert.equal(resolved.job?.id, "job-1");
 	assert.ok(resolved.job);
-	let draft = { question: "核实期间继续编辑", additional: "原补充" };
+	let draft = { question: "核实期间继续编辑" };
 	let notifications = 0;
 	const accepted = coordinator.acceptSubmission(resolved.job, {
 		threadId: "thread-1",
@@ -146,7 +148,6 @@ test("讨论协调器在丢失受理响应后以同一 request_id 核实并刷�
 		},
 		setError: () => {},
 		onJobAccepted: () => {},
-		onGenerationAccepted: () => {},
 	});
 	coordinator.observeJob(accepted, {
 		threadId: "thread-1",
@@ -157,7 +158,6 @@ test("讨论协调器在丢失受理响应后以同一 request_id 核实并刷�
 	});
 	assert.deepEqual(draft, {
 		question: "核实期间继续编辑",
-		additional: "原补充",
 	});
 	assert.equal(notifications, 1);
 	assert.ok(invalidated.some((key) => key[0] === "chat-thread"));
@@ -171,7 +171,7 @@ test("生产受理入口以函数式草稿更新保留迟到响应期间的新�
 		submit: async () => job(1),
 		findByRequest: async () => job(1),
 	});
-	let draft = { question: "提交后编辑", additional: "原补充" };
+	let draft = { question: "提交后编辑" };
 	let pending = { input: submitted, uncertain: true };
 	let accepted = 0;
 	coordinator.acceptSubmission(job(1, "queued"), {
@@ -189,9 +189,8 @@ test("生产受理入口以函数式草稿更新保留迟到响应期间的新�
 		onJobAccepted: () => {
 			accepted += 1;
 		},
-		onGenerationAccepted: () => {},
 	});
-	assert.deepEqual(draft, { question: "提交后编辑", additional: "原补充" });
+	assert.deepEqual(draft, { question: "提交后编辑" });
 	assert.equal(pending, null);
 	assert.equal(accepted, 1);
 });
@@ -253,16 +252,28 @@ test("重复观察同版本 Job 不重复写入 QueryClient 缓存", () => {
 	assert.equal(updates, 1);
 });
 
-test("旧补充要求合并为可见问题，保留全文且再次转换不重复", () => {
-	const legacy = { question: "原问题", additional: "  保留例句\n只讲语气  " };
-	const restored = visibleDraft(legacy);
-	assert.deepEqual(restored, {
-		question: "原问题\n\n补充要求：\n  保留例句\n只讲语气  ",
-		additional: "",
+test("已合入正文的旧补充要求经过受理保留完整内容并保护新编辑", () => {
+	const question = "原问题\n\n  保留例句\n只讲语气  ";
+	const input = { ...submitted, question };
+	const coordinator = new DiscussionCoordinator(new QueryClient(), {
+		submit: async () => job(1),
+		findByRequest: async () => job(1),
 	});
-	assert.equal(visibleDraft(restored), restored);
-	assert.deepEqual(visibleDraft({ question: "", additional: "保留例句" }), {
-		question: "补充要求：\n保留例句",
-		additional: "",
+	let draft = { question: `${question}\n新的编辑` };
+	const edited = draft;
+	coordinator.acceptSubmission(job(1, "queued"), {
+		threadId: "thread-1",
+		segmentId: "segment-1",
+		input,
+		setRecentJobId: () => {},
+		setPending: () => {},
+		setDraft: (update) => {
+			draft = update(draft);
+		},
+		setError: () => {},
+		onJobAccepted: () => {},
 	});
+	assert.equal(draft, edited);
+	assert.equal(draft.question, `${question}\n新的编辑`);
+	assert.equal(Object.hasOwn(input, "additional_instructions"), false);
 });

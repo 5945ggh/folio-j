@@ -2,7 +2,7 @@
 export function shouldMountWorkbench(
 	activated: boolean,
 	chatOpen: boolean,
-	generateToken: string | null,
+	explainToken: string | null,
 ): boolean {
-	return activated || chatOpen || Boolean(generateToken);
+	return activated || chatOpen || Boolean(explainToken);
 }

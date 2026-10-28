@@ -34,10 +34,7 @@ export async function workbenchRender(h: BrowserHarness) {
 		job_summary: {
 			artifacts: [],
 			error: index === 39 ? "历史失败" : null,
-			retry:
-				index === 39
-					? { question: "恢复的问题", additional_instructions: "保留例句" }
-					: null,
+			retry: index === 39 ? { question: "恢复的问题\n\n保留例句" } : null,
 		},
 	}));
 	let job: Job = {
@@ -110,10 +107,9 @@ export async function workbenchRender(h: BrowserHarness) {
 				</button>
 				<Workbench
 					segment={materialSegment}
-					generateToken={null}
+					explainToken={null}
 					selectedThreadId="thread"
 					onSelectThread={() => {}}
-					onGenerationAccepted={() => {}}
 					onSubmissionStarted={() => {}}
 					onJobAccepted={() => {}}
 					onOpenArtifact={() => {}}
@@ -193,7 +189,7 @@ export async function workbenchRender(h: BrowserHarness) {
 		);
 		button("把原问题放回输入框").click();
 		await until(
-			() => input.value === "恢复的问题\n\n补充要求：\n保留例句",
+			() => input.value === "恢复的问题\n\n保留例句",
 			"Memoized history must retain latest retry callback",
 		);
 		await settle();

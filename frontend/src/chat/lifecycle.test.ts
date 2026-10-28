@@ -25,7 +25,7 @@ test("opening discussion and a visible direct thread activate the workbench", ()
 		);
 });
 
-test("quick generation activates before its URL update, then hiding preserves the mounted session", () => {
+test("explanation shortcut activates before its URL update, then hiding preserves the mounted session", () => {
 	let active = shouldMountWorkbench(false, false, "generation-request");
 	assert.equal(active, true);
 	for (const search of [

@@ -89,7 +89,6 @@ def question_payload(seed: dict[str, Any], **changes: Any) -> dict[str, Any]:
         "expected_thread_revision": seed["thread"]["revision"],
         "expected_segment_revision": seed["segment"]["revision"],
         "question": "だった是什么意思？",
-        "additional_instructions": "请简短解释。",
         "stream": True,
         **changes,
     }
@@ -101,6 +100,30 @@ async def accept(client: AsyncClient, seed: dict[str, Any], **changes: Any) -> d
     )
     assert response.status_code == 202, response.text
     return response.json()
+
+
+@pytest.mark.asyncio
+async def test_explanation_prompt_is_available_without_provider_configuration(
+    tmp_path: Path,
+) -> None:
+    async with chat_client(tmp_path / "prompt-only.db") as (client, _app):
+        response = await client.get("/api/chat/explanation-prompt")
+        assert response.status_code == 200, response.text
+        assert set(response.json()) == {"question"}
+        assert "创建并保存一份独立讲解" in response.json()["question"]
+        assert "保存成功后" in response.json()["question"]
+        assert "无须在对话中重复全文" in response.json()["question"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("action", ["chat", "generate_analysis"])
+async def test_new_job_rejects_removed_action_selector(tmp_path: Path, action: str) -> None:
+    async with chat_client(tmp_path / "removed-action.db") as (client, _app):
+        seed = await seed_chat(client)
+        response = await client.post(
+            f"/api/threads/{seed['thread']['id']}/jobs", json=question_payload(seed, action=action)
+        )
+        assert response.status_code == 422, response.text
 
 
 @pytest.mark.asyncio
@@ -172,17 +195,16 @@ async def test_review_decision_is_idempotent_and_version_bound(tmp_path: Path) -
 
 
 @pytest.mark.asyncio
-async def test_quick_analysis_accept_freezes_writer_tools_and_current_model(tmp_path: Path) -> None:
+async def test_chat_accept_freezes_save_tools_and_current_model(tmp_path: Path) -> None:
     database = tmp_path / "quick.db"
     async with chat_client(database) as (client, _app):
         seed = await seed_chat(client)
         job = await accept(
             client,
             seed,
-            action="generate_analysis",
             question="请为当前片段生成总体讲解。",
         )
-        assert job["kind"] == "generate_analysis"
+        assert job["kind"] == "chat"
         assert job["model"]["provider_model_id"] == seed["model"]["id"]
         with sqlite3.connect(database) as connection:
             row = connection.execute(
@@ -193,7 +215,7 @@ async def test_quick_analysis_accept_freezes_writer_tools_and_current_model(tmp_
         assert [tool["function"]["name"] for tool in snapshot["tools"]] == [
             "list_analyses",
             "read_analysis",
-            "generate_analysis",
+            "save_analysis",
             "update_analysis_section",
             "insert_analysis_sections",
             "delete_analysis_section",
@@ -233,7 +255,7 @@ async def test_accept_atomically_locks_text_and_records_snapshot_without_run(
         assert [item["role"] for item in messages["items"]] == ["user", "assistant"]
         assert messages["items"][0]["content"] == "だった是什么意思？"
         assert job["question"] == "だった是什么意思？"
-        assert job["additional_instructions"] == "请简短解释。"
+        assert "additional_instructions" not in job
         assert "fictional-chat-secret" not in json.dumps(job)
         assert "credential_ref" not in job
         assert "base_url" not in job["model"]
@@ -542,7 +564,7 @@ async def test_history_page_projects_job_facts_without_loading_large_snapshots(
         assert summary == {
             "artifacts": [{"analysis_id": "saved-analysis", "revision_id": "old-revision"}],
             "error": "保留的失败原因",
-            "retry": {"question": "原问题", "additional_instructions": "补充要求"},
+            "retry": {"question": "原问题\n\n补充要求"},
         }
         assert messages[0]["job_summary"] is None
         assert len(statements) == 2, statements

@@ -1,0 +1,31 @@
+{# version: v1 #}
+【当前学习片段】
+片段是当前讨论与讲解围绕的目标文本，可由用户手动录入，或从应用内材料的选区保存。用户可以补充、修改或清空语境、参考译文、听写和出处说明。
+
+【目标原文】
+{{ segment.text }}
+
+【前文（仅作语境）】
+{{ segment.context_before or '（未提供）' }}
+
+【后文（仅作语境）】
+{{ segment.context_after or '（未提供）' }}
+
+【参考译文（可能不准确）】
+{{ segment.translation or '（未提供）' }}
+
+【参考听写（可能不准确）】
+{{ segment.transcription or '（未提供）' }}
+
+【材料出处（应用派生）】
+{% if segment.material_provenance %}{{ segment.material_provenance.display or '（暂无可读出处）' }}
+{% if segment.material_provenance.status != 'resolved' %}出处状态：{{ {
+    'material_deleted': '原材料已删除',
+    'version_unavailable': '材料版本不可用',
+    'snapshot_mismatch': '原文快照不匹配',
+    'invalid_reference': '材料出处记录无效'
+}[segment.material_provenance.status] }}。
+{% endif %}{% else %}（未关联材料出处）
+{% endif %}
+【出处说明（用户填写）】
+{{ segment.source_ref or '（未填写）' }}

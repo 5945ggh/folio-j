@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chat_schemas import (
+    ExplanationPromptResponse,
     JobCreate,
     JobDecision,
     JobResponse,
@@ -20,6 +21,15 @@ from app.services import chat as service
 
 router = APIRouter(prefix="/api")
 Session = Annotated[AsyncSession, Depends(get_session)]
+
+
+@router.get(
+    "/chat/explanation-prompt",
+    response_model=ExplanationPromptResponse,
+    operation_id="getExplanationPrompt",
+)
+def explanation_prompt() -> ExplanationPromptResponse:
+    return service.explanation_prompt()
 
 
 @router.get("/segments/{segment_id}/threads", response_model=ThreadPage, operation_id="listThreads")

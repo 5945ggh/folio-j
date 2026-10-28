@@ -2,21 +2,20 @@
 
 import json
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any, cast
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chat_models import ChatMessage, Job
 from app.models import Segment, Source
+from app.prompting import assemble_context
+from app.provenance_schemas import SegmentProvenanceResponse
+from app.services.context_plugins import CONTEXT_PLUGINS, ENV, PROMPTS
 from app.settings_models import Profile, Style
 
-PROMPTS = Path(__file__).resolve().parents[3] / "prompts" / "chat"
-PROMPT_VERSION = "v4+tools_v4"
+PROMPT_VERSION = "v8+tools_v5+context_v1+user_v4"
 MAX_MESSAGE_CHARS = 200000
-ENV = Environment(loader=FileSystemLoader(PROMPTS), undefined=StrictUndefined, autoescape=False)
 
 
 def snapshot_time(value: datetime) -> str:
@@ -45,8 +44,9 @@ async def make_input_snapshot(
     profile: Profile,
     style: Style | None,
     question: str,
-    additional_instructions: str,
     protocol: str,
+    *,
+    material_provenance: SegmentProvenanceResponse | None = None,
 ) -> dict[str, Any]:
     history_rows = (
         await session.execute(
@@ -71,7 +71,7 @@ async def make_input_snapshot(
         for message, job in history_rows
     ]
     snapshot: dict[str, Any] = {
-        "snapshot_version": 1,
+        "snapshot_version": 4,
         "source": {
             "id": source.id,
             "title": source.title,
@@ -88,6 +88,24 @@ async def make_input_snapshot(
             "context_after": segment.context_after,
             "transcription": segment.transcription,
             "source_ref": segment.source_ref,
+            "material_provenance": (
+                {
+                    "display": material_provenance.display,
+                    "status": material_provenance.status,
+                    "material_id": (
+                        material_provenance.material_provenance.material_id
+                        if material_provenance.material_provenance
+                        else None
+                    ),
+                    "version_id": (
+                        material_provenance.material_provenance.version_id
+                        if material_provenance.material_provenance
+                        else None
+                    ),
+                }
+                if material_provenance is not None and material_provenance.status != "none"
+                else None
+            ),
         },
         "profile": {
             "native_language": profile.native_language,
@@ -105,7 +123,6 @@ async def make_input_snapshot(
             else None
         ),
         "question": question,
-        "additional_instructions": additional_instructions,
         "history": history,
         "references": {
             "source_id": source.id,
@@ -113,8 +130,7 @@ async def make_input_snapshot(
             "message_ids": [item["message_id"] for item in history],
         },
     }
-    system = ENV.get_template("system_v4.j2").render(**snapshot).strip()
-    user = ENV.get_template("user_v2.j2").render(**snapshot).strip()
+    user = ENV.get_template("user_v4.j2").render(**snapshot).strip()
     previous = next(
         (
             job
@@ -123,6 +139,15 @@ async def make_input_snapshot(
         ),
         None,
     )
+    same_protocol = previous is not None and previous.model_snapshot["protocol"] == protocol
+    assembly = assemble_context(
+        CONTEXT_PLUGINS,
+        snapshot,
+        previous.input_snapshot.get("context_state") if same_protocol and previous else None,
+    )
+    snapshot["context_state"] = assembly.state
+    initial_system = [item for item in assembly.messages if item["role"] == "system"]
+    initial_context = [item for item in assembly.messages if item["role"] != "system"]
     messages: list[dict[str, Any]]
     if previous is not None:
         messages = list(previous.execution_state["protocol_messages"])
@@ -134,8 +159,9 @@ async def make_input_snapshot(
                 if item.get("type") == "reasoning" or item.get("reasoning_content")
             )
             messages = [
-                {"role": "system", "content": system},
+                *initial_system,
                 {"role": "user", "content": _history_material(messages)},
+                *initial_context,
             ]
             snapshot["protocol_conversion"] = {
                 "from": prior_protocol,
@@ -144,8 +170,10 @@ async def make_input_snapshot(
                 "provider_reasoning_items_not_portable": omitted,
                 "strategy": "history_material_v1",
             }
+        else:
+            messages.extend(assembly.messages)
     else:
-        messages = [{"role": "system", "content": system}]
+        messages = list(initial_system)
         legacy_items: list[dict[str, str]] = []
         for message, job in history_rows:
             if message.role == "user":
@@ -164,6 +192,7 @@ async def make_input_snapshot(
         if legacy_items:
             messages.append({"role": "user", "content": _history_material(legacy_items)})
             snapshot["legacy_history_conversion"] = "history_material_v1"
+        messages.extend(initial_context)
     failed_jobs = (
         await session.scalars(
             select(Job)
@@ -200,20 +229,7 @@ async def make_input_snapshot(
         )
     messages.append({"role": "user", "content": user})
     snapshot["messages"] = messages
-    snapshot["tools"] = json.loads((PROMPTS / "tools_v4.json").read_text())["tools"]
-    snapshot["writer_text"] = (
-        Environment(
-            loader=FileSystemLoader(PROMPTS.parent / "analysis"),
-            undefined=StrictUndefined,
-            autoescape=False,
-        )
-        .get_template("writer_v2.j2")
-        .render()
-        .strip()
-    )
-    snapshot["writer_version"] = "v2"
-    snapshot["saved_artifact_template"] = (PROMPTS / "saved_artifact_v1.j2").read_text()
-    snapshot["saved_artifact_version"] = "v1"
+    snapshot["tools"] = json.loads((PROMPTS / "tools_v5.json").read_text())["tools"]
     snapshot["prompt_version"] = (
         PROMPT_VERSION
         + ("+artifact_v1" if recovered_artifacts else "")

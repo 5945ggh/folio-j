@@ -12,19 +12,19 @@ from app.chat_models import ChatMessage, ChatThread, Job
 from app.ids import new_ulid
 from app.llm import adapters
 from app.models import Segment, Source
-from app.services.settings import now, read_credential, redact_credential
+from app.services.settings import now, read_credential
 from app.settings_models import Run
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
-ANALYSIS_CALL_SECONDS = 180
+CALL_SECONDS = 180
 SCAN_SECONDS = 0.25
 ACTIVE = ("queued", "running", "stopping")
 
 
 def tool_definitions() -> list[dict[str, Any]]:
-    path = Path(__file__).resolve().parents[3] / "prompts" / "chat" / "tools_v4.json"
+    path = Path(__file__).resolve().parents[3] / "prompts" / "chat" / "tools_v5.json"
     data: dict[str, Any] = json.loads(path.read_text())
     return data["tools"]
 
@@ -70,6 +70,18 @@ async def _claim(
         assistant = await _assistant(session, job_id)
         if assistant is None:
             return None
+        if job.kind == "generate_analysis":
+            finished = now()
+            job.status = "interrupted"
+            job.error_code = "legacy_job_unsupported"
+            job.error = "旧版专用生成任务已停用，请重新发起普通对话"
+            job.execution_token = None
+            job.finished_at = finished
+            job.version += 1
+            assistant.status, assistant.updated_at = "interrupted", finished
+            _release(thread, job)
+            await session.commit()
+            return None
         try:
             key = read_credential(application.state.database_path, job.credential_ref)
         except (OSError, UnicodeError):
@@ -89,11 +101,9 @@ async def _claim(
         started = now()
         state = dict(job.execution_state or {})
         messages = list(state.get("protocol_messages") or inputs["messages"])
-        if job.kind == "generate_analysis":
-            messages.append({"role": "user", "content": inputs["writer_text"]})
         run = Run(
             id=new_ulid(),
-            purpose="analysis" if job.kind == "generate_analysis" else "chat",
+            purpose="chat",
             job_id=job.id,
             messages=messages,
             deleted_at=None,
@@ -109,8 +119,7 @@ async def _claim(
             output_text="",
             error=None,
             usage=None,
-            prompt_version=inputs["prompt_version"]
-            + (f"+writer_{inputs['writer_version']}" if job.kind == "generate_analysis" else ""),
+            prompt_version=inputs["prompt_version"],
             prompt_text="",
             base_url=model["base_url"],
             credential_ref=job.credential_ref,
@@ -140,78 +149,10 @@ async def _claim(
             max_output_tokens=model["max_output_tokens"],
             reasoning_effort=model["reasoning_effort"],
             messages=messages,
-            tools=inputs["tools"] if job.kind == "generate_analysis" else None,
-            tool_choice="none" if job.kind == "generate_analysis" else None,
-            timeout_seconds=ANALYSIS_CALL_SECONDS,
+            tools=inputs["tools"],
+            timeout_seconds=CALL_SECONDS,
         )
         return token, key, snapshot
-
-
-async def _finish(  # pyright: ignore[reportUnusedFunction]
-    application: "FastAPI",
-    job_id: str,
-    token: str,
-    *,
-    result: adapters.GenerateResult | None,
-    error_code: str | None,
-    error: str | None,
-    partial: str,
-    key: str | None,
-) -> None:
-    async with application.state.session_factory() as session:
-        await session.execute(text("BEGIN IMMEDIATE"))
-        job = await session.get(Job, job_id)
-        if job is None or job.status != "running" or job.execution_token != token:
-            return
-        thread = await session.get(ChatThread, job.thread_id)
-        if thread is None or not await _parents_valid(session, job, thread):
-            return
-        run = await session.scalar(select(Run).where(Run.job_id == job_id))
-        assistant = await _assistant(session, job_id)
-        if run is None or run.status != "running" or assistant is None:
-            return
-        partial = redact_credential(partial or run.output_text or assistant.content, key) or ""
-        final_text = (
-            redact_credential(result.text, key) if result is not None else partial
-        ) or partial
-        complete = (
-            result is not None and result.completed and bool(final_text.strip()) and not error_code
-        )
-        status = "succeeded" if complete else "failed"
-        if not complete and error_code is None:
-            error_code, error = "incomplete_output", "模型未返回完整的可见文本"
-        if complete and job.kind == "generate_analysis":
-            from app.services.analyses import create_analysis
-
-            detail = await create_analysis(
-                session,
-                segment_id=thread.segment_id,
-                source_md=final_text,
-                operation_key=f"job:{job.id}:create",
-                origin="agent",
-                run_id=run.id,
-            )
-            state = dict(job.execution_state or {})
-            state["artifacts"] = [{"analysis_id": detail.id, "revision_id": detail.revision_id}]
-            state["active_step"] = "saved"
-            job.execution_state = state
-            final_text = "讲解已保存，可在左侧阅读。"
-        job.status = run.status = status
-        job.error_code, job.error = error_code, error
-        run.error = error
-        run.output_text = (redact_credential(result.text, key) or partial) if result else partial
-        assistant.content = final_text
-        run.usage = result.usage if result is not None else None
-        run.raw_response = (
-            redact_credential(result.raw_response, key) if result is not None else None
-        )
-        assistant.status = "complete" if complete else "failed"
-        finished = now()
-        assistant.updated_at = run.finished_at = job.finished_at = finished
-        job.execution_token = None
-        job.version += 1
-        _release(thread, job)
-        await session.commit()
 
 
 async def execution_authorized(session: AsyncSession, job_id: str, token: str) -> bool:
@@ -283,17 +224,9 @@ async def execute_job(application: "FastAPI", job_id: str) -> None:
         if claim is None:
             return
         token, key, snapshot = claim
-        async with application.state.session_factory() as session:
-            current = await session.get(Job, job_id)
-            is_chat = current is not None and current.kind == "chat_reply"
-        if is_chat:
-            from app.jobs.agent import execute_agent_job
+        from app.jobs.agent import execute_agent_job
 
-            await execute_agent_job(application, job_id, token, key, snapshot)
-            return
-        from app.jobs.agent import execute_quick_job
-
-        await execute_quick_job(application, job_id, token, key, snapshot)
+        await execute_agent_job(application, job_id, token, key, snapshot)
 
 
 async def recover_chat_jobs(session: AsyncSession) -> None:

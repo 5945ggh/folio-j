@@ -78,8 +78,7 @@ export function makeJob(status: Job["status"]): Job {
 		thread_id: "thread",
 		request_id: "request",
 		kind: "chat",
-		question: "原问题",
-		additional_instructions: "原补充",
+		question: "原问题\n\n原补充",
 		permission_mode: "review",
 		version: 1,
 		status,
@@ -257,7 +256,6 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 										error: job.error,
 										retry: {
 											question: job.question,
-											additional_instructions: job.additional_instructions,
 										},
 									},
 								},
@@ -266,14 +264,13 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 					next_cursor: null,
 				});
 			if (path === "/api/threads/thread/jobs" && request.method === "POST") {
-				submissionCount++;
 				submitted = await request.json();
+				submissionCount++;
 				if (failSubmission)
 					return Response.json({ detail: "离线拒绝提交" }, { status: 422 });
 				job = {
 					...makeJob("running"),
 					question: submitted?.question ?? "",
-					additional_instructions: submitted?.additional_instructions ?? "",
 					request_id: submitted?.request_id ?? "",
 				};
 				thread = {
@@ -327,10 +324,9 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 			<div style={{ height: "700px", background: "#fff", maxWidth: "100%" }}>
 				<Workbench
 					segment={materialSegment}
-					generateToken={null}
+					explainToken={null}
 					selectedThreadId={selected}
 					onSelectThread={setSelected}
-					onGenerationAccepted={() => {}}
 					onSubmissionStarted={() => {}}
 					onJobAccepted={() => {}}
 					onOpenArtifact={(analysis, revision) => {
@@ -361,6 +357,10 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 		};
 		check(pressEnter().defaultPrevented, "Empty Enter must not add a newline");
 		check(submissionCount === 0, "Empty Enter must not submit a job");
+		check(
+			find<HTMLTextAreaElement>("#chat-question").maxLength === 20002,
+			"Question must accept the full legacy merged body limit",
+		);
 		inputValue(find("#chat-question"), "请解释这个语气");
 		await until(
 			() =>
@@ -559,13 +559,13 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 		);
 		check(
 			submitted?.question === "请解释这个语气，保留日语例句" &&
-				submitted.additional_instructions === "" &&
+				!Object.hasOwn(submitted, "additional_instructions") &&
 				!Object.hasOwn(submitted, "style_id") &&
 				submitted.stream === false &&
 				submitted.expected_thread_revision === 5 &&
 				submitted.expected_segment_revision === 7 &&
 				!!submitted.request_id,
-			"Job payload changed question, additional instructions, settings or optimistic revisions",
+			"Job payload must use only question, settings and optimistic revisions",
 		);
 		check(
 			find<HTMLTextAreaElement>("#chat-question").value ===
@@ -754,6 +754,10 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 				find(".chat-review-card").textContent?.includes("新开头"),
 			"Review must show before and after",
 		);
+		check(
+			find<HTMLTextAreaElement>("#review-instructions").maxLength === 10000,
+			"Review feedback must retain its 10000-character contract",
+		);
 		inputValue(find("#review-instructions"), "请保留例句");
 		await until(
 			() =>
@@ -796,7 +800,7 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 		await until(
 			() =>
 				find<HTMLTextAreaElement>("#chat-question").value ===
-				"原问题\n\n补充要求：\n原补充",
+				"原问题\n\n原补充",
 			"Retry must restore legacy instructions visibly in the single question field",
 		);
 		if (refreshed) {
@@ -852,6 +856,21 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 						"Icon-only button requires accessible label",
 					);
 		}
+		const beforeRetry = submissionCount;
+		await until(
+			() => !button("发送问题").disabled,
+			"Restored question must be available for resubmission",
+		);
+		button("发送问题").click();
+		await until(
+			() => submissionCount === beforeRetry + 1,
+			"Retry must submit the restored question",
+		);
+		check(
+			String(submitted?.question) === "原问题\n\n原补充" &&
+				!Object.hasOwn(submitted, "additional_instructions"),
+			"Retry must send merged question without an extra instructions field",
+		);
 	} finally {
 		dispose();
 	}

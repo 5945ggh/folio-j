@@ -91,6 +91,8 @@ try {
 		[390, 900, "?suite=reader-session"],
 		[1280, 900, "?suite=reader-session&direction=vertical-rl"],
 		[600, 900, ""],
+		[1280, 900, "?suite=explanation"],
+		[390, 900, "?suite=explanation"],
 		[1280, 900, "?suite=workbench"],
 		[390, 900, "?suite=workbench"],
 		[1280, 900, "?suite=workbench-history"],

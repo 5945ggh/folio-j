@@ -25,9 +25,8 @@ def offline_discovery(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("action", ["chat", "generate_analysis"])
 async def test_stream_coalesces_500_chunks_and_queries_only_authorization_fields(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, action: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     clock = [0.0]
     monkeypatch.setattr(agent, "monotonic", lambda: clock[0], raising=False)
@@ -58,7 +57,7 @@ async def test_stream_coalesces_500_chunks_and_queries_only_authorization_fields
     install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "cost.db") as (client, app):
         seed = await seed_chat(client)
-        job = await accept(client, seed, action=action)
+        job = await accept(client, seed)
         engine = app.state.session_factory.kw["bind"].sync_engine
 
         def observe(
@@ -94,9 +93,8 @@ async def test_stream_coalesces_500_chunks_and_queries_only_authorization_fields
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("failure", ["provider_error", "timeout", "output_limit"])
-@pytest.mark.parametrize("action", ["chat", "generate_analysis"])
 async def test_failure_flushes_latest_buffer_and_fences_retained_callback(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str, action: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
     monkeypatch.setattr(agent, "monotonic", lambda: 0.0, raising=False)
     buffer_ready = asyncio.Event()
@@ -138,7 +136,7 @@ async def test_failure_flushes_latest_buffer_and_fences_retained_callback(
     install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "flush.db") as (client, app):
         seed = await seed_chat(client)
-        job = await accept(client, seed, action=action)
+        job = await accept(client, seed)
         await runtime.execute_job(app, job["id"])
         final = (await client.get(f"/api/jobs/{job['id']}")).json()
         assert final["status"] == "failed"

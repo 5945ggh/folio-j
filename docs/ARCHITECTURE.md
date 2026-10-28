@@ -279,15 +279,15 @@ erDiagram
 - 接受请求以线程内request_id幂等，原样重放返回原身份，异payload或并发新轮冲突；Segment用户编辑revision和Thread.revision用于拒绝陈旧提交。片段编辑、来源／片段删除必须同步参与事务保护，不能只修改新入口。
 - Job在接受时存在，Run在实际调用前创建；新增Run.purpose区分verification与chat，旧数据为verification。chat不进入模型验证历史／能力汇总，删除学习内容后也不能通过Run详情重见原文。
 - 2B实际输入为现有Source／Segment、学习背景、适用预设、本轮问题及本线程成功的完整历史；管理备注不自动发送，失败／中断残文保留展示但不自动拼入后续请求。messages接受时渲染并保存，worker不读取新的默认值、资料或模板替换输入。持久讲解的确切版本读取已由2C工具落实，见第3.5节。
-- 2B交付时没有成果工具、审核等待或修复循环，单Job一次生成且60秒调用预算；这是历史切片边界。当前2C已增加工具循环、生成分支和具体操作审核，预算见第3.5节。TBD-16的Analysis执行部分已落实，Occurrence部分仍未实现；TBD-17继续保持未决。
+- 2B交付时没有成果工具、审核等待或修复循环，单Job一次生成且60秒调用预算；这是历史切片边界。当前2C已增加工具循环、显式保存和具体操作审核，预算见第3.5节。TBD-16的Analysis执行部分已落实，Occurrence部分仍未实现；TBD-17继续保持未决。
 
 ### 3.5 2C Analysis 与工具执行实现
 
 `analysis_models.py`、`analysis_schemas.py`、`services/analyses.py`和`services/normalizer.py`实现持久Analysis、不可变Revision和派生Section，相关表纳入当前初始基线。Analysis.current_revision_id指向最新版本，编辑以基础修订校验并创建新版本；未修改块保留uid和原文。创建／编辑的操作身份与payload共同保证幂等，不能跨Segment重用操作身份。
 
-`jobs/agent.py`执行主对话工具循环与内部写作分支。Job.execution_state持久保存实际协议历史、预算、成果和具体待审方案，一个Job可关联多个Run；Run结束、成果保存和Job完成分别判断。`waiting_review`仍占用线程活动任务身份，批准或拒绝须绑定方案版本；拒绝可附加指令，批准不把附加指令悄悄写进已展示方案。重启中断执行中的任务，待审核方案可重新打开；已保存的成果始终保留。
+`jobs/agent.py`执行统一的主对话工具循环。Job.execution_state持久保存实际协议历史、预算、成果和具体待审方案，一个Job可关联多个Run；Run结束、成果保存和Job完成分别判断。`waiting_review`仍占用线程活动任务身份，批准或拒绝须绑定方案版本；拒绝可附加指令，批准不把附加指令悄悄写进已展示方案。重启中断执行中的任务，待审核方案可重新打开；已保存的成果始终保留。
 
-当前预算常量集中在`jobs/agent.py`：最多8次模型调用，单次调用上限180秒，累计计时上限600秒，输出和上下文各200000字符。累计值通过`execution_state.model_seconds`持久保存各次`_invoke`的实际耗时（包含其内部授权核对／入口等待），不是整个Job的墙钟时长；人工审核等待和外部工具处理不计入。下一次调用时限取180秒与剩余累计时间的较小值。分支与主循环共享计数和全局并发名额，不在审核恢复时重置预算。停止撤销执行标识，后续调用和保存均再核对持久状态；已进入的模型调用仅尽力取消，不能保证远端不再计费。
+当前预算常量集中在`jobs/agent.py`：最多8次模型调用，单次调用上限180秒，累计计时上限600秒，输出和上下文各200000字符。累计值通过`execution_state.model_seconds`持久保存各次`_invoke`的实际耗时（包含其内部授权核对／入口等待），不是整个Job的墙钟时长；人工审核等待和外部工具处理不计入。下一次调用时限取180秒与剩余累计时间的较小值。各次调用共享计数和全局并发名额，不在审核恢复时重置预算。停止撤销执行标识，后续调用和保存均再核对持久状态；已进入的模型调用仅尽力取消，不能保证远端不再计费。
 
 消息历史默认保留正向 `after_ordinal` 分页；`direction=backward` 配合可选 `before_ordinal` 从最近消息向前读取，页内始终按 ordinal 升序。助手消息附带 `job_summary`，仅包含成果引用、错误与失败重试输入；页查询投影所需 JSON 字段，不载入完整调用历史。前端首屏取最近50条，再由用户按需加载更早消息。
 
@@ -295,21 +295,35 @@ erDiagram
 
 ## 4. 模块设计
 
-2A 已落地设置与模型验证：`settings_models.py`／`settings_schemas.py`、`services/settings.py` 与 `llm/adapters.py`；配置保存在SQLite，凭据使用数据库旁 `<数据库文件名>.secrets/` 的独立文件（0700目录／0600文件）。验证 Run 固定非敏感配置和凭据引用，后台最多并发2次，每次只调用一次，60秒超时；页面只观察持久记录，重启不自动重放。非流式响应脱敏留存，流式保存脱敏聚合正文与终止元数据，不记录可能重组出密钥的逐包碎片。详见[2A契约](handovers/archived/STAGE_2A_MODEL_SETTINGS.md)。2B已实现片段上下文与持久问答；2C在此基础上实现Analysis成果工具、内部生成分支、多Run和具体操作审核。Occurrence及复杂组合方案仍留后续切片。
+2A 已落地设置与模型验证：`settings_models.py`／`settings_schemas.py`、`services/settings.py` 与 `llm/adapters.py`；配置保存在SQLite，凭据使用数据库旁 `<数据库文件名>.secrets/` 的独立文件（0700目录／0600文件）。验证 Run 固定非敏感配置和凭据引用，后台最多并发2次，每次只调用一次，60秒超时；页面只观察持久记录，重启不自动重放。非流式响应脱敏留存，流式保存脱敏聚合正文与终止元数据，不记录可能重组出密钥的逐包碎片。详见[2A契约](handovers/archived/STAGE_2A_MODEL_SETTINGS.md)。2B已实现片段上下文与持久问答；2C在此基础上实现Analysis成果工具、多Run和具体操作审核。Occurrence及复杂组合方案仍留后续切片。
 
 ### 4.1 上下文管理器（`services/context.py`）
 
-职责：`services/context.py`组装主对话接受快照与历史，`jobs/agent.py`在实际工具触发点追加模板化写作指令与工具结果。资料范围遵循[PRD 4.5](PRD.md#45-讨论共享资料与成果保存)和[F7](PRD.md#f7-片段讨论与成果整理)：读取工具校验当前Segment归属，不搜索其他线程聊天历史；跨线程只共享本Segment持久成果。内容与执行状态依据持久记录，实际使用的出处留痕，不默认载入全部资料。当前已实现Analysis读取，Occurrence读取仍是目标约束。
+职责：`services/context.py`组装主对话接受快照与历史，`jobs/agent.py`按实际调用追加模型协议项与工具结果。资料范围遵循[PRD 4.5](PRD.md#45-讨论共享资料与成果保存)和[F7](PRD.md#f7-片段讨论与成果整理)：读取工具校验当前Segment归属，不搜索其他线程聊天历史；跨线程只共享本Segment持久成果。内容与执行状态依据持久记录，实际使用的出处留痕，不默认载入全部资料。当前已实现Analysis读取，Occurrence读取仍是目标约束。
 
-当前主对话加载`prompts/chat/system_v4.j2`、`user_v2.j2`和`tools_v4.json`，组合版本记录为`v4+tools_v4`。system区分普通问答、专题／总体讲解及内部写作场景；完整文档组织预设只在明确请求对应产物时生效。背景、预设、材料和本轮要求以user后缀加入，接受时固定。旧Job／Run的实际输入与版本不随升级改写，用户数据库中的预设也不自动覆盖。`generate_analysis`可传入独立的`title`（去除首尾空白并做NFC规范化后为1–200字符），省略时沿用首个二级标题／正文摘录的系统取名；总标题不随Section编辑改写。快捷总体讲解继续由系统自动取名。
+主对话通过[`app/prompting.py`](../backend/src/app/prompting.py)组装有序、带版本的上下文事件。`ContextPlugin.emit(facts)`在冻结的事实快照上返回一个或多个`ContextEvent`；事件具有插件内稳定key、版本、完整文本及system／context流。通用组装器只处理身份、顺序、版本和文本摘要，不认识学习背景字段。内置[`context_plugins.py`](../backend/src/app/services/context_plugins.py)以有序元组配置基础规则、来源、片段、学习背景和讲解预设；各自模板维护具体字段与表达，画像重构不要求修改差量算法。不提供外部插件发现或异步生命周期。
+
+首轮按system流、context流、当前问题的顺序注入；system流使用system消息，context流使用user资料消息。后续原样保留完整协议历史，仅追加变化模块的完整当前值，再追加问题；不重复未变化的材料和偏好，也不作字段级patch。模块版本或文本变化只替换该模块；流内成员增删、换序时追加该流的完整快照，明确撤销未列出的旧模块。空字段、取消预设和空流均有清空语义，空模块正文显示明确的清空标记。基础规则变化同样在末尾追加system更新，不改写历史前缀。事件用途与替代规则由[`context/events_v1.j2`](../backend/prompts/context/events_v1.j2)表达；`[应用自动注入消息]`及中文方括号标识来源、用途和内容边界，实际消息角色仍由协议字段确定。
+
+差量基线`context_state`随`Job.input_snapshot`保存，只取实际接续协议历史的同一成功Job；失败／中断任务不推进基线。未知或损坏基线、旧历史重建及协议转换重新提供完整当前状态。快照版本为4，当前组合版本为`v8+tools_v5+context_v1+user_v4`；`user_v4.j2`只包含用户消息正文。插件、工具与实际消息在受理时冻结，worker和工具循环不重新求值。旧Job／Run及用户预设不随升级改写；未更新背景与偏好持续适用，对话任务按用户当前意图承接或切换。文档组织预设按当前任务采用。
+
+片段模块提供目标原文、前后文、参考译文、听写、材料派生出处与用户填写的出处说明，个人管理备注不注入。材料出处复用`material_provenance.resolve`的可读display与状态，正常时含材料名称、章节及可派生的章内位置；删除或失效时保留可用名称并明确状态，不沿用未核实的章节位置。因解析器会释放读取事务，[`context_provenance.py`](../backend/src/app/services/context_provenance.py)在聊天受理写锁外准备结果，受理事务内复核片段、持久出处及材料依据，变化则拒绝新任务；已有请求优先幂等重放。快照仅保留display、status、material_id及version_id，模型正文只接收可读出处和状态。材料改名或删除无需改变Segment.revision，也会在后续请求中触发片段模块更新；原受理消息和持久出处不改写。
+
+普通`JobCreate`、`JobResponse`与`RetryInput`仅保留`question`，不再提供独立`additional_instructions`。正文以NFC码点计，最多20002，容纳旧两个10000码点字段及合并空行。旧快照、请求与模型消息不迁移；读取旧任务或恢复失败重试时，以双换行连接原问题和旧补充原文；同键幂等比较也采用该投影，保留原请求记录。已受理旧普通任务继续执行冻结消息。审核`JobDecision.additional_instructions`及工具反馈独立保留，不并入新一轮问题。
+
+`save_analysis(source_md, title?)`要求Agent完整提供非空、自足的Markdown正文，最大持久正文长度为500000字符；可选标题去除首尾空白并做NFC规范化后为1–200字符，省略时从正文取名。工具只进行本地校验和保存，不调用模型、补写正文或打开内部写作分支；成功返回status、title、analysis_id和revision_id。创建沿用原文保护、归属、操作身份与不可变修订规则，Run出处指向实际产生该保存工具调用的普通chat Run；重复同一call保留首次出处。总标题不随Section编辑改写。
 
 用户重命名使用 `PATCH /api/analyses/{analysis_id}`，提交新 `title` 与打开时的 `expected_title`，返回当前 `AnalysisListItem`。短写事务核验讲解及父级可见性，仅更新名称与更新时间；同名请求幂等返回，名称已变化返回 409。名称不属于修订，重命名不改 Markdown、Revision、Section、引用或 Run，不需要数据库迁移；当前和历史详情均读取讲解现名称。前端只合并缓存中的名称与更新时间，再刷新详情、列表、来源聚合和本章记录，保留所读修订及正文。
 
-内部生成分支以主对话触发点的完整上下文快照启动，保留材料、已讨论要求、已读取资料和截至触发点的有效消息，不先摘要替代全文。分支沿用父调用的Provider、模型、协议、参数、system、工具定义及完整有效消息前缀；真实触发工具调用先以真实委派开始结果闭合，再在末尾追加`analysis/writer_v2.j2`，以`tool_choice=none`直接生成Markdown。快捷总体讲解复用同一能力；没有既有讨论时以片段材料和本次要求建立上下文，不伪造assistant工具调用。生成校验通过后保存Analysis及初始Revision。
+「创建 AI 讲解」通过`GET /api/chat/explanation-prompt`读取版本化的`explanation_request_v1.j2`。前端以每个快捷token冻结问题与模型，幂等创建新的普通线程并提交一次普通Job，不复用已有线程，不创建专用生成任务；问题明确请求创建并保存一份独立讲解；Agent填写完整Markdown并调用save_analysis，成功后在对话报告结果，无须重复全文。每个token的创建与提交独立完成，不依赖当时显示哪个线程。响应不确定时核实原请求，不重新发起模型调用。
 
-保持相同前缀以争取Provider缓存命中，是执行意图而非命中率保证；实际命中通过服务端usage的cached／hit／miss字段观察，缺失值保持未知，不伪造为0。分支不切换解析默认模型或替换system，不以缓存为理由静默省略资料或沿用失效权限。主模型不在工具参数中搬运已有要求、上下文或完整新文档；主对话只接收成果身份、确切修订及真实保存结果，正文按需读取，写作模板与全篇正文不重复回灌主上下文。局部Section编辑在主对话执行，不自动推断Section语义依赖；该分支是Job内部过程，不等于用户可管理的聊天分支树。
+普通解释直接保留在主对话；用户明确要求保存或整理成独立资料时，Agent在`save_analysis`参数中写完整正文，工具本地保存并返回真实成果身份，随后主循环可回复保存成功。正文不要求在聊天可见回复中重复，但完整参数保留在实际协议历史中。列表、确切版本读取与Section编辑沿用同一主循环和现有审核；不提供消息引用式保存或额外模型写作流程。写入授权与调用时机由系统规则表达，工具说明描述能力、输入和结果；权限、归属、停止和实际写入由运行时校验，不增加关键词式意图判定。
 
-同协议历史保留实际reasoning与工具字段。旧版本或协议切换时，无法合法重放的原生消息作为按原顺序保留的历史资料追加，不伪造私有推理或用摘要替代内容。已保存但收尾失败的成果在下一轮以持久事实恢复。渲染后的messages、工具定义和模板版本写入快照及Run；长期依据为[主对话system](../backend/prompts/chat/system_v4.j2)、[本轮输入模板](../backend/prompts/chat/user_v2.j2)、[工具定义](../backend/prompts/chat/tools_v4.json)、[内部写作模板](../backend/prompts/analysis/writer_v2.j2)及[上下文实现](../backend/src/app/services/context.py)。历史转换与成果恢复另使用`chat/history_material_v1.j2`、`saved_artifact_v1.j2`和`recovered_artifacts_v1.j2`；临时聚合审阅快照不是生产依据。
+保持相同前缀以争取Provider缓存命中，实际命中通过usage的cached／hit／miss字段观察，缺失值保持未知。所有模型请求使用同一工具清单及`tool_choice=auto`，不再为写作切换none。保存前还须检查当前协议消息、工具定义和实际保存结果能否容纳下一次请求；超出200000字符上下文预算时不提交讲解，也不截断成功历史。普通保存成功后的收尾失败仍按真实成果反馈，不把已保存误报为未保存。
+
+同协议历史保留实际reasoning与工具字段。旧版本或协议切换时，无法合法重放的原生消息作为按原顺序保留的历史资料追加，不伪造私有推理或用摘要替代内容。已保存但收尾失败的成果在下一轮以持久事实恢复。渲染后的messages、工具定义和模板版本写入快照及Run；长期依据为[主对话system](../backend/prompts/chat/system_v8.j2)、[本轮输入模板](../backend/prompts/chat/user_v4.j2)、[工具定义](../backend/prompts/chat/tools_v5.json)、[快捷问题](../backend/prompts/chat/explanation_request_v1.j2)及[上下文实现](../backend/src/app/services/context.py)。历史转换与成果恢复另使用`chat/history_material_v1.j2`、`recovered_artifacts_v1.j2`；临时聚合审阅快照不是生产依据。
+
+旧任务执行以已保存的实际messages、tools或prompt为准，不从旧模板文件重新渲染。旧模板保留用于源码与阶段记录对照，其中`translation/v1.txt`另由兼容性测试读取以构造旧任务快照；具体引用及保留用途见[旧模板核对记录](handovers/AGENT_CONTEXT_ACCEPTANCE.md#旧模板引用与保留核对)。历史记录中的旧文本仍可随冻结历史回放，文件是否参与当前加载与历史文本是否保留分别判断。
 
 **持久讲解格式契约**（占位，`[TBD-07]`）：
 
@@ -320,6 +334,8 @@ erDiagram
 
 ### 4.2 LLM 层（`llm/`）
 
+当前生效提示词的主体统一使用中文，协议字段、工具名、版本标识和原文示例保留原有表达。暂不引入提示词多语言机制，后续根据实际语言需求或效果比较另行设计国际化方案。
+
 - **统一接入配置**：Provider、模型和用途默认值通过设置 UI 经服务层维护。`config.py`读取应用运行TOML，模型接入配置由`services/settings.py`维护SQLite来源；服务层按 PRD F1 解析用途默认值、片段预选、对话线程选择及单次覆盖，不将 `providers.toml` 设为唯一入口。
 - **配置快照**：任务被接受时确定 Provider 配置身份、base_url、模型 ID、有效协议与参数，保存非敏感的实际请求配置。worker 执行时不得重新读取最新默认值来改变目标。凭据已采用独立文件及内部引用，更新产生新引用，删除检查包含活动Job（含待审核），不能把密钥复制进 Run 或普通配置响应。
 - **协议适配**：基于 `openai.AsyncOpenAI` 分别适配 Chat Completions 与 Responses 的文本请求、响应及流式事件。上层业务使用统一文本与原生工具调用接口，不承担协议字段映射。2C覆盖两种协议普通／流式的工具结果、reasoning回放和缓存用量；结构化提取仍待Occurrence切片。
@@ -327,7 +343,7 @@ erDiagram
 - **模型发现与验证**：列表获取与用户手动模型登记并存；缓存列表并记录刷新结果。列表、文本调用与输出能力分别验证，不能把模型出现于列表当作完整能力声明。验证能力属于具体配置组合，不只属于模型名称。
 - **本地对话历史**：首轮文本问答在本地保存完整消息与来源，允许后续回复改选模型；Provider 远端会话标识不是唯一历史依据。协议内部状态的处理留在适配层。
 - **Run 记录**：每次模型调用前创建 Run，结束时写入输出、用量和状态；用户触发的模型调用验证同样记录。配置失效明确报告，不悄悄采用其他默认值。
-- **有限执行预算**：底层临时故障重试、结构化输出修复和 Agent 继续尝试需受协调后的有限预算约束，不能各自重新获得一套预算而无界叠加。当前Analysis主循环和分支由`jobs/agent.py`共享第3.5节预算；2A验证保留单次60秒预算。未来提取修复须复用协调预算；所有实际模型调用继续记录Run。
+- **有限执行预算**：底层临时故障重试、结构化输出修复和 Agent 继续尝试需受协调后的有限预算约束，不能各自重新获得一套预算而无界叠加。当前Analysis工具循环由`jobs/agent.py`遵循第3.5节预算；2A验证保留单次60秒预算。未来提取修复须复用协调预算；所有实际模型调用继续记录Run。
 - **开发缓存（未来预留，当前没有dev_cache配置项或本地缓存实现）**：缓存身份包含 Provider 配置身份与端点、协议、模型、实际参数、消息和输出契约等非敏感请求内容，避免不同接入方式共享错误结果；缓存到 `data/llm_cache/`。未来测试录制与回放可复用同一套机制（见第 8 节），不将凭据内容写入缓存。
 - **流式观察**：当前2A轮询持久Run，问答／Analysis轮询Job的持久状态和聚合正文，不新增SSE。后续SSE须为每个订阅者独立分发并支持从持久记录补读，不能用单个消费队列让不同页面分走事件。离开与重连不重复发起生成，具体协议见 [2B实施契约](handovers/archived/STAGE_2B_ASYNC_QA.md)。
 
@@ -372,9 +388,9 @@ erDiagram
 
 #### 已实现Analysis工具与Section写操作契约
 
-当前提供Analysis生成／保存、列表／确切版本读取和按块编辑；候选查询、创建一个或多个pending、修改pending仍为首轮目标，尚未实现。Analysis 删除业务接口不注册为首轮 Agent 工具；候选手动创建入口暂缓，状态操作保留给用户界面。
+当前提供Analysis显式保存、列表／确切版本读取和按块编辑；候选查询、创建一个或多个pending、修改pending仍为首轮目标，尚未实现。Analysis 删除业务接口不注册为首轮 Agent 工具；候选手动创建入口暂缓，状态操作保留给用户界面。
 
-当前Section写操作显式传入目标信息；实际工具名称和字段见[tools_v4.json](../backend/prompts/chat/tools_v4.json)：
+当前Section写操作显式传入目标信息；实际工具名称和字段见[tools_v5.json](../backend/prompts/chat/tools_v5.json)：
 
 ```text
 update_analysis_section(analysis_id, base_revision_id, sid, title?, body?)
@@ -392,7 +408,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 编辑规则集中在 `services/analyses.py`：审核与保存共用目标归属／基础版本读取和纯 Markdown 变换，统一 NFC、标题空白、二级标题边界、插入锚点、行终止与块身份映射。审核中的原内容和拟保存内容来自该变换；Job 负责权限、等待审核及执行授权。实际保存仍在写事务中重新核对目标、当前基础版本和操作身份，再生成不可变 Revision，不使用审核预览缓存代替执行校验。
 
-以上为当前基本工具；生成通过`generate_analysis(title?)`进入内部写作分支，列表／读取通过`list_analyses`和`read_analysis`完成。不预设所有高频组合工具；后续Shortcut tool应复用相同归属、校验、审批和修订规则。
+以上为当前基本工具；保存通过`save_analysis(source_md, title?)`直接落库，列表／读取通过`list_analyses`和`read_analysis`完成。不预设所有高频组合工具；后续Shortcut tool应复用相同归属、校验、审批和修订规则。
 
 #### 工具审核与执行边界
 
@@ -413,10 +429,10 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 ### 4.6 Job 与 Worker（`jobs/`）
 
-- 当前Job使用queued／running／waiting_review／stopping／succeeded／failed／interrupted状态；lifespan先取得同一数据库的单进程排他锁，再恢复中断状态并启动调度。调度按持久queued任务领取，问答／Analysis与2A验证共用并发上限2。2B交付时每Job一次生成、60秒调用预算；当前工具循环及内部写作分支使用第3.5节统一预算，不新建第二套并发名额或独立重试循环。实际实现见[`jobs/runtime.py`](../backend/src/app/jobs/runtime.py)与[`jobs/agent.py`](../backend/src/app/jobs/agent.py)，2B历史边界见[归档契约](handovers/archived/STAGE_2B_ASYNC_QA.md)。
+- 当前Job使用queued／running／waiting_review／stopping／succeeded／failed／interrupted状态；lifespan先取得同一数据库的单进程排他锁，再恢复中断状态并启动调度。调度按持久queued任务领取，问答／Analysis与2A验证共用并发上限2。2B交付时每Job一次生成、60秒调用预算；当前工具循环使用第3.5节统一预算，不新建第二套并发名额或独立重试循环。实际实现见[`jobs/runtime.py`](../backend/src/app/jobs/runtime.py)与[`jobs/agent.py`](../backend/src/app/jobs/agent.py)，2B历史边界见[归档契约](handovers/archived/STAGE_2B_ASYNC_QA.md)。
 - 调用入口和停止／来源／片段删除的提交共用短进程互斥，并在进入适配器前核对持久状态；互斥不覆盖网络等待。每次进度／终态写入检查execution_token、活动Job身份与对象未删除；停止先持久撤销token，再取消执行，收尾后释放线程。当前多个Run及已保存成果分别留存，助手消息、Job终态与线程释放由收尾事务维护，不能用2B单次调用的终态规则推断整轮成果回滚。
 - 流式进度在单次调用内聚合，持久写入间隔至少250ms，结束或异常立即刷新已有脱敏正文；每次写入仍核对持久授权，停止或删除后的缓冲与迟到回调不能落库。
-- 当前Job.kind为`chat_reply`和`generate_analysis`，覆盖普通讨论／工具循环与快捷总体讲解；可选提取任务仍为预留，尚无对应实现。离开页面不取消任务。
+- 所有新Job.kind均为`chat_reply`，覆盖普通讨论、快捷讲解与显式保存。旧`generate_analysis`记录保留读取，未完成旧任务被中断并释放线程，不再启动旧writer；旧工具调用返回不支持，不隐式恢复分支。可选提取仍为预留。离开页面不取消普通任务。
 - 接受事务检查线程空闲，数据库唯一活动Job约束和active_job_id阻止同线程运行／待审时接收新轮；审核决定走既有Job，不建立消息队列。独立线程按全局资源调度。用户草稿与等待行为见[PRD 6.6](PRD.md#66-异步操作与离开页面)。
 - 停止语义见[PRD 6.6](PRD.md#66-异步操作与离开页面)。执行层持久记录停止意图、撤销token并取消未执行方案；后续调用／修复／保存再核对授权，提交竞争依据实际持久结果反馈，收尾完成才释放线程。迟到结果不能恢复旧任务或方案；Analysis并发保护已落实，候选写入仍待其切片。
 - 当前重启将残留queued／running／stopping任务及关联未完成消息、Run统一标为interrupted并释放线程；waiting_review不在中断集合内，保留具体方案与线程活动身份供用户继续决定，不自动重放；已终态历史不改。2A验证Run仍沿用其中断语义，不能只修改Run而留下忙碌线程。重复后台实例拿不到进程锁时须直接退出，不运行恢复逻辑。
@@ -548,7 +564,7 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 
 ## 6. 前端结构
 
-A1 中，`analysis/AnalysisPanel.tsx` 只承担持久讲解读取与删除，`AnalysisGeneration.tsx` 承担生成和停止控制，由片段页组合。`chat/lifecycle.ts` 的激活规则让纯回看不挂载 Workbench；显式展开、未显式收起的线程直达或快捷生成才启动。URL 中 `chat=0` 优先于 thread；启动后在当前 Segment 页面内保活。A2 人工编辑沿用此边界。C2 的 `reader-frames.ts` 集中 iframe 装载、事件、资源就绪与销毁，`reader-selection.ts` 捕获原生选区并校验全部范围；学习界面只取得稳定引用与章数据。原有 ReaderLayout、位置队列和导航协调继续控制成功呈现及保存时机。
+`analysis/AnalysisPanel.tsx`承担持久讲解读取与删除，由片段页组合；「创建 AI 讲解」进入普通讨论，不再挂载专用生成观察器。`chat/lifecycle.ts` 的激活规则让纯回看不挂载 Workbench；显式展开、未显式收起的线程直达或「创建 AI 讲解」才启动。URL 中 `chat=0` 优先于 thread；启动后在当前 Segment 页面内保活。A2 人工编辑沿用此边界。C2 的 `reader-frames.ts` 集中 iframe 装载、事件、资源就绪与销毁，`reader-selection.ts` 捕获原生选区并校验全部范围；学习界面只取得稳定引用与章数据。原有 ReaderLayout、位置队列和导航协调继续控制成功呈现及保存时机。
 
 返回原处与书内搜索使用同一临时定位高亮生命周期，精确目标稳定呈现约 2.5 秒后进入 260ms 淡出。`NavigationHighlightLifetime` 驱动每帧背景透明度与前景色恢复，完成后清理目标和 CSS Highlight 注册；不依赖伪元素的普通 CSS transition。正文输入提前淡出，新导航、切章或离页立即清理；减少动态效果时跳过淡出。ReaderFrames 保留当前透明度用于重排，旧定时器和动画按代次隔离；重排不续期、不变亮、不复活已清理目标，永久学习／翻译标记不受影响。
 
@@ -568,7 +584,7 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 
 `chat/discussion.ts` 集中讨论受理、按同一 `request_id` 核实、Job 版本合并与终态刷新／成果通知。直接受理和核实受理进入同一处理函数，以函数式更新只清除尚未改写的提交草稿；轮询、停止和审核返回的 Job 共用版本合并规则。页面保留本地草稿、显示状态和 URL 导航适配，阅读保护绑定首次提交时的确切讲解／Revision，不因响应丢失后的重试覆盖该快照。终态通知在当前讨论实例内按 Job 身份去重，不新增状态库、队列或刷新恢复契约。
 
-缓存合并保留较新的 Job；相同或较旧版本的重复观察不再写入缓存，避免共享查询订阅形成更新循环。普通讨论成果由协调器在终态通知页面，快捷生成的成果观察与自动阅读仍由 `SegmentPage.tsx` 承接；两者共用阅读位置判断。轮询可能先于受理核实发现成果，此时也按 Job 的 `request_id` 查找首次提交快照。
+缓存合并保留较新的 Job；相同或较旧版本的重复观察不再写入缓存，避免共享查询订阅形成更新循环。所有讨论成果由协调器在终态通知页面；快捷提问本身不产生持久讲解，后续显式保存沿用同一成果通知和阅读位置判断。轮询可能先于受理核实发现成果，此时也按 Job 的 `request_id` 查找首次提交快照。
 
 `catalog/state.ts` 集中 Source 内容视图的默认排序解析、窗口展开／关闭及参数清理，并返回对应的 push／replace 选择。`useSourceContentLocation` 只负责 Router 与偏好读取适配；页面不再各自维护清理字段。来源栏查询保持独立，窗口返回保留内容筛选，显式 URL 排序优先于存储偏好；旧入口和 `expanded=book` 链接继续兼容。
 
@@ -591,7 +607,7 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 │   ├── prompts/
 │   │   ├── model_verification_v1.j2 / default_explanation_style_v1.j2
 │   │   ├── chat/                # system、user、工具定义和历史／成果模板
-│   │   └── analysis/            # writer版本化模板
+│   │   └── analysis/            # 旧writer模板，仅保留历史来源
 │   ├── src/app/
 │   │   ├── main.py / config.py / db.py / ids.py
 │   │   ├── models.py / schemas.py

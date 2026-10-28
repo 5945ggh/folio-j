@@ -739,6 +739,19 @@
         "title": "DefaultsResponse",
         "type": "object"
       },
+      "ExplanationPromptResponse": {
+        "properties": {
+          "question": {
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "ExplanationPromptResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -769,20 +782,6 @@
       "JobCreate": {
         "additionalProperties": false,
         "properties": {
-          "action": {
-            "default": "chat",
-            "enum": [
-              "chat",
-              "generate_analysis"
-            ],
-            "title": "Action",
-            "type": "string"
-          },
-          "additional_instructions": {
-            "default": "",
-            "title": "Additional Instructions",
-            "type": "string"
-          },
           "expected_segment_revision": {
             "minimum": 1.0,
             "title": "Expected Segment Revision",
@@ -805,6 +804,7 @@
             "title": "Model Id"
           },
           "question": {
+            "maxLength": 20002,
             "title": "Question",
             "type": "string"
           },
@@ -879,10 +879,6 @@
               }
             ],
             "title": "Active Step"
-          },
-          "additional_instructions": {
-            "title": "Additional Instructions",
-            "type": "string"
           },
           "artifacts": {
             "items": {
@@ -1055,7 +1051,6 @@
           "model",
           "permission_mode",
           "question",
-          "additional_instructions",
           "error_code",
           "error",
           "created_at",
@@ -3537,18 +3532,13 @@
       },
       "RetryInput": {
         "properties": {
-          "additional_instructions": {
-            "title": "Additional Instructions",
-            "type": "string"
-          },
           "question": {
             "title": "Question",
             "type": "string"
           }
         },
         "required": [
-          "question",
-          "additional_instructions"
+          "question"
         ],
         "title": "RetryInput",
         "type": "object"
@@ -6100,6 +6090,24 @@
           }
         },
         "summary": "Sources"
+      }
+    },
+    "/api/chat/explanation-prompt": {
+      "get": {
+        "operationId": "getExplanationPrompt",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplanationPromptResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Explanation Prompt"
       }
     },
     "/api/health": {

@@ -6,11 +6,13 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.analysis_schemas import SectionOperation
 
 ULID_PATTERN = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
+# Preserve the capacity of two legacy 10000-character fields plus their separator.
+MAX_QUESTION_CHARS = 20002
 PermissionMode = Literal["review", "full_access"]
 MessageStatus = Literal["complete", "pending", "streaming", "failed", "interrupted"]
 JobStatus = Literal[
@@ -53,12 +55,10 @@ class ThreadPatch(Input):
 
 
 class JobCreate(Input):
-    action: Literal["chat", "generate_analysis"] = "chat"
     request_id: str
     expected_thread_revision: int = Field(ge=1)
     expected_segment_revision: int = Field(ge=1)
-    question: str
-    additional_instructions: str = ""
+    question: str = Field(json_schema_extra={"maxLength": MAX_QUESTION_CHARS})
     model_id: str | None = Field(default_factory=lambda: None)
     style_id: str | None = Field(default_factory=lambda: None)
     stream: bool = True
@@ -67,13 +67,13 @@ class JobCreate(Input):
     _model = field_validator("model_id")(check_optional_ulid)
     _style = field_validator("style_id")(check_optional_ulid)
 
-    @field_validator("question", "additional_instructions")
+    @field_validator("question")
     @classmethod
-    def normalize_text(cls, value: str, info: ValidationInfo) -> str:
+    def normalize_text(cls, value: str) -> str:
         normalized = unicodedata.normalize("NFC", value)
-        if len(normalized) > 10000:
-            raise ValueError("文本最多10000码点")
-        if info.field_name == "question" and not normalized.strip():
+        if len(normalized) > MAX_QUESTION_CHARS:
+            raise ValueError(f"问题正文最多{MAX_QUESTION_CHARS}码点")
+        if not normalized.strip():
             raise ValueError("问题不能为空白")
         return normalized
 
@@ -102,7 +102,10 @@ class ArtifactResponse(BaseModel):
 
 class RetryInput(BaseModel):
     question: str
-    additional_instructions: str
+
+
+class ExplanationPromptResponse(BaseModel):
+    question: str
 
 
 class MessageJobSummary(BaseModel):
@@ -183,7 +186,6 @@ class JobResponse(BaseModel):
     model: ModelSnapshotResponse
     permission_mode: PermissionMode
     question: str
-    additional_instructions: str
     error_code: str | None
     error: str | None
     created_at: datetime

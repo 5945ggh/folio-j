@@ -27,10 +27,7 @@ export async function workbenchHistory(h: BrowserHarness) {
 					? [{ analysis_id: "saved", revision_id: "old-revision" }]
 					: [],
 			error: index === 41 ? "历史失败原因" : null,
-			retry:
-				index === 41
-					? { question: "历史原问题", additional_instructions: "旧补充" }
-					: null,
+			retry: index === 41 ? { question: "历史原问题\n\n旧补充" } : null,
 		},
 	}));
 	let historyGets = 0;
@@ -88,10 +85,9 @@ export async function workbenchHistory(h: BrowserHarness) {
 				</button>
 				<Workbench
 					segment={materialSegment}
-					generateToken={null}
+					explainToken={null}
 					selectedThreadId="thread"
 					onSelectThread={() => {}}
-					onGenerationAccepted={() => {}}
 					onSubmissionStarted={() => {}}
 					onJobAccepted={() => {}}
 					onOpenArtifact={(analysis, revision) => {
@@ -139,7 +135,7 @@ export async function workbenchHistory(h: BrowserHarness) {
 		await until(
 			() =>
 				container.querySelector<HTMLTextAreaElement>("#chat-question")
-					?.value === "历史原问题\n\n补充要求：\n旧补充",
+					?.value === "历史原问题\n\n旧补充",
 			"Retry must visibly restore original question and instructions",
 		);
 		const more = [...container.querySelectorAll("button")].find((button) =>

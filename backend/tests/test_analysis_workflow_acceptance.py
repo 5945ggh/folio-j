@@ -295,10 +295,11 @@ async def test_review_resume_keeps_shared_eight_call_budget(
         nonlocal count
         count += 1
         if count == 1:
-            return _turn(snapshot, "先生成", [_call("generate_analysis", {}, "generate_1")])
-        if count == 2:
-            assert tool_choice == "none"
-            return _turn(snapshot, "## 预算内成果\n已保存\n")
+            return _turn(
+                snapshot,
+                "先保存",
+                [_call("save_analysis", {"source_md": "## 预算内成果\n已保存\n"}, "save_1")],
+            )
         if count <= 6:
             return _turn(snapshot, "", [_call("list_analyses", {}, f"read_{count}")])
         if count == 7:

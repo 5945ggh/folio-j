@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chat_models import ChatMessage, ChatThread, Job
 from app.chat_schemas import (
+    ExplanationPromptResponse,
     JobCreate,
     JobDecision,
     JobResponse,
@@ -28,7 +29,8 @@ from app.chat_schemas import (
 )
 from app.ids import new_ulid
 from app.models import Segment, Source
-from app.services.context import MAX_MESSAGE_CHARS, make_input_snapshot
+from app.services import context_provenance
+from app.services.context import ENV, MAX_MESSAGE_CHARS, make_input_snapshot
 from app.services.settings import ensure_settings, read_credential, redact_credential
 from app.services.sources import lock_segment_text
 from app.settings_models import Defaults, Profile, Provider, ProviderModel, Run, Style
@@ -48,6 +50,26 @@ def now() -> datetime:
 
 def utc(value: datetime | None) -> datetime | None:
     return value.replace(tzinfo=UTC) if value and value.tzinfo is None else value
+
+
+def _legacy_question(question: str, additional: str | None = None) -> str:
+    """Project old split inputs into one visible body without rewriting records."""
+    return f"{question}\n\n{additional}" if additional else question
+
+
+def _current_job_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    current = dict(payload)
+    if current.get("action") == "chat":
+        current.pop("action")
+    additional = current.pop("additional_instructions", None)
+    current["question"] = _legacy_question(current["question"], additional)
+    return current
+
+
+def explanation_prompt() -> ExplanationPromptResponse:
+    return ExplanationPromptResponse(
+        question=ENV.get_template("explanation_request_v1.j2").render().strip()
+    )
 
 
 async def begin_write(session: AsyncSession) -> None:
@@ -189,8 +211,10 @@ async def job_response(session: AsyncSession, job: Job) -> JobResponse:
         runs=[RunSummary(id=row.id, status=row.status, purpose=row.purpose) for row in runs],
         model=model,
         permission_mode=cast(Any, job.permission_mode),
-        question=cast(str, job.input_snapshot["question"]),
-        additional_instructions=cast(str, job.input_snapshot["additional_instructions"]),
+        question=_legacy_question(
+            cast(str, job.input_snapshot["question"]),
+            job.input_snapshot.get("additional_instructions"),
+        ),
         error_code=job.error_code,
         error=job.error,
         created_at=cast(datetime, utc(job.created_at)),
@@ -226,11 +250,9 @@ def explicit_payload(data: ThreadCreate | JobCreate) -> dict[str, Any]:
     if isinstance(data, ThreadCreate):
         return data.model_dump(exclude={"request_id"}, exclude_unset=True)
     return {
-        "action": data.action,
         "expected_thread_revision": data.expected_thread_revision,
         "expected_segment_revision": data.expected_segment_revision,
         "question": data.question,
-        "additional_instructions": data.additional_instructions,
         "model_id": data.model_id if "model_id" in data.model_fields_set else {"omitted": True},
         "style_id": data.style_id if "style_id" in data.model_fields_set else {"omitted": True},
         "stream": data.stream,
@@ -425,7 +447,7 @@ async def list_messages(
                 artifacts=artifacts or [],
                 error=error,
                 retry=(
-                    RetryInput(question=question, additional_instructions=additional or "")
+                    RetryInput(question=_legacy_question(question, additional))
                     if question is not None
                     else None
                 ),
@@ -439,6 +461,18 @@ async def accept_job(
 ) -> JobResponse:
     await ensure_settings(session)
     try:
+        # The shared resolver releases read transactions while validating EPUB bytes.
+        # Prepare before taking the acceptance write lock, then recheck its inputs.
+        initial_thread = await require_thread(session, thread_id)
+        existing_id = await session.scalar(
+            select(Job.id).where(Job.thread_id == thread_id, Job.request_id == data.request_id)
+        )
+        prepared_provenance = (
+            await context_provenance.prepare(session, initial_thread.segment_id)
+            if existing_id is None
+            else None
+        )
+        await session.rollback()
         await begin_write(session)
         thread = await require_thread(session, thread_id)
         source, segment = await require_segment(session, thread.segment_id)
@@ -449,7 +483,7 @@ async def accept_job(
         if old is not None:
             if old.deleted_at is not None:
                 raise ChatError(404, "任务不存在", "not_found")
-            if old.request_payload != payload:
+            if _current_job_payload(old.request_payload) != payload:
                 raise ChatError(409, "请求ID对应不同内容", "idempotency_conflict")
             response = await job_response(session, old)
             await session.commit()
@@ -470,6 +504,10 @@ async def accept_job(
         style = await session.get(Style, style_id) if style_id else None
         if style_id is not None and style is None:
             raise ChatError(409, "讲解预设不可用", "style_unavailable")
+        if prepared_provenance is None or not await prepared_provenance.matches(
+            session, segment.id
+        ):
+            raise ChatError(409, "片段材料出处已变化，请重新发送", "stale_provenance")
         snapshot = await make_input_snapshot(
             session,
             thread_id,
@@ -478,8 +516,8 @@ async def accept_job(
             profile,
             style,
             data.question,
-            data.additional_instructions,
             protocol,
+            material_provenance=prepared_provenance.value,
         )
         if len(json.dumps(snapshot["messages"], ensure_ascii=False)) > MAX_MESSAGE_CHARS:
             raise ChatError(422, "上下文超过本地上限，请缩短问题或新建对话", "context_limit")
@@ -514,7 +552,7 @@ async def accept_job(
         created = now()
         job = Job(
             id=new_ulid(),
-            kind="generate_analysis" if data.action == "generate_analysis" else "chat_reply",
+            kind="chat_reply",
             thread_id=thread_id,
             request_id=data.request_id,
             request_payload=payload,

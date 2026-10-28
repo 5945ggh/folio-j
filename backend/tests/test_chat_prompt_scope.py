@@ -53,30 +53,31 @@ async def test_accepted_template_versions_and_generation_tool_contract(
     system_version = declared_template_version(context.PROMPTS / system_name)
     tools_name = snapshot["prompt_version"].split("+")[1]
     tool_contract = json.loads((context.PROMPTS / f"{tools_name}.json").read_text())
-    assert snapshot["prompt_version"] == f"{system_version}+tools_{tool_contract['version']}"
-    assert snapshot["tools"] == tool_contract["tools"]
-    writer_path = context.PROMPTS.parent / "analysis" / f"writer_{snapshot['writer_version']}.j2"
-    assert snapshot["writer_version"] == declared_template_version(writer_path)
     assert (
-        snapshot["writer_text"] == context.ENV.from_string(writer_path.read_text()).render().strip()
+        snapshot["prompt_version"]
+        == f"{system_version}+tools_{tool_contract['version']}+context_v1+user_v4"
     )
+    assert snapshot["tools"] == tool_contract["tools"]
+    assert "writer_text" not in snapshot
+    assert "writer_version" not in snapshot
+    assert "saved_artifact_template" not in snapshot
 
     generation = next(
         tool["function"]
         for tool in snapshot["tools"]
-        if tool["function"]["name"] == "generate_analysis"
+        if tool["function"]["name"] == "save_analysis"
     )["parameters"]
     assert generation["properties"]["title"]["type"] == "string"
     assert generation["properties"]["title"]["maxLength"] == 200
     assert generation["properties"]["title"]["minLength"] == 1
     assert "title" not in generation.get("required", [])
+    assert generation["required"] == ["source_md"]
+    assert generation["properties"]["source_md"]["maxLength"] == 500000
     assert generation["additionalProperties"] is False
 
-    # Smoke-check current template guardrails; execution boundaries have agent tests.
+    # The accepted protocol message includes the versioned rules without rewriting them.
     system = snapshot["messages"][0]["content"]
-    assert "普通提问" in system and "不强制" in system
-    assert "专题讲解" in system and "不扩写" in system
-    assert "不再调用生成工具" in system
+    assert get_template(system_name).render().strip() in system
 
 
 @pytest.mark.asyncio
@@ -100,25 +101,26 @@ async def test_chat_system_scope_is_rendered_for_each_style_choice(
 
         job = await accept(client, seed, question="这里的だった是什么用法？", **changes)
         snapshot = accepted_input(database, job["id"])
-        assert [message["role"] for message in snapshot["messages"]] == ["system", "user"]
+        assert [message["role"] for message in snapshot["messages"]] == ["system", "user", "user"]
         system = snapshot["messages"][0]["content"]
-        user = snapshot["messages"][1]["content"]
+        material = snapshot["messages"][-2]["content"]
+        user = snapshot["messages"][-1]["content"]
         assert "だった是什么用法？" in user
-        assert "昨日は雨だった。" in user
+        assert "昨日は雨だった。" in material
+        assert "昨日は雨だった。" not in user
         assert "昨日は雨だった。" not in system
+        # Saved-document section guidance applies even with a custom or disabled style.
+        assert "## 标题" in system
 
         if style_choice == "default":
             assert snapshot["style"]["id"] == seed["settings"]["defaults"]["style_id"]
-            assert "## 标题" in user
-            assert "## 标题" not in system
+            assert "## 标题" in material
         elif style_choice == "custom":
             assert snapshot["style"]["body_md"] == "只在需要时提示重音。"
-            assert "只在需要时提示重音。" in user
-            assert "## 标题" not in system
+            assert "只在需要时提示重音。" in material
         else:
             assert snapshot["style"] is None
-            assert "## 标题" not in system
-            assert "本轮未选择讲解预设" in user
+            assert "未选择讲解预设" in material
 
 
 @pytest.mark.asyncio
@@ -169,3 +171,112 @@ async def test_run_reuses_accepted_prompt_after_style_change(
     assert row is not None
     assert json.loads(row[0]) == accepted["messages"]
     assert "以后只讨论读音。" not in json.dumps(captured, ensure_ascii=False)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("change", ["none", "profile", "segment", "style", "protocol"])
+async def test_successful_turn_only_appends_changed_context_modules(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
+) -> None:
+    from test_analysis_agent import refreshed
+
+    async def generate(
+        _snapshot: adapters.CallSnapshot,
+        _key: str | None,
+        _progress: Callable[[str], Awaitable[None]],
+    ) -> adapters.GenerateResult:
+        return adapters.GenerateResult("离线回答。", True, None, "{}")
+
+    install_text_turn(monkeypatch, generate)
+    database = tmp_path / "incremental.db"
+    async with chat_client(database) as (client, app):
+        seed = await seed_chat(client)
+        first = await accept(client, seed)
+        await runtime.execute_job(app, first["id"])
+        assert (await client.get(f"/api/jobs/{first['id']}")).json()["status"] == "succeeded"
+        prefix = accepted_input(database, first["id"])["messages"]
+        changes: dict[str, Any] = {}
+        if change == "profile":
+            profile = {**seed["settings"]["profile"], "level_note": "能阅读中级小说"}
+            response = await client.put("/api/settings/profile", json=profile)
+            assert response.status_code == 200, response.text
+        elif change == "segment":
+            response = await client.patch(
+                f"/api/segments/{seed['segment']['id']}",
+                json={"expected_revision": seed["segment"]["revision"], "context_before": ""},
+            )
+            assert response.status_code == 200, response.text
+        elif change == "style":
+            changes["style_id"] = None
+        elif change == "protocol":
+            response = await client.patch(
+                f"/api/providers/{seed['provider']['id']}", json={"protocol": "responses"}
+            )
+            assert response.status_code == 200, response.text
+        second = await accept(client, await refreshed(client, seed), question="现在继续", **changes)
+        accepted = accepted_input(database, second["id"])
+        if change == "protocol":
+            assert accepted["protocol_conversion"]["strategy"] == "history_material_v1"
+            assert accepted["messages"][0]["role"] == "system"
+            material = accepted["messages"][-2]["content"]
+            assert "昨日は雨だった。" in material
+            assert "学习背景" in material
+            assert "## 标题" in material
+            assert "现在继续" in accepted["messages"][-1]["content"]
+            return
+        assert accepted["messages"][: len(prefix)] == prefix
+        # The successful assistant reply extends the saved input before the new turn.
+        appended = accepted["messages"][len(prefix) + 1 :]
+        assert "现在继续" in appended[-1]["content"]
+        assert "昨日は雨だった。" not in appended[-1]["content"]
+        if change == "none":
+            assert len(appended) == 1
+        else:
+            assert len(appended) == 2
+            material = appended[0]["content"]
+            if change == "profile":
+                assert "能阅读中级小说" in material
+                assert "昨日は雨だった。" not in material
+            elif change == "segment":
+                assert "昨日は雨だった。" in material
+                assert "朝のこと。" not in material
+                assert "学习情况自述" not in material
+            else:
+                assert "未选择讲解预设" in material
+                assert "昨日は雨だった。" not in material
+        assert accepted["context_state"]
+
+
+@pytest.mark.asyncio
+async def test_failed_turn_does_not_advance_context_baseline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from test_analysis_agent import refreshed
+
+    succeed = True
+
+    async def generate(
+        _snapshot: adapters.CallSnapshot,
+        _key: str | None,
+        _progress: Callable[[str], Awaitable[None]],
+    ) -> adapters.GenerateResult:
+        if not succeed:
+            raise RuntimeError("offline failure")
+        return adapters.GenerateResult("成功回答。", True, None, "{}")
+
+    install_text_turn(monkeypatch, generate)
+    database = tmp_path / "failed.db"
+    async with chat_client(database) as (client, app):
+        seed = await seed_chat(client)
+        first = await accept(client, seed)
+        await runtime.execute_job(app, first["id"])
+        profile = {**seed["settings"]["profile"], "level_note": "失败轮的新背景"}
+        assert (await client.put("/api/settings/profile", json=profile)).status_code == 200
+        failed = await accept(client, await refreshed(client, seed))
+        succeed = False
+        await runtime.execute_job(app, failed["id"])
+        assert (await client.get(f"/api/jobs/{failed['id']}")).json()["status"] == "failed"
+        retry = await accept(client, await refreshed(client, seed), question="再次继续")
+        snapshot = accepted_input(database, retry["id"])
+        assert "失败轮的新背景" in snapshot["messages"][-2]["content"]
+        assert "再次继续" in snapshot["messages"][-1]["content"]

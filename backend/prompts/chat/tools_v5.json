@@ -1,0 +1,238 @@
+{
+  "version": "v5",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "list_analyses",
+        "description": "只读列出当前片段已保存的独立讲解，返回讲解ID、标题、摘录及当前修订ID，支持分页。需要正文时，再读取指定讲解。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "本页最多返回的讲解数，省略时为20。"
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "跳过的讲解数，省略时为0。"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_analysis",
+        "description": "只读读取当前片段的指定讲解。省略revision_id时读取当前修订，提供时读取该确切修订；默认返回全部块正文，可用section_ids按块的uid选择部分内容。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "analysis_id": {
+              "type": "string",
+              "description": "当前片段下的讲解ID。"
+            },
+            "revision_id": {
+              "type": "string",
+              "description": "指定读取的修订ID，省略时读取当前修订。"
+            },
+            "section_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "要读取的块uid列表；省略时返回全部块，不使用显示编号或短码。"
+            }
+          },
+          "required": [
+            "analysis_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "save_analysis",
+        "description": "校验并保存提供的完整、自足的Markdown讲解正文，创建新的讲解及初始修订。工具不生成或补写正文。title可选，省略时从正文取名。成功返回status、title、analysis_id和revision_id。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "整份讲解的总标题，概括主题与范围，独立于正文中的讲解块标题。"
+            },
+            "source_md": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500000,
+              "description": "要保存的完整、自足的Markdown讲解正文。"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "source_md"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "update_analysis_section",
+        "description": "更新指定讲解块的标题和／或正文，生成新修订。sid使用读取结果中的uid；title和body至少提供一个，提供的body完整替换该块正文，省略项保持原值。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "analysis_id": {
+              "type": "string",
+              "description": "当前片段下的讲解ID。"
+            },
+            "base_revision_id": {
+              "type": "string",
+              "description": "目标讲解的当前修订ID，用于检测版本冲突。"
+            },
+            "sid": {
+              "type": "string",
+              "description": "读取结果中kind为section的块uid，不使用显示编号或短码。"
+            },
+            "title": {
+              "type": "string",
+              "description": "新的块标题内容，不含二级标题前缀。"
+            },
+            "body": {
+              "type": "string",
+              "description": "该块的完整新正文，不含本块标题；块内可用三级及以下标题细分，不另起二级标题块。"
+            }
+          },
+          "required": [
+            "analysis_id",
+            "base_revision_id",
+            "sid"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "insert_analysis_sections",
+        "description": "插入一个或多个讲解块，生成新修订。after_sid使用已有块的uid，省略则插在前置内容之后；每个新块分别填写标题和正文。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "analysis_id": {
+              "type": "string",
+              "description": "当前片段下的讲解ID。"
+            },
+            "base_revision_id": {
+              "type": "string",
+              "description": "目标讲解的当前修订ID，用于检测版本冲突。"
+            },
+            "after_sid": {
+              "type": "string",
+              "description": "在该已有块uid之后插入；省略时插在前置内容之后。"
+            },
+            "sections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "新块标题内容，不含二级标题前缀。"
+                  },
+                  "body": {
+                    "type": "string",
+                    "description": "新块正文，不含本块标题；块内可用三级及以下标题细分，不另起二级标题块。"
+                  }
+                },
+                "required": [
+                  "title",
+                  "body"
+                ],
+                "additionalProperties": false
+              },
+              "description": "至少一个新讲解块，按数组顺序插入。"
+            }
+          },
+          "required": [
+            "analysis_id",
+            "base_revision_id",
+            "sections"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "delete_analysis_section",
+        "description": "删除指定讲解块并生成新修订，保留历史版本。sid使用读取结果中的uid。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "analysis_id": {
+              "type": "string",
+              "description": "当前片段下的讲解ID。"
+            },
+            "base_revision_id": {
+              "type": "string",
+              "description": "目标讲解的当前修订ID，用于检测版本冲突。"
+            },
+            "sid": {
+              "type": "string",
+              "description": "读取结果中kind为section的块uid，不使用显示编号或短码。"
+            }
+          },
+          "required": [
+            "analysis_id",
+            "base_revision_id",
+            "sid"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "update_analysis_preamble",
+        "description": "替换首个二级标题之前的前置内容并生成新修订。body为空字符串时清空该部分；正文不应另起二级标题。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "analysis_id": {
+              "type": "string",
+              "description": "当前片段下的讲解ID。"
+            },
+            "base_revision_id": {
+              "type": "string",
+              "description": "目标讲解的当前修订ID，用于检测版本冲突。"
+            },
+            "body": {
+              "type": "string",
+              "description": "首个二级标题之前的完整内容；空字符串表示清空，不另起二级标题。"
+            }
+          },
+          "required": [
+            "analysis_id",
+            "base_revision_id",
+            "body"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

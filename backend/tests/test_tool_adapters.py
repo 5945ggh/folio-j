@@ -357,7 +357,7 @@ async def test_responses_stream_retains_reasoning_and_terminal_calls(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
 @pytest.mark.parametrize("stream", [False, True])
-async def test_writer_tool_choice_none_and_no_call(
+async def test_tool_choice_none_and_no_call(
     monkeypatch: pytest.MonkeyPatch, protocol: Protocol, stream: bool
 ) -> None:
     requests: list[httpx.Request] = []

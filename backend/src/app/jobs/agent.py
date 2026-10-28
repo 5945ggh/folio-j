@@ -4,11 +4,11 @@ import asyncio
 import json
 import unicodedata
 from contextlib import suppress
+from hashlib import sha256
 from time import monotonic
 from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import HTTPException
-from jinja2 import Environment
 from sqlalchemy import select, text, update
 
 from app.analysis_schemas import SectionOperation
@@ -246,9 +246,6 @@ async def _next_run(
     job_id: str,
     token: str,
     messages: list[dict[str, Any]],
-    *,
-    purpose: str = "chat",
-    prompt_version: str | None = None,
 ) -> bool:
     async with app.state.session_factory() as session:
         await session.execute(text("BEGIN IMMEDIATE"))
@@ -260,7 +257,7 @@ async def _next_run(
         session.add(
             Run(
                 id=new_ulid(),
-                purpose=purpose,
+                purpose="chat",
                 job_id=job.id,
                 messages=messages,
                 deleted_at=None,
@@ -276,7 +273,7 @@ async def _next_run(
                 output_text="",
                 error=None,
                 usage=None,
-                prompt_version=prompt_version or job.input_snapshot["prompt_version"],
+                prompt_version=job.input_snapshot["prompt_version"],
                 prompt_text="",
                 base_url=model["base_url"],
                 credential_ref=job.credential_ref,
@@ -404,118 +401,95 @@ async def _persist_messages(
         await session.commit()
 
 
-async def _branch(
+async def _save_analysis(
     app: "FastAPI",
-    job: Job,
+    job_id: str,
     token: str,
-    key: str | None,
-    snapshot: adapters.CallSnapshot,
-    messages: list[dict[str, Any]],
     call_id: str,
+    args: dict[str, Any],
+    key: str | None,
+    messages: list[dict[str, Any]],
     tools: list[dict[str, Any]],
-    title: str | None = None,
+    protocol: str,
 ) -> dict[str, Any]:
-    """Start a real delegation, close its protocol call, then append writer suffix."""
-    start = _tool_output(
-        snapshot.protocol,
-        call_id,
-        {"status": "delegated", "message": "内部生成已开始；完成后核对保存结果"},
-    )
-    branch_messages = [
-        *messages,
-        start,
-        {"role": "user", "content": job.input_snapshot["writer_text"]},
-    ]
-    available, remaining = await _remaining_budget(app, job.id)
-    if available <= 1 or remaining <= 0:
-        return {"error": "budget_exhausted"}
-    if not await _next_run(
-        app,
-        job.id,
-        token,
-        branch_messages,
-        purpose="analysis",
-        prompt_version=(
-            job.input_snapshot["prompt_version"] + f"+writer_{job.input_snapshot['writer_version']}"
-        ),
-    ):
-        return {"error": "job_stopped"}
-    began = asyncio.get_running_loop().time()
-    turn = await _invoke(
-        app,
-        job.id,
-        token,
-        snapshot,
-        key,
-        branch_messages,
-        tools,
-        tool_choice="none",
-        call_seconds=min(CALL_SECONDS, remaining),
-    )
-    elapsed = asyncio.get_running_loop().time() - began
+    """Save the tool's complete Markdown under the live job transaction."""
+    from app.analysis_models import Analysis, AnalysisRevision
+    from app.jobs.runtime import execution_authorized
+
     if (
-        not turn.completed
-        or turn.calls
-        or not turn.text.strip()
-        or len(turn.text) > OUTPUT_CHAR_LIMIT
+        len(json.dumps({"messages": messages, "tools": tools}, ensure_ascii=False))
+        > MAX_CONTEXT_CHARS
     ):
-        await _finish_run(
-            app,
-            job.id,
-            token,
-            turn,
-            branch_messages,
-            error="讲解生成未完整结束",
-            elapsed=elapsed,
-            persist_messages=False,
-        )
-        return {"error": "incomplete_output"}
-    branch_messages.extend(turn.history_items)
-    if not await _finish_run(
-        app, job.id, token, turn, branch_messages, persist_messages=False, elapsed=elapsed
-    ):
-        return {"error": "job_stopped"}
+        raise ContextLimitError()
+
+    if set(args) - {"source_md", "title"}:
+        raise ValueError("保存工具只接受source_md和title参数")
+    source_md = args.get("source_md")
+    if not isinstance(source_md, str) or not source_md.strip() or len(source_md) > 500000:
+        raise ValueError("讲解正文须非空且不超过500000字符")
+    title: str | None = None
+    if "title" in args:
+        value = args["title"]
+        if not isinstance(value, str):
+            raise ValueError("讲解总标题须为字符串")
+        title = unicodedata.normalize("NFC", value.strip())
+        if not title or len(title) > 200:
+            raise ValueError("讲解总标题须非空且不超过200字符")
+    encoded = json.dumps(args, ensure_ascii=False)
+    if key and redact_credential(encoded, key) != encoded:
+        raise ValueError("保存内容包含当前模型凭据")
     async with app.state.session_factory() as session:
         await session.execute(text("BEGIN IMMEDIATE"))
-        current = await session.get(Job, job.id)
-        thread = await session.get(ChatThread, job.thread_id)
-        if (
-            current is None
-            or thread is None
-            or current.status != "running"
-            or current.execution_token != token
-            or thread.active_job_id != job.id
-        ):
+        if not await execution_authorized(session, job_id, token):
             return {"error": "job_stopped"}
+        job = await session.get(Job, job_id)
+        assert job is not None
+        thread = await session.get(ChatThread, job.thread_id)
+        assert thread is not None
+        operation_key = f"job:{job_id}:save:{sha256(call_id.encode()).hexdigest()[:32]}"
+        # A repeated native call keeps the original generating Run as its provenance.
+        run_id = await session.scalar(
+            select(AnalysisRevision.run_id)
+            .join(Analysis, Analysis.id == AnalysisRevision.analysis_id)
+            .where(
+                Analysis.operation_key == operation_key,
+                AnalysisRevision.parent_revision_id.is_(None),
+            )
+        )
+        if run_id is None:
+            run_id = await session.scalar(
+                select(Run.id)
+                .where(Run.job_id == job_id, Run.purpose == "chat")
+                .order_by(Run.created_at.desc(), Run.id.desc())
+            )
+        if run_id is None:
+            raise ValueError("无法定位保存正文的模型调用")
         detail = await analyses.create_analysis(
             session,
             segment_id=thread.segment_id,
-            source_md=turn.text,
-            operation_key=f"job:{job.id}:generate:{call_id}",
+            source_md=source_md,
+            operation_key=operation_key,
             origin="agent",
             title=title,
-            run_id=(
-                await session.scalar(
-                    select(Run.id)
-                    .where(Run.job_id == job.id, Run.purpose == "analysis")
-                    .order_by(Run.created_at.desc(), Run.id.desc())
-                )
-            ),
+            run_id=run_id,
         )
-        state = dict(current.execution_state or {})
-        artifacts = list(state.get("artifacts", []))
         artifact = {"analysis_id": detail.id, "revision_id": detail.revision_id}
-        artifacts.append(artifact)
+        output = {"status": "saved", "title": detail.title, **artifact}
+        following = [*messages, _tool_output(protocol, call_id, output)]
+        if (
+            len(json.dumps({"messages": following, "tools": tools}, ensure_ascii=False))
+            > MAX_CONTEXT_CHARS
+        ):
+            # Creation only flushed. Raising rolls back the document and revision.
+            raise ContextLimitError()
+        state = dict(job.execution_state or {})
+        artifacts = list(state.get("artifacts", []))
+        if artifact not in artifacts:
+            artifacts.append(artifact)
         state["artifacts"] = artifacts
-        current.execution_state = state
-        assistant = await session.scalar(
-            select(ChatMessage).where(ChatMessage.job_id == job.id, ChatMessage.role == "assistant")
-        )
-        if assistant is not None:
-            assistant.content = f"已保存讲解：Analysis {detail.id}，Revision {detail.revision_id}。"
-            assistant.updated_at = now()
+        job.execution_state = state
         await session.commit()
-        return {"status": "saved", "title": detail.title, **artifact}
+        return output
 
 
 async def _read_tool(
@@ -759,7 +733,7 @@ async def execute_agent_job(
                 messages=messages,
             )
             return
-        messages.extend(turn.history_items)
+        messages.extend(_redact_object(item, key) for item in turn.history_items)
         if not await _finish_run(app, job_id, token, turn, messages, elapsed=elapsed):
             return
         if not turn.calls:
@@ -797,24 +771,23 @@ async def execute_agent_job(
                 args = cast(dict[str, Any], args)
                 if name in {"list_analyses", "read_analysis"}:
                     output = await _read_tool(app, segment_id, name, args)
+                elif name == "save_analysis":
+                    output = await _save_analysis(
+                        app,
+                        job_id,
+                        token,
+                        call["id"],
+                        args,
+                        key,
+                        messages,
+                        tools,
+                        snapshot.protocol,
+                    )
                 elif name == "generate_analysis":
-                    if set(args) - {"title"}:
-                        raise ValueError("生成工具只接受title参数，不接受正文或上下文")
-                    title: str | None = None
-                    if "title" in args:
-                        value = args["title"]
-                        if not isinstance(value, str):
-                            raise ValueError("讲解总标题须为字符串")
-                        title = unicodedata.normalize("NFC", value.strip())
-                        if not title or len(title) > 200:
-                            raise ValueError("讲解总标题须非空且不超过200字符")
-                    async with app.state.session_factory() as session:
-                        job = await session.get(Job, job_id)
-                        if job is None:
-                            return
-                        output = await _branch(
-                            app, job, token, key, snapshot, messages, call["id"], tools, title
-                        )
+                    output = {
+                        "error": "tool_not_supported",
+                        "message": "旧生成工具已停用；不会启动内部生成分支。请直接回答当前问题。",
+                    }
                 elif name in EDIT_NAMES:
                     proposal = await _proposal(app, segment_id, name, call["id"], args)
                     if key and redact_credential(
@@ -859,16 +832,6 @@ async def execute_agent_job(
                     output = await _apply(app, job_id, token, segment_id, proposal)
                 else:
                     output = {"error": "unknown_tool"}
-            except TimeoutError:
-                await _terminate(
-                    app,
-                    job_id,
-                    token,
-                    error_code="timeout",
-                    error="讲解分支模型调用超时",
-                    messages=messages,
-                )
-                return
             except asyncio.CancelledError:
                 return
             except ContextLimitError:
@@ -877,7 +840,7 @@ async def execute_agent_job(
                     job_id,
                     token,
                     error_code="context_limit",
-                    error="分支上下文超过本地上限",
+                    error="保存后的上下文超过本地上限，讲解未保存",
                     messages=messages,
                 )
                 return
@@ -898,142 +861,3 @@ async def execute_agent_job(
             )
         await _persist_messages(app, job_id, token, messages)
         needs_run = True
-
-
-async def execute_quick_job(
-    app: "FastAPI", job_id: str, token: str, key: str | None, snapshot: adapters.CallSnapshot
-) -> None:
-    """Generate a document directly from the accepted user turn and writer suffix."""
-    from app.jobs.runtime import _finish  # pyright: ignore[reportPrivateUsage]
-
-    messages = list(snapshot.messages or [])
-    try:
-        turn = await _invoke(
-            app,
-            job_id,
-            token,
-            snapshot,
-            key,
-            messages,
-            snapshot.tools or [],
-            tool_choice="none",
-            call_seconds=CALL_SECONDS,
-        )
-    except asyncio.CancelledError:
-        return
-    except TimeoutError:
-        await _finish(
-            app,
-            job_id,
-            token,
-            result=None,
-            error_code="timeout",
-            error="模型调用超时（180 秒）",
-            partial="",
-            key=key,
-        )
-        return
-    except ContextLimitError:
-        await _finish(
-            app,
-            job_id,
-            token,
-            result=None,
-            error_code="context_limit",
-            error="上下文超过本地上限",
-            partial="",
-            key=key,
-        )
-        return
-    except OutputLimitError:
-        await _finish(
-            app,
-            job_id,
-            token,
-            result=None,
-            error_code="output_limit",
-            error="讲解超过本地长度上限",
-            partial="",
-            key=key,
-        )
-        return
-    except Exception as exc:
-        await _finish(
-            app,
-            job_id,
-            token,
-            result=None,
-            error_code="provider_error",
-            error=safe_verification_error(exc),
-            partial="",
-            key=key,
-        )
-        return
-    if len(turn.text) > OUTPUT_CHAR_LIMIT:
-        await _finish(
-            app,
-            job_id,
-            token,
-            result=None,
-            error_code="output_limit",
-            error="讲解超过本地长度上限",
-            partial="",
-            key=key,
-        )
-        return
-    if turn.completed and not turn.calls:
-        result = adapters.GenerateResult(
-            turn.text, bool(turn.text.strip()), turn.usage, turn.raw_response
-        )
-        try:
-            await _finish(
-                app, job_id, token, result=result, error_code=None, error=None, partial="", key=key
-            )
-            async with app.state.session_factory() as session:
-                await session.execute(text("BEGIN IMMEDIATE"))
-                job = await session.get(Job, job_id)
-                assistant = await session.scalar(
-                    select(ChatMessage).where(
-                        ChatMessage.job_id == job_id, ChatMessage.role == "assistant"
-                    )
-                )
-                if job is not None and job.status == "succeeded" and assistant is not None:
-                    state = dict(job.execution_state or {})
-                    artifact_fact = (
-                        Environment(autoescape=False)
-                        .from_string(job.input_snapshot["saved_artifact_template"])
-                        .render(
-                            artifacts_json=json.dumps(
-                                state.get("artifacts", []), ensure_ascii=False
-                            )
-                        )
-                        .strip()
-                    )
-                    state["protocol_messages"] = [
-                        *job.input_snapshot["messages"],
-                        {"role": "user", "content": artifact_fact},
-                    ]
-                    job.execution_state = state
-                    await session.commit()
-        except (HTTPException, ValueError) as exc:
-            await _finish(
-                app,
-                job_id,
-                token,
-                result=None,
-                error_code="save_failed",
-                error=str(exc),
-                partial="",
-                key=key,
-            )
-    else:
-        await _finish(
-            app,
-            job_id,
-            token,
-            result=None,
-            error_code="incomplete_output",
-            error="讲解生成未完整结束",
-            partial=turn.text,
-            key=key,
-        )

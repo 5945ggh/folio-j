@@ -12,16 +12,13 @@ import {
 } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { AnalysisEditor } from "./analysis/AnalysisEditor";
-import { AnalysisGenerationStatus } from "./analysis/AnalysisGeneration";
 import { AnalysisPanel } from "./analysis/AnalysisPanel";
-import { type AnalysisDetail, analysisKeys } from "./analysis/api";
+import type { AnalysisDetail } from "./analysis/api";
 import { savedAnalysisLocation } from "./analysis/editor";
 import { api } from "./api/client";
-import { chatKeys, getJob, type Job } from "./chat/api";
+import type { Job } from "./chat/api";
 import {
 	captureReadingPosition,
-	freshestJob,
-	isTerminalJob,
 	readingPositionForJob,
 	shouldOpenArtifact,
 } from "./chat/discussion";
@@ -226,62 +223,22 @@ export function SegmentDetail() {
 		lastWidth: number;
 	} | null>(null);
 	const widthRange = conversationWidthRange(workspaceWidth);
-	const [generateToken, setGenerateToken] = useState<string | null>(null);
+	const [explainToken, setExplainToken] = useState<string | null>(null);
 	const [discussionActivated, setDiscussionActivated] = useState(false);
 	const workbenchMounted = shouldMountWorkbench(
 		discussionActivated,
 		chatOpen,
-		generateToken,
+		explainToken,
 	);
 	useEffect(() => {
 		if (workbenchMounted) setDiscussionActivated(true);
 	}, [workbenchMounted]);
-	const [generationJobId, setGenerationJobId] = useState<string | null>(null);
-	const openedGenerationArtifact = useRef<string | null>(null);
 	const jobReading = useRef<
 		Record<string, { analysisId: string | null; revisionId: string | null }>
 	>({});
 	const requestReading = useRef<
 		Record<string, { analysisId: string | null; revisionId: string | null }>
 	>({});
-	const generation = useQuery({
-		queryKey: chatKeys.job(generationJobId ?? ""),
-		queryFn: async () => {
-			const fresh = await getJob(generationJobId ?? "");
-			return freshestJob(
-				client.getQueryData<Job>(chatKeys.job(generationJobId ?? "")),
-				fresh,
-			);
-		},
-		enabled: Boolean(generationJobId),
-		refetchInterval: (query) =>
-			query.state.data &&
-			["succeeded", "failed", "interrupted"].includes(query.state.data.status)
-				? false
-				: 1000,
-	});
-	useEffect(() => {
-		const artifact = generation.data?.artifacts?.[0];
-		if (!artifact?.analysis_id || !artifact.revision_id) return;
-		const key = `${generation.data?.id}:${artifact.analysis_id}:${artifact.revision_id}`;
-		if (openedGenerationArtifact.current === key) return;
-		openedGenerationArtifact.current = key;
-		void client.invalidateQueries({ queryKey: analysisKeys.list(id) });
-		void client.invalidateQueries({ queryKey: ["catalog"] });
-		const latest = readSegmentLocation(locationRef.current.latest.search);
-		const expected = generation.data
-			? readingPositionForJob(
-					jobReading.current,
-					requestReading.current,
-					generation.data,
-				)
-			: undefined;
-		if (!shouldOpenArtifact(expected, latest)) return;
-		updateLocation({
-			analysisId: artifact.analysis_id,
-			revisionId: artifact.revision_id,
-		});
-	}, [generation.data, client, id, updateLocation]);
 	const segment = useQuery({
 		queryKey: queries.segment(id),
 		queryFn: () => getSegment(id),
@@ -519,29 +476,19 @@ export function SegmentDetail() {
 										toolbarActions={
 											<NewAnalysisActions
 												disabled={!segment.isSuccess}
-												generationDisabled={Boolean(
-													generation.data && !isTerminalJob(generation.data),
-												)}
 												onCreate={() =>
 													setAnalysisEditor({
 														segment: current,
 														restoreFocusId: "manual-analysis-create",
 													})
 												}
-												onGenerate={() => {
+												onExplain={() => {
 													setChatOpen(true);
-													setGenerateToken(crypto.randomUUID());
+													setExplainToken(crypto.randomUUID());
 												}}
 											/>
 										}
-									>
-										{generation.data && (
-											<AnalysisGenerationStatus
-												job={generation.data}
-												onSelect={selectAnalysis}
-											/>
-										)}
-									</AnalysisPanel>
+									></AnalysisPanel>
 								</section>
 							</div>
 						</section>
@@ -669,13 +616,7 @@ export function SegmentDetail() {
 									onSelectThread={(threadId) =>
 										updateLocation({ threadId, chatOpen: true })
 									}
-									generateToken={generateToken}
-									onGenerationAccepted={(job: Job) => {
-										if (activeId.current !== id) return;
-										setGenerationJobId(job.id);
-										updateLocation({ threadId: job.thread_id });
-										setGenerateToken(null);
-									}}
+									explainToken={explainToken}
 									onSubmissionStarted={(requestId) => {
 										const latest = readSegmentLocation(
 											locationRef.current.latest.search,

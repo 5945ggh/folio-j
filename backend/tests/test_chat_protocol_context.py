@@ -94,12 +94,13 @@ async def test_next_turn_keeps_complete_protocol_prefix_and_appends_new_material
         segment,
         profile,
         None,
-        "继续讨论",
-        "请关注过去式",
+        "继续讨论\n\n请关注过去式",
         "chat_completions",
     )
     assert snapshot["messages"][: len(prefix)] == prefix
     assert "01ARZ3NDEKTSV4RRFFQ69G5FAX" in snapshot["messages"][-2]["content"]
     assert "writer_v1" not in str(snapshot["messages"])
-    assert "本轮补充要求：请关注过去式" in snapshot["messages"][-1]["content"]
-    assert "本轮未选择讲解预设" in snapshot["messages"][-1]["content"]
+    assert "继续讨论\n\n请关注过去式" in snapshot["messages"][-1]["content"]
+    assert "additional_instructions" not in snapshot
+    assert "未选择讲解预设" in snapshot["messages"][-3]["content"]
+    assert "雨だった。" not in snapshot["messages"][-1]["content"]

@@ -10,14 +10,12 @@ import {
 /** Creation belongs to the collection; callers own the execution lifecycle. */
 export function NewAnalysisActions({
 	onCreate,
-	onGenerate,
+	onExplain,
 	disabled,
-	generationDisabled,
 }: {
 	onCreate: () => void;
-	onGenerate: () => void;
+	onExplain: () => void;
 	disabled: boolean;
-	generationDisabled: boolean;
 }) {
 	const menuId = useId();
 	const menu = useRef<HTMLDivElement>(null);
@@ -149,14 +147,13 @@ export function NewAnalysisActions({
 					type="button"
 					role="menuitem"
 					tabIndex={-1}
-					disabled={disabled || generationDisabled}
-					title={generationDisabled ? "已有讲解正在生成" : undefined}
+					disabled={disabled}
 					onClick={() => {
 						closeMenu();
-						onGenerate();
+						onExplain();
 					}}
 				>
-					使用 AI 生成
+					创建 AI 讲解
 				</button>
 			</div>
 		</div>

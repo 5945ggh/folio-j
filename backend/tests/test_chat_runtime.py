@@ -363,7 +363,7 @@ async def test_stop_cannot_commit_between_dispatch_check_and_sdk_entry(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("failure", ["provider_error", "timeout", "progress_limit", "result_limit"])
-async def test_quick_failure_preserves_durable_partial_without_success_or_history(
+async def test_reply_failure_preserves_durable_partial_without_success_or_history(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
     partial = "## 已脱敏的残文\n\n已经收到的有效讲解正文 [REDACTED]"
@@ -389,7 +389,7 @@ async def test_quick_failure_preserves_durable_partial_without_success_or_histor
     install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "quick-failure.db") as (client, app):
         seed = await seed_chat(client)
-        job = await accept(client, seed, action="generate_analysis")
+        job = await accept(client, seed)
         await runtime.execute_job(app, job["id"])
         failed = (await client.get(f"/api/jobs/{job['id']}")).json()
         expected_code = "output_limit" if failure.endswith("limit") else failure
