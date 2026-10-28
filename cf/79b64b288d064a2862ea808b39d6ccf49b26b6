@@ -1,0 +1,27 @@
+docs/ARCHITECTURE.md
+  s_e73a3f947fc97c::t_4fd229f8db03c7 177
+  s_e73a3f947fc97c::t_68b51ced5e5b2f 178
+backend/src/app/services/material_metadata.py
+  s_e73a3f947fc97c::t_da01090cf23c5e 22-24
+  s_e73a3f947fc97c::t_5af7e3a4d16326 12,25-31,49-50,56-65,85-93,96-97,113-116
+backend/tests/test_material_metadata_concurrency.py
+  s_e73a3f947fc97c::t_da01090cf23c5e 168-170,220-222
+  s_e73a3f947fc97c::t_79ef4348724943 6,24
+  s_e73a3f947fc97c::t_2acdc67894303a 1-5,7-23,25-167,171-219,223-226
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf79b64b288d064a2862ea808b39d6ccf49b26b6",
+  "prompts": {},
+  "sessions": {
+    "s_e73a3f947fc97c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18084-5c78-70a1-b745-6b6c89870ba3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
