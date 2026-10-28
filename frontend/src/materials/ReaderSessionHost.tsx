@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { matchRoutes, useLocation } from "react-router";
+import { useLocation } from "react-router";
+import { readerSessionRoute } from "../navigation/reader-session-route";
 import {
 	advanceRetainedSession,
 	DEFAULT_RETENTION_MS,
@@ -11,12 +12,11 @@ import {
 	type ReaderSessionEntry,
 } from "./MaterialReader";
 
-const readerRoute = [{ path: "/materials/:id" }];
-
 /** Keeps one reading session across Segment visits without replacing router context. */
 export function ReaderSessionHost() {
 	const location = useLocation();
-	const materialId = matchRoutes(readerRoute, location)?.[0]?.params.id;
+	const route = readerSessionRoute(location.pathname);
+	const materialId = route?.kind === "reader" ? route.materialId : undefined;
 	const current = useMemo(
 		() =>
 			materialId ? { key: materialId, value: { materialId, location } } : null,
@@ -26,7 +26,7 @@ export function ReaderSessionHost() {
 	const next = advanceRetainedSession(
 		state,
 		current,
-		/^\/segments\/[^/]+$/.test(location.pathname),
+		route?.kind === "segment",
 		Date.now(),
 	);
 	if (next !== state) setState(next);

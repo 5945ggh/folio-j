@@ -2,7 +2,6 @@ import { lazy } from "react";
 import {
 	createRoutesFromElements,
 	Link,
-	matchRoutes,
 	Navigate,
 	Outlet,
 	Route,
@@ -11,6 +10,7 @@ import {
 } from "react-router";
 import { MaterialsPage } from "./catalog/MaterialsPage";
 import { PageBoundary } from "./navigation/PageBoundary";
+import { readerSessionRoute } from "./navigation/reader-session-route";
 import { Shell } from "./Shared";
 
 const ReaderSessionHost = lazy(() =>
@@ -50,10 +50,7 @@ function SegmentRoute() {
 
 export function App() {
 	const { pathname } = useLocation();
-	const sessionRoute = matchRoutes(
-		[{ path: "/materials/:id" }, { path: "/segments/:id" }],
-		pathname,
-	);
+	const sessionRoute = readerSessionRoute(pathname);
 	return (
 		<>
 			{sessionRoute && (

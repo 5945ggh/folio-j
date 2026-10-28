@@ -332,6 +332,16 @@ export async function readerSession(
 					},
 				],
 			} satisfies Schema["SegmentProvenanceResponse"];
+		else if (path.endsWith("/search"))
+			data = {
+				material_id: materialId,
+				version_id: versionId,
+				query: new URL(request.url).searchParams.get("q") ?? "",
+				items: [],
+				total: 0,
+				offset: 0,
+				limit: 50,
+			} satisfies Schema["MaterialSearchResponse"];
 		else if (path.endsWith("/readings/prepare"))
 			data = {
 				material_id: materialId,
@@ -855,15 +865,54 @@ export async function readerSession(
 			}
 		}
 		if (retained && !preview) {
+			const plainReturnUsage = usageReads;
+			const searchDraft = "尾斜杠片段往返保留的搜索草稿";
+			if (realApp) {
+				const toc = h.container.querySelector<HTMLButtonElement>(
+					'button[aria-label="目录"]',
+				);
+				check(toc, "Actual reader must expose the navigation panel");
+				toc.click();
+				await h.until(
+					() => !!h.container.querySelector('button[data-tab="search"]'),
+					"Actual reader navigation tabs must mount",
+				);
+				h.container
+					.querySelector<HTMLButtonElement>('button[data-tab="search"]')
+					?.click();
+				const search = h.container.querySelector<HTMLInputElement>(
+					'input[placeholder="搜索本书原文…"]',
+				);
+				check(search, "Actual reader must expose its search draft input");
+				h.inputValue(search, searchDraft);
+				await h.until(
+					() => search.value === searchDraft,
+					"Reader search must accept the unsaved draft",
+				);
+			}
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			);
 			const scrollBeforePlainReturn = vertical
 				? viewport.scrollLeft
 				: viewport.scrollTop;
-			const plainReturnUsage = usageReads;
-			go("/segments/saved");
+			go(realApp ? "/segments/saved/" : "/segments/saved");
 			await h.until(
 				() => !!h.container.querySelector(segmentSelector),
 				"Plain return scenario must pause the reader",
 			);
+			if (realApp) {
+				check(
+					entry?.pathname === "/segments/saved/" &&
+						previous.every(
+							(frame, index) =>
+								frame.isConnected &&
+								frame.contentDocument === documents[index] &&
+								frame.getClientRects().length === 0,
+						),
+					"Trailing-slash Segment route must pause the same iframe and Document identities",
+				);
+			}
 			go(`/materials/${materialId}`);
 			await h.until(
 				() =>
@@ -889,6 +938,13 @@ export async function readerSession(
 				"Returning without ?segment must preserve the prior reading position",
 			);
 			if (realApp) {
+				const search = h.container.querySelector<HTMLInputElement>(
+					'input[placeholder="搜索本书原文…"]',
+				);
+				check(
+					search?.value === searchDraft,
+					"Returning from a trailing-slash Segment route must preserve the reader search draft",
+				);
 				const beforeForwardUsage = usageReads;
 				go(-1);
 				await h.until(

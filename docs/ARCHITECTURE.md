@@ -178,6 +178,8 @@ Source 目录提供材料、未删除片段与讲解的真实计数，概览仅�
 
 ### 3.1.2 阅读器 R1.1 呈现与只读派生查询
 
+阅读会话的挂载与保留共用 `navigation/reader-session-route` 分类，均使用 Router 的 `matchRoutes` 语义；合法的片段尾斜杠路径也保留原阅读会话。
+
 前端 `materials/ReaderSessionHost.tsx` 从真实 location 识别当前材料，保留最近一个阅读会话，并在片段页暂停该会话。纯 `navigation/retained-session` 策略负责身份替换、恢复代次和暂离十分钟的租期，过期检查同时覆盖定时淘汰和直接返回。打开其他材料替换旧实例，离开适用路由释放。缓存只存在当前标签页内存，不持久化书籍正文，也不增加依赖。
 
 宿主将稳定的 `{ materialId, location }` entry 显式传给 `MaterialReaderSession`；`MaterialOpening` 消费入口 location，Reader 接收已校验的 `returnTo`。`MaterialReader` 仅为独立路由挂载保留薄适配，导航由真实 Data Router 处理，宿主不构造嵌套 `Routes` 或冻结 Router context。`navigation/view-activity.tsx` 提供 `ViewActivityProvider` 与 `useViewActivity`，统一传递 active／activation 生命周期；接入视图据此停止隐藏期间的输入、布局及查询副作用，最终卸载仍执行资源清理。保留状态不替代 TanStack Query 的服务端数据缓存。
