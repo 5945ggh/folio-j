@@ -79,6 +79,10 @@ latency 不含 HTTP 序列化、浏览器或 fixture 构造。tracemalloc 独立
 
 本次完整复跑 `just lint`、`just test` 通过：后端 853 项通过、1 项私有样书测试跳过，前端 636 项通过。构建、85 个 Chrome 配置与真实页面采用上一节已有验收，本次核对记录，未重新运行浏览器。首次注音成本和缓存预算限制保持上述结论；未新增依赖、修改 TBD 或调用真实模型。
 
+## 2026-10-29 本地主分支整合
+
+提交 `eb0036b` 已从 `codex/reader-read-performance` 快进合入本地 `main`，原主分支为 `7747434`，合并无冲突。生产代码与提交前验收对象一致，本次仅同步交付状态，沿用上一节的工程与浏览器验收；尚未推送远端。
+
 ## 原始证据
 
 - [原始基线](evidence/reader-read-performance/baseline-original.json)、[只减少第二次 BLOB](evidence/reader-read-performance/position-no-second-blob.json)
