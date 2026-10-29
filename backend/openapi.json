@@ -499,6 +499,102 @@
         "title": "ChapterSummary",
         "type": "object"
       },
+      "ContextCopySettingsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "after_characters": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "After Characters",
+            "type": "integer"
+          },
+          "after_sentences": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "After Sentences",
+            "type": "integer"
+          },
+          "before_characters": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Before Characters",
+            "type": "integer"
+          },
+          "before_sentences": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Before Sentences",
+            "type": "integer"
+          },
+          "include_source": {
+            "title": "Include Source",
+            "type": "boolean"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "include_source",
+          "before_sentences",
+          "after_sentences",
+          "before_characters",
+          "after_characters",
+          "revision"
+        ],
+        "title": "ContextCopySettingsResponse",
+        "type": "object"
+      },
+      "ContextCopySettingsUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "after_characters": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "After Characters",
+            "type": "integer"
+          },
+          "after_sentences": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "After Sentences",
+            "type": "integer"
+          },
+          "before_characters": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Before Characters",
+            "type": "integer"
+          },
+          "before_sentences": {
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Before Sentences",
+            "type": "integer"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "include_source": {
+            "title": "Include Source",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "include_source",
+          "before_sentences",
+          "after_sentences",
+          "before_characters",
+          "after_characters",
+          "expected_revision"
+        ],
+        "title": "ContextCopySettingsUpdate",
+        "type": "object"
+      },
       "CoveragePoint": {
         "properties": {
           "coverage": {
@@ -8844,6 +8940,60 @@
           }
         },
         "summary": "Patch Settings"
+      }
+    },
+    "/api/settings/context-copy": {
+      "get": {
+        "operationId": "getContextCopySettings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextCopySettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Settings"
+      },
+      "put": {
+        "operationId": "saveContextCopySettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContextCopySettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextCopySettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Settings"
       }
     },
     "/api/settings/defaults": {

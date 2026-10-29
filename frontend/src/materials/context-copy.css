@@ -47,3 +47,29 @@
 	padding: 12px;
 	margin: 0;
 }
+.reader-copy-settings form > fieldset {
+	border: 0;
+	padding: 0;
+	margin: 0;
+	min-inline-size: 0;
+}
+.reader-copy-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-block: 12px;
+}
+.reader-copy-actions button {
+	border: 1px solid var(--reader-line);
+	border-radius: 6px;
+	padding: 7px 10px;
+	color: var(--reader-fg);
+	background: var(--reader-bg);
+	font: inherit;
+	font-size: 12px;
+	cursor: pointer;
+}
+.reader-copy-actions button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}

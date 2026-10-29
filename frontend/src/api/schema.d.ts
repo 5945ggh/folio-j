@@ -783,6 +783,24 @@ export interface paths {
         patch: operations["patchSettings"];
         trace?: never;
     };
+    "/api/settings/context-copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Settings */
+        get: operations["getContextCopySettings"];
+        /** Save Settings */
+        put: operations["saveContextCopySettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings/defaults": {
         parameters: {
             query?: never;
@@ -1370,6 +1388,36 @@ export interface components {
             part_count: number;
             /** Title */
             title: string;
+        };
+        /** ContextCopySettingsResponse */
+        ContextCopySettingsResponse: {
+            /** After Characters */
+            after_characters: number;
+            /** After Sentences */
+            after_sentences: number;
+            /** Before Characters */
+            before_characters: number;
+            /** Before Sentences */
+            before_sentences: number;
+            /** Include Source */
+            include_source: boolean;
+            /** Revision */
+            revision: number;
+        };
+        /** ContextCopySettingsUpdate */
+        ContextCopySettingsUpdate: {
+            /** After Characters */
+            after_characters: number;
+            /** After Sentences */
+            after_sentences: number;
+            /** Before Characters */
+            before_characters: number;
+            /** Before Sentences */
+            before_sentences: number;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Include Source */
+            include_source: boolean;
         };
         /** CoveragePoint */
         CoveragePoint: {
@@ -5246,6 +5294,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getContextCopySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextCopySettingsResponse"];
+                };
+            };
+        };
+    };
+    saveContextCopySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContextCopySettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextCopySettingsResponse"];
                 };
             };
             /** @description Validation Error */

@@ -30,6 +30,9 @@ import {
 	ViewActivityProvider,
 } from "../navigation/view-activity";
 import { InlineError } from "../Shared";
+import type { ContextCopySettings } from "../settings/context-copy-api";
+import { contextCopyKey } from "../settings/context-copy-cache";
+import { useContextCopySettings } from "../settings/context-copy-query";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "../speech";
 import { getSpeechController } from "../speech/browser";
 import {
@@ -68,14 +71,7 @@ import {
 	useChapterTranslations,
 	useMaterialTranslationActivity,
 } from "./chapter-translations-query";
-import {
-	buildContextCopy,
-	CONTEXT_COPY_KEY,
-	type ContextCopyPreferences,
-	DEFAULT_CONTEXT_COPY,
-	readContextCopyPreferences,
-	writeContextCopyPreferences,
-} from "./context-copy";
+import { buildContextCopy } from "./context-copy";
 import {
 	imagePrecedesText,
 	nearestText,
@@ -360,10 +356,10 @@ function Reader({
 	);
 	const [toolsVisible, setToolsVisible] = useState(true);
 	const [ui, setUi] = useState(readReaderUiPreferences);
-	const [copyPreferences, setCopyPreferences] = useState(
-		readContextCopyPreferences,
+	const copySettings = useContextCopySettings(active);
+	const [copySettingsError, setCopySettingsError] = useState<Error | null>(
+		null,
 	);
-	const [copyStorageFailed, setCopyStorageFailed] = useState(false);
 	const [bookUi, setBookUi] = useState(() =>
 		readBookUiPreferences(book.id, book.version_id),
 	);
@@ -514,18 +510,10 @@ function Reader({
 		setUi(next);
 		setStorageFailed(!writeReaderUiPreferences(next));
 	}, []);
-	const setCopyPreference = useCallback((next: ContextCopyPreferences) => {
-		setCopyPreferences(next);
-		setCopyStorageFailed(!writeContextCopyPreferences(next));
-	}, []);
 	useEffect(() => {
 		const changed = (event: StorageEvent) => {
 			if (event.key === READER_UI_KEY || event.key === null)
 				setUi(readReaderUiPreferences());
-			if (event.key === CONTEXT_COPY_KEY || event.key === null) {
-				setCopyPreferences(readContextCopyPreferences());
-				setCopyStorageFailed(false);
-			}
 		};
 		window.addEventListener("storage", changed);
 		return () => window.removeEventListener("storage", changed);
@@ -2015,6 +2003,26 @@ function Reader({
 						usage.error
 					}
 				/>
+				{copySettingsError && (
+					<button
+						type="button"
+						disabled={copySettings.isFetching}
+						onClick={() => {
+							void copySettings.refetch().then((result) => {
+								if (result.isSuccess) {
+									setCopySettingsError((current) =>
+										current === copySettingsError ? null : current,
+									);
+									setSelectionError((current) =>
+										current === copySettingsError ? null : current,
+									);
+								}
+							});
+						}}
+					>
+						重新读取复制设置
+					</button>
+				)}
 				{originError && (
 					<button
 						type="button"
@@ -2352,10 +2360,23 @@ function Reader({
 								book.version_id,
 								chapter.data,
 							);
+							const savedCopySettings =
+								client.getQueryData<ContextCopySettings>(contextCopyKey);
+							if (
+								!savedCopySettings ||
+								client.getQueryState(contextCopyKey)?.status !== "success"
+							) {
+								const failure = new Error(
+									"复制设置尚未就绪，请重新读取后再复制。原文可继续阅读。",
+								);
+								setCopySettingsError(failure);
+								throw failure;
+							}
+							setCopySettingsError(null);
 							const content = buildContextCopy(
 								chapter.data,
 								target.reference,
-								copyPreferences,
+								savedCopySettings,
 								book.title,
 							);
 							setSelectionError(null);
@@ -2520,8 +2541,6 @@ function Reader({
 			)}
 			{rightView.value === "settings" && (
 				<ReaderSettings
-					copyPreferences={copyPreferences}
-					onCopyPreferences={setCopyPreference}
 					settings={settings}
 					ui={ui}
 					bookUi={bookUi}
@@ -2537,7 +2556,6 @@ function Reader({
 						void changeBookUi(DEFAULT_BOOK_UI);
 						change(defaults);
 						setUiPreference(DEFAULT_READER_UI);
-						setCopyPreference(DEFAULT_CONTEXT_COPY);
 					}}
 					onClose={() => closePanel("right")}
 				/>
@@ -2552,7 +2570,7 @@ function Reader({
 						: "正在获取全量注音，当前阅读可继续。"}
 				</p>
 			)}
-			{(storageFailed || copyStorageFailed) && panels.right === "settings" && (
+			{storageFailed && panels.right === "settings" && (
 				<p className="reader-preference-notice" role="status">
 					偏好暂未存入浏览器，本次阅读仍可使用。
 				</p>

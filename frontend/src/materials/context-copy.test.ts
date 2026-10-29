@@ -3,21 +3,9 @@ import test from "node:test";
 import type { Chapter } from "./api.ts";
 import {
 	buildContextCopy,
-	CONTEXT_COPY_KEY,
 	type ContextCopyPreferences,
 	DEFAULT_CONTEXT_COPY,
-	normalizeContextCopyPreferences,
-	readContextCopyPreferences,
-	writeContextCopyPreferences,
 } from "./context-copy.ts";
-import {
-	bookUiKey,
-	DEFAULT_BOOK_UI,
-	DEFAULT_READER_UI,
-	READER_UI_KEY,
-	readBookUiPreferences,
-	readReaderUiPreferences,
-} from "./preferences.ts";
 import type { MaterialProvenance } from "./study-api.ts";
 import { ContextPrefillError } from "./study-context.ts";
 
@@ -81,136 +69,6 @@ const budgetFields = [
 	"before_characters",
 	"after_characters",
 ] as const;
-
-test("copy preferences recover invalid fields independently and accept only bounded integers", () => {
-	assert.deepEqual(DEFAULT_CONTEXT_COPY, {
-		before_sentences: 3,
-		after_sentences: 0,
-		before_characters: 200,
-		after_characters: 200,
-		include_source: true,
-	});
-	for (const field of budgetFields) {
-		for (const value of [0, 1, 100000]) {
-			assert.equal(
-				normalizeContextCopyPreferences({ [field]: value })[field],
-				value,
-			);
-		}
-		for (const value of [-1, 0.1, 100001, NaN, Infinity, "1", null, true]) {
-			const normalized = normalizeContextCopyPreferences({
-				...DEFAULT_CONTEXT_COPY,
-				include_source: false,
-				[field]: value,
-			});
-			assert.equal(normalized[field], DEFAULT_CONTEXT_COPY[field]);
-			assert.equal(normalized.include_source, false);
-		}
-	}
-	for (const value of [null, [], "value", 0, true])
-		assert.deepEqual(
-			normalizeContextCopyPreferences(value),
-			DEFAULT_CONTEXT_COPY,
-		);
-	for (const include_source of [0, "false", null])
-		assert.equal(
-			normalizeContextCopyPreferences({ include_source }).include_source,
-			true,
-		);
-	assert.deepEqual(
-		normalizeContextCopyPreferences({
-			before_sentences: 5,
-			after_sentences: "broken",
-			before_characters: -1,
-			after_characters: 400,
-			include_source: false,
-			enabled: false,
-		}),
-		{
-			before_sentences: 5,
-			after_sentences: 0,
-			before_characters: 200,
-			after_characters: 400,
-			include_source: false,
-		},
-	);
-});
-
-test("copy preferences persist across books in a key independent of appearance and study settings", () => {
-	const values = new Map<string, string>([
-		[READER_UI_KEY, JSON.stringify(DEFAULT_READER_UI)],
-		[bookUiKey("material", "version"), JSON.stringify(DEFAULT_BOOK_UI)],
-		["segment-context", JSON.stringify({ enabled: false })],
-	]);
-	const before = new Map(values);
-	const store = {
-		getItem: (key: string) => values.get(key) ?? null,
-		setItem: (key: string, value: string) => {
-			values.set(key, value);
-		},
-	};
-	const preference = {
-		...DEFAULT_CONTEXT_COPY,
-		before_sentences: 6,
-		after_characters: 0,
-		include_source: false,
-	};
-	assert.equal(writeContextCopyPreferences(preference, store), true);
-	assert.deepEqual(readContextCopyPreferences(store), preference);
-	assert.deepEqual(
-		readBookUiPreferences("material", "version", store),
-		DEFAULT_BOOK_UI,
-	);
-	assert.deepEqual(
-		readBookUiPreferences("another", "v2", store),
-		DEFAULT_BOOK_UI,
-	);
-	assert.deepEqual(readReaderUiPreferences(store), DEFAULT_READER_UI);
-	for (const [key, value] of before) assert.equal(values.get(key), value);
-	assert.equal(values.size, before.size + 1);
-	assert.ok(values.has(CONTEXT_COPY_KEY));
-	assert.equal(writeContextCopyPreferences(DEFAULT_CONTEXT_COPY, store), true);
-	assert.deepEqual(readContextCopyPreferences(store), DEFAULT_CONTEXT_COPY);
-});
-
-test("broken JSON, inaccessible storage, and rejected writes keep copy preferences usable", () => {
-	for (const data of ["{", "null", "[]", '"text"', "42"]) {
-		assert.deepEqual(
-			readContextCopyPreferences({ getItem: () => data, setItem: () => {} }),
-			DEFAULT_CONTEXT_COPY,
-		);
-	}
-	const inaccessible = {
-		getItem: () => {
-			throw new Error("security");
-		},
-		setItem: () => {
-			throw new Error("quota");
-		},
-	};
-	assert.deepEqual(
-		readContextCopyPreferences(inaccessible),
-		DEFAULT_CONTEXT_COPY,
-	);
-	assert.equal(
-		writeContextCopyPreferences(DEFAULT_CONTEXT_COPY, inaccessible),
-		false,
-	);
-	const old = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
-	Object.defineProperty(globalThis, "localStorage", {
-		configurable: true,
-		get: () => {
-			throw new Error("security");
-		},
-	});
-	try {
-		assert.deepEqual(readContextCopyPreferences(), DEFAULT_CONTEXT_COPY);
-		assert.equal(writeContextCopyPreferences(DEFAULT_CONTEXT_COPY), false);
-	} finally {
-		if (old) Object.defineProperty(globalThis, "localStorage", old);
-		else Reflect.deleteProperty(globalThis, "localStorage");
-	}
-});
 
 test("copy labels separate exact target, local context, and optional source", () => {
 	const book = chapter("前々。前。 𠮷が\n学ぶ \n後。遠後。");

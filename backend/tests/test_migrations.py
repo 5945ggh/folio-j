@@ -1,4 +1,4 @@
-"""A fixed schema baseline rebuilds safely without historical upgrade machinery."""
+"""Fixed baseline and incremental revisions rebuild and preserve existing data."""
 
 import shutil
 import sqlite3
@@ -25,6 +25,7 @@ from alembic import command
 from app import (
     analysis_models,
     chat_models,
+    context_copy_models,
     material_models,
     models,
     segment_context_models,
@@ -36,6 +37,7 @@ from app.db import Base
 _ = (
     analysis_models,
     chat_models,
+    context_copy_models,
     material_models,
     models,
     settings_models,
@@ -43,6 +45,7 @@ _ = (
     translation_models,
 )
 BASELINE = "0001_schema_baseline"
+HEAD = "0002_context_copy_settings"
 SCRIPTS = Path(__file__).resolve().parents[1] / "alembic"
 
 
@@ -117,7 +120,7 @@ def _temporary_revision(tmp_path: Path, body: str) -> Path:
         "from alembic import op\n"
         "import sqlalchemy as sa\n"
         "revision = 'future_test'\n"
-        f"down_revision = {BASELINE!r}\n"
+        f"down_revision = {HEAD!r}\n"
         "branch_labels = None\ndepends_on = None\n"
         "def upgrade():\n"
         "    assert op.get_bind().exec_driver_sql('PRAGMA foreign_keys').scalar_one() == 1\n"
@@ -136,21 +139,21 @@ def test_empty_database_rebuilds_current_schema(
     config = _config(database, monkeypatch)
     scripts = ScriptDirectory.from_config(config)
     revisions = list(scripts.walk_revisions())
-    assert [revision.revision for revision in revisions] == [BASELINE]
-    assert revisions[0].down_revision is None
-    assert scripts.get_bases() == scripts.get_heads() == [BASELINE]
+    assert [revision.revision for revision in revisions] == [HEAD, BASELINE]
+    assert revisions[0].down_revision == BASELINE
+    assert revisions[1].down_revision is None
+    assert scripts.get_bases() == [BASELINE]
+    assert scripts.get_heads() == [HEAD]
     command.upgrade(config, "head")
     with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchall() == [
-            (BASELINE,)
-        ]
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchall() == [(HEAD,)]
         assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
         tables = {
             row[0]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
-        assert len(Base.metadata.tables) == 28
+        assert len(Base.metadata.tables) == 29
         assert tables == {"alembic_version", *Base.metadata.tables}
     engine = create_engine(URL.create("sqlite", database=str(database)))
     try:
@@ -232,7 +235,7 @@ def test_full_downgrade_and_rebuild_with_self_referencing_history(
         assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
 
 
-def test_baseline_ddl_does_not_follow_runtime_metadata_changes(
+def test_revision_ddl_does_not_follow_runtime_metadata_changes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     original = tmp_path / "original.db"
@@ -321,3 +324,39 @@ def test_old_revision_labels_are_not_silently_accepted(
         command.upgrade(config, "head")
     assert _rows(database) == before
     assert _schema(database) == schema
+
+
+def test_baseline_upgrade_only_adds_context_copy_settings_and_preserves_history(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "upgrade-existing.db"
+    config = _config(database, monkeypatch)
+    command.upgrade(config, BASELINE)
+    _seed_history(database)
+    before, schema = _rows(database), _schema(database)
+    assert "context_copy_settings" not in before
+
+    command.upgrade(config, "head")
+    after = _rows(database)
+    assert after.pop("context_copy_settings") == []
+    assert after.pop("alembic_version") == [(HEAD,)]
+    assert before.pop("alembic_version") == [(BASELINE,)]
+    assert after == before
+    assert [entry for entry in _schema(database) if entry[1] != "context_copy_settings"] == schema
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO context_copy_settings "
+            "(id,include_source,before_sentences,after_sentences,before_characters,"
+            "after_characters,revision) VALUES (1,0,5,2,300,50,8)"
+        )
+    head_rows, head_schema = _rows(database), _schema(database)
+    command.upgrade(config, "head")
+    assert _rows(database) == head_rows
+    assert _schema(database) == head_schema
+
+    command.downgrade(config, BASELINE)
+    assert _rows(database) == {**before, "alembic_version": [(BASELINE,)]}
+    assert _schema(database) == schema
+    command.upgrade(config, "head")
+    assert _schema(database) == head_schema
+    assert _rows(database)["context_copy_settings"] == []

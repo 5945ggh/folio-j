@@ -7,6 +7,7 @@ from sqlalchemy import Connection
 from alembic import context
 from app import analysis_models as _analysis_models
 from app import chat_models as _chat_models
+from app import context_copy_models as _context_copy_models
 from app import material_models as _material_models
 from app import models as _models
 from app import segment_context_models as _segment_context_models
@@ -22,6 +23,7 @@ _ = (
     _settings_models,
     _material_models,
     _segment_context_models,
+    _context_copy_models,
 )
 
 target_metadata = _models.Base.metadata
