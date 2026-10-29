@@ -1,0 +1,77 @@
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 3,7
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_1e48d562ceb002::t_95eb4c81915163 3
+  s_1e48d562ceb002::t_3f52429a9c2c9b 16-17,32-33,37-38
+  s_1e48d562ceb002::t_35ecbc3ba170d5 20-21
+.agents/skills/document-maintenance/SKILL.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 3,20-21,34-40,43-45,49-51,57-59
+docs/PRD.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 227,650
+docs/USAGE.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 13,19-32,63,85,115
+frontend/browser-tests/settings-models.tsx
+  s_1e48d562ceb002::t_3f52429a9c2c9b 1-253
+docs/handovers/README.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 14-15,17,40,54-63
+  s_1e48d562ceb002::t_7537fc5525ddf7 64
+docs/TECH_STACK.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 25,31,38,40,42,44,48,65,71,73,76,80-81,84
+  s_1e48d562ceb002::t_35ecbc3ba170d5 75
+docs/handovers/archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 1-42
+frontend/scripts/test-browser.mjs
+  s_1e48d562ceb002::t_3f52429a9c2c9b 18-19
+README.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 94
+docs/ARCHITECTURE.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 171,189,197,199,207,677
+docs/handovers/archived/SETTINGS_MODELS_ACCEPTANCE.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 1-23
+  s_1e48d562ceb002::t_f05526c3544f76 35
+  s_1e48d562ceb002::t_95eb4c81915163 24-34
+frontend/src/settings/SettingsPage.tsx
+  s_1e48d562ceb002::t_3f52429a9c2c9b 25-27,36,61,92-97,135-136,141,162-175,177-183,193-201,209-222
+  s_1e48d562ceb002::t_ab1a8adea718a1 223-224
+docs/handovers/text-study/TEST_MATRIX.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 3,79,82,85,87-88
+docs/UPGRADING.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 13-97,122,124
+frontend/browser-tests/main.tsx
+  s_1e48d562ceb002::t_3f52429a9c2c9b 34,401
+frontend/src/settings/draft.test.ts
+  s_1e48d562ceb002::t_3f52429a9c2c9b 113,133-157
+  s_1e48d562ceb002::t_6cf76a00a31242 158-160
+docs/handovers/archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 1-300
+docs/handovers/epub-reading/README.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 99,105-121
+frontend/src/settings/ModelDefaults.tsx
+  s_1e48d562ceb002::t_3f52429a9c2c9b 2-3,59-61,119-121,134-149,190-196
+docs/INFORMATION_ARCHITECTURE.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 22-23,27-29,77,81,87,95-96,99,103,117,235
+docs/handovers/archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 3
+docs/handovers/archived/APPLICATION_THEME_ACCEPTANCE.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 1-58
+frontend/src/settings/settings-refresh.css
+  s_1e48d562ceb002::t_3f52429a9c2c9b 44-87,260-262
+references/README.md
+  s_1e48d562ceb002::t_3f52429a9c2c9b 7-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7442c68cc735aa5e8a76e1c3beba6049ed192c9d",
+  "prompts": {},
+  "sessions": {
+    "s_1e48d562ceb002": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18620-4129-7932-8af8-e35fddeaf3c2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
