@@ -1,0 +1,88 @@
+frontend/browser-tests/reader-context-copy.tsx
+  s_77b456adad68f8::t_40932862a7b5d3 3,93-103,106-128,196-202,326-342,392,396,398-399,409,416,420-455,458-495,510,580-601,608
+frontend/src/settings/context-copy-cache.ts
+  s_77b456adad68f8::t_40932862a7b5d3 1-22
+frontend/browser-tests/reader-context-copy-fixture.ts
+  s_77b456adad68f8::t_40932862a7b5d3 1-41
+backend/src/app/context_copy_models.py
+  s_77b456adad68f8::t_40932862a7b5d3 1-37
+frontend/src/settings/context-copy-cache.test.ts
+  s_77b456adad68f8::t_40932862a7b5d3 1-101
+frontend/src/settings/context-copy-query.ts
+  s_77b456adad68f8::t_40932862a7b5d3 1-36
+docs/PRD.md
+  s_77b456adad68f8::t_40932862a7b5d3 250-252
+frontend/src/settings/context-copy-draft.ts
+  s_77b456adad68f8::t_40932862a7b5d3 1-123
+backend/openapi.json
+  s_77b456adad68f8::t_40932862a7b5d3 502-597,8945-8996
+  s_77b456adad68f8::t_67f655aea38027 8997-8998
+docs/handovers/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md
+  s_77b456adad68f8::t_40932862a7b5d3 1-32,34-35
+  s_77b456adad68f8::t_598afee29bbe07 33
+  s_77b456adad68f8::t_d292c748c3e81f 36-38
+backend/src/app/services/context_copy_settings.py
+  s_77b456adad68f8::t_40932862a7b5d3 1-53
+frontend/src/materials/context-copy.css
+  s_77b456adad68f8::t_40932862a7b5d3 50-75
+frontend/src/materials/ReaderControls.tsx
+  s_77b456adad68f8::t_40932862a7b5d3 328,330,332
+backend/src/app/context_copy_schemas.py
+  s_77b456adad68f8::t_40932862a7b5d3 1-33
+docs/handovers/reading-practice/PLAN.md
+  s_77b456adad68f8::t_40932862a7b5d3 17,31
+backend/src/app/api/settings.py
+  s_77b456adad68f8::t_40932862a7b5d3 9,35
+frontend/src/materials/context-copy.ts
+  s_77b456adad68f8::t_40932862a7b5d3 1,4,6
+backend/alembic/versions/0002_context_copy_settings.py
+  s_77b456adad68f8::t_40932862a7b5d3 1-48
+docs/USAGE.md
+  s_77b456adad68f8::t_40932862a7b5d3 45-47
+frontend/src/settings/context-copy-draft.test.ts
+  s_77b456adad68f8::t_40932862a7b5d3 1-126
+frontend/src/materials/ReaderCopySettings.tsx
+  s_77b456adad68f8::t_40932862a7b5d3 1,3-26,28,89-90,93,100,105,108,111,116-117,121-122,125,127-136,140-296
+  s_77b456adad68f8::t_4619b257444808 297
+docs/UPGRADING.md
+  s_77b456adad68f8::t_40932862a7b5d3 114-116
+frontend/browser-tests/main.tsx
+  s_77b456adad68f8::t_40932862a7b5d3 26,63-68
+frontend/src/api/schema.d.ts
+  s_77b456adad68f8::t_40932862a7b5d3 786-803,1392-1421,5310-5351,5354-5357,5359-5362
+  s_77b456adad68f8::t_dbecf3ad91f961 5352-5353,5358
+frontend/src/materials/MaterialReader.tsx
+  s_77b456adad68f8::t_40932862a7b5d3 33-35,74,359-361,2006-2025,2363-2375,2379,2573
+backend/src/app/api/context_copy.py
+  s_77b456adad68f8::t_40932862a7b5d3 1-25
+docs/handovers/reading-practice/CONTEXT_COPY_ACCEPTANCE.md
+  s_77b456adad68f8::t_40932862a7b5d3 5-6
+docs/ARCHITECTURE.md
+  s_77b456adad68f8::t_40932862a7b5d3 70,84,471,509-511
+backend/tests/test_context_copy_settings.py
+  s_77b456adad68f8::t_40932862a7b5d3 1-181
+backend/alembic/env.py
+  s_77b456adad68f8::t_40932862a7b5d3 10,26
+frontend/src/settings/context-copy-api.ts
+  s_77b456adad68f8::t_40932862a7b5d3 1-31
+docs/INFORMATION_ARCHITECTURE.md
+  s_77b456adad68f8::t_40932862a7b5d3 127
+backend/tests/test_migrations.py
+  s_77b456adad68f8::t_40932862a7b5d3 1,28,40,48,123,142-146,149,156,238,327-362
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7d57239ce1b826e14668d6c0e2c4f7ebea8600ef",
+  "prompts": {},
+  "sessions": {
+    "s_77b456adad68f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18657-3d2a-7b03-b9af-5af7cd0b9e63",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
