@@ -1,0 +1,35 @@
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_5154176e484139::t_1522c9c56e37a2 39
+docs/ARCHITECTURE.md
+  s_5154176e484139::t_ff7493368e6684 140
+frontend/src/materials/MaterialReader.tsx
+  s_5154176e484139::t_a0a23ca349f450 1217-1220
+docs/handovers/README.md
+  s_5154176e484139::t_fd1482a1fc11b7 8
+docs/handovers/READER_LAYOUT_SWITCH_ACCEPTANCE.md
+  s_5154176e484139::t_d0179a32131783 1-2,4-17,19-25
+  s_5154176e484139::t_4229d39a7cb251 18
+  s_5154176e484139::t_1522c9c56e37a2 3
+frontend/browser-tests/main.tsx
+  s_5154176e484139::t_b776f89a422864 26,402
+frontend/browser-tests/reader-layout-switch.tsx
+  s_5154176e484139::t_02276291b1a633 1-406
+frontend/scripts/test-browser.mjs
+  s_5154176e484139::t_b6967b82843984 85-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "238f4f565d2094ca914250ce9dd6ba94cc6ae491",
+  "prompts": {},
+  "sessions": {
+    "s_5154176e484139": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1850d-58ec-7442-8301-8b1da6e869e9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
