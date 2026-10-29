@@ -1,0 +1,87 @@
+docs/handovers/reading-practice/CONTEXT_COPY_ACCEPTANCE.md
+  s_77b456adad68f8::t_1a45439f371a7c 1-24,27-38,43-48
+  s_77b456adad68f8::t_99325f12af43f7 25-26,39-41
+  s_77b456adad68f8::t_1afc5db82bc45f 42
+frontend/src/materials/context-copy.test.ts
+  s_77b456adad68f8::t_c4da4b6887827b 17,56,111-114,160-167,191-198,219-226,273-279,288-297,303-306,308-315,329-332,340-346,350-352,362-374,378,380-386
+  s_77b456adad68f8::t_77e49ef31942e8 217,376-377,379
+  s_77b456adad68f8::t_a2581d6ebbed80 1-16,18-55,57-110,115-159,168-190,199-216,218,227-272,280-287,298-302,307,316-328,333-339,347-349,353-361,375,387-403
+frontend/src/materials/study-overlays.css
+  s_77b456adad68f8::t_26fd0555d932ef 61
+frontend/src/materials/context-copy.css
+  s_77b456adad68f8::t_9aa5e3b04edd87 1-19,22-31,33,35-36,38-49
+  s_77b456adad68f8::t_702a13977acf41 20-21,32,34,37
+docs/handovers/README.md
+  s_77b456adad68f8::t_902347c017bcf0 7
+docs/ARCHITECTURE.md
+  s_77b456adad68f8::t_e816a75325f639 508-509
+frontend/browser-tests/main.tsx
+  s_77b456adad68f8::t_ba3a48fce71062 25,406
+frontend/src/materials/ReaderContextCopy.tsx
+  s_77b456adad68f8::t_349153bcd5b2e1 20,29,36,69
+  s_77b456adad68f8::t_8b0be9edd5f254 1-7,12-15,105-110
+  s_77b456adad68f8::t_26fd0555d932ef 8-11,16-19,21-28,30-35,37-68,70-90,92-104,111-116
+  s_77b456adad68f8::t_1e1c871f07b4d7 91
+docs/PRD.md
+  s_77b456adad68f8::t_902347c017bcf0 246-257
+  s_77b456adad68f8::t_1a45439f371a7c 6
+frontend/browser-tests/reader-context-copy.tsx
+  s_77b456adad68f8::t_ba3a48fce71062 1-326,355-361,363-471,473-477
+  s_77b456adad68f8::t_fcece837a9fff4 327-354,362,472
+frontend/src/materials/ReaderCopySettings.tsx
+  s_77b456adad68f8::t_96c8674e217229 92
+  s_77b456adad68f8::t_247bae1d12bc67 2-3,8-59,160-169
+  s_77b456adad68f8::t_9aa5e3b04edd87 1,4-7,60-91,93-104,108-130,135-151,156,171-173
+  s_77b456adad68f8::t_4501a5804964ae 105-107,131-134,152-155
+  s_77b456adad68f8::t_702a13977acf41 157-159,170
+docs/README.md
+  s_77b456adad68f8::t_e816a75325f639 13
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_77b456adad68f8::t_1a45439f371a7c 9,15
+  s_77b456adad68f8::t_6250116ec169f6 8
+  s_77b456adad68f8::t_59cc30eb42c161 14
+frontend/src/materials/context-copy.ts
+  s_77b456adad68f8::t_1b97ac29d9b55d 1-139
+frontend/src/materials/ReaderControls.tsx
+  s_77b456adad68f8::t_4501a5804964ae 6
+  s_77b456adad68f8::t_9aa5e3b04edd87 3,77-78,90-91,333-336
+frontend/scripts/test-browser.mjs
+  s_77b456adad68f8::t_ba3a48fce71062 52-55
+frontend/src/materials/context-copy-feedback.css
+  s_77b456adad68f8::t_26fd0555d932ef 1-17,21-64
+  s_77b456adad68f8::t_8b0be9edd5f254 18-20
+frontend/src/materials/StudyOverlays.tsx
+  s_77b456adad68f8::t_26fd0555d932ef 12,14,107-108,113-114,126-138
+frontend/src/materials/MaterialReader.tsx
+  s_77b456adad68f8::t_26fd0555d932ef 346-350,366,517-520,525-528,2341-2368,2515-2520,2523-2524,2540,2555
+  s_77b456adad68f8::t_8b0be9edd5f254 72-78,113,363-365
+  s_77b456adad68f8::t_21727f41b016dd 71
+docs/handovers/reading-practice/PLAN.md
+  s_77b456adad68f8::t_902347c017bcf0 1-30,33-35
+  s_77b456adad68f8::t_1a45439f371a7c 31-32
+docs/GLOSSARY.md
+  s_77b456adad68f8::t_1a45439f371a7c 3
+  s_77b456adad68f8::t_902347c017bcf0 16
+docs/INFORMATION_ARCHITECTURE.md
+  s_77b456adad68f8::t_99325f12af43f7 127
+  s_77b456adad68f8::t_902347c017bcf0 128-132
+docs/USAGE.md
+  s_77b456adad68f8::t_99325f12af43f7 45
+  s_77b456adad68f8::t_e816a75325f639 46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d125fee70844ed4674cb80844c42adccf66d43af",
+  "prompts": {},
+  "sessions": {
+    "s_77b456adad68f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18657-3d2a-7b03-b9af-5af7cd0b9e63",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
