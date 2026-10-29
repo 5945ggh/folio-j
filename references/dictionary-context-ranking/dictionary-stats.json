@@ -1,0 +1,183 @@
+{
+  "file_name": "明镜日汉双解词典_Yomitan 1.4.3.zip",
+  "sha256": "58fd5c08d919f609507ba12d3ffa82468d7bd3f2b97304a9ec7d27620a1e00f2",
+  "zip_bytes": 16156321,
+  "uncompressed_bytes": 317695123,
+  "index": {
+    "title": "明鏡日汉双解辞典",
+    "format": 3,
+    "revision": "MeikyouShuangjie_20240624_1.4.3",
+    "sequenced": true,
+    "sourceLanguage": "ja",
+    "targetLanguage": "zh",
+    "url": "https://forum.freemdict.com/t/topic/38630"
+  },
+  "archive_files": 29,
+  "term_banks": 28,
+  "rows": 139462,
+  "sequences": 61259,
+  "sequences_with_different_definition_payloads": 0,
+  "empty_reading_rows": 61278,
+  "unique_expressions": 122374,
+  "expressions_with_multiple_sequences": 9432,
+  "scores": {
+    "0": 139462
+  },
+  "class_nodes_deduplicated_by_sequence": {
+    "exjp": 137052,
+    "def1": 91377,
+    "def2": 88146,
+    "num": 87853,
+    "dfcn": 87671,
+    "exam": 68526,
+    "excn": 68526,
+    "type": 62675,
+    "mjrhsjcd-entry": 61259,
+    "head": 61259,
+    "word": 60104,
+    "sanjiao": 8845,
+    "fanyi": 4354,
+    "def0": 2781,
+    "canzhao": 2489,
+    "biaoji": 2486,
+    "lingxing": 2275,
+    "wen": 1525,
+    "paisheng": 1401,
+    "ming": 1302,
+    "phrase": 1155,
+    "yufa": 854,
+    "biaoxian": 819,
+    "keneng": 575,
+    "def2_first": 498,
+    "jiu": 378,
+    "yixing": 164,
+    "dong": 116,
+    "yuyuan": 91,
+    "shu": 90,
+    "square": 77,
+    "zhuyi": 21,
+    "num_circle": 9
+  },
+  "sequences_containing_class": {
+    "mjrhsjcd-entry": 61259,
+    "head": 61259,
+    "def1": 61259,
+    "num": 61259,
+    "def2": 60490,
+    "dfcn": 60470,
+    "word": 60104,
+    "type": 60085,
+    "exam": 32983,
+    "exjp": 32983,
+    "excn": 32983,
+    "sanjiao": 8560,
+    "fanyi": 4209,
+    "canzhao": 2351,
+    "lingxing": 2252,
+    "biaoji": 2236,
+    "wen": 1523,
+    "paisheng": 1401,
+    "def0": 1341,
+    "ming": 1302,
+    "phrase": 1155,
+    "biaoxian": 695,
+    "yufa": 626,
+    "keneng": 575,
+    "def2_first": 492,
+    "jiu": 378,
+    "yixing": 164,
+    "dong": 116,
+    "yuyuan": 90,
+    "shu": 90,
+    "square": 73,
+    "zhuyi": 21,
+    "num_circle": 1
+  },
+  "selected_expression_candidates": {
+    "開く": [
+      {
+        "reading": "あく",
+        "sequence": 377
+      },
+      {
+        "reading": "ひらく",
+        "sequence": 42708
+      }
+    ],
+    "明日": [
+      {
+        "reading": "あした",
+        "sequence": 621
+      },
+      {
+        "reading": "あす",
+        "sequence": 667
+      },
+      {
+        "reading": "みょうにち",
+        "sequence": 48187
+      }
+    ],
+    "生": [
+      {
+        "reading": "しょう",
+        "sequence": 22187
+      },
+      {
+        "reading": "せい",
+        "sequence": 26710
+      },
+      {
+        "reading": "なま",
+        "sequence": 37610
+      },
+      {
+        "reading": "うぶ",
+        "sequence": 3912
+      },
+      {
+        "reading": "き",
+        "sequence": 9958
+      }
+    ],
+    "上手": [
+      {
+        "reading": "じょうず",
+        "sequence": 25334
+      },
+      {
+        "reading": "うわて",
+        "sequence": 4171
+      },
+      {
+        "reading": "かみて",
+        "sequence": 8354
+      }
+    ],
+    "人気": [
+      {
+        "reading": "じんき",
+        "sequence": 25685
+      },
+      {
+        "reading": "にんき",
+        "sequence": 38568
+      },
+      {
+        "reading": "ひとけ",
+        "sequence": 42162
+      }
+    ],
+    "掛ける": [
+      {
+        "reading": "かける",
+        "sequence": 7327
+      }
+    ]
+  },
+  "caveats": [
+    "Class node counts describe this converter's structure, not verified sense counts.",
+    "Examples can be fragments or contain placeholders; these are not labeled WSD instances.",
+    "Sequence is scoped to this dictionary version and is not a universal sense identifier."
+  ]
+}
