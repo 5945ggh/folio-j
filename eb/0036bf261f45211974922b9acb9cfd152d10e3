@@ -1,0 +1,128 @@
+backend/src/app/services/reader_queries.py
+  s_e73a3f947fc97c::t_63759fb31e3db2 7,24-26,244
+  s_e73a3f947fc97c::t_7a4589e6eab873 21
+  s_e73a3f947fc97c::t_5713fae5d7b24d 245,247
+backend/tests/test_reader_views.py
+  s_e73a3f947fc97c::t_2115ae13dc3438 427-428,441-443,662-664
+  s_e73a3f947fc97c::t_04fc4d1c4d9555 36,141-143,387-426,429-440
+  s_e73a3f947fc97c::t_734e6f275c5ae0 537-538,540,549-557,559,566,574-586
+  s_e73a3f947fc97c::t_967ae221558144 238
+  s_e73a3f947fc97c::t_541d53131c4ec7 24,67,527-536,539,541-548,558,560-565,567-573,587-643
+  s_e73a3f947fc97c::t_df080c1e6307ce 659-660,665
+  s_e73a3f947fc97c::t_1baa618c6f99e6 486
+  s_e73a3f947fc97c::t_f6cdb548831834 1-23,25-28,30-32,35,37-50,52-55,60-63,66,68-104,106-135,137-140,144-154,156-176,178-189,191-237,239-247,249-322,324-344,346-349,351-378,380-386,444-470,472-485,487-518,520-526,644-650,652-658,661,666-697,699-708
+  s_e73a3f947fc97c::t_34a61b18ea42ee 29,33-34,51,56-59,64-65,105,136,155,177,190,248,323,345,350,379,471,519,651,698
+scripts/reader_measurement_baseline.py
+  s_e73a3f947fc97c::t_e22fa4a811b158 1-27,33-38,43-57,61-103,107-119,123-143,147-196,200-261,267-289
+  s_e73a3f947fc97c::t_705311be782ecd 28-32,39-42,58-60,104-106,120-122,144-146,197-199,262-266
+docs/handovers/archived/evidence/reader-read-performance/largest-views.json
+  s_e73a3f947fc97c::t_f6b46fb9a944e7 1-1898
+docs/ARCHITECTURE.md
+  s_e73a3f947fc97c::t_a95eedff1a4d0d 213-218
+scripts/measure_reader_backend.py
+  s_e73a3f947fc97c::t_f81ddae0a1b249 290,479
+  s_e73a3f947fc97c::t_0a679b042ba279 42
+  s_e73a3f947fc97c::t_e802cf68622743 554-555,557-558
+  s_e73a3f947fc97c::t_431a8890aa2b93 1-7,10-35,37,39-41,43,47-51,53-56,61-64,75,78,80-102,104,111-120,124-139,203,210-211,217-230,236-245,253-262,270,273-289,291-296,317,325-332,348,361,365,367,406-408,412-422,424-425,436-439,449-451,468-470,474-478,480-483,492-498,502-507,516-523,532-536,604-606,610-613,617,622-624,643-645,672-675,688-689,708,731-736,740-741,762-764,768-772
+  s_e73a3f947fc97c::t_667e0070eeb398 423,444,452-454,457-461,463-467,551,561,567
+  s_e73a3f947fc97c::t_8cd6a0ebea1d4f 73-74
+  s_e73a3f947fc97c::t_5b0c9285f2747f 103,105-110,121-123,140-202,204-209,212-216,231-235,246-252,263-269,318-322,333-347,349-360,362-364,369-382,388-405,409-411,440-443,447-448,471-473,484-491,499-501,508,515,524-529,531,537-543,552,560,568-571,603,607-609,614-616,618,633,653-657,664-668,671,709-718,723-730,737-739,753-761,765-767
+  s_e73a3f947fc97c::t_4eb732c0059cba 44-46,52,57-60,65,67-68,70-72
+  s_e73a3f947fc97c::t_cf3f739ae26711 576-577,599-601,619-621,749-750
+  s_e73a3f947fc97c::t_22c70ea966eaa2 38,66,69,297-301,304,308-309,315-316,323-324,366,368,383-384,426-427,430,446,514,530,545,742,746-747
+  s_e73a3f947fc97c::t_b0885b8819b623 699,703
+  s_e73a3f947fc97c::t_24115eb318581b 455,462
+  s_e73a3f947fc97c::t_705311be782ecd 626-632,635-637,648-651
+  s_e73a3f947fc97c::t_b45e3ba47ce0e0 8-9,553,556
+  s_e73a3f947fc97c::t_836161390bf10a 302-303,305-307,310-314,385-387,428-429,509-513,743-745
+  s_e73a3f947fc97c::t_4239ac25941bb1 271-272,456,546-550,625,634,638-642,646-647,652,659-663,669
+  s_e73a3f947fc97c::t_6474c4c83022e3 36,76-77,79,431-435,445,544,559,562-566,572-575,578-598,602,658,670,676-687,690-698,719-722,748,751-752
+  s_e73a3f947fc97c::t_39f4243fc1ab21 700-702,704-707
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_895f24df52fa90::t_3ba20294af71da 3
+docs/handovers/archived/evidence/reader-read-performance/largest-baseline.json
+  s_e73a3f947fc97c::t_f6b46fb9a944e7 1-1802
+docs/handovers/archived/evidence/reader-read-performance/small-baseline-recheck.json
+  s_e73a3f947fc97c::t_eafe79821521da 1-1418
+docs/handovers/archived/evidence/reader-read-performance/views-initial.json
+  s_e73a3f947fc97c::t_eafe79821521da 1-3593
+docs/handovers/README.md
+  s_e73a3f947fc97c::t_ea755ab6c9cc08 19-20
+docs/handovers/archived/READER_READ_PERFORMANCE_ACCEPTANCE.md
+  s_e73a3f947fc97c::t_e32c992d1963ce 70-72
+  s_e73a3f947fc97c::t_8a035e237406f3 52,54-60,88
+  s_e73a3f947fc97c::t_ea755ab6c9cc08 1-51,53,61-69,73-75,82-87,89-90
+  s_895f24df52fa90::t_3ba20294af71da 76-81
+docs/DEVELOPMENT.md
+  s_e73a3f947fc97c::t_ac2a89f4552684 63
+  s_e73a3f947fc97c::t_a95eedff1a4d0d 51-62
+docs/handovers/archived/evidence/reader-read-performance/baseline.json
+  s_e73a3f947fc97c::t_eafe79821521da 1-3393
+backend/src/app/main.py
+  s_e73a3f947fc97c::t_50d4876371609a 77-80
+  s_e73a3f947fc97c::t_63759fb31e3db2 27,48-49
+docs/handovers/archived/evidence/reader-read-performance/views-final.json
+  s_e73a3f947fc97c::t_eafe79821521da 1-3597
+backend/tests/test_reader_measurement.py
+  s_e73a3f947fc97c::t_76c1fd964303ae 7,70,72,77,85,89
+  s_e73a3f947fc97c::t_fedf0e7db4804d 41-46,55-64,137-138
+  s_e73a3f947fc97c::t_bca9d5b58077a3 10-11,14,16,108-120,127-136,139-140,143,150-156,161-165,170-174
+  s_e73a3f947fc97c::t_96231e3fcab86c 121-126,141-142,144-149,157-160,166-169
+  s_e73a3f947fc97c::t_b7887d46745bf5 47-54
+  s_e73a3f947fc97c::t_5ae9c390e1df60 1-6,8-9,12-13,17-40,65-69,73-76,79,81-84,87-88
+  s_e73a3f947fc97c::t_931b45a85ca2c3 15,78,80,86
+  s_e73a3f947fc97c::t_5b8cedbfc18695 71
+  s_e73a3f947fc97c::t_c3e42fcc00927c 90-107
+backend/src/app/services/materials.py
+  s_e73a3f947fc97c::t_63759fb31e3db2 6,47-49,264-267,271,279
+  s_e73a3f947fc97c::t_5713fae5d7b24d 44,268,272,278,310
+  s_e73a3f947fc97c::t_0f5c719cd8cca6 275
+backend/src/app/api/materials.py
+  s_e73a3f947fc97c::t_63759fb31e3db2 140,142-144,210,213-215,239,242-249
+backend/src/app/services/reader_views.py
+  s_e73a3f947fc97c::t_1e10ca9ca7b33b 118-123,125,127,212,216,218,430-435,515-517
+  s_e73a3f947fc97c::t_847ffd5aeea65f 12,38,264,267-271,279-286,441-448,463-473,504-508,523-533
+  s_e73a3f947fc97c::t_8aaa3f9722a535 63-72,275-278,407,485
+  s_e73a3f947fc97c::t_363581da843928 1-3,5-11,13-14,16-26,28-36,40-62,73-92,114-117,124,126,129-131,158-177,179-193,204-211,217,219-239,242-251,253,256,258,263,326-406,408-411,413-429,436-440,449-452,454-462,474-484,486-491,493-503,509-514,519-522
+  s_e73a3f947fc97c::t_6f92154ee6577b 265,293-296,301-303,306-325
+  s_e73a3f947fc97c::t_47fa90d85a6d8c 15,27,37,39,93-113,128,132-157,178,194-203,252,254-255,266,272-274,287-292,297-300,304-305,412,453,492,518
+  s_e73a3f947fc97c::t_7240001d4a68ad 4,240-241
+  s_e73a3f947fc97c::t_b34a47a719a4a0 257,259-262
+  s_e73a3f947fc97c::t_ec6b1e303fa818 213-215
+backend/src/app/services/reader_view_cache.py
+  s_e73a3f947fc97c::t_6ebc3533f9c92d 1-50,59-67,69-94,97-121
+  s_e73a3f947fc97c::t_b34a47a719a4a0 51-58,68,95-96
+docs/handovers/archived/evidence/reader-read-performance/baseline-original.json
+  s_e73a3f947fc97c::t_eafe79821521da 1-2830
+docs/handovers/archived/evidence/reader-read-performance/small-views-recheck.json
+  s_e73a3f947fc97c::t_eafe79821521da 1-1460
+backend/src/app/services/readings.py
+  s_e73a3f947fc97c::t_5713fae5d7b24d 135,137
+  s_e73a3f947fc97c::t_63759fb31e3db2 5,24-26,134
+docs/handovers/archived/evidence/reader-read-performance/position-no-second-blob.json
+  s_e73a3f947fc97c::t_eafe79821521da 1-2830
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb0036bf261f45211974922b9acb9cfd152d10e3",
+  "prompts": {},
+  "sessions": {
+    "s_895f24df52fa90": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a184e9-f108-7163-88ee-a422ed040ad9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_e73a3f947fc97c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18084-5c78-70a1-b745-6b6c89870ba3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
