@@ -1,0 +1,71 @@
+docs/handovers/TEST_CLEANUP_ACCEPTANCE.md
+  s_f8dcc8c4c17620::t_12e573ed4d7062 14,27
+  s_f8dcc8c4c17620::t_a9bdbbab04ad1d 3
+  s_f8dcc8c4c17620::t_e70f816be0c05e 26,28-35
+  s_f8dcc8c4c17620::t_04eebf4414d9ef 1-2,4-13,15-21,23-25,36-37
+  s_f8dcc8c4c17620::t_d4fbaaa3a17298 22
+frontend/scripts/test-browser.mjs
+  s_f8dcc8c4c17620::t_dd73ce7b4bf3c3 12-13,108-110,124-126,141-144
+  s_f8dcc8c4c17620::t_735f64e7ae7df1 199-202,224-228,230-238,241-242,255-258,316-322,324-328,399-400,402-405
+  s_f8dcc8c4c17620::t_2f62a6c36f3bcb 9-11,49,111-123,127-140,145-183,415
+  s_f8dcc8c4c17620::t_284a2ce4c63b5a 406-414,416-419,429,440,444,447
+frontend/scripts/browser-test-plan.mjs
+  s_f8dcc8c4c17620::t_ca9360c16b20b9 1-31
+  s_f8dcc8c4c17620::t_329120291a4da4 32-38
+docs/DEVELOPMENT.md
+  s_f8dcc8c4c17620::t_04eebf4414d9ef 45-50
+frontend/scripts/browser-test-plan.test.mjs
+  s_f8dcc8c4c17620::t_999bbfb62ae443 1-37
+  s_f8dcc8c4c17620::t_af35833f642f59 38-44,46-47,49-76,78-79,81-82
+frontend/package.json
+  s_f8dcc8c4c17620::t_999bbfb62ae443 12
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_f8dcc8c4c17620::t_a9bdbbab04ad1d 12
+frontend/src/materials/highlight.test.ts
+  s_f8dcc8c4c17620::t_7c93c682f3b038 149,151-155,158,162-171
+frontend/browser-tests/reader-layout-switch.tsx
+  s_f8dcc8c4c17620::t_11c6f4fd704e13 86-94,169,171-173,178-193,195,224-232,242-248,287-296,315,350,406,456-492
+frontend/browser-tests/chapter-records.tsx
+  s_f8dcc8c4c17620::t_2f62a6c36f3bcb 664-669,699-707
+  s_f8dcc8c4c17620::t_277085d2eff569 708-726
+docs/handovers/README.md
+  s_f8dcc8c4c17620::t_04eebf4414d9ef 8
+backend/tests/test_chat_protocol_context.py
+  s_f8dcc8c4c17620::t_bf97d3296e07c8 4,9,16-24,26-34,38,122-124
+backend/tests/test_stream_progress.py
+  s_f8dcc8c4c17620::t_8078e27d568288 4,29,31,33-34,40-42,46-48,58,60,64,92-104,112,274
+frontend/browser-tests/inline-animation.ts
+  s_f8dcc8c4c17620::t_6149cace7fb973 43-70
+frontend/browser-tests/inline-motion-fixture.ts
+  s_f8dcc8c4c17620::t_ea8975ca6c6b91 7,20,24-33,39-41,45-47,60,67,71,73-79,96-97,110,120-139,141-144,146-147,149-154,156-157,160-161,163-164,166-176,181-182,187-241,243-248,250-252,254,256-271,275-280,283-290,292-297,301,350
+frontend/browser-tests/inline-performance.ts
+  s_f8dcc8c4c17620::t_e201a2629d6bc7 132,188,204-205,239-244
+frontend/browser-tests/reader-session.tsx
+  s_f8dcc8c4c17620::t_4631a9639426dd 1,171,176,1336-1390
+frontend/browser-tests/route-motion.tsx
+  s_f8dcc8c4c17620::t_f0780a6b2e9619 214-217,219-220,222-223,225,227,230,232,235,267-268,273,276-279,281-282,284-288,291,293-294,300-301,304-308,310-314,317-318,320-322,324-339,341-346,365-366,409-419,426,451,493,510,512
+frontend/browser-tests/segment-share.tsx
+  s_f8dcc8c4c17620::t_d20e6066b4bbf3 312
+frontend/browser-tests/workbench-render.tsx
+  s_f8dcc8c4c17620::t_05a09f19f032a3 9,132,143,151,161,164-165,167,177,199,201
+frontend/src/materials/viewport.test.ts
+  s_f8dcc8c4c17620::t_9c32d24c8b89bb 252-269
+frontend/src/settings/segment-context-cache.test.ts
+  s_f8dcc8c4c17620::t_e62776b466449e 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f76e2d5e9370591515ebf23bbec14fd9a6fed281",
+  "prompts": {},
+  "sessions": {
+    "s_f8dcc8c4c17620": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18594-e415-7920-9be0-1f78b9dec6c0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
