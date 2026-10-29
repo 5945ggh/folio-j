@@ -224,7 +224,7 @@ JSON 文档树及教学 payload 的生产用途留待主动学习交互确定，
 
 ### 4.8 阅读翻译与设备朗读
 
-翻译与设备朗读辅助当前阅读，不要求先创建学习片段或获得完整解析。范围与取舍依据见[阅读辅助原方案](handovers/text-study/TRANSLATION_AND_SPEECH_PLAN.md)，后续入口调整见[验收记录](handovers/archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)；交付状态由实施基线维护。
+翻译与设备朗读辅助当前阅读，不要求先创建学习片段或获得完整解析。范围与取舍依据见[阅读辅助原方案](handovers/archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md)，后续入口调整见[验收记录](handovers/archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)；交付状态由实施基线维护，待验证与后续接入见[阅读辅助后续安排](handovers/epub-reading/README.md#阅读辅助后续安排)。
 
 - 首轮翻译仅作用于 EPUB 中有确切出处的同章连续选区，沿用第 4.7 节的支持范围。显式触发后固定原文、出处、语境和实际配置；先采用 LLM adapter，允许以后接入专用服务。Segment 直接生成译文、批量／整章翻译及材料对话后置。
 - 默认日译简体中文，前文最多 3 句／200 个 Unicode 码点，后文为 0，偏好独立于 Segment 语境及讲解语言。本次语境可检查、编辑、清空或扩大，只翻译目标；补全句子须用户选择，不自动扩大目标或发送全书／其他讨论历史。
@@ -646,7 +646,7 @@ AI 操作由后台执行，用户可离开后返回查看；审核等待、服�
 | TBD-08 | 知识库的默认分组方式 | 以 anchor 经 NFKC 规范化并去除首尾空白后精确匹配；一条 Occurrence 有多个 anchor 时出现在多个组中 |
 | TBD-12 | 单用户假设 | 不做鉴权，服务仅监听 127.0.0.1 |
 | TBD-13 | 前端路由库与 lint 工具 | React Router（library 的 Data router）+ Biome |
-| TBD-16 | 讨论成果保存与执行契约 | 产品行为已确认：保留独立保存的成功部分、逐项反馈、有限修复且不绕过审核，见 F8。2C已落实Analysis读取／生成／Section编辑、具体操作审核、操作幂等与持久保存核实、统一调用预算，见ARCHITECTURE 3.5；Occurrence与复杂组合方案的恢复和修复仍随后续切片细化。 |
+| TBD-16 | 讨论成果保存与执行契约 | 产品行为已确认：保留独立保存的成功部分、逐项反馈、有限修复且不绕过审核，见 F8。Occurrence 与复杂组合方案的恢复和修复仍随后续切片细化；执行机制见 [ARCHITECTURE 3.5](ARCHITECTURE.md#35-2c-analysis-与工具执行实现)，交付状态见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。 |
 | TBD-17 | 组合操作的审核呈现 | 线程级权限、初始默认审核模式、空闲时切换、停止取消未执行方案及基本工具审核规则已确认；混合操作方案如何分组展示与反馈留待交互设计，不改变已确认的执行边界。 |
 
 仍需继续审订：积累库默认浏览方式、线程命名与单独删除、相关内容查找交互、最终验收案例及全篇优先级和交付顺序。基本操作能力、当前片段读取范围、主动停止与同线程发送规则已确认；总体讲解快捷入口已纳入Analysis切片，其余快捷入口留到闭环后打磨。技术契约见上表，其他未决项不能由旧架构占位自动补全。

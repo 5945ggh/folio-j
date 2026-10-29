@@ -10,6 +10,91 @@
 
 升级前停止使用目标库的服务，制作 SQLite 一致性备份，并同时备份对应凭据目录。数据库使用 WAL 模式，不要在服务仍写入时只复制主数据库文件。恢复时保持数据库与凭据目录配套；改名或换路径时，凭据目录也须对应新的数据库文件名。
 
+### 制作备份
+
+先在运行服务的终端按 `Ctrl-C`，确认所有使用该库的实例均已退出。在仓库根目录执行以下示例，把参数换成仓库外一个尚不存在的绝对目录；如平时设置了 `FOLIO_J_DATABASE_PATH`，备份时也使用同一值。脚本读取当前应用配置，以只读连接调用 SQLite 的备份 API，不复制源库的 WAL／SHM 文件。
+
+```sh
+uv run --project backend python - /absolute/path/to/new-backup <<'PY'
+import os
+import shutil
+import sqlite3
+import subprocess
+import sys
+from contextlib import closing
+from pathlib import Path
+
+from app.config import load_settings
+
+source = load_settings().database.path.resolve()
+destination = Path(sys.argv[1]).expanduser()
+if not destination.is_absolute() or not source.is_file():
+    raise SystemExit("请使用绝对备份路径，并确认源数据库已存在。")
+revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+destination.mkdir(mode=0o700)  # 已有目录会报错，不覆盖旧备份。
+with closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as original:
+    with closing(sqlite3.connect(destination / "database.sqlite3")) as snapshot:
+        original.backup(snapshot)
+        if snapshot.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
+            raise SystemExit("备份完整性检查失败，请保留源库并检查错误。")
+os.chmod(destination / "database.sqlite3", 0o600)
+credentials = source.with_name(source.name + ".secrets")
+if credentials.exists():
+    shutil.copytree(credentials, destination / "credentials")
+    for item in (destination / "credentials").rglob("*"):
+        os.chmod(item, 0o700 if item.is_dir() else 0o600)
+    os.chmod(destination / "credentials", 0o700)
+(destination / "backup-info.txt").write_text(
+    f"code_revision={revision}\nsource_database={source}\n", encoding="utf-8"
+)
+print(f"备份完成：{destination}")
+PY
+```
+
+只有输出“备份完成”才表示数据库、凭据复制及检查均已完成；中途失败时保留源库，换一个新目录重试。备份目录含未加密密钥，应私下保管。`backup-info.txt` 记录提交号与源库路径，不归档代码或本地改动；同时保留对应代码与未提交修改，恢复历史备份时使用匹配版本。
+
+### 恢复到独立路径
+
+先准备与备份匹配的代码和依赖，停止服务，再把下面两个参数改为备份目录和一个全新的数据库绝对路径。脚本拒绝覆盖已有数据库、凭据目录及残留 WAL／SHM／进程锁文件，原库保持可用。不要通过删除现存 WAL／SHM 来绕过检查，另选新路径。
+
+```sh
+uv run --project backend python - /absolute/path/to/new-backup /absolute/path/to/restored/app.db <<'PY'
+import os
+import shutil
+import sqlite3
+import sys
+from contextlib import closing
+from pathlib import Path
+
+backup = Path(sys.argv[1]).expanduser()
+target = Path(sys.argv[2]).expanduser()
+if not backup.is_absolute() or not target.is_absolute():
+    raise SystemExit("备份目录与恢复路径都必须是绝对路径。")
+source = backup / "database.sqlite3"
+if not source.is_file() or not (backup / "backup-info.txt").is_file():
+    raise SystemExit("备份不完整，请检查数据库与备份说明。")
+reserved = [Path(str(target) + suffix) for suffix in ("", "-wal", "-shm", ".secrets", ".worker.lock")]
+if any(item.exists() or item.is_symlink() for item in reserved):
+    raise SystemExit("恢复目标或配套文件已存在，请选择全新路径。")
+with closing(sqlite3.connect(source.resolve().as_uri() + "?mode=ro", uri=True)) as snapshot:
+    if snapshot.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
+        raise SystemExit("备份完整性检查失败，未恢复。")
+target.parent.mkdir(parents=True, exist_ok=True)
+with source.open("rb") as original, target.open("xb") as restored:
+    os.chmod(target, 0o600)
+    shutil.copyfileobj(original, restored)
+if (backup / "credentials").exists():
+    credentials = Path(str(target) + ".secrets")
+    shutil.copytree(backup / "credentials", credentials)
+    for item in credentials.rglob("*"):
+        os.chmod(item, 0o700 if item.is_dir() else 0o600)
+    os.chmod(credentials, 0o700)
+print(f"恢复完成：{target}")
+PY
+```
+
+若恢复中途失败，保留备份与原库，排查后换一个新目标重试。完成后，以同一目标路径启动匹配代码，例如 `FOLIO_J_DATABASE_PATH=/absolute/path/to/restored/app.db just start`；确认来源、阅读记录、讲解和模型设置可读后，再决定是否用配置文件固定此路径。后续每次启动和迁移都须使用相同路径，避免误开默认数据库。后台任务在恢复后按正常重启规则处理中断状态，不自动重放模型请求。
+
 ## EPUB 存储格式与开发库重建
 
 应用只读取 `FJEPUB` 版本字节 `2` 的图片池编译包，对应逻辑契约 `epub-reading-v2`。最终产物仅保留章节 HTML，完整资源 HTML 只在编译时临时使用；资源正文、样式及定位信息继续保留。v1 图片池包和旧裸 zlib 书包均不支持，不提供旧格式转换命令。无图和小图书籍同样使用这一格式；原 EPUB 不变，新产物摘要按新契约计算，重新导入创建新材料与版本。
@@ -34,6 +119,6 @@ just migrate
 
 ## 旧开发数据库与备份
 
-2026-10-20 曾整理早期 12 个开发 revision，过程见[历史验收](handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md)。2026-10-25 再将后续六个开发 revision 收敛为当前完整初始基线，过程见[当前验收](handovers/archived/DATABASE_MIGRATION_ACCEPTANCE.md)。
+开发期迁移整理与显式版本对齐的历史过程见[早期基线验收](handovers/archived/DATABASE_BASELINE_ACCEPTANCE.md)和[当前基线验收](handovers/archived/DATABASE_MIGRATION_ACCEPTANCE.md)。
 
-旧 `0001_initial` 至 `0006_translations` 版本标签会明确报未找到 revision，不会自动重建或修改数据。可丢弃旧开发库时按前节显式重建；需要保留数据时使用对应历史代码和配套备份。当前本机开发库经完整结构等价验证、备份后做过一次显式版本对齐，这不是应用启动或普通升级的通用处理路径。
+旧 `0001_initial` 至 `0006_translations` 版本标签会明确报未找到 revision，不会自动重建或修改数据。可丢弃旧开发库时按前节显式重建；需要保留数据时使用对应历史代码和配套备份。

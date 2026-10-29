@@ -1,6 +1,6 @@
 # 阅读翻译与设备朗读验收
 
-> 2026-10-23，基于 `589feeb` 的实施与验收记录，范围为已批准方案的 S0、T1、T2、V1。当前交付状态由 [MVP 实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)维护，产品规则见 [PRD 4.8](../../../PRD.md#48-阅读翻译与设备朗读)，资源候选与后续切片见[方案](../../text-study/TRANSLATION_AND_SPEECH_PLAN.md)。
+> 2026-10-23，基于 `589feeb` 的实施与验收记录，范围为已批准方案的 S0、T1、T2、V1。当前交付状态由 [MVP 实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)维护，产品规则见 [PRD 4.8](../../../PRD.md#48-阅读翻译与设备朗读)，原方案及资源候选见[历史方案](TRANSLATION_AND_SPEECH_PLAN.md)，未完成事项由[阅读辅助后续安排](../../epub-reading/README.md#阅读辅助后续安排)承接。
 
 ## 本轮实现
 

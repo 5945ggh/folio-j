@@ -5,14 +5,12 @@
 ## 阶段资料
 
 - [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：汇总当前能力、实现缺口和验收入口；目录、封面、书籍编辑及阅读器的现行接口由[架构](../ARCHITECTURE.md)维护。
-- [模型与服务二级切换验证](SETTINGS_MODELS_ACCEPTANCE.md)：页面拆分、草稿保护与隔离浏览器验证。
-- [整站基础主题验收](APPLICATION_THEME_ACCEPTANCE.md)：浅／深／系统模式、样式抽象与阅读器配色更新验证。
 - [EPUB 原生阅读阶段](epub-reading/README.md)：维护后续切片的顺序与准备条件，区分已完成的基础阅读／学习衔接和后续材料对话／讲解形成。
 - [C2 精确验收样例与实施门禁](text-study/C2_EXACT_CASES.md)：仍在使用的 `context-sentences-v1` 句界、取文与截断规则，及对应固定数据；实施门禁记录保留历史意义。
-- [文本与资料调整验收样例](text-study/TEST_MATRIX.md)：保留可核算统计和跨切片回归要求；阅读标记部分含旧交互预期，现行行为见[阅读与导航](../INFORMATION_ARCHITECTURE.md#片段标记与页边入口)。样例不表示已经通过，实际结果从实施基线进入对应验收。
-- [阅读翻译、译文留存与设备朗读方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)：保留 2026-10-23 的获批范围、资源限制候选与尚未收口的后续设计；后续入口已有调整，现行行为见 [PRD 4.8](../PRD.md#48-阅读翻译与设备朗读)。
+- [文本与资料调整验收样例](text-study/TEST_MATRIX.md)：保留可核算统计和跨切片回归要求；阅读标记交互依据[阅读与导航](../INFORMATION_ARCHITECTURE.md#片段标记与页边入口)。样例不表示已经通过，实际结果从实施基线进入对应验收。
+- [阅读辅助后续安排](epub-reading/README.md#阅读辅助后续安排)：维护真实样句与设备验证、资源候选及后续翻译／语音接入的准备条件。
 
-后三份资料混合现行规则、固定样例与未决设计，暂留活动区；其历史日期与阶段假设不构成当前交付状态。已完成实施计划与验收从下方归档查阅。
+C2 精确样例与文本验收矩阵保留仍在使用的规则和固定样例，阅读辅助后续安排承接未完成事项；其历史日期与阶段假设不构成当前交付状态。已完成实施计划与验收从下方归档查阅。
 
 ## 历史计划与近期验收
 
@@ -31,7 +29,7 @@
 | 文本处理、统计与人工资料 | [文本与资料历史计划](archived/text-study/PLAN.md) | [S0 收口](archived/text-study/S0_ACCEPTANCE.md)、[B1 文本分析](archived/text-study/B1_ACCEPTANCE.md)、[B2 统计](archived/text-study/B2_ACCEPTANCE.md)、[A1 独立回看](archived/text-study/A1_ACCEPTANCE.md)、[A2 人工资料](archived/text-study/A2_ACCEPTANCE.md) |
 | 精确出处与阅读体验 | [阅读体验计划](archived/text-study/READING_EXPERIENCE_PLAN.md) | [C1 出处](archived/text-study/C1_ACCEPTANCE.md)、[C2 选区与资料往返](archived/text-study/C2_ACCEPTANCE.md)、[阅读标记](archived/text-study/READER_MARKS_ACCEPTANCE.md)、[阅读体验](archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单](archived/text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
 | 原处预览与阅读会话 | — | [原处预览](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md)、[会话保留与加载测量](archived/text-study/READER_SESSION_ACCEPTANCE.md)：最近一本书的短期保留、恢复核验、学习状态刷新与历史基线比较 |
-| 阅读辅助与片段资料 | 方案仍在上方阶段资料中维护 | [翻译与设备朗读验收及限制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)、[片段资料与操作](archived/text-study/SEGMENT_UI_ACCEPTANCE.md)、[阅读器正文复制](archived/text-study/READER_COPY_ACCEPTANCE.md) |
+| 阅读辅助与片段资料 | [历史方案](archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md)，未完成事项见[阅读辅助后续安排](epub-reading/README.md#阅读辅助后续安排) | [翻译与设备朗读验收及限制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)、[片段资料与操作](archived/text-study/SEGMENT_UI_ACCEPTANCE.md)、[阅读器正文复制](archived/text-study/READER_COPY_ACCEPTANCE.md) |
 | EPUB 基础阅读切片 1 | [历史实施契约](archived/epub-reading/SLICE_1_DRAFT.md) | [切片 1 验收](archived/epub-reading/SLICE_1_ACCEPTANCE.md)；导入反馈、材料删除、注音与恢复随后已有调整 |
 
 | 工程验收 | 记录范围与现行入口 |
@@ -44,6 +42,17 @@
 | [UI 深浅主题适配](archived/READER_THEME_ACCEPTANCE.md) | 公共页面与 Reader 主题、内容及控件配色的修复与验证 |
 | [路由代码按需加载](archived/ROUTE_LOADING_ACCEPTANCE.md) | 页面拆包、真实路由的保活／定位／草稿回归、历史冷加载比较及主分支整合复核 |
 | [测试质量整改](archived/TEST_QUALITY_ACCEPTANCE.md) | 凭据脱敏、故障注入、持久化和独立浏览器回归；保留原有验证限制 |
+
+### 2026-10-29 归档
+
+以下记录的对应代码已提交，历史日期、验证数字、浏览器观察和限制保持原样。翻译原方案中的未完成事项及资源候选已由[阅读辅助后续安排](epub-reading/README.md#阅读辅助后续安排)承接。
+
+| 资料 | 保留范围 |
+| --- | --- |
+| [模型与服务二级切换验证](archived/SETTINGS_MODELS_ACCEPTANCE.md) | 页面拆分、草稿保护与隔离浏览器验证 |
+| [整站基础主题验收](archived/APPLICATION_THEME_ACCEPTANCE.md) | 浅／深／系统模式、样式抽象、提交隔离与阅读器配色更新 |
+| [图片查看器加载与定位测量](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md) | 原始测量、提交前缓存修复、控件与完整离线浏览器回归 |
+| [阅读翻译、译文留存与设备朗读原方案](archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md) | 2026-10-23 获批范围、设计取舍和历史实施安排；现行行为见 PRD 4.8 |
 
 ### 既有归档
 

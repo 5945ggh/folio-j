@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-28；代码基准为 `eb5c2c1`，本次提交新增模型与服务二级切换。工程与浏览器验证状态见下表；主分支整合复核见路由加载验收。
+> 状态核对：2026-10-29；工作区 HEAD 为 `21cf270`，模型与服务二级切换已提交。工程与浏览器验证状态见下表；主分支整合复核见路由加载验收。
 > 本文件汇总当前能力、实现缺口和验收入口。产品范围见 [PRD](../PRD.md)，领域含义见 [GLOSSARY](../GLOSSARY.md)，技术选型见 [TECH_STACK](../TECH_STACK.md)；具体实现由[架构](../ARCHITECTURE.md)维护。
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
@@ -12,8 +12,8 @@
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定，共用原文保护规则 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](archived/text-study/A2_ACCEPTANCE.md) |
 | 路由代码按需加载 | 已提交，主分支整合经工程检查、73 组完整浏览器回归及独立复核通过 | 默认素材库同步加载，其他页面按路由加载；阅读与片段路径共用稳定会话宿主，保留真实 URL、iframe 身份、精确返回与草稿；尾斜杠直达及地址切换有回归覆盖。原冷加载比较绑定当时版本，整合后未重测 | [路由加载验收与整合复核](archived/ROUTE_LOADING_ACCEPTANCE.md#主分支整合复核2026-10-27) |
 | 数据库迁移基线 | 已提交，工程、实际启动与独立审查通过 | 六个开发迁移收敛为固定 `0001_schema_baseline`，28 表结构、默认值及约束不变；外键全程开启，保留事务回滚、校验与后续增量入口；本机库备份后显式对齐并保留设置与所有应用数据 | [架构](../ARCHITECTURE.md#3-领域模型)、[升级边界](../UPGRADING.md#当前迁移基线)、[验收](archived/DATABASE_MIGRATION_ACCEPTANCE.md) |
-| 设置与模型接入 | 已提交、工程验收通过；模型设置二级切换随本次提交交付，用户已基本测试 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；模型与服务分为默认模型与服务管理，保留分组保存、草稿保护和验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](archived/settings-refresh/ACCEPTANCE.md)、[二级切换验证](SETTINGS_MODELS_ACCEPTANCE.md) |
-| 阅读翻译与设备朗读 | 已提交，基础能力经全量浏览器验证；译文标题栏工具与选区拖动经工程、定向浏览器及只读复审通过 | 选区翻译、持久找回、原子采用、版本冲突保护；本章记录分片段／翻译，同出处成功译文归并标记、重叠入口合并，后台完成自动刷新；译文卡标题栏重译／停止、旧文保留与相邻版本回看，宽屏拖动、窄屏停靠；设备支持时可暂停／继续，结束后原条保留并切换重播，声音语速就地调整；真实模型质量与设备声音待实测，外部 TTS 后置 | [方案](text-study/TRANSLATION_AND_SPEECH_PLAN.md)、[验收与限制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)、[标题栏与拖动验收](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#选区译文标题栏工具与拖动2026-10-24)、[播放器联合验收](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#提交前修复与联合验收2026-10-24) |
+| 设置与模型接入 | 已提交、工程验收通过；模型设置二级切换用户已基本测试 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；模型与服务分为默认模型与服务管理，保留分组保存、草稿保护和验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](archived/settings-refresh/ACCEPTANCE.md)、[二级切换验证](archived/SETTINGS_MODELS_ACCEPTANCE.md) |
+| 阅读翻译与设备朗读 | 已提交，基础能力经全量浏览器验证；译文标题栏工具与选区拖动经工程、定向浏览器及只读复审通过 | 选区翻译、持久找回、原子采用、版本冲突保护；本章记录分片段／翻译，同出处成功译文归并标记、重叠入口合并，后台完成自动刷新；译文卡标题栏重译／停止、旧文保留与相邻版本回看，宽屏拖动、窄屏停靠；设备支持时可暂停／继续，结束后原条保留并切换重播，声音语速就地调整；真实模型质量与设备声音待实测，外部 TTS 后置 | [历史方案](archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md)、[验收与限制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)、[标题栏与拖动验收](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#选区译文标题栏工具与拖动2026-10-24)、[播放器联合验收](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#提交前修复与联合验收2026-10-24) |
 | 正文划选保存译文与临时定位高亮 | 已提交，工程、联合浏览器验收及独立复核通过 | 翻译详情移除新建及独立采用入口；正文草稿按确切位置及整体边缘空白规则匹配成功译文，一次预填并保护编辑／清空与冻结提交；原子创建采用收据；搜索及返回原处临时强调共用生命周期与淡出 | [联合验收与限制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#本章记录与学习片段联合验收2026-10-24)、[PRD 4.8](../PRD.md#48-阅读翻译与设备朗读) |
 | 翻译会话状态归属 | 已提交 `8f6ce79`，工程、全量浏览器及独立复核通过 | 同目标双入口共用草稿和固定请求，历史选择分别保存；集中生成门禁、原请求核实与 Reader 生命周期；最近翻译视图及旧任务重做分支已移除 | [状态归属重构验收](archived/TRANSLATION_SESSION_REFACTOR_ACCEPTANCE.md)、[后续入口调整](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#手动试用调整与注音调查2026-10-24) |
 | 片段讨论 | 已提交，面板调整通过工程、浏览器及独立复审 | 持久线程、后台工具循环、输入快照、停止、重启恢复与线程权限；单行标题、可展开引用、助手全宽消息及独立设置浮层；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[界面调整验收](archived/text-study/SEGMENT_UI_ACCEPTANCE.md) |
@@ -28,13 +28,13 @@
 | 来源空间 S2 | 已提交 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；来源栏可调宽并保存偏好，片段／讲解列表搜索、排序与空态已打磨；工程验收完成，用户使用验收待进行 | [S2 工程验收](archived/sources-s2/ACCEPTANCE.md) |
 | EPUB 导入与恢复 | 已提交 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读，托管字节暂保留 | [切片 1](archived/epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](archived/epub-reading/SLICE_0_ACCEPTANCE.md) |
 | 阅读器 R1.1 | 已提交 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级 | [R1.1 工程验收](archived/reader-r1/ACCEPTANCE.md)、[交互优化](archived/reader-r1/INTERACTION_POLISH.md) |
-| 独立图片查看器 | 随本次提交交付，工程、完整离线浏览器回归与独立复审通过 | 正文与图库共用查看器，按入口返回；居中图片与虚化背景、缩放拖动、复制图片、原图下载及在图库中查看当前出现项；真实触屏和系统剪贴板未验 | [验收与提交前修复](epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27)、[交互契约](../INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[使用指南](../USAGE.md#查看正文图片与插图库) |
-| 图片加载与定位优化 | 随本次提交交付，缓存竞争修复、完整离线浏览器回归与独立复审通过 | 正文图先显示，后台按出现身份定位；阅读会话有界复用元数据与图片字节 | [测量与验证](epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md) |
+| 独立图片查看器 | 已提交，工程、完整离线浏览器回归与独立复审通过 | 正文与图库共用查看器，按入口返回；居中图片与虚化背景、缩放拖动、复制图片、原图下载及在图库中查看当前出现项；真实触屏和系统剪贴板未验 | [验收与提交前修复](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27)、[交互契约](../INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[使用指南](../USAGE.md#查看正文图片与插图库) |
+| 图片加载与定位优化 | 已提交，缓存竞争修复、完整离线浏览器回归与独立复审通过 | 正文图先显示，后台按出现身份定位；阅读会话有界复用元数据与图片字节 | [测量与验证](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md) |
 | 阅读会话复用 | 已提交，工程、完整浏览器及后续定向回归通过 | 同标签页片段往返复用最近一本书的正文与 iframe，返回重新核验并刷新学习状态；暂离十分钟或离开适用范围释放，仍按片段精确出处定位；测量未显示离线可读时间稳定下降 | [测量与验收](archived/text-study/READER_SESSION_ACCEPTANCE.md)、[宿主调整](archived/text-study/READER_SESSION_ACCEPTANCE.md#2026-10-25-阅读会话宿主局部调整) |
 | 阅读页进入效果 | 已提交，工程、完整浏览器及实际页面检查通过；动画手感待用户试用 | 保留书卡按压，真实正文轻淡入、标题轻位移，加载提示延迟显示；不改变会话租期与恢复核验 | [试用记录](archived/text-study/READER_SESSION_ACCEPTANCE.md#2026-10-25-阅读页进入动画试用) |
 | 阅读器既有主题适配 | 已提交，工程、全量浏览器及独立审查通过 | Reader 独立白／黑纸面；确认框、作者样式覆盖、讲解预览、错误提示、目录选中进度及辅助文字可读性 | [既有验收](archived/READER_THEME_ACCEPTANCE.md) |
-| 整站基础颜色模式 | 已提交，工程、完整浏览器及独立审查通过 | 保留浅色视觉，应用浅／深／跟随系统、即时本地保存与跨标签同步；公共语义颜色与阅读器独立纸面，配色更新不重建正文或清空选区 | [整站主题验收](APPLICATION_THEME_ACCEPTANCE.md)、[设计系统](../DESIGN_SYSTEM.md) |
-| 阅读工具栏不透明度 | 已提交；本次提交统一不透明度语义与设置分组，工程与完整离线浏览器回归通过 | 上下栏统一不透明度、轻微模糊、跨书偏好与恢复默认；兼容旧透明度值；横排顶部透文及章末滚动留白、竖排每列避让底栏 | [原透明度与遮挡验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-15-工具栏背景透明度)、[本轮修复验收](epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27) |
+| 整站基础颜色模式 | 已提交，工程、完整浏览器及独立审查通过 | 保留浅色视觉，应用浅／深／跟随系统、即时本地保存与跨标签同步；公共语义颜色与阅读器独立纸面，配色更新不重建正文或清空选区 | [整站主题验收](archived/APPLICATION_THEME_ACCEPTANCE.md)、[设计系统](../DESIGN_SYSTEM.md) |
+| 阅读工具栏不透明度 | 已提交；不透明度语义与设置分组已统一，工程与完整离线浏览器回归通过 | 上下栏统一不透明度、轻微模糊、跨书偏好与恢复默认；兼容旧透明度值；横排顶部透文及章末滚动留白、竖排每列避让底栏 | [原透明度与遮挡验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-15-工具栏背景透明度)、[本轮修复验收](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27) |
 | 阅读滚动交互 | 已提交、工程与浏览器验收通过 | 正文外留白可滚动、竖排手势轴统一；阅读键平滑滚动并遵循减少动态效果偏好，位置恢复保持即时 | [滚动与切章提交复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
 | 跳转链与继续阅读 | 已提交、工程验收通过 | 连续查阅保留首次原点，持续阅读后下一次跳转更新原点；旧返回入口保留，失败请求不消耗阅读信号 | [跳转链验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-跳转链与继续阅读) |
 | 章节位置记忆 | 已提交、工程与浏览器验收通过 | 各章最后位置持久化、目录恢复、当前章不跳与回到章首；保留恢复锚点，内容末端进入可读区域即 100%、回看可下降；图文混排按图片前正文显示进度，空白尾片段不阻断采样 | [章节位置验收](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)、[章末进度与真实书复核](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-真实书复核与口径调整)、[提交前复核](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-提交前复核) |
