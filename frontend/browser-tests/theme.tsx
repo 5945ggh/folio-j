@@ -200,6 +200,7 @@ export async function themeRegression(h: BrowserHarness) {
 	const [
 		{ Shell, InlineError },
 		{ StudySegmentPanel },
+		{ ReaderLeaveProvider },
 		{ StudyPreview },
 		{ ReaderNavigationPanel },
 		{ MaterialReader },
@@ -207,6 +208,7 @@ export async function themeRegression(h: BrowserHarness) {
 	] = await Promise.all([
 		import("../src/Shared"),
 		import("../src/materials/StudySegmentPanel"),
+		import("../src/materials/ReaderLeaveProvider"),
 		import("../src/materials/StudyPreview"),
 		import("../src/materials/ReaderPanels"),
 		import("../src/materials/MaterialReader"),
@@ -232,13 +234,15 @@ export async function themeRegression(h: BrowserHarness) {
 			});
 			const dispose = await h.mount(
 				<div className="reader-r1" data-theme={theme}>
-					<StudySegmentPanel
-						target={target}
-						sourceId="source"
-						sourceTitle="主题回归"
-						onCancel={noop}
-						onSaved={noop}
-					/>
+					<ReaderLeaveProvider active>
+						<StudySegmentPanel
+							target={target}
+							sourceId="source"
+							sourceTitle="主题回归"
+							onCancel={noop}
+							onSaved={noop}
+						/>
+					</ReaderLeaveProvider>
 				</div>,
 			);
 			try {

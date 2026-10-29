@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { useBeforeUnload, useBlocker } from "react-router";
 import { queries, type Segment } from "../content";
 import { ConfirmDialog, InlineError } from "../Shared";
 import {
@@ -13,6 +12,10 @@ import {
 	type TranslationResult,
 } from "../translation/api";
 import type { ChapterTranslation } from "./chapter-translations-query";
+import {
+	ReaderLeaveDialog,
+	useReaderLeaveBlocker,
+} from "./ReaderLeaveProvider";
 import {
 	createMaterialSegment,
 	type MaterialSegmentInput,
@@ -131,26 +134,20 @@ export function StudySegmentPanel({
 	});
 	const changed =
 		draft.before.edited || draft.after.edited || draft.translation.edited;
-	const blocker = useBlocker(
-		() => !completed.current && (changed || uncertain || submitting.current),
+	const protectedDraft = () =>
+		!completed.current &&
+		(draftRef.current.before.edited ||
+			draftRef.current.after.edited ||
+			draftRef.current.translation.edited ||
+			Boolean(pendingRequest.current) ||
+			submitting.current);
+	const blocker = useReaderLeaveBlocker(
+		"segment",
+		protectedDraft,
+		protectedDraft,
 	);
 	const blockerRef = useRef(blocker);
 	blockerRef.current = blocker;
-	useBeforeUnload(
-		useCallback((event) => {
-			if (
-				!completed.current &&
-				(draftRef.current.before.edited ||
-					draftRef.current.after.edited ||
-					draftRef.current.translation.edited ||
-					pendingRequest.current ||
-					submitting.current)
-			) {
-				event.preventDefault();
-				event.returnValue = "";
-			}
-		}, []),
-	);
 	useEffect(() => {
 		alive.current = true;
 		heading.current?.focus({ preventScroll: true });
@@ -628,68 +625,72 @@ export function StudySegmentPanel({
 				</button>
 			</footer>
 			{(confirmDiscard || blocker.state === "blocked") && (
-				<ConfirmDialog
-					titleId={`${titleId}-discard`}
-					onClose={() => {
-						setConfirmDiscard(false);
-						if (blocker.state === "blocked") blocker.reset();
-					}}
-				>
-					<h2 id={`${titleId}-discard`}>放弃本次草稿？</h2>
-					<p>
-						{uncertain
-							? "保存结果尚未确认。放弃后可从来源检查片段是否已保存。"
-							: "未保存的译文或语境修改会丢失。"}
-					</p>
-					<div className="actions">
-						<button
-							type="button"
-							data-dialog-cancel
-							onClick={() => {
-								setConfirmDiscard(false);
-								if (blocker.state === "blocked") blocker.reset();
-							}}
-						>
-							继续编辑
-						</button>
-						<button
-							type="button"
-							disabled={save.isPending || select.isPending}
-							onClick={discard}
-						>
-							放弃草稿
-						</button>
-					</div>
-				</ConfirmDialog>
+				<ReaderLeaveDialog>
+					<ConfirmDialog
+						titleId={`${titleId}-discard`}
+						onClose={() => {
+							setConfirmDiscard(false);
+							if (blocker.state === "blocked") blocker.reset();
+						}}
+					>
+						<h2 id={`${titleId}-discard`}>放弃本次草稿？</h2>
+						<p>
+							{uncertain
+								? "保存结果尚未确认。放弃后可从来源检查片段是否已保存。"
+								: "未保存的译文或语境修改会丢失。"}
+						</p>
+						<div className="actions">
+							<button
+								type="button"
+								data-dialog-cancel
+								onClick={() => {
+									setConfirmDiscard(false);
+									if (blocker.state === "blocked") blocker.reset();
+								}}
+							>
+								继续编辑
+							</button>
+							<button
+								type="button"
+								disabled={save.isPending || select.isPending}
+								onClick={discard}
+							>
+								放弃草稿
+							</button>
+						</div>
+					</ConfirmDialog>
+				</ReaderLeaveDialog>
 			)}
 			{reuse && (
-				<ConfirmDialog
-					titleId={`${titleId}-reuse`}
-					onClose={() => setReuse(null)}
-				>
-					<h2 id={`${titleId}-reuse`}>选用已有片段？</h2>
-					<p>将保留已有片段的译文和语境，本次未保存的修改会被放弃。</p>
-					<div className="actions">
-						<button
-							type="button"
-							data-dialog-cancel
-							onClick={() => setReuse(null)}
-						>
-							继续编辑
-						</button>
-						<button
-							type="button"
-							onClick={() => {
-								const chosen = reuse;
-								setReuse(null);
-								submitting.current = true;
-								select.mutate(chosen);
-							}}
-						>
-							选用并打开
-						</button>
-					</div>
-				</ConfirmDialog>
+				<ReaderLeaveDialog>
+					<ConfirmDialog
+						titleId={`${titleId}-reuse`}
+						onClose={() => setReuse(null)}
+					>
+						<h2 id={`${titleId}-reuse`}>选用已有片段？</h2>
+						<p>将保留已有片段的译文和语境，本次未保存的修改会被放弃。</p>
+						<div className="actions">
+							<button
+								type="button"
+								data-dialog-cancel
+								onClick={() => setReuse(null)}
+							>
+								继续编辑
+							</button>
+							<button
+								type="button"
+								onClick={() => {
+									const chosen = reuse;
+									setReuse(null);
+									submitting.current = true;
+									select.mutate(chosen);
+								}}
+							>
+								选用并打开
+							</button>
+						</div>
+					</ConfirmDialog>
+				</ReaderLeaveDialog>
 			)}
 		</aside>
 	);

@@ -27,6 +27,7 @@ import { defaultReaderContextCopyResponse } from "./reader-context-copy-fixture"
 import { readerImages } from "./reader-images";
 import { readerLayoutSwitch } from "./reader-layout-switch";
 import { readerSession } from "./reader-session";
+import { readerSettings } from "./reader-settings";
 import { readingAidsRegression } from "./reading-aids";
 import { recordSaving } from "./record-saving";
 import { routeLoading } from "./route-loading";
@@ -203,6 +204,9 @@ async function clearStudyContext() {
 	const { StudySegmentPanel } = await import(
 		"../src/materials/StudySegmentPanel"
 	);
+	const { ReaderLeaveProvider } = await import(
+		"../src/materials/ReaderLeaveProvider"
+	);
 	const text = "前。学習。後。";
 	const target: StudyTarget = {
 		reference: {
@@ -309,15 +313,17 @@ async function clearStudyContext() {
 		throw new Error(`Unexpected ${request.method} ${pathname}`);
 	};
 	const dispose = await mount(
-		<StudySegmentPanel
-			target={target}
-			sourceId="source"
-			sourceTitle="テスト"
-			onCancel={() => {}}
-			onSaved={() => {
-				accepted = true;
-			}}
-		/>,
+		<ReaderLeaveProvider active>
+			<StudySegmentPanel
+				target={target}
+				sourceId="source"
+				sourceTitle="テスト"
+				onCancel={() => {}}
+				onSaved={() => {
+					accepted = true;
+				}}
+			/>
+		</ReaderLeaveProvider>,
 	);
 	try {
 		await until(
@@ -410,6 +416,7 @@ try {
 		["reader-images", readerImages],
 		["reader-layout-switch", readerLayoutSwitch],
 		["reader-context-copy", readerContextCopy],
+		["reader-settings", readerSettings],
 		["reader-image-performance", readerImages],
 		["catalog-overview", overviewImportRegression],
 		["catalog-reuse", reusedImportRegression],

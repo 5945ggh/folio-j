@@ -1,0 +1,209 @@
+.reader-settings {
+	min-inline-size: 0;
+}
+.reader-settings .reader-settings-group {
+	min-inline-size: 0;
+	padding-block: 0 22px;
+	margin-block: 0 22px;
+	border-bottom: 1px solid var(--reader-line);
+}
+.reader-settings .reader-settings-group:last-child {
+	margin-block-end: 0;
+	padding-block-end: 0;
+	border-bottom: 0;
+}
+.reader-settings h3 {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.5;
+}
+.reader-settings .reader-settings-scope {
+	margin: 4px 0 14px;
+	font-size: 10px;
+	line-height: 1.6;
+	color: var(--reader-muted);
+}
+.reader-settings .reader-field {
+	margin: 14px 0;
+	gap: 10px;
+}
+.reader-settings .reader-options {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+.reader-settings .reader-options > button {
+	min-block-size: 38px;
+	padding: 8px 6px;
+	font-size: 12px;
+	white-space: nowrap;
+}
+.reader-settings label.reader-settings-slider {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 10px;
+	margin: 16px 0;
+}
+.reader-settings-slider output {
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+}
+.reader-settings-slider output span {
+	font-size: 10px;
+}
+.reader-settings-slider input[type="range"] {
+	grid-column: 1 / -1;
+	min-width: 0;
+	margin: 0;
+	min-height: 20px;
+}
+.reader-settings label.reader-settings-toggle {
+	flex-wrap: nowrap;
+	min-height: 32px;
+	margin: 12px 0;
+	gap: 16px;
+}
+.reader-settings-toggle input[type="checkbox"] {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: var(--reader-accent);
+}
+.reader-settings .reader-settings-disclosure {
+	margin-top: 12px;
+}
+.reader-settings-disclosure > summary {
+	position: relative;
+	display: grid;
+	gap: 3px;
+	padding: 9px 18px 9px 0;
+	list-style: none;
+	cursor: pointer;
+	color: var(--reader-fg);
+	font-size: 12px;
+	line-height: 1.6;
+}
+.reader-settings-disclosure > summary::-webkit-details-marker {
+	display: none;
+}
+.reader-settings-disclosure > summary::after {
+	content: "";
+	position: absolute;
+	right: 3px;
+	top: 15px;
+	width: 5px;
+	height: 5px;
+	border-right: 1px solid var(--reader-muted);
+	border-bottom: 1px solid var(--reader-muted);
+	transform: rotate(45deg);
+}
+.reader-settings-disclosure[open] > summary::after {
+	transform: rotate(225deg);
+	top: 18px;
+}
+.reader-settings-disclosure > summary:hover .reader-settings-disclosure-label {
+	color: var(--reader-accent);
+}
+.reader-settings .reader-settings-summary {
+	color: var(--reader-muted);
+	font-size: 11px;
+	overflow-wrap: anywhere;
+}
+.reader-settings .reader-settings-more {
+	padding-top: 4px;
+}
+.reader-settings-more > .reader-settings-disclosure {
+	border-top: 1px solid var(--reader-line);
+	padding-top: 4px;
+}
+.reader-settings-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.reader-settings .reader-settings-reset-button {
+	flex: none;
+	min-block-size: 32px;
+	padding: 5px 10px;
+	border: 1px solid var(--reader-line);
+	background: var(--reader-soft);
+	color: var(--reader-accent);
+	font-size: 12px;
+	line-height: 1.5;
+	white-space: nowrap;
+}
+.reader-settings .reader-settings-reset-button:hover:not(:disabled) {
+	border-color: var(--reader-accent);
+	background: var(--reader-selected-bg);
+}
+.reader-settings .reader-settings-status {
+	color: var(--reader-muted);
+	margin: 8px 0 0;
+}
+.reader-settings .reader-settings-error,
+.reader-settings .reader-settings-error p {
+	color: var(--reader-error);
+}
+.reader-settings .reader-settings-error {
+	font-size: 11px;
+	line-height: 1.8;
+}
+.reader-settings .reader-settings-error > p {
+	margin: 8px 0;
+}
+.reader-copy-leave-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 20px;
+}
+.reader-copy-leave .reader-copy-leave-actions > button {
+	border-color: var(--reader-line);
+}
+.reader-copy-leave-actions > button.primary {
+	background: var(--reader-fg);
+	color: var(--reader-bg);
+	border-color: var(--reader-fg);
+}
+.reader-copy-leave-actions > button.primary:hover {
+	background: color-mix(in srgb, var(--reader-fg) 85%, var(--reader-bg));
+}
+.reader-r1 .reader-settings-trigger {
+	position: relative;
+}
+.reader-settings-pending-label {
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	transform: translate(-50%, 100%);
+	padding-top: 2px;
+	font-size: 9px;
+	line-height: 1.2;
+	white-space: nowrap;
+	color: var(--reader-muted);
+}
+@media (max-width: 400px) {
+	.reader-settings .reader-settings-group {
+		padding-block-end: 18px;
+		margin-block-end: 18px;
+	}
+	.reader-settings .reader-field {
+		gap: 8px;
+	}
+	.reader-settings .reader-field > span {
+		font-size: 12px;
+	}
+	.reader-copy-leave .reader-copy-leave-actions > button {
+		flex: 1 1 auto;
+	}
+}
+
+/* Shared theme scope for navigation dialogs, outside temporarily hidden pages. */
+.reader-r1.reader-dialog-host {
+	display: contents;
+}

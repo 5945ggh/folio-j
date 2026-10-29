@@ -378,6 +378,12 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			() => !!h.container.querySelector(".reader-copy-settings"),
 			"Copy preferences must appear within reading settings",
 		);
+		const copyGroup = h.container.querySelector<HTMLDetailsElement>(
+			'[data-reader-settings-group="copy"] > details',
+		);
+		check(copyGroup, "Copy group must expose its disclosure");
+		copyGroup.querySelector<HTMLElement>("summary")?.click();
+		await h.until(() => copyGroup.open, "Copy group must open");
 		check(
 			findInput("前文句数").value === "3" &&
 				findInput("后文句数").value === "0",
@@ -477,7 +483,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 				!stored.include_source,
 			"Database must store the complete configured preference set",
 		);
-		button("恢复复制默认值").click();
+		button("重置复制设置").click();
 		await h.until(
 			() =>
 				findInput("前文句数").value === "3" &&
@@ -589,6 +595,12 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			"Failed settings read must not block original reading",
 		);
 		failRead = false;
+		const retryCopyGroup = h.container.querySelector<HTMLDetailsElement>(
+			'[data-reader-settings-group="copy"] > details',
+		);
+		check(retryCopyGroup, "Copy group must remain available after failed read");
+		if (!retryCopyGroup.open)
+			retryCopyGroup.querySelector<HTMLElement>("summary")?.click();
 		button("重新读取复制设置").click();
 		await h.until(
 			() => !!h.container.querySelector(".reader-copy-settings input"),

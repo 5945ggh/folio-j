@@ -455,9 +455,9 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 		}
 		for (let attempt = 0; attempt < 2; attempt++) {
 			const reset = h.container.querySelector<HTMLButtonElement>(
-				"button.reader-reset",
+				'[data-reader-settings-group="typography"] button.reader-settings-reset-button[aria-label="重置排版"]',
 			);
-			check(reset, "Real reset settings button must remain available");
+			check(reset, "Real typography reset must remain available");
 			const beforeReset = saved.length;
 			reset.click();
 			await h.until(

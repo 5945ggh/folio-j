@@ -1,8 +1,16 @@
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
 import type { Settings } from "./api";
 import { restoreReaderPanelFocus } from "./motion";
 import type { BookUiPreferences, ReaderUiPreferences } from "./preferences";
 import { ReaderCopySettings } from "./ReaderCopySettings";
+import { ReaderSettingsReset } from "./ReaderSettingsReset";
+import {
+	type ReaderSettingsExpanded,
+	type ReaderSettingsGroup,
+	typographySummary,
+} from "./reader-settings";
+import type { ReaderCopyEditor } from "./use-reader-copy-editor";
+import "./reader-settings.css";
 
 export function ReaderPanel({
 	title,
@@ -11,6 +19,8 @@ export function ReaderPanel({
 	inactive = false,
 	closing = false,
 	children,
+	bodyScrollTop,
+	onBodyScrollTop,
 }: {
 	title: string;
 	side?: "right" | "left";
@@ -18,8 +28,16 @@ export function ReaderPanel({
 	inactive?: boolean;
 	closing?: boolean;
 	children: ReactNode;
+	bodyScrollTop?: number;
+	onBodyScrollTop?: (top: number) => void;
 }) {
 	const root = useRef<HTMLElement>(null);
+	const body = useRef<HTMLDivElement>(null);
+	const initialScrollTop = useRef(bodyScrollTop);
+	useLayoutEffect(() => {
+		if (body.current && initialScrollTop.current !== undefined)
+			body.current.scrollTop = initialScrollTop.current;
+	}, []);
 	const closeRef = useRef(onClose);
 	closeRef.current = onClose;
 	useEffect(() => {
@@ -65,8 +83,47 @@ export function ReaderPanel({
 					×
 				</button>
 			</header>
-			<div className="reader-panel-body">{children}</div>
+			<div
+				ref={body}
+				className="reader-panel-body"
+				onScroll={
+					onBodyScrollTop
+						? (event) => onBodyScrollTop(event.currentTarget.scrollTop)
+						: undefined
+				}
+			>
+				{children}
+			</div>
 		</section>
+	);
+}
+function SettingsDisclosure({
+	label,
+	summary,
+	open,
+	onOpen,
+	children,
+}: {
+	label: string;
+	summary?: string;
+	open: boolean;
+	onOpen: (open: boolean) => void;
+	children: ReactNode;
+}) {
+	return (
+		<details
+			className="reader-settings-disclosure"
+			open={open}
+			onToggle={(event) => {
+				if (event.currentTarget.open !== open) onOpen(event.currentTarget.open);
+			}}
+		>
+			<summary>
+				<span className="reader-settings-disclosure-label">{label}</span>
+				{summary && <span className="reader-settings-summary">{summary}</span>}
+			</summary>
+			<div className="reader-settings-more">{children}</div>
+		</details>
 	);
 }
 export function ReaderSettings({
@@ -76,10 +133,16 @@ export function ReaderSettings({
 	onSettings,
 	onUi,
 	onBookUi,
-	onReset,
+	onResetGroup,
 	onClose,
 	inactive,
 	closing,
+	copyEditor,
+	expanded,
+	onExpandedChange,
+	scrollTop,
+	onScrollTop,
+	rubyStatus,
 }: {
 	settings: Settings;
 	ui: ReaderUiPreferences;
@@ -87,164 +150,154 @@ export function ReaderSettings({
 	onSettings: (v: Settings) => void;
 	onUi: (v: ReaderUiPreferences) => void;
 	onBookUi: (v: BookUiPreferences) => void;
-	onReset: () => void;
+	onResetGroup: (group: ReaderSettingsGroup) => void;
 	onClose: () => void;
 	inactive?: boolean;
 	closing?: boolean;
+	copyEditor: ReaderCopyEditor;
+	expanded: ReaderSettingsExpanded;
+	onExpandedChange: (next: ReaderSettingsExpanded) => void;
+	scrollTop?: number;
+	onScrollTop?: (top: number) => void;
+	rubyStatus?: ReactNode;
 }) {
+	const setExpanded = (key: keyof ReaderSettingsExpanded, open: boolean) =>
+		onExpandedChange({ ...expanded, [key]: open });
 	return (
 		<ReaderPanel
 			title="阅读设置"
 			inactive={inactive}
 			closing={closing}
 			onClose={onClose}
+			bodyScrollTop={scrollTop}
+			onBodyScrollTop={onScrollTop}
 		>
-			<fieldset>
-				<legend>
-					纸面
-					<span className="reader-scope">全局</span>
-				</legend>
-				<fieldset className="reader-options" aria-label="纸面主题">
-					{(["white", "black", "system"] as const).map((v, i) => (
-						<button
-							key={v}
-							type="button"
-							aria-pressed={ui.theme === v}
-							onClick={() => onUi({ ...ui, theme: v })}
-						>
-							{["白", "黑", "跟随系统"][i]}
-						</button>
-					))}
-				</fieldset>
-			</fieldset>
-			<fieldset>
-				<legend>
-					工具栏
-					<span className="reader-scope">全局</span>
-				</legend>
-				<label>
-					不透明度 <output>{ui.toolbarOpacity}%</output>
-					<input
-						aria-label="工具栏背景不透明度"
-						aria-valuetext={`${ui.toolbarOpacity}%`}
-						aria-describedby="reader-toolbar-opacity-hint"
-						type="range"
-						min="0"
-						max="100"
-						step="5"
-						value={ui.toolbarOpacity}
-						onChange={(e) =>
-							onUi({ ...ui, toolbarOpacity: Number(e.target.value) })
-						}
-					/>
-				</label>
-				<p id="reader-toolbar-opacity-hint">
-					同时调整顶部标题栏与底部工具栏背景；0% 完全透明，100% 不透明。
-				</p>
-			</fieldset>
-			<fieldset>
-				<legend>
-					排版
-					<span className="reader-scope">本书</span>
-				</legend>
-				<div className="reader-field">
-					<span>文字方向</span>
-					<fieldset className="reader-options" aria-label="文字方向">
-						{(["horizontal-tb", "vertical-rl"] as const).map((v, i) => (
-							<button
-								key={v}
-								type="button"
-								aria-pressed={settings.writing_mode === v}
-								onClick={() => onSettings({ ...settings, writing_mode: v })}
-							>
-								{["横排", "竖排"][i]}
-							</button>
-						))}
-					</fieldset>
-				</div>
-				<div className="reader-field">
-					<span>字体</span>
-					<fieldset className="reader-options" aria-label="字体">
-						{(["mincho", "gothic"] as const).map((v, i) => (
-							<button
-								key={v}
-								type="button"
-								aria-pressed={bookUi.font === v}
-								onClick={() => onBookUi({ ...bookUi, font: v })}
-							>
-								{["明朝体", "黑体"][i]}
-							</button>
-						))}
-					</fieldset>
-				</div>
-				<label>
-					字号 <output>{settings.font_size}px</output>
-					<input
-						aria-label="字号"
-						type="range"
-						min="12"
-						max="40"
-						value={settings.font_size}
-						onChange={(e) =>
-							onSettings({ ...settings, font_size: Number(e.target.value) })
-						}
-					/>
-				</label>
-				<label>
-					行距 <output>{settings.line_height.toFixed(1)}</output>
-					<input
-						aria-label="行距"
-						type="range"
-						min="1"
-						max="3"
-						step="0.1"
-						value={settings.line_height}
-						onChange={(e) =>
-							onSettings({ ...settings, line_height: Number(e.target.value) })
-						}
-					/>
-				</label>
-				<label>
-					正文宽度 <output>{bookUi.width}px</output>
-					<input
-						aria-label="正文宽度"
-						type="range"
-						min="560"
-						max="1040"
-						step="20"
-						value={bookUi.width}
-						disabled={settings.writing_mode === "vertical-rl"}
-						onChange={(e) =>
-							onBookUi({ ...bookUi, width: Number(e.target.value) })
-						}
-					/>
-				</label>
-				{settings.writing_mode === "vertical-rl" && (
-					<p>正文宽度仅在横排生效。</p>
-				)}
-			</fieldset>
-			<fieldset>
-				<legend>
-					注音
-					<span className="reader-scope">本书</span>
-				</legend>
-				<div className="reader-field">
-					<span>范围</span>
-					<fieldset className="reader-options" aria-label="注音范围">
-						{(["original", "all"] as const).map((scope, i) => (
-							<button
-								key={scope}
-								type="button"
-								aria-pressed={(bookUi.rubyScope ?? "original") === scope}
-								onClick={() => onBookUi({ ...bookUi, rubyScope: scope })}
-							>
-								{["原书", "全量"][i]}
-							</button>
-						))}
-					</fieldset>
-				</div>
-				<div className="reader-field">
-					<span>显示</span>
+			<div className="reader-settings">
+				<section
+					className="reader-settings-group"
+					data-reader-settings-group="typography"
+					aria-labelledby="reader-typography-title"
+				>
+					<div className="reader-settings-heading">
+						<h3 id="reader-typography-title">排版</h3>
+						<ReaderSettingsReset
+							label="排版"
+							description="恢复字号、方向、行距、字体与正文宽度。"
+							onReset={() => onResetGroup("typography")}
+						/>
+					</div>
+					<p className="reader-settings-scope">本书</p>
+					<label className="reader-settings-slider">
+						字号{" "}
+						<output>
+							{settings.font_size}
+							<span> px</span>
+						</output>
+						<input
+							aria-label="字号"
+							type="range"
+							min="12"
+							max="40"
+							value={settings.font_size}
+							onChange={(e) =>
+								onSettings({ ...settings, font_size: Number(e.target.value) })
+							}
+						/>
+					</label>
+					<div className="reader-field">
+						<span>文字方向</span>
+						<fieldset className="reader-options" aria-label="文字方向">
+							{(["horizontal-tb", "vertical-rl"] as const).map((v, i) => (
+								<button
+									key={v}
+									type="button"
+									aria-pressed={settings.writing_mode === v}
+									onClick={() => onSettings({ ...settings, writing_mode: v })}
+								>
+									{["横排", "竖排"][i]}
+								</button>
+							))}
+						</fieldset>
+					</div>
+					<SettingsDisclosure
+						label="更多排版"
+						summary={typographySummary(settings, bookUi)}
+						open={expanded.typography}
+						onOpen={(open) => setExpanded("typography", open)}
+					>
+						<label className="reader-settings-slider">
+							行距 <output>{settings.line_height.toFixed(1)}</output>
+							<input
+								aria-label="行距"
+								type="range"
+								min="1"
+								max="3"
+								step="0.1"
+								value={settings.line_height}
+								onChange={(e) =>
+									onSettings({
+										...settings,
+										line_height: Number(e.target.value),
+									})
+								}
+							/>
+						</label>
+						<p className="reader-settings-scope">
+							以下仅用于本书版本 · 当前浏览器
+						</p>
+						<div className="reader-field">
+							<span>字体</span>
+							<fieldset className="reader-options" aria-label="字体">
+								{(["mincho", "gothic"] as const).map((v, i) => (
+									<button
+										key={v}
+										type="button"
+										aria-pressed={bookUi.font === v}
+										onClick={() => onBookUi({ ...bookUi, font: v })}
+									>
+										{["明朝体", "黑体"][i]}
+									</button>
+								))}
+							</fieldset>
+						</div>
+						<label className="reader-settings-slider">
+							正文宽度{" "}
+							<output>
+								{bookUi.width}
+								<span> px</span>
+							</output>
+							<input
+								aria-label="正文宽度"
+								type="range"
+								min="560"
+								max="1040"
+								step="20"
+								value={bookUi.width}
+								disabled={settings.writing_mode === "vertical-rl"}
+								onChange={(e) =>
+									onBookUi({ ...bookUi, width: Number(e.target.value) })
+								}
+							/>
+						</label>
+						{settings.writing_mode === "vertical-rl" && (
+							<p>正文宽度仅在横排生效，当前值会保留。</p>
+						)}
+					</SettingsDisclosure>
+				</section>
+				<section
+					className="reader-settings-group"
+					data-reader-settings-group="ruby"
+					aria-labelledby="reader-ruby-title"
+				>
+					<div className="reader-settings-heading">
+						<h3 id="reader-ruby-title">注音</h3>
+						<ReaderSettingsReset
+							label="注音"
+							description="恢复原书注音与显示方式。"
+							onReset={() => onResetGroup("ruby")}
+						/>
+					</div>
+					<p className="reader-settings-scope">本书版本 · 当前浏览器</p>
 					<fieldset className="reader-options" aria-label="注音显示">
 						{(["show", "on-demand", "hide"] as const).map((v, i) => (
 							<button
@@ -257,79 +310,135 @@ export function ReaderSettings({
 							</button>
 						))}
 					</fieldset>
-				</div>
-				<p>
-					原书注音优先；全量补充未标注的汉字。按需时可悬停、轻点、选中或按 R
-					显现。
-				</p>
-			</fieldset>
-			<fieldset>
-				<legend>
-					正文标记
-					<span className="reader-scope">全局</span>
-				</legend>
-				<label>
-					<span>阅读记录下划线</span>
-					<input
-						type="checkbox"
-						aria-label="显示阅读记录下划线"
-						checked={ui.marks.studySegmentUnderlines}
-						onChange={(event) =>
-							onUi({
-								...ui,
-								marks: {
-									...ui.marks,
-									studySegmentUnderlines: event.target.checked,
-								},
-							})
-						}
-					/>
-				</label>
-				<label>
-					<span>阅读记录页边入口</span>
-					<input
-						type="checkbox"
-						aria-label="显示阅读记录页边入口"
-						checked={ui.marks.studySegmentMargins}
-						onChange={(event) =>
-							onUi({
-								...ui,
-								marks: {
-									...ui.marks,
-									studySegmentMargins: event.target.checked,
-								},
-							})
-						}
-					/>
-				</label>
-				<p>
-					实线表示学习片段，虚线表示翻译；重叠处保留实线。页边空间不足时使用“本章记录”。隐藏标记不删除记录。
-				</p>
-			</fieldset>
-			<fieldset>
-				<legend>
-					专注阅读
-					<span className="reader-scope">全局</span>
-				</legend>
-				<label>
-					<span>静置后自动隐藏工具</span>
-					<input
-						type="checkbox"
-						aria-label="专注阅读"
-						checked={ui.focus}
-						onChange={(e) => onUi({ ...ui, focus: e.target.checked })}
-					/>
-				</label>
-				<p>
-					单击未标记正文收起，再次单击、移动鼠标或按 Tab
-					唤出。方向键、空格和滚动不会唤出工具。
-				</p>
-			</fieldset>
-			<ReaderCopySettings />
-			<button type="button" className="reader-reset" onClick={onReset}>
-				恢复阅读外观默认值
-			</button>
-			<p>恢复本设备与本书的阅读外观。</p>
+					{rubyStatus}
+					<div className="reader-field">
+						<span>注音范围</span>
+						<fieldset className="reader-options" aria-label="注音范围">
+							{(["original", "all"] as const).map((v, i) => (
+								<button
+									key={v}
+									type="button"
+									aria-pressed={(bookUi.rubyScope ?? "original") === v}
+									onClick={() => onBookUi({ ...bookUi, rubyScope: v })}
+								>
+									{["原书", "全量"][i]}
+								</button>
+							))}
+						</fieldset>
+					</div>
+					<SettingsDisclosure
+						label="注音使用说明"
+						open={expanded.rubyHelp}
+						onOpen={(open) => setExpanded("rubyHelp", open)}
+					>
+						<p>
+							原书注音优先；全量补充未标注的汉字。按需时可悬停、轻点、选中或按 R
+							显现。
+						</p>
+					</SettingsDisclosure>
+				</section>
+				<section
+					className="reader-settings-group"
+					data-reader-settings-group="interface"
+					aria-labelledby="reader-interface-title"
+				>
+					<div className="reader-settings-heading">
+						<h3 id="reader-interface-title">阅读界面</h3>
+						<ReaderSettingsReset
+							label="阅读界面"
+							description="恢复纸面、工具栏不透明度与记录显示。"
+							onReset={() => onResetGroup("interface")}
+						/>
+					</div>
+					<p className="reader-settings-scope">所有书籍 · 当前浏览器</p>
+					<fieldset className="reader-options" aria-label="纸面主题">
+						{(["white", "black", "system"] as const).map((v, i) => (
+							<button
+								key={v}
+								type="button"
+								aria-pressed={ui.theme === v}
+								onClick={() => onUi({ ...ui, theme: v })}
+							>
+								{["白", "黑", "跟随系统"][i]}
+							</button>
+						))}
+					</fieldset>
+					<SettingsDisclosure
+						label="更多界面设置"
+						summary={`下划线${ui.marks.studySegmentUnderlines ? "开" : "关"} · 页边入口${ui.marks.studySegmentMargins ? "开" : "关"}`}
+						open={expanded.interface}
+						onOpen={(open) => setExpanded("interface", open)}
+					>
+						<label className="reader-settings-slider">
+							工具栏不透明度 <output>{ui.toolbarOpacity}%</output>
+							<input
+								aria-label="工具栏背景不透明度"
+								aria-valuetext={`${ui.toolbarOpacity}%`}
+								type="range"
+								min="0"
+								max="100"
+								step="5"
+								value={ui.toolbarOpacity}
+								onChange={(e) =>
+									onUi({ ...ui, toolbarOpacity: Number(e.target.value) })
+								}
+							/>
+						</label>
+						<label className="reader-settings-toggle">
+							<span>展示阅读记录下划线</span>
+							<input
+								type="checkbox"
+								aria-label="展示阅读记录下划线"
+								checked={ui.marks.studySegmentUnderlines}
+								onChange={(e) =>
+									onUi({
+										...ui,
+										marks: {
+											...ui.marks,
+											studySegmentUnderlines: e.target.checked,
+										},
+									})
+								}
+							/>
+						</label>
+						<label className="reader-settings-toggle">
+							<span>展示阅读记录页边入口</span>
+							<input
+								type="checkbox"
+								aria-label="展示阅读记录页边入口"
+								checked={ui.marks.studySegmentMargins}
+								onChange={(e) =>
+									onUi({
+										...ui,
+										marks: {
+											...ui.marks,
+											studySegmentMargins: e.target.checked,
+										},
+									})
+								}
+							/>
+						</label>
+						<SettingsDisclosure
+							label="工具与阅读记录说明"
+							open={expanded.interfaceHelp}
+							onOpen={(open) => setExpanded("interfaceHelp", open)}
+						>
+							<p>
+								单击未标记正文收起工具，再次单击、移动鼠标或按 Tab
+								唤出。方向键、空格和滚动不会唤出工具。不透明度同时用于顶部与底部工具栏。
+							</p>
+							<p>
+								实线表示学习片段，虚线表示翻译；重叠处保留实线。页边空间不足时使用“本章记录”。隐藏标记不删除记录。纸面独立于应用外观。
+							</p>
+						</SettingsDisclosure>
+					</SettingsDisclosure>
+				</section>
+				<ReaderCopySettings
+					editor={copyEditor}
+					expanded={expanded}
+					onExpandedChange={onExpandedChange}
+				/>
+			</div>
 		</ReaderPanel>
 	);
 }

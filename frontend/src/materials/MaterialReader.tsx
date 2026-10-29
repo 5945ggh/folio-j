@@ -32,7 +32,6 @@ import {
 import { InlineError } from "../Shared";
 import type { ContextCopySettings } from "../settings/context-copy-api";
 import { contextCopyKey } from "../settings/context-copy-cache";
-import { useContextCopySettings } from "../settings/context-copy-query";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "../speech";
 import { getSpeechController } from "../speech/browser";
 import {
@@ -96,8 +95,6 @@ import {
 import { ReaderPreferenceSubmission } from "./preference-submission";
 import {
 	type BookUiPreferences,
-	DEFAULT_BOOK_UI,
-	DEFAULT_READER_UI,
 	READER_UI_KEY,
 	type ReaderUiPreferences,
 	readBookUiPreferences,
@@ -108,6 +105,8 @@ import {
 } from "./preferences";
 import { ContextCopyFeedback, useReaderContextCopy } from "./ReaderContextCopy";
 import { ReaderIcon, ReaderPanel, ReaderSettings } from "./ReaderControls";
+import { ReaderCopyLeaveGuard } from "./ReaderCopyLeaveGuard";
+import { ReaderLeaveProvider } from "./ReaderLeaveProvider";
 import {
 	ReaderDirectImageViewer,
 	ReaderGalleryPanel,
@@ -140,6 +139,11 @@ import {
 	canResumeReader,
 	readerSessionIdentity,
 } from "./reader-session";
+import {
+	DEFAULT_READER_SETTINGS_EXPANDED,
+	DEFAULT_READING_SETTINGS,
+	restoreReaderSettingsGroup,
+} from "./reader-settings";
 import type {
 	ScreenAnchor,
 	StudyMarkHit,
@@ -159,6 +163,10 @@ import { useChapterStudyMarks } from "./study-marks-query";
 import { nativeSelectionKey } from "./study-overlays";
 import { freshestUsage, OpenAction } from "./usage";
 import {
+	type ReaderCopyEditor,
+	useReaderCopyEditor,
+} from "./use-reader-copy-editor";
+import {
 	atChapterEnd,
 	chapterEndAdjustment,
 	readingFrameDistance,
@@ -166,11 +174,7 @@ import {
 	viewportSize,
 } from "./viewport";
 
-const defaults: Settings = {
-	font_size: 22,
-	line_height: 2,
-	writing_mode: "horizontal-tb",
-};
+const defaults: Settings = DEFAULT_READING_SETTINGS;
 type ReaderPositionWriter = {
 	current: PositionQueue<Position> | null;
 	healthy: boolean;
@@ -189,12 +193,18 @@ function Reader({
 	sessionToken,
 	discard,
 	positionWriter,
+	copyEditor,
+	copyEditRequest,
+	onThemeChange,
 }: {
 	book: Material;
 	returnTo: ReturnDestination;
 	sessionToken: string;
 	discard: { current: boolean };
 	positionWriter: ReaderPositionWriter;
+	copyEditor: ReaderCopyEditor;
+	copyEditRequest: number;
+	onThemeChange: (theme: "white" | "black") => void;
 	initialOrigin: SegmentProvenance | null;
 	readingsSummary: ReadingsSummary;
 	notice: "imported" | "reused" | null;
@@ -356,7 +366,18 @@ function Reader({
 	);
 	const [toolsVisible, setToolsVisible] = useState(true);
 	const [ui, setUi] = useState(readReaderUiPreferences);
-	const copySettings = useContextCopySettings(active);
+	const copySettings = copyEditor.query;
+	const [settingsExpanded, setSettingsExpanded] = useState(
+		DEFAULT_READER_SETTINGS_EXPANDED,
+	);
+	const settingsScrollTop = useRef(0);
+	const copyEditorStatus = copyEditor.pending
+		? "处理中"
+		: copyEditor.needsReload || copyEditor.noticeError || copySettings.isError
+			? "待处理"
+			: copyEditor.dirty
+				? "未保存"
+				: "";
 	const [copySettingsError, setCopySettingsError] = useState<Error | null>(
 		null,
 	);
@@ -367,6 +388,7 @@ function Reader({
 		() => matchMedia("(prefers-color-scheme: dark)").matches,
 	);
 	const theme = resolveReaderTheme(ui.theme, systemDark);
+	useLayoutEffect(() => onThemeChange(theme), [theme, onThemeChange]);
 	const [storageFailed, setStorageFailed] = useState(false);
 	const jumpReading = useRef(new JumpReadingSession());
 	const [directImage, setDirectImage] = useState<
@@ -1880,6 +1902,14 @@ function Reader({
 		});
 	};
 	const renderToken = generation;
+	const handledCopyEdit = useRef(0);
+	useEffect(() => {
+		if (!active || copyEditRequest === handledCopyEdit.current) return;
+		handledCopyEdit.current = copyEditRequest;
+		setSettingsExpanded((previous) => ({ ...previous, copy: true }));
+		selectPanel("settings");
+		controller.current?.show();
+	}, [active, copyEditRequest, selectPanel]);
 	return (
 		<main
 			ref={shell}
@@ -2279,11 +2309,21 @@ function Reader({
 					<button
 						type="button"
 						aria-label="阅读设置"
-						data-tooltip="阅读设置"
+						className="reader-settings-trigger"
+						data-tooltip={
+							copyEditorStatus
+								? `阅读设置 · 复制设置${copyEditorStatus}`
+								: "阅读设置"
+						}
 						aria-expanded={panels.right === "settings"}
 						onClick={() => selectPanel("settings", true)}
 					>
 						Aa
+						{copyEditorStatus && (
+							<small className="reader-settings-pending-label" role="status">
+								{copyEditorStatus}
+							</small>
+						)}
 					</button>
 					<button
 						type="button"
@@ -2541,6 +2581,22 @@ function Reader({
 			)}
 			{rightView.value === "settings" && (
 				<ReaderSettings
+					copyEditor={copyEditor}
+					expanded={settingsExpanded}
+					onExpandedChange={setSettingsExpanded}
+					scrollTop={settingsScrollTop.current}
+					onScrollTop={(value) => {
+						settingsScrollTop.current = value;
+					}}
+					rubyStatus={
+						rubyPreparing || rubyError ? (
+							<p role={rubyError ? "alert" : "status"}>
+								{rubyError
+									? `注音暂不可用，已保留当前阅读范围。${rubyError.message}`
+									: "正在获取全量注音，当前阅读可继续。"}
+							</p>
+						) : null
+					}
 					settings={settings}
 					ui={ui}
 					bookUi={bookUi}
@@ -2552,24 +2608,19 @@ function Reader({
 					onSettings={change}
 					onUi={setUiPreference}
 					onBookUi={changeBookUi}
-					onReset={() => {
-						void changeBookUi(DEFAULT_BOOK_UI);
-						change(defaults);
-						setUiPreference(DEFAULT_READER_UI);
+					onResetGroup={(group) => {
+						const patch = restoreReaderSettingsGroup(group);
+						if (patch.bookUi)
+							void changeBookUi({ ...latest.current.bookUi, ...patch.bookUi });
+						if (patch.settings)
+							change({ ...latest.current.settings, ...patch.settings });
+						if (patch.ui)
+							setUiPreference({ ...latest.current.ui, ...patch.ui });
 					}}
 					onClose={() => closePanel("right")}
 				/>
 			)}
-			{panels.right === "settings" && (rubyPreparing || rubyError) && (
-				<p
-					className="reader-preference-notice"
-					role={rubyError ? "alert" : "status"}
-				>
-					{rubyError
-						? `注音暂不可用，已保留当前阅读范围。${rubyError.message}`
-						: "正在获取全量注音，当前阅读可继续。"}
-				</p>
-			)}
+
 			{storageFailed && panels.right === "settings" && (
 				<p className="reader-preference-notice" role="status">
 					偏好暂未存入浏览器，本次阅读仍可使用。
@@ -2745,6 +2796,15 @@ function Reader({
 
 function MaterialOpening({ id, location }: { id: string; location: Location }) {
 	const host = useViewActivity();
+	const copyEditor = useReaderCopyEditor(host.active);
+	const [copyEditRequest, setCopyEditRequest] = useState(0);
+	const [dialogHost, setDialogHost] = useState<HTMLDivElement | null>(null);
+	const [dialogTheme, setDialogTheme] = useState(() =>
+		resolveReaderTheme(
+			readReaderUiPreferences().theme,
+			matchMedia("(prefers-color-scheme: dark)").matches,
+		),
+	);
 	const client = useQueryClient();
 	const navigate = useNavigate();
 	const segmentId = new URLSearchParams(location.search).get("segment");
@@ -2901,7 +2961,17 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 		label: "素材库",
 	});
 	return (
-		<>
+		<ReaderLeaveProvider active={host.active} dialogHost={dialogHost}>
+			<div
+				className="reader-r1 reader-dialog-host"
+				data-theme={dialogTheme}
+				ref={setDialogHost}
+			/>
+			<ReaderCopyLeaveGuard
+				editor={copyEditor}
+				materialId={id}
+				onContinueEditing={() => setCopyEditRequest((value) => value + 1)}
+			/>
 			{session && (
 				<ViewActivityProvider
 					value={{ active: ready, activation: session.activation }}
@@ -2913,6 +2983,9 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 					>
 						<Reader
 							key={`${readerSessionIdentity({ materialId: id, versionId: session.book.version_id, generationId: session.summary.generation_id })}:${session.serial}`}
+							copyEditor={copyEditor}
+							copyEditRequest={copyEditRequest}
+							onThemeChange={setDialogTheme}
 							book={session.book}
 							returnTo={back}
 							readingsSummary={session.summary}
@@ -2955,7 +3028,7 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 					</div>
 				</main>
 			)}
-		</>
+		</ReaderLeaveProvider>
 	);
 }
 export type ReaderSessionEntry = { materialId: string; location: Location };

@@ -1,31 +1,16 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useId, useState } from "react";
-import { RequestError } from "../content";
-import {
-	type ContextCopySettings,
-	saveContextCopySettings,
-} from "../settings/context-copy-api";
-import { commitContextCopyResponse } from "../settings/context-copy-cache";
+import { useId } from "react";
 import {
 	type BudgetField,
-	type ContextCopyFields,
-	completeCopyDraft,
-	conflictCopyDraft,
-	copyDraftDirty,
-	copyDraftRequest,
-	copyFields,
-	createCopyDraft,
-	editCopyDraft,
 	parseCopyFields,
-	receiveCopySettings,
-	reloadCopyDraft,
 } from "../settings/context-copy-draft";
-import {
-	useContextCopySettings,
-	useReloadContextCopySettings,
-} from "../settings/context-copy-query";
 import type { Chapter } from "./api";
-import { buildContextCopy, DEFAULT_CONTEXT_COPY } from "./context-copy";
+import { buildContextCopy } from "./context-copy";
+import { ReaderSettingsReset } from "./ReaderSettingsReset";
+import {
+	contextCopySummary,
+	type ReaderSettingsExpanded,
+} from "./reader-settings";
+import type { ReaderCopyEditor } from "./use-reader-copy-editor";
 import "./context-copy.css";
 
 const exampleBefore = "朝、窓を開けた。風が頬に触れた。庭の花が揺れていた。";
@@ -113,185 +98,223 @@ function BudgetInput({
 	);
 }
 
-export function ReaderCopySettings() {
-	const settings = useContextCopySettings();
+export function ReaderCopySettings({
+	editor,
+	expanded,
+	onExpandedChange,
+}: {
+	editor: ReaderCopyEditor;
+	expanded: ReaderSettingsExpanded;
+	onExpandedChange: (next: ReaderSettingsExpanded) => void;
+}) {
+	const fields = editor.fields;
+	const preview = fields ? parseCopyFields(fields) : null;
+	const setExpanded = (
+		key: "copy" | "copyLimits" | "copyPreview",
+		open: boolean,
+	) => onExpandedChange({ ...expanded, [key]: open });
+	const field = (key: BudgetField, label: string) =>
+		fields && (
+			<BudgetInput
+				label={label}
+				value={fields[key]}
+				onChange={(value) => editor.change({ ...fields, [key]: value })}
+			/>
+		);
 	return (
-		<fieldset className="reader-copy-settings">
-			<legend>
-				带上下文复制
-				<span className="reader-scope">个人默认值 · 跨书／浏览器</span>
-			</legend>
-			<p>
-				配置保存在数据库，对所有书籍生效。修改后保存，复制时使用已保存的配置；关闭面板会放弃未保存的修改。
-			</p>
-			{settings.isPending && <p role="status">正在读取复制设置…</p>}
-			{settings.isError && (
-				<div role="alert">
-					<p>读取复制设置失败，原文可继续阅读。</p>
-					<button type="button" onClick={() => void settings.refetch()}>
-						重新读取复制设置
-					</button>
-				</div>
-			)}
-			{settings.data && <CopySettingsForm settings={settings.data} />}
-		</fieldset>
-	);
-}
-
-function CopySettingsForm({ settings }: { settings: ContextCopySettings }) {
-	const client = useQueryClient();
-	const reloadSettings = useReloadContextCopySettings();
-	const [draft, setDraft] = useState(() => createCopyDraft(settings));
-	const [notice, setNotice] = useState("");
-	const [pending, setPending] = useState(false);
-	const save = useMutation({
-		mutationFn: saveContextCopySettings,
-		retry: false,
-	});
-	useEffect(() => {
-		setDraft((current) => receiveCopySettings(current, settings));
-	}, [settings]);
-	const dirty = copyDraftDirty(draft);
-	const needsReload =
-		draft.conflict || draft.latest.revision > draft.baseline.revision;
-	const preview = parseCopyFields(draft.fields);
-	const change = (fields: ContextCopyFields) => {
-		setDraft((current) => editCopyDraft(current, fields));
-		setNotice("");
-		save.reset();
-	};
-	const field = (key: BudgetField, label: string) => (
-		<BudgetInput
-			label={label}
-			value={draft.fields[key]}
-			onChange={(value) => change({ ...draft.fields, [key]: value })}
-		/>
-	);
-	async function persist() {
-		const request = copyDraftRequest(draft);
-		if (!request || pending) return;
-		setPending(true);
-		setNotice("");
-		try {
-			const result = await save.mutateAsync(request);
-			const persisted = await commitContextCopyResponse(client, result);
-			if (persisted) {
-				setDraft((current) => completeCopyDraft(current, result, persisted));
-				if (persisted.revision === result.revision)
-					setNotice("复制设置已保存。");
-			}
-		} catch (error) {
-			if (error instanceof RequestError && error.status === 409) {
-				setDraft((current) => conflictCopyDraft(current));
-			} else {
-				setNotice("保存失败，修改已保留。");
-			}
-		} finally {
-			setPending(false);
-		}
-	}
-	async function reload(keepChanges: boolean) {
-		if (pending) return;
-		setPending(true);
-		setNotice("");
-		try {
-			const latest = await reloadSettings();
-			setDraft((current) => reloadCopyDraft(current, latest, keepChanges));
-			save.reset();
-			setNotice(
-				keepChanges
-					? "已读取最新配置并保留修改；再次保存会提交整组配置。"
-					: "已使用服务器保存的复制设置。",
-			);
-		} catch {
-			setNotice("读取复制设置失败，修改已保留。");
-		} finally {
-			setPending(false);
-		}
-	}
-	return (
-		<form
-			onSubmit={(event) => {
-				event.preventDefault();
-				void persist();
-			}}
+		<section
+			className="reader-settings-group reader-copy-settings"
+			data-reader-settings-group="copy"
+			aria-label="带上下文复制"
 		>
-			<fieldset disabled={pending}>
-				{field("before_sentences", "前文句数")}
-				{field("after_sentences", "后文句数")}
-				<p>句数设为 0 时，不附带该侧上下文。</p>
-				<label>
-					<span>附带出处</span>
-					<input
-						type="checkbox"
-						checked={draft.fields.include_source}
-						onChange={(event) =>
-							change({ ...draft.fields, include_source: event.target.checked })
-						}
-					/>
-				</label>
-				<details className="reader-copy-advanced">
-					<summary>高级：上下文字符上限</summary>
-					{field("before_characters", "前文字符上限")}
-					{field("after_characters", "后文字符上限")}
+			<ReaderSettingsReset
+				label="复制设置"
+				description="恢复复制默认值，只修改草稿，保存后生效。"
+				disabled={editor.pending || !fields}
+				onReset={() => editor.resetDefaults()}
+			/>
+			<details
+				className="reader-settings-disclosure reader-copy-disclosure"
+				open={expanded.copy}
+				onToggle={(event) => {
+					if (event.currentTarget.open !== expanded.copy)
+						setExpanded("copy", event.currentTarget.open);
+				}}
+			>
+				<summary>
+					<span className="reader-settings-disclosure-label">带上下文复制</span>
+					<span className="reader-settings-summary">
+						{editor.query.data
+							? `已保存 · ${contextCopySummary(editor.query.data)}`
+							: "个人默认值"}
+					</span>
+				</summary>
+				<div className="reader-settings-more">
+					<p className="reader-settings-scope">个人默认 · 所有书籍</p>
 					<p>
-						每侧同时受句数与字符上限约束；字符上限为 0
-						时不附带该侧。选区原文始终完整保留。
+						使用同一后端的浏览器共用。修改和重置均在保存后生效，关闭面板保留本次阅读中的修改。
 					</p>
-				</details>
-				<details className="reader-copy-preview">
-					<summary>格式示例</summary>
-					<p>使用固定样例，随当前草稿更新。</p>
-					{preview ? (
-						<pre>
-							{
-								buildContextCopy(
-									exampleChapter,
-									exampleReference,
-									preview,
-									"示例书籍",
-								).text
-							}
-						</pre>
-					) : (
-						<p>填写有效预算后显示格式示例。</p>
+					{fields && (
+						<form
+							onSubmit={(event) => {
+								event.preventDefault();
+								void editor.save();
+							}}
+						>
+							<fieldset disabled={editor.pending}>
+								<div className="reader-copy-budget-grid">
+									{field("before_sentences", "前文句数")}
+									{field("after_sentences", "后文句数")}
+								</div>
+								<label className="reader-settings-toggle">
+									<span>附带出处</span>
+									<input
+										type="checkbox"
+										checked={fields.include_source}
+										onChange={(event) =>
+											editor.change({
+												...fields,
+												include_source: event.target.checked,
+											})
+										}
+									/>
+								</label>
+								<details
+									className="reader-settings-disclosure reader-copy-advanced"
+									open={expanded.copyLimits}
+									onToggle={(event) => {
+										if (event.currentTarget.open !== expanded.copyLimits)
+											setExpanded("copyLimits", event.currentTarget.open);
+									}}
+								>
+									<summary>上下文字符上限</summary>
+									<div className="reader-settings-more">
+										<div className="reader-copy-budget-grid">
+											{field("before_characters", "前文字符上限")}
+											{field("after_characters", "后文字符上限")}
+										</div>
+										<p>
+											每侧同时受句数与字符上限约束；任一设为 0
+											时不附带该侧。选区原文始终完整保留。
+										</p>
+									</div>
+								</details>
+								<details
+									className="reader-settings-disclosure reader-copy-preview"
+									open={expanded.copyPreview}
+									onToggle={(event) => {
+										if (event.currentTarget.open !== expanded.copyPreview)
+											setExpanded("copyPreview", event.currentTarget.open);
+									}}
+								>
+									<summary>格式示例</summary>
+									<div className="reader-settings-more">
+										<p>固定样例 · 使用当前草稿</p>
+										{preview ? (
+											<pre>
+												{
+													buildContextCopy(
+														exampleChapter,
+														exampleReference,
+														preview,
+														"示例书籍",
+													).text
+												}
+											</pre>
+										) : (
+											<p>填写有效预算后显示格式示例。</p>
+										)}
+									</div>
+								</details>
+								<div className="reader-copy-actions">
+									<button
+										className="reader-copy-save"
+										type="submit"
+										disabled={
+											!editor.dirty || !editor.valid || editor.needsReload
+										}
+									>
+										{editor.saving ? "正在保存…" : "保存复制设置"}
+									</button>
+									<button
+										type="button"
+										disabled={!editor.dirty}
+										onClick={() => editor.discard()}
+									>
+										放弃修改
+									</button>
+								</div>
+							</fieldset>
+						</form>
 					)}
-				</details>
-				<div className="reader-copy-actions">
-					<button type="submit" disabled={!dirty || !preview || needsReload}>
-						{pending ? "正在保存…" : "保存复制设置"}
-					</button>
-					<button
-						type="button"
-						onClick={() => change(copyFields(DEFAULT_CONTEXT_COPY))}
-					>
-						恢复复制默认值
-					</button>
 				</div>
-			</fieldset>
-			<p>恢复默认值只修改当前草稿，保存后生效。</p>
-			{needsReload && (
-				<div role="alert">
-					<p>复制设置已在其他页面更新，修改已保留。重新读取后再保存。</p>
-					<div className="reader-copy-actions">
+			</details>
+			<div className="reader-copy-settings-feedback">
+				{fields && !editor.valid && (
+					<p className="reader-settings-error" role="alert">
+						复制预算需为 0–100000 的整数，修改已保留。
+					</p>
+				)}
+				{editor.pending ? (
+					<p className="reader-settings-status" role="status">
+						{editor.saving ? "正在保存复制设置…" : "正在读取复制设置…"}
+					</p>
+				) : (
+					editor.dirty && (
+						<p className="reader-settings-status" role="status">
+							有未保存修改
+						</p>
+					)
+				)}
+				{editor.query.isPending && !fields && (
+					<p role="status">正在读取复制设置…</p>
+				)}
+				{editor.query.isError && (
+					<div className="reader-settings-error" role="alert">
+						<p>读取复制设置失败，原文可继续阅读。</p>
 						<button
 							type="button"
-							disabled={pending}
-							onClick={() => void reload(true)}
+							disabled={editor.pending}
+							onClick={() => void editor.query.refetch()}
 						>
-							重新读取并保留修改
-						</button>
-						<button
-							type="button"
-							disabled={pending}
-							onClick={() => void reload(false)}
-						>
-							重新读取并使用服务器设置
+							重新读取复制设置
 						</button>
 					</div>
-				</div>
-			)}
-			{notice && <p role={save.isError ? "alert" : "status"}>{notice}</p>}
-		</form>
+				)}
+				{editor.needsReload && (
+					<div className="reader-settings-error" role="alert">
+						<p>复制设置已在其他页面更新，修改已保留。重新读取后再保存。</p>
+						<div className="reader-copy-actions">
+							<button
+								type="button"
+								disabled={editor.pending}
+								onClick={() => void editor.reload(true)}
+							>
+								重新读取并保留修改
+							</button>
+							<button
+								type="button"
+								disabled={editor.pending}
+								onClick={() => void editor.reload(false)}
+							>
+								重新读取并使用服务器设置
+							</button>
+						</div>
+					</div>
+				)}
+				{editor.notice && (
+					<p
+						className={
+							editor.noticeError
+								? "reader-settings-error"
+								: "reader-settings-status"
+						}
+						role={editor.noticeError ? "alert" : "status"}
+					>
+						{editor.notice}
+					</p>
+				)}
+			</div>
+		</section>
 	);
 }

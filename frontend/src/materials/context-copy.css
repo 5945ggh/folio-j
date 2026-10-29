@@ -1,40 +1,69 @@
-.reader-panel-body .reader-copy-settings {
+.reader-settings .reader-copy-disclosure {
+	margin-top: 0;
+}
+.reader-copy-settings {
+	position: relative;
+}
+.reader-copy-settings > .reader-settings-reset-button {
+	position: absolute;
+	inset-inline-end: 0;
+	top: 0;
+	z-index: 1;
+}
+.reader-settings .reader-copy-disclosure > summary {
+	padding-top: 5px;
+	padding-inline-end: 84px;
+	min-block-size: 32px;
+}
+.reader-settings
+	.reader-copy-disclosure
+	> summary
+	.reader-settings-disclosure-label {
+	font-size: 14px;
+	font-weight: 600;
+}
+.reader-settings .reader-copy-disclosure > summary::after {
+	top: 12px;
+	inset-inline-end: 68px;
+}
+.reader-settings .reader-copy-disclosure[open] > summary::after {
+	top: 15px;
+}
+.reader-settings .reader-copy-settings form > fieldset {
+	border: 0;
+	padding: 0;
+	margin: 0;
 	min-inline-size: 0;
 }
+.reader-copy-budget-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+}
+.reader-settings .reader-copy-budget label {
+	display: grid;
+	gap: 8px;
+	margin: 10px 0 0;
+	font-size: 12px;
+}
 .reader-copy-budget input[type="number"] {
-	width: 7.5em;
-	max-width: 100%;
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
 	border: 1px solid var(--reader-line);
 	border-radius: 6px;
-	padding: 7px 8px;
+	padding: 9px 8px;
 	color: var(--reader-fg);
 	background: var(--reader-bg);
 	font: inherit;
+	font-variant-numeric: tabular-nums;
 }
 .reader-copy-budget input[aria-invalid="true"] {
-	border-style: dashed;
+	border-color: var(--reader-error-border);
 }
-.reader-copy-settings input[type="checkbox"] {
-	accent-color: var(--reader-accent);
-}
-.reader-copy-advanced summary,
-.reader-copy-preview summary {
-	cursor: pointer;
-	padding-block: 8px;
-	color: var(--reader-muted);
-	font-size: 12px;
-}
-.reader-copy-settings :is(input, summary):focus-visible {
-	outline: 2px solid var(--reader-accent);
-	outline-offset: 3px;
-}
-.reader-copy-preview {
-	margin: 8px 0 0;
-}
-.reader-copy-preview p {
-	color: var(--reader-muted);
-	font-size: 11px;
-	margin: 0 0 8px;
+.reader-settings .reader-copy-budget small {
+	color: var(--reader-error);
+	margin-top: 4px;
 }
 .reader-copy-preview pre {
 	white-space: pre-wrap;
@@ -46,30 +75,39 @@
 	border-radius: 6px;
 	padding: 12px;
 	margin: 0;
-}
-.reader-copy-settings form > fieldset {
-	border: 0;
-	padding: 0;
-	margin: 0;
-	min-inline-size: 0;
+	background: var(--reader-soft);
 }
 .reader-copy-actions {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
-	margin-block: 12px;
+	margin-block: 16px 0;
 }
 .reader-copy-actions button {
 	border: 1px solid var(--reader-line);
 	border-radius: 6px;
-	padding: 7px 10px;
+	padding: 8px 10px;
 	color: var(--reader-fg);
 	background: var(--reader-bg);
 	font: inherit;
 	font-size: 12px;
 	cursor: pointer;
 }
+.reader-copy-actions .reader-copy-save {
+	background: var(--reader-fg);
+	color: var(--reader-bg);
+	border-color: var(--reader-fg);
+}
+.reader-copy-actions .reader-copy-save:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--reader-fg) 85%, var(--reader-bg));
+}
 .reader-copy-actions button:disabled {
 	opacity: 0.5;
 	cursor: default;
+}
+.reader-copy-settings-feedback:empty {
+	display: none;
+}
+.reader-copy-settings-feedback > .reader-settings-status {
+	font-size: 11px;
 }

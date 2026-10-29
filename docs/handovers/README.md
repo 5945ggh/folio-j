@@ -4,6 +4,7 @@
 
 ## 阶段资料
 
+- [阅读设置结构调查与实施进展](reading-practice/READER_SETTINGS_STRUCTURE.md)：保留 `main 7d57239` 调查及低保真记录；生产工作区已接入四组设置、会话草稿和分组恢复，离开与查询保护已完成[独立验收](reading-practice/READER_SETTINGS_ACCEPTANCE.md)，尚未合入 main。现行规则见[阅读设置交互](../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)。
 - [实际阅读评测：复制、书签与搜索](reading-practice/PLAN.md)：已确认用途、三阶段顺序、书签的独立阅读职责及数据保护；首阶段接入带上下文复制。
 - [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：汇总当前能力、实现缺口和验收入口；目录、封面、书籍编辑及阅读器的现行接口由[架构](../ARCHITECTURE.md)维护。
 - [测试清理与入口回归](TEST_CLEANUP_ACCEPTANCE.md)：无效断言与重复覆盖清理、确定性动画检查、Reader 真实入口与运行器筛选保护。
