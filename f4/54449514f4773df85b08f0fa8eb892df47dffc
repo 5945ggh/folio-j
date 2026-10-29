@@ -1,0 +1,86 @@
+docs/PRD.md
+  s_31ab8f4076efcf::t_928f6cd838dc0c 227
+  s_31ab8f4076efcf::t_bb5b727fbca826 649
+docs/TECH_STACK.md
+  s_31ab8f4076efcf::t_fa609fc16b40d7 25,31,38,40,42,44,48,65,71,75,80-81,84
+  s_31ab8f4076efcf::t_8c6c5f99859aa4 73,76
+references/README.md
+  s_31ab8f4076efcf::t_297a5a697dbc84 7
+  s_31ab8f4076efcf::t_fa91c8fae3e2b2 8
+docs/handovers/archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md
+  s_31ab8f4076efcf::t_949a7151888e46 3
+docs/INFORMATION_ARCHITECTURE.md
+  s_31ab8f4076efcf::t_fa609fc16b40d7 99
+  s_31ab8f4076efcf::t_bb5b727fbca826 95-96,103,117,235
+docs/handovers/archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md
+  s_31ab8f4076efcf::t_ff60a5c7dc461e 3-4,6-8,46
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_31ab8f4076efcf::t_949a7151888e46 15-16
+  s_31ab8f4076efcf::t_ff60a5c7dc461e 3,31-32,36-37
+docs/ARCHITECTURE.md
+  s_31ab8f4076efcf::t_bb5b727fbca826 171,185,193,195,203,643
+docs/UPGRADING.md
+  s_31ab8f4076efcf::t_337d17344f55a3 13-97,122,124
+docs/USAGE.md
+  s_31ab8f4076efcf::t_8469ccce586bed 13,19-28,30-32,115
+  s_31ab8f4076efcf::t_93c4afe5086da2 63
+  s_31ab8f4076efcf::t_c0a16b1c50662c 29
+docs/handovers/archived/APPLICATION_THEME_ACCEPTANCE.md
+  s_31ab8f4076efcf::t_ff60a5c7dc461e 9
+docs/handovers/archived/SETTINGS_MODELS_ACCEPTANCE.md
+  s_31ab8f4076efcf::t_ff60a5c7dc461e 3
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_31ab8f4076efcf::t_ff60a5c7dc461e 3,7
+docs/handovers/epub-reading/README.md
+  s_31ab8f4076efcf::t_ff60a5c7dc461e 99,105-118,120-121
+  s_31ab8f4076efcf::t_c0a16b1c50662c 119
+docs/handovers/README.md
+  s_31ab8f4076efcf::t_8bcc56380da47b 10-11,13,32,46-55
+  s_31ab8f4076efcf::t_5cdaebcf2831e3 56
+docs/handovers/text-study/TEST_MATRIX.md
+  s_31ab8f4076efcf::t_c0a16b1c50662c 87-88
+  s_31ab8f4076efcf::t_ff60a5c7dc461e 3,79,82,85
+.agents/skills/document-maintenance/SKILL.md
+  s_31ab8f4076efcf::t_1b4acc247e33d1 3,20-21,34-40,43,49-51,57-59
+  s_31ab8f4076efcf::t_93c4afe5086da2 45
+  s_f8dcc8c4c17620::t_7a3d000393fe8d 44
+README.md
+  s_729753c22ae9b3::t_1d98bd5f06dc82 94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f454449514f4773df85b08f0fa8eb892df47dffc",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_31ab8f4076efcf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18594-2605-76f0-9f5e-036a5ffb7b90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_729753c22ae9b3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18595-b03e-7500-9144-d6be827f7aa7",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_f8dcc8c4c17620": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18594-e415-7920-9be0-1f78b9dec6c0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
