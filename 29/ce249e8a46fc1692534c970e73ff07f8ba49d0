@@ -1,0 +1,36 @@
+references/dictionary-context-ranking/inspect_dictionary.py
+  s_1e48d562ceb002::t_cfd44ebf50211c 1-98
+references/READING_FEATURE_NOTES.md
+  s_8cc34390c56174::t_544ac95c371fd8 1-33
+references/dictionary-context-ranking/REPORT.md
+  s_1e48d562ceb002::t_cfd44ebf50211c 1-213
+references/dictionary-context-ranking/dictionary-stats.json
+  s_1e48d562ceb002::t_cfd44ebf50211c 1-183
+references/README.md
+  s_8cc34390c56174::t_544ac95c371fd8 8
+  s_1e48d562ceb002::t_cfd44ebf50211c 3,7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "29ce249e8a46fc1692534c970e73ff07f8ba49d0",
+  "prompts": {},
+  "sessions": {
+    "s_1e48d562ceb002": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18620-4129-7932-8af8-e35fddeaf3c2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_8cc34390c56174": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1863b-80e3-7253-9625-14c0aa059bd3",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
