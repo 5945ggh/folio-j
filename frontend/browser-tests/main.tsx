@@ -23,6 +23,7 @@ import { navigationFeedback } from "./navigation-feedback";
 import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
 import { readerImages } from "./reader-images";
+import { readerLayoutSwitch } from "./reader-layout-switch";
 import { readerSession } from "./reader-session";
 import { readingAidsRegression } from "./reading-aids";
 import { recordSaving } from "./record-saving";
@@ -398,6 +399,7 @@ try {
 	const standalone = new Map([
 		["app-theme", appTheme],
 		["reader-images", readerImages],
+		["reader-layout-switch", readerLayoutSwitch],
 		["reader-image-performance", readerImages],
 		["catalog-overview", overviewImportRegression],
 		["catalog-reuse", reusedImportRegression],

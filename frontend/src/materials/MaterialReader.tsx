@@ -1214,6 +1214,10 @@ function Reader({
 			jumpReading.current.pause();
 			let located = false;
 			const vertical = settings.writing_mode === "vertical-rl";
+			// Margin markers can retain the previous layout's overflow until React
+			// commits their new coordinates. Reset that axis before locating text.
+			if (vertical) root.scrollTop = 0;
+			else root.scrollLeft = 0;
 			const receipt = presentation.current;
 			let navigationFailure: Error | undefined;
 			if (receipt?.beginning) {

@@ -5,6 +5,7 @@
 ## 阶段资料
 
 - [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：汇总当前能力、实现缺口和验收入口；目录、封面、书籍编辑及阅读器的现行接口由[架构](../ARCHITECTURE.md)维护。
+- [阅读方向切换修复](READER_LAYOUT_SWITCH_ACCEPTANCE.md)：页边标记导致横转竖正文移出视口的复现、修复与回归；包含导航协调结构建议的评估。
 - [整站基础主题验收](APPLICATION_THEME_ACCEPTANCE.md)：浅／深／系统模式、样式抽象与阅读器配色更新验证。
 - [Agent 上下文与讲解流程验收](AGENT_CONTEXT_ACCEPTANCE.md)：首轮基线、变化事件、统一Agent讲解、完整正文保存、提示词审阅、旧版本引用核对及独立审查修复。
 - [EPUB 原生阅读阶段](epub-reading/README.md)：维护后续切片的顺序与准备条件，区分已完成的基础阅读／学习衔接和后续材料对话／讲解形成。

@@ -36,6 +36,7 @@
 | 整站基础颜色模式 | 随本次提交交付，工程、完整浏览器与独立审查通过 | 保留浅色视觉，应用浅／深／跟随系统、即时本地保存与跨标签同步；公共语义颜色与阅读器独立纸面，配色更新不重建正文或清空选区 | [整站主题验收](APPLICATION_THEME_ACCEPTANCE.md)、[设计系统](../DESIGN_SYSTEM.md) |
 | 阅读工具栏不透明度 | 已提交；本次提交统一不透明度语义与设置分组，工程与完整离线浏览器回归通过 | 上下栏统一不透明度、轻微模糊、跨书偏好与恢复默认；兼容旧透明度值；横排顶部透文及章末滚动留白、竖排每列避让底栏 | [原透明度与遮挡验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-15-工具栏背景透明度)、[本轮修复验收](epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27) |
 | 阅读滚动交互 | 已提交、工程与浏览器验收通过 | 正文外留白可滚动、竖排手势轴统一；阅读键平滑滚动并遵循减少动态效果偏好，位置恢复保持即时 | [滚动与切章提交复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
+| 阅读方向切换修复 | 已提交，工程、完整浏览器回归、指定章节副本验证及独立复审通过 | 清除旧页边标记保留的非阅读轴偏移，横竖切换保持正文和锚点可见 | [复现与验证](READER_LAYOUT_SWITCH_ACCEPTANCE.md) |
 | 跳转链与继续阅读 | 已提交、工程验收通过 | 连续查阅保留首次原点，持续阅读后下一次跳转更新原点；旧返回入口保留，失败请求不消耗阅读信号 | [跳转链验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-跳转链与继续阅读) |
 | 章节位置记忆 | 已提交、工程与浏览器验收通过 | 各章最后位置持久化、目录恢复、当前章不跳与回到章首；保留恢复锚点，内容末端进入可读区域即 100%、回看可下降；图文混排按图片前正文显示进度，空白尾片段不阻断采样 | [章节位置验收](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)、[章末进度与真实书复核](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-真实书复核与口径调整)、[提交前复核](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-提交前复核) |
 | 底部相邻章节导航 | 已提交、工程与浏览器验收通过 | 上一章／目录／下一章、首末边界与加载锁；复用章节记忆和返回链，保留工具面板与查询；窄屏进度移到顶部；章末入口未增加 | [相邻切章验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-底部相邻章节导航)、[提交复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
