@@ -1,0 +1,21 @@
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e73a3f947fc97c::t_e84df3a52dfb8a 3
+docs/handovers/archived/READER_READ_PERFORMANCE_ACCEPTANCE.md
+  s_e73a3f947fc97c::t_e84df3a52dfb8a 82-85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "19815f0e295172a148825f14c133afe868a4c1e2",
+  "prompts": {},
+  "sessions": {
+    "s_e73a3f947fc97c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18084-5c78-70a1-b745-6b6c89870ba3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
