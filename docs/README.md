@@ -10,6 +10,7 @@
 | 为什么做、长期怎样演进 | [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) | 动机、取舍与待验证设想；方向不自动成为实施要求 |
 | 文本处理与学习资料如何解耦 | [文本分析与统计契约](ARCHITECTURE.md#314-文本分析与统计契约)、[文本与资料历史计划](handovers/archived/text-study/PLAN.md) | 现行契约由架构与 PRD 维护；历史计划保留切片依赖、实施依据与验收入口，当前交付状态见实施基线 |
 | EPUB 阅读与学习衔接如何继续推进 | [EPUB 原生阅读阶段](handovers/epub-reading/README.md) | 切片顺序、准备条件，以及注音、选区学习、材料对话和讲解形成的边界 |
+| 实际阅读中发现的复制、书签与搜索需求怎样落地 | [实际阅读评测计划](handovers/reading-practice/PLAN.md) | 已确认用途、三阶段实施顺序与各阶段验收重点 |
 | 目录、书籍管理、阅读器和注音有哪些现行契约 | [架构](ARCHITECTURE.md#31-实体)、[阅读与导航](INFORMATION_ARCHITECTURE.md) | 服务接口、缓存与发布机制、页面操作及状态恢复；验收限制从实施基线查找 |
 | 首轮承诺什么行为、哪些决定未定 | [PRD.md](PRD.md) | 范围、产品行为、内容保护、验收与 `[TBD-xx]`；决定依据链接原始方案和验收，P0 不表示已经交付 |
 | 名词指什么、身份与引用如何区分 | [GLOSSARY.md](GLOSSARY.md) | 定义、不变式、词表和反例；完整操作流程引用 PRD |

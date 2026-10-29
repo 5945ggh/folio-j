@@ -1,0 +1,49 @@
+.reader-panel-body .reader-copy-settings {
+	min-inline-size: 0;
+}
+.reader-copy-budget input[type="number"] {
+	width: 7.5em;
+	max-width: 100%;
+	border: 1px solid var(--reader-line);
+	border-radius: 6px;
+	padding: 7px 8px;
+	color: var(--reader-fg);
+	background: var(--reader-bg);
+	font: inherit;
+}
+.reader-copy-budget input[aria-invalid="true"] {
+	border-style: dashed;
+}
+.reader-copy-settings input[type="checkbox"] {
+	accent-color: var(--reader-accent);
+}
+.reader-copy-advanced summary,
+.reader-copy-preview summary {
+	cursor: pointer;
+	padding-block: 8px;
+	color: var(--reader-muted);
+	font-size: 12px;
+}
+.reader-copy-settings :is(input, summary):focus-visible {
+	outline: 2px solid var(--reader-accent);
+	outline-offset: 3px;
+}
+.reader-copy-preview {
+	margin: 8px 0 0;
+}
+.reader-copy-preview p {
+	color: var(--reader-muted);
+	font-size: 11px;
+	margin: 0 0 8px;
+}
+.reader-copy-preview pre {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	font: inherit;
+	font-size: 12px;
+	line-height: 1.8;
+	border: 1px solid var(--reader-line);
+	border-radius: 6px;
+	padding: 12px;
+	margin: 0;
+}

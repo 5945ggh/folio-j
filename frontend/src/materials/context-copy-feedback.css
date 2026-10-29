@@ -1,0 +1,64 @@
+.reader-copy-feedback {
+	position: fixed;
+	z-index: 52;
+	top: 70px;
+	left: 50%;
+	transform: translateX(-50%);
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	max-width: calc(100vw - 24px);
+	box-sizing: border-box;
+	padding: 8px 12px;
+	border: 1px solid var(--reader-line);
+	border-radius: 10px;
+	background: var(--reader-bg);
+	color: var(--reader-fg);
+	box-shadow: 0 5px 22px #0002;
+	font:
+		13px / 1.6 system-ui,
+		sans-serif;
+	writing-mode: horizontal-tb;
+}
+.reader-copy-feedback button {
+	border: 0;
+	border-radius: 6px;
+	background: var(--reader-soft);
+	color: inherit;
+	padding: 6px 10px;
+	font: inherit;
+	cursor: pointer;
+}
+.reader-copy-feedback button:focus-visible,
+.reader-copy-feedback textarea:focus-visible {
+	outline: 2px solid var(--reader-mark-focus);
+	outline-offset: 2px;
+}
+.reader-copy-fallback {
+	display: block;
+	width: min(440px, calc(100vw - 24px));
+	max-height: calc(100dvh - 150px);
+	overflow: auto;
+}
+.reader-copy-fallback header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+.reader-copy-fallback p {
+	margin: 8px 0;
+}
+.reader-copy-fallback textarea {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	height: min(260px, 36dvh);
+	margin-bottom: 8px;
+	border: 1px solid var(--reader-line);
+	border-radius: 6px;
+	padding: 8px;
+	background: var(--reader-bg);
+	color: inherit;
+	font: inherit;
+	resize: vertical;
+}

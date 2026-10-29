@@ -22,6 +22,7 @@ import { materialImport } from "./material-import";
 import { navigationFeedback } from "./navigation-feedback";
 import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
+import { readerContextCopy } from "./reader-context-copy";
 import { readerImages } from "./reader-images";
 import { readerLayoutSwitch } from "./reader-layout-switch";
 import { readerSession } from "./reader-session";
@@ -402,6 +403,7 @@ try {
 		["app-theme", appTheme],
 		["reader-images", readerImages],
 		["reader-layout-switch", readerLayoutSwitch],
+		["reader-context-copy", readerContextCopy],
 		["reader-image-performance", readerImages],
 		["catalog-overview", overviewImportRegression],
 		["catalog-reuse", reusedImportRegression],

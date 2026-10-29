@@ -9,8 +9,9 @@ import type { ScreenAnchor } from "./reader-study";
 import { studyOverlayPosition } from "./study-overlays";
 import "./study-overlays.css";
 
-function ToolIcon({ name }: { name: "translate" | "speak" | "save" }) {
+function ToolIcon({ name }: { name: "translate" | "speak" | "save" | "copy" }) {
 	const path = {
+		copy: "M9 8h11v13H9zM5 16H3V3h11v2",
 		translate: "m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1m10 20-5-10-5 10M14 18h6",
 		speak:
 			"M11 5 6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14",
@@ -103,10 +104,14 @@ export function SelectionToolbar({
 	onSave,
 	onTranslate,
 	onSpeak,
+	onCopy,
+	copying = false,
 	onClose,
 }: {
 	onTranslate?: () => void;
 	onSpeak?: () => void;
+	onCopy?: () => void;
+	copying?: boolean;
 	anchor: ScreenAnchor;
 	onSave: () => void;
 	onClose: () => void;
@@ -118,6 +123,19 @@ export function SelectionToolbar({
 			role="toolbar"
 			onClose={onClose}
 		>
+			{onCopy && (
+				<button
+					type="button"
+					aria-label="带上下文复制"
+					aria-busy={copying}
+					disabled={copying}
+					onMouseDown={(event) => event.preventDefault()}
+					onClick={onCopy}
+				>
+					<ToolIcon name="copy" />
+					带上下文复制
+				</button>
+			)}
 			{onTranslate && (
 				<button
 					type="button"

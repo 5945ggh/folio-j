@@ -58,6 +58,7 @@
 }
 .reader-study-tool.toolbar {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	padding: 3px;
 	max-width: calc(100vw - 24px);
