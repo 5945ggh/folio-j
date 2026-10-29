@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.context_copy import router as context_copy_router
 from app.api.segment_context import router as segment_context_router
 from app.db import get_session
 from app.services import settings as service
@@ -31,6 +32,7 @@ from app.settings_schemas import (
 
 router = APIRouter(prefix="/api")
 router.include_router(segment_context_router)
+router.include_router(context_copy_router)
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 

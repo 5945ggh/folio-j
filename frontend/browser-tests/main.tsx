@@ -23,6 +23,7 @@ import { navigationFeedback } from "./navigation-feedback";
 import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
 import { readerContextCopy } from "./reader-context-copy";
+import { defaultReaderContextCopyResponse } from "./reader-context-copy-fixture";
 import { readerImages } from "./reader-images";
 import { readerLayoutSwitch } from "./reader-layout-switch";
 import { readerSession } from "./reader-session";
@@ -59,7 +60,12 @@ window.fetch = async (input, init) => {
 			new URL(request.url).origin === location.origin,
 			`Unexpected origin ${request.url}`,
 		);
-		return await handleRequest(request);
+		return (
+			defaultReaderContextCopyResponse(
+				request,
+				new URLSearchParams(location.search).get("suite"),
+			) ?? (await handleRequest(request))
+		);
 	} catch (error) {
 		unexpectedRequests.push(String(error));
 		throw error;

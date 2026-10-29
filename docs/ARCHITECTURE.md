@@ -67,7 +67,7 @@ flowchart LR
 
 Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。独立材料删除保留 Material 身份墓碑并清理其托管副本及派生阅读数据，不改 Source、片段、讲解、讨论或片段任务；独立翻译任务按第 4.8 节撤销。接受问答、成功保存持久讲解或建立精确材料出处时，在对应短写事务中首次设置 `text_locked_at`；共同保护函数不提交事务、不递增片段记录 revision，也不重写已有锁定时间。原文编辑、来源／片段删除共用事务校验边界。
 
-数据库生命周期由应用 lifespan 管理。`0001_schema_baseline` 以固定 Alembic DDL 从空库直接建立当前 28 张业务表及其字段、服务器默认值、外键、CHECK 和索引，包括材料软删除与活跃材料部分唯一索引、精确出处、语境设置及翻译表；版本脚本不导入运行时 ORM，也不调用自动建表。旧开发阶段的回填、批量重建及中间 revision 已移除，历史编号与当时的数据保护事实保留在阶段验收中。
+数据库生命周期由应用 lifespan 管理。`0001_schema_baseline` 以固定 Alembic DDL 建立原有 28 张业务表，包括材料软删除与活跃材料部分唯一索引、精确出处、语境设置及翻译表；`0002_context_copy_settings` 一次性新增独立复制设置表，当前 head 共 29 张业务表。空库顺序执行两份脚本，既有基线库只执行新增脚本；版本脚本不导入运行时 ORM，也不调用自动建表。旧开发阶段的回填、批量重建及中间 revision 已移除，历史编号与当时的数据保护事实保留在阶段验收中。
 
 迁移与应用读取同一配置的数据库路径，连接始终启用外键。迁移使用显式 `BEGIN IMMEDIATE` 与事务性 DDL，提交前执行全库 `foreign_key_check`；执行或校验失败会回滚 DDL、数据及版本记录。初始基线支持显式完整降级到 base，该操作删除全部应用表，包含自引用历史的降级回归已通过。`just dev`／`just start` 先执行迁移，不自动删库或修改版本标签。需保留日常数据或发布第一版后继续维护增量升级路径；旧开发库边界见[升级与备份](UPGRADING.md#当前迁移基线)，等价性及本机对齐证据见[迁移基线验收](handovers/archived/DATABASE_MIGRATION_ACCEPTANCE.md)。
 
@@ -81,6 +81,7 @@ Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profi
 | 讲解预设（`Style`） | `name`、`body_md` | 命名预设，默认选择由 `Defaults.style_id` 维护 |
 | `Defaults` | 三种用途的模型 ID、`style_id`、`permission_mode` | 新操作与新线程采用的默认设置 |
 | `SegmentContextSettings` | enabled、两侧句数／字符上限、revision | 独立单例，版本条件保存；读取缺省不写库 |
+| `ContextCopySettings` | include_source、两侧句数／字符上限、revision | 独立复制偏好单例，版本条件保存；读取缺省不写库 |
 | `SegmentMaterialProvenance` | segment_id、material_id、version_id、范围 payload、请求身份及请求依据 | 一对一精确出处与创建凭据，材料删除后保留 |
 | `Source` | `title`、`note`、来源描述 | 用户声明的来源范围；未来可容纳不同形式的输入，不等于文件或 Collection |
 | `Segment` | `source_id`、`text`、译文、语境、备注、听写、`source_ref`、`text_locked_at` | 学习目标原文入库做 NFC；`source_ref` 为自由文本出处，精确材料出处经独立关系保存；片段分词数据待后续接入 |
@@ -467,7 +468,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 设备朗读由前端共享控制器管理目标快照与偏好，播放器及声音浮层供 Reader 和 Segment 复用。暂停／继续调用设备适配器并复用当前 utterance；取消、换目标、重播及离页递增代次隔离迟到事件。浏览器取消可能保留全局暂停状态，适配器取消后及新 utterance 入队后检查并恢复，避免重播挂起；偏好只用于下次新播放，恢复当前 utterance 不重新解析。纯逻辑和假设备测试覆盖该状态协调，实际设备表现以实测为准。
 
-产品行为由 [PRD 4.8](PRD.md#48-阅读翻译与设备朗读)维护。translation_settings、translation_tasks、translation_results、translation_adoptions 四表由当前初始基线直接建立，不改变 Provider、模型或 Segment 身份。现行共 28 张业务表，空库与重复升级检查覆盖 ORM 一致性；历史增量迁移的记录见对应阶段验收。
+产品行为由 [PRD 4.8](PRD.md#48-阅读翻译与设备朗读)维护。translation_settings、translation_tasks、translation_results、translation_adoptions 四表由初始基线直接建立，不改变 Provider、模型或 Segment 身份。空库与重复升级检查覆盖 ORM 一致性；现行迁移链见第 3 节，历史增量迁移的记录见对应阶段验收。
 
 `services/translations.py` 提供独立任务生命周期，不借用 chat_jobs 或虚构线程。目标复用精确材料出处值，受理时 prepare／写事务 recheck 并固定原文、实际语境、方案修订、Provider／模型配置、模板及凭据内部引用。请求身份全局唯一，同键异文或路径材料身份不同返回冲突／无效请求。历史按材料分页，可用规范出处摘要筛选；成功结果引用不可变任务输入，正文不原地修改。
 
@@ -505,7 +506,9 @@ Reader 的章节翻译 query 完成全部分页后发布标记；阅读页独立
 
 ### 资料写入与材料出处契约
 
-阅读选区的带上下文复制由前端 `context-copy.ts` 组合：`buildContextCopy` 使用 `prefillContext` 校验材料版本、资源范围与快照，再生成带目标／语境标签的文本。偏好独立存储在 `folio-reader-context-copy-v1`，预算按 0–100000 严格整数逐字段校验，存储异常时保留本页设置，跨标签页通过 storage 事件更新。`ReaderContextCopy.tsx` 在用户手势内调用剪贴板，按选区身份、章节呈现代次和请求序号隔离回执；失败保留本次文本供手动复制。准备和复制均不发起新查询或数据写入；不改变现有片段分享格式，默认值由 [PRD 4.9](PRD.md#49-阅读摘录书签与记录检索)维护。
+阅读选区的带上下文复制由前端 `context-copy.ts` 组合：`buildContextCopy` 使用 `prefillContext` 校验材料版本、资源范围与快照，再生成带目标／语境标签的文本。`context_copy_settings` 单例通过 GET／PUT `/api/settings/context-copy` 读取及保存，预算为 0–100000 严格整数，附出处为严格布尔值。GET 无记录时返回默认值和 revision=0，不写库；PUT 在短事务内比较 expected_revision，成功递增，冲突返回 409。旧 `folio-reader-context-copy-v1` 不再读取或写入，也不导入。
+
+Reader 通过 TanStack Query 预读已保存配置，读取失败不阻止正文呈现。编辑草稿与已保存缓存分开，保存失败或冲突保留草稿；缓存合并保留较新 revision，取消陈旧读取，避免迟到响应回退配置。复制使用已保存配置在用户手势内同步组装文本并调用剪贴板，不先等待网络；未成功读取时提示重试。`ReaderContextCopy.tsx` 按选区身份、章节呈现代次和请求序号隔离复制回执，失败保留本次文本供手动复制。复制不写学习内容或调用模型，不改变现有片段分享格式，默认值由 [PRD 4.9](PRD.md#49-阅读摘录书签与记录检索)维护。
 
 人工资料写入已按 A2 建立生产入口；材料出处与阅读往返已按 C1／C2 接入。约定如下：
 

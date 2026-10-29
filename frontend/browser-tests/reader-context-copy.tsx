@@ -1,5 +1,6 @@
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
+import { defaultContextCopySettings } from "./reader-context-copy-fixture";
 
 type Schema = components["schemas"];
 const stamp = "2026-10-29T00:00:00Z";
@@ -89,8 +90,42 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		},
 	};
 	const writes: string[] = [];
+	let stored: Schema["ContextCopySettingsResponse"] = {
+		...defaultContextCopySettings,
+	};
+	const settingsWrites: Schema["ContextCopySettingsUpdate"][] = [];
+	let nextSaveStatus = 200;
+	let failRead = false;
+	let readCount = 0;
+	let releaseRead: (() => void) | undefined;
+	const firstRead = new Promise<void>((resolve) => {
+		releaseRead = resolve;
+	});
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
+		if (path === "/api/settings/context-copy" && request.method === "GET") {
+			readCount++;
+			if (readCount === 1) await firstRead;
+			return failRead
+				? Response.json({ detail: "Offline settings failure" }, { status: 503 })
+				: Response.json(stored);
+		}
+		if (path === "/api/settings/context-copy" && request.method === "PUT") {
+			const update: Schema["ContextCopySettingsUpdate"] = await request.json();
+			settingsWrites.push(update);
+			if (nextSaveStatus !== 200) {
+				const status = nextSaveStatus;
+				nextSaveStatus = 200;
+				return Response.json({ detail: "Settings save rejected" }, { status });
+			}
+			check(
+				update.expected_revision === stored.revision,
+				"Save must use the latest read database revision",
+			);
+			const { expected_revision, ...preferences } = update;
+			stored = { ...preferences, revision: expected_revision + 1 };
+			return Response.json(stored);
+		}
 		if (request.method !== "GET") {
 			writes.push(`${request.method} ${path}`);
 			check(
@@ -158,6 +193,13 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 	});
 	localStorage.clear();
 	localStorage.setItem("folio-reader-ui-v1", JSON.stringify({ focus: false }));
+	const legacyPreferences = JSON.stringify({
+		...defaultContextCopySettings,
+		before_sentences: 0,
+		after_sentences: 2,
+		include_source: false,
+	});
+	localStorage.setItem(preferenceKey, legacyPreferences);
 	const copies: string[] = [];
 	let write: (value: string) => Promise<void> = async () => {};
 	const clipboardDescriptor = Object.getOwnPropertyDescriptor(
@@ -281,6 +323,23 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		);
 	try {
 		await open();
+		await h.until(
+			() => readCount === 1,
+			"Reader must request database copy settings",
+		);
+		check(
+			releaseRead,
+			"Initial settings read must remain pending while the original loads",
+		);
+		check(
+			!!h.container.querySelector("iframe.material-part"),
+			"Delayed settings must not block original reading",
+		);
+		releaseRead();
+		await h.until(
+			() => !h.container.textContent?.includes("正在读取复制设置"),
+			"Initial settings read must settle",
+		);
 		const selected = await select();
 		toolbarFits();
 		const count = copies.length;
@@ -330,17 +389,14 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			() => beforeInput.getAttribute("aria-invalid") === "true",
 			"Empty numeric draft must be visibly invalid",
 		);
+		const beforeInvalidSave = settingsWrites.length;
 		beforeInput.dispatchEvent(
 			new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
 		);
-		await h.until(
-			() => beforeInput.value === "3",
-			"Invalid empty draft must restore current value rather than become zero",
-		);
+		await new Promise((resolve) => setTimeout(resolve, 0));
 		check(
-			JSON.parse(localStorage.getItem(preferenceKey) ?? "{}")
-				.before_sentences !== 0,
-			"Invalid empty draft must not persist zero",
+			beforeInput.value === "" && settingsWrites.length === beforeInvalidSave,
+			"Invalid empty draft must remain editable and never save as zero",
 		);
 		const advanced = h.container.querySelector<HTMLDetailsElement>(
 			".reader-copy-advanced",
@@ -350,33 +406,93 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		check(
 			findInput("前文字符上限").value === "200" &&
 				findInput("后文字符上限").value === "200",
-			"Character defaults must be visible and match the copy contract",
+			"Character defaults must match the copy contract",
 		);
 		for (const [label, value] of [
 			["前文句数", "0"],
 			["后文句数", "1"],
 		]) {
 			check(label && value, "Budget fixture must have label and value");
-			const input = findInput(label);
-			h.inputValue(input, value);
+			h.inputValue(findInput(label), value);
 			await new Promise((resolve) => setTimeout(resolve, 0));
-			input.dispatchEvent(
-				new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
-			);
-			await h.until(
-				() =>
-					JSON.parse(localStorage.getItem(preferenceKey) ?? "{}")[
-						label === "前文句数" ? "before_sentences" : "after_sentences"
-					] === Number(value),
-				`${label} must persist after Enter`,
-			);
 		}
 		findInput("附带出处").click();
 		await h.until(
+			() => !findInput("附带出处").checked,
+			"Source draft must update",
+		);
+		check(
+			settingsWrites.length === 0,
+			"Editing preferences must not auto-save",
+		);
+		await select();
+		button("带上下文复制").click();
+		check(
+			copies.at(-1) === defaultCopy,
+			"Unsaved drafts must not change copying",
+		);
+		nextSaveStatus = 500;
+		button("保存复制设置").click();
+		await h.until(
+			() => !!h.container.textContent?.includes("保存失败，修改已保留"),
+			"Failed save must report retained draft",
+		);
+		check(
+			findInput("前文句数").value === "0" &&
+				findInput("后文句数").value === "1" &&
+				!findInput("附带出处").checked,
+			"Failed save must retain all draft fields",
+		);
+		check(stored.revision === 0, "Failed save must not change database state");
+		stored = { ...defaultContextCopySettings, revision: 1 };
+		nextSaveStatus = 409;
+		button("保存复制设置").click();
+		await h.until(
+			() => !!h.container.textContent?.includes("复制设置已在其他页面更新"),
+			"Conflict must explain the need to read again",
+		);
+		check(findInput("后文句数").value === "1", "Conflict must retain draft");
+		button("重新读取并保留修改").click();
+		await h.until(
 			() =>
-				JSON.parse(localStorage.getItem(preferenceKey) ?? "{}")
-					.include_source === false,
-			"Source preference must persist",
+				readCount >= 2 &&
+				!h.container.textContent?.includes("重新读取后再保存"),
+			"Conflict recovery must refresh revision without discarding draft",
+		);
+		check(
+			findInput("前文句数").value === "0" &&
+				findInput("后文句数").value === "1",
+			"Reload must retain chosen draft",
+		);
+		button("保存复制设置").click();
+		await h.until(
+			() =>
+				stored.revision === 2 &&
+				!!h.container.textContent?.includes("复制设置已保存"),
+			"Explicit save must commit all preferences using refreshed revision",
+		);
+		check(
+			stored.before_sentences === 0 &&
+				stored.after_sentences === 1 &&
+				!stored.include_source,
+			"Database must store the complete configured preference set",
+		);
+		button("恢复复制默认值").click();
+		await h.until(
+			() =>
+				findInput("前文句数").value === "3" &&
+				findInput("后文句数").value === "0",
+			"Restore defaults must update draft",
+		);
+		check(
+			stored.before_sentences === 0 &&
+				stored.revision === 2 &&
+				Number(settingsWrites.length) === 3,
+			"Restore defaults must wait for explicit save",
+		);
+		check(
+			localStorage.getItem(preferenceKey) === legacyPreferences,
+			"Old browser copy preferences must remain ignored and untouched",
 		);
 		button("关闭阅读设置").click();
 		await select();
@@ -391,7 +507,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		button("带上下文复制").click();
 		check(
 			copies.at(-1) === configuredCopy,
-			"Copy preferences must survive unmount/remount",
+			"Saved database copy preferences must survive unmount/remount",
 		);
 		await h.until(success, "Remounted successful copy must show feedback");
 		write = async () => {
@@ -461,13 +577,35 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 				!h.container.querySelector('[aria-label="选区操作"]'),
 			"Late copy result after leaving reader must not restore UI",
 		);
+		failRead = true;
+		await open();
+		button("阅读设置").click();
+		await h.until(
+			() => !!h.container.textContent?.includes("读取复制设置失败"),
+			"Failed settings read must be visible while original remains readable",
+		);
+		check(
+			!!h.container.querySelector("iframe.material-part"),
+			"Failed settings read must not block original reading",
+		);
+		failRead = false;
+		button("重新读取复制设置").click();
+		await h.until(
+			() => !!h.container.querySelector(".reader-copy-settings input"),
+			"Read retry must recover saved preferences",
+		);
+		check(
+			findInput("前文句数").value === "0" &&
+				findInput("后文句数").value === "1",
+			"Read retry must use database preferences",
+		);
 		check(
 			writes.every((request) =>
 				/\/(opened|readings\/prepare|reading-position)$/.test(request),
 			),
 			"Copy must only permit normal reader lifecycle writes",
 		);
-		return `context copy: ${direction}/${window.innerWidth}px; real MaterialReader + native iframe selection; defaults/ruby/ordinary copy, settings persistence, denied/manual clipboard, stale selection/unmount callbacks, toolbar bounds; clipboard API substitute (not system clipboard); lifecycle writes ${writes.length}`;
+		return `context copy: ${direction}/${window.innerWidth}px; real MaterialReader + native iframe selection; defaults/ruby/ordinary copy, database save/remount, ignored legacy storage, delayed/failed reads, failed/conflicting saves with retained drafts, defaults draft, denied/manual clipboard, stale selection/unmount callbacks, toolbar bounds; clipboard API substitute (not system clipboard); lifecycle writes ${writes.length}`;
 	} finally {
 		if (!preview) dispose?.();
 		if (clipboardDescriptor)

@@ -1,11 +1,9 @@
+import type { ContextCopyPreferences } from "../settings/context-copy-api.ts";
 import type { Chapter } from "./api.ts";
-import type { PreferenceStorage } from "./preferences.ts";
 import type { MaterialProvenance } from "./study-api.ts";
-import { type ContextBudget, prefillContext } from "./study-context.ts";
+import { prefillContext } from "./study-context.ts";
 
-export type ContextCopyPreferences = Omit<ContextBudget, "enabled"> & {
-	include_source: boolean;
-};
+export type { ContextCopyPreferences } from "../settings/context-copy-api.ts";
 
 export const DEFAULT_CONTEXT_COPY: ContextCopyPreferences = {
 	before_sentences: 3,
@@ -14,83 +12,6 @@ export const DEFAULT_CONTEXT_COPY: ContextCopyPreferences = {
 	after_characters: 200,
 	include_source: true,
 };
-export const CONTEXT_COPY_KEY = "folio-reader-context-copy-v1";
-
-function storage(): PreferenceStorage | undefined {
-	try {
-		return globalThis.localStorage;
-	} catch {
-		return undefined;
-	}
-}
-
-function budgetValue(value: unknown, fallback: number): number {
-	return typeof value === "number" &&
-		Number.isInteger(value) &&
-		value >= 0 &&
-		value <= 100000
-		? value
-		: fallback;
-}
-
-export function normalizeContextCopyPreferences(
-	input: unknown,
-): ContextCopyPreferences {
-	const value =
-		input && typeof input === "object" && !Array.isArray(input)
-			? (input as Record<string, unknown>)
-			: {};
-	return {
-		before_sentences: budgetValue(
-			value.before_sentences,
-			DEFAULT_CONTEXT_COPY.before_sentences,
-		),
-		after_sentences: budgetValue(
-			value.after_sentences,
-			DEFAULT_CONTEXT_COPY.after_sentences,
-		),
-		before_characters: budgetValue(
-			value.before_characters,
-			DEFAULT_CONTEXT_COPY.before_characters,
-		),
-		after_characters: budgetValue(
-			value.after_characters,
-			DEFAULT_CONTEXT_COPY.after_characters,
-		),
-		include_source:
-			typeof value.include_source === "boolean"
-				? value.include_source
-				: DEFAULT_CONTEXT_COPY.include_source,
-	};
-}
-
-export function readContextCopyPreferences(
-	store = storage(),
-): ContextCopyPreferences {
-	try {
-		return normalizeContextCopyPreferences(
-			JSON.parse(store?.getItem(CONTEXT_COPY_KEY) ?? "null"),
-		);
-	} catch {
-		return { ...DEFAULT_CONTEXT_COPY };
-	}
-}
-
-export function writeContextCopyPreferences(
-	value: ContextCopyPreferences,
-	store = storage(),
-): boolean {
-	try {
-		if (!store) return false;
-		store.setItem(
-			CONTEXT_COPY_KEY,
-			JSON.stringify(normalizeContextCopyPreferences(value)),
-		);
-		return true;
-	} catch {
-		return false;
-	}
-}
 
 /** Verify the exact target and build a local copy without saving learning content. */
 export function buildContextCopy(

@@ -111,7 +111,9 @@ PY
 just migrate
 ```
 
-当前仅有初始基线 `0001_schema_baseline`，直接建立完整 28 表；原有开发期六个 revision 已合并，不再支持逐步升级或降级。新编号与旧 `0001_initial` 不同，避免旧库被误认为已达到当前结构。`just dev` 和 `just start` 仍先执行 `just migrate`，不自动删除数据库或执行 stamp。
+当前迁移链为 `0001_schema_baseline` → `0002_context_copy_settings`：初始基线建立原有 28 表，第二份一次性脚本新增复制设置表，最终共 29 张业务表。已有 `0001_schema_baseline` 库只新增该表，原有材料、学习记录与其他设置保持；重复运行不会重建表或重置复制配置。旧浏览器复制偏好不导入，未保存过数据库配置时使用默认值。
+
+按前文停止服务并完成一致性备份后，运行 `just migrate` 升级；`just dev` 和 `just start` 也会先执行相同迁移。无需额外手工 SQL 或 stamp。原有开发期六个 revision 已合并，不再支持从它们逐步升级；基线编号与旧 `0001_initial` 不同，避免旧库被误认为已达到当前结构。
 
 从本基线开始保存需保留的数据后，备份并运行相同命令应用后续增量迁移。显式降级到 base 会删除全部应用表；迁移事务、外键校验及边界见[架构](ARCHITECTURE.md#3-领域模型)，本轮结构等价与验证见[迁移验收](handovers/archived/DATABASE_MIGRATION_ACCEPTANCE.md)。
 

@@ -5,18 +5,18 @@
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
 
-2026-10-29 实际阅读评测补充：以 `main 29ce249` 为起点，带上下文复制已提交至 `codex/reader-context-copy`，尚未合入 main。功能实现通过工程检查、定向浏览器及独立审查；格式示例默认折叠的最终调整通过常规工程检查，按用户要求未重跑浏览器。书签与扩展搜索按[三阶段计划](reading-practice/PLAN.md)后续实施。
+2026-10-29 实际阅读评测补充：带上下文复制首版 `d125fee` 与数据库持久化调整 `14fb998` 已合入本地 main，现用库经一致性备份后升级至 `0002_context_copy_settings`，原有数据与凭据保持。首版浏览器与折叠调整的验证范围见[原验收](reading-practice/CONTEXT_COPY_ACCEPTANCE.md)；数据库调整通过常规工程检查及独立审查，实际升级与校验见[数据库验收](reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md#现用库升级与主分支集成)，按用户要求未重跑浏览器。书签与扩展搜索按[三阶段计划](reading-practice/PLAN.md)后续实施。
 
 ## 1. 当前实现、差额与验收依据
 
 | 能力 | 状态 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- | --- |
-| 带上下文复制 | 已提交至功能分支，工程检查通过；浏览器与审查范围见验收 | 选区直接复制目标、语境及可选出处，独立浏览器偏好与默认折叠的格式预览；复用既有取文，不创建学习内容；系统剪贴板回读与实体触屏未验证 | [验收](reading-practice/CONTEXT_COPY_ACCEPTANCE.md) |
+| 带上下文复制 | 已合入本地 main，现用库升级与只读配置核验通过 | 选区直接复制目标、语境及可选出处；复制默认值独立保存于数据库，旧浏览器值忽略；显式保存与冲突保稿，格式预览默认折叠；复用既有取文，不创建学习内容 | [首版验收](reading-practice/CONTEXT_COPY_ACCEPTANCE.md)、[数据库持久化验收](reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md) |
 | 位置书签与扩展搜索 | 已确认范围，未实现 | 位置书签及普通阅读备注独立于学习资料；书内搜索后续扩展片段、译文和书签 | [实施计划](reading-practice/PLAN.md)、[PRD 4.9](../PRD.md#49-阅读摘录书签与记录检索) |
 | 测试清理与入口回归 | 已提交，完整工程检查、浏览器矩阵及独立复审通过 | 清理旧分支与重复断言，保留业务保护；Reader 恢复默认、迟到注音与缓存回收通过真实入口回归，浏览器筛选空集明确失败 | [验收与变异检查](TEST_CLEANUP_ACCEPTANCE.md) |
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定，共用原文保护规则 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](archived/text-study/A2_ACCEPTANCE.md)、[统一Agent验收](AGENT_CONTEXT_ACCEPTANCE.md) |
 | 路由代码按需加载 | 已提交，主分支整合经工程检查、73 组完整浏览器回归及独立复核通过 | 默认素材库同步加载，其他页面按路由加载；阅读与片段路径共用稳定会话宿主，保留真实 URL、iframe 身份、精确返回与草稿；尾斜杠直达及地址切换有回归覆盖。原冷加载比较绑定当时版本，整合后未重测 | [路由加载验收与整合复核](archived/ROUTE_LOADING_ACCEPTANCE.md#主分支整合复核2026-10-27) |
-| 数据库迁移基线 | 已提交，工程、实际启动与独立审查通过 | 六个开发迁移收敛为固定 `0001_schema_baseline`，28 表结构、默认值及约束不变；外键全程开启，保留事务回滚、校验与后续增量入口；本机库备份后显式对齐并保留设置与所有应用数据 | [架构](../ARCHITECTURE.md#3-领域模型)、[升级边界](../UPGRADING.md#当前迁移基线)、[验收](archived/DATABASE_MIGRATION_ACCEPTANCE.md) |
+| 数据库迁移基线 | 初始基线与复制配置增量脚本已合入，现用库升级完成 | `0001_schema_baseline` 保留原有 28 表；`0002_context_copy_settings` 一次性新增复制设置表，空库、旧数据保留、重复升级与回滚均有验证；现用库完整性、外键、既有表内容与凭据校验通过 | [架构](../ARCHITECTURE.md#3-领域模型)、[升级边界](../UPGRADING.md#当前迁移基线)、[基线历史验收](archived/DATABASE_MIGRATION_ACCEPTANCE.md)、[复制配置验收](reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md) |
 | 设置与模型接入 | 已提交、工程验收通过；模型设置二级切换用户已基本测试 | 学习背景、讲解预设、Provider／模型／用途默认值、模型发现及普通／流式文本验证；模型与服务分为默认模型与服务管理，保留分组保存、草稿保护和验证记录筛选 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置调整验收](archived/settings-refresh/ACCEPTANCE.md)、[二级切换验证](archived/SETTINGS_MODELS_ACCEPTANCE.md) |
 | 阅读翻译与设备朗读 | 已提交，基础能力经全量浏览器验证；译文标题栏工具与选区拖动经工程、定向浏览器及只读复审通过 | 选区翻译、持久找回、原子采用、版本冲突保护；本章记录分片段／翻译，同出处成功译文归并标记、重叠入口合并，后台完成自动刷新；译文卡标题栏重译／停止、旧文保留与相邻版本回看，宽屏拖动、窄屏停靠；设备支持时可暂停／继续，结束后原条保留并切换重播，声音语速就地调整；真实模型质量与设备声音待实测，外部 TTS 后置 | [历史方案](archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md)、[验收与限制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)、[标题栏与拖动验收](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#选区译文标题栏工具与拖动2026-10-24)、[播放器联合验收](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#提交前修复与联合验收2026-10-24) |
 | 正文划选保存译文与临时定位高亮 | 已提交，工程、联合浏览器验收及独立复核通过 | 翻译详情移除新建及独立采用入口；正文草稿按确切位置及整体边缘空白规则匹配成功译文，一次预填并保护编辑／清空与冻结提交；原子创建采用收据；搜索及返回原处临时强调共用生命周期与淡出 | [联合验收与限制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#本章记录与学习片段联合验收2026-10-24)、[PRD 4.8](../PRD.md#48-阅读翻译与设备朗读) |

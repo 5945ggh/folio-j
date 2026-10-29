@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, useRef } from "react";
 import type { Settings } from "./api";
-import type { ContextCopyPreferences } from "./context-copy";
 import { restoreReaderPanelFocus } from "./motion";
 import type { BookUiPreferences, ReaderUiPreferences } from "./preferences";
 import { ReaderCopySettings } from "./ReaderCopySettings";
@@ -74,8 +73,6 @@ export function ReaderSettings({
 	settings,
 	ui,
 	bookUi,
-	copyPreferences,
-	onCopyPreferences,
 	onSettings,
 	onUi,
 	onBookUi,
@@ -87,8 +84,6 @@ export function ReaderSettings({
 	settings: Settings;
 	ui: ReaderUiPreferences;
 	bookUi: BookUiPreferences;
-	copyPreferences: ContextCopyPreferences;
-	onCopyPreferences: (v: ContextCopyPreferences) => void;
 	onSettings: (v: Settings) => void;
 	onUi: (v: ReaderUiPreferences) => void;
 	onBookUi: (v: BookUiPreferences) => void;
@@ -330,13 +325,11 @@ export function ReaderSettings({
 					唤出。方向键、空格和滚动不会唤出工具。
 				</p>
 			</fieldset>
-			<ReaderCopySettings
-				preferences={copyPreferences}
-				onChange={onCopyPreferences}
-			/>
+			<ReaderCopySettings />
 			<button type="button" className="reader-reset" onClick={onReset}>
-				恢复阅读设置默认值
+				恢复阅读外观默认值
 			</button>
+			<p>恢复本设备与本书的阅读外观。</p>
 		</ReaderPanel>
 	);
 }
