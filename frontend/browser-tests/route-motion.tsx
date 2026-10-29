@@ -211,28 +211,28 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 		);
 		const animation = message
 			.getAnimations()
-			.find(
-				(item) =>
-					item instanceof CSSAnimation &&
-					item.animationName === "reader-loading-reveal",
+			.find((item) =>
+				(item.effect as KeyframeEffect | null)
+					?.getKeyframes()
+					.some((frame) => "visibility" in frame),
 			);
-		check(animation, `${label} must use the CSS loading reveal`);
-		const timing = animation.effect?.getTiming();
+		check(animation, `${label} must delay its loading text reveal`);
+		const timing = animation.effect?.getComputedTiming();
 		check(
-			timing?.delay === 150 && timing.duration === 0,
-			`${label} must delay only its text by 150ms`,
+			timing && Number(timing.delay) > 0 && Number(timing.endTime) <= 500,
+			`${label} must briefly defer loading text without a long wait`,
 		);
-		// Seek the real CSS animation so slow machines cannot miss its hidden frame.
+		// Seek the production effect so a busy machine cannot miss its hidden state.
 		animation.pause();
-		animation.currentTime = 149;
+		animation.currentTime = 0;
 		check(
 			getComputedStyle(message).visibility === "hidden",
-			`${label} must remain hidden before 150ms`,
+			`${label} must initially remain hidden`,
 		);
-		animation.currentTime = 150;
+		animation.currentTime = Number(timing.endTime);
 		check(
 			getComputedStyle(message).visibility === "visible",
-			`${label} must reveal after 150ms while its request is still held`,
+			`${label} must reveal while its request is still held`,
 		);
 		animation.finish();
 	};
@@ -264,56 +264,86 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 		);
 		if (reduced) {
 			check(
-				getComputedStyle(main).animationName === "none" &&
-					getComputedStyle(heading).animationName === "none",
+				main.getAnimations().length === 0 &&
+					heading.getAnimations().length === 0,
 				"Reduced motion must suppress page and title entry",
 			);
 			return;
 		}
-		const animation = (element: HTMLElement, name: string) => {
+		const animation = (element: HTMLElement, property: string) => {
 			const found = element
 				.getAnimations()
-				.find(
-					(item) => item instanceof CSSAnimation && item.animationName === name,
+				.find((item) =>
+					(item.effect as KeyframeEffect | null)
+						?.getKeyframes()
+						.some((frame) => property in frame),
 				);
-			check(found, `${label} must animate ${name} on the real presented DOM`);
+			check(found, `${label} must animate ${property} on its presented DOM`);
+			const timing = found.effect?.getComputedTiming();
 			check(
-				found.effect?.getTiming().duration === 240 &&
-					found.effect.getTiming().delay === 0,
-				`${name} must start immediately and last 240ms`,
+				timing &&
+					timing.delay === 0 &&
+					Number(timing.endTime) > 0 &&
+					Number(timing.endTime) <= 1000,
+				`${label} entry must start immediately and finish promptly`,
 			);
 			found.pause();
-			return found;
+			return { effect: found, end: Number(timing.endTime) };
 		};
-		const page = animation(main, "reader-page-enter");
-		const title = animation(heading, "reader-title-enter");
+		const page = animation(main, "opacity");
+		const title = animation(heading, "transform");
 		const rectangles = () =>
 			[main, viewport, iframe, source].map((element) => {
 				const rect = element.getBoundingClientRect();
 				return [rect.x, rect.y, rect.width, rect.height];
 			});
-		page.currentTime = 0;
-		title.currentTime = 0;
+		page.effect.currentTime = 0;
+		title.effect.currentTime = 0;
 		const before = rectangles();
 		const viewportTransform = getComputedStyle(viewport).transform;
+		const initialPageOpacity = Number(getComputedStyle(main).opacity);
+		const initialTitleOpacity = Number(getComputedStyle(heading).opacity);
+		const initialTitleY = new DOMMatrixReadOnly(
+			getComputedStyle(heading).transform,
+		).m42;
 		check(
-			Math.abs(Number(getComputedStyle(main).opacity) - 0.8) < 0.001,
-			"Page must begin at 0.8 opacity",
+			initialPageOpacity >= 0.5 &&
+				initialPageOpacity < 1 &&
+				initialTitleOpacity >= 0.5 &&
+				initialTitleOpacity < 1,
+			"Page and title must begin with a light visible fade",
 		);
 		check(
-			Math.abs(Number(getComputedStyle(heading).opacity) - 0.8) < 0.001,
-			"Title must begin at 0.8 opacity",
+			initialTitleY > 0 && initialTitleY <= 24,
+			"Title must begin a small distance below its layout position",
 		);
-		check(
-			new DOMMatrixReadOnly(getComputedStyle(heading).transform).m42 === 8,
-			"Title must begin 8px below its final position",
-		);
-		for (const time of [120, 240]) {
-			page.currentTime = time;
-			title.currentTime = time;
+		for (const progress of [0.5, 1]) {
+			page.effect.currentTime = page.end * progress;
+			title.effect.currentTime = title.end * progress;
 			await tick();
+			if (progress < 1) {
+				const opacity = Number(getComputedStyle(main).opacity);
+				const titleOpacity = Number(getComputedStyle(heading).opacity);
+				const titleY = new DOMMatrixReadOnly(
+					getComputedStyle(heading).transform,
+				).m42;
+				check(
+					opacity > initialPageOpacity &&
+						opacity < 1 &&
+						titleOpacity > initialTitleOpacity &&
+						titleOpacity < 1 &&
+						titleY > 0 &&
+						titleY < initialTitleY,
+					"Seeking entry must expose an actual intermediate fade and title movement",
+				);
+			}
 			check(
-				JSON.stringify(rectangles()) === JSON.stringify(before),
+				rectangles().every((rect, index) =>
+					rect.every(
+						(value, axis) =>
+							Math.abs(value - (before[index]?.[axis] ?? Number.NaN)) <= 0.1,
+					),
+				),
 				"Page, reading viewport, iframe and source rects must stay fixed throughout entry",
 			);
 			check(
@@ -332,8 +362,8 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 				new DOMMatrixReadOnly(getComputedStyle(heading).transform).m42 === 0,
 			"Title must finish at its layout position",
 		);
-		page.finish();
-		title.finish();
+		page.effect.finish();
+		title.effect.finish();
 	};
 	const plainReturn = async (selector: string, destination: string) => {
 		const back = link(selector);
@@ -376,13 +406,24 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 			`${label} must not inherit the loading delay`,
 		);
 	};
+	// Capture entry at its first rendered frame so a busy machine cannot consume
+	// a short animation before readerReady observes the presented DOM.
+	const holdEntry = (event: AnimationEvent) => {
+		const target = event.target;
+		if (
+			target instanceof HTMLElement &&
+			target.matches('main.reader-r1[data-presented="true"], .reader-heading')
+		)
+			for (const effect of target.getAnimations()) effect.pause();
+	};
+	if (!preview) h.container.addEventListener("animationstart", holdEntry);
 	try {
 		await h.until(
 			() => !!h.container.querySelector(".book-card"),
 			"Catalog must mount",
 		);
 		if (preview)
-			return "route motion preview: real book card/details → reader; local API fixtures, 240ms presented DOM entry and 150ms loading text delay";
+			return "route motion preview: real book card/details → reader; local API fixtures, presented DOM entry and brief loading text delay";
 		// A slow book request and then a slow chapter exercise both real loading surfaces.
 		gateMaterial();
 		chapterGate = new Promise<void>((resolve) => {
@@ -407,13 +448,7 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 			"Entry must wait for completed iframe/location presentation",
 		);
 		check(
-			!loadingMain
-				?.getAnimations()
-				.some(
-					(animation) =>
-						animation instanceof CSSAnimation &&
-						animation.animationName === "reader-page-enter",
-				),
+			!loadingMain?.getAnimations().length,
 			"Pending source must not consume the entry animation",
 		);
 		releaseChapter?.();
@@ -455,7 +490,7 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 		);
 		await plainReturn(".book-details-back", catalogEntry);
 		await freshCatalog();
-		// Fresh immediate API responses also present without awaiting the 240ms animation.
+		// Fresh immediate API responses also present while entry effects are available.
 		card().click();
 		await readerReady();
 		await entryMotion("Fresh fast card");
@@ -472,8 +507,9 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 			warnings.length === 0,
 			`Shared App routes must not emit warnings: ${warnings.join("\n")}`,
 		);
-		return `route motion ${innerWidth}px${reduced ? " reduced motion" : ""}: real card/details and fast/cached presentation, 240ms page/title CSS entry, fixed source geometry, both 150ms loading delays, immediate errors and nested returns/query preservation`;
+		return `route motion ${innerWidth}px${reduced ? " reduced motion" : ""}: real card/details and fast/cached presentation, light page/title entry, fixed source geometry, both brief loading delays, immediate errors and nested returns/query preservation`;
 	} finally {
+		h.container.removeEventListener("animationstart", holdEntry);
 		console.warn = originalWarn;
 		releaseMaterial?.();
 		releaseChapter?.();

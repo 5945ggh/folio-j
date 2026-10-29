@@ -15,10 +15,6 @@ source = source.replace(
 	'const frontend = fileURLToPath(new URL("..", import.meta.url));',
 	`const frontend = ${JSON.stringify(frontend)};`,
 );
-source = source.replace(
-	"root: frontend,",
-	'root: frontend, cacheDir: path.join(profile, "vite-cache"),',
-);
 if (baseline) {
 	const modules = [
 		"MaterialReader.tsx",

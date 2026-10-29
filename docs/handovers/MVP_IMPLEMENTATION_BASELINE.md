@@ -9,6 +9,7 @@
 
 | 能力 | 状态 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- | --- |
+| 测试清理与入口回归 | 已提交，完整工程检查、浏览器矩阵及独立复审通过 | 清理旧分支与重复断言，保留业务保护；Reader 恢复默认、迟到注音与缓存回收通过真实入口回归，浏览器筛选空集明确失败 | [验收与变异检查](TEST_CLEANUP_ACCEPTANCE.md) |
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定，共用原文保护规则 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](archived/text-study/A2_ACCEPTANCE.md)、[统一Agent验收](AGENT_CONTEXT_ACCEPTANCE.md) |
 | 路由代码按需加载 | 已提交，主分支整合经工程检查、73 组完整浏览器回归及独立复核通过 | 默认素材库同步加载，其他页面按路由加载；阅读与片段路径共用稳定会话宿主，保留真实 URL、iframe 身份、精确返回与草稿；尾斜杠直达及地址切换有回归覆盖。原冷加载比较绑定当时版本，整合后未重测 | [路由加载验收与整合复核](archived/ROUTE_LOADING_ACCEPTANCE.md#主分支整合复核2026-10-27) |
 | 数据库迁移基线 | 已提交，工程、实际启动与独立审查通过 | 六个开发迁移收敛为固定 `0001_schema_baseline`，28 表结构、默认值及约束不变；外键全程开启，保留事务回滚、校验与后续增量入口；本机库备份后显式对齐并保留设置与所有应用数据 | [架构](../ARCHITECTURE.md#3-领域模型)、[升级边界](../UPGRADING.md#当前迁移基线)、[验收](archived/DATABASE_MIGRATION_ACCEPTANCE.md) |

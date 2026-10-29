@@ -9,7 +9,7 @@
 		"preview": "vite preview --host 127.0.0.1",
 		"lint": "biome check .",
 		"typecheck": "tsc -b --noEmit",
-		"test": "node --test src/settings/*.test.ts src/chat/*.test.ts src/analysis/*.test.ts src/materials/*.test.ts src/catalog/*.test.ts src/translation/*.test.ts src/speech/*.test.ts src/segments/*.test.ts src/navigation/*.test.ts src/theme/*.test.ts",
+		"test": "node --test scripts/*.test.mjs src/settings/*.test.ts src/chat/*.test.ts src/analysis/*.test.ts src/materials/*.test.ts src/catalog/*.test.ts src/translation/*.test.ts src/speech/*.test.ts src/segments/*.test.ts src/navigation/*.test.ts src/theme/*.test.ts",
 		"test:browser": "node scripts/test-browser.mjs",
 		"format": "biome format --write .",
 		"gen-api": "openapi-typescript ../backend/openapi.json -o src/api/schema.d.ts"

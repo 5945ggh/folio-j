@@ -40,6 +40,34 @@ export function readerAnimations(
 	];
 }
 
+/** Pause real production effects and seek their common elapsed clock, without rAF sampling. */
+export function pauseReaderAnimations(
+	container: HTMLElement,
+	documents: Document[],
+) {
+	const effects = readerAnimations(container, documents);
+	const clocks = effects.map((effect) => Number(effect.currentTime ?? 0));
+	const ends = effects.map((effect) =>
+		Number(effect.effect?.getComputedTiming().endTime ?? 0),
+	);
+	const reference = clocks[0] ?? 0;
+	for (const effect of effects) effect.pause();
+	return {
+		effects,
+		clockSpread: effects.length ? Math.max(...clocks) - Math.min(...clocks) : 0,
+		// A shared duration is part of the synchronization contract; values may change.
+		durationSpread: effects.length ? Math.max(...ends) - Math.min(...ends) : 0,
+		seek(progress: number) {
+			const time = (ends[0] ?? 0) * progress;
+			for (const [index, effect] of effects.entries())
+				effect.currentTime = time + (clocks[index] ?? reference) - reference;
+		},
+		resume() {
+			for (const effect of effects) effect.play();
+		},
+	};
+}
+
 export async function settleInline(
 	h: BrowserHarness,
 	doc: Document,

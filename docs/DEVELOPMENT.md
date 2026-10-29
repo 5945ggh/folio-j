@@ -42,6 +42,12 @@ just check-assets # 验证保留的实验和静态原型
 
 后端 schema 变化后运行 `just gen-api`，将 OpenAPI 与前端生成类型一并提交；不要手改生成类型。工程约束、测试规则及提交要求由 [AGENTS.md](../AGENTS.md) 维护。
 
+## 浏览器定向回归
+
+`BROWSER_TEST_SUITE=reader-layout-switch just test-browser` 运行该组的所有窗口与方向组合。`BROWSER_TEST_QUERY='?direction=vertical-rl&suite=reader-session' just test-browser` 按完整查询选择场景，参数顺序和空值标记的写法不影响匹配。两个筛选同时设置时取交集；没有匹配场景会在启动 Chrome 前失败。完成后输出实际通过场数。
+
+每次运行使用独立的 Chrome profile 与 Vite 缓存。设置 `BROWSER_TEST_SCREENSHOT_DIR=/绝对路径` 保存场景截图，文件名包含窗口宽高和完整查询身份，避免方向、主题或其他标记不同的场景相互覆盖。历史 `BROWSER_TEST_BASELINE` 仅用于下节的 Reader 测量，不用于普通回归或分享预览。
+
 ## 阅读会话性能测量
 
 `node frontend/scripts/measure-reader.mjs --baseline` 在隔离 Vite 中读取本轮历史基线的阅读器模块；不切换工作树、不修改磁盘上的生产代码。省略 `--baseline` 测量当前实现。设置 `READER_MEASUREMENT_RUNS=3` 重复三次，默认覆盖 1280 和 390 宽度；通过 `BROWSER_TEST_QUERY='?suite=reader-session&direction=vertical-rl'` 可选择竖排。

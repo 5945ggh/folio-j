@@ -71,29 +71,6 @@ test("late frame readiness during suspension waits for a visible surface before 
 	assert.equal(restored, 1);
 });
 
-test("an inactive book cache may be collected while its drained reader queue still permits reuse", async () => {
-	const { QueryClient } = await import("@tanstack/react-query");
-	const { PositionQueue } = await import("./position.ts");
-	const client = new QueryClient({
-		defaultOptions: { queries: { gcTime: 0 } },
-	});
-	const queue = new PositionQueue(
-		3,
-		async (_position: number, revision) => revision + 1,
-		() => {},
-	);
-	queue.enqueue(350);
-	await queue.flush();
-	client.setQueryData(["materials", "book"], {
-		reading_position: { revision: queue.revision },
-	});
-	await new Promise<void>((resolve) => setTimeout(resolve, 10));
-	assert.equal(client.getQueryData(["materials", "book"]), undefined);
-	assert.equal(canResumeReader(identity, identity, queue.revision, 4), true);
-	assert.equal(canResumeReader(identity, identity, queue.revision, 5), false);
-	client.clear();
-});
-
 test("a stopped writer requires a new session even when its CAS revision still matches", async () => {
 	const { PositionQueue } = await import("./position.ts");
 	let healthy = true;

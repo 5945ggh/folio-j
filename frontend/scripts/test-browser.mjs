@@ -6,59 +6,11 @@ import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
-const chrome =
-	process.env.CHROME_BIN ??
-	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-await access(chrome).catch(() => {
-	throw new Error(
-		`Chrome unavailable at ${chrome}; set CHROME_BIN to a Chrome executable`,
-	);
-});
-const profile = await mkdtemp(path.join(tmpdir(), "folio-j-browser-tests-"));
-let server;
-try {
-	server = await createServer({
-		root: frontend,
-		configFile: path.join(frontend, "vite.config.ts"),
-		server: {
-			host: "127.0.0.1",
-			port: 0,
-			strictPort: false,
-			proxy: {},
-			hmr: false,
-			watch: null,
-		},
-		plugins: [
-			{
-				name: "count-chat-markdown-renders",
-				enforce: "pre",
-				transform(source, id) {
-					if (!id.endsWith("/src/analysis/Markdown.tsx")) return;
-					return source.replace(
-						"\treturn (",
-						`globalThis.__chatMarkdownRenders ??= {}; globalThis.__chatMarkdownRenders[text] = (globalThis.__chatMarkdownRenders[text] ?? 0) + 1;\n\treturn (`,
-					);
-				},
-			},
-			{
-				name: "block-unmocked-test-api",
-				configureServer(vite) {
-					vite.middlewares.use((request, response, next) => {
-						if (!request.url?.startsWith("/api/")) return next();
-						response.statusCode = 500;
-						response.end("Browser tests must mock all API requests");
-					});
-				},
-			},
-		],
-	});
-	await server.listen();
-	const address = server.httpServer?.address();
-	if (!address || typeof address === "string")
-		throw new Error("Vite did not select a port");
-	const url = `http://127.0.0.1:${address.port}/browser-tests/`;
-	console.log(`Browser regression page: ${url}`);
-	for (const [width, height, query] of [
+const { selectBrowserScenarios, browserScreenshotName } = await import(
+	path.join(frontend, "scripts/browser-test-plan.mjs")
+);
+const scenarios = selectBrowserScenarios(
+	[
 		[1280, 900, "?suite=app-theme&system=light"],
 		[1280, 900, "?suite=app-theme&system=dark"],
 		[390, 900, "?suite=app-theme&system=light"],
@@ -94,6 +46,7 @@ try {
 		[1280, 900, "?suite=reader-images&reduced-motion"],
 		[390, 900, "?suite=reader-session"],
 		[1280, 900, "?suite=reader-session&direction=vertical-rl"],
+		[1280, 900, "?suite=reader-clipboard"],
 		[600, 900, ""],
 		[1280, 900, "?suite=explanation"],
 		[390, 900, "?suite=explanation"],
@@ -152,17 +105,82 @@ try {
 		[1280, 900, "?suite=theme&system=dark"],
 		[320, 900, "?suite=theme&system=light"],
 		[320, 900, "?suite=theme&system=dark"],
-	].filter(
-		([, , query]) =>
-			!process.env.BROWSER_TEST_SUITE ||
-			new URLSearchParams(query).get("suite") ===
-				process.env.BROWSER_TEST_SUITE,
-	)) {
-		if (
-			process.env.BROWSER_TEST_QUERY &&
-			query !== process.env.BROWSER_TEST_QUERY
-		)
-			continue;
+	],
+	process.env,
+);
+const chrome =
+	process.env.CHROME_BIN ??
+	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+await access(chrome).catch(() => {
+	throw new Error(
+		`Chrome unavailable at ${chrome}; set CHROME_BIN to a Chrome executable`,
+	);
+});
+const profile = await mkdtemp(path.join(tmpdir(), "folio-j-browser-tests-"));
+let server;
+try {
+	server = await createServer({
+		root: frontend,
+		cacheDir: path.join(profile, "vite-cache"),
+		// The test-only virtual import must be prebundled before the page mounts.
+		optimizeDeps: { include: ["react-markdown"] },
+		configFile: path.join(frontend, "vite.config.ts"),
+		server: {
+			host: "127.0.0.1",
+			port: 0,
+			strictPort: false,
+			proxy: {},
+			hmr: false,
+			watch: null,
+		},
+		plugins: [
+			{
+				name: "count-chat-markdown-parses",
+				enforce: "pre",
+				resolveId(source, importer) {
+					if (
+						source === "react-markdown" &&
+						importer?.split("?")[0].endsWith("/src/analysis/Markdown.tsx")
+					)
+						return "\0browser-test-markdown";
+				},
+				load(id) {
+					if (id !== "\0browser-test-markdown") return;
+					// Observe actual Markdown processing through its plugin interface.
+					return `import ReactMarkdown from "react-markdown";
+import { createElement } from "react";
+function countParse() {
+  return (_tree, file) => {
+    const text = String(file.value);
+    globalThis.__chatMarkdownParses ??= {};
+    globalThis.__chatMarkdownParses[text] = (globalThis.__chatMarkdownParses[text] ?? 0) + 1;
+  };
+}
+export default function ObservedMarkdown(props) {
+  return createElement(ReactMarkdown, {...props, remarkPlugins: [countParse, ...(props.remarkPlugins ?? [])]});
+}`;
+				},
+			},
+			{
+				name: "block-unmocked-test-api",
+				configureServer(vite) {
+					vite.middlewares.use((request, response, next) => {
+						if (!request.url?.startsWith("/api/")) return next();
+						response.statusCode = 500;
+						response.end("Browser tests must mock all API requests");
+					});
+				},
+			},
+		],
+	});
+	await server.listen();
+	const address = server.httpServer?.address();
+	if (!address || typeof address === "string")
+		throw new Error("Vite did not select a port");
+	const url = `http://127.0.0.1:${address.port}/browser-tests/`;
+	console.log(`Browser regression page: ${url}`);
+	let completed = 0;
+	for (const [width, height, query] of scenarios) {
 		let testQuery = process.env.BROWSER_TEST_BASELINE
 			? `${query}&baseline`
 			: query;
@@ -178,6 +196,10 @@ try {
 		} else if (process.env.BROWSER_TEST_SCREENSHOT_DIR) {
 			testQuery += "&capture";
 		}
+		const scene = `${width}x${height}${testQuery}`;
+		console.log(
+			`Browser scenario ${completed + 1}/${scenarios.length}: ${scene}`,
+		);
 		const browser = spawn(
 			chrome,
 			[
@@ -199,9 +221,25 @@ try {
 		);
 		let serial = 0;
 		let incoming = "";
+		let stderr = "";
+		let lastMethod = "launch";
+		let lastPageState;
+		let stoppedError;
+		const exceptions = [];
 		const pending = new Map();
+		const rejectPending = (error) => {
+			stoppedError = error;
+			for (const waiter of pending.values()) waiter.reject(error);
+			pending.clear();
+		};
+		const closed = new Promise((resolve) => browser.once("close", resolve));
+		browser.stderr.on("data", (chunk) => {
+			stderr = (stderr + chunk.toString()).slice(-4000);
+		});
 		const command = (method, params = {}, sessionId) =>
 			new Promise((resolve, reject) => {
+				if (stoppedError) return reject(stoppedError);
+				lastMethod = method;
 				const id = ++serial;
 				pending.set(id, { resolve, reject });
 				browser.stdio[3].write(
@@ -214,6 +252,10 @@ try {
 			while (boundary !== -1) {
 				const message = JSON.parse(incoming.slice(0, boundary));
 				incoming = incoming.slice(boundary + 1);
+				if (message.method === "Runtime.exceptionThrown") {
+					exceptions.push(message.params.exceptionDetails);
+					if (exceptions.length > 3) exceptions.shift();
+				}
 				if (
 					message.method === "Runtime.bindingCalled" &&
 					message.params.name === "__dispatchBrowserPointer"
@@ -271,12 +313,19 @@ try {
 				boundary = incoming.indexOf("\0");
 			}
 		});
-		browser.on("error", (error) => {
-			for (const waiter of pending.values()) waiter.reject(error);
-		});
+		browser.on("error", rejectPending);
+		browser.stdio[3].on("error", rejectPending);
+		browser.on("exit", (code, signal) =>
+			rejectPending(
+				new Error(`Chrome exited (${code ?? signal}) in ${scene}: ${stderr}`),
+			),
+		);
 		const timeout = setTimeout(() => {
-			for (const waiter of pending.values())
-				waiter.reject(new Error("Browser regression timed out"));
+			rejectPending(
+				new Error(
+					`Browser regression timed out in ${scene}; last command ${lastMethod}; page ${JSON.stringify(lastPageState)}; exceptions ${JSON.stringify(exceptions)}\n${stderr}`,
+				),
+			);
 			browser.kill();
 		}, 60000);
 		try {
@@ -347,20 +396,27 @@ try {
 				},
 				sessionId,
 			);
-			await command("Page.navigate", { url: `${url}${testQuery}` }, sessionId);
+			const destination = `${url}${testQuery}`;
+			await command("Page.navigate", { url: destination }, sessionId);
 			// Use actual rendering and scroll/ResizeObserver delivery, not virtual time.
-			const evaluated = await command(
-				"Runtime.evaluate",
-				{
-					expression: `new Promise((resolve) => { const timer = setInterval(() => { const result = document.querySelector('#result'); if (result?.dataset.status) { clearInterval(timer); resolve({ status: result.dataset.status, text: result.textContent }); } }, 20); })`,
-					awaitPromise: true,
-					returnByValue: true,
-				},
-				sessionId,
-			);
-			if (evaluated.exceptionDetails)
-				throw new Error(JSON.stringify(evaluated.exceptionDetails));
-			const result = evaluated.result.value;
+			// Probe from Node so waiting cannot remain bound to a discarded document.
+			let result;
+			while (!result) {
+				const evaluated = await command(
+					"Runtime.evaluate",
+					{
+						expression: `({href: location.href, ready: document.readyState, status: document.querySelector('#result')?.dataset.status, text: document.querySelector('#result')?.textContent})`,
+						returnByValue: true,
+					},
+					sessionId,
+				);
+				if (evaluated.exceptionDetails)
+					throw new Error(JSON.stringify(evaluated.exceptionDetails));
+				lastPageState = evaluated.result.value;
+				if (lastPageState?.href === destination && lastPageState.status)
+					result = lastPageState;
+				else await new Promise((resolve) => setTimeout(resolve, 20));
+			}
 			if (result.status !== "passed") throw new Error(result.text);
 			if (process.env.BROWSER_TEST_SCREENSHOT_DIR) {
 				await command(
@@ -370,11 +426,7 @@ try {
 				);
 				const directory = path.resolve(process.env.BROWSER_TEST_SCREENSHOT_DIR);
 				await mkdir(directory, { recursive: true });
-				const parameters = new URLSearchParams(testQuery);
-				const scene = (parameters.get("path") ?? "appearance")
-					.replace(/[^a-z0-9]+/gi, "-")
-					.replace(/^-|-$/g, "");
-				const filename = `${parameters.get("suite") ?? "default"}-${width}-${parameters.get("system") ?? "system"}-${parameters.get("mode") ?? "auto"}-${scene}${parameters.get("panel") ? `-${parameters.get("panel")}` : ""}.png`;
+				const filename = browserScreenshotName(width, height, testQuery);
 				const captured = await command(
 					"Page.captureScreenshot",
 					{ format: "png", captureBeyondViewport: false },
@@ -385,12 +437,14 @@ try {
 				console.log(`Screenshot: ${destination}`);
 			}
 			console.log(result.text);
+			completed++;
 		} finally {
 			clearTimeout(timeout);
 			browser.kill();
-			await new Promise((resolve) => browser.once("close", resolve));
+			await closed;
 		}
 	}
+	console.log(`Browser scenarios passed: ${completed}/${scenarios.length}`);
 } finally {
 	await server?.close();
 	await rm(profile, { recursive: true, force: true });

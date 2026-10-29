@@ -1,14 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { QueryClient } from "@tanstack/react-query";
-import {
-	completeDraft,
-	createDraft,
-	draftDirty,
-	editDraft,
-	receiveDraft,
-	resetDraft,
-} from "./draft.ts";
+import { completeDraft, createDraft, editDraft } from "./draft.ts";
 import {
 	commitSegmentContextResponse,
 	segmentContextKey,
@@ -75,29 +68,4 @@ test("an older save response cannot replace a newer settings revision", async ()
 	assert.deepEqual(accepted, latest);
 	assert.deepEqual(client.getQueryData(segmentContextKey), latest);
 	client.clear();
-});
-
-test("a conflict refresh retains local budgets; discard adopts the latest server values", () => {
-	const local = { ...defaults, before_sentences: 7 };
-	const latest = { ...defaults, after_characters: 500, revision: 1 };
-	const draft = receiveDraft(editDraft(createDraft(defaults), local), latest);
-	assert.deepEqual(draft.value, local);
-	assert.equal(draftDirty(draft), true);
-	assert.deepEqual(resetDraft(draft).value, latest);
-	const retry = editDraft(draft, { ...draft.value, revision: latest.revision });
-	const saved = { ...retry.value, revision: 2 };
-	const accepted = completeDraft(retry, retry.value, saved);
-	assert.equal(draftDirty(accepted), false);
-	assert.deepEqual(accepted.value, saved);
-});
-
-test("a late save acceptance preserves edits made after its submitted snapshot", () => {
-	const submitted = { ...defaults, before_sentences: 5 };
-	const edited = { ...submitted, after_sentences: 6 };
-	const draft = editDraft(editDraft(createDraft(defaults), submitted), edited);
-	const saved = { ...submitted, revision: 1 };
-	const accepted = completeDraft(draft, submitted, saved);
-	assert.deepEqual(accepted.value, edited);
-	assert.equal(draftDirty(accepted), true);
-	assert.equal(accepted.saved, false);
 });

@@ -249,3 +249,21 @@ test("native bookmark gutters preserve the original reading bounds", () => {
 		{ left: 260, right: 1020, top: 82, bottom: 720, width: 760, height: 638 },
 	);
 });
+
+test("repeated same-size invalidation requires a fresh completed pass before sampling", () => {
+	const recovery = new ViewportRecovery();
+	const size = { width: 760, height: 800 };
+	recovery.finish(recovery.begin(size), size);
+	for (let attempt = 0; attempt < 2; attempt++) {
+		recovery.invalidate();
+		assert.equal(
+			recovery.observe(size, () => 42),
+			null,
+		);
+		assert.equal(recovery.finish(recovery.begin(size), size), true);
+		assert.equal(
+			recovery.observe(size, () => 42),
+			42,
+		);
+	}
+});

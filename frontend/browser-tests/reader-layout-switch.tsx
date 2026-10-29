@@ -83,6 +83,15 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 	const check: BrowserHarness["check"] = h.check;
 	localStorage.clear();
 	localStorage.setItem("folio-reader-ui-v1", JSON.stringify({ focus: false }));
+	localStorage.setItem(
+		`folio-reader-book-ui-v1:${materialId}:v1`,
+		JSON.stringify({ rubyScope: "all" }),
+	);
+	let releaseReadings = () => {};
+	const readingsGate = new Promise<void>((resolve) => {
+		releaseReadings = resolve;
+	});
+	let readingsRequested = false;
 	const saved: Schema["ReadingPositionUpdate"][] = [];
 	let opened = false;
 	h.mock(async (request) => {
@@ -157,15 +166,33 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 				material_id: materialId,
 				version_id: "v1",
 				generation_id: "generation",
-				token_count: 0,
+				token_count: paragraphs.length,
 			} satisfies Schema["MaterialReadingsSummary"]);
-		if (path.endsWith("/readings"))
+		if (path.endsWith("/readings")) {
+			readingsRequested = true;
+			await readingsGate;
 			return Response.json({
 				material_id: materialId,
 				version_id: "v1",
 				generation_id: "generation",
-				resources: [],
+				resources: [
+					{
+						resource_id: "r",
+						text_sha256: hash,
+						tokens: paragraphs.map((_, index) => ({
+							start: startAt(index),
+							end: startAt(index) + 1,
+							surface: "春",
+							reading: "ハル",
+							dictionary_form: "春",
+							normalized_form: "春",
+							is_oov: false,
+							pos: ["名詞"],
+						})),
+					},
+				],
 			} satisfies Schema["MaterialReadingsResponse"]);
+		}
 		if (path.endsWith("/opened") || path.endsWith("/usage")) {
 			if (path.endsWith("/opened")) opened = true;
 			return Response.json({
@@ -194,6 +221,15 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 		`/materials/${materialId}`,
 	);
 	try {
+		await h.until(
+			() => readingsRequested,
+			"All-scope initial reading assets must be requested",
+		);
+		check(
+			!h.container.querySelector(".reader-viewport") && saved.length === 0,
+			"Pending readings must not mount a provisional viewport or save a temporary position",
+		);
+		releaseReadings();
 		const frames = () => [
 			...h.container.querySelectorAll<HTMLIFrameElement>(
 				"iframe.material-part",
@@ -202,6 +238,13 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 		await h.until(
 			() => opened && frames().length === 3 && saved.length > 0,
 			"Reader must present all three frames at the saved chapter midpoint",
+		);
+		check(
+			frames().every(
+				(frame) =>
+					!!frame.contentDocument?.querySelector("ruby[data-auto-ruby]"),
+			),
+			"Late all-scope assets must decorate the newly mounted reading frames",
 		);
 		const previous = frames();
 		const documents = previous.map((frame) => frame.contentDocument);
@@ -241,6 +284,16 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 				(!initialVertical && innerWidth <= 720 ? 0 : 3),
 			"Initial study margins must be rendered before switching direction",
 		);
+		const beforeLateMountResize = saved.length;
+		viewport.style.height = `${viewport.clientHeight - 40}px`;
+		await h.until(
+			() => saved.length > beforeLateMountResize,
+			"The first resize after delayed readings mount must restore and save",
+		);
+		check(
+			visibleParagraphs().includes(200),
+			"Delayed readings mount must establish a usable recovery baseline for resize",
+		);
 		if (preview)
 			return "reader layout switch fixture: chapter midpoint with study marks";
 		const settings = h.container.querySelector<HTMLButtonElement>(
@@ -259,7 +312,7 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 				() =>
 					h.container.querySelectorAll(".reader-study-margin").length ===
 					expected,
-				"Study margins must follow the current reading direction and available width",
+				`Study margins must follow ${mode} and available width (expected ${expected})`,
 			);
 			if (!expected) return;
 			const frame = frames()[1];
@@ -294,6 +347,7 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 		const assertLayout = async (
 			mode: "horizontal-tb" | "vertical-rl",
 			label: string,
+			checkMargins = true,
 		) => {
 			const geometry = frames().map((frame) => ({
 				mode: frame.contentWindow?.getComputedStyle(
@@ -349,7 +403,7 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 					`Horizontal frames must restore vertical scrolling and fit the reading width: ${JSON.stringify(geometry)}`,
 				);
 			}
-			await assertMargins(mode);
+			if (checkMargins) await assertMargins(mode);
 		};
 		const changes = initialVertical
 			? ([
@@ -399,6 +453,43 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 				await assertLayout(mode, "竖排缩窄正文");
 			}
 		}
+		for (let attempt = 0; attempt < 2; attempt++) {
+			const reset = h.container.querySelector<HTMLButtonElement>(
+				"button.reader-reset",
+			);
+			check(reset, "Real reset settings button must remain available");
+			const beforeReset = saved.length;
+			reset.click();
+			await h.until(
+				() =>
+					saved.length > beforeReset &&
+					saved.at(-1)?.settings?.font_size === 22 &&
+					saved.at(-1)?.settings?.line_height === 2 &&
+					saved.at(-1)?.settings?.writing_mode === "horizontal-tb",
+				"Each real reset, including identical defaults, must complete restoration and save",
+			);
+			await assertLayout("horizontal-tb", `恢复默认 ${attempt + 1}`, false);
+			const beforeResize = saved.length;
+			viewport.style.width = attempt === 0 ? "75%" : "85%";
+			await h.until(
+				() => saved.length > beforeResize,
+				"After reset the reader must resume sampling and persist the resized anchor",
+			);
+			await assertLayout(
+				"horizontal-tb",
+				`恢复默认后缩放 ${attempt + 1}`,
+				false,
+			);
+		}
+		check(
+			saved.every(
+				(position) =>
+					position.part_index === 1 &&
+					Math.abs((position.offset ?? 0) - startAt(200)) <=
+						(paragraphs[200]?.length ?? 0),
+			),
+			`Restoration must never persist a temporary layout position: ${JSON.stringify(saved)}`,
+		);
 		return `reader layout switch (${initialVertical ? "vertical → horizontal → vertical" : "horizontal → vertical → horizontal"}): midpoint text, anchor, scroll axis, study margins, iframe and Document identities retained`;
 	} finally {
 		if (!preview) dispose();

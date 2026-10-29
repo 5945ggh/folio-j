@@ -13,7 +13,6 @@ async function segmentShareComponentRegression(h: BrowserHarness) {
 	);
 	const { until, container } = h;
 	const check: BrowserHarness["check"] = h.check;
-	const baseline = new URLSearchParams(location.search).has("baseline");
 	const preview = new URLSearchParams(location.search).has("preview");
 	const pending: { origin?: () => void; copy?: () => void } = {};
 	const finishOrigin = () => pending.origin?.();
@@ -97,20 +96,6 @@ async function segmentShareComponentRegression(h: BrowserHarness) {
 		},
 	});
 	try {
-		if (baseline) {
-			check(
-				!!container.querySelector("textarea[readonly]"),
-				"Existing preview is read-only",
-			);
-			check(
-				[...container.querySelectorAll("button")].some(
-					(node) => node.textContent === "仅复制原文" && !node.disabled,
-				),
-				"Original copy remains available during origin loading",
-			);
-			finishOrigin();
-			return "share baseline: read-only preview and original-only loading fallback";
-		}
 		const dialog = container.querySelector<HTMLDialogElement>(
 			".segment-share-dialog",
 		);
@@ -324,6 +309,6 @@ async function segmentShareComponentRegression(h: BrowserHarness) {
 export async function segmentShareRegression(h: BrowserHarness) {
 	const component = await segmentShareComponentRegression(h);
 	const params = new URLSearchParams(location.search);
-	if (params.has("preview") || params.has("baseline")) return component;
+	if (params.has("preview")) return component;
 	return `${component}; ${await segmentShareSourceRegression(h)}`;
 }

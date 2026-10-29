@@ -5,6 +5,7 @@
 ## 阶段资料
 
 - [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：汇总当前能力、实现缺口和验收入口；目录、封面、书籍编辑及阅读器的现行接口由[架构](../ARCHITECTURE.md)维护。
+- [测试清理与入口回归](TEST_CLEANUP_ACCEPTANCE.md)：无效断言与重复覆盖清理、确定性动画检查、Reader 真实入口与运行器筛选保护。
 - [阅读方向切换修复](READER_LAYOUT_SWITCH_ACCEPTANCE.md)：页边标记导致横转竖正文移出视口的复现、修复与回归；包含导航协调结构建议的评估。
 - [Reader 呈现协调收拢](READER_PRESENTATION_REFACTOR_ACCEPTANCE.md)：已加载目标交付、正文呈现／重排／暂离的协调 interface，以及迟到资源和恢复目标保护的回归。
 - [整站基础主题验收](APPLICATION_THEME_ACCEPTANCE.md)：浅／深／系统模式、样式抽象与阅读器配色更新验证。

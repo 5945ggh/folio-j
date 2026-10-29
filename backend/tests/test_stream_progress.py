@@ -1,6 +1,7 @@
 """Bound stream persistence cost and exercise flushes with a deterministic clock."""
 
 import asyncio
+import math
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
@@ -25,19 +26,26 @@ def offline_discovery(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("interval", [None, 0.3], ids=["production_policy", "compliant_300ms"])
 async def test_stream_coalesces_500_chunks_and_queries_only_authorization_fields(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, interval: float | None
 ) -> None:
+    if interval is not None:
+        monkeypatch.setattr(agent, "PROGRESS_INTERVAL_SECONDS", interval)
     clock = [0.0]
     monkeypatch.setattr(agent, "monotonic", lambda: clock[0], raising=False)
     statements: list[str] = []
     callback_statements: list[str] = []
     final_text = "## 讲解\n\n" + "正文" * 500
-    flushed: list[str] = []
+    flushed: list[tuple[float, str]] = []
+    callback_flushes: list[tuple[float, str]] = []
+    receiving_chunks = False
     original_progress = vars(agent)["_progress"]
 
     async def record_progress(app: Any, job_id: str, token: str, value: str) -> None:
-        flushed.append(value)
+        flushed.append((clock[0], value))
+        if receiving_chunks:
+            callback_flushes.append((clock[0], value))
         await original_progress(app, job_id, token, value)
 
     monkeypatch.setattr(agent, "_progress", record_progress)
@@ -47,10 +55,13 @@ async def test_stream_coalesces_500_chunks_and_queries_only_authorization_fields
         _key: str | None,
         progress: Callable[[str], Awaitable[None]],
     ) -> adapters.GenerateResult:
+        nonlocal receiving_chunks
         began = len(statements)
+        receiving_chunks = True
         for chunk in range(1, 501):
             clock[0] = chunk / 1000
             await progress("## 讲解\n\n" + "正文" * chunk)
+        receiving_chunks = False
         callback_statements.extend(statements[began:])
         return adapters.GenerateResult(final_text, True, None, "{}")
 
@@ -78,8 +89,19 @@ async def test_stream_coalesces_500_chunks_and_queries_only_authorization_fields
         write_count = sum(statement == "BEGIN IMMEDIATE" for statement in statements)
         assert write_count <= 8, f"500 chunks opened {write_count} write transactions"
         progress_writes = sum(value == "BEGIN IMMEDIATE" for value in callback_statements)
-        assert progress_writes == 2
-        assert flushed == ["## 讲解\n\n" + "正文" * count for count in (1, 251, 500)]
+        # Initial progress may be immediate. Subsequent ordinary writes must be
+        # at least 250ms apart; a final forced flush may happen sooner. Slower
+        # policies such as 300ms satisfy the same persistence-cost contract.
+        assert callback_flushes
+        assert all(
+            later[0] - earlier[0] >= 0.25 - 1e-9
+            for earlier, later in zip(callback_flushes, callback_flushes[1:], strict=False)
+        )
+        ordinary_write_limit = math.floor(clock[0] / 0.25) + 1
+        assert progress_writes <= ordinary_write_limit
+        assert len(callback_flushes) <= ordinary_write_limit
+        assert len(flushed) <= ordinary_write_limit + 1
+        assert flushed[-1][1] == final_text
         progress_selects = [value for value in callback_statements if value.startswith("SELECT")]
         assert progress_selects
         assert all("input_snapshot" not in value for value in progress_selects)
@@ -87,6 +109,7 @@ async def test_stream_coalesces_500_chunks_and_queries_only_authorization_fields
         assert all("runs.messages" not in value for value in progress_selects)
         final = (await client.get(f"/api/jobs/{job['id']}")).json()
         assert final["status"] == "succeeded"
+        assert final["assistant_message"]["content"] == final_text
         run = (await client.get(f"/api/runs/{final['run_id']}")).json()
         assert run["output_text"] == final_text
 
@@ -248,7 +271,7 @@ async def test_supervisor_flushes_pending_text_while_upstream_is_idle(
             await asyncio.wait_for(ready.wait(), timeout=2)
             before = (await client.get(f"/api/jobs/{job['id']}")).json()
             assert before["assistant_message"]["content"] == "首段"
-            clock[0] = 0.25
+            clock[0] = 1.0
             await asyncio.wait_for(flushed.wait(), timeout=2)
             current = (await client.get(f"/api/jobs/{job['id']}")).json()
             assert current["status"] == "running"

@@ -661,8 +661,12 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 					study.start >= translated.end || translated.start >= study.end,
 					"Overlapping study and translation source must never draw two underlines",
 				);
-		const markStyle =
-			doc.getElementById("folio-study-style")?.textContent ?? "";
+		const markSheet =
+			doc.querySelector<HTMLStyleElement>("#folio-study-style")?.sheet;
+		check(markSheet, "Record marks need an active stylesheet");
+		const markRules = [...markSheet.cssRules].filter(
+			(rule): rule is CSSStyleRule => rule.type === CSSRule.STYLE_RULE,
+		);
 		const verticalLines =
 			doc.querySelector<SVGSVGElement>("#folio-study-lines");
 		if (direction === "vertical-rl") {
@@ -690,20 +694,36 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				!verticalLines,
 				"Horizontal records must use native underlines without an overlay",
 			);
-		check(
-			/::highlight\(folio-study\)\{[^}]*text-decoration-style:solid/.test(
-				markStyle,
-			),
-			"Learning segment marks must use solid underlines",
-		);
-		check(
-			/::highlight\(folio-translation\)\{[^}]*text-decoration-style:dashed/.test(
-				markStyle,
-			),
-			"Translation marks must use dashed underlines",
-		);
 		const view = doc.defaultView;
 		check(view, "Record marks require a live frame");
+		for (const name of [
+			"folio-study",
+			"folio-study-active",
+			"folio-translation",
+			"folio-translation-active",
+		]) {
+			const rule = markRules.find(
+				(rule) => rule.selectorText === `::highlight(${name})`,
+			);
+			check(rule, `Missing record style for ${name}`);
+			check(
+				!rule.style.color &&
+					!rule.style.background &&
+					!rule.style.backgroundColor,
+				"Record decoration must preserve source glyph and background colors",
+			);
+			const painted = view.getComputedStyle(doc.body, `::highlight(${name})`);
+			check(
+				painted.textDecorationStyle ===
+					(name.startsWith("folio-translation") ? "dashed" : "solid"),
+				"Record style must distinguish learning segments from translations",
+			);
+			check(
+				painted.textDecorationLine ===
+					(direction === "vertical-rl" ? "none" : "underline"),
+				"Horizontal native underlines and vertical overlay marks must not double paint",
+			);
+		}
 		const canvas = doc.createElement("canvas");
 		canvas.width = canvas.height = 1;
 		const context = canvas.getContext("2d", { willReadFrequently: true });

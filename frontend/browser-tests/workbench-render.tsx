@@ -6,7 +6,7 @@ import { makeJob, makeThread, provider, settings } from "./workbench";
 
 declare global {
 	interface Window {
-		__chatMarkdownRenders?: Record<string, number>;
+		__chatMarkdownParses?: Record<string, number>;
 	}
 }
 
@@ -129,7 +129,7 @@ export async function workbenchRender(h: BrowserHarness) {
 	const countStable = () =>
 		historic.reduce(
 			(total, message) =>
-				total + (window.__chatMarkdownRenders?.[message.content] ?? 0),
+				total + (window.__chatMarkdownParses?.[message.content] ?? 0),
 			0,
 		);
 	const dispose = await mount(<Screen />);
@@ -140,7 +140,7 @@ export async function workbenchRender(h: BrowserHarness) {
 		);
 		await settle();
 		const initial = countStable();
-		check(initial >= 40, "Runner must instrument actual Markdown invocations");
+		check(initial >= 40, "Runner must instrument actual Markdown parsing");
 		const input =
 			container.querySelector<HTMLTextAreaElement>("#chat-question");
 		check(input, "Missing composer");
@@ -148,7 +148,7 @@ export async function workbenchRender(h: BrowserHarness) {
 		await settle();
 		check(
 			countStable() === initial,
-			`Composer input rerendered ${countStable() - initial} stable Markdown replies`,
+			`Composer input reparsed ${countStable() - initial} stable Markdown replies`,
 		);
 		button("刷新活动内容").click();
 		await until(
@@ -158,12 +158,13 @@ export async function workbenchRender(h: BrowserHarness) {
 		await settle();
 		check(
 			countStable() === initial,
-			"Active streaming update rerendered historic Markdown",
+			"Active streaming update reparsed historic Markdown",
 		);
 		check(
-			window.__chatMarkdownRenders?.["## 活动回复第二段"] === 1,
-			"Updated active text must render exactly once",
+			(window.__chatMarkdownParses?.["## 活动回复第二段"] ?? 0) > 0,
+			"Updated active text must pass through the Markdown processor",
 		);
+		const activeParses = window.__chatMarkdownParses?.["## 活动回复第二段"];
 		const getsBeforeProgress = jobGets;
 		button("刷新活动进度").click();
 		await until(
@@ -173,7 +174,7 @@ export async function workbenchRender(h: BrowserHarness) {
 		await settle();
 		check(
 			countStable() === initial &&
-				window.__chatMarkdownRenders?.["## 活动回复第二段"] === 1,
+				window.__chatMarkdownParses?.["## 活动回复第二段"] === activeParses,
 			"Progress-only refresh must preserve every unchanged Markdown tree",
 		);
 		button("复制助手消息").click();
@@ -195,9 +196,9 @@ export async function workbenchRender(h: BrowserHarness) {
 		await settle();
 		check(
 			countStable() === initial,
-			"Failure retry draft update must not rerender stable Markdown",
+			"Failure retry draft update must not reparse stable Markdown",
 		);
-		return `workbench render ${window.innerWidth}px: 40 historic replies; input/active stream/progress/copy/retry = 0 historic Markdown rerenders; active text renders once`;
+		return `workbench render ${window.innerWidth}px: 40 historic replies; input/active stream/progress/copy/retry = 0 historic Markdown reparses; active text is parsed and progress reuses it`;
 	} finally {
 		dispose();
 		if (clipboard) Object.defineProperty(navigator, "clipboard", clipboard);

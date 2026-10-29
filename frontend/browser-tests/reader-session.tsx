@@ -1,3 +1,4 @@
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import {
 	type Location,
@@ -167,10 +168,12 @@ export async function readerSession(
 	const segmentSelector = realApp
 		? ".segment-workspace"
 		: "[data-segment-page]";
+	let queryClient: QueryClient | undefined;
 	let navigate: ReturnType<typeof useNavigate> | undefined;
 	let entry: Location | undefined;
 	const entries: Array<{ location: Location; action: string }> = [];
 	function Navigator() {
+		queryClient = useQueryClient();
 		const routeNavigate = useNavigate();
 		const routeLocation = useLocation();
 		const action = useNavigationType();
@@ -1330,6 +1333,61 @@ export async function readerSession(
 				!h.container.textContent?.includes("已新导入书籍。"),
 				"History must not replay a consumed import notice",
 			);
+			const { waitForPositionWrites } = await import(
+				"../src/materials/persistence"
+			);
+			check(queryClient, "Session fixture must share the real query cache");
+			for (const externalRevision of [false, true]) {
+				const cachedFrames = frames();
+				const cachedDocuments = cachedFrames.map(
+					(frame) => frame.contentDocument,
+				);
+				go("/segments/saved");
+				await h.until(
+					() => !!h.container.querySelector(segmentSelector),
+					"Cache collection regression must pause the real reader",
+				);
+				await waitForPositionWrites(materialId);
+				const drained = savedPositions.get(materialId);
+				check(
+					drained && drained.revision > 0,
+					"A local writer must have advanced and drained its CAS revision",
+				);
+				queryClient.removeQueries({
+					queryKey: ["materials", materialId],
+					exact: true,
+				});
+				check(
+					queryClient.getQueryData(["materials", materialId]) === undefined,
+					"Inactive book query must actually be removed before reactivation",
+				);
+				if (externalRevision)
+					savedPositions.set(materialId, {
+						...drained,
+						revision: drained.revision + 1,
+					});
+				const beforeResumeUsage = usageReads;
+				go(`/materials/${materialId}`);
+				await h.until(
+					() =>
+						usageReads > beforeResumeUsage &&
+						frames().length === 3 &&
+						frames().every((frame) => !!frame.getClientRects().length),
+					"Reactivation must validate the server revision after cache collection",
+				);
+				check(
+					frames().every((frame, index) =>
+						externalRevision
+							? frame !== cachedFrames[index] &&
+								frame.contentDocument !== cachedDocuments[index]
+							: frame === cachedFrames[index] &&
+								frame.contentDocument === cachedDocuments[index],
+					),
+					externalRevision
+						? "External CAS revision must replace the old reader documents"
+						: "Drained local writer revision must preserve iframe and Document identities without book cache",
+				);
+			}
 		}
 		check(
 			!retained || warnings.length === 0,

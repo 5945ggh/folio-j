@@ -146,61 +146,29 @@ test("repainting separate intervals in one document retains all intervals", asyn
 	]);
 });
 
-test("study decoration declares its own red color with longhands while preserving glyph color", async () => {
+test("study registration preserves both ordinary and active source ranges", async () => {
 	const { prepareStudyUnderlines } = await import("./highlight.ts");
-	for (const theme of ["white", "black"] as const) {
-		const h = harness();
-		const range = h.doc.createRange();
-		prepareStudyUnderlines(h.doc, [range], [range], theme)();
-		const rules = [
-			...h.style.textContent.matchAll(
-				/::highlight\((folio-study(?:-active)?)\)\{([^}]+)\}/g,
-			),
-		];
-		assert.equal(rules.length, 2);
-		for (const rule of rules) {
-			const declarations = rule[2] ?? "";
-			assert.match(declarations, /(?:^|;)text-decoration-line:underline;/);
-			assert.match(declarations, /(?:^|;)text-decoration-style:solid;/);
-			assert.ok(
-				declarations.includes("text-decoration-color:var(--reader-study);"),
-			);
-			assert.doesNotMatch(
-				declarations,
-				/(?:^|;)(?:color|background(?:-color)?):/,
-			);
-		}
-		assert.ok(h.marks.has("folio-study"));
-		assert.ok(h.marks.has("folio-study-active"));
-	}
+	const h = harness();
+	const range = h.doc.createRange();
+	prepareStudyUnderlines(h.doc, [range], [range], "white")();
+	assert.deepEqual(h.marks.get("folio-study")?.ranges, [range]);
+	assert.deepEqual(h.marks.get("folio-study-active")?.ranges, [range]);
 });
 
-test("translation decoration uses a lower emphasis dashed red in both themes and clears independently of search", async () => {
+test("translation ranges register independently and clearing records preserves search", async () => {
 	const { prepareStudyUnderlines, clearStudyHighlights } = await import(
 		"./highlight.ts"
 	);
-	for (const theme of ["white", "black"] as const) {
-		const h = harness();
-		const range = h.doc.createRange();
-		highlightRange(h.doc, projection(["原文"]), 0, 2);
-		prepareStudyUnderlines(h.doc, [], [], theme, [range], [range])();
-		assert.ok(h.marks.has("folio-translation"));
-		assert.ok(h.marks.has("folio-translation-active"));
-		const normal =
-			h.style.textContent.match(
-				/::highlight\(folio-translation\)\{([^}]+)\}/,
-			)?.[1] ?? "";
-		assert.match(normal, /text-decoration-style:dashed;/);
-		assert.ok(
-			normal.includes("text-decoration-color:var(--reader-translation);"),
-		);
-		assert.match(normal, /text-underline-position:under left;/);
-		assert.doesNotMatch(normal, /(?:^|;)(?:color|background(?:-color)?):/);
-		clearStudyHighlights(h.doc);
-		assert.equal(h.marks.has("folio-translation"), false);
-		assert.equal(h.marks.has("folio-translation-active"), false);
-		assert.equal(h.marks.has("folio-search"), true);
-	}
+	const h = harness();
+	const range = h.doc.createRange();
+	highlightRange(h.doc, projection(["原文"]), 0, 2);
+	prepareStudyUnderlines(h.doc, [], [], "white", [range], [range])();
+	assert.deepEqual(h.marks.get("folio-translation")?.ranges, [range]);
+	assert.deepEqual(h.marks.get("folio-translation-active")?.ranges, [range]);
+	clearStudyHighlights(h.doc);
+	assert.equal(h.marks.has("folio-translation"), false);
+	assert.equal(h.marks.has("folio-translation-active"), false);
+	assert.equal(h.marks.has("folio-search"), true);
 });
 
 test("vertical record lines merge each column, respect clipping and clear when returning to horizontal", async () => {

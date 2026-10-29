@@ -551,7 +551,6 @@ try {
 											}),
 										]
 									: [
-											await readerClipboard(),
 											await workbenchRegression({
 												container,
 												check,

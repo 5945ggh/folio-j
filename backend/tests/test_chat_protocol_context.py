@@ -1,21 +1,41 @@
 """Frozen chat input keeps the complete provider protocol prefix."""
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
+from jinja2 import Environment, FileSystemLoader
 
 from app.models import Segment, Source
 from app.services.context import make_input_snapshot
 from app.settings_models import Profile
 
 
+@pytest.fixture
+def writer_instructions() -> dict[str, str]:
+    writers = Environment(
+        loader=FileSystemLoader(Path(__file__).resolve().parents[1] / "prompts" / "analysis"),
+        autoescape=False,
+    )
+    return {name: writers.get_template(name).render().strip() for name in writers.list_templates()}
+
+
 @pytest.mark.asyncio
-async def test_next_turn_keeps_complete_protocol_prefix_and_appends_new_material() -> None:
+@pytest.mark.parametrize("writer_template", ["writer_v1.j2", "writer_v2.j2"])
+async def test_next_turn_keeps_complete_protocol_prefix_and_appends_new_material(
+    writer_template: str,
+    writer_instructions: dict[str, str],
+) -> None:
+    # Old writer instructions remain legitimate frozen history, but must never be
+    # introduced again by ordinary chat context assembly. Read their actual text:
+    # the filenames do not occur in rendered provider messages.
+    writer_text = writer_instructions[writer_template]
     prefix = [
         {"role": "system", "content": "固定规则"},
         {"role": "user", "content": "旧问题及补充要求"},
+        {"role": "user", "content": writer_text},
         {"role": "assistant", "content": "答复", "reasoning_content": "保留推理"},
     ]
     prior = SimpleNamespace(
@@ -99,7 +119,9 @@ async def test_next_turn_keeps_complete_protocol_prefix_and_appends_new_material
     )
     assert snapshot["messages"][: len(prefix)] == prefix
     assert "01ARZ3NDEKTSV4RRFFQ69G5FAX" in snapshot["messages"][-2]["content"]
-    assert "writer_v1" not in str(snapshot["messages"])
+    appended = "\n".join(item["content"] for item in snapshot["messages"][len(prefix) :])
+    for instructions in writer_instructions.values():
+        assert instructions.splitlines()[0] not in appended
     assert "继续讨论\n\n请关注过去式" in snapshot["messages"][-1]["content"]
     assert "additional_instructions" not in snapshot
     assert "未选择讲解预设" in snapshot["messages"][-3]["content"]
