@@ -48,6 +48,19 @@ just check-assets # 验证保留的实验和静态原型
 
 测量使用离线接口夹具和真实 Chrome DOM 时钟，输出材料／出处／注音准备／章节请求的相对时间、iframe 呈现时间、可读与保存状态，以及 iframe／Document 身份是否复用；夹具响应耗时不能代表真实后端或模型耗时。验收与比较口径见[阅读会话记录](handovers/archived/text-study/READER_SESSION_ACCEPTANCE.md)，复用接口与生命周期见[架构](ARCHITECTURE.md#312-阅读器-r11-呈现与只读派生查询)。
 
+## 后端细粒度读取测量
+
+`scripts/measure_reader_backend.py` 在临时 SQLite 中测量位置保存、单章注音及首／中／末图片读取。默认采用 `scripts/reader_measurement_baseline.py` 中冻结自 `7747434` 的三条服务流程；加 `--reader-views` 测量当前生产读取视图。冻结对照与当前实现共用模型、解码器和纯投影／进度规则，仅用于测量，不被生产代码调用。
+
+```sh
+uv run --project backend python scripts/measure_reader_backend.py --output /tmp/reader-baseline.json --repeats 3
+uv run --project backend python scripts/measure_reader_backend.py --reader-views --output /tmp/reader-views.json --repeats 3
+```
+
+默认覆盖三种确定性合成书和 4 请求并发；`--sizes small` 可缩小范围。`--epub /绝对路径/样书.epub` 额外读取本地样书，报告只含规模、摘要和指标；不会访问用户数据库或模型。`--chapter-selection largest` 改用跨度最长的正文章，默认 `first` 选择首个含正文的章。
+
+耗时不包含 HTTP 序列化、浏览器或 fixture 构造；冷请求指新建读取视图实例，OS／SQLite 页缓存仍可能热。latency 与 tracemalloc 分开测量；冷峰值包含缓存建立，冷后存活值在释放响应并 GC 后记录，暖峰值只计本次新增分配，不能当作总内存。RSS 是整个测量进程的高水位，包含 fixture 构造。比较时顺序运行两组并避免同时构建或测试。结果与取舍见[后端读取性能验收](handovers/archived/READER_READ_PERFORMANCE_ACCEPTANCE.md)。
+
 ## 生产页面冷加载测量
 
 `just build` 后运行 `node frontend/scripts/measure-loading.mjs`，在隔离 Chrome 中测量生产素材库与学习偏好页。脚本使用本机静态服务器与离线 API，每次新建浏览器上下文并禁用 HTTP 缓存，默认各跑五次；`LOADING_MEASUREMENT_RUNS` 可设为 1–20。输出实际 JS／CSS 响应体大小、逐文件 gzip 估值、首个内容绘制和目标表单／空库内容出现时间，不访问用户数据库或模型。

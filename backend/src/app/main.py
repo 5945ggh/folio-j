@@ -24,6 +24,7 @@ from app.jobs.supervision import BackgroundWorker, workers
 from app.services import translations
 from app.services.analyses import AnalysisWriteError
 from app.services.chat import ChatError
+from app.services.reader_views import ReaderViews
 from app.services.settings import interrupt_unfinished
 from app.services.statistics_runtime import StatisticsRuntime
 
@@ -44,6 +45,8 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
             raise RuntimeError(f"数据库已有后台执行进程：{path}") from exc
         engine = create_engine(path)
         application.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
+        reader_views = ReaderViews(application.state.session_factory)
+        application.state.reader_views = reader_views
         statistics_runtime = StatisticsRuntime()
         application.state.statistics_runtime = statistics_runtime
         application.state.database_path = path
@@ -71,7 +74,10 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         finally:
             await asyncio.gather(*(executor.close() for executor in background.values()))
             try:
-                await statistics_runtime.close()
+                try:
+                    await reader_views.close()
+                finally:
+                    await statistics_runtime.close()
             finally:
                 await engine.dispose()
                 fcntl.flock(lock_fd, fcntl.LOCK_UN)

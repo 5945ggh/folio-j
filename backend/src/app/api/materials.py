@@ -137,9 +137,11 @@ async def list_chapter_segments(
     operation_id="saveReadingPosition",
 )
 async def save_position(
-    material_id: str, data: ReadingPositionUpdate, session: Session
+    material_id: str, data: ReadingPositionUpdate, session: Session, request: Request
 ) -> ReadingPositionResponse:
-    return await service.save_position(session, material_id, data)
+    return await service.save_position(
+        session, material_id, data, reader_views=request.app.state.reader_views
+    )
 
 
 @router.get(
@@ -205,9 +207,12 @@ async def get_illustration_content(
     material_id: str,
     ordinal: Annotated[int, Path(ge=0)],
     session: Session,
+    request: Request,
     version_id: str,
 ) -> Response:
-    return await reader_queries.illustration_content(session, material_id, version_id, ordinal)
+    return await reader_queries.illustration_content(
+        session, material_id, version_id, ordinal, reader_views=request.app.state.reader_views
+    )
 
 
 @router.post(
@@ -231,9 +236,17 @@ async def get_readings(
     version_id: str,
     chapter_id: str,
     session: Session,
+    request: Request,
     generation_id: str | None = None,
 ) -> MaterialReadingsResponse:
-    return await readings.get_readings(session, material_id, version_id, chapter_id, generation_id)
+    return await readings.get_readings(
+        session,
+        material_id,
+        version_id,
+        chapter_id,
+        generation_id,
+        reader_views=request.app.state.reader_views,
+    )
 
 
 @router.delete("/materials/{material_id}", status_code=204, operation_id="deleteMaterial")

@@ -16,6 +16,8 @@
 
 ## 历史计划与近期验收
 
+- [后端细粒度读取性能验收](archived/READER_READ_PERFORMANCE_ACCEPTANCE.md)：位置、章节注音和单图读取的基线、视图复用、内存取舍与回归。
+
 - [事务、后台执行与阅读会话可靠性验收](archived/ARCHITECTURE_RELIABILITY_ACCEPTANCE.md)：元数据短事务、后台故障恢复及尾斜杠片段往返的修复与回归。
 
 已完成阶段的计划、接口快照与验收统一在 [Archived](#archived) 索引。计划中的原始交互、旧接口和检查结论按其日期及验证范围理解，后续变化以实施基线和负责规范为准。

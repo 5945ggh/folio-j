@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-28；主分支核对基准为 `9b475f8`，包含已合入的整站基础主题、上下文事件及统一 Agent 讲解。元数据短事务、后台故障恢复和尾斜杠片段往返修复已提交到 `codex/architecture-reliability`，尚未合入 `main`；工程、完整浏览器回归及独立复审通过，见[可靠性验收](archived/ARCHITECTURE_RELIABILITY_ACCEPTANCE.md)。其他能力状态见下表；主分支整合复核见路由加载验收。
+> 状态核对：2026-10-29；主分支核对基准为 `7747434`，已包含前三项[可靠性修复](archived/ARCHITECTURE_RELIABILITY_ACCEPTANCE.md)。后端细粒度读取优化在 `codex/reader-read-performance` 分支完成验收，尚未合入 `main`；工程检查、完整浏览器回归、真实页面及复审结果，以及性能收益与首次读取成本见[读取性能记录](archived/READER_READ_PERFORMANCE_ACCEPTANCE.md)。其他能力状态见下表；主分支整合复核见路由加载验收。
 > 本文件汇总当前能力、实现缺口和验收入口。产品范围见 [PRD](../PRD.md)，领域含义见 [GLOSSARY](../GLOSSARY.md)，技术选型见 [TECH_STACK](../TECH_STACK.md)；具体实现由[架构](../ARCHITECTURE.md)维护。
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。

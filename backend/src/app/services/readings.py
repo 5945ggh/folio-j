@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -19,6 +20,9 @@ from app.readings_schemas import (
 from app.services.epub_readings import chapter_resources as chapter_resources
 from app.services.epub_readings import text_resources
 from app.services.sources import begin_write, utc_now
+
+if TYPE_CHECKING:
+    from app.services.reader_views import ReaderViews
 
 
 def summary(asset: MaterialReadingsGeneration) -> MaterialReadingsSummary:
@@ -127,33 +131,7 @@ async def get_readings(
     version_id: str,
     chapter_id: str,
     generation_id: str | None = None,
+    *,
+    reader_views: "ReaderViews",
 ) -> MaterialReadingsResponse:
-    from app.services.materials import bundle, require_material
-
-    material = await require_material(session, material_id)
-    if version_id != material.version_id:
-        raise HTTPException(409, "材料版本已改变")
-    active = (
-        await session.scalar(
-            select(MaterialReadingsGeneration).where(
-                MaterialReadingsGeneration.id == generation_id,
-                MaterialReadingsGeneration.material_id == material_id,
-                MaterialReadingsGeneration.version_id == version_id,
-            )
-        )
-        if generation_id is not None
-        else await current(session, material)
-    )
-    if active is None:
-        if generation_id is not None:
-            raise HTTPException(404, "注音代次不存在")
-        raise HTTPException(409, "注音尚未准备，请调用准备接口后重试")
-    generation_id, payload = active.id, active.payload
-    book = await asyncio.to_thread(bundle, material)
-    resources = await asyncio.to_thread(chapter_resources, payload, book, chapter_id)
-    return MaterialReadingsResponse(
-        material_id=material_id,
-        version_id=version_id,
-        generation_id=generation_id,
-        resources=resources,
-    )
+    return await reader_views.chapter_readings(material_id, version_id, chapter_id, generation_id)

@@ -1,0 +1,2830 @@
+{
+  "format": "reader-backend-measurement-v1",
+  "python": "3.11.14 (main, Feb  4 2026, 00:01:31) [Clang 21.1.4 ]",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "seed": 20261028,
+  "repeats": 3,
+  "concurrency": 4,
+  "reset_hook": null,
+  "scope": "real services; excludes HTTP serialization, fixture construction, network/LLM",
+  "cold_definition": "first call after optional reset hook; OS/SQLite page caches remain warm",
+  "memory_definition": "separate tracemalloc pass; live response included, fixture excluded",
+  "rss_high_water_bytes": 1253949440,
+  "rss_definition": "process lifetime high-water including construction and all earlier cases",
+  "fixtures": [
+    {
+      "name": "small",
+      "metadata": {
+        "scale": {
+          "chapters": 4,
+          "tokens_per_chapter": 500,
+          "images": 2,
+          "image_side": 128
+        },
+        "seed": 20261028,
+        "image_bytes": 98726,
+        "chapters": 4,
+        "resources": 4,
+        "text_codepoints": 4000,
+        "token_count": 2000,
+        "bundle_bytes": 104686,
+        "bundle_sha256": "c203d82d1f49c52bd6840ca81048426d7b244bc94c6969d2a07181925f93ac34",
+        "readings_bytes": 22096,
+        "readings_sha256": "811ee5019004ebf372dae9bc9d3af3100b1b95e8799d428af58e7d4f110e676f",
+        "image_count": 2,
+        "construction_seconds": 0.025373916956596076
+      },
+      "cases": [
+        {
+          "operation": "position",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 6.4463329035788774,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 0.770249986089766,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 4.2371670715510845,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 0.8374579483643174,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 3.47312493249774,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 0.7874589646235108,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 3.736249986104667,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 0.971166999079287,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 3.736249986104667,
+          "warm_max_ms": 4.2371670715510845,
+          "first_memory": {
+            "elapsed_ms": 6.337875034660101,
+            "requests": 1,
+            "peak_python_bytes": 798846,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 0.9082499891519547,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 5.888374987989664,
+            "requests": 1,
+            "peak_python_bytes": 798550,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 0.9194170124828815,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "readings",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 6.261542090214789,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 0.8298329776152968,
+            "readings_decode_ms": 3.155000042170286
+          },
+          "warm": [
+            {
+              "elapsed_ms": 4.508999991230667,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 0.7460000924766064,
+              "readings_decode_ms": 2.35066597815603
+            },
+            {
+              "elapsed_ms": 4.62024996522814,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 0.7573330076411366,
+              "readings_decode_ms": 2.425458049401641
+            },
+            {
+              "elapsed_ms": 4.470249987207353,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 0.7330420194193721,
+              "readings_decode_ms": 2.3382919607684016
+            }
+          ],
+          "warm_median_ms": 4.508999991230667,
+          "warm_max_ms": 4.62024996522814,
+          "first_memory": {
+            "elapsed_ms": 15.412959037348628,
+            "requests": 1,
+            "peak_python_bytes": 3348626,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 0.9088750230148435,
+            "readings_decode_ms": 10.505457990802824
+          },
+          "warm_memory": {
+            "elapsed_ms": 15.773665974847972,
+            "requests": 1,
+            "peak_python_bytes": 3349970,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 0.8878340013325214,
+            "readings_decode_ms": 11.069708038121462
+          }
+        },
+        {
+          "operation": "readings",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 19.469749997369945,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 4.581790999509394,
+            "readings_decode_ms": 19.742291187867522
+          },
+          "warm": [
+            {
+              "elapsed_ms": 16.045666066929698,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 6.05433399323374,
+              "readings_decode_ms": 26.859667734242976
+            },
+            {
+              "elapsed_ms": 15.981665928848088,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 6.037831888534129,
+              "readings_decode_ms": 28.319376171566546
+            },
+            {
+              "elapsed_ms": 16.553624998778105,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 5.820706952363253,
+              "readings_decode_ms": 20.256332936696708
+            }
+          ],
+          "warm_median_ms": 16.045666066929698,
+          "warm_max_ms": 16.553624998778105,
+          "first_memory": {
+            "elapsed_ms": 58.11908293981105,
+            "requests": 4,
+            "peak_python_bytes": 7889571,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 8.22566682472825,
+            "readings_decode_ms": 117.42229002993554
+          },
+          "warm_memory": {
+            "elapsed_ms": 63.554667052812874,
+            "requests": 4,
+            "peak_python_bytes": 9066534,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 8.98666784632951,
+            "readings_decode_ms": 132.74212495889515
+          }
+        },
+        {
+          "operation": "image:0",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 2.3281669709831476,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 0.8102499414235353,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 2.362665953114629,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 1.1182500747963786,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 1.8804590217769146,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 0.7667919853702188,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 1.8493329407647252,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 0.753625063225627,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 1.8804590217769146,
+          "warm_max_ms": 2.362665953114629,
+          "first_memory": {
+            "elapsed_ms": 2.8459590394049883,
+            "requests": 1,
+            "peak_python_bytes": 795578,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 0.9003749582916498,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 2.9027500422671437,
+            "requests": 1,
+            "peak_python_bytes": 795290,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 0.9237499907612801,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:0",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 5.120791960507631,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 7.337249931879342,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 4.918959108181298,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 7.41695798933506,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 5.284167011268437,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 7.932292064651847,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 4.638750106096268,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 6.978458142839372,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 4.918959108181298,
+          "warm_max_ms": 5.284167011268437,
+          "first_memory": {
+            "elapsed_ms": 8.11816705390811,
+            "requests": 4,
+            "peak_python_bytes": 1929750,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 8.980709011666477,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 8.361750049516559,
+            "requests": 4,
+            "peak_python_bytes": 2338032,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 10.267999954521656,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:1",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 2.1314169280231,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 0.7997080683708191,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 1.9941669888794422,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 0.7872080896049738,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 1.8677919870242476,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 0.7411669939756393,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 1.8747909925878048,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 0.7330829976126552,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 1.8747909925878048,
+          "warm_max_ms": 1.9941669888794422,
+          "first_memory": {
+            "elapsed_ms": 2.933999989181757,
+            "requests": 1,
+            "peak_python_bytes": 795579,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 0.8986248867586255,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 2.8682079864665866,
+            "requests": 1,
+            "peak_python_bytes": 795291,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 0.9034168906509876,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:1",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 5.189333111047745,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 7.862749160267413,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 5.046832957305014,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 7.656207890249789,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 4.997874959371984,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 7.66562600620091,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 5.095000029541552,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 7.7060830080881715,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 5.046832957305014,
+          "warm_max_ms": 5.095000029541552,
+          "first_memory": {
+            "elapsed_ms": 8.947790949605405,
+            "requests": 4,
+            "peak_python_bytes": 2437265,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 10.780499083921313,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 9.560790960676968,
+            "requests": 4,
+            "peak_python_bytes": 2437609,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 10.71116712410003,
+            "readings_decode_ms": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "medium",
+      "metadata": {
+        "scale": {
+          "chapters": 24,
+          "tokens_per_chapter": 1000,
+          "images": 8,
+          "image_side": 256
+        },
+        "seed": 20261028,
+        "image_bytes": 1575936,
+        "chapters": 24,
+        "resources": 24,
+        "text_codepoints": 48000,
+        "token_count": 24000,
+        "bundle_bytes": 1631744,
+        "bundle_sha256": "0005c3f4751ab04a5d34f3b40b4dd2dfe74ba3cdfc9c35d86fec573f66af1384",
+        "readings_bytes": 261308,
+        "readings_sha256": "64379a496b1f6c1646672b730d56beee7ff72be581a536cafe6eaf547076771a",
+        "image_count": 8,
+        "construction_seconds": 0.3740472079953179
+      },
+      "cases": [
+        {
+          "operation": "position",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 16.579375020228326,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 12.081834021955729,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 15.985541976988316,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 11.559125036001205,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 15.882040956057608,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 11.60866697318852,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 16.455749981105328,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 11.421000002883375,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 15.985541976988316,
+          "warm_max_ms": 16.455749981105328,
+          "first_memory": {
+            "elapsed_ms": 19.187042023986578,
+            "requests": 1,
+            "peak_python_bytes": 11354463,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 12.279959046281874,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 19.676584051921964,
+            "requests": 1,
+            "peak_python_bytes": 11336015,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 12.045333976857364,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "readings",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 88.83895806502551,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 11.218457948416471,
+            "readings_decode_ms": 71.46670809015632
+          },
+          "warm": [
+            {
+              "elapsed_ms": 81.68845798354596,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 10.465541039593518,
+              "readings_decode_ms": 66.78720901254565
+            },
+            {
+              "elapsed_ms": 79.30874999146909,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 10.237542097456753,
+              "readings_decode_ms": 64.82095795217901
+            },
+            {
+              "elapsed_ms": 92.38633292261511,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 10.469791013747454,
+              "readings_decode_ms": 77.55187503062189
+            }
+          ],
+          "warm_median_ms": 81.68845798354596,
+          "warm_max_ms": 92.38633292261511,
+          "first_memory": {
+            "elapsed_ms": 260.7842501020059,
+            "requests": 1,
+            "peak_python_bytes": 41014020,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 11.749959085136652,
+            "readings_decode_ms": 230.8332920074463
+          },
+          "warm_memory": {
+            "elapsed_ms": 198.866416933015,
+            "requests": 1,
+            "peak_python_bytes": 41014468,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 12.182792066596448,
+            "readings_decode_ms": 170.83154199644923
+          }
+        },
+        {
+          "operation": "readings",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 473.1999170035124,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 188.43233375810087,
+            "readings_decode_ms": 1576.490415027365
+          },
+          "warm": [
+            {
+              "elapsed_ms": 373.02041600923985,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 122.33712489251047,
+              "readings_decode_ms": 1045.0162909692153
+            },
+            {
+              "elapsed_ms": 323.8676249748096,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 113.49862604402006,
+              "readings_decode_ms": 1098.2350828126073
+            },
+            {
+              "elapsed_ms": 331.66187501046807,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 119.25750109367073,
+              "readings_decode_ms": 1131.188292056322
+            }
+          ],
+          "warm_median_ms": 331.66187501046807,
+          "warm_max_ms": 373.02041600923985,
+          "first_memory": {
+            "elapsed_ms": 775.5497089819983,
+            "requests": 4,
+            "peak_python_bytes": 155013315,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 127.95283331070095,
+            "readings_decode_ms": 2212.147750076838
+          },
+          "warm_memory": {
+            "elapsed_ms": 776.4265419682488,
+            "requests": 4,
+            "peak_python_bytes": 164079863,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 117.03212605789304,
+            "readings_decode_ms": 2574.787250952795
+          }
+        },
+        {
+          "operation": "image:0",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 14.327250071801245,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 11.330000008456409,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 12.561290990561247,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 10.631832992658019,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 12.22341600805521,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 10.385041940025985,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 12.738750083371997,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 10.891083045862615,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 12.561290990561247,
+          "warm_max_ms": 12.738750083371997,
+          "first_memory": {
+            "elapsed_ms": 14.263167046010494,
+            "requests": 1,
+            "peak_python_bytes": 11334431,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 11.453583021648228,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 13.985791010782123,
+            "requests": 1,
+            "peak_python_bytes": 11334143,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 11.332166031934321,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:0",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 35.665875067934394,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 116.73691612668335,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 35.656417021527886,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 124.77128999307752,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 36.705459002405405,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 124.7188770212233,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 37.46783290989697,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 102.60041686706245,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 36.705459002405405,
+          "warm_max_ms": 37.46783290989697,
+          "first_memory": {
+            "elapsed_ms": 45.08008307311684,
+            "requests": 4,
+            "peak_python_bytes": 38128707,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 129.7327078646049,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 43.65958308335394,
+            "requests": 4,
+            "peak_python_bytes": 38128987,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 135.5438327882439,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:4",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 14.239209005609155,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 10.6306669767946,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 13.900125049985945,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 10.458709090016782,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 14.247999992221594,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 10.660000029020011,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 14.112332952208817,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 10.481207980774343,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 14.112332952208817,
+          "warm_max_ms": 14.247999992221594,
+          "first_memory": {
+            "elapsed_ms": 16.051874961704016,
+            "requests": 1,
+            "peak_python_bytes": 11334491,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 11.384000070393085,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 15.452708001248538,
+            "requests": 1,
+            "peak_python_bytes": 11334203,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 11.055000009946525,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:4",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 42.33891703188419,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 134.3559578526765,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 42.07225004211068,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 115.72716594673693,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 41.96120903361589,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 130.85754215717316,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 43.18308306392282,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 124.01795794721693,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 42.07225004211068,
+          "warm_max_ms": 43.18308306392282,
+          "first_memory": {
+            "elapsed_ms": 51.00812506861985,
+            "requests": 4,
+            "peak_python_bytes": 38127859,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 150.78333404380828,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 49.200500012375414,
+            "requests": 4,
+            "peak_python_bytes": 38128979,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 143.97629187442362,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:7",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 15.66124998498708,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 10.809040977619588,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 15.681457938626409,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 10.695834062062204,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 15.704625053331256,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 10.90733299497515,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 15.950332977809012,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 11.11258298624307,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 15.704625053331256,
+          "warm_max_ms": 15.950332977809012,
+          "first_memory": {
+            "elapsed_ms": 17.92733301408589,
+            "requests": 1,
+            "peak_python_bytes": 11334491,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 11.692166095599532,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 16.940708039328456,
+            "requests": 1,
+            "peak_python_bytes": 11334203,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 10.99424995481968,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:7",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 48.425499931909144,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 125.35391701385379,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 47.72499995306134,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 134.56891698297113,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 47.76229104027152,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 131.39112608041614,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 46.84874997474253,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 122.97037383541465,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 47.72499995306134,
+          "warm_max_ms": 47.76229104027152,
+          "first_memory": {
+            "elapsed_ms": 57.67829099204391,
+            "requests": 4,
+            "peak_python_bytes": 38129915,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 157.13608206715435,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 55.89037493336946,
+            "requests": 4,
+            "peak_python_bytes": 38127827,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 139.165333006531,
+            "readings_decode_ms": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "large",
+      "metadata": {
+        "scale": {
+          "chapters": 60,
+          "tokens_per_chapter": 1500,
+          "images": 16,
+          "image_side": 512
+        },
+        "seed": 20261028,
+        "image_bytes": 12596032,
+        "chapters": 60,
+        "resources": 60,
+        "text_codepoints": 180000,
+        "token_count": 90000,
+        "bundle_bytes": 12861162,
+        "bundle_sha256": "845323c3e589661c403ce132fb2ce5cf86f85de009ec07020eb1c6c4de3fcaca",
+        "readings_bytes": 978392,
+        "readings_sha256": "9ee9368effad37509cefcb3d05c206570d0f387fb3039e9ea9c815ae09bdd516",
+        "image_count": 16,
+        "construction_seconds": 1.6025291249388829
+      },
+      "cases": [
+        {
+          "operation": "position",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 88.42895901761949,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 79.20924993231893,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 89.10779107827693,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 80.46316599939018,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 90.58924997225404,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 81.78158302325755,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 90.92979191336781,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 82.63504097703844,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 90.58924997225404,
+          "warm_max_ms": 90.92979191336781,
+          "first_memory": {
+            "elapsed_ms": 94.39712495077401,
+            "requests": 1,
+            "peak_python_bytes": 74460905,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 82.66074990388006,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 96.19824995752424,
+            "requests": 1,
+            "peak_python_bytes": 74460905,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 83.62616703379899,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "readings",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 380.63829205930233,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 81.24974998645484,
+            "readings_decode_ms": 284.2494159704074
+          },
+          "warm": [
+            {
+              "elapsed_ms": 367.0919999713078,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 87.14516600593925,
+              "readings_decode_ms": 265.17104101367295
+            },
+            {
+              "elapsed_ms": 372.69191700033844,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 78.99866602383554,
+              "readings_decode_ms": 277.91699999943376
+            },
+            {
+              "elapsed_ms": 386.2451249733567,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 81.02458296343684,
+              "readings_decode_ms": 278.980333940126
+            }
+          ],
+          "warm_median_ms": 372.69191700033844,
+          "warm_max_ms": 386.2451249733567,
+          "first_memory": {
+            "elapsed_ms": 769.8016660287976,
+            "requests": 1,
+            "peak_python_bytes": 178377325,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 82.23641698714346,
+            "readings_decode_ms": 631.9580000126734
+          },
+          "warm_memory": {
+            "elapsed_ms": 773.8322920631617,
+            "requests": 1,
+            "peak_python_bytes": 178377773,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 81.5934999845922,
+            "readings_decode_ms": 624.2493340978399
+          }
+        },
+        {
+          "operation": "readings",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 1685.5507500004023,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 925.923915929161,
+            "readings_decode_ms": 5465.751374955289
+          },
+          "warm": [
+            {
+              "elapsed_ms": 1545.3552500111982,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 909.9490420194343,
+              "readings_decode_ms": 4732.524458086118
+            },
+            {
+              "elapsed_ms": 1564.272042014636,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 918.775458005257,
+              "readings_decode_ms": 4828.315959079191
+            },
+            {
+              "elapsed_ms": 1640.7671250635758,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 865.6585408607498,
+              "readings_decode_ms": 5428.699834039435
+            }
+          ],
+          "warm_median_ms": 1564.272042014636,
+          "warm_max_ms": 1640.7671250635758,
+          "first_memory": {
+            "elapsed_ms": 3517.4064999446273,
+            "requests": 4,
+            "peak_python_bytes": 713521255,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 961.9767919648439,
+            "readings_decode_ms": 12348.310874891467
+          },
+          "warm_memory": {
+            "elapsed_ms": 3379.510625032708,
+            "requests": 4,
+            "peak_python_bytes": 713510858,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 926.9017911283299,
+            "readings_decode_ms": 11760.812334134243
+          }
+        },
+        {
+          "operation": "image:0",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 90.68233403377235,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 82.2060409700498,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 85.96612501423806,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 78.69550003670156,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 85.12787509243935,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 77.82733300700784,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 85.5899170273915,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 78.51658307481557,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 85.5899170273915,
+          "warm_max_ms": 85.96612501423806,
+          "first_memory": {
+            "elapsed_ms": 89.3234999384731,
+            "requests": 1,
+            "peak_python_bytes": 74459349,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 80.957958009094,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 88.24995800387114,
+            "requests": 1,
+            "peak_python_bytes": 74459061,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 80.10404196102172,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:0",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 253.97766602691263,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 924.8580420389771,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 246.72366690356284,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 861.3147500436753,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 243.66541695781052,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 827.6385013014078,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 245.01420801971108,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 879.4919580686837,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 245.01420801971108,
+          "warm_max_ms": 246.72366690356284,
+          "first_memory": {
+            "elapsed_ms": 257.03987502492964,
+            "requests": 4,
+            "peak_python_bytes": 244127768,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 903.0270410003141,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 258.1989170284942,
+            "requests": 4,
+            "peak_python_bytes": 244129552,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 907.0502498652786,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:8",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 99.08508404623717,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 78.72291700914502,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 98.3280420769006,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 78.11374997254461,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 103.74329204205424,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 83.24729197192937,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 100.05683300551027,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 79.73933301400393,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 100.05683300551027,
+          "warm_max_ms": 103.74329204205424,
+          "first_memory": {
+            "elapsed_ms": 105.6195420678705,
+            "requests": 1,
+            "peak_python_bytes": 74459349,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 83.56495900079608,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 102.6332089677453,
+            "requests": 1,
+            "peak_python_bytes": 74459061,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 80.69145900662988,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:8",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 295.92658393085003,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 920.8924591075629,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 298.53220796212554,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 888.9936249470338,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 305.74624997098,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 918.8904169714078,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 307.5993340462446,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 922.81474894844,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 305.74624997098,
+          "warm_max_ms": 307.5993340462446,
+          "first_memory": {
+            "elapsed_ms": 320.9979170933366,
+            "requests": 4,
+            "peak_python_bytes": 244128200,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 935.0537500577047,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 322.7099999785423,
+            "requests": 4,
+            "peak_python_bytes": 244126728,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 969.2431670846418,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:15",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 112.65854199882597,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 80.60695801395923,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 112.56904201582074,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 80.30408399645239,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 116.94770795293152,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 84.59287509322166,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 111.29866703413427,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 79.34162497986108,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 112.56904201582074,
+          "warm_max_ms": 116.94770795293152,
+          "first_memory": {
+            "elapsed_ms": 116.48770899046212,
+            "requests": 1,
+            "peak_python_bytes": 74459349,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 82.86875009071082,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 114.32087502907962,
+            "requests": 1,
+            "peak_python_bytes": 74459061,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 80.58266702573746,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:15",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 353.53154106996953,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 912.5166658777744,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 361.5302910329774,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 954.1520432103425,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 353.947207913734,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 918.7407919671386,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 923.3015419449657,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 2643.7005010666326,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 361.5302910329774,
+          "warm_max_ms": 923.3015419449657,
+          "first_memory": {
+            "elapsed_ms": 385.56800002697855,
+            "requests": 4,
+            "peak_python_bytes": 244126744,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 997.0239999238402,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 375.09374995715916,
+            "requests": 4,
+            "peak_python_bytes": 244130112,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 975.7108759367839,
+            "readings_decode_ms": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "local-epub",
+      "metadata": {
+        "source_bytes": 3916746,
+        "source_sha256": "66bc139a11eb6f89d96db9e41806cf57cfd2faf2b5e89b2fee9f44c375e95a68",
+        "chapters": 8,
+        "resources": 24,
+        "text_codepoints": 88779,
+        "token_count": 60000,
+        "bundle_bytes": 4476769,
+        "bundle_sha256": "ec22e0f690cdcbec20763b9968ed7746242f8b8d90e727a4ef73ec9a79d54464",
+        "readings_bytes": 1066026,
+        "readings_sha256": "841de101edfb4ae5df34ca1502f3c138778b714f79a9238891b0b2053176e23e",
+        "image_count": 17,
+        "construction_seconds": 1.598216374986805
+      },
+      "cases": [
+        {
+          "operation": "position",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 39.94366596452892,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 34.75649992469698,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 40.122332982718945,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 34.63008301332593,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 38.79829100333154,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 33.925791969522834,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 39.36983295716345,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 7,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 34.16249994188547,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 39.36983295716345,
+          "warm_max_ms": 40.122332982718945,
+          "first_memory": {
+            "elapsed_ms": 44.19158399105072,
+            "requests": 1,
+            "peak_python_bytes": 32627952,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 36.099083023145795,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 44.467250001616776,
+            "requests": 1,
+            "peak_python_bytes": 32627952,
+            "sql": 7,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 36.20370803400874,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "readings",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 223.90070802066475,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 35.83049995359033,
+            "readings_decode_ms": 178.1971249729395
+          },
+          "warm": [
+            {
+              "elapsed_ms": 219.54733307939023,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 35.3131250012666,
+              "readings_decode_ms": 175.0514169689268
+            },
+            {
+              "elapsed_ms": 220.46845802105963,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 35.20008397754282,
+              "readings_decode_ms": 175.80870795063674
+            },
+            {
+              "elapsed_ms": 217.2232079319656,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 2,
+              "bundle_selects": 1,
+              "readings_selects": 1,
+              "epub_decodes": 1,
+              "readings_decodes": 1,
+              "epub_decode_ms": 34.82237504795194,
+              "readings_decode_ms": 173.37054200470448
+            }
+          ],
+          "warm_median_ms": 219.54733307939023,
+          "warm_max_ms": 220.46845802105963,
+          "first_memory": {
+            "elapsed_ms": 500.5048749735579,
+            "requests": 1,
+            "peak_python_bytes": 104627746,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 34.88525003194809,
+            "readings_decode_ms": 424.4049999397248
+          },
+          "warm_memory": {
+            "elapsed_ms": 498.81437502335757,
+            "requests": 1,
+            "peak_python_bytes": 104628194,
+            "sql": 2,
+            "bundle_selects": 1,
+            "readings_selects": 1,
+            "epub_decodes": 1,
+            "readings_decodes": 1,
+            "epub_decode_ms": 34.927040920592844,
+            "readings_decode_ms": 421.53158294968307
+          }
+        },
+        {
+          "operation": "readings",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 1117.1028750250116,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 381.692333961837,
+            "readings_decode_ms": 3909.4126251293346
+          },
+          "warm": [
+            {
+              "elapsed_ms": 1125.0755410874262,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 366.2294599926099,
+              "readings_decode_ms": 3953.3629160141572
+            },
+            {
+              "elapsed_ms": 1100.4403340630233,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 359.2767911031842,
+              "readings_decode_ms": 3868.6964998487383
+            },
+            {
+              "elapsed_ms": 1100.808666087687,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 8,
+              "bundle_selects": 4,
+              "readings_selects": 4,
+              "epub_decodes": 4,
+              "readings_decodes": 4,
+              "epub_decode_ms": 347.44908288121223,
+              "readings_decode_ms": 3857.685083989054
+            }
+          ],
+          "warm_median_ms": 1100.808666087687,
+          "warm_max_ms": 1125.0755410874262,
+          "first_memory": {
+            "elapsed_ms": 2214.536042069085,
+            "requests": 4,
+            "peak_python_bytes": 418405137,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 385.0782089866698,
+            "readings_decode_ms": 7991.352417040616
+          },
+          "warm_memory": {
+            "elapsed_ms": 2197.2540410934016,
+            "requests": 4,
+            "peak_python_bytes": 418278976,
+            "sql": 8,
+            "bundle_selects": 4,
+            "readings_selects": 4,
+            "epub_decodes": 4,
+            "readings_decodes": 4,
+            "epub_decode_ms": 378.02379205822945,
+            "readings_decode_ms": 7912.276167189702
+          }
+        },
+        {
+          "operation": "image:0",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 39.27379194647074,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 35.38824990391731,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 37.44304203428328,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 34.139541909098625,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 37.32062492053956,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 34.04533304274082,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 37.36966697033495,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 34.10654200706631,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 37.36966697033495,
+          "warm_max_ms": 37.44304203428328,
+          "first_memory": {
+            "elapsed_ms": 39.73158402368426,
+            "requests": 1,
+            "peak_python_bytes": 32626368,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 35.330875078216195,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 39.6087080007419,
+            "requests": 1,
+            "peak_python_bytes": 32626080,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 35.38625000510365,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:0",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 111.62266705650836,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 353.4936250653118,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 111.53929203283042,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 383.9905831264332,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 114.30945806205273,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 380.6933331070468,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 112.98962496221066,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 383.383208187297,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 112.98962496221066,
+          "warm_max_ms": 114.30945806205273,
+          "first_memory": {
+            "elapsed_ms": 119.03283407445997,
+            "requests": 4,
+            "peak_python_bytes": 101656287,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 400.68974904716015,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 119.40170906018466,
+            "requests": 4,
+            "peak_python_bytes": 101657295,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 410.98445805255324,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:8",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 50.67729204893112,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 34.8299159668386,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 50.43020797893405,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 34.617000026628375,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 51.82662489823997,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 35.804040962830186,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 50.86350010242313,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 34.99237494543195,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 50.86350010242313,
+          "warm_max_ms": 51.82662489823997,
+          "first_memory": {
+            "elapsed_ms": 125.33970910590142,
+            "requests": 1,
+            "peak_python_bytes": 32626368,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 35.34445900004357,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 124.83212491497397,
+            "requests": 1,
+            "peak_python_bytes": 32626080,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 35.739999962970614,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:8",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 167.1889580320567,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 404.17129010893404,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 163.79508306272328,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 399.5318760862574,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 162.00949996709824,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 423.91916702035815,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 162.46404207777232,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 428.91995911486447,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 162.46404207777232,
+          "warm_max_ms": 163.79508306272328,
+          "first_memory": {
+            "elapsed_ms": 473.63529191352427,
+            "requests": 4,
+            "peak_python_bytes": 101656551,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 411.8709589820355,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 471.9951249426231,
+            "requests": 4,
+            "peak_python_bytes": 101658495,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 411.24070808291435,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:16",
+          "concurrency": 1,
+          "first": {
+            "elapsed_ms": 104.4745419640094,
+            "requests": 1,
+            "peak_python_bytes": null,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 34.65729206800461,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 103.89124997891486,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 34.275874961167574,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 108.51262498181313,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 36.102708079852164,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 108.30074991099536,
+              "requests": 1,
+              "peak_python_bytes": null,
+              "sql": 1,
+              "bundle_selects": 1,
+              "readings_selects": 0,
+              "epub_decodes": 1,
+              "readings_decodes": 0,
+              "epub_decode_ms": 35.70395801216364,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 108.30074991099536,
+          "warm_max_ms": 108.51262498181313,
+          "first_memory": {
+            "elapsed_ms": 522.4993750452995,
+            "requests": 1,
+            "peak_python_bytes": 32626368,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 35.7796250609681,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 523.1536669889465,
+            "requests": 1,
+            "peak_python_bytes": 32626080,
+            "sql": 1,
+            "bundle_selects": 1,
+            "readings_selects": 0,
+            "epub_decodes": 1,
+            "readings_decodes": 0,
+            "epub_decode_ms": 35.573374945670366,
+            "readings_decode_ms": 0
+          }
+        },
+        {
+          "operation": "image:16",
+          "concurrency": 4,
+          "first": {
+            "elapsed_ms": 383.65970796439797,
+            "requests": 4,
+            "peak_python_bytes": null,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 412.56729199085385,
+            "readings_decode_ms": 0
+          },
+          "warm": [
+            {
+              "elapsed_ms": 470.4942919779569,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 531.1744989594445,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 380.9414580464363,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 410.82545812241733,
+              "readings_decode_ms": 0
+            },
+            {
+              "elapsed_ms": 384.07858402933925,
+              "requests": 4,
+              "peak_python_bytes": null,
+              "sql": 4,
+              "bundle_selects": 4,
+              "readings_selects": 0,
+              "epub_decodes": 4,
+              "readings_decodes": 0,
+              "epub_decode_ms": 412.96033398248255,
+              "readings_decode_ms": 0
+            }
+          ],
+          "warm_median_ms": 384.07858402933925,
+          "warm_max_ms": 470.4942919779569,
+          "first_memory": {
+            "elapsed_ms": 2098.30474993214,
+            "requests": 4,
+            "peak_python_bytes": 101658719,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 408.5508759599179,
+            "readings_decode_ms": 0
+          },
+          "warm_memory": {
+            "elapsed_ms": 2049.4478750042617,
+            "requests": 4,
+            "peak_python_bytes": 101657567,
+            "sql": 4,
+            "bundle_selects": 4,
+            "readings_selects": 0,
+            "epub_decodes": 4,
+            "readings_decodes": 0,
+            "epub_decode_ms": 431.15350091829896,
+            "readings_decode_ms": 0
+          }
+        }
+      ]
+    }
+  ]
+}

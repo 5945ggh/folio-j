@@ -1,11 +1,10 @@
 """Read-only queries over immutable compiled books; CPU work runs off the event loop."""
 
 import asyncio
-import base64
-import binascii
 import unicodedata
 from collections.abc import Iterator
 from html.parser import HTMLParser
+from typing import TYPE_CHECKING
 from urllib.parse import quote
 
 from fastapi import HTTPException, Response
@@ -19,8 +18,11 @@ from app.material_schemas import (
     MaterialSearchItem,
     MaterialSearchResponse,
 )
-from app.services.epub import MAX_PRODUCT_BYTES
+from app.services.epub import MAX_PRODUCT_BYTES as MAX_PRODUCT_BYTES
 from app.services.materials import bundle, require_material
+
+if TYPE_CHECKING:
+    from app.services.reader_views import ReaderViews
 
 
 async def _material(session: AsyncSession, material_id: str, version_id: str) -> Material:
@@ -234,38 +236,15 @@ async def locate_illustration(
     )
 
 
-def _content(material: Material, ordinal: int) -> tuple[bytes, str]:
-    for index, (_, _, _, _, _, source) in enumerate(_images(bundle(material))):
-        if index != ordinal:
-            continue
-        header, encoded = source.split(",", 1)
-        if len(encoded) > ((MAX_PRODUCT_BYTES + 2) // 3) * 4:
-            raise HTTPException(413, "图片超过编译安全大小限制")
-        try:
-            data = base64.b64decode(encoded, validate=True)
-        except (ValueError, binascii.Error) as exc:
-            raise HTTPException(422, "图片数据损坏") from exc
-        mime = header[5:].split(";", 1)[0]
-        valid = (
-            (mime == "image/png" and data.startswith(b"\x89PNG\r\n\x1a\n"))
-            or (mime == "image/jpeg" and data.startswith(b"\xff\xd8\xff"))
-            or (mime == "image/gif" and data.startswith((b"GIF87a", b"GIF89a")))
-            or (mime == "image/webp" and data.startswith(b"RIFF") and data[8:12] == b"WEBP")
-        )
-        if not valid or len(data) > MAX_PRODUCT_BYTES:
-            raise HTTPException(422, "图片类型与内容不符")
-        return data, mime
-    raise HTTPException(404, "图片不存在")
-
-
 async def illustration_content(
     session: AsyncSession,
     material_id: str,
     version_id: str,
     ordinal: int,
+    *,
+    reader_views: "ReaderViews",
 ) -> Response:
-    material = await _material(session, material_id, version_id)
-    data, mime = await asyncio.to_thread(_content, material, ordinal)
+    data, mime = await reader_views.image_content(material_id, version_id, ordinal)
     return Response(
         content=data,
         media_type=mime,

@@ -2,8 +2,8 @@
 
 import asyncio
 import hashlib
-import re
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from fastapi import HTTPException, Request
 from sqlalchemy import delete, select
@@ -41,7 +41,11 @@ from app.services import readings
 from app.services.epub import EpubError, compile_epub_bytes
 from app.services.epub_readings import text_resources
 from app.services.position_progress import chapter_progress
+from app.services.reader_views import MaterialIdentity
 from app.services.sources import as_utc, begin_write, require_source, utc_now
+
+if TYPE_CHECKING:
+    from app.services.reader_views import ReaderViews
 
 MAX_UPLOAD_BYTES = 32 * 1024 * 1024
 
@@ -257,39 +261,26 @@ async def get_chapter(
 
 
 async def save_position(
-    session: AsyncSession, material_id: str, data: ReadingPositionUpdate
+    session: AsyncSession,
+    material_id: str,
+    data: ReadingPositionUpdate,
+    *,
+    reader_views: "ReaderViews",
 ) -> ReadingPositionResponse:
     try:
-        material = await require_material(session, material_id)
-        book = await asyncio.to_thread(bundle, material)
-        chapter = next((c for c in book.chapters if c.id == data.chapter_id), None)
-        if (
-            data.version_id != material.version_id
-            or chapter is None
-            or data.part_index >= len(chapter.parts)
-        ):
-            raise HTTPException(422, "位置版本或章节无效")
-        part = chapter.parts[data.part_index]
-        if part.resource_id != data.resource_id:
-            raise HTTPException(422, "位置资源不属于章节")
-        if data.kind == "text" and (
-            data.offset is None or not part.start <= data.offset <= part.end
-        ):
-            raise HTTPException(422, "正文偏移超出章节范围")
-        if data.kind == "image" and str(data.image_id) not in re.findall(
-            r'data-epub-image=["\'](\d+)["\']', part.html
-        ):
-            raise HTTPException(422, "图片不属于章节")
+        anchor = PositionAnchor.model_validate(data.model_dump(exclude={"expected_revision"}))
+        prepared = await reader_views.validate_position(material_id, data)
         await session.rollback()
         await begin_write(session)
-        material = await require_material(session, material_id)
+        material = await require_material(session, material_id, with_bundle=False)
         if material.version_id != data.version_id:
             raise HTTPException(422, "位置版本无效")
+        if prepared.identity != MaterialIdentity.from_material(material):
+            raise HTTPException(409, "材料版本已改变")
         position = await session.get(ReadingPosition, material_id)
         revision = position.revision if position else 0
         if data.expected_revision != revision:
             raise HTTPException(409, "阅读位置已更新，请重新读取")
-        anchor = PositionAnchor.model_validate(data.model_dump(exclude={"expected_revision"}))
         now = utc_now()
         if position is None:
             position = ReadingPosition(
@@ -316,7 +307,7 @@ async def save_position(
             **anchor.model_dump(),
             revision=position.revision,
             updated_at=now,
-            progress=chapter_progress(book, anchor),
+            progress=prepared.progress,
         )
         await session.commit()
         return result
