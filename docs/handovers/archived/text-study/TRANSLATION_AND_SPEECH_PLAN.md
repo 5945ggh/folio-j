@@ -1,9 +1,11 @@
 # 阅读翻译、译文留存与设备朗读方案
 
+> 已归档：保留 2026-10-23 的方案、获批范围和当时的实施安排；其中保存入口、采用表单及验收待执行描述不再作为当前要求。现行行为见 [PRD 4.8](../../../PRD.md#48-阅读翻译与设备朗读)和[阅读与导航](../../../INFORMATION_ARCHITECTURE.md#选区与资料往返)，未完成事项与资源候选由[阅读辅助后续安排](../../epub-reading/README.md#阅读辅助后续安排)承接。
+
 > 2026-10-23，用户已认可第 11 节讨论后的行为并授权实施 S0、T1、T2、V1。资源上限采用集中配置的试验初值，保留为待真实样句和模型实测的候选，不作为翻译质量或性能承诺。方案批准与工程交付分别记录。
-> 当前能力与验收见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)。既有选区、出处和片段复用规则见 [PRD 4.7](../../PRD.md#47-当前-epub-阶段安排)及 [C1／C2 计划](../archived/text-study/PLAN.md)，本轮产品规则见 [PRD 4.8](../../PRD.md#48-阅读翻译与设备朗读)。
-> 后续确认并接入本章记录与正文翻译标记，按确切出处归并成功历史、与片段重叠时合并入口；2026-10-24 验收见[对应记录](../archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-24-本章记录与正文翻译标记)。
-> 2026-10-24 手动试用后移除“最近翻译”，改由正文标记、本章记录及原处再次划选找回；下文保留原方案，现行入口以 [PRD 4.8](../../PRD.md#48-阅读翻译与设备朗读) 为准。
+> 当前能力与验收见 [MVP 实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。既有选区、出处和片段复用规则见 [PRD 4.7](../../../PRD.md#47-当前-epub-阶段安排)及 [C1／C2 计划](PLAN.md)，本轮产品规则见 [PRD 4.8](../../../PRD.md#48-阅读翻译与设备朗读)。
+> 后续确认并接入本章记录与正文翻译标记，按确切出处归并成功历史、与片段重叠时合并入口；2026-10-24 验收见[对应记录](TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-24-本章记录与正文翻译标记)。
+> 2026-10-24 手动试用后移除“最近翻译”，改由正文标记、本章记录及原处再次划选找回；下文保留原方案，现行入口以 [PRD 4.8](../../../PRD.md#48-阅读翻译与设备朗读) 为准。
 
 本方案接通“选中原文 → 取得并找回译文 → 明确留下学习片段”，同时确定设备朗读和未来远端语音的配置位置。阅读帮助可以独立使用；用户采用结果时，已有内容直接进入学习流程，不重复生成。
 
@@ -41,7 +43,7 @@ Segment 页面直接生成新译文、无材料出处的任意文本翻译、批
 | Run 与 llm 文本调用 | 每次模型调用留痕、普通／流式文本输出 | translation 用途、独立任务关联、结果及日志的读取权限 |
 | chat_jobs 与 worker | 有限执行、停止和重启恢复的既有经验及可复用基础设施 | 独立翻译任务生命周期；现有 Job 要求非空 thread_id，不能直接增加 kind 后复用 |
 
-代码入口：[出处服务](../../../backend/src/app/services/material_provenance.py)、[片段服务](../../../backend/src/app/services/sources.py)、[片段输入](../../../backend/src/app/schemas.py)、[设置模型](../../../backend/src/app/settings_models.py)、[讨论模型](../../../backend/src/app/chat_models.py)、[模型适配器](../../../backend/src/app/llm/adapters.py)。
+代码入口：[出处服务](../../../../backend/src/app/services/material_provenance.py)、[片段服务](../../../../backend/src/app/services/sources.py)、[片段输入](../../../../backend/src/app/schemas.py)、[设置模型](../../../../backend/src/app/settings_models.py)、[讨论模型](../../../../backend/src/app/chat_models.py)、[模型适配器](../../../../backend/src/app/llm/adapters.py)。
 
 Segment 当前虽有 revision，但普通更新输入不带 expected_revision，译文和语境仍可能被最后一次写入覆盖。采用已有译文若要修改这些字段，必须同时补齐相关编辑入口的条件更新，不能仅靠前端确认框防止并发覆盖。
 

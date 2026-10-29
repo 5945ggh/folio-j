@@ -41,6 +41,50 @@
 	color: var(--settings-blue);
 	border-color: var(--settings-blue);
 }
+.settings-page .settings-subnav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 24px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--settings-line);
+}
+.settings-page .settings-subnav a {
+	padding: 8px 14px;
+	border: 1px solid transparent;
+	border-radius: 7px;
+	color: var(--settings-muted);
+	font-size: 13px;
+	text-decoration: none;
+}
+.settings-page .settings-subnav a[aria-current="page"] {
+	border-color: var(--settings-line);
+	background: var(--color-surface);
+	color: var(--settings-blue);
+}
+.settings-page .settings-model-guide {
+	margin-bottom: 24px;
+	padding: 16px;
+	border: 1px solid var(--settings-line);
+	border-radius: 10px;
+	font-size: 13px;
+	line-height: 1.7;
+}
+.settings-page .settings-model-guide p {
+	margin: 0 0 8px;
+	color: var(--settings-muted);
+}
+.settings-page .settings-model-guide strong {
+	display: block;
+	margin-bottom: 6px;
+}
+.settings-page .settings-model-guide a {
+	color: var(--settings-blue);
+	text-underline-offset: 3px;
+}
+.settings-page .settings-model-identity {
+	overflow-wrap: anywhere;
+}
 .settings-page .settings-content {
 	width: 100%;
 	max-width: 790px;
@@ -213,7 +257,9 @@
 	filter: brightness(0.96);
 }
 .settings-page .settings-button:focus-visible,
-.settings-page .settings-tabs a:focus-visible {
+.settings-page .settings-tabs a:focus-visible,
+.settings-page .settings-subnav a:focus-visible,
+.settings-page .settings-model-guide a:focus-visible {
 	outline: 2px solid var(--color-focus);
 	outline-offset: 3px;
 }

@@ -22,6 +22,9 @@ export function SettingsPage() {
 	const translation = section === "translation";
 	const speech = section === "speech";
 	const appearance = section === "appearance";
+	const models =
+		!learning && !permissions && !translation && !speech && !appearance;
+	const services = section === "providers";
 	const settings = useQuery({
 		queryKey: settingsKeys.settings,
 		queryFn: getSettings,
@@ -30,8 +33,7 @@ export function SettingsPage() {
 	const providers = useQuery({
 		queryKey: settingsKeys.providers,
 		queryFn: getProviders,
-		enabled:
-			!learning && !permissions && !translation && !speech && !appearance,
+		enabled: models,
 		refetchInterval: (query) =>
 			query.state.data?.some((provider) =>
 				provider.models.some((model) =>
@@ -56,18 +58,7 @@ export function SettingsPage() {
 					>
 						学习偏好
 					</Link>
-					<Link
-						to="/settings"
-						aria-current={
-							!learning &&
-							!permissions &&
-							!translation &&
-							!speech &&
-							!appearance
-								? "page"
-								: undefined
-						}
-					>
+					<Link to="/settings" aria-current={models ? "page" : undefined}>
 						模型与服务
 					</Link>
 					<Link
@@ -98,8 +89,12 @@ export function SettingsPage() {
 				<div className="settings-content">
 					{history ? (
 						<>
-							<Link className="settings-back-link" to="/settings">
-								← 返回模型与服务
+							<ModelSettingsNavigation services />
+							<Link
+								className="settings-back-link"
+								to="/settings?section=providers"
+							>
+								← 返回服务管理
 							</Link>
 							<div className="settings-page-head">
 								<h2>验证历史</h2>
@@ -137,12 +132,13 @@ export function SettingsPage() {
 														: "选择任务默认模型，管理接入的模型服务。"}
 								</p>
 							</div>
-							{!appearance && settings.isPending && (
+							{models && <ModelSettingsNavigation services={services} />}
+							{!appearance && !services && settings.isPending && (
 								<p className="settings-loading" role="status">
 									正在加载设置…
 								</p>
 							)}
-							{!appearance && settings.isError && (
+							{!appearance && !services && settings.isError && (
 								<section className="settings-state">
 									<InlineError error={settings.error} />
 									<button
@@ -163,34 +159,28 @@ export function SettingsPage() {
 							{permissions && settings.data && (
 								<PermissionSettings settings={settings.data} />
 							)}
-							{!learning &&
-								!permissions &&
-								!translation &&
-								!speech &&
-								!appearance && (
-									<>
-										{providers.isPending && (
-											<p className="settings-loading" role="status">
-												正在加载模型服务…
-											</p>
-										)}
-										{providers.isError && (
-											<section className="settings-state">
-												<InlineError error={providers.error} />
-												<button
-													className="settings-button secondary"
-													type="button"
-													onClick={() => void providers.refetch()}
-												>
-													重试模型服务
-												</button>
-											</section>
-										)}
-										{providers.data && (
-											<ModelDefaults
-												settings={settings.data}
-												providers={providers.data}
+							{models && (
+								<>
+									{providers.isPending && (
+										<p className="settings-loading" role="status">
+											正在加载模型服务…
+										</p>
+									)}
+									{providers.isError && (
+										<section className="settings-state">
+											<InlineError error={providers.error} />
+											<button
+												className="settings-button secondary"
+												type="button"
+												onClick={() => void providers.refetch()}
 											>
+												重试模型服务
+											</button>
+										</section>
+									)}
+									{providers.data &&
+										(services ? (
+											<>
 												<ProviderSettings providers={providers.data} />
 												<div className="settings-tools-footer">
 													<span className="settings-hint">
@@ -200,14 +190,35 @@ export function SettingsPage() {
 														查看验证历史 →
 													</Link>
 												</div>
-											</ModelDefaults>
-										)}
-									</>
-								)}
+											</>
+										) : (
+											<ModelDefaults
+												settings={settings.data}
+												providers={providers.data}
+											/>
+										))}
+								</>
+							)}
 						</>
 					)}
 				</div>
 			</SettingsDraftProvider>
 		</Shell>
+	);
+}
+
+function ModelSettingsNavigation({ services }: { services: boolean }) {
+	return (
+		<nav className="settings-subnav" aria-label="模型与服务分类">
+			<Link to="/settings" aria-current={!services ? "page" : undefined}>
+				默认模型
+			</Link>
+			<Link
+				to="/settings?section=providers"
+				aria-current={services ? "page" : undefined}
+			>
+				服务管理
+			</Link>
+		</nav>
 	);
 }
