@@ -12,10 +12,14 @@ export type ReaderNavigationIntent =
 			mark?: { start: number; end: number };
 	  }
 	| { type: "return" };
-export type ReaderNavigationDestination = {
+type NavigationDraft = {
 	target: Position;
 	beginning: boolean;
 	mark?: { start: number; end: number };
+};
+export type ReaderNavigationDestination = NavigationDraft & {
+	chapter: Chapter;
+	part: Chapter["parts"][number];
 };
 export type ReaderNavigationCompletion = {
 	anchor: Position | null;
@@ -64,7 +68,7 @@ function chapterDestination(
 	versionId: string,
 	settings: Settings,
 	beginning: boolean,
-): ReaderNavigationDestination {
+): NavigationDraft {
 	const part = chapter.parts[0];
 	if (!part) throw new Error("章节没有可阅读内容");
 	if (saved && !beginning)
@@ -255,7 +259,11 @@ export class ReaderNavigation {
 			if (!accepts()) return false;
 			const active = this.context;
 			if (!active) return false;
-			const destination = explicit
+			if (data.version_id !== active.versionId)
+				throw new Error("原位置版本已不可用。");
+			if (data.id !== id)
+				throw new Error("无法定位到原文位置，请重新打开目录或重试。");
+			const draft: NavigationDraft = explicit
 				? {
 						target: { ...explicit, settings: active.settings },
 						beginning: false,
@@ -270,11 +278,12 @@ export class ReaderNavigation {
 						active.settings,
 						intent.type === "beginning",
 					);
-			const target = destination.target;
+			const target = draft.target;
 			if (target.version_id !== active.versionId)
 				throw new Error("原位置版本已不可用。");
 			const part = data.parts[target.part_index];
 			if (
+				target.chapter_id !== data.id ||
 				!part ||
 				part.resource_id !== target.resource_id ||
 				(target.kind === "text" &&
@@ -284,6 +293,11 @@ export class ReaderNavigation {
 					!part.html.includes(`data-epub-image="${target.image_id}"`))
 			)
 				throw new Error("无法定位到原文位置，请重新打开目录或重试。");
+			const destination: ReaderNavigationDestination = {
+				...draft,
+				chapter: data,
+				part,
+			};
 			const last = active.presentedAnchor();
 			if (
 				intent.type === "beginning" &&

@@ -196,6 +196,70 @@ test("directory, search and image jumps preserve the first stable origin", async
 	assert.deepEqual(f.saved, [position("A"), position("A"), position("A")]);
 });
 
+test("present receives the exact loaded chapter and selected part across equal part indices", async () => {
+	const f = fixture();
+	const loaded = ["B", "C"].map((id) => {
+		const data = chapter(id);
+		const first = data.parts[0];
+		assert.ok(first);
+		data.parts.push({
+			...first,
+			resource_id: "shared-resource",
+			start: 100,
+			end: 200,
+		});
+		return data;
+	});
+	f.setLoader(async (id) => {
+		const data = loaded.find((item) => item.id === id);
+		assert.ok(data);
+		return data;
+	});
+	for (const data of loaded) {
+		assert.equal(
+			await f.navigate({
+				type: "position",
+				target: {
+					...position(data.id, 140),
+					part_index: 1,
+					resource_id: "shared-resource",
+				},
+				mark: { start: 140, end: 145 },
+			}),
+			true,
+		);
+		const destination = f.presentations.at(-1)?.destination;
+		assert.ok(destination);
+		assert.equal(destination.chapter, data);
+		assert.equal(destination.part, data.parts[1]);
+		assert.equal(destination.target.chapter_id, data.id);
+		assert.deepEqual(destination.mark, { start: 140, end: 145 });
+		f.complete();
+	}
+	assert.notEqual(
+		f.presentations[1]?.destination?.part,
+		f.presentations[2]?.destination?.part,
+	);
+});
+
+test("loaded chapter and remembered target identities must match before present receives them", async () => {
+	for (const mismatch of ["chapter", "version", "remembered"] as const) {
+		const f = fixture();
+		const data = chapter("B");
+		if (mismatch === "chapter") data.id = "C";
+		if (mismatch === "version") data.version_id = "old";
+		if (mismatch === "remembered")
+			f.remembered.set("B", { ...position("B"), chapter_id: "C" });
+		// Keep the same part/resource so a content-only check cannot mask identity errors.
+		f.setLoader(async () => data);
+		assert.equal(await f.navigate({ type: "chapter", id: "B" }), false);
+		assert.ok(f.navigation.state.error);
+		assert.equal(f.presentations.length, 1);
+		assert.deepEqual(f.saved, []);
+		assert.equal(f.navigation.state.origin, null);
+	}
+});
+
 test("return progress stays with its origin through later reading, failed returns and retry", async () => {
 	const f = fixture();
 	assert.equal(f.navigation.state.originProgress, null);
@@ -237,12 +301,16 @@ test("out-of-order chapter loads accept only the latest request", async () => {
 	f.setLoader((id) => (id === "B" ? b.promise : c.promise));
 	const first = f.navigation.navigate({ type: "chapter", id: "B" });
 	const last = f.navigation.navigate({ type: "chapter", id: "C" });
-	c.resolve(chapter("C"));
+	const current = chapter("C");
+	const obsolete = chapter("B");
+	c.resolve(current);
 	assert.equal(await last, true);
-	b.resolve(chapter("B"));
+	b.resolve(obsolete);
 	assert.equal(await first, false);
 	assert.equal(f.presentations.length, 2);
 	assert.equal(f.presentations[1]?.destination?.target.chapter_id, "C");
+	assert.equal(f.presentations[1]?.destination?.chapter, current);
+	assert.equal(f.presentations[1]?.destination?.part, current.parts[0]);
 	assert.deepEqual(f.navigation.state.origin, position("A"));
 });
 
@@ -335,6 +403,7 @@ test("failed chapter load releases the adjacent lock and permits retry", async (
 	assert.match(f.navigation.state.error?.message ?? "", /failed/);
 	assert.equal(f.navigation.state.origin, null);
 	assert.equal(f.saved.length, 0);
+	assert.equal(f.presentations.length, 1);
 	f.setLoader(async (id) => chapter(id));
 	assert.equal(await f.navigate({ type: "adjacent", direction: "next" }), true);
 	assert.equal(f.navigation.state.error, null);
@@ -462,11 +531,14 @@ test("a deferred destination and remembered position adopt the latest settings",
 		writing_mode: "horizontal-tb",
 	};
 	f.setSettings(current);
-	load.resolve(chapter("B"));
+	const data = chapter("B");
+	load.resolve(data);
 	assert.equal(await pending, true);
 	assert.deepEqual(f.presentations.at(-1)?.destination, {
 		target: { ...saved, settings: current },
 		beginning: false,
+		chapter: data,
+		part: data.parts[0],
 	});
 	assert.equal(saved.settings, settings);
 });
@@ -740,11 +812,15 @@ test("remembered text and image positions retain their location and chapter-end 
 				...(image ? { kind: "image", image_id: 7, image_progress: 0.6 } : {}),
 			};
 			const original = structuredClone(anchor);
+			const data = chapter("B");
+			f.setLoader(async () => data);
 			f.remembered.set("B", anchor);
 			await f.navigate({ type: "chapter", id: "B" });
 			assert.deepEqual(f.presentations.at(-1)?.destination, {
 				target: anchor,
 				beginning: false,
+				chapter: data,
+				part: data.parts[0],
 			});
 			assert.deepEqual(anchor, original);
 			f.complete();

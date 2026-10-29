@@ -4,6 +4,7 @@ import {
 	imageTextOffset,
 	type Projection,
 	projectPart,
+	readingContentEnd,
 } from "./dom.ts";
 import { isReaderFrameTarget, registerReaderFrameTargets } from "./focus.ts";
 import {
@@ -209,6 +210,17 @@ export class ReaderFrames {
 	}
 	refreshStudyGeometry(): void {
 		this.flowMotion.measure(() => this.study.refresh());
+	}
+	measure(vertical: boolean): void {
+		this.invalidateStudyGeometry();
+		for (const frame of this.frames.values()) {
+			frame.resize();
+			frame.contentEnd = readingContentEnd(
+				frame.doc,
+				frame.projection,
+				vertical,
+			);
+		}
 	}
 	preserveStudyPreviewDuringLayout(update: () => void): void {
 		const previous = this.measuringInlineLayout;
