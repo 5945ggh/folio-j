@@ -6,7 +6,7 @@
 	background: var(--reader-bg);
 	border: 1px solid var(--reader-line);
 	border-radius: 10px;
-	box-shadow: 0 5px 22px #0002;
+	box-shadow: 0 5px 22px var(--reader-shadow);
 	font:
 		13px / 1.5 system-ui,
 		sans-serif;
@@ -33,18 +33,16 @@
 }
 .reader-study-tool button:hover,
 .reader-study-notice button:hover {
-	background: #8882;
+	background: var(--reader-tool-hover-bg);
 }
-.reader-study-tool.toolbar button.primary {
-	background: var(--reader-selected-bg);
-	color: var(--reader-selected-fg);
+.reader-study-tool.toolbar button.primary,
+.reader-study-notice button.reader-study-notice-open {
+	background: var(--reader-accent-soft);
+	color: var(--reader-on-accent-soft);
 }
-.reader-study-tool.toolbar button.primary:hover {
-	background: color-mix(
-		in srgb,
-		var(--reader-selected-bg) 78%,
-		var(--reader-selected-fg)
-	);
+.reader-study-tool.toolbar button.primary:hover,
+.reader-study-notice button.reader-study-notice-open:hover {
+	background: var(--reader-accent-soft-hover);
 }
 .reader-tool-divider {
 	align-self: stretch;
@@ -53,7 +51,7 @@
 }
 .reader-study-tool button:focus-visible,
 .reader-study-notice button:focus-visible {
-	outline: 2px solid var(--reader-mark-focus);
+	outline: 2px solid var(--reader-tool-focus);
 	outline-offset: -2px;
 }
 .reader-study-tool.toolbar {

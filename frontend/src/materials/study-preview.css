@@ -10,7 +10,7 @@
 	border-radius: 12px;
 	background: var(--reader-bg);
 	color: var(--reader-fg);
-	box-shadow: 0 8px 32px #0002;
+	box-shadow: 0 8px 32px var(--reader-shadow);
 	font:
 		13px / 1.65 system-ui,
 		sans-serif;

@@ -99,7 +99,7 @@
 	border-color: var(--reader-fg);
 }
 .reader-copy-actions .reader-copy-save:hover:not(:disabled) {
-	background: color-mix(in srgb, var(--reader-fg) 85%, var(--reader-bg));
+	background: var(--reader-action-solid-hover);
 }
 .reader-copy-actions button:disabled {
 	opacity: 0.5;

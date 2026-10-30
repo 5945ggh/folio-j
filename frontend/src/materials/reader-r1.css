@@ -5,9 +5,23 @@
 	--reader-muted: light-dark(#6d6d6d, #999);
 	--reader-line: light-dark(#e9e9e9, #393939);
 	--reader-soft: light-dark(#f6f6f6, #252525);
+	--reader-tool-hover-bg: #8882;
+	--reader-action-solid-hover: color-mix(
+		in srgb,
+		var(--reader-fg) 85%,
+		var(--reader-bg)
+	);
+	--reader-shadow: #0002;
 	--reader-error: light-dark(#a3443e, #ef9a9a);
-	--reader-selected-bg: light-dark(#eaf0fc, #293951);
-	--reader-selected-fg: light-dark(#365b9f, #c5d8ff);
+	--reader-accent-soft: light-dark(#eaf0fc, #293951);
+	--reader-on-accent-soft: light-dark(#365b9f, #c5d8ff);
+	--reader-accent-soft-hover: color-mix(
+		in srgb,
+		var(--reader-accent-soft) 78%,
+		var(--reader-on-accent-soft)
+	);
+	--reader-selected-bg: var(--reader-accent-soft);
+	--reader-selected-fg: var(--reader-on-accent-soft);
 	--reader-selection-bg: light-dark(
 		rgba(93, 132, 206, 0.32),
 		rgba(122, 158, 224, 0.4)
@@ -497,7 +511,7 @@
 	line-height: 1.5;
 	background: var(--reader-fg);
 	color: var(--reader-bg);
-	box-shadow: 0 2px 8px #0002;
+	box-shadow: 0 2px 8px var(--reader-shadow);
 	pointer-events: none;
 	opacity: 0;
 	visibility: hidden;

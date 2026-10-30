@@ -15,6 +15,7 @@
 
 | 能力 | 状态 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- | --- |
+| 阅读器配色 token 收拢 | 已合入本地 main，工程与定向浏览器检查通过 | 保存提示保留紧凑布局并复用蓝色；工具、浮层、书签及图片查看器按语义归并原值，译文焦点和朗读滑块跟随 Reader 作用域；多套配色入口尚未实现 | [本轮验收](reading-practice/READER_COLOR_TOKENS_ACCEPTANCE.md)、[颜色约定](../DESIGN_SYSTEM.md#阅读器的强调色与标记) |
 | 阅读翻译动画、共享缓存与删除 | 已合入本地 main，工程、浏览器与现用库核验通过 | 展开复用锚点并统一零态启动；Query 与图片共用 64 MiB／512 项估算保留预算，活跃工作集单列；按确切出处删除已有阅读历史和标记，停止重译，保留片段、讲解与关联快照；新增 0004 增量迁移 | [本轮验收](reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md)、[PRD 4.8](../PRD.md#48-阅读翻译与设备朗读) |
 | 带上下文复制 | 已合入本地 main，现用库升级与只读配置核验通过 | 选区直接复制目标、语境及可选出处；复制默认值独立保存于数据库，旧浏览器值忽略；显式保存与冲突保稿，格式预览默认折叠；复用既有取文，不创建学习内容 | [首版验收](reading-practice/CONTEXT_COPY_ACCEPTANCE.md)、[数据库持久化验收](reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md) |
 | 阅读设置四组结构与会话草稿 | 已合入本地 main，整合回归通过 | 常用项直达，低频控件与说明折叠；摘要取已保存复制值，状态持续可见；排版、注音与界面分组恢复，复制只恢复草稿；同次阅读保稿及离开保护沿用各项存储范围，不新增迁移 | [现行交互](../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)、[结构依据](reading-practice/READER_SETTINGS_STRUCTURE.md)、[独立验收](reading-practice/READER_SETTINGS_ACCEPTANCE.md) |

@@ -16,7 +16,7 @@
 	border-radius: 12px;
 	background: var(--reader-bg);
 	color: var(--reader-fg);
-	box-shadow: 0 4px 20px #0002;
+	box-shadow: 0 4px 20px var(--reader-shadow);
 	font-size: 13px;
 	max-height: calc(100dvh - 190px - var(--reader-speech-clearance, 0px));
 	overflow: auto;
@@ -41,6 +41,11 @@
 	flex-shrink: 0;
 }
 .reader-bookmarks-content {
+	--reader-bookmark-surface: color-mix(
+		in srgb,
+		var(--reader-soft) 65%,
+		var(--reader-bg)
+	);
 	padding: 0 16px 18px;
 }
 .reader-bookmark-hint {
@@ -60,7 +65,7 @@
 	padding: 16px 16px 10px;
 	border: 1px solid var(--reader-line);
 	border-radius: 0 20px 0 0;
-	background: color-mix(in srgb, var(--reader-soft) 65%, var(--reader-bg));
+	background: var(--reader-bookmark-surface);
 	transition: border-color 140ms ease;
 }
 .reader-bookmark-item:focus-within,
@@ -164,7 +169,7 @@
 	border: 1px solid
 		color-mix(in srgb, var(--reader-accent) 45%, var(--reader-line));
 	border-radius: 0 20px 0 0;
-	background: color-mix(in srgb, var(--reader-soft) 65%, var(--reader-bg));
+	background: var(--reader-bookmark-surface);
 }
 .reader-bookmark-editor > p {
 	line-height: 1.7;

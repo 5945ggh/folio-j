@@ -269,7 +269,7 @@
 	background: var(--reader-soft, var(--color-surface-hover));
 }
 .translation-card :focus-visible {
-	outline: 2px solid var(--color-focus);
+	outline: 2px solid var(--reader-focus, var(--color-focus));
 	outline-offset: 2px;
 }
 .app-shell.segment-study-shell .segment-translation-area {

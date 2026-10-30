@@ -190,7 +190,7 @@ export function SavedSegmentNotice({
 	close.current = onClose;
 	useEffect(() => {
 		if (hovered || focused) return;
-		const timer = setTimeout(() => close.current(), 6000);
+		const timer = setTimeout(() => close.current(), 12000);
 		return () => clearTimeout(timer);
 	}, [hovered, focused]);
 	return (
@@ -209,7 +209,11 @@ export function SavedSegmentNotice({
 			}}
 		>
 			<span>{kind === "created" ? "已保存学习片段" : "已选用已有片段"}</span>
-			<button type="button" onClick={onOpen}>
+			<button
+				type="button"
+				className="reader-study-notice-open"
+				onClick={onOpen}
+			>
 				打开片段 →
 			</button>
 			<button type="button" aria-label="关闭保存提示" onClick={onClose}>

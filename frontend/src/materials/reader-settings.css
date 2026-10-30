@@ -171,7 +171,7 @@
 	border-color: var(--reader-fg);
 }
 .reader-copy-leave-actions > button.primary:hover {
-	background: color-mix(in srgb, var(--reader-fg) 85%, var(--reader-bg));
+	background: var(--reader-action-solid-hover);
 }
 .reader-r1 .reader-settings-trigger {
 	position: relative;
