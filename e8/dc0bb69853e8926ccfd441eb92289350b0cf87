@@ -1,0 +1,66 @@
+frontend/src/materials/StudyOverlays.tsx
+  s_7abf8a8418ff8c::t_adb1e4bfe6e803 212-216
+  s_7abf8a8418ff8c::t_31cdba72442535 193
+docs/INFORMATION_ARCHITECTURE.md
+  s_7abf8a8418ff8c::t_6bf5e4e2ebfde1 247-248
+  s_7abf8a8418ff8c::t_abfb62c64e08e2 249
+frontend/src/translation/translation.css
+  s_7abf8a8418ff8c::t_8c74f2235dcd2b 272
+frontend/src/materials/reader-settings.css
+  s_7abf8a8418ff8c::t_cb8ca5ee1c2812 174
+frontend/src/materials/study-overlays.css
+  s_7abf8a8418ff8c::t_abfb62c64e08e2 38-41,43-45
+  s_7abf8a8418ff8c::t_cb8ca5ee1c2812 36
+  s_7abf8a8418ff8c::t_4d92b74ac02eb4 54
+  s_7abf8a8418ff8c::t_b0c2cfedf584f3 9
+frontend/src/materials/reader-panels.css
+  s_7abf8a8418ff8c::t_604afbfc247fc7 6,616,631
+  s_7abf8a8418ff8c::t_a2f0371c2eca41 332-338,347,375,380-382,392,436,450-451
+frontend/src/materials/context-copy.css
+  s_7abf8a8418ff8c::t_cb8ca5ee1c2812 102
+docs/handovers/reading-practice/READER_COLOR_TOKENS_ACCEPTANCE.md
+  s_7abf8a8418ff8c::t_377453468f8a9f 1-2,4-15,18-21
+  s_7abf8a8418ff8c::t_fbe2aab11cef4e 16
+  s_7abf8a8418ff8c::t_27f2c8e3305813 17
+  s_7abf8a8418ff8c::t_ab718041faa94c 3
+frontend/src/materials/study.css
+  s_7abf8a8418ff8c::t_b0c2cfedf584f3 15
+  s_7abf8a8418ff8c::t_cb8ca5ee1c2812 61
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_7abf8a8418ff8c::t_ab718041faa94c 18
+docs/DESIGN_SYSTEM.md
+  s_7abf8a8418ff8c::t_27f2c8e3305813 46
+  s_7abf8a8418ff8c::t_4d92b74ac02eb4 52
+  s_7abf8a8418ff8c::t_377453468f8a9f 43-44,47-48
+  s_7abf8a8418ff8c::t_abfb62c64e08e2 31-42,45,49-51,53
+frontend/src/materials/context-copy-feedback.css
+  s_7abf8a8418ff8c::t_b0c2cfedf584f3 17
+frontend/src/materials/reader-r1.css
+  s_7abf8a8418ff8c::t_abfb62c64e08e2 16-24
+  s_7abf8a8418ff8c::t_96653bc6d8d475 8-14,514
+frontend/src/materials/study-preview.css
+  s_7abf8a8418ff8c::t_b0c2cfedf584f3 13
+frontend/src/materials/chapter-records.css
+  s_7abf8a8418ff8c::t_b0c2cfedf584f3 12
+frontend/src/speech/speech.css
+  s_7abf8a8418ff8c::t_8c74f2235dcd2b 5,16,346,363
+frontend/src/materials/reader-bookmarks.css
+  s_7abf8a8418ff8c::t_b0c2cfedf584f3 19
+  s_7abf8a8418ff8c::t_cb8ca5ee1c2812 44-48,68,172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e8dc0bb69853e8926ccfd441eb92289350b0cf87",
+  "prompts": {},
+  "sessions": {
+    "s_7abf8a8418ff8c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18b95-8a84-7c42-a24a-791f4b903db9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
