@@ -1,0 +1,97 @@
+backend/alembic/versions/0003_material_bookmarks.py
+  s_964ce93abc7819::t_d7a5f64f775197 1-56
+backend/openapi.json
+  s_964ce93abc7819::t_071c07f8a65cf4 381-515,3261-3344,6847-7117
+backend/src/app/api/bookmarks.py
+  s_964ce93abc7819::t_929cad50a93de8 1-58
+backend/src/app/bookmark_schemas.py
+  s_964ce93abc7819::t_f8e0d6897d2895 1-46
+backend/src/app/main.py
+  s_964ce93abc7819::t_fbce942f8b490b 16,140
+backend/src/app/material_models.py
+  s_964ce93abc7819::t_07515676fb7cb0 8,125-162
+backend/src/app/services/bookmark_positions.py
+  s_964ce93abc7819::t_78190373bc5cd9 1-110
+backend/src/app/services/bookmarks.py
+  s_964ce93abc7819::t_9ef24d44b7e6f0 1-185
+backend/src/app/services/reader_views.py
+  s_964ce93abc7819::t_65250fc9b8ac5e 24,29,161,458-480
+backend/tests/test_bookmarks.py
+  s_964ce93abc7819::t_d59600ad262c8b 1-345
+backend/tests/test_migrations.py
+  s_964ce93abc7819::t_7b83319ef0317e 48-49,143-146,158,341,344,355,362,365-389
+docs/ARCHITECTURE.md
+  s_964ce93abc7819::t_3887218a850429 70,91,263-272,283
+docs/GLOSSARY.md
+  s_964ce93abc7819::t_4276044fdefa16 16
+docs/INFORMATION_ARCHITECTURE.md
+  s_964ce93abc7819::t_40210d92321970 97,137,143-150,169,171
+docs/PRD.md
+  s_964ce93abc7819::t_853597b9bb7afc 258-262
+docs/UPGRADING.md
+  s_964ce93abc7819::t_92cf968c179099 114
+docs/USAGE.md
+  s_964ce93abc7819::t_cd1accaa6c7a70 21,33-40
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_964ce93abc7819::t_b749267c1aaef5 8,10,17-19
+docs/handovers/README.md
+  s_964ce93abc7819::t_34c99f9a9218f1 7-8
+docs/handovers/reading-practice/BOOKMARKS_ACCEPTANCE.md
+  s_964ce93abc7819::t_f5c708337fc41e 1-76
+docs/handovers/reading-practice/PLAN.md
+  s_964ce93abc7819::t_8eed5b88518a5f 11,16,21,25,27,35-36
+docs/handovers/reading-practice/READER_SETTINGS_ACCEPTANCE.md
+  s_964ce93abc7819::t_4c2e94e6d5342a 3
+docs/handovers/reading-practice/READER_SETTINGS_STRUCTURE.md
+  s_964ce93abc7819::t_ab8a1045a12490 229
+frontend/browser-tests/main.tsx
+  s_964ce93abc7819::t_8941a4b1cffde0 23,418
+frontend/browser-tests/position-bookmarks.tsx
+  s_964ce93abc7819::t_9297bd69364ef8 1-900
+frontend/browser-tests/theme.tsx
+  s_964ce93abc7819::t_9a3ed665c51561 1,218-226,384
+frontend/scripts/test-browser.mjs
+  s_964ce93abc7819::t_ed13d9fd1ccc96 77-80
+frontend/src/api/schema.d.ts
+  s_964ce93abc7819::t_f34bff931ccfb2 197-233,1380-1436,2385-2412,3912-4081
+frontend/src/catalog/BookDeleteDialog.tsx
+  s_964ce93abc7819::t_47cddf1a9c3c90 55
+frontend/src/materials/MaterialReader.tsx
+  s_964ce93abc7819::t_6e69da33ee42ed 106,358,551,2213,2271,2297-2313,2358-2361,2677
+frontend/src/materials/ReaderBookmarks.tsx
+  s_964ce93abc7819::t_dd30d397112058 1-589
+frontend/src/materials/ReaderControls.tsx
+  s_964ce93abc7819::t_a1009093a7646d 449,452
+frontend/src/materials/ReaderPanels.tsx
+  s_964ce93abc7819::t_8d308fd81b1b53 15-18,113,115-116,180-182,187,221-229,253-254,258,303-316
+frontend/src/materials/bookmark-drafts.test.ts
+  s_964ce93abc7819::t_527a668144d468 1-114
+frontend/src/materials/bookmark-drafts.ts
+  s_964ce93abc7819::t_35703959b0165e 1-80
+frontend/src/materials/bookmarks-api.ts
+  s_964ce93abc7819::t_ea48ca16339ad1 1-81
+frontend/src/materials/reader-bookmarks.css
+  s_964ce93abc7819::t_3e2b7b60a09923 1-208
+frontend/src/materials/reader-panel-logic.test.ts
+  s_964ce93abc7819::t_6a2d3724540eb3 99-114
+frontend/src/materials/reader-panel-logic.ts
+  s_964ce93abc7819::t_ecded8e5aad2dd 5,13,28-29,38
+frontend/src/materials/reader-panels.css
+  s_964ce93abc7819::t_469e0537e6cbac 546,553,556-558
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "312b02a1e6ca66ad2c93eddae1778f2f095d8d16",
+  "prompts": {},
+  "sessions": {
+    "s_964ce93abc7819": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18a51-b0cc-7aa3-9871-6c43e60a29b5",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
