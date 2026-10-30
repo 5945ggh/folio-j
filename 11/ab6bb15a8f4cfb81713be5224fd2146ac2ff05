@@ -1,0 +1,100 @@
+docs/handovers/reading-practice/BOOKMARKS_ACCEPTANCE.md
+  s_30aa92419c0438::t_cf6884f59b1d5b 53
+  s_30aa92419c0438::t_3a59e90e46f10f 3-52,54-63
+  s_30aa92419c0438::t_ffba8b4109f74d 1-2
+frontend/src/materials/ReaderBookmarks.tsx
+  s_30aa92419c0438::t_cf49005cb74224 436-466
+  s_30aa92419c0438::t_f60849cd9132b6 1-435,467-589
+docs/INFORMATION_ARCHITECTURE.md
+  s_30aa92419c0438::t_3a59e90e46f10f 117-120,137,139
+  s_30aa92419c0438::t_54b7e792a30e3f 97,107,113-116
+frontend/src/materials/reader-bookmarks.css
+  s_30aa92419c0438::t_cf49005cb74224 9,12,15,18,24,28,32,39,42,45,47-48,50,52-205,208
+  s_30aa92419c0438::t_83921f4b27e017 1-8,10-11,13-14,16-17,19-23,25-27,29-31,33-38,40-41,43-44,46,49,51,206-207
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_30aa92419c0438::t_3a59e90e46f10f 15
+  s_30aa92419c0438::t_3c94a406ce4239 16
+docs/USAGE.md
+  s_30aa92419c0438::t_3a59e90e46f10f 31
+  s_30aa92419c0438::t_c5dc55d79ba9c9 21,27-30,32-34
+backend/alembic/versions/0003_material_bookmarks.py
+  s_30aa92419c0438::t_a845133be61e51 1-56
+backend/openapi.json
+  s_30aa92419c0438::t_91967e4a92752a 381-515,3261-3344,6847-7117
+backend/src/app/api/bookmarks.py
+  s_30aa92419c0438::t_1adbd75276d505 1-58
+backend/src/app/bookmark_schemas.py
+  s_30aa92419c0438::t_570698020ce497 1-46
+backend/src/app/main.py
+  s_30aa92419c0438::t_4fc6d2e0f74832 16,140
+backend/src/app/material_models.py
+  s_30aa92419c0438::t_dcd87419050b72 8,125-162
+backend/src/app/services/bookmark_positions.py
+  s_30aa92419c0438::t_c312b1834eff9c 1-110
+backend/src/app/services/bookmarks.py
+  s_30aa92419c0438::t_03741797dc045d 1-185
+backend/src/app/services/reader_views.py
+  s_30aa92419c0438::t_a480d95d2d3fa6 24,29,161,458-480
+backend/tests/test_bookmarks.py
+  s_30aa92419c0438::t_197b2772b04d92 1-345
+backend/tests/test_migrations.py
+  s_30aa92419c0438::t_b1e2589303caf1 48-49,143-146,158,341,344,355,362,365-389
+docs/ARCHITECTURE.md
+  s_30aa92419c0438::t_c15bfa399786a6 70,91,263-272,283
+docs/GLOSSARY.md
+  s_30aa92419c0438::t_bd66f400f9755e 16
+docs/PRD.md
+  s_30aa92419c0438::t_d491095657a8c0 256-260
+docs/UPGRADING.md
+  s_30aa92419c0438::t_b87e7b792c9c1e 114
+docs/handovers/README.md
+  s_30aa92419c0438::t_243ad4496b0730 7
+docs/handovers/reading-practice/PLAN.md
+  s_30aa92419c0438::t_6592d38e42669d 14,19,23,25,33-34
+frontend/browser-tests/main.tsx
+  s_30aa92419c0438::t_c59bfd4c0bbc9c 23,412
+frontend/browser-tests/position-bookmarks.tsx
+  s_30aa92419c0438::t_bddc3282e2cbb4 1-900
+frontend/browser-tests/theme.tsx
+  s_30aa92419c0438::t_62fb13a231c8b5 1,216-224,380
+frontend/scripts/test-browser.mjs
+  s_30aa92419c0438::t_d875ad3c2528a7 71-74
+frontend/src/api/schema.d.ts
+  s_30aa92419c0438::t_25368db86b28ad 197-233,1380-1436,2385-2412,3912-4081
+frontend/src/catalog/BookDeleteDialog.tsx
+  s_30aa92419c0438::t_e9be90b2dd0d2c 55
+frontend/src/materials/MaterialReader.tsx
+  s_30aa92419c0438::t_090d430975bb8d 109,348,529,2183,2241,2267-2283,2318-2321,2626
+frontend/src/materials/ReaderControls.tsx
+  s_30aa92419c0438::t_f3f2abf76c4526 340,343
+frontend/src/materials/ReaderPanels.tsx
+  s_30aa92419c0438::t_43cebd10f68323 15-18,113,115-116,180-182,187,221-229,253-254,258,303-316
+frontend/src/materials/bookmark-drafts.test.ts
+  s_30aa92419c0438::t_2659a237d91359 1-114
+frontend/src/materials/bookmark-drafts.ts
+  s_30aa92419c0438::t_e106279e96a6cc 1-80
+frontend/src/materials/bookmarks-api.ts
+  s_30aa92419c0438::t_df25c3bd83c6fa 1-81
+frontend/src/materials/reader-panel-logic.test.ts
+  s_30aa92419c0438::t_16ebfffe19fa5e 99-114
+frontend/src/materials/reader-panel-logic.ts
+  s_30aa92419c0438::t_0268a2f1428e36 5,13,28-29,38
+frontend/src/materials/reader-panels.css
+  s_30aa92419c0438::t_b0bb3419932e4f 546,553,556-558
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "11ab6bb15a8f4cfb81713be5224fd2146ac2ff05",
+  "prompts": {},
+  "sessions": {
+    "s_30aa92419c0438": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18674-5636-7ea0-aadc-da3a7c2f22b3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
