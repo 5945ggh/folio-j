@@ -12,6 +12,10 @@ import {
 	searchMaterial,
 } from "./api";
 import { restoreReaderPanelFocus, useReaderPresence } from "./motion";
+import {
+	type ReaderBookmarks,
+	ReaderBookmarksContent,
+} from "./ReaderBookmarks";
 import { ReaderIcon } from "./ReaderControls";
 import { copyReaderImage, downloadReaderImage } from "./reader-image-actions";
 import type { ReaderImageCache } from "./reader-image-cache";
@@ -106,9 +110,10 @@ function ReaderQueryPanel({
 		node?.addEventListener("keydown", keydown);
 		const initialFocus =
 			node?.querySelector<HTMLElement>(
-				'[role="tabpanel"]:not([hidden]) input',
+				'[role="tabpanel"]:not([hidden]) :is(input, textarea)',
 			) ?? node?.querySelector<HTMLElement>("button");
-		initialFocus?.focus({ preventScroll: true });
+		if (!node?.contains(document.activeElement))
+			initialFocus?.focus({ preventScroll: true });
 		return () => {
 			node?.removeEventListener("keydown", keydown);
 			if (node) restoreReaderPanelFocus(node, previous);
@@ -172,13 +177,14 @@ export function ReaderNavigationPanel(
 		progress: number | null;
 		chapterProgress: ReadonlyMap<string, number | null>;
 		onBeginning: () => void;
-		tab: "toc" | "search";
-		onTab: (tab: "toc" | "search") => void;
+		tab: "toc" | "bookmarks" | "search";
+		bookmarks: ReaderBookmarks;
+		onTab: (tab: "toc" | "bookmarks" | "search") => void;
 		onChoose: (chapterId: string) => void;
 	},
 ) {
 	const id = useId();
-	const tabs = ["toc", "search"] as const;
+	const tabs = ["toc", "bookmarks", "search"] as const;
 	const current = props.chapters.find(
 		(chapter) => chapter.id === props.chapterId,
 	);
@@ -212,10 +218,15 @@ export function ReaderNavigationPanel(
 						role="tablist"
 						aria-label="导航方式"
 						onKeyDown={(event) => {
-							let next: "toc" | "search";
-							if (event.key === "ArrowRight" || event.key === "ArrowLeft")
-								next = props.tab === "toc" ? "search" : "toc";
-							else if (event.key === "Home") next = "toc";
+							let next: (typeof tabs)[number];
+							if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+								const direction = event.key === "ArrowRight" ? 1 : -1;
+								next =
+									tabs[
+										(tabs.indexOf(props.tab) + direction + tabs.length) %
+											tabs.length
+									] ?? "toc";
+							} else if (event.key === "Home") next = "toc";
 							else if (event.key === "End") next = "search";
 							else return;
 							event.preventDefault();
@@ -239,10 +250,12 @@ export function ReaderNavigationPanel(
 							>
 								{tab === "toc" ? (
 									<ReaderIcon name="toc" />
+								) : tab === "bookmarks" ? (
+									<ReaderIcon name="bookmark" />
 								) : (
 									<CatalogIcon name="search" />
 								)}
-								{tab === "toc" ? "目录" : "搜索"}
+								{tab === "toc" ? "目录" : tab === "bookmarks" ? "书签" : "搜索"}
 							</button>
 						))}
 					</div>
@@ -286,6 +299,20 @@ export function ReaderNavigationPanel(
 						</li>
 					))}
 				</ol>
+			</div>
+			<div
+				id={`${id}-bookmarks-panel`}
+				role="tabpanel"
+				aria-labelledby={`${id}-bookmarks-tab`}
+				hidden={props.tab !== "bookmarks"}
+			>
+				<ReaderBookmarksContent
+					bookmarks={props.bookmarks}
+					active={props.tab === "bookmarks" && !props.inactive}
+					settings={props.settings}
+					navigationError={props.navigationError}
+					onNavigate={props.onNavigate}
+				/>
 			</div>
 			<div
 				id={`${id}-search-panel`}

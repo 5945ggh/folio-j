@@ -21,11 +21,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.epub_schemas import CompiledBook
 from app.epub_storage import decode as decode_epub
 from app.material_models import Material, MaterialReadingsCurrent, MaterialReadingsGeneration
-from app.material_schemas import ReadingPositionUpdate
+from app.material_schemas import PositionAnchor, ReadingPositionUpdate
 from app.models import Source
 from app.nlp.assets import decode as decode_readings
 from app.nlp.contracts import MaterialReadingToken, MaterialResourceReadings
 from app.readings_schemas import MaterialReadingsResponse
+from app.services.bookmark_positions import BookmarkLocation, project_bookmark
 from app.services.epub_readings import text_resources
 from app.services.position_progress import chapter_progress
 from app.services.reader_view_cache import Key, ViewCache
@@ -157,7 +158,7 @@ def _decode_asset(payload: bytes, book: _BookView, generation: _Generation) -> _
     return _Readings(tuple(resources))
 
 
-def _position(view: _BookView, data: ReadingPositionUpdate) -> float | None:
+def _position(view: _BookView, data: PositionAnchor) -> float | None:
     book = view.book
     chapter = next((chapter for chapter in book.chapters if chapter.id == data.chapter_id), None)
     if chapter is None or data.part_index >= len(chapter.parts):
@@ -453,6 +454,29 @@ class ReaderViews:
         progress = await self._project(_position, book, data)
         await self._check(identity, position=True)
         return ValidatedPosition(identity, progress)
+
+    async def bookmark_location(
+        self, material_id: str, position: PositionAnchor
+    ) -> tuple[MaterialIdentity, BookmarkLocation]:
+        return await self._request(
+            partial(self._bookmark_location, material_id, position.model_copy(deep=True))
+        )
+
+    async def _bookmark_location(
+        self, material_id: str, position: PositionAnchor
+    ) -> tuple[MaterialIdentity, BookmarkLocation]:
+        identity = await self._identity(material_id)
+        if identity.version_id != position.version_id:
+            raise HTTPException(422, "位置版本或章节无效")
+        view = await self._book(identity)
+
+        def project() -> BookmarkLocation:
+            _position(view, position)
+            return project_bookmark(view.book, position)
+
+        location = await self._project(project)
+        await self._check(identity, position=True)
+        return identity, location
 
     async def chapter_readings(
         self,

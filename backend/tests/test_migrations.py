@@ -45,7 +45,8 @@ _ = (
     translation_models,
 )
 BASELINE = "0001_schema_baseline"
-HEAD = "0002_context_copy_settings"
+COPY_SETTINGS = "0002_context_copy_settings"
+HEAD = "0003_material_bookmarks"
 SCRIPTS = Path(__file__).resolve().parents[1] / "alembic"
 
 
@@ -139,9 +140,10 @@ def test_empty_database_rebuilds_current_schema(
     config = _config(database, monkeypatch)
     scripts = ScriptDirectory.from_config(config)
     revisions = list(scripts.walk_revisions())
-    assert [revision.revision for revision in revisions] == [HEAD, BASELINE]
-    assert revisions[0].down_revision == BASELINE
-    assert revisions[1].down_revision is None
+    assert [revision.revision for revision in revisions] == [HEAD, COPY_SETTINGS, BASELINE]
+    assert revisions[0].down_revision == COPY_SETTINGS
+    assert revisions[1].down_revision == BASELINE
+    assert revisions[2].down_revision is None
     assert scripts.get_bases() == [BASELINE]
     assert scripts.get_heads() == [HEAD]
     command.upgrade(config, "head")
@@ -153,7 +155,7 @@ def test_empty_database_rebuilds_current_schema(
             row[0]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
-        assert len(Base.metadata.tables) == 29
+        assert len(Base.metadata.tables) == 30
         assert tables == {"alembic_version", *Base.metadata.tables}
     engine = create_engine(URL.create("sqlite", database=str(database)))
     try:
@@ -336,10 +338,10 @@ def test_baseline_upgrade_only_adds_context_copy_settings_and_preserves_history(
     before, schema = _rows(database), _schema(database)
     assert "context_copy_settings" not in before
 
-    command.upgrade(config, "head")
+    command.upgrade(config, COPY_SETTINGS)
     after = _rows(database)
     assert after.pop("context_copy_settings") == []
-    assert after.pop("alembic_version") == [(HEAD,)]
+    assert after.pop("alembic_version") == [(COPY_SETTINGS,)]
     assert before.pop("alembic_version") == [(BASELINE,)]
     assert after == before
     assert [entry for entry in _schema(database) if entry[1] != "context_copy_settings"] == schema
@@ -350,13 +352,38 @@ def test_baseline_upgrade_only_adds_context_copy_settings_and_preserves_history(
             "after_characters,revision) VALUES (1,0,5,2,300,50,8)"
         )
     head_rows, head_schema = _rows(database), _schema(database)
-    command.upgrade(config, "head")
+    command.upgrade(config, COPY_SETTINGS)
     assert _rows(database) == head_rows
     assert _schema(database) == head_schema
 
     command.downgrade(config, BASELINE)
     assert _rows(database) == {**before, "alembic_version": [(BASELINE,)]}
     assert _schema(database) == schema
-    command.upgrade(config, "head")
+    command.upgrade(config, COPY_SETTINGS)
     assert _schema(database) == head_schema
     assert _rows(database)["context_copy_settings"] == []
+
+
+def test_bookmarks_upgrade_preserves_existing_settings_and_learning_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "bookmarks-upgrade.db"
+    config = _config(database, monkeypatch)
+    command.upgrade(config, COPY_SETTINGS)
+    _seed_history(database)
+    with sqlite3.connect(database) as connection:
+        connection.execute("INSERT INTO context_copy_settings VALUES (1,0,2,3,45,67,8)")
+    before = _rows(database)
+    command.upgrade(config, "head")
+    after = _rows(database)
+    assert after.pop("material_bookmarks") == []
+    assert after.pop("alembic_version") == [(HEAD,)]
+    before.pop("alembic_version")
+    assert after == before
+    schema = _schema(database)
+    command.upgrade(config, "head")
+    assert _schema(database) == schema
+    command.downgrade(config, COPY_SETTINGS)
+    restored = _rows(database)
+    restored.pop("alembic_version")
+    assert restored == before

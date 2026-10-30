@@ -52,6 +52,7 @@ export function BookDeleteDialog({
 			<p>
 				已保存的片段、讲解、讨论等学习积累会保留。所属来源和同来源的其他材料不受影响。
 			</p>
+			<p>书签及备注会保留并随本书隐藏，重新导入后不会自动关联。</p>
 			<p>你导入时选择的本地 EPUB 文件不会被删除。</p>
 			{impact.isPending && <p role="status">正在核对翻译记录…</p>}
 			<InlineError error={impact.error} />

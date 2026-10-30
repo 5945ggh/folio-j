@@ -194,6 +194,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/bookmarks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Bookmarks */
+        get: operations["listMaterialBookmarks"];
+        put?: never;
+        /** Create Bookmark */
+        post: operations["createMaterialBookmark"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/bookmarks/{bookmark_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Bookmark */
+        get: operations["getMaterialBookmark"];
+        put?: never;
+        post?: never;
+        /** Delete Bookmark */
+        delete: operations["deleteMaterialBookmark"];
+        options?: never;
+        head?: never;
+        /** Update Bookmark */
+        patch: operations["updateMaterialBookmark"];
+        trace?: never;
+    };
     "/api/materials/{material_id}/chapters/{chapter_id}": {
         parameters: {
             query?: never;
@@ -1340,6 +1377,63 @@ export interface components {
             /** Revision Id */
             revision_id: string;
         };
+        /** BookmarkCreate */
+        BookmarkCreate: {
+            position: components["schemas"]["PositionAnchor"];
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+        };
+        /** BookmarkResponse */
+        BookmarkResponse: {
+            /** Chapter Title */
+            chapter_title: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Excerpt */
+            excerpt: string;
+            /** Id */
+            id: string;
+            /** Material Id */
+            material_id: string;
+            /** Note */
+            note: string;
+            position: components["schemas"]["PositionAnchor"];
+            /** Revision */
+            revision: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** BookmarkUpdate */
+        BookmarkUpdate: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Note */
+            note: string;
+        };
+        /** BookmarksResponse */
+        BookmarksResponse: {
+            /** Items */
+            items: components["schemas"]["BookmarkResponse"][];
+            /** Limit */
+            limit: number;
+            /** Material Id */
+            material_id: string;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+            /** Version Id */
+            version_id: string;
+        };
         /** ChapterPart */
         ChapterPart: {
             /** End */
@@ -2287,6 +2381,34 @@ export interface components {
             stream: boolean;
             /** Temperature */
             temperature: number | null;
+        };
+        /** PositionAnchor */
+        PositionAnchor: {
+            /**
+             * At Chapter End
+             * @default false
+             */
+            at_chapter_end: boolean;
+            /** Chapter Id */
+            chapter_id: string;
+            /** Image Id */
+            image_id?: number | null;
+            /** Image Progress */
+            image_progress?: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "image";
+            /** Offset */
+            offset?: number | null;
+            /** Part Index */
+            part_index: number;
+            /** Resource Id */
+            resource_id: string;
+            settings?: components["schemas"]["ReadingSettings"];
+            /** Version Id */
+            version_id: string;
         };
         /** ProfileInput */
         ProfileInput: {
@@ -3787,6 +3909,176 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listMaterialBookmarks: {
+        parameters: {
+            query: {
+                version_id: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookmarksResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    createMaterialBookmark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookmarkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookmarkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialBookmark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+                bookmark_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookmarkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deleteMaterialBookmark: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+                bookmark_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    updateMaterialBookmark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+                bookmark_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookmarkUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookmarkResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

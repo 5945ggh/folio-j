@@ -4,7 +4,7 @@
 
 ## 阶段资料
 
-- [实际阅读评测：复制、书签与搜索](reading-practice/PLAN.md)：已确认用途、三阶段顺序、书签的独立阅读职责及数据保护；首阶段接入带上下文复制。
+- [实际阅读评测：复制、书签与搜索](reading-practice/PLAN.md)：已确认用途、三阶段顺序与数据保护；复制已接入，位置书签的工作区实现与验收见阶段记录，扩展搜索后续实施。
 - [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)：汇总当前能力、实现缺口和验收入口；目录、封面、书籍编辑及阅读器的现行接口由[架构](../ARCHITECTURE.md)维护。
 - [测试清理与入口回归](TEST_CLEANUP_ACCEPTANCE.md)：无效断言与重复覆盖清理、确定性动画检查、Reader 真实入口与运行器筛选保护。
 - [阅读方向切换修复](READER_LAYOUT_SWITCH_ACCEPTANCE.md)：页边标记导致横转竖正文移出视口的复现、修复与回归；包含导航协调结构建议的评估。

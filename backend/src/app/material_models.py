@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import (
     JSON,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -121,3 +122,41 @@ class MaterialReadingsCurrent(Base):
     generation_id: Mapped[str] = mapped_column(
         ForeignKey("material_readings_generations.id"), nullable=False
     )
+
+
+class MaterialBookmark(Base):
+    """Frozen position and excerpt with independently editable reading notes."""
+
+    __tablename__ = "material_bookmarks"
+    __table_args__ = (
+        UniqueConstraint("material_id", "request_id", name="uq_material_bookmark_request"),
+        Index(
+            "ix_material_bookmark_order",
+            "material_id",
+            "version_id",
+            "chapter_index",
+            "part_index",
+            "position_offset",
+            "position_order",
+            "image_progress",
+            "id",
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(26), primary_key=True)
+    material_id: Mapped[str] = mapped_column(ForeignKey("materials.id"), nullable=False)
+    version_id: Mapped[str] = mapped_column(String(26), nullable=False)
+    request_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    request_payload: Mapped[str] = mapped_column(Text, nullable=False)
+    position: Mapped[str] = mapped_column(Text, nullable=False)
+    chapter_title: Mapped[str] = mapped_column(Text, nullable=False)
+    excerpt: Mapped[str] = mapped_column(Text, nullable=False)
+    note: Mapped[str] = mapped_column(Text, nullable=False)
+    chapter_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    part_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    position_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    position_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    image_progress: Mapped[float] = mapped_column(Float, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
