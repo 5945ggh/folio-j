@@ -1,0 +1,129 @@
+backend/src/app/services/catalog.py
+  s_ba5c9c23b0483a::t_307e915adf142f 231
+  s_ba5c9c23b0483a::t_85150f6cdb5104 16,24,224-230,232-235,237-247
+backend/tests/test_catalog_provenance.py
+  s_ba5c9c23b0483a::t_307e915adf142f 173-174
+  s_ba5c9c23b0483a::t_45c2afe643e9a1 64-67,79-80,88-91,137-140
+  s_ba5c9c23b0483a::t_51d8d5f1a13e62 1-53,55-58,60-63,68-78,81-87,92-136,141-144,146-166,181-187,192-193,197
+  s_ba5c9c23b0483a::t_4ea5f4e34f05c1 54,59
+  s_ba5c9c23b0483a::t_527f759696df2d 145,167-172,175-180,188-191,194-196
+docs/handovers/archived/SEGMENT_CATALOG_ACCEPTANCE.md
+  s_ba5c9c23b0483a::t_0545aba3bfdbd7 18-21,24-25
+  s_ba5c9c23b0483a::t_18a1606288ca2f 3
+  s_ba5c9c23b0483a::t_14954ea4d36542 30-34
+  s_ba5c9c23b0483a::t_1696728f5e5098 1-2,4-17,22-23,26-29
+  s_ba5c9c23b0483a::t_bce4ba2e1502f1 35
+frontend/src/catalog/SegmentMetadata.tsx
+  s_ba5c9c23b0483a::t_88f12a70773d39 1-2,4-5,8-9,31-33
+  s_ba5c9c23b0483a::t_25ff0d56b28b26 30
+  s_ba5c9c23b0483a::t_27bb530a08d9ef 13-19,24,26-29
+  s_ba5c9c23b0483a::t_1fb27c745b7b36 3,6-7,10-12,20-23,25
+frontend/src/catalog/segment-origin.ts
+  s_ba5c9c23b0483a::t_88f12a70773d39 1-2,13-15,17,19,45,47,52-53,58-59,64-65,70-71,73,84
+  s_ba5c9c23b0483a::t_27bb530a08d9ef 3-10,27-28,34-42,48-51,54-57,60-63,66-69,81-83
+  s_ba5c9c23b0483a::t_be98b091139dfa 11-12,16,18,20-26,29-33,43-44,46,72,74-80
+frontend/src/analysis/reading.css
+  s_ba5c9c23b0483a::t_88f12a70773d39 184-186
+frontend/src/catalog/api.ts
+  s_ba5c9c23b0483a::t_88f12a70773d39 13
+frontend/browser-tests/main.tsx
+  s_ba5c9c23b0483a::t_e49a53f654039b 36,427
+backend/src/app/catalog_schemas.py
+  s_ba5c9c23b0483a::t_283e3cbb37c8a6 67-70,79-85
+  s_ba5c9c23b0483a::t_ffe250109e338e 71-78
+docs/INFORMATION_ARCHITECTURE.md
+  s_ba5c9c23b0483a::t_14954ea4d36542 57
+  s_ba5c9c23b0483a::t_d224251a62b080 58-60
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_ba5c9c23b0483a::t_18a1606288ca2f 18
+frontend/src/catalog/SourceViews.tsx
+  s_ba5c9c23b0483a::t_63b88b128f13eb 10
+  s_ba5c9c23b0483a::t_88f12a70773d39 15,35-36,242-244,272,281-283,291,310,365,375,377,392
+  s_ba5c9c23b0483a::t_25ff0d56b28b26 273-280,284-290,378-391,405-412
+  s_ba5c9c23b0483a::t_29016c39cbf114 413-414
+frontend/src/catalog/source-content.css
+  s_ba5c9c23b0483a::t_9b1e707915fa7b 566,569-571
+  s_ba5c9c23b0483a::t_88f12a70773d39 497-534
+  s_ba5c9c23b0483a::t_5f3cf390bcb80b 568,572,575-576
+  s_ba5c9c23b0483a::t_c05a4d4f021db4 411,494
+  s_ba5c9c23b0483a::t_27bb530a08d9ef 535-565,567,573-574,577-591
+frontend/src/catalog/SourceOverview.tsx
+  s_ba5c9c23b0483a::t_88f12a70773d39 23,333
+frontend/src/segments/deletion.test.ts
+  s_ba5c9c23b0483a::t_b9bd60f57b217d 1-140,143-187
+  s_ba5c9c23b0483a::t_4c65e77e13d867 141-142
+docs/handovers/README.md
+  s_ba5c9c23b0483a::t_18a1606288ca2f 24
+  s_ba5c9c23b0483a::t_1696728f5e5098 25
+frontend/scripts/test-browser.mjs
+  s_ba5c9c23b0483a::t_e49a53f654039b 32-34
+frontend/browser-tests/segment-catalog.tsx
+  s_ba5c9c23b0483a::t_96a2826ee8b1c2 20-23,113-118,129-132,145-147,149-152,158-160,162-165,168-170,175-206,210-227,238-240,244-253,260-262,265-268,271-273,278-288,290-293,300-304,453-462,464-472,477-493,508-542,545-549,551-554,558-565,571-578,581-585,587-588,593-596,599,601-602,605-624,626-629,631-639,641-648,651-654,658-662,667-674,678-688,690,700-715,723-739
+  s_ba5c9c23b0483a::t_b16d30bacf1015 496-498,501-503,655-657
+  s_ba5c9c23b0483a::t_5f25689abad16c 404
+  s_ba5c9c23b0483a::t_57815e11965cfc 600
+  s_ba5c9c23b0483a::t_703f27f8e6059c 51-54,663-666
+  s_ba5c9c23b0483a::t_6e146a10073643 14,586
+  s_ba5c9c23b0483a::t_a4891fcf2d918a 305,314-344,365,373,386-387,400-403,409,414-415,422-424,431-435,440-450,689,740-741
+  s_ba5c9c23b0483a::t_9ab4bebc0ec3b7 499-500,504-506
+  s_ba5c9c23b0483a::t_205c231b9d04dc 1-4,6-13,15-19,24-50,56-112,119-128,133-144,148,153-157,161,166-167,171-174,207-209,228-237,241-243,254-259,263-264,269-270,274-277,289,294-299,451-452,463,473-476,494-495,507,543-544,550,555-557,566-570,579-580,589-592,597-598,603-604,625,630,640,649-650,675-677,691-699,716-722,742
+  s_ba5c9c23b0483a::t_9f76eb4abb42a4 306-313,345-355,357,361-364,366-368,370-372,374-377,382,384-385,388-392,394-399,405-408,410-413,416-421,425-430,436-439
+  s_ba5c9c23b0483a::t_a4dd68ed66a96f 369,393
+  s_ba5c9c23b0483a::t_1a2276fb63af95 358-360,378-380
+  s_ba5c9c23b0483a::t_4652539d965fef 381,383
+  s_ba5c9c23b0483a::t_509853e6edb200 356
+  s_ba5c9c23b0483a::t_61e8065286b6e1 5,55
+frontend/src/catalog/segment-origin.test.ts
+  s_ba5c9c23b0483a::t_1e5ed87d1f73b5 1-3,5,10,17-19,32-33,53-55,60-63,72-80,88-91,105
+  s_ba5c9c23b0483a::t_66d6acf0b3933f 4,34-52
+  s_ba5c9c23b0483a::t_25ff0d56b28b26 6-9,11-16,20-31,56-59,64-71,81-87,92-104
+  s_ba5c9c23b0483a::t_3ab219b512f54c 106-151
+frontend/src/segments/deletion.ts
+  s_ba5c9c23b0483a::t_d03240b3788d76 67-71
+  s_ba5c9c23b0483a::t_f1d5ff880f944d 1-25,49-66,72-131,146-152
+  s_ba5c9c23b0483a::t_b9bd60f57b217d 26-48,132-145
+backend/src/app/services/material_provenance.py
+  s_ba5c9c23b0483a::t_45c2afe643e9a1 894
+  s_ba5c9c23b0483a::t_628df50a25a039 15
+  s_ba5c9c23b0483a::t_f1d5ff880f944d 788
+  s_ba5c9c23b0483a::t_8a3651ce2429a4 909-910,913,919
+  s_ba5c9c23b0483a::t_eb4e1f8e3277b6 724-787,789-893,895-908,911-912,914-918,920-931
+frontend/src/analysis/AnalysisPanel.tsx
+  s_ba5c9c23b0483a::t_88f12a70773d39 535
+docs/ARCHITECTURE.md
+  s_ba5c9c23b0483a::t_d224251a62b080 169-172
+frontend/src/catalog/SegmentMenu.tsx
+  s_ba5c9c23b0483a::t_25ff0d56b28b26 4-10,51-53
+  s_ba5c9c23b0483a::t_88f12a70773d39 1-3,11-50,54-80
+frontend/src/segments/SegmentDeleteDialog.tsx
+  s_ba5c9c23b0483a::t_b9bd60f57b217d 41-42,89,91
+  s_ba5c9c23b0483a::t_f1d5ff880f944d 1-40,43-88,90,92-130
+frontend/browser-tests/analysis-rename.tsx
+  s_ba5c9c23b0483a::t_52199db9469da1 269
+  s_ba5c9c23b0483a::t_96a2826ee8b1c2 274-275
+  s_ba5c9c23b0483a::t_e49a53f654039b 263-268,270-273,276-277
+docs/USAGE.md
+  s_ba5c9c23b0483a::t_d224251a62b080 17-20
+frontend/src/SegmentPage.tsx
+  s_ba5c9c23b0483a::t_f1d5ff880f944d 54,619-620,622-627
+backend/openapi.json
+  s_ba5c9c23b0483a::t_d9eb1e2a0f838b 4255-4356,4361,4712-4765
+frontend/src/api/schema.d.ts
+  s_ba5c9c23b0483a::t_d2ac42be701cfb 2763-2801,2805,2932-2945
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e19bfb88afbce66bd092c7e061fbbc163b45ee73",
+  "prompts": {},
+  "sessions": {
+    "s_ba5c9c23b0483a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18d45-4c34-7791-98e1-3d141c21f520",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
