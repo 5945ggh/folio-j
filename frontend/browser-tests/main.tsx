@@ -20,6 +20,7 @@ import { chapterRecords } from "./chapter-records";
 import { explanationRegression } from "./explanation";
 import { materialImport } from "./material-import";
 import { navigationFeedback } from "./navigation-feedback";
+import { positionBookmarks } from "./position-bookmarks";
 import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
 import { readerContextCopy } from "./reader-context-copy";
@@ -414,6 +415,7 @@ try {
 		["settings-models", settingsModels],
 		["app-theme", appTheme],
 		["reader-images", readerImages],
+		["position-bookmarks", positionBookmarks],
 		["reader-layout-switch", readerLayoutSwitch],
 		["reader-context-copy", readerContextCopy],
 		["reader-settings", readerSettings],

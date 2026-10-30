@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import type { components } from "../src/api/schema";
 import { projectPart } from "../src/materials/dom";
 import { DEFAULT_BOOK_UI, READER_UI_KEY } from "../src/materials/preferences";
@@ -214,6 +215,15 @@ export async function themeRegression(h: BrowserHarness) {
 		import("../src/materials/MaterialReader"),
 		import("../src/translation/TranslationPanel"),
 	]);
+	const { useReaderBookmarks } = await import(
+		"../src/materials/ReaderBookmarks"
+	);
+	function ThemeNavigationPanel(
+		props: Omit<ComponentProps<typeof ReaderNavigationPanel>, "bookmarks">,
+	) {
+		const bookmarks = useReaderBookmarks("theme", "v1");
+		return <ReaderNavigationPanel {...props} bookmarks={bookmarks} />;
+	}
 	const noop = () => {};
 	for (const theme of ["white", "black"] as const) {
 		await run(`study confirmations ${theme}`, async () => {
@@ -371,7 +381,7 @@ export async function themeRegression(h: BrowserHarness) {
 		await run(`navigation progress ${theme}`, async () => {
 			const dispose = await h.mount(
 				<div className="reader-r1" data-theme={theme}>
-					<ReaderNavigationPanel
+					<ThemeNavigationPanel
 						materialId="theme"
 						versionId="v1"
 						settings={settings}

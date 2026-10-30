@@ -67,7 +67,7 @@ flowchart LR
 
 Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一事务内标记所属片段，材料通过 Source 存活门禁变为不可见。独立材料删除保留 Material 身份墓碑并清理其托管副本及派生阅读数据，不改 Source、片段、讲解、讨论或片段任务；独立翻译任务按第 4.8 节撤销。接受问答、成功保存持久讲解或建立精确材料出处时，在对应短写事务中首次设置 `text_locked_at`；共同保护函数不提交事务、不递增片段记录 revision，也不重写已有锁定时间。原文编辑、来源／片段删除共用事务校验边界。
 
-数据库生命周期由应用 lifespan 管理。`0001_schema_baseline` 以固定 Alembic DDL 建立原有 28 张业务表，包括材料软删除与活跃材料部分唯一索引、精确出处、语境设置及翻译表；`0002_context_copy_settings` 一次性新增独立复制设置表，当前 head 共 29 张业务表。空库顺序执行两份脚本，既有基线库只执行新增脚本；版本脚本不导入运行时 ORM，也不调用自动建表。旧开发阶段的回填、批量重建及中间 revision 已移除，历史编号与当时的数据保护事实保留在阶段验收中。
+数据库生命周期由应用 lifespan 管理。`0001_schema_baseline` 以固定 Alembic DDL 建立原有 28 张业务表，包括材料软删除与活跃材料部分唯一索引、精确出处、语境设置及翻译表；`0002_context_copy_settings` 一次性新增独立复制设置表，`0003_material_bookmarks` 新增位置书签表，当前 head 共 30 张业务表。空库顺序执行三份脚本，既有基线库只执行新增脚本；版本脚本不导入运行时 ORM，也不调用自动建表。旧开发阶段的回填、批量重建及中间 revision 已移除，历史编号与当时的数据保护事实保留在阶段验收中。
 
 迁移与应用读取同一配置的数据库路径，连接始终启用外键。迁移使用显式 `BEGIN IMMEDIATE` 与事务性 DDL，提交前执行全库 `foreign_key_check`；执行或校验失败会回滚 DDL、数据及版本记录。初始基线支持显式完整降级到 base，该操作删除全部应用表，包含自引用历史的降级回归已通过。`just dev`／`just start` 先执行迁移，不自动删库或修改版本标签。需保留日常数据或发布第一版后继续维护增量升级路径；旧开发库边界见[升级与备份](UPGRADING.md#当前迁移基线)，等价性及本机对齐证据见[迁移基线验收](handovers/archived/DATABASE_MIGRATION_ACCEPTANCE.md)。
 
@@ -88,6 +88,7 @@ Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profi
 | `Material` | `source_id`、标题、源字节摘要、`version_id`、产物摘要、契约版本、原 EPUB 字节、压缩编译包 | 同 Source 同源字节复用身份；版本、正文与资源不可变，章节及 spine 资源在包内表达 |
 | `MaterialCustomCover` | `material_id`、媒体类型、用户上传图片字节 | 持久展示覆盖，独立于可重建封面缓存；信息修订由 Material 的 `metadata_revision` 管理 |
 | `ReadingPosition` | `material_id`、`revision`、位置与三项阅读设置的 `payload`、`updated_at` | 每材料最多一条，按条件版本更新；位置绑定具体版本、章、part 和资源 |
+| `MaterialBookmark` | material_id、version_id、position、chapter_title、excerpt、note、request_id、revision、deleted_at | 独立持久回访点；书中排序字段由验证后的原文和图片位置派生，材料删除后保留并隐藏 |
 | `ChapterReadingPosition` | `material_id` + `chapter_id` 复合主键、位置 `payload`、`revision`、`updated_at` | 各章最后位置；revision 为该次材料位置写入的版本，与全书最后位置原子更新 |
 | `MaterialUsage` | `material_id`、状态、独立 `revision`、`last_opened_at`、`last_action_id` | 每材料最多一条；未开始／进行中／已完成与最近打开独立于位置保存 |
 | `MaterialCover` | `material_id`、媒体类型、图片字节、`rule_version`、诊断原因 | 每材料最多一条可重建缓存；`data=NULL` 表示无可用封面，版本 2 可重提旧缓存 |
@@ -259,6 +260,16 @@ GET `/api/materials/{material_id}/statistics` 接受明确的 version_id 和可�
 
 前端 `catalog/BookStatistics.tsx` 在详情信息后独立加载；查询键包含材料、版本和可选代次，与目录／元信息查询分离。重新进入或显式刷新读取当前结果，普通信息编辑不重新请求统计。加载、失败、无代次与零词次分别显示，错误不继续展示缓存中的旧正文；说明区呈现实际分词配置和规则版本。纯逻辑测试、缓存竞争和浏览器证据见[B2 验收](handovers/archived/text-study/B2_ACCEPTANCE.md)。
 
+### 3.1.5 位置书签
+
+`material_bookmarks` 绑定 Material 与不可变版本，保存 `PositionAnchor`、章名、摘要、备注、创建请求与独立 revision。书中排序使用章序、part 序、资源码点、同点图片顺序及图片局部进度，ID 为最后稳定排序键。阅读停留和排版保存不更新书签；跳转通过现有 `ReaderNavigation`，采用当前设置，不将书签创建时设置恢复到正文。
+
+`ReaderViews.bookmark_location` 在已校验编译视图上验证文本或图片位置，派生排序和摘要；计算在写锁外执行，写入短事务重新核验材料身份与可见性。`bookmark_positions.py` 集中固定预算：当前位置前最多 40、后最多 120 个 Unicode 码点，同章可跨相邻 part，合计最多 160 码点，整理空白，不包含 ruby 或应用附加文字。无附近文字的图片可取原图 alt，仍受总预算约束。
+
+接口以 `/api/materials/{material_id}/bookmarks` 为前缀：GET 按 `version_id`、`offset`、`limit` 分页（默认 40、最多 100）；POST 接收冻结的 `request_id` 与 `position`；`/{bookmark_id}` 提供 GET、PATCH 备注及 DELETE。创建按材料与 UUID 去重，同请求不同位置拒绝；已删除请求不能重建。备注 NFC 规范化、最多 5000 码点，PATCH 和 DELETE 携带 `expected_revision`，陈旧请求返回 409。成功添加和编辑不产生 Run、Segment 或阅读位置写入。
+
+书签独立删除设置 `deleted_at`。所有读取和修改检查材料与 Source 可见性；材料删除保留行及备注，不在重新导入时换绑。`0003_material_bookmarks` 从现有复制配置迁移继续增量建表，原有数据与配置保持。前端经生成 DTO 和 TanStack Query 访问，列表分页与备注草稿按材料版本及书签身份隔离。
+
 ### 3.2 关系
 
 下图为已实现实体关系。Occurrence 未来关联 Segment 和具体 AnalysisRevision／Section，契约见上表与第 4.4–4.5 节。
@@ -269,6 +280,7 @@ erDiagram
   Source ||--o{ Material : contains
   Material ||--o| ReadingPosition : resumes
   Material ||--o{ ChapterReadingPosition : remembers
+  Material ||--o{ MaterialBookmark : bookmarks
   Material ||--o| MaterialUsage : tracks
   Material ||--o| MaterialCover : caches
   Segment ||--o{ Analysis : has

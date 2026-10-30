@@ -5,17 +5,18 @@
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
 
-2026-10-29 实际阅读评测补充：带上下文复制首版 `d125fee` 与数据库持久化调整 `14fb998` 已合入本地 main，现用库经一致性备份后升级至 `0002_context_copy_settings`，原有数据与凭据保持。首版浏览器与折叠调整的验证范围见[原验收](reading-practice/CONTEXT_COPY_ACCEPTANCE.md)；数据库调整通过常规工程检查及独立审查，实际升级与校验见[数据库验收](reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md#现用库升级与主分支集成)，按用户要求未重跑浏览器。书签与扩展搜索按[三阶段计划](reading-practice/PLAN.md)后续实施。
+2026-10-29 实际阅读评测补充：带上下文复制首版 `d125fee` 与数据库持久化调整 `14fb998` 已合入本地 main，现用库经一致性备份后升级至 `0002_context_copy_settings`，原有数据与凭据保持。首版浏览器与折叠调整的验证范围见[原验收](reading-practice/CONTEXT_COPY_ACCEPTANCE.md)；数据库调整通过常规工程检查及独立审查，实际升级与校验见[数据库验收](reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md#现用库升级与主分支集成)，按用户要求未重跑浏览器。当时的后续顺序见[三阶段计划](reading-practice/PLAN.md)，当前交付见下方整合记录。
 
-2026-10-29 阅读设置工作区补充：`codex/reader-settings-structure` 从 `main 7d57239` 开始，已接入四组设置、分组恢复及当前 Reader 路由会话的复制草稿。双草稿离开协调和查询再验证期间的保护已验证，结构版工程检查及生产组件的隔离浏览器场景通过，用户审阅后的界面细调按要求仅运行常规检查，尚未合入 main。验收与限制见[阅读设置验收](reading-practice/READER_SETTINGS_ACCEPTANCE.md)。后端、schema、默认参数与迁移不变；当前实现接入不改变上方既有版本的验收结论。范围与历史依据见[结构方案](reading-practice/READER_SETTINGS_STRUCTURE.md#9-生产工作区进展2026-10-29)。
+2026-10-30 本地整合：阅读设置 `eaee221` 与位置书签 `11ab6bb` 已合入原目录的本地 main。保留四组设置、会话草稿与离开保护，并接入单角圆角书签卡片及 `0003_material_bookmarks`。整合后的检查与启动核验见[集成记录](reading-practice/BOOKMARKS_ACCEPTANCE.md#2026-10-30-原目录集成)，现用库及原有凭据沿用已验证的升级结果。
 
 ## 1. 当前实现、差额与验收依据
 
 | 能力 | 状态 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- | --- |
 | 带上下文复制 | 已合入本地 main，现用库升级与只读配置核验通过 | 选区直接复制目标、语境及可选出处；复制默认值独立保存于数据库，旧浏览器值忽略；显式保存与冲突保稿，格式预览默认折叠；复用既有取文，不创建学习内容 | [首版验收](reading-practice/CONTEXT_COPY_ACCEPTANCE.md)、[数据库持久化验收](reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md) |
-| 阅读设置四组结构与会话草稿 | 功能分支实现与验收完成，尚未合入 main | 常用项直达，低频控件与说明折叠；摘要取已保存复制值，状态持续可见；排版、注音与界面分组恢复，复制只恢复草稿；同次阅读保稿及离开保护沿用各项存储范围，不新增迁移 | [现行交互](../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)、[结构依据](reading-practice/READER_SETTINGS_STRUCTURE.md)、[独立验收](reading-practice/READER_SETTINGS_ACCEPTANCE.md) |
-| 位置书签与扩展搜索 | 已确认范围，未实现 | 位置书签及普通阅读备注独立于学习资料；书内搜索后续扩展片段、译文和书签 | [实施计划](reading-practice/PLAN.md)、[PRD 4.9](../PRD.md#49-阅读摘录书签与记录检索) |
+| 阅读设置四组结构与会话草稿 | 已合入本地 main，整合回归通过 | 常用项直达，低频控件与说明折叠；摘要取已保存复制值，状态持续可见；排版、注音与界面分组恢复，复制只恢复草稿；同次阅读保稿及离开保护沿用各项存储范围，不新增迁移 | [现行交互](../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)、[结构依据](reading-practice/READER_SETTINGS_STRUCTURE.md)、[独立验收](reading-practice/READER_SETTINGS_ACCEPTANCE.md) |
+| 位置书签 | 已合入本地 main，整合检查与启动核验通过 | 快捷添加当前阅读位置、固定预算摘要、普通阅读备注、书中顺序列表及跳转；删除书籍后保留并隐藏，不向重导材料换绑；单角圆角卡片已通过浏览器核对，现用库已备份并升至 0003，原有数据与凭据一致 | [书签验收](reading-practice/BOOKMARKS_ACCEPTANCE.md)、[PRD 4.9](../PRD.md#49-阅读摘录书签与记录检索) |
+| 扩展书内搜索 | 已确认范围，未实现 | 后续搜索明确关联本书的片段、译文和书签；当前仍为原文字面检索 | [实施计划](reading-practice/PLAN.md) |
 | 测试清理与入口回归 | 已提交，完整工程检查、浏览器矩阵及独立复审通过 | 清理旧分支与重复断言，保留业务保护；Reader 恢复默认、迟到注音与缓存回收通过真实入口回归，浏览器筛选空集明确失败 | [验收与变异检查](TEST_CLEANUP_ACCEPTANCE.md) |
 | 来源与片段 | 已提交 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定，共用原文保护规则 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](archived/text-study/A2_ACCEPTANCE.md)、[统一Agent验收](AGENT_CONTEXT_ACCEPTANCE.md) |
 | 路由代码按需加载 | 已提交，主分支整合经工程检查、73 组完整浏览器回归及独立复核通过 | 默认素材库同步加载，其他页面按路由加载；阅读与片段路径共用稳定会话宿主，保留真实 URL、iframe 身份、精确返回与草稿；尾斜杠直达及地址切换有回归覆盖。原冷加载比较绑定当时版本，整合后未重测 | [路由加载验收与整合复核](archived/ROUTE_LOADING_ACCEPTANCE.md#主分支整合复核2026-10-27) |

@@ -103,6 +103,7 @@ import {
 	writeBookUiPreferences,
 	writeReaderUiPreferences,
 } from "./preferences";
+import { ReaderBookmarkNotice, useReaderBookmarks } from "./ReaderBookmarks";
 import { ContextCopyFeedback, useReaderContextCopy } from "./ReaderContextCopy";
 import { ReaderIcon, ReaderPanel, ReaderSettings } from "./ReaderControls";
 import { ReaderCopyLeaveGuard } from "./ReaderCopyLeaveGuard";
@@ -354,6 +355,7 @@ function Reader({
 			? `${chapterId}:${generation}:${translationTargetKey(selection.target.reference)}`
 			: null,
 	);
+	const bookmarks = useReaderBookmarks(book.id, book.version_id);
 	const [panels, setPanels] = useState<ReaderPanelsState>(EMPTY_READER_PANELS);
 	const leftView = useReaderPresence(panels.left);
 	const rightView = useReaderPresence(panels.right);
@@ -546,7 +548,7 @@ function Reader({
 			if (
 				!(
 					latest.current.panels.right === "study" &&
-					(next === "toc" || next === "search")
+					(next === "toc" || next === "bookmarks" || next === "search")
 				)
 			) {
 				setMarkHit(null);
@@ -2208,7 +2210,7 @@ function Reader({
 										stroke="currentColor"
 										strokeWidth="1.5"
 									>
-										<path d="M6 4h12v16l-6-4-6 4z" />
+										<path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h6" />
 									</svg>
 								)}
 							</button>
@@ -2266,7 +2268,7 @@ function Reader({
 						<button
 							type="button"
 							aria-label="目录"
-							data-tooltip="目录与搜索"
+							data-tooltip="目录、书签与搜索"
 							aria-expanded={panels.left !== null}
 							onClick={() => selectPanel("toc", true)}
 						>
@@ -2292,6 +2294,23 @@ function Reader({
 							<ReaderIcon name="next" />
 						</button>
 					</div>
+					<button
+						type="button"
+						aria-label="添加当前位置书签"
+						data-tooltip="添加当前位置书签"
+						disabled={bookmarks.busy || chapterSwitchBusy || !presented}
+						onClick={() =>
+							bookmarks.add(() => {
+								if (navigation.current.state.busy) return null;
+								const sampled = capture();
+								return sampled
+									? presentation.current.presentedAnchor(() => sampled)
+									: null;
+							})
+						}
+					>
+						<ReaderIcon name="bookmark" />
+					</button>
 					<button
 						type="button"
 						aria-label="插图库"
@@ -2336,6 +2355,10 @@ function Reader({
 					</button>
 				</nav>
 			</footer>
+			<ReaderBookmarkNotice
+				bookmarks={bookmarks}
+				onEdit={() => selectPanel("bookmarks")}
+			/>
 			<SpeechPlaybackBar />
 			{translationTarget && (
 				<div hidden={!translationOpen}>
@@ -2651,6 +2674,7 @@ function Reader({
 						!active ||
 						(compactPanels && !!panels.right && panels.activeSide === "right")
 					}
+					bookmarks={bookmarks}
 					tab={leftView.value}
 					onTab={(tab) => selectPanel(tab)}
 					onChoose={(id) =>

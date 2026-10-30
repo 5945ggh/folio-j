@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.api.analyses import router as analyses_router
+from app.api.bookmarks import router as bookmarks_router
 from app.api.health import router as health_router
 from app.api.materials import router as materials_router
 from app.api.settings import router as settings_router
@@ -136,6 +137,7 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
 
     application.include_router(catalog_router)
     application.include_router(materials_router)
+    application.include_router(bookmarks_router)
     application.include_router(analyses_router)
     application.include_router(sources_router)
     application.include_router(settings_router)

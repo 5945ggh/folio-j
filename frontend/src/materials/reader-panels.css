@@ -543,15 +543,18 @@
 	position: absolute;
 	bottom: -1px;
 	left: 0;
-	width: 50%;
+	width: calc(100% / 3);
 	height: 2px;
 	background: var(--reader-accent);
 	pointer-events: none;
 	transform: translateX(0);
 	transition: transform var(--reader-motion-duration, 180ms) ease-out;
 }
-.reader-query-tabs[data-active-tab="search"]::after {
+.reader-query-tabs[data-active-tab="bookmarks"]::after {
 	transform: translateX(100%);
+}
+.reader-query-tabs[data-active-tab="search"]::after {
+	transform: translateX(200%);
 }
 
 .reader-navigation-error {

@@ -2,6 +2,7 @@ export const READER_QUERY_PAGE_SIZE = 40;
 export const READER_SEARCH_DELAY = 200;
 export type ReaderPanelKind =
 	| "toc"
+	| "bookmarks"
 	| "search"
 	| "gallery"
 	| "settings"
@@ -9,7 +10,7 @@ export type ReaderPanelKind =
 	| "info";
 export type ReaderPanelSide = "left" | "right";
 export type ReaderPanelsState = {
-	left: "toc" | "search" | null;
+	left: "toc" | "bookmarks" | "search" | null;
 	right: "gallery" | "settings" | "info" | "study" | null;
 	activeSide: ReaderPanelSide | null;
 };
@@ -24,7 +25,8 @@ export function selectReaderPanel(
 	toggle = false,
 	compact = false,
 ): ReaderPanelsState {
-	const navigation = next === "toc" || next === "search";
+	const navigation =
+		next === "toc" || next === "bookmarks" || next === "search";
 	const side = navigation ? "left" : "right";
 	if (
 		compact &&
@@ -33,7 +35,7 @@ export function selectReaderPanel(
 		(current[side] === next || (navigation && current.left !== null))
 	)
 		return { ...current, activeSide: side };
-	if (next === "toc" || next === "search") {
+	if (next === "toc" || next === "bookmarks" || next === "search") {
 		const left = toggle && current.left !== null ? null : next;
 		return {
 			...current,

@@ -96,3 +96,19 @@ test("image fit preserves ratio, does not enlarge small originals and zoom is re
 		height: 200,
 	});
 });
+
+test("bookmarks share the left navigation and retain the selected tab when uncovered", () => {
+	const saved = selectReaderPanel(EMPTY_READER_PANELS, "bookmarks");
+	assert.deepEqual(saved, {
+		left: "bookmarks",
+		right: null,
+		activeSide: "left",
+	});
+	const covered = selectReaderPanel(saved, "settings");
+	assert.deepEqual(selectReaderPanel(covered, "toc", true, true), {
+		...covered,
+		activeSide: "left",
+	});
+	assert.equal(selectReaderPanel(saved, "search").left, "search");
+	assert.equal(selectReaderPanel(saved, "toc", true).left, null);
+});
