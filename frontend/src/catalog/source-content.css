@@ -408,7 +408,7 @@
 .source-view-panel .segment-meta {
 	font-size: 11px;
 }
-.source-view-panel .segment-row > .button {
+.source-view-panel .segment-row-actions > .button {
 	font-size: 12px;
 	border: 0;
 	background: transparent;
@@ -491,6 +491,101 @@
 	flex-wrap: nowrap;
 	align-items: flex-start;
 }
-.source-view-panel .segment-row > .button {
+.source-view-panel .segment-row-actions > .button {
 	flex: none;
+}
+.segment-row-actions {
+	display: flex;
+	align-items: center;
+	flex: none;
+	gap: 6px;
+}
+.source-view-panel .segment-meta,
+.overview-segment .segment-meta {
+	display: block;
+	max-width: none;
+	font-size: 11px;
+	line-height: 1.8;
+}
+.segment-created-at {
+	white-space: nowrap;
+}
+.library-popover.segment-list-menu {
+	width: min(160px, calc(100vw - 24px));
+	min-width: 0;
+	padding: 5px;
+	border-radius: 8px;
+}
+.segment-list-menu button {
+	display: block;
+	width: 100%;
+	min-height: 32px;
+	padding: 5px 8px;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	font-size: 12px;
+	text-align: left;
+	cursor: pointer;
+}
+.segment-list-menu button:hover,
+.segment-list-menu button:focus-visible {
+	background: var(--color-surface-active);
+}
+
+.source-view-panel .segment-meta,
+.overview-segment .segment-meta {
+	container-type: inline-size;
+}
+.segment-meta-layout {
+	display: flex;
+	align-items: baseline;
+	gap: 16px;
+}
+.segment-origin-label {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	white-space: nowrap;
+}
+.segment-origin-part {
+	display: flex;
+	min-width: 0;
+	flex: 0 1 auto;
+}
+.segment-origin-value {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.segment-origin-separator {
+	flex: none;
+	white-space: pre;
+}
+.segment-origin-label:has(.segment-origin-chapter) .segment-origin-title {
+	min-width: 3em;
+	max-width: 40%;
+	flex: 0 1 30%;
+}
+.segment-origin-chapter {
+	min-width: 3em;
+	flex: 1 1 0;
+}
+.segment-origin-supplement {
+	min-width: 1.8em;
+	flex: 0 1 18%;
+}
+.segment-origin-position,
+.segment-origin-state {
+	flex: none;
+}
+.segment-created-at {
+	flex: none;
+}
+@container (max-width: 600px) {
+	.segment-meta-layout {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 2px;
+	}
 }

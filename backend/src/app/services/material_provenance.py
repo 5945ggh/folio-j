@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.catalog_schemas import SegmentProvenanceSummary
 from app.epub_schemas import CompiledBook, CompiledResource
 from app.epub_storage import decode as decode_epub
 from app.ids import new_ulid
@@ -720,3 +721,211 @@ async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceRe
             "display": " · ".join(item for item in (result.display, location) if item) or None,
         }
     )
+
+
+@dataclass(frozen=True)
+class _CatalogOrigin:
+    source_id: str
+    material_id: str
+    version_id: str
+    assembly_rule: str
+    payload: str
+    text: str
+
+
+@dataclass(frozen=True)
+class _CatalogMaterial:
+    source_id: str
+    title: str
+    deleted: bool
+    version_id: str
+    product_sha256: str
+    contract_version: str
+    compiled_bundle: bytes
+
+    @classmethod
+    def snapshot(cls, material: Material) -> "_CatalogMaterial":
+        return cls(
+            material.source_id,
+            material.title,
+            material.deleted_at is not None,
+            material.version_id,
+            material.product_sha256,
+            material.contract_version,
+            material.compiled_bundle,
+        )
+
+    def identity(self) -> tuple[str, str, str, bytes]:
+        return (
+            self.version_id,
+            self.product_sha256,
+            self.contract_version,
+            self.compiled_bundle,
+        )
+
+
+def _catalog_summary(
+    source_id: str,
+    origin: _CatalogOrigin,
+    material: _CatalogMaterial | None,
+    books: dict[str, CompiledBook | None],
+) -> SegmentProvenanceSummary:
+    try:
+        reference = MaterialProvenance.model_validate_json(origin.payload)
+    except ValidationError:
+        return SegmentProvenanceSummary(status="invalid_reference")
+    if (
+        origin.source_id != source_id
+        or origin.material_id != reference.material_id
+        or origin.version_id != reference.version_id
+        or origin.assembly_rule != ASSEMBLY_RULE
+        or (material is not None and material.source_id != source_id)
+    ):
+        return SegmentProvenanceSummary(status="invalid_reference")
+    if material is None:
+        return SegmentProvenanceSummary(status="version_unavailable")
+    title = material.title if material.title.strip() else None
+    result = SegmentProvenanceSummary(status="version_unavailable", display=title, title=title)
+    if material.deleted:
+        return result.model_copy(update={"status": "material_deleted"})
+    if material.version_id != reference.version_id:
+        return result
+    if origin.material_id not in books:
+        try:
+            book = decode_epub(material.compiled_bundle)
+            books[origin.material_id] = (
+                book
+                if book.product_sha256 == material.product_sha256
+                and book.contract == material.contract_version
+                else None
+            )
+        except ValueError:
+            books[origin.material_id] = None
+    book = books[origin.material_id]
+    if book is None:
+        return result.model_copy(update={"status": "snapshot_mismatch"})
+    try:
+        _, text, chapter_id, parts = validate_reference(book, reference)
+    except ProvenanceError:
+        return result.model_copy(update={"status": "snapshot_mismatch"})
+    if text != origin.text:
+        return result.model_copy(update={"status": "snapshot_mismatch"})
+    chapter = next((item for item in book.chapters if item.id == chapter_id), None)
+    chapter_title = chapter.title if chapter is not None and chapter.title.strip() else None
+    location = chapter_location(book, chapter_id, parts)
+    return result.model_copy(
+        update={
+            "status": "resolved",
+            "chapter_title": chapter_title,
+            "display": " · ".join(item for item in (title, location) if item) or None,
+        }
+    )
+
+
+def _catalog_summaries(
+    source_id: str,
+    origins: dict[str, _CatalogOrigin],
+    materials: dict[str, _CatalogMaterial],
+) -> dict[str, SegmentProvenanceSummary]:
+    books: dict[str, CompiledBook | None] = {}
+    return {
+        segment_id: _catalog_summary(source_id, origin, materials.get(origin.material_id), books)
+        for segment_id, origin in origins.items()
+    }
+
+
+async def catalog_provenance_summaries(
+    session: AsyncSession, source_id: str, segments: list[Segment]
+) -> dict[str, SegmentProvenanceSummary]:
+    """Validate one page off-thread, decoding each material once, then recheck visibility."""
+    ids = [segment.id for segment in segments]
+    origins = {
+        segment.id: _CatalogOrigin(
+            origin.source_id,
+            origin.material_id,
+            origin.version_id,
+            origin.assembly_rule,
+            origin.payload,
+            segment.text,
+        )
+        for segment in segments
+        if (origin := segment.material_provenance) is not None
+    }
+    material_ids = {origin.material_id for origin in origins.values()}
+    materials = {
+        material.id: _CatalogMaterial.snapshot(material)
+        for material in (
+            await session.scalars(select(Material).where(Material.id.in_(material_ids)))
+        ).all()
+    }
+    # Release the read snapshot before potentially expensive EPUB validation.
+    await session.rollback()
+    summaries = await asyncio.to_thread(_catalog_summaries, source_id, origins, materials)
+    await require_source(session, source_id)
+    current_materials = {
+        material.id: _CatalogMaterial.snapshot(material)
+        for material in (
+            await session.scalars(
+                select(Material)
+                .where(Material.id.in_(material_ids))
+                .execution_options(populate_existing=True)
+            )
+        ).all()
+    }
+    current_segments = (
+        await session.scalars(
+            select(Segment)
+            .where(
+                Segment.id.in_(ids), Segment.source_id == source_id, Segment.deleted_at.is_(None)
+            )
+            .execution_options(populate_existing=True)
+        )
+    ).all()
+    result: dict[str, SegmentProvenanceSummary] = {}
+    for segment in current_segments:
+        origin = origins.get(segment.id)
+        current_origin = segment.material_provenance
+        if origin is None:
+            result[segment.id] = SegmentProvenanceSummary(status="none")
+            continue
+        material = current_materials.get(origin.material_id)
+        before = materials.get(origin.material_id)
+        summary = summaries[segment.id]
+        current_summary = _catalog_summary(source_id, origin, material, {origin.material_id: None})
+        if current_origin is None or (
+            current_origin.source_id,
+            current_origin.material_id,
+            current_origin.version_id,
+            current_origin.assembly_rule,
+            current_origin.payload,
+        ) != (
+            origin.source_id,
+            origin.material_id,
+            origin.version_id,
+            origin.assembly_rule,
+            origin.payload,
+        ):
+            summary = SegmentProvenanceSummary(status="invalid_reference")
+        elif current_summary.status != "snapshot_mismatch":
+            summary = current_summary
+        elif material is None or before is None or material.identity() != before.identity():
+            # Never attach a chapter derived from an obsolete immutable product.
+            summary = current_summary.model_copy(update={"status": "version_unavailable"})
+        elif segment.text != origin.text:
+            summary = SegmentProvenanceSummary(
+                status="snapshot_mismatch", title=summary.title, display=summary.title
+            )
+        elif material.title != before.title:
+            title = current_summary.title
+            # Title is mutable metadata; the validated location remains reliable.
+            location = summary.display
+            if before.title.strip() and location and location.startswith(before.title):
+                location = location[len(before.title) :].removeprefix(" · ")
+            summary = summary.model_copy(
+                update={
+                    "title": title,
+                    "display": " · ".join(item for item in (title, location) if item) or None,
+                }
+            )
+        result[segment.id] = summary
+    return result

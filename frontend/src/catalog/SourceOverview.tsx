@@ -20,6 +20,7 @@ import { useCatalogScroll } from "./hooks";
 import { ImportCards, useImportTasks } from "./ImportCards";
 import { ImportDialog } from "./ImportDialog";
 import { Icon } from "./LibraryTools";
+import { SegmentMetadata } from "./SegmentMetadata";
 import { analysisDestination } from "./state";
 
 const analysesQuery: AnalysisQuery = {
@@ -329,13 +330,7 @@ export function SourceOverview({
 									<article className="overview-segment" key={segment.id}>
 										<Link to={`/segments/${segment.id}`} state={{ returnTo }}>
 											<p lang="ja">{segment.text}</p>
-											<small>
-												{segment.source_ref ||
-													(segment.material_provenance
-														? "已保存材料出处"
-														: "未填写出处")}{" "}
-												· 添加于 {dateLabel(segment.created_at)}
-											</small>
+											<SegmentMetadata segment={segment} />
 										</Link>
 										<Link
 											className="source-text-button"

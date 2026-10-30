@@ -532,6 +532,7 @@ function DocumentActions({
 					type="button"
 					role="menuitem"
 					tabIndex={-1}
+					className="text-danger"
 					onClick={() => {
 						closeMenu();
 						onDelete();

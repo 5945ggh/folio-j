@@ -166,6 +166,10 @@ GET、PUT 与前端即时显示采用相同进度口径：章末标志为 true �
 
 Source 目录提供材料、未删除片段与讲解的真实计数，概览仅取有界预览。讲解聚合仅关联未删除 Segment，携带所属片段、确切当前修订和最多 160 码点原文短摘，避免前端 N+1；书籍目录平铺 usage 字段。旧列表接口保留原响应形状。查询、封面和写入检查完整 Source 可见性链，不可见来源或材料返回 404。
 
+片段目录使用 `SegmentCatalogItem`，在原片段字段外增加 `provenance_summary`（`display/title/chapter_title/status`）。服务按页批量读取材料，在线程内复用出处校验与章内位置规则，每本材料每页只解码一次；校验后重新检查来源、片段可见性与材料完整产物身份。只有有效出处返回章名和位置，失效时保留可核实书名与状态；字段不持久化，旧片段接口不变。概览和完整列表使用同一前端元信息组件。
+
+列表与详情共用 `SegmentDeleteDialog`，沿用 Segment 删除及影响接口，提交前比对全部影响字段（含 `analysis_count`）。成功后取消相关在途读取、清理目标片段及其讲解／讨论缓存，刷新来源计数、目录和对应材料阅读标记；活动列表先移除已删除对象，保留筛选与分页并等待刷新。删除语义沿用既有软删除，不增加恢复入口。
+
 封面规则版本 `2` 优先采用有效的 EPUB3 cover-image／EPUB2 meta name=cover 声明，再按 spine 中 XHTML `img`／SVG `image` 的包内引用、manifest 图像顺序回退首张可用静态 PNG／JPEG；重复候选只尝试一次，不依赖 ZIP 物理排列。引用必须属于 manifest，SVG image 仅提供静态图片引用。坏候选继续，全局归档安全失败整体拒绝，不请求远程图片。图片限制为 4 MiB、1600 万像素；APNG、GIF、WebP、SVG 不作为有效封面候选，无可用候选时使用占位。标准库校验 PNG 结构／CRC 和 JPEG marker、有效帧／扫描组件及非空熵数据，要求 EOI，允许 EOI 后最多 1024 字节；这不是完整像素解码，浏览器加载失败仍占位。
 
 `GET /api/materials/{material_id}/details` 从不可变编译包读取原书标题与章节数，并返回当前展示信息，不记录阅读打开或触发注音准备。`PATCH .../metadata` 使用独立 `metadata_revision`（初值 0）与非负整数 `expected_revision` 条件写入，书名去两端空白并 NFC 后须为 1–300 字符；`cover_action` 为 keep／replace／reset，默认 keep，仅 replace 要求且允许图片。图片须为严格 base64 的静态 PNG／JPEG，解码后不超过 4 MiB、1600 万像素，格式与大小错误返回 422。

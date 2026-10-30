@@ -13,6 +13,7 @@ from app.catalog_schemas import (
     MaterialCatalogItem,
     MaterialCatalogPage,
     ReadingStatus,
+    SegmentCatalogItem,
     SegmentCatalogPage,
     SourceCatalogItem,
     SourceCatalogPage,
@@ -20,6 +21,7 @@ from app.catalog_schemas import (
 from app.material_models import Material, MaterialCover, MaterialCustomCover, MaterialUsage
 from app.models import Segment, Source
 from app.services.covers import cover_url
+from app.services.material_provenance import catalog_provenance_summaries
 from app.services.materials import summary
 from app.services.sources import as_utc, require_source, segment_response
 
@@ -211,7 +213,6 @@ async def segment_catalog(
                 Segment.source_ref.like(pattern, escape="\\"),
             )
         )
-    count = int(await session.scalar(select(func.count()).select_from(statement.subquery())) or 0)
     key = Segment.created_at if sort == "created_at" else Segment.updated_at
     rows = (
         await session.scalars(
@@ -220,8 +221,30 @@ async def segment_catalog(
             .limit(page_size)
         )
     ).all()
+    ids = [segment.id for segment in rows]
+    summaries = await catalog_provenance_summaries(session, source_id, list(rows))
+    # Re-read current page members after validation; deleted ancestors/segments stay hidden.
+    current = {
+        segment.id: segment
+        for segment in (
+            await session.scalars(
+                statement.where(Segment.id.in_(ids)).execution_options(populate_existing=True)
+            )
+        ).all()
+    }
+    count = int(await session.scalar(select(func.count()).select_from(statement.subquery())) or 0)
     return SegmentCatalogPage(
-        items=[segment_response(s) for s in rows], total=count, page=page, page_size=page_size
+        items=[
+            SegmentCatalogItem(
+                **segment_response(current[segment_id]).model_dump(),
+                provenance_summary=summaries[segment_id],
+            )
+            for segment_id in ids
+            if segment_id in current and segment_id in summaries
+        ],
+        total=count,
+        page=page,
+        page_size=page_size,
     )
 
 

@@ -260,6 +260,21 @@ export async function analysisRename(h: BrowserHarness) {
 				menuItems.some((item) => item.textContent?.trim() === "重命名"),
 			"Menu must retain version/delete and add rename",
 		);
+		const deleteAction = menuItems.find(
+			(item) => item.textContent?.trim() === "删除此讲解",
+		);
+		check(deleteAction, "Menu must expose delete-analysis action");
+		const color = getComputedStyle(deleteAction).color;
+		const probe = document.createElement("span");
+		probe.style.color = "var(--color-danger)";
+		deleteAction.append(probe);
+		const dangerColor = getComputedStyle(probe).color;
+		probe.remove();
+		check(
+			color === dangerColor &&
+				color !== getComputedStyle(menuItems[0] ?? trigger).color,
+			"Delete-analysis text must use the danger red rather than normal menu text",
+		);
 		await until(
 			() => document.activeElement === menuItems.at(-1),
 			"ArrowUp must focus the actual last menu item",

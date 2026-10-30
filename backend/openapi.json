@@ -4252,11 +4252,113 @@
         "title": "SectionRead",
         "type": "object"
       },
+      "SegmentCatalogItem": {
+        "properties": {
+          "context_after": {
+            "title": "Context After",
+            "type": "string"
+          },
+          "context_before": {
+            "title": "Context Before",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "material_provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MaterialProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "provenance_summary": {
+            "$ref": "#/components/schemas/SegmentProvenanceSummary"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_ref": {
+            "title": "Source Ref",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "text_locked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Locked At"
+          },
+          "text_sha256": {
+            "title": "Text Sha256",
+            "type": "string"
+          },
+          "transcription": {
+            "title": "Transcription",
+            "type": "string"
+          },
+          "translation": {
+            "title": "Translation",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source_id",
+          "text",
+          "text_sha256",
+          "translation",
+          "context_before",
+          "context_after",
+          "transcription",
+          "note",
+          "source_ref",
+          "created_at",
+          "updated_at",
+          "text_locked_at",
+          "revision",
+          "provenance_summary"
+        ],
+        "title": "SegmentCatalogItem",
+        "type": "object"
+      },
       "SegmentCatalogPage": {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/SegmentResponse"
+              "$ref": "#/components/schemas/SegmentCatalogItem"
             },
             "title": "Items",
             "type": "array"
@@ -4605,6 +4707,60 @@
           "status"
         ],
         "title": "SegmentProvenanceResponse",
+        "type": "object"
+      },
+      "SegmentProvenanceSummary": {
+        "properties": {
+          "chapter_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Title"
+          },
+          "display": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display"
+          },
+          "status": {
+            "enum": [
+              "resolved",
+              "material_deleted",
+              "version_unavailable",
+              "snapshot_mismatch",
+              "invalid_reference",
+              "none"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "SegmentProvenanceSummary",
         "type": "object"
       },
       "SegmentResponse": {

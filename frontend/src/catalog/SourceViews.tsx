@@ -7,10 +7,12 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import type { Source } from "../content";
 import { ConfirmDialog, dateLabel, InlineError } from "../Shared";
+import { SegmentDeleteDialog } from "../segments/SegmentDeleteDialog";
 import {
 	type AnalysisQuery,
 	type Book,
 	type BookQuery,
+	type CatalogSegment,
 	catalogAnalyses,
 	catalogBooks,
 	catalogKeys,
@@ -30,6 +32,8 @@ import { useImportTasks } from "./ImportCards";
 import { ImportDialog } from "./ImportDialog";
 import { Icon } from "./LibraryTools";
 import { sourceListState } from "./presentation";
+import { SegmentMenu } from "./SegmentMenu";
+import { SegmentMetadata } from "./SegmentMetadata";
 import { SourceOverview } from "./SourceOverview";
 import { analysisDestination, lastCatalogPage } from "./state";
 
@@ -235,6 +239,9 @@ function SourceSegments({
 	onAddSegment: () => void;
 }) {
 	const location = useLocation();
+	const [deleting, setDeleting] = useState<CatalogSegment | null>(null);
+	const focusAfterDelete = useRef<number | null>(null);
+	const deletingIndex = useRef(0);
 	const { state, change } = useCatalogState(
 		"segments",
 		`segments-${source.id}`,
@@ -262,6 +269,26 @@ function SourceSegments({
 	useEffect(() => {
 		if (last !== null && state.page > last) change({ page: last });
 	}, [last, state.page, change]);
+	useEffect(() => {
+		if (
+			deleting ||
+			focusAfterDelete.current === null ||
+			segments.isFetching ||
+			segments.isPlaceholderData ||
+			(last !== null && state.page > last)
+		)
+			return;
+		const index = focusAfterDelete.current;
+		focusAfterDelete.current = null;
+		const panel = document.getElementById("source-content-panel-segments");
+		const triggers = panel?.querySelectorAll<HTMLButtonElement>(
+			".segment-menu-trigger",
+		);
+		(
+			triggers?.[Math.min(index, triggers.length - 1)] ??
+			document.getElementById("source-add-segment")
+		)?.focus();
+	});
 	const returnTo = {
 		to: `${location.pathname}${location.search}`,
 		label: source.title,
@@ -280,6 +307,7 @@ function SourceSegments({
 		view === "out-of-page";
 	const addButton = (
 		<button
+			id="source-add-segment"
 			type="button"
 			className={`button ${view === "empty" ? "primary" : "secondary"}`}
 			onClick={(event) => {
@@ -334,7 +362,7 @@ function SourceSegments({
 				</div>
 			) : (
 				<div className="segment-list">
-					{segments.data.items.map((segment) => (
+					{segments.data.items.map((segment, index) => (
 						<article className="segment-row" key={segment.id}>
 							<Link
 								className="segment-content-link"
@@ -344,21 +372,24 @@ function SourceSegments({
 								<span className="segment-text" lang="ja">
 									{segment.text}
 								</span>
-								<span className="segment-meta">
-									{segment.source_ref ||
-										(segment.material_provenance
-											? "已保存材料出处"
-											: "未填写出处")}{" "}
-									· {dateLabel(segment.created_at)}
-								</span>
+								<SegmentMetadata segment={segment} />
 							</Link>
-							<Link
-								className="button secondary"
-								to={`/segments/${segment.id}?chat=1`}
-								state={{ returnTo }}
-							>
-								讨论
-							</Link>
+							<div className="segment-row-actions">
+								<Link
+									className="button secondary"
+									to={`/segments/${segment.id}?chat=1`}
+									state={{ returnTo }}
+								>
+									讨论
+								</Link>
+								<SegmentMenu
+									id={segment.id}
+									onDelete={() => {
+										deletingIndex.current = index;
+										setDeleting(segment);
+									}}
+								/>
+							</div>
 						</article>
 					))}
 				</div>
@@ -369,6 +400,16 @@ function SourceSegments({
 					total={segments.data.total}
 					pageSize={segments.data.page_size}
 					onChange={(page) => change({ page })}
+				/>
+			)}
+			{deleting && (
+				<SegmentDeleteDialog
+					segment={deleting}
+					close={() => setDeleting(null)}
+					restoreFocusId="source-add-segment"
+					onDeleted={() => {
+						focusAfterDelete.current = deletingIndex.current;
+					}}
 				/>
 			)}
 		</>

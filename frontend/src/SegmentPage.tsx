@@ -31,9 +31,7 @@ import {
 import { shouldMountWorkbench } from "./chat/lifecycle";
 import { Workbench } from "./chat/Workbench";
 import {
-	errorMessage,
 	getSegment,
-	getSegmentDeleteImpact,
 	getSource,
 	queries,
 	RequestError,
@@ -53,6 +51,7 @@ import { ConfirmDialog, InlineError } from "./Shared";
 import { changedSegmentFields, segmentEditFields } from "./segments/edit";
 import { NewAnalysisActions } from "./segments/NewAnalysisActions";
 import { OriginalCard } from "./segments/OriginalCard";
+import { SegmentDeleteDialog } from "./segments/SegmentDeleteDialog";
 import { SegmentFrame } from "./segments/SegmentFrame";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "./speech";
 
@@ -279,12 +278,6 @@ export function SegmentDetail() {
 		queryFn: () => getSource(segment.data?.source_id ?? ""),
 		enabled: segment.isSuccess,
 	});
-	const impact = useQuery({
-		queryKey: queries.segmentImpact(id),
-		queryFn: () => getSegmentDeleteImpact(id),
-		enabled: deleting,
-		staleTime: 0,
-	});
 	const [conflictReadVersion, setConflictReadVersion] = useState(0);
 	const update = useMutation({
 		mutationFn: async (fields: SegmentFields) => {
@@ -329,38 +322,6 @@ export function SegmentDetail() {
 		},
 		enabled: Boolean(editing) && editConflicted,
 		retry: false,
-	});
-	const remove = useMutation({
-		mutationFn: async () => {
-			const latest = await impact.refetch();
-			if (latest.isError || !latest.data)
-				throw latest.error ?? new Error("无法核对删除范围，请重试。");
-			if (
-				latest.data.thread_count !== impact.data?.thread_count ||
-				latest.data.message_count !== impact.data?.message_count ||
-				latest.data.active_job_count !== impact.data?.active_job_count
-			)
-				throw new Error("删除范围刚刚变化，请核对最新影响后再次确认。");
-			const { error, response } = await api.DELETE(
-				"/api/segments/{segment_id}",
-				{ params: { path: { segment_id: id } } },
-			);
-			if (error || !response.ok) throw errorMessage(error, response.status);
-		},
-		onSuccess: () => {
-			if (segment.data) {
-				void client.invalidateQueries({
-					queryKey: queries.segments(segment.data.source_id),
-				});
-				void client.invalidateQueries({
-					queryKey: queries.source(segment.data.source_id),
-				});
-			}
-			void client.invalidateQueries({ queryKey: queries.sources });
-			void client.invalidateQueries({ queryKey: ["catalog"] });
-			if (activeId.current === id)
-				navigate(segment.data ? `/sources/${segment.data.source_id}` : "/");
-		},
 	});
 	const current = segment.data;
 	return (
@@ -655,50 +616,15 @@ export function SegmentDetail() {
 						</aside>
 					</div>
 					{deleting && (
-						<ConfirmDialog
-							titleId="delete-segment-title"
+						<SegmentDeleteDialog
+							segment={current}
 							restoreFocusId="segment-more-trigger"
-							onClose={() => setDeleting(false)}
-						>
-							<p className="eyebrow">删除确认</p>
-							<h2 id="delete-segment-title">删除这个片段？</h2>
-							<blockquote lang="ja">
-								{current.text.slice(0, 140)}
-								{current.text.length > 140 ? "…" : ""}
-							</blockquote>
-							{impact.isPending ? (
-								<p>正在读取当前影响范围…</p>
-							) : impact.isError ? (
-								<InlineError error={impact.error} />
-							) : (
-								<p>
-									这会一并删除 {impact.data.thread_count} 条讨论和{" "}
-									{impact.data.message_count} 条消息。
-									{impact.data.active_job_count > 0 &&
-										`其中 ${impact.data.active_job_count} 个进行中的任务会被中断。`}
-									来源本身及其他片段保留。删除后无法从页面恢复。
-								</p>
-							)}
-							<InlineError error={remove.error} />
-							<div className="actions">
-								<button
-									className="button danger"
-									type="button"
-									disabled={!impact.isSuccess || remove.isPending}
-									onClick={() => remove.mutate()}
-								>
-									{remove.isPending ? "删除中…" : "确认删除"}
-								</button>
-								<button
-									className="button secondary"
-									type="button"
-									disabled={remove.isPending}
-									onClick={() => setDeleting(false)}
-								>
-									取消
-								</button>
-							</div>
-						</ConfirmDialog>
+							close={() => setDeleting(false)}
+							onDeleted={() => {
+								if (activeId.current === id)
+									navigate(`/sources/${current.source_id}`);
+							}}
+						/>
 					)}
 				</div>
 			)}

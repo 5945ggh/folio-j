@@ -181,6 +181,9 @@
 .app-shell.segment-study-shell .analysis-document-menu button:focus-visible {
 	background: var(--sidebar);
 }
+.app-shell.segment-study-shell .analysis-document-menu button.text-danger {
+	color: var(--color-danger);
+}
 
 .app-shell.segment-study-shell .analysis-version-dialog {
 	color: var(--text, inherit);

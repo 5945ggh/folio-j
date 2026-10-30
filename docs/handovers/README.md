@@ -21,6 +21,8 @@ C2 精确样例与文本验收矩阵保留仍在使用的规则和固定样例�
 
 ## 历史计划与近期验收
 
+- [片段目录出处与删除验收](archived/SEGMENT_CATALOG_ACCEPTANCE.md)：概览与列表的具体出处、共享删除确认、影响复核及危险操作文字色；实现状态与验证范围见记录。
+
 - [后端细粒度读取性能验收](archived/READER_READ_PERFORMANCE_ACCEPTANCE.md)：位置、章节注音和单图读取的基线、视图复用、内存取舍与回归。
 
 - [事务、后台执行与阅读会话可靠性验收](archived/ARCHITECTURE_RELIABILITY_ACCEPTANCE.md)：元数据短事务、后台故障恢复及尾斜杠片段往返的修复与回归。

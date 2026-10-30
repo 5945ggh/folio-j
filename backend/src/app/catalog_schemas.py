@@ -64,7 +64,25 @@ class SourceCatalogPage(CatalogPage[SourceCatalogItem]):
     pass
 
 
-class SegmentCatalogPage(CatalogPage[SegmentResponse]):
+class SegmentProvenanceSummary(BaseModel):
+    display: str | None = None
+    title: str | None = None
+    chapter_title: str | None = None
+    status: Literal[
+        "resolved",
+        "material_deleted",
+        "version_unavailable",
+        "snapshot_mismatch",
+        "invalid_reference",
+        "none",
+    ]
+
+
+class SegmentCatalogItem(SegmentResponse):
+    provenance_summary: SegmentProvenanceSummary
+
+
+class SegmentCatalogPage(CatalogPage[SegmentCatalogItem]):
     pass
 
 

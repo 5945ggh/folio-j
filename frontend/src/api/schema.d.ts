@@ -2760,10 +2760,49 @@ export interface components {
             /** Uid */
             uid: string;
         };
+        /** SegmentCatalogItem */
+        SegmentCatalogItem: {
+            /** Context After */
+            context_after: string;
+            /** Context Before */
+            context_before: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            material_provenance?: components["schemas"]["MaterialProvenance"] | null;
+            /** Note */
+            note: string;
+            provenance_summary: components["schemas"]["SegmentProvenanceSummary"];
+            /** Revision */
+            revision: number;
+            /** Source Id */
+            source_id: string;
+            /** Source Ref */
+            source_ref: string;
+            /** Text */
+            text: string;
+            /** Text Locked At */
+            text_locked_at: string | null;
+            /** Text Sha256 */
+            text_sha256: string;
+            /** Transcription */
+            transcription: string;
+            /** Translation */
+            translation: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** SegmentCatalogPage */
         SegmentCatalogPage: {
             /** Items */
-            items: components["schemas"]["SegmentResponse"][];
+            items: components["schemas"]["SegmentCatalogItem"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -2882,6 +2921,20 @@ export interface components {
             parts?: components["schemas"]["ProvenancePart"][];
             /** Segment Id */
             segment_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "resolved" | "material_deleted" | "version_unavailable" | "snapshot_mismatch" | "invalid_reference" | "none";
+            /** Title */
+            title?: string | null;
+        };
+        /** SegmentProvenanceSummary */
+        SegmentProvenanceSummary: {
+            /** Chapter Title */
+            chapter_title?: string | null;
+            /** Display */
+            display?: string | null;
             /**
              * Status
              * @enum {string}

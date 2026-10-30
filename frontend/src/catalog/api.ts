@@ -10,6 +10,7 @@ export type BookQuery = NonNullable<
 export type SourceQuery = NonNullable<
 	paths["/api/catalog/sources"]["get"]["parameters"]["query"]
 >;
+export type CatalogSegment = components["schemas"]["SegmentCatalogItem"];
 export type SegmentQuery = NonNullable<
 	paths["/api/sources/{source_id}/catalog/segments"]["get"]["parameters"]["query"]
 >;

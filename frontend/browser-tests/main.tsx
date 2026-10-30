@@ -33,6 +33,7 @@ import { readingAidsRegression } from "./reading-aids";
 import { recordSaving } from "./record-saving";
 import { routeLoading } from "./route-loading";
 import { routeMotion } from "./route-motion";
+import { segmentCatalog } from "./segment-catalog";
 import { segmentMaterials } from "./segment-materials";
 import { segmentShareRegression } from "./segment-share";
 import { settingsModels } from "./settings-models";
@@ -423,6 +424,7 @@ try {
 		["catalog-overview", overviewImportRegression],
 		["catalog-reuse", reusedImportRegression],
 		["catalog-toolbar", catalogToolbarRegression],
+		["segment-catalog", segmentCatalog],
 		["record-saving", recordSaving],
 		["navigation-feedback", navigationFeedback],
 		["route-motion", routeMotion],
