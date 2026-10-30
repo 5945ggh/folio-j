@@ -135,3 +135,17 @@
 		width: calc(100vw - 24px);
 	}
 }
+.reader-record-translation-entry {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.reader-record-translation-entry > .reader-record-translation {
+	flex: 1;
+	min-width: 0;
+}
+
+.reader-record-translation-entry > .translation-remove {
+	flex: 0 0 auto;
+}

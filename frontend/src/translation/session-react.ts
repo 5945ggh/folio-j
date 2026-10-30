@@ -10,10 +10,15 @@ import {
 	createTranslation,
 	getTranslationHistory,
 	getTranslationSettings,
+	removeTranslation,
 	stopTranslation,
 	type TranslationTask,
 	translationSettingsKey,
 } from "./api";
+import {
+	applyTranslationRemoval,
+	cancelTranslationReads,
+} from "./removal-cache";
 import {
 	createTranslationSessions,
 	emptyTranslationSnapshot,
@@ -56,8 +61,8 @@ export function translationQueryAdapter(
 			});
 			return client.fetchQuery({
 				queryKey: ["translations", reference.material_id, identity, 0],
-				queryFn: () =>
-					getTranslationHistory(reference.material_id, 0, identity),
+				queryFn: ({ signal }) =>
+					getTranslationHistory(reference.material_id, 0, identity, signal),
 				staleTime: 0,
 				retry: false,
 			});
@@ -142,6 +147,13 @@ export function translationQueryAdapter(
 		async stop(taskId) {
 			// Mutations are commands; their returned server facts are written by accept().
 			return stopTranslation(taskId);
+		},
+		async remove(reference) {
+			const identity = await targetIdentity(reference);
+			await cancelTranslationReads(client, reference.material_id);
+			const removed = await removeTranslation(reference.material_id, identity);
+			await applyTranslationRemoval(client, reference.material_id, removed);
+			return removed;
 		},
 		uuid: () => crypto.randomUUID(),
 	};

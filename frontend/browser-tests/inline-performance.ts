@@ -31,11 +31,22 @@ export async function inlinePerformance(
 		0,
 	);
 	check(
-		count >= 400,
-		"Performance regression requires at least 400 ordinary paragraphs",
+		count >= 550,
+		"Performance regression requires at least 550 ordinary paragraphs",
+	);
+	const leafCount = documents.reduce(
+		(total, doc) => total + doc.querySelectorAll("[data-locator-leaf]").length,
+		0,
+	);
+	check(
+		leafCount >= count * 4 &&
+			(documents[0]?.querySelectorAll("p").length ?? 0) >= 540,
+		"Performance fixture requires a dense first frame with four canonical leaves per paragraph",
 	);
 	const doc = documents[0];
-	const source = doc?.querySelector<HTMLElement>('[data-locator-leaf="2"]');
+	const source = doc
+		?.querySelectorAll("p")[1]
+		?.querySelectorAll<HTMLElement>("[data-locator-leaf]")[1];
 	const paragraph = source?.closest("p");
 	const viewport = h.container.querySelector<HTMLElement>(".reader-viewport");
 	const result = results[1];
@@ -50,8 +61,8 @@ export async function inlinePerformance(
 	const tap = () => {
 		const range = doc.createRange();
 		check(source.firstChild, "Original source must remain intact");
-		range.setStart(source.firstChild, 5);
-		range.setEnd(source.firstChild, 6);
+		range.setStart(source.firstChild, 1);
+		range.setEnd(source.firstChild, 2);
 		const rect = range.getBoundingClientRect();
 		for (const type of ["pointerdown", "pointerup"])
 			source.dispatchEvent(
@@ -144,7 +155,7 @@ export async function inlinePerformance(
 		};
 	};
 	try {
-		for (const opening of [true, false]) {
+		for (const opening of [true, false, true, false]) {
 			reflows = 0;
 			refreshes = 0;
 			rangeReads = 0;
@@ -159,6 +170,7 @@ export async function inlinePerformance(
 				stable = 0,
 				maxSourceDrift = 0;
 			let previousGeometry = "";
+			const phases: { time: number; height: number; opacity: number }[] = [];
 			tap();
 			while (performance.now() - started < 3000) {
 				const now = await nextFrame();
@@ -177,6 +189,12 @@ export async function inlinePerformance(
 				);
 				const node = inline();
 				const position = geometry();
+				if (phases.length < 5)
+					phases.push({
+						time: Math.round(now - started),
+						height: Math.round(position.height),
+						opacity: position.opacity,
+					});
 				if (reducedMotion)
 					check(
 						readerAnimations(h.container, documents).length === 0,
@@ -192,7 +210,7 @@ export async function inlinePerformance(
 				previousGeometry = currentGeometry;
 				if (stable >= 3) break;
 			}
-			const metrics = `${opening ? "open" : "close"}: ${Math.round(performance.now() - started)}ms, ${frameCount} frames, ${longFrames} >50ms, max ${Math.round(maxFrame)}ms, reflows ${reflows}, mark refreshes ${refreshes}, Range reads ${rangeReads}`;
+			const metrics = `${opening ? "open" : "close"}: ${Math.round(performance.now() - started)}ms, ${frameCount} frames, ${longFrames} >50ms, max ${Math.round(maxFrame)}ms, reflows ${reflows}, mark refreshes ${refreshes}, Range reads ${rangeReads}, startup ${JSON.stringify(phases)}`;
 			samples.push(metrics);
 			check(stable >= 3, `Toggle must settle: ${metrics}`);
 			if (opening)
@@ -255,7 +273,7 @@ export async function inlinePerformance(
 					`Toggle must bound whole-reader reflow work independently of animation frames: ${metrics}`,
 				);
 				check(
-					rangeReads <= count * 8,
+					rangeReads <= leafCount * 4,
 					`Toggle must bound full source geometry scans: ${metrics}`,
 				);
 				check(
@@ -264,7 +282,7 @@ export async function inlinePerformance(
 				);
 			}
 		}
-		return `inline performance ${count} paragraphs / ${frames.length} frames${matchMedia("(prefers-reduced-motion: reduce)").matches ? " reduced motion" : ""}: ${samples.join("; ")}`;
+		return `inline performance ${count} paragraphs / ${leafCount} leaves / ${frames.length} frames${matchMedia("(prefers-reduced-motion: reduce)").matches ? " reduced motion" : ""}: ${samples.join("; ")}`;
 	} finally {
 		ReaderLayout.prototype.reflow = reflow;
 		ReaderStudy.prototype.refresh = refresh;

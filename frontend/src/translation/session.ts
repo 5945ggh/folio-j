@@ -6,6 +6,7 @@ import { prefillContext } from "../materials/study-context.ts";
 import type {
 	getTranslationHistory,
 	TranslationInput,
+	TranslationRemoval,
 	TranslationSettings,
 	TranslationTask,
 } from "./api.ts";
@@ -32,6 +33,7 @@ export interface TranslationQueryAdapter {
 	submit(materialId: string, input: TranslationInput): Promise<TranslationTask>;
 	accept(task: TranslationTask): void;
 	stop(taskId: string): Promise<TranslationTask>;
+	remove(reference: MaterialProvenance): Promise<TranslationRemoval>;
 	uuid(): string;
 }
 export type TranslationOutcome =
@@ -59,7 +61,7 @@ export type TranslationSnapshot = Readonly<{
 		budgetEdited: boolean;
 		localError: Error | null;
 	}>;
-	phase: "idle" | "submitting" | "uncertain";
+	phase: "idle" | "submitting" | "uncertain" | "removing";
 	acceptedTaskId: string | null;
 	error: Error | null;
 }>;
@@ -72,13 +74,17 @@ export interface TranslationSession {
 	readonly reference: MaterialProvenance;
 	getSnapshot(): TranslationSnapshot;
 	subscribe(listener: () => void): () => void;
-	open(intent: { kind: "selection" | "history" }): Promise<TranslationOutcome>;
+	open(intent: {
+		kind: "selection" | "history";
+		newSelection?: boolean;
+	}): Promise<TranslationOutcome>;
 	edit(change: TranslationEdit): boolean;
 	browseHistory(): void;
 	execute(command: {
 		kind: "translate" | "verify";
 	}): Promise<TranslationOutcome>;
 	stop(taskId: string): Promise<TranslationTask>;
+	remove(): Promise<TranslationRemoval>;
 }
 export interface TranslationSessions {
 	bindOwner(): () => void;
@@ -141,6 +147,8 @@ export function createTranslationSessions(
 		private automatic: "none" | "waiting" | "consumed" = "none";
 		private preparation: { epoch: number; promise: Promise<void> } | null =
 			null;
+		private generation = 0;
+		private removal: Promise<TranslationRemoval> | null = null;
 		private freshEpoch = -1;
 		private initialization: Promise<void> | null = null;
 		private operation: {
@@ -148,7 +156,7 @@ export function createTranslationSessions(
 			epoch: number;
 		} | null = null;
 		private frozen: TranslationInput | null = null;
-		private chapter: StudyTarget["chapter"] | undefined;
+		private chapter: WeakRef<StudyTarget["chapter"]> | undefined;
 		private sourceId: string;
 		constructor(sourceId: string, reference: MaterialProvenance) {
 			this.sourceId = sourceId;
@@ -156,7 +164,8 @@ export function createTranslationSessions(
 			this.key = translationTargetKey(reference);
 		}
 		attach(target: StudyTarget) {
-			this.chapter ??= target.chapter;
+			if (this.chapter?.deref() !== target.chapter)
+				this.chapter = new WeakRef(target.chapter);
 		}
 		getSnapshot = () => this.state;
 		subscribe = (listener: () => void) => {
@@ -170,8 +179,8 @@ export function createTranslationSessions(
 			for (const listener of this.listeners) listener();
 		}
 		private initialize(): Promise<void> {
-			if (this.state.draft.initialized || !this.chapter)
-				return Promise.resolve();
+			const chapter = this.chapter?.deref();
+			if (this.state.draft.initialized || !chapter) return Promise.resolve();
 			if (this.initialization) return this.initialization;
 			this.initialization = adapter
 				.settings()
@@ -187,11 +196,10 @@ export function createTranslationSessions(
 								after_characters: settings.after_characters,
 							};
 					try {
-						const fill = prefillContext(
-							this.chapter as StudyTarget["chapter"],
-							this.reference,
-							{ ...budget, enabled: true },
-						);
+						const fill = prefillContext(chapter, this.reference, {
+							...budget,
+							enabled: true,
+						});
 						this.update({
 							draft: {
 								...draft,
@@ -223,6 +231,7 @@ export function createTranslationSessions(
 			currentEpoch: number,
 			refresh = false,
 		): Promise<void> {
+			const generation = this.generation;
 			if (!refresh && this.freshEpoch === currentEpoch)
 				return Promise.resolve();
 			if (this.preparation?.epoch === currentEpoch)
@@ -230,7 +239,8 @@ export function createTranslationSessions(
 			const promise = adapter
 				.history(this.reference)
 				.then(() => {
-					if (bound && epoch === currentEpoch) this.freshEpoch = currentEpoch;
+					if (bound && epoch === currentEpoch && this.generation === generation)
+						this.freshEpoch = currentEpoch;
 				})
 				.finally(() => {
 					if (this.preparation?.promise === promise) this.preparation = null;
@@ -240,12 +250,17 @@ export function createTranslationSessions(
 		}
 		open = async ({
 			kind,
+			newSelection = false,
 		}: {
 			kind: "selection" | "history";
+			newSelection?: boolean;
 		}): Promise<TranslationOutcome> => {
+			if (this.state.phase === "removing") return skipped("busy");
+			if (kind === "selection" && newSelection) this.automatic = "none";
 			if (kind === "selection" && this.automatic === "none")
 				this.automatic = "waiting";
 			const currentEpoch = epoch;
+			const generation = this.generation;
 			try {
 				await Promise.all([
 					this.initialize(),
@@ -254,7 +269,8 @@ export function createTranslationSessions(
 			} catch {
 				return skipped("history");
 			}
-			if (!bound || epoch !== currentEpoch) return skipped("inactive");
+			if (!bound || epoch !== currentEpoch || this.generation !== generation)
+				return skipped("inactive");
 			if (kind !== "selection" || this.automatic !== "waiting")
 				return skipped("automatic");
 			const history = adapter.peekHistory(this.reference);
@@ -311,9 +327,10 @@ export function createTranslationSessions(
 				});
 				return true;
 			}
-			if (!this.chapter) return false;
+			const chapter = this.chapter?.deref();
+			if (!chapter) return false;
 			try {
-				const fill = prefillContext(this.chapter, this.reference, {
+				const fill = prefillContext(chapter, this.reference, {
 					...draft.budget,
 					enabled: true,
 				});
@@ -340,7 +357,8 @@ export function createTranslationSessions(
 			command: Parameters<TranslationSession["execute"]>[0],
 			automatic: boolean,
 		): Promise<TranslationOutcome> {
-			if (this.operation) return Promise.resolve(skipped("busy"));
+			if (this.operation || this.state.phase === "removing")
+				return Promise.resolve(skipped("busy"));
 			if (command.kind !== "verify" && this.state.phase === "uncertain")
 				return Promise.resolve(skipped("uncertain"));
 			if (command.kind === "verify" && !this.frozen)
@@ -465,6 +483,34 @@ export function createTranslationSessions(
 			const task = await adapter.stop(taskId);
 			adapter.accept(task);
 			return task;
+		};
+		remove = (): Promise<TranslationRemoval> => {
+			if (this.removal) return this.removal;
+			if (!bound) return Promise.reject(new Error("请返回阅读器后重试删除。"));
+			if (this.operation?.posted || this.state.phase === "uncertain")
+				return Promise.reject(new Error("请先核实原提交，再删除此处翻译。"));
+			this.generation++;
+			this.automatic = "consumed";
+			this.freshEpoch = -1;
+			this.preparation = null;
+			this.operation = null;
+			this.frozen = null;
+			this.update({ phase: "removing", error: null });
+			const operation = Promise.resolve()
+				.then(() => adapter.remove(this.reference))
+				.then((removed) => {
+					this.update({ phase: "idle", acceptedTaskId: null, error: null });
+					return removed;
+				})
+				.catch((error) => {
+					this.update({ phase: "idle", error: failure(error) });
+					throw error;
+				})
+				.finally(() => {
+					if (this.removal === operation) this.removal = null;
+				});
+			this.removal = operation;
+			return operation;
 		};
 	}
 	function get(sourceId: string, reference: MaterialProvenance) {

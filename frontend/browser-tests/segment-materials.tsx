@@ -442,6 +442,7 @@ async function segmentContentAggregation(
 		source_id: "source",
 		material_id: "book",
 		material_deleted: false,
+		reader_deleted: false,
 		material_provenance: provenance,
 		identity_sha256: "c".repeat(64),
 		text: materialSegment.text,

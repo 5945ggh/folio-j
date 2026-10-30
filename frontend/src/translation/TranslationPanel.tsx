@@ -42,6 +42,10 @@ import {
 	translationTargetKey,
 	translationVersionShortcut,
 } from "./state";
+import {
+	TranslationRemoval,
+	type TranslationRemoved,
+} from "./TranslationRemoval";
 import "./translation.css";
 
 type ResultSnapshot = {
@@ -218,6 +222,7 @@ export function TranslationPanel({
 	onOpenSegment,
 	onBackToOrigin,
 	onResultSelected,
+	onRemoved,
 }: {
 	materialId: string;
 	sourceId: string;
@@ -233,6 +238,7 @@ export function TranslationPanel({
 	onOpenSegment?: (id: string) => void;
 	onBackToOrigin: (result: TranslationResult) => void;
 	onResultSelected?: (result: TranslationResult) => void;
+	onRemoved?: TranslationRemoved;
 }) {
 	const { active, activation } = useViewActivity();
 	const element = useRef<HTMLElement>(null);
@@ -375,9 +381,9 @@ export function TranslationPanel({
 	});
 	const history = useQuery({
 		queryKey: ["translations", materialId, identity.data, offset],
-		queryFn: () => {
+		queryFn: ({ signal }) => {
 			if (!identity.data) throw new Error("缺少翻译目标身份");
-			return getTranslationHistory(materialId, offset, identity.data);
+			return getTranslationHistory(materialId, offset, identity.data, signal);
 		},
 		enabled: active && !!identity.data,
 		retry: false,
@@ -402,7 +408,7 @@ export function TranslationPanel({
 			: selectedTaskId;
 	const task = useQuery({
 		queryKey: ["translation-task", taskId],
-		queryFn: () => getTranslationTask(taskId ?? ""),
+		queryFn: ({ signal }) => getTranslationTask(taskId ?? "", signal),
 		enabled: active && !!taskId,
 		refetchInterval: (query) =>
 			active && activeTranslation(query.state.data) ? 800 : false,
@@ -480,8 +486,9 @@ export function TranslationPanel({
 		resultId ?? (taskId ? task.data?.result_id : history.data?.results[0]?.id);
 	const result = useQuery({
 		queryKey: ["translation-result", resolvedId],
-		queryFn: () => getTranslationResult(resolvedId ?? ""),
+		queryFn: ({ signal }) => getTranslationResult(resolvedId ?? "", signal),
 		enabled: active && !!resolvedId,
+		staleTime: Number.POSITIVE_INFINITY,
 		retry: false,
 	});
 	const resultRefreshed = useReaderSessionRefresh(
@@ -491,7 +498,10 @@ export function TranslationPanel({
 		activation,
 	);
 	const readableResult =
-		resultRefreshed && result.isSuccess && result.data.id === resolvedId
+		resultRefreshed &&
+		result.isSuccess &&
+		!result.data.reader_deleted &&
+		result.data.id === resolvedId
 			? result.data
 			: undefined;
 	const lastLoadedResult = useRef<ResultSnapshot | null>(null);
@@ -517,7 +527,9 @@ export function TranslationPanel({
 			? retainedResult.result
 			: undefined;
 	// Only this activation's validated output may bridge a pending or failed retranslation read.
-	const displayedResult = readableResult ?? retained ?? followedResult;
+	const displayedResult = result.data?.reader_deleted
+		? undefined
+		: (readableResult ?? retained ?? followedResult);
 	useEffect(() => {
 		if (visible && readableResult) onResultSelected?.(readableResult);
 	}, [visible, readableResult, onResultSelected]);
@@ -539,7 +551,19 @@ export function TranslationPanel({
 	const stop = useMutation({
 		mutationFn: (id: string) => session.stop(id),
 	});
-	const busy = activeTranslation(currentTask) || pending;
+	const removing = state.phase === "removing";
+	const busy = activeTranslation(currentTask) || pending || removing;
+	const removed: TranslationRemoved = (value, reference) => {
+		choiceGeneration.current++;
+		lastLoadedResult.current = null;
+		setRetainedResult(undefined);
+		setVersionReturnId(null);
+		setResultId(null);
+		setTaskId(null);
+		setOffset(0);
+		if (onRemoved) onRemoved(value, reference);
+		else onClose();
+	};
 	const fill = () => session.edit({ kind: "refill" });
 	const setBudget = (value: typeof budget) =>
 		session.edit({ kind: "budget", value });
@@ -571,21 +595,23 @@ export function TranslationPanel({
 			{versionShortcut.label}
 		</button>
 	);
-	const progressLabel = pending
-		? "提交中"
-		: currentTask?.status === "queued"
-			? "等待翻译"
-			: currentTask?.status === "running"
-				? displayedResult
-					? "重译中"
-					: "翻译中"
-				: currentTask?.status === "stopping"
-					? "停止中"
-					: history.isPending ||
-							identity.isPending ||
-							(result.isFetching && !readableResult && !!resolvedId)
-						? "读取中"
-						: "";
+	const progressLabel = removing
+		? "正在删除"
+		: pending
+			? "提交中"
+			: currentTask?.status === "queued"
+				? "等待翻译"
+				: currentTask?.status === "running"
+					? displayedResult
+						? "重译中"
+						: "翻译中"
+					: currentTask?.status === "stopping"
+						? "停止中"
+						: history.isPending ||
+								identity.isPending ||
+								(result.isFetching && !readableResult && !!resolvedId)
+							? "读取中"
+							: "";
 	const actionLabel = uncertain
 		? "核实原提交"
 		: displayedResult || history.data?.results.length
@@ -610,6 +636,9 @@ export function TranslationPanel({
 				)}
 			</span>
 			<div className="translation-header-actions">
+				{(displayedResult || history.data?.tasks.length || currentTask) && (
+					<TranslationRemoval session={session} onRemoved={removed} />
+				)}
 				{(displayedResult || initialized || uncertain) && (
 					<button
 						type="button"

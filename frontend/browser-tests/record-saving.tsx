@@ -136,6 +136,7 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 		source_id: "source",
 		material_id: book.id,
 		material_deleted: false,
+		reader_deleted: false,
 		material_provenance: reference(0, trim),
 		identity_sha256: await targetIdentity(reference(0, trim)),
 		text: trim ? original.trim() : original,

@@ -13,44 +13,60 @@ export function imageTextOffset(
 	return Array.from(projection.raw.slice(0, end).normalize("NFC")).length;
 }
 
+/** One synchronous read pass shares author style and clipping geometry across leaves. */
+function contentGeometry(doc: Document) {
+	const styles = new Map<Element, CSSStyleDeclaration>();
+	const bounds = new Map<Element, DOMRect>();
+	const style = (element: Element) => {
+		let value = styles.get(element);
+		if (!value && doc.defaultView?.getComputedStyle) {
+			value = doc.defaultView.getComputedStyle(element);
+			styles.set(element, value);
+		}
+		return value;
+	};
+	const visible = (element: Element | null) =>
+		!element || !/^(hidden|collapse)$/.test(style(element)?.visibility ?? "");
+	const rect = (rect: DOMRect, element: Element | null) => {
+		if (!(rect.width > 0 && rect.height > 0) || !visible(element)) return null;
+		let left = rect.left,
+			right = rect.left + rect.width,
+			top = rect.bottom - rect.height,
+			bottom = rect.bottom;
+		for (let parent = element; parent; parent = parent.parentElement) {
+			const css = style(parent);
+			const clipX = /^(hidden|clip|auto|scroll)$/.test(css?.overflowX ?? ""),
+				clipY = /^(hidden|clip|auto|scroll)$/.test(css?.overflowY ?? "");
+			if (!clipX && !clipY) continue;
+			let box = bounds.get(parent);
+			if (!box) {
+				box = parent.getBoundingClientRect();
+				bounds.set(parent, box);
+			}
+			if (clipX) {
+				const start = box.left + parent.clientLeft;
+				left = Math.max(left, start);
+				right = Math.min(right, start + parent.clientWidth);
+			}
+			if (clipY) {
+				const start = box.top + parent.clientTop;
+				top = Math.max(top, start);
+				bottom = Math.min(bottom, start + parent.clientHeight);
+			}
+			if (left >= right || top >= bottom) return null;
+		}
+		return { left, right, top, bottom };
+	};
+	return { visible, rect };
+}
+
 /** Visible content geometry shared by resume anchors and passive study entrances. */
 export function visibleContentRect(
 	doc: Document,
 	rect: DOMRect,
 	element: Element | null,
 ) {
-	if (!(rect.width > 0 && rect.height > 0)) return null;
-	let left = rect.left,
-		right = rect.left + rect.width,
-		top = rect.bottom - rect.height,
-		bottom = rect.bottom;
-	const view = doc.defaultView;
-	if (view?.getComputedStyle) {
-		if (
-			element &&
-			/^(hidden|collapse)$/.test(view.getComputedStyle(element).visibility)
-		)
-			return null;
-		for (let parent = element; parent; parent = parent.parentElement) {
-			const style = view.getComputedStyle(parent);
-			const clipX = /^(hidden|clip|auto|scroll)$/.test(style.overflowX),
-				clipY = /^(hidden|clip|auto|scroll)$/.test(style.overflowY);
-			if (!clipX && !clipY) continue;
-			const bounds = parent.getBoundingClientRect();
-			if (clipX) {
-				const start = bounds.left + parent.clientLeft;
-				left = Math.max(left, start);
-				right = Math.min(right, start + parent.clientWidth);
-			}
-			if (clipY) {
-				const start = bounds.top + parent.clientTop;
-				top = Math.max(top, start);
-				bottom = Math.min(bottom, start + parent.clientHeight);
-			}
-			if (left >= right || top >= bottom) return null;
-		}
-	}
-	return { left, right, top, bottom };
+	return contentGeometry(doc).rect(rect, element);
 }
 
 /** Measure actual glyphs and images, excluding collapsed/hidden text and author/reader trailing whitespace. */
@@ -60,14 +76,9 @@ export function readingContentEnd(
 	vertical: boolean,
 ): number | null {
 	let end: number | null = null;
-	const visible = (element: Element | null) =>
-		!element ||
-		!doc.defaultView ||
-		!/^(hidden|collapse)$/.test(
-			doc.defaultView.getComputedStyle(element).visibility,
-		);
+	const geometry = contentGeometry(doc);
 	const include = (rect: DOMRect, element: Element | null) => {
-		const bounds = visibleContentRect(doc, rect, element);
+		const bounds = geometry.rect(rect, element);
 		if (!bounds) return;
 		const value = vertical ? bounds.left : bounds.bottom;
 		if (!Number.isFinite(value)) return;
@@ -80,14 +91,14 @@ export function readingContentEnd(
 	};
 	for (const { node } of projection.entries) {
 		const start = node.data.search(/\S/u);
-		if (start < 0 || !visible(node.parentElement)) continue;
+		if (start < 0 || !geometry.visible(node.parentElement)) continue;
 		const range = doc.createRange();
 		range.setStart(node, start);
 		range.setEnd(node, node.data.trimEnd().length);
 		include(range.getBoundingClientRect(), node.parentElement);
 	}
 	for (const image of doc.querySelectorAll<HTMLElement>("[data-epub-image]"))
-		if (visible(image)) include(image.getBoundingClientRect(), image);
+		if (geometry.visible(image)) include(image.getBoundingClientRect(), image);
 	return end;
 }
 

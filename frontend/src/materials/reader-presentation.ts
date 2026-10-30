@@ -219,9 +219,9 @@ export class ReaderPresentation {
 	): Position | null {
 		return this.layout.presentedAnchor(capture);
 	}
-	reflow(update?: () => void): void {
+	reflow(update?: () => void, capture?: () => Position | null): void {
 		// Inline translation motion intentionally bypasses commit's stabilization.
-		if (this.active) this.layout.reflow(update);
+		if (this.active) this.layout.reflow(update, capture);
 	}
 	checkpoint(capture: () => Position | null): void {
 		this.dependencies.frames.finishInlineMotion();

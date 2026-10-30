@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { App, appRoutes } from "./App";
+import { readerResourceCache } from "./materials/reader-resource-cache";
 import { startAppTheme } from "./theme/browser";
 import "./styles.css";
 import "./catalog/source-content.css";
@@ -13,6 +14,7 @@ startAppTheme();
 const queryClient = new QueryClient({
 	defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
+readerResourceCache(queryClient);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing root element");

@@ -51,6 +51,9 @@ export function SegmentTranslations({
 								<p>模型：{item.model_id}</p>
 							</details>
 							{item.material_deleted && <p>原材料已删除；此译文快照保留。</p>}
+							{item.reader_deleted && (
+								<p>此处阅读翻译已删除；关联译文快照保留。</p>
+							)}
 						</details>
 					))}
 				</details>

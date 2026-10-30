@@ -52,6 +52,21 @@ export function editStudyTranslation(
 	};
 }
 
+/** Detach only the expected source; an uncertain or in-flight save keeps its frozen association. */
+export function detachStudyTranslation(
+	draft: ContextDraft,
+	resultId: string,
+	pending: MaterialSegmentInput | null,
+	locked = false,
+): ContextDraft {
+	if (pending || locked || draft.translation.resultId !== resultId)
+		return draft;
+	return {
+		...draft,
+		translation: { ...draft.translation, resultId: null, edited: true },
+	};
+}
+
 /** A late result cannot refill an edited/cleared field or change its chosen source. */
 export function applyStudyTranslation(
 	draft: ContextDraft,

@@ -46,14 +46,19 @@ export function useMaterialTranslationActivity(
 		queryKey: key,
 		enabled,
 		staleTime: activation > 0 ? Number.POSITIVE_INFINITY : 0,
-		queryFn: async (): Promise<TranslationActivity> => {
+		queryFn: async ({ signal }): Promise<TranslationActivity> => {
 			const previous = client.getQueryData<TranslationActivity>(key);
-			const recent = await getTranslationHistory(materialId);
+			const recent = await getTranslationHistory(
+				materialId,
+				0,
+				undefined,
+				signal,
+			);
 			const missing = (previous?.tasks.filter(activeTranslation) ?? []).filter(
 				(task) => !recent.tasks.some((item) => item.id === task.id),
 			);
 			const tracked = await Promise.all(
-				missing.map((task) => getTranslationTask(task.id)),
+				missing.map((task) => getTranslationTask(task.id, signal)),
 			);
 			const tasks = [...recent.tasks, ...tracked];
 			return {

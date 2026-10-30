@@ -48,6 +48,12 @@ class FakeAnimation {
 		this.frames = frames;
 		this.options = options;
 	}
+	pause() {
+		this.playState = "paused";
+	}
+	play() {
+		this.playState = "running";
+	}
 	cancel() {
 		this.cancelled = true;
 		this.playState = "idle";
@@ -1104,5 +1110,116 @@ test("complex author transforms are preserved and reduced motion applies updates
 		h.later.y += 80;
 	});
 	assert.equal(h.later.animations.length, 0);
+	assert.equal(h.motion.running, false);
+});
+
+test("synchronous insertion work cannot consume motion time before the shared rendering start", () => {
+	const h = harness();
+	let start: FrameRequestCallback | null = null;
+	Object.assign(h.outer.defaultView, {
+		requestAnimationFrame: (callback: FrameRequestCallback) => {
+			start = callback;
+			return 1;
+		},
+		cancelAnimationFrame: () => {
+			start = null;
+		},
+	});
+	h.outer.timeline.currentTime = 1000;
+	h.doc.timeline.currentTime = 200;
+	h.motion.change(() => {
+		h.following.y += 80;
+		h.later.y += 80;
+	});
+	const inner = h.following.animations[0],
+		outer = h.later.animations[0];
+	assert.ok(inner && outer);
+	assert.equal(inner.playState, "paused");
+	assert.equal(outer.playState, "paused");
+	assert.equal(inner.currentTime, 0);
+	// The entire expensive insertion completes before the rendering update.
+	h.outer.timeline.currentTime = 1060;
+	h.doc.timeline.currentTime = 260;
+	assert.ok(start);
+	(start as FrameRequestCallback)(1060);
+	assert.equal(inner.playState, "running");
+	assert.equal(outer.playState, "running");
+	assert.equal(inner.startTime, 260);
+	assert.equal(outer.startTime, 1060);
+	h.motion.change(() => {
+		h.following.y += 20;
+	});
+	assert.ok(start, "a following change prepares its own rendering start");
+	h.motion.clear();
+	assert.equal(start, null, "disposing the reader cancels a prepared start");
+	assert.equal(h.motion.running, false);
+});
+
+test("closing a prepared zero-height opening cancels its queued growth and restores actual collapsed frame geometry", () => {
+	const h = harness();
+	const margin = new Element(h.outer, 70, 4);
+	margin.css.position = "absolute";
+	h.margins.push(margin);
+	let next = 0;
+	const callbacks = new Map<number, FrameRequestCallback>();
+	Object.assign(h.outer.defaultView, {
+		requestAnimationFrame: (callback: FrameRequestCallback) => {
+			callbacks.set(++next, callback);
+			return next;
+		},
+		cancelAnimationFrame: (id: number) => {
+			callbacks.delete(id);
+		},
+	});
+	h.node.style.setProperty("height", "0px");
+	h.following.y = 150;
+	h.later.y = 580;
+	h.first.style.setProperty("height", "420px");
+	let growth: FakeAnimation | undefined;
+	h.motion.change(
+		() => {
+			h.node.style.setProperty("height", "80px");
+			h.first.style.setProperty("height", "500px");
+			growth = h.node.animate([{ height: "0px" }, { height: "80px" }], {
+				duration: INLINE_MOTION_MS,
+			});
+			Object.assign(growth, { transitionProperty: "height" });
+		},
+		() => ({ node: html(h.node), fromHeight: 0, fullHeight: 80 }),
+	);
+	assert.ok(growth);
+	margin.y = 150;
+	h.motion.marginsChanged();
+	assert.equal(margin.getBoundingClientRect().top, 70);
+	const resize = h.first.animations[0];
+	assert.ok(resize);
+	assert.equal(h.node.getBoundingClientRect().height, 0);
+	assert.equal(resize.playState, "paused");
+	const openingStart = next;
+	// InlineTranslation.hide cancels the prepared CSS transition and sets the
+	// collapsed target before asking the flow owner to collapse the iframe.
+	growth.cancel();
+	h.node.style.setProperty("height", "0px");
+	h.motion.collapse(html(h.node), 80);
+	assert.equal(callbacks.has(openingStart), false);
+	assert.equal(resize.cancelled, true);
+	assert.equal(h.first.style.getPropertyValue("height"), "420px");
+	assert.deepEqual(
+		[
+			h.first.getBoundingClientRect().height,
+			h.following.getBoundingClientRect().top,
+			h.later.getBoundingClientRect().top,
+			margin.getBoundingClientRect().top,
+		],
+		[420, 70, 500, 70],
+	);
+	for (const callback of callbacks.values()) callback(16);
+	assert.equal(h.first.getBoundingClientRect().height, 420);
+	assert.equal(margin.getBoundingClientRect().top, 70);
+	// Removing the empty output commits the actual marker position and releases
+	// the constant hold just as a real React margin-coordinate commit does.
+	h.motion.beforeRemove();
+	margin.y = 70;
+	h.motion.marginsChanged();
 	assert.equal(h.motion.running, false);
 });

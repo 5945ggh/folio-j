@@ -9,6 +9,7 @@ from typing import Any, cast
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import defer
 
 from app.config import REPO_ROOT, load_settings
 from app.ids import new_ulid
@@ -46,6 +47,7 @@ from app.translation_schemas import (
     TranslationCreate,
     TranslationDeleteImpact,
     TranslationHistoryResponse,
+    TranslationRemovalResponse,
     TranslationResultResponse,
     TranslationSettingsResponse,
     TranslationSettingsUpdate,
@@ -132,10 +134,14 @@ async def model_for(session: AsyncSession, model_id: str) -> tuple[ProviderModel
 
 async def visible_task(session: AsyncSession, task: TranslationTask) -> Material:
     await require_source(session, task.source_id)
-    material = await session.get(Material, task.material_id)
+    material = await session.scalar(
+        select(Material)
+        .options(defer(Material.compiled_bundle))
+        .where(Material.id == task.material_id)
+    )
     if material is None:
         raise HTTPException(404, "材料不存在")
-    if material.deleted_at is not None:
+    if material.deleted_at is not None or task.reader_deleted_at is not None:
         linked = await session.scalar(
             select(TranslationAdoption.id)
             .join(Segment, Segment.id == TranslationAdoption.segment_id)
@@ -205,6 +211,7 @@ async def result_response(
         source_id=task.source_id,
         material_id=task.material_id,
         material_deleted=material.deleted_at is not None,
+        reader_deleted=task.reader_deleted_at is not None,
         material_provenance=payload["material_provenance"],
         identity_sha256=task.identity_sha256,
         chapter_id=payload["chapter_id"],
@@ -239,11 +246,15 @@ async def get_result(session: AsyncSession, result_id: str) -> TranslationResult
 async def history(
     session: AsyncSession, material_id: str, offset: int, limit: int, identity: str | None
 ) -> TranslationHistoryResponse:
-    material = await session.get(Material, material_id)
+    material = await session.scalar(
+        select(Material).options(defer(Material.compiled_bundle)).where(Material.id == material_id)
+    )
     if material is None or material.deleted_at is not None:
         raise HTTPException(404, "材料不存在")
     await require_source(session, material.source_id)
-    query = select(TranslationTask).where(TranslationTask.material_id == material_id)
+    query = select(TranslationTask).where(
+        TranslationTask.material_id == material_id, TranslationTask.reader_deleted_at.is_(None)
+    )
     if identity is not None:
         query = query.where(TranslationTask.identity_sha256 == identity)
     rows = list(
@@ -275,6 +286,8 @@ async def accept(
         select(TranslationTask).where(TranslationTask.request_id == str(data.request_id))
     )
     if old:
+        if old.reader_deleted_at is not None:
+            raise HTTPException(404, "翻译记录已从阅读器移除")
         await visible_task(session, old)
         if old.request_payload != serialized:
             raise conflict("相同请求身份不能提交不同内容")
@@ -294,6 +307,8 @@ async def accept(
         select(TranslationTask).where(TranslationTask.request_id == str(data.request_id))
     )
     if old:
+        if old.reader_deleted_at is not None:
+            raise HTTPException(404, "翻译记录已从阅读器移除")
         if old.request_payload != serialized:
             raise conflict("相同请求身份不能提交不同内容")
         await visible_task(session, old)
@@ -375,6 +390,49 @@ async def stop(session: AsyncSession, task_id: str) -> TranslationTaskResponse:
     return task_response(task)
 
 
+async def remove_reader_history(
+    session: AsyncSession, material_id: str, identity: str
+) -> TranslationRemovalResponse:
+    """Remove an exact reader target while preserving adopted snapshots and receipts."""
+    await begin_write(session)
+    material = await session.scalar(
+        select(Material).options(defer(Material.compiled_bundle)).where(Material.id == material_id)
+    )
+    if material is None or material.deleted_at is not None:
+        raise HTTPException(404, "材料不存在")
+    await require_source(session, material.source_id)
+    tasks = list(
+        (
+            await session.scalars(
+                select(TranslationTask)
+                .where(
+                    TranslationTask.material_id == material_id,
+                    TranslationTask.identity_sha256 == identity,
+                )
+                .order_by(TranslationTask.created_at, TranslationTask.id)
+            )
+        ).all()
+    )
+    removed_at = utc_now()
+    for task in tasks:
+        if task.reader_deleted_at is None:
+            task.reader_deleted_at = removed_at
+        if task.status in ACTIVE:
+            task.status, task.token, task.error = "cancelled", None, "翻译记录已从阅读器移除"
+            if task.run_id:
+                run = await session.get(Run, task.run_id)
+                if run is not None:
+                    run.status, run.finished_at = "cancelled", removed_at
+    response = TranslationRemovalResponse(
+        identity_sha256=identity,
+        task_ids=[task.id for task in tasks],
+        result_ids=[task.result_id for task in tasks if task.result_id is not None],
+        cancelled_task_ids=[task.id for task in tasks if task.status == "cancelled"],
+    )
+    await session.commit()
+    return response
+
+
 async def adopt(
     session: AsyncSession, result_id: str, data: TranslationAdopt
 ) -> TranslationAdoptionResponse:
@@ -394,6 +452,8 @@ async def adopt(
             id=old.id, result_id=old.result_id, segment=segment_response(segment)
         )
     result = await get_result(session, result_id)
+    if result.reader_deleted:
+        raise HTTPException(404, "翻译记录已从阅读器移除，不能建立新采用关系")
     await session.rollback()
     prepared = await prepare_reference(session, result.source_id, result.material_provenance)
     await begin_write(session)
@@ -407,8 +467,8 @@ async def adopt(
     result = await get_result(session, result_id)
     if prepared.text != result.text:
         raise conflict("译文目标与材料不一致")
-    if result.material_deleted:
-        raise HTTPException(404, "材料已删除，不能建立新采用关系")
+    if result.material_deleted or result.reader_deleted:
+        raise HTTPException(404, "材料或翻译记录已删除，不能建立新采用关系")
     fields = {
         key: unicodedata.normalize("NFC", value)
         for key, value in data.model_dump(
@@ -710,7 +770,9 @@ async def revoke_tasks(
 
 
 async def delete_impact(session: AsyncSession, material_id: str) -> TranslationDeleteImpact:
-    material = await session.get(Material, material_id)
+    material = await session.scalar(
+        select(Material).options(defer(Material.compiled_bundle)).where(Material.id == material_id)
+    )
     if material is None or material.deleted_at is not None:
         raise HTTPException(404, "材料不存在")
     await require_source(session, material.source_id)
@@ -724,7 +786,6 @@ async def delete_impact(session: AsyncSession, material_id: str) -> TranslationD
     for task in rows:
         if task.result_id is None:
             continue
-        total += 1
         linked = await session.scalar(
             select(TranslationAdoption.id)
             .join(Segment, Segment.id == TranslationAdoption.segment_id)
@@ -735,6 +796,9 @@ async def delete_impact(session: AsyncSession, material_id: str) -> TranslationD
             )
             .limit(1)
         )
+        if linked is None and task.reader_deleted_at is not None:
+            continue
+        total += 1
         retained += int(linked is not None)
     return TranslationDeleteImpact(
         material_id=material_id,

@@ -15,6 +15,10 @@ import {
 } from "../translation/placement";
 import type { TranslationSessions } from "../translation/session";
 import { TranslationPanel } from "../translation/TranslationPanel";
+import {
+	TranslationRemoval,
+	type TranslationRemoved,
+} from "../translation/TranslationRemoval";
 import type { Chapter } from "./api";
 import type { ChapterTranslation } from "./chapter-translations-query";
 import {
@@ -41,6 +45,7 @@ type Props = Omit<StudyPreviewProps, "onEmphasize" | "embedded"> & {
 	onResultSelected: (result: TranslationResult) => void;
 	onBackToOrigin: (result: TranslationResult) => void;
 	translationSessions: TranslationSessions;
+	onTranslationRemoved?: TranslationRemoved;
 	manualPosition?: ReaderCardPosition | null;
 	onManualPositionChange?: (value: ReaderCardPosition | null) => void;
 };
@@ -383,6 +388,7 @@ export function ChapterRecords(props: Props) {
 							visible={!inactive && tab === "translation"}
 							translationSessions={props.translationSessions}
 							onResultSelected={props.onResultSelected}
+							onRemoved={props.onTranslationRemoved}
 							onOpenSegment={props.onOpen}
 							onBackToOrigin={props.onBackToOrigin}
 							onClose={onClose}
@@ -407,27 +413,42 @@ export function ChapterRecords(props: Props) {
 								<p role="status">有 {props.unavailable} 处翻译暂时无法定位。</p>
 							)}
 							{translations.map((item) => (
-								<button
-									className="reader-record-translation"
-									data-translation-id={item.identity_sha256}
+								<div
+									className="reader-record-translation-entry"
 									key={item.identity_sha256}
-									type="button"
-									onClick={() => {
-										nextFocus.current = "detail";
-										setSelectedId(item.identity_sha256);
-									}}
-									onMouseEnter={() =>
-										onEmphasize(item.identity_sha256, "translation")
-									}
-									onMouseLeave={() => onEmphasize(null, "translation")}
-									onFocus={() =>
-										onEmphasize(item.identity_sha256, "translation")
-									}
-									onBlur={() => onEmphasize(null, "translation")}
 								>
-									<span lang="ja">{item.excerpt}</span>
-									<span>{item.translation_excerpt}</span>
-								</button>
+									<button
+										className="reader-record-translation"
+										data-translation-id={item.identity_sha256}
+										type="button"
+										onClick={() => {
+											nextFocus.current = "detail";
+											setSelectedId(item.identity_sha256);
+										}}
+										onMouseEnter={() =>
+											onEmphasize(item.identity_sha256, "translation")
+										}
+										onMouseLeave={() => onEmphasize(null, "translation")}
+										onFocus={() =>
+											onEmphasize(item.identity_sha256, "translation")
+										}
+										onBlur={() => onEmphasize(null, "translation")}
+									>
+										<span lang="ja">{item.excerpt}</span>
+										<span>{item.translation_excerpt}</span>
+									</button>
+									<TranslationRemoval
+										session={props.translationSessions.forTarget(
+											props.sourceId,
+											{
+												reference: item.material_provenance,
+												chapter,
+											},
+										)}
+										onRemoved={props.onTranslationRemoved}
+										label={`删除此处翻译：${item.excerpt}`}
+									/>
+								</div>
 							))}
 						</div>
 					)}

@@ -1,9 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ReaderImageCache } from "./reader-image-cache.ts";
+import { ReaderResourceBudget } from "./reader-resource-cache.ts";
+
+const imageCache = () =>
+	new ReaderImageCache(
+		new ReaderResourceBudget({ maxBytes: 33 * 1024 * 1024 }),
+	);
 
 test("reader image bytes are reused within a session and released on close", async () => {
-	const cache = new ReaderImageCache();
+	const cache = imageCache();
 	const signal = new AbortController().signal;
 	const source = "data:image/png;base64,aGVsbG8=";
 	const first = await cache.get(source, signal);
@@ -14,7 +20,7 @@ test("reader image bytes are reused within a session and released on close", asy
 });
 
 test("a gallery occurrence reuses the trusted source already loaded in the reader", async () => {
-	const cache = new ReaderImageCache();
+	const cache = imageCache();
 	const signal = new AbortController().signal;
 	const source = "data:image/png;base64,aGVsbG8=";
 	cache.rememberSource("/gallery/1", source);
@@ -24,12 +30,12 @@ test("a gallery occurrence reuses the trusted source already loaded in the reade
 });
 
 test("an in-flight occurrence uses its latest source association before cache eviction", async () => {
-	const cache = new ReaderImageCache();
+	const cache = imageCache();
 	const original = globalThis.fetch;
 	const source = "data:image/png;base64,aGVsbG8=";
 	let release: (() => void) | undefined;
 	globalThis.fetch = async (url) => {
-		if (url === "/first") {
+		if (url === "/first" && !release) {
 			await new Promise<void>((resolve) => {
 				release = resolve;
 			});
@@ -55,7 +61,7 @@ test("an in-flight occurrence uses its latest source association before cache ev
 });
 
 test("associating an existing blob preserves its byte charge and alias deletion releases it", async () => {
-	const cache = new ReaderImageCache();
+	const cache = imageCache();
 	const original = globalThis.fetch;
 	const source = "data:image/png;base64,aGVsbG8=";
 	globalThis.fetch = async () =>
@@ -80,7 +86,7 @@ test("associating an existing blob preserves its byte charge and alias deletion 
 });
 
 test("associating overlapping blobs keeps the source blob and charges it only once", async () => {
-	const cache = new ReaderImageCache();
+	const cache = imageCache();
 	const original = globalThis.fetch;
 	const source = "data:image/png;base64,aGVsbG8=";
 	globalThis.fetch = async () =>
@@ -101,7 +107,7 @@ test("associating overlapping blobs keeps the source blob and charges it only on
 });
 
 test("failed or cancelled requests do not populate the cache", async () => {
-	const cache = new ReaderImageCache();
+	const cache = imageCache();
 	const controller = new AbortController();
 	controller.abort();
 	await assert.rejects(
@@ -116,7 +122,7 @@ test("failed or cancelled requests do not populate the cache", async () => {
 });
 
 test("shared byte requests survive one cancelled waiter and are reused", async () => {
-	const cache = new ReaderImageCache();
+	const cache = imageCache();
 	const original = globalThis.fetch;
 	let calls = 0;
 	let release: (() => void) | undefined;
@@ -145,7 +151,7 @@ test("shared byte requests survive one cancelled waiter and are reused", async (
 });
 
 test("least recently used image bytes are evicted under the memory budget", async () => {
-	const cache = new ReaderImageCache();
+	const cache = imageCache();
 	const original = globalThis.fetch;
 	let calls = 0;
 	globalThis.fetch = async () => {

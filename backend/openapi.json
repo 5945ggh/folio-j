@@ -5475,6 +5475,43 @@
         "title": "TranslationHistoryResponse",
         "type": "object"
       },
+      "TranslationRemovalResponse": {
+        "properties": {
+          "cancelled_task_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cancelled Task Ids",
+            "type": "array"
+          },
+          "identity_sha256": {
+            "title": "Identity Sha256",
+            "type": "string"
+          },
+          "result_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Result Ids",
+            "type": "array"
+          },
+          "task_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Task Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "identity_sha256",
+          "task_ids",
+          "result_ids",
+          "cancelled_task_ids"
+        ],
+        "title": "TranslationRemovalResponse",
+        "type": "object"
+      },
       "TranslationResultResponse": {
         "properties": {
           "adopted_segment_ids": {
@@ -5553,6 +5590,11 @@
           "provider_name": {
             "title": "Provider Name",
             "type": "string"
+          },
+          "reader_deleted": {
+            "default": false,
+            "title": "Reader Deleted",
+            "type": "boolean"
           },
           "reasoning_effort": {
             "anyOf": [
@@ -8203,6 +8245,55 @@
           }
         },
         "summary": "Create Translation"
+      }
+    },
+    "/api/materials/{material_id}/translations/{identity_sha256}": {
+      "delete": {
+        "operationId": "remove_translation_history_api_materials__material_id__translations__identity_sha256__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "identity_sha256",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{64}$",
+              "title": "Identity Sha256",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationRemovalResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Translation History"
       }
     },
     "/api/materials/{material_id}/usage": {

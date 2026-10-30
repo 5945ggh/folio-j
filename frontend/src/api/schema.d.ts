@@ -521,6 +521,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/translations/{identity_sha256}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Translation History */
+        delete: operations["remove_translation_history_api_materials__material_id__translations__identity_sha256__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/materials/{material_id}/usage": {
         parameters: {
             query?: never;
@@ -3228,6 +3245,17 @@ export interface components {
             /** Tasks */
             tasks: components["schemas"]["TranslationTaskResponse"][];
         };
+        /** TranslationRemovalResponse */
+        TranslationRemovalResponse: {
+            /** Cancelled Task Ids */
+            cancelled_task_ids: string[];
+            /** Identity Sha256 */
+            identity_sha256: string;
+            /** Result Ids */
+            result_ids: string[];
+            /** Task Ids */
+            task_ids: string[];
+        };
         /** TranslationResultResponse */
         TranslationResultResponse: {
             /** Adopted Segment Ids */
@@ -3264,6 +3292,11 @@ export interface components {
             protocol: string;
             /** Provider Name */
             provider_name: string;
+            /**
+             * Reader Deleted
+             * @default false
+             */
+            reader_deleted: boolean;
             /** Reasoning Effort */
             reasoning_effort: string | null;
             /** Run Id */
@@ -4707,6 +4740,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TranslationTaskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_translation_history_api_materials__material_id__translations__identity_sha256__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                material_id: string;
+                identity_sha256: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationRemovalResponse"];
                 };
             };
             /** @description Validation Error */

@@ -347,7 +347,8 @@ async def test_persisted_metadata_cannot_misplace_a_successful_result(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "mutation", ["material", "source", "version", "bundle", "payload", "result", "status"]
+    "mutation",
+    ["material", "source", "version", "bundle", "payload", "result", "status", "reader_removal"],
 )
 async def test_final_gate_rechecks_visibility_and_immutable_values(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
@@ -383,6 +384,12 @@ async def test_final_gate_rechecks_visibility_and_immutable_values(
                     else f"/api/sources/{source}"
                 )
                 assert (await client.delete(target)).status_code == 204
+            elif mutation == "reader_removal":
+                result = await client.delete(
+                    f"/api/materials/{material['id']}/translations/"
+                    f"{translations.identity_sha256(MaterialProvenance.model_validate(provenance(material)))}"
+                )
+                assert result.status_code == 200, result.text
             else:
                 with sqlite3.connect(database) as connection:
                     statement, parameters = {

@@ -205,6 +205,7 @@ export async function readingAidsRegression(
 		source_id: "source",
 		material_id: "reading-aids",
 		material_deleted: false,
+		reader_deleted: false,
 		material_provenance: reference,
 		identity_sha256: identity,
 		text,

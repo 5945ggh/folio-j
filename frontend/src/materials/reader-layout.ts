@@ -113,11 +113,11 @@ export class ReaderLayout<A> {
 		this.ready.add(index);
 		if (this.ready.size === surface.parts) this.reflow();
 	}
-	reflow(update?: () => void): void {
+	reflow(update?: () => void, capture?: () => A | null): void {
 		const surface = this.surface;
 		const size = surface?.size();
 		if (!surface || !size) return;
-		this.pending = this.anchor(surface.capture);
+		this.pending = this.anchor(capture ?? surface.capture);
 		this.cancelSave();
 		const pass = this.recovery.begin(size);
 		update?.();

@@ -400,6 +400,8 @@ async def create_material_segment(
         translation: TranslationResultResponse | None = None
         if data.translation_result_id is not None:
             translation = await get_result(session, data.translation_result_id)
+            if translation.reader_deleted:
+                raise failure("not_found", "翻译记录已从阅读器移除", 404)
             if translation.source_id != source_id or not translation_reference_matches(
                 prepared.reference, translation.material_provenance
             ):
@@ -423,6 +425,8 @@ async def create_material_segment(
             assert translation is not None and data.translation_result_id is not None
             await recheck_reference(session, translation_reference)
             current = await get_result(session, data.translation_result_id)
+            if current.reader_deleted:
+                raise failure("not_found", "翻译记录已从阅读器移除", 404)
             if current.model_dump(exclude={"adopted_segment_ids"}) != translation.model_dump(
                 exclude={"adopted_segment_ids"}
             ):

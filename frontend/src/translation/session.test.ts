@@ -112,6 +112,7 @@ function result(): TranslationResult {
 		chapter_id: "chapter",
 		material_provenance: target().reference,
 		material_deleted: false,
+		reader_deleted: false,
 		adopted_segment_ids: [],
 		parts: [],
 		identity_sha256: "identity",
@@ -180,6 +181,25 @@ function fixture() {
 		async stop(id) {
 			return { ...task(), id, status: "cancelled" };
 		},
+		async remove(reference) {
+			histories.set(translationTargetKey(reference), empty());
+			const taskIds = accepted
+				.filter(
+					(value) =>
+						translationTargetKey(value.material_provenance) ===
+						translationTargetKey(reference),
+				)
+				.map((value) => value.id);
+			for (let index = accepted.length - 1; index >= 0; index--)
+				if (taskIds.includes(accepted[index]?.id ?? ""))
+					accepted.splice(index, 1);
+			return {
+				identity_sha256: "identity",
+				task_ids: taskIds,
+				result_ids: ["result"],
+				cancelled_task_ids: [],
+			};
+		},
 		uuid: () => `uuid-${++uuid}`,
 	};
 	const sessions = createTranslationSessions(adapter);
@@ -219,6 +239,79 @@ test("same target has one stable immutable snapshot shared by subscribers", asyn
 	await f.session.open({ kind: "history" });
 	assert.equal(f.session.getSnapshot().draft.before, "");
 	assert.equal(f.requests.length, 0);
+});
+
+test("removal cancels preflight and consumes stale automatic intent, while a new selection may translate", async () => {
+	const f = fixture();
+	await f.session.open({ kind: "history" });
+	const ready = deferred<TranslationSettings>();
+	f.adapter.settings = () => ready.promise;
+	const pending = f.session.execute({ kind: "translate" });
+	await Promise.resolve();
+	const removed = await f.session.remove();
+	assert.equal(removed.identity_sha256, "identity");
+	ready.resolve(settings);
+	assert.equal((await pending).kind, "not-executed");
+	assert.equal(f.requests.length, 0);
+	assert.equal(
+		(await f.session.open({ kind: "selection" })).kind,
+		"not-executed",
+	);
+	assert.equal(f.requests.length, 0);
+	assert.equal(
+		(await f.session.open({ kind: "selection", newSelection: true })).kind,
+		"accepted",
+	);
+	assert.equal(f.requests.length, 1);
+	f.unbind();
+});
+
+test("removal joins one command, blocks new work, and preserves an edited draft on failure", async () => {
+	const f = fixture();
+	await f.session.open({ kind: "history" });
+	f.session.edit({ kind: "context", before: "保留我的草稿" });
+	const removal = deferred<Awaited<ReturnType<typeof f.session.remove>>>();
+	f.adapter.remove = () => removal.promise;
+	const first = f.session.remove();
+	assert.equal(f.session.remove(), first);
+	assert.equal(f.session.getSnapshot().phase, "removing");
+	assert.equal(
+		(await f.session.execute({ kind: "translate" })).kind,
+		"not-executed",
+	);
+	assert.equal(
+		(await f.session.open({ kind: "selection", newSelection: true })).kind,
+		"not-executed",
+	);
+	removal.reject(new Error("删除失败"));
+	await assert.rejects(first, /删除失败/);
+	assert.equal(f.session.getSnapshot().phase, "idle");
+	assert.equal(f.session.getSnapshot().draft.before, "保留我的草稿");
+	f.unbind();
+});
+
+test("a posted or uncertain translation must be verified before removal", async () => {
+	const f = fixture();
+	await f.session.open({ kind: "history" });
+	const posted = deferred<TranslationTask>();
+	f.adapter.submit = (_id, input) => {
+		f.requests.push(input);
+		return posted.promise;
+	};
+	const pending = f.session.execute({ kind: "translate" });
+	for (let index = 0; index < 20 && !f.requests.length; index++)
+		await Promise.resolve();
+	assert.equal(f.requests.length, 1);
+	await assert.rejects(f.session.remove(), /先核实原提交/);
+	posted.reject(new Error("网络响应中断"));
+	assert.equal((await pending).kind, "uncertain");
+	await assert.rejects(f.session.remove(), /先核实原提交/);
+	f.adapter.submit = async (_id, input) =>
+		task(input.material_provenance, input.request_id);
+	assert.equal((await f.session.execute({ kind: "verify" })).kind, "accepted");
+	await f.session.remove();
+	assert.equal(f.session.getSnapshot().acceptedTaskId, null);
+	f.unbind();
 });
 
 test("late settings preserve edits, clearing and budget; only refill replaces context", async () => {

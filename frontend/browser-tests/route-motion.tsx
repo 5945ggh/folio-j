@@ -1,5 +1,6 @@
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
+import { defaultContextCopySettings } from "./reader-context-copy-fixture";
 
 type Schema = components["schemas"];
 const timestamp = "2026-10-25T00:00:00Z";
@@ -84,6 +85,8 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 	const base = `/api/materials/${book.id}`;
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
+		if (request.method === "GET" && path === "/api/settings/context-copy")
+			return Response.json(defaultContextCopySettings);
 		if (request.method === "GET" && path === "/api/sources")
 			return Response.json([]);
 		if (request.method === "GET" && path === "/api/materials")

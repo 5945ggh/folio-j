@@ -567,11 +567,22 @@ function IllustrationImage({
 		if (!activity.active || !requested || src.startsWith("data:")) return;
 		const controller = new AbortController();
 		let objectUrl: string | undefined;
-		void cache.get(src, controller.signal).then(
-			(blob) => {
-				if (controller.signal.aborted) return;
-				objectUrl = URL.createObjectURL(blob);
-				setLoaded({ key: src, url: objectUrl });
+		let releaseBlob: (() => void) | undefined;
+		void cache.acquire(src, controller.signal).then(
+			({ blob, release }) => {
+				if (controller.signal.aborted) {
+					release();
+					return;
+				}
+				releaseBlob = release;
+				try {
+					objectUrl = URL.createObjectURL(blob);
+					setLoaded({ key: src, url: objectUrl });
+				} catch {
+					release();
+					releaseBlob = undefined;
+					setFailed(true);
+				}
 			},
 			() => {
 				if (!controller.signal.aborted) setFailed(true);
@@ -585,6 +596,7 @@ function IllustrationImage({
 					previous?.url === objectUrl ? undefined : previous,
 				);
 			}
+			releaseBlob?.();
 		};
 	}, [activity.active, requested, item.content_url, cache, attempt]);
 	const size = fitImageSize(

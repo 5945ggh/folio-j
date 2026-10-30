@@ -26,6 +26,7 @@ class TranslationTask(Base):
     payload: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), index=True)
     token: Mapped[str | None] = mapped_column(String(26))
+    reader_deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     result_id: Mapped[str | None] = mapped_column(String(26))
     run_id: Mapped[str | None] = mapped_column(String(26))
     error: Mapped[str | None] = mapped_column(Text)

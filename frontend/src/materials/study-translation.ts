@@ -75,6 +75,7 @@ export function matchingStudyTranslation(
 		.find(
 			(result) =>
 				!result.material_deleted &&
+				!result.reader_deleted &&
 				translationReferenceKey(result.material_provenance) === key,
 		);
 	if (selected) return selected.id;

@@ -224,3 +224,60 @@ test("study entry geometry rejects hidden and author-clipped ranges before scree
 		null,
 	);
 });
+
+test("one extent pass shares author clipping reads across leaves and refreshes them next pass", () => {
+	let styles = 0,
+		boxes = 0;
+	let height = 100;
+	const parent = {
+		parentElement: null,
+		clientLeft: 0,
+		clientTop: 0,
+		clientWidth: 100,
+		get clientHeight() {
+			return height;
+		},
+		getBoundingClientRect: () => {
+			boxes++;
+			return { left: 0, top: 0 };
+		},
+	} as unknown as Element;
+	const doc = {
+		defaultView: {
+			getComputedStyle: () => {
+				styles++;
+				return {
+					visibility: "visible",
+					overflowX: "visible",
+					overflowY: "hidden",
+				};
+			},
+		},
+		createRange: () => ({
+			setStart: () => {},
+			setEnd: () => {},
+			getBoundingClientRect: () => ({
+				left: 0,
+				bottom: 160,
+				width: 10,
+				height: 100,
+			}),
+		}),
+		querySelectorAll: () => [],
+	} as unknown as Document;
+	const projection = {
+		raw: "本文".repeat(100),
+		entries: Array.from({ length: 100 }, (_, index) => ({
+			node: { data: "本文", parentElement: parent } as unknown as Text,
+			start: index * 2,
+			end: index * 2 + 2,
+		})),
+	};
+	assert.equal(readingContentEnd(doc, projection, false), 100);
+	assert.equal(styles, 1);
+	assert.equal(boxes, 1);
+	height = 120;
+	assert.equal(readingContentEnd(doc, projection, false), 120);
+	assert.equal(styles, 2);
+	assert.equal(boxes, 2);
+});

@@ -84,6 +84,7 @@ async def candidates(session: AsyncSession, material_id: str) -> list[Candidate]
             .where(
                 TranslationTask.material_id == material_id,
                 TranslationTask.status == "succeeded",
+                TranslationTask.reader_deleted_at.is_(None),
                 TranslationTask.result_id == TranslationResult.id,
             )
         )

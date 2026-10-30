@@ -457,7 +457,9 @@ try {
 						},
 					}),
 				]
-			: suite === "chapter-records" || suite === "inline-records"
+			: suite === "chapter-records" ||
+					suite === "inline-records" ||
+					suite === "translation-removal"
 				? [
 						await chapterRecords(
 							{

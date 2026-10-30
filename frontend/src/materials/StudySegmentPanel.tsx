@@ -33,6 +33,7 @@ import {
 	type ContextSide,
 	contextInputError,
 	createContextDraft,
+	detachStudyTranslation,
 	editContext,
 	editStudyTranslation,
 	prepareStudyRequest,
@@ -54,6 +55,7 @@ export function StudySegmentPanel({
 	translations = [],
 	translationsReady = true,
 	preferredTranslations = [],
+	preferredResultId,
 }: {
 	target: StudyTarget;
 	sourceId: string;
@@ -64,6 +66,7 @@ export function StudySegmentPanel({
 	translations?: readonly ChapterTranslation[];
 	translationsReady?: boolean;
 	preferredTranslations?: readonly TranslationResult[];
+	preferredResultId?: string | null;
 }) {
 	const client = useQueryClient();
 	const titleId = useId();
@@ -76,16 +79,19 @@ export function StudySegmentPanel({
 		setDraft(next);
 	}, []);
 	const [preferred] = useState(() => structuredClone(preferredTranslations));
+	const [preferredId] = useState(preferredResultId);
 	const [translationResultId, setTranslationResultId] = useState<
 		string | null
 	>();
 	useEffect(() => {
 		if (translationResultId !== undefined) return;
-		const chosen = matchingStudyTranslation(
-			snapshot.reference,
-			translationsReady ? translations : [],
-			preferred,
-		);
+		const chosen =
+			preferredId ??
+			matchingStudyTranslation(
+				snapshot.reference,
+				translationsReady ? translations : [],
+				preferred,
+			);
 		if (chosen || translationsReady) setTranslationResultId(chosen);
 	}, [
 		translationResultId,
@@ -93,11 +99,14 @@ export function StudySegmentPanel({
 		snapshot.reference,
 		translations,
 		preferred,
+		preferredId,
 	]);
 	const savedTranslation = useQuery({
 		queryKey: ["translation-result", translationResultId],
-		queryFn: () => getTranslationResult(translationResultId ?? ""),
+		queryFn: ({ signal }) =>
+			getTranslationResult(translationResultId ?? "", signal),
 		enabled: !!translationResultId,
+		staleTime: Number.POSITIVE_INFINITY,
 		retry: false,
 	});
 	const [budget, setBudget] = useState<ContextBudget | null>(null);
@@ -115,6 +124,9 @@ export function StudySegmentPanel({
 	const [confirmDiscard, setConfirmDiscard] = useState(false);
 	const [reuse, setReuse] = useState<Segment | null>(null);
 	const [uncertain, setUncertain] = useState(false);
+	const [detachedTranslation, setDetachedTranslation] = useState<
+		"deleted" | "unavailable" | null
+	>(null);
 	const alive = useRef(true);
 	const completed = useRef(false);
 	const submitting = useRef(false);
@@ -182,11 +194,22 @@ export function StudySegmentPanel({
 		mutationFn: (body: MaterialSegmentInput) =>
 			createMaterialSegment(sourceId, body),
 		onSuccess: (segment) => accept(segment, "created"),
-		onError: (error) => {
+		onError: (error, body) => {
 			if (!alive.current) return;
 			const lost = uncertainStudyFailure(error);
 			if (!lost) pendingRequest.current = null;
 			setUncertain(lost);
+			if (
+				body.translation_result_id &&
+				error &&
+				typeof error === "object" &&
+				"status" in error &&
+				error.status === 404
+			)
+				void client.invalidateQueries({
+					queryKey: ["translation-result", body.translation_result_id],
+					exact: true,
+				});
 		},
 		onSettled: () => {
 			submitting.current = false;
@@ -201,12 +224,34 @@ export function StudySegmentPanel({
 		},
 	});
 	const locked = save.isPending || select.isPending || uncertain;
+	const detachTranslation = useCallback(
+		(resultId: string, reason: "deleted" | "unavailable") => {
+			if (!alive.current || completed.current) return;
+			const previous = draftRef.current;
+			const next = detachStudyTranslation(
+				previous,
+				resultId,
+				pendingRequest.current,
+				locked || submitting.current,
+			);
+			if (next === previous) return;
+			updateDraft(next);
+			setDetachedTranslation(reason);
+		},
+		[locked, updateDraft],
+	);
+	useEffect(() => {
+		const result = savedTranslation.data;
+		if (result && result.id === translationResultId && result.reader_deleted)
+			detachTranslation(result.id, "deleted");
+	}, [savedTranslation.data, translationResultId, detachTranslation]);
 	useEffect(() => {
 		const result = savedTranslation.data;
 		if (
 			!result ||
 			result.id !== translationResultId ||
 			result.material_deleted ||
+			result.reader_deleted ||
 			result.source_id !== sourceId ||
 			!alive.current ||
 			completed.current ||
@@ -406,10 +451,21 @@ export function StudySegmentPanel({
 						}}
 					/>
 				</label>
+				{detachedTranslation && (
+					<p role="status">
+						{detachedTranslation === "deleted"
+							? "原阅读翻译已删除，草稿文字仍保留，可独立保存为片段"
+							: "已解除译文关联，草稿文字仍保留，可独立保存为片段"}
+					</p>
+				)}
 				{savedTranslation.isFetching && <p role="status">正在读取已存译文…</p>}
-				{savedTranslation.isError && (
+				{(savedTranslation.isError ||
+					savedTranslation.data?.material_deleted) && (
 					<div>
 						<InlineError error={savedTranslation.error} />
+						{savedTranslation.data?.material_deleted && (
+							<p>原阅读译文当前不可用，可重试读取或解除关联。</p>
+						)}
 						<button
 							type="button"
 							disabled={locked}
@@ -417,6 +473,18 @@ export function StudySegmentPanel({
 						>
 							重试读取译文
 						</button>
+						{draft.translation.resultId && (
+							<button
+								type="button"
+								disabled={locked || Boolean(pendingRequest.current)}
+								onClick={() => {
+									const resultId = draftRef.current.translation.resultId;
+									if (resultId) detachTranslation(resultId, "unavailable");
+								}}
+							>
+								保留草稿并解除译文关联
+							</button>
+						)}
 					</div>
 				)}
 				<fieldset disabled={locked} className="study-context-fields">

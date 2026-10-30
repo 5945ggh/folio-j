@@ -4,6 +4,8 @@ import { requireData } from "../content";
 export type TranslationResult =
 	components["schemas"]["TranslationResultResponse"];
 export type TranslationTask = components["schemas"]["TranslationTaskResponse"];
+export type TranslationRemoval =
+	components["schemas"]["TranslationRemovalResponse"];
 export type TranslationSettings =
 	components["schemas"]["TranslationSettingsResponse"];
 export type TranslationSettingsInput =
@@ -25,10 +27,12 @@ export async function getTranslationHistory(
 	materialId: string,
 	offset = 0,
 	identity?: string,
+	signal?: AbortSignal,
 ) {
 	const { data, error, response } = await api.GET(
 		"/api/materials/{material_id}/translations",
 		{
+			signal,
 			params: {
 				path: { material_id: materialId },
 				query: {
@@ -51,10 +55,10 @@ export async function createTranslation(
 	);
 	return requireData(data, error, response.status);
 }
-export async function getTranslationTask(id: string) {
+export async function getTranslationTask(id: string, signal?: AbortSignal) {
 	const { data, error, response } = await api.GET(
 		"/api/translation-tasks/{task_id}",
-		{ params: { path: { task_id: id } } },
+		{ params: { path: { task_id: id } }, signal },
 	);
 	return requireData(data, error, response.status);
 }
@@ -65,10 +69,21 @@ export async function stopTranslation(id: string) {
 	);
 	return requireData(data, error, response.status);
 }
-export async function getTranslationResult(id: string) {
+export async function getTranslationResult(id: string, signal?: AbortSignal) {
 	const { data, error, response } = await api.GET(
 		"/api/translation-results/{result_id}",
-		{ params: { path: { result_id: id } } },
+		{ params: { path: { result_id: id } }, signal },
+	);
+	return requireData(data, error, response.status);
+}
+export async function removeTranslation(materialId: string, identity: string) {
+	const { data, error, response } = await api.DELETE(
+		"/api/materials/{material_id}/translations/{identity_sha256}",
+		{
+			params: {
+				path: { material_id: materialId, identity_sha256: identity },
+			},
+		},
 	);
 	return requireData(data, error, response.status);
 }

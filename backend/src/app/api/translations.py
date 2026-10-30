@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
@@ -15,6 +15,7 @@ from app.translation_schemas import (
     TranslationCreate,
     TranslationDeleteImpact,
     TranslationHistoryResponse,
+    TranslationRemovalResponse,
     TranslationResultResponse,
     TranslationSettingsResponse,
     TranslationSettingsUpdate,
@@ -114,3 +115,19 @@ async def material_translation_delete_impact(
     material_id: str, session: Session
 ) -> TranslationDeleteImpact:
     return await service.delete_impact(session, material_id)
+
+
+@router.delete(
+    "/materials/{material_id}/translations/{identity_sha256}",
+    response_model=TranslationRemovalResponse,
+)
+async def remove_translation_history(
+    material_id: str,
+    identity_sha256: Annotated[str, Path(pattern=r"^[0-9a-f]{64}$")],
+    session: Session,
+    request: Request,
+) -> TranslationRemovalResponse:
+    result = await service.remove_reader_history(session, material_id, identity_sha256)
+    for task_id in result.cancelled_task_ids:
+        service.cancel(request.app, task_id)
+    return result

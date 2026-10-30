@@ -3,6 +3,10 @@ import { projectPart } from "../src/materials/dom";
 import type { BrowserHarness } from "./harness";
 import { inlinePerformance } from "./inline-performance";
 import { inlineRecords } from "./inline-records";
+import {
+	translationRemoval,
+	translationRemovalFixture,
+} from "./translation-removal";
 
 type Schema = components["schemas"];
 const timestamp = "2026-10-23T00:00:00Z";
@@ -112,41 +116,49 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 	const check: BrowserHarness["check"] = h.check;
 	const params = new URLSearchParams(location.search);
 	const inlineSuite = params.get("suite") === "inline-records";
+	const removalSuite = params.get("suite") === "translation-removal";
 	const performanceSuite = inlineSuite && params.has("performance");
-	const inlineParagraphs = inlineSuite
-		? [
-				...paragraphs,
-				...Array.from(
-					{ length: performanceSuite ? 400 : 20 },
-					(_, index) => `追加第${index}段。春の風が静かな庭を通り抜ける。`,
-				),
-			]
-		: paragraphs;
+	const inlineParagraphs = removalSuite
+		? [...paragraphs, paragraphs[1] ?? ""]
+		: inlineSuite
+			? [
+					...paragraphs,
+					...Array.from(
+						{ length: performanceSuite ? 553 : 20 },
+						(_, index) => `追加第${index}段。春の風が静かな庭を通り抜ける。`,
+					),
+				]
+			: paragraphs;
 	const inlineText = inlineParagraphs.join("");
-	let inlineChapter = inlineSuite
-		? {
-				...chapter,
-				resources: chapter.resources.map((resource) => ({
-					...resource,
-					text: inlineText,
-					css: "p{margin:0 0 10em}",
-				})),
-				parts: chapter.parts.map((part) => ({
-					...part,
-					end: inlineText.length,
-					leaf_end: 25,
-					html:
-						part.html +
-						inlineParagraphs
-							.slice(4)
-							.map(
-								(value, index) =>
-									`<p><span data-locator-leaf="${index + 5}">${value}</span></p>`,
-							)
-							.join(""),
-				})),
-			}
-		: chapter;
+	let inlineChapter =
+		inlineSuite || removalSuite
+			? {
+					...chapter,
+					resources: chapter.resources.map((resource) => ({
+						...resource,
+						text: inlineText,
+						css: performanceSuite
+							? "p{margin:0;line-height:2}"
+							: removalSuite
+								? "p{margin:0 0 1.8em}"
+								: "p{margin:0 0 10em}",
+					})),
+					parts: chapter.parts.map((part) => ({
+						...part,
+						end: inlineText.length,
+						leaf_end: 25,
+						html:
+							part.html +
+							inlineParagraphs
+								.slice(4)
+								.map(
+									(value, index) =>
+										`<p><span data-locator-leaf="${index + 5}">${value}</span></p>`,
+								)
+								.join(""),
+					})),
+				}
+			: chapter;
 
 	if (performanceSuite) {
 		// Split one canonical resource into three real reading frames, with marks
@@ -154,10 +166,10 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		let offset = 0;
 		inlineChapter = {
 			...inlineChapter,
-			parts: [0, 140, 280].map((start, index) => {
+			parts: [0, 550, 553].map((start, index) => {
 				const values = inlineParagraphs.slice(
 					start,
-					index === 2 ? undefined : start + 140,
+					index === 2 ? undefined : [550, 553][index],
 				);
 				const length = values.join("").length;
 				const part = {
@@ -165,12 +177,16 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 					spine_index: 0,
 					start: offset,
 					end: offset + length,
-					leaf_start: start + 1,
-					leaf_end: start + values.length + 1,
+					leaf_start: start * 4 + 1,
+					leaf_end: (start + values.length) * 4 + 1,
 					html: values
 						.map(
 							(value, paragraph) =>
-								`<p><span data-locator-leaf="${start + paragraph + 1}">${value}</span></p>`,
+								`<p>${Array.from({ length: 4 }, (_, leaf) => {
+									const begin = Math.floor((value.length * leaf) / 4);
+									const end = Math.floor((value.length * (leaf + 1)) / 4);
+									return `<span data-locator-leaf="${(start + paragraph) * 4 + leaf + 1}">${value.slice(begin, end)}</span>`;
+								}).join("")}</p>`,
 						)
 						.join(""),
 				};
@@ -198,6 +214,14 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		import("../src/translation/state"),
 	]);
 	const references = paragraphs.map((_, index) => reference(index));
+	if (removalSuite) {
+		const repeated = reference(1);
+		const range = repeated.ranges[0];
+		check(range, "Removal fixture requires a repeated source range");
+		range.start = text.length;
+		range.end = text.length + range.exact.length;
+		references.push(repeated);
+	}
 	if (inlineSuite) {
 		const partial = references[1]?.ranges[0];
 		const cross = references[2]?.ranges[0];
@@ -219,17 +243,20 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			source_id: "source",
 			material_id: "chapter-records",
 			material_deleted: false,
+			reader_deleted: false,
 			material_provenance,
 			identity_sha256: identities[index] ?? "",
-			text: inlineSuite
-				? (material_provenance.ranges[0]?.exact ?? "")
-				: (paragraphs[index] ?? ""),
+			text:
+				inlineSuite || removalSuite
+					? (material_provenance.ranges[0]?.exact ?? "")
+					: (paragraphs[index] ?? ""),
 			translation:
 				[
 					"春风静静穿过庭院。",
 					"猫在走廊上缓缓睁开眼睛。",
 					"远处的天空还留着微光。",
 					"风吹动树叶，发出细小的声音。",
+					"同文异址的独立译文。",
 				][index] ?? "",
 			context_before: "",
 			context_after: "",
@@ -238,7 +265,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			model_id: "fixture",
 			run_id: `run-${index}`,
 			created_at: timestamp,
-			adopted_segment_ids: [],
+			adopted_segment_ids: removalSuite && index === 0 ? ["saved"] : [],
 			chapter_id: "chapter",
 			parts: [],
 			scheme_id: "default",
@@ -273,6 +300,9 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			target_language: result.target_language,
 			created_at: result.created_at,
 		}));
+	const removal = removalSuite
+		? translationRemovalFixture(h, results, historical, summaries)
+		: undefined;
 	const pages: string[] = [];
 	const generated: string[] = [];
 	let allowGeneration = false;
@@ -362,6 +392,8 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			? successfulTask
 			: { ...successfulTask, status: "queued", result_id: null, run_id: null };
 	h.mock(async (request) => {
+		const removedResponse = await removal?.respond(request);
+		if (removedResponse) return removedResponse;
 		const url = new URL(request.url);
 		const path = url.pathname;
 		if (
@@ -459,7 +491,9 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			pages.push(after);
 			check(after === "" || after === "page-two", `Unexpected cursor ${after}`);
 			return Response.json({
-				items: after ? summaries.slice(2) : summaries.slice(0, 2),
+				items: (after ? summaries.slice(2) : summaries.slice(0, 2)).filter(
+					(item) => !removal?.removed.has(item.identity_sha256),
+				),
 				next_cursor: after ? null : "page-two",
 				unavailable_count: 0,
 			});
@@ -540,7 +574,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			`Unmocked chapter record request ${request.method} ${path}`,
 		);
 	});
-	const dispose = await h.mount(
+	let dispose = await h.mount(
 		<MaterialReader />,
 		"/materials/:id",
 		"/materials/chapter-records",
@@ -595,6 +629,15 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
 		);
 		containedPanel();
+		if (preview && params.get("panel") === "translation-removal") {
+			const target = results[1];
+			check(target, "Removal preview requires a saved target");
+			button(`删除此处翻译：${target.text}`).click();
+			await h.until(
+				() => !!h.container.querySelector("dialog[open]"),
+				"Removal confirmation must open for preview",
+			);
+		}
 		if (preview)
 			return "chapter records preview: real MaterialReader, paginated exact references, local API and silent speech";
 		const frame = h.container.querySelector<HTMLIFrameElement>(
@@ -602,6 +645,36 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		);
 		const doc = frame?.contentDocument;
 		check(frame && doc, "Missing real reader frame");
+		if (removal) {
+			const releaseReader = () => {
+				dispose();
+				dispose = () => {};
+			};
+			return await translationRemoval(h, doc, inlineText, results, removal, {
+				chapter: inlineChapter,
+				releaseReader,
+				async remountReader() {
+					releaseReader();
+					dispose = await h.mount(
+						<MaterialReader />,
+						"/materials/:id",
+						"/materials/chapter-records",
+					);
+					await h.until(
+						() =>
+							!!h.container
+								.querySelector<HTMLIFrameElement>("iframe.material-part")
+								?.contentDocument?.querySelector("[data-locator-leaf]"),
+						"Remounted reader must load canonical source",
+					);
+					const next = h.container.querySelector<HTMLIFrameElement>(
+						"iframe.material-part",
+					)?.contentDocument;
+					check(next, "Remounted reader requires an iframe document");
+					return next;
+				},
+			});
+		}
 		if (inlineSuite) {
 			button("本章记录").click();
 			await h.until(

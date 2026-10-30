@@ -411,3 +411,29 @@ test("geometry commits stabilize old inline motion before capturing and replacin
 	layout.reflow();
 	assert.deepEqual(events, ["capture", "resize", "restore", "restored"]);
 });
+
+test("inline reflow reuses one accepted capture while preserving pending recovery", () => {
+	const { layout, events, scroll } = fixture();
+	let captures = 0;
+	layout.reflow(
+		() => events.push("inline mutation"),
+		() => {
+			captures++;
+			return 720;
+		},
+	);
+	assert.equal(captures, 1);
+	assert.deepEqual(events, [
+		"inline mutation",
+		"resize",
+		"restore",
+		"restored",
+	]);
+	assert.equal(scroll(), 720);
+	layout.setAnchor(900);
+	layout.reflow(undefined, () => {
+		assert.fail("an unresolved navigation intent must not be sampled over");
+	});
+	assert.equal(scroll(), 900);
+	assert.equal(layout.canSample(size), true);
+});

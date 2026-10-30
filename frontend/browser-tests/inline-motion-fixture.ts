@@ -169,8 +169,12 @@ export async function inlineMotionFixture(h: BrowserHarness) {
 					"Translation and source must have actual motion effects",
 				);
 				check(
+					control.effects.every((effect) => effect.currentTime === 0),
+					"Prepared translation and source motion must start at zero before the next rendering update",
+				);
+				check(
 					control.clockSpread <= 1 && control.durationSpread <= 1,
-					"Translation and source effects must share their production clock and duration",
+					`Translation and source effects must share their production clock and duration: ${JSON.stringify(control.effects.map((effect) => ({ time: effect.currentTime, start: effect.startTime, timeline: effect.timeline?.currentTime, kind: (effect as CSSTransition).transitionProperty, doc: (effect.effect as KeyframeEffect)?.target?.ownerDocument === document ? "outer" : "inner" })))}`,
 				);
 				check(
 					(
@@ -270,6 +274,33 @@ export async function inlineMotionFixture(h: BrowserHarness) {
 			);
 			preserveSource();
 		};
+		if (!reduced) {
+			check(show(), "Same-frame reversal must prepare a new translation");
+			check(
+				position().height === 0,
+				"Opening must still be at its prepared zero height",
+			);
+			hide();
+			const sameFrame = position();
+			check(
+				(
+					["text", "image", "frameHeight", "laterFrame", "margin"] as const
+				).every((key) => Math.abs(sameFrame[key] - closed[key]) <= 1),
+				`Closing before the prepared start must preserve collapsed geometry: ${JSON.stringify({ closed, sameFrame })}`,
+			);
+			await settleInline(
+				{ ...h, container: root },
+				doc,
+				() => !output.element,
+				"Same-frame reversal must discard its empty output and all growth effects",
+			);
+			check(
+				(
+					["text", "image", "frameHeight", "laterFrame", "margin"] as const
+				).every((key) => Math.abs(position()[key] - closed[key]) <= 1),
+				"A cancelled prepared opening must never leave an expanded iframe or marker",
+			);
+		}
 		await phase(true);
 		await phase(false);
 		await phase(true, true);

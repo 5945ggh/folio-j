@@ -561,3 +561,25 @@ test("checkpoint preserves an accepted same-chapter jump before its render commi
 		"same-chapter jump retains its ready frames",
 	);
 });
+
+test("inline reflow passes the accepted anchor through recovery without recapturing", (t) => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const f = fixture();
+	f.boot();
+	const accepted = position("A", 72);
+	let captures = 0;
+	f.presentation.reflow(undefined, () => {
+		captures++;
+		return accepted;
+	});
+	assert.equal(captures, 1);
+	assert.deepEqual(f.restorations.at(-1)?.anchor, accepted);
+	assert.equal(f.presentation.canSample(size), true);
+	f.presentation.present(destination("A", 88), f.complete, f.capture);
+	f.presentation.reflow(undefined, () => {
+		assert.fail("an unresolved destination must retain its pending anchor");
+	});
+	assert.equal(f.presentation.canSample(size), false);
+	f.commit();
+	assert.equal(f.restorations.at(-1)?.anchor?.offset, 88);
+});

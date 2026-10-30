@@ -32,11 +32,48 @@ export class ReaderFlowMotion {
 	get running(): boolean {
 		return this.effects.size > 0;
 	}
+	private startFrame: { view: Window; id: number } | null = null;
+	private waiting = new Set<Animation>();
+	private cancelStart(): void {
+		if (this.startFrame)
+			this.startFrame.view.cancelAnimationFrame(this.startFrame.id);
+		this.startFrame = null;
+		this.waiting.clear();
+	}
 	private begin(): void {
-		const time = this.root()?.ownerDocument.timeline?.currentTime;
+		this.cancelStart();
+		const doc = this.root()?.ownerDocument;
+		const time = doc?.timeline?.currentTime;
 		this.started = typeof time === "number" ? time : null;
+		const view = doc?.defaultView;
+		if (!view?.requestAnimationFrame) return;
+		// Build every effect at its actual starting geometry. Starting them together
+		// at the next rendering update keeps synchronous layout work out of elapsed
+		// animation time and avoids a skipped opening phase after an expensive insert.
+		const id = view.requestAnimationFrame(() => {
+			this.startFrame = null;
+			const time = doc?.timeline?.currentTime;
+			this.started = typeof time === "number" ? time : null;
+			const waiting = this.waiting;
+			this.waiting = new Set();
+			for (const animation of waiting) {
+				// Explicit seeking/playback owns the clock once it has moved away
+				// from the prepared start.
+				if (animation.playState !== "paused" || animation.currentTime !== 0)
+					continue;
+				animation.play();
+				this.align(animation);
+			}
+		});
+		this.startFrame = { view, id };
 	}
 	private align(animation: Animation): void {
+		if (this.startFrame) {
+			animation.pause();
+			animation.currentTime = 0;
+			this.waiting.add(animation);
+			return;
+		}
 		const time = animation.timeline?.currentTime;
 		const reference = this.root()?.ownerDocument.timeline?.currentTime;
 		if (
@@ -229,7 +266,12 @@ export class ReaderFlowMotion {
 		hold = false,
 		margin = false,
 	): void {
-		if (Math.abs(from - to) < 0.1 || !element.isConnected || !element.animate)
+		// A constant nonzero hold keeps uncommitted margin coordinates in place.
+		if (
+			(Math.abs(from - to) < 0.1 && (!hold || Math.abs(to) < 0.1)) ||
+			!element.isConnected ||
+			!element.animate
+		)
 			return;
 		const view = element.ownerDocument.defaultView;
 		if (!view) return;
@@ -448,7 +490,9 @@ export class ReaderFlowMotion {
 		const frame = Array.from(this.frames()).find(
 			(item) => item.doc === node.ownerDocument,
 		);
-		if (!frame || height <= 0) return;
+		if (!frame) return;
+		// A prepared opening is still zero-height, but its queued frame growth
+		// must be cancelled and its final underlying height collapsed as usual.
 		this.cancelEffects();
 		const boundary =
 			frame.element.getBoundingClientRect().top +
@@ -547,6 +591,7 @@ export class ReaderFlowMotion {
 				);
 	}
 	clear(): void {
+		this.cancelStart();
 		this.cancelEffects();
 		this.pendingMargins.clear();
 		this.started = null;

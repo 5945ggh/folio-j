@@ -38,9 +38,11 @@ import {
 	getTranslationResult,
 	type TranslationResult,
 } from "../translation/api";
+import { TranslationPreferences } from "../translation/preference";
 import { useTranslationSessions } from "../translation/session-react";
 import { targetText, translationTargetKey } from "../translation/state";
 import { TranslationPanel } from "../translation/TranslationPanel";
+import type { TranslationRemoved } from "../translation/TranslationRemoval";
 import {
 	getChapter,
 	getMaterial,
@@ -134,6 +136,7 @@ import {
 	type ReaderPresentationState,
 	type ReaderRestoreIntent,
 } from "./reader-presentation";
+import { readerResourceCache } from "./reader-resource-cache";
 import type { ReaderHighlightRange } from "./reader-selection";
 import {
 	cancelReaderSessionReads,
@@ -220,13 +223,12 @@ function Reader({
 	const [translationOpen, setTranslationOpen] = useState(false);
 	const [translationAnchor, setTranslationAnchor] =
 		useState<ScreenAnchor | null>(null);
-	const selectedTranslations = useRef(new Map<string, TranslationResult>());
+	const client = useQueryClient();
+	const selectedTranslations = useRef(new TranslationPreferences());
 	const rememberTranslation = useCallback((result: TranslationResult) => {
-		selectedTranslations.current.delete(result.identity_sha256);
-		selectedTranslations.current.set(result.identity_sha256, result);
+		selectedTranslations.current.remember(result);
 	}, []);
 	const translationSessions = useTranslationSessions();
-	const client = useQueryClient();
 	const readingGeneration = readingsSummary.generation_id;
 	const navigate = useNavigate();
 	const initialAnchor = initialOrigin
@@ -403,7 +405,9 @@ function Reader({
 		  }
 		| undefined
 	>();
-	const [imageCache] = useState(() => new ReaderImageCache());
+	const [imageCache] = useState(
+		() => new ReaderImageCache(readerResourceCache(client)),
+	);
 	const cacheCloseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
 		undefined,
 	);
@@ -475,6 +479,7 @@ function Reader({
 		markHit,
 		manualPosition,
 		inlineRequest,
+		translationTarget,
 		studyTargetActive: studyTarget !== null,
 		studyActive:
 			translationOpen ||
@@ -497,6 +502,7 @@ function Reader({
 		markHit,
 		manualPosition,
 		inlineRequest,
+		translationTarget,
 		studyTargetActive: studyTarget !== null,
 		studyActive:
 			translationOpen ||
@@ -807,6 +813,7 @@ function Reader({
 		}),
 	);
 	const alive = useRef(true);
+	const inlineMutation = useRef(false);
 	useLayoutEffect(() => {
 		presentation.current.setActive(active, discard.current);
 		return () => presentation.current.setActive(false, discard.current);
@@ -934,12 +941,40 @@ function Reader({
 		);
 		markTrigger.current?.focus({ preventScroll: true });
 	}, [closeInlineTranslation]);
+	const forgetTranslation = useCallback<TranslationRemoved>(
+		(removed, reference) => {
+			selectedTranslations.current.forget(removed.identity_sha256);
+			if (
+				latest.current.inlineRequest?.item.identity_sha256 ===
+				removed.identity_sha256
+			)
+				closeInlineTranslation();
+			if (
+				latest.current.translationTarget &&
+				translationTargetKey(latest.current.translationTarget.reference) ===
+					translationTargetKey(reference)
+			) {
+				setTranslationOpen(false);
+				setTranslationTarget(null);
+			}
+			if (
+				previewEmphasis.current?.kind === "translation" &&
+				previewEmphasis.current.id === removed.identity_sha256
+			) {
+				previewEmphasis.current = null;
+				frames.current.emphasizeStudyMark(null);
+			}
+		},
+		[closeInlineTranslation],
+	);
 	useEffect(() => {
 		if (!markHit) setManualPosition(null);
 	}, [markHit]);
 	const inlineResult = useQuery({
 		queryKey: ["translation-result", inlineRequest?.item.result_id],
-		queryFn: () => getTranslationResult(inlineRequest?.item.result_id ?? ""),
+		queryFn: ({ signal }) =>
+			getTranslationResult(inlineRequest?.item.result_id ?? "", signal),
+		staleTime: Number.POSITIVE_INFINITY,
 		enabled:
 			active &&
 			!!inlineRequest &&
@@ -1346,7 +1381,7 @@ function Reader({
 					if (located && highlight.current?.kind === "search")
 						navigationHighlight.current?.presented();
 					frames.current.refreshStudyGeometry();
-					observe();
+					if (!inlineMutation.current) observe();
 				},
 			};
 		},
@@ -1398,10 +1433,18 @@ function Reader({
 				const before = screenTop();
 				jumpReading.current.pause();
 				let applied = false;
-				presentation.current.reflow(() => {
-					applied = true;
-					update();
-				});
+				inlineMutation.current = true;
+				try {
+					presentation.current.reflow(
+						() => {
+							applied = true;
+							update();
+						},
+						() => anchor,
+					);
+				} finally {
+					inlineMutation.current = false;
+				}
 				if (!applied) {
 					update();
 					return;
@@ -1763,6 +1806,7 @@ function Reader({
 			return;
 		}
 		const matching =
+			!result.reader_deleted &&
 			result.id === item.result_id &&
 			result.identity_sha256 === item.identity_sha256 &&
 			result.material_provenance.material_id === book.id &&
@@ -2366,6 +2410,7 @@ function Reader({
 						key={translationTargetKey(translationTarget.reference)}
 						materialId={book.id}
 						onResultSelected={rememberTranslation}
+						onRemoved={forgetTranslation}
 						translationSessions={translationSessions}
 						visible={active && translationOpen}
 						anchor={translationAnchor}
@@ -2391,7 +2436,9 @@ function Reader({
 					translationsReady={
 						!chapterTranslations.loading && !chapterTranslations.isError
 					}
-					preferredTranslations={[...selectedTranslations.current.values()]}
+					preferredResultId={selectedTranslations.current.matching(
+						studyTarget.reference,
+					)}
 					sourceId={book.source_id}
 					sourceTitle={source.data?.title ?? "所属来源"}
 					onCancel={() => setStudyTarget(null)}
@@ -2464,6 +2511,9 @@ function Reader({
 								chapter.data,
 							);
 							setTranslationTarget(structuredClone(target));
+							void translationSessions
+								.forTarget(book.source_id, target)
+								.open({ kind: "selection", newSelection: true });
 							setTranslationAnchor(selection.anchor);
 							setTranslationOpen(true);
 							setSelection(null);
@@ -2556,6 +2606,7 @@ function Reader({
 						sourceId={book.source_id}
 						direction={settings.writing_mode}
 						onResultSelected={rememberTranslation}
+						onTranslationRemoved={forgetTranslation}
 						translationSessions={translationSessions}
 						onBackToOrigin={backToTranslationOrigin}
 						onOpen={openStudySegment}

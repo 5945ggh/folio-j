@@ -69,6 +69,7 @@ class TranslationResultResponse(BaseModel):
     source_id: str
     material_id: str
     material_deleted: bool
+    reader_deleted: bool = False
     material_provenance: MaterialProvenance
     identity_sha256: str
     chapter_id: str
@@ -137,3 +138,10 @@ class TranslationDeleteImpact(BaseModel):
     hidden_result_count: int
     retained_result_count: int
     active_task_count: int
+
+
+class TranslationRemovalResponse(BaseModel):
+    identity_sha256: str
+    task_ids: list[str]
+    result_ids: list[str]
+    cancelled_task_ids: list[str]

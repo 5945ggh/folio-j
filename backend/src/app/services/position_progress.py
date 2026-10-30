@@ -1,7 +1,6 @@
 """Current chapter position from immutable canonical codepoint ranges."""
 
 import unicodedata
-from functools import lru_cache
 from html.parser import HTMLParser
 
 from app.epub_schemas import CompiledBook
@@ -39,7 +38,6 @@ class _ImagePrefix(HTMLParser):
             self.text.append(data)
 
 
-@lru_cache(maxsize=8)
 def _image_offset(markup: str, image_id: int) -> int:
     parser = _ImagePrefix(image_id)
     parser.feed(markup)

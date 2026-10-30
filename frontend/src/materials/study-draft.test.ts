@@ -7,6 +7,7 @@ import {
 	beginContextFill,
 	contextInputError,
 	createContextDraft,
+	detachStudyTranslation,
 	editContext,
 	editStudyTranslation,
 	prepareStudyRequest,
@@ -178,4 +179,70 @@ test("提交冻结实际译文及关联结果，核实时不改选区或采用�
 		contextInputError(editStudyTranslation(draft, "😀".repeat(100_001))),
 		"译文和前后文各不能超过 100,000 个字符。",
 	);
+});
+
+test("解除失效译文关联保留全部草稿文字并阻止迟到预填", () => {
+	let draft = applyStudyTranslation(createContextDraft("target"), "target", {
+		id: "removed",
+		translation: "原译文",
+	});
+	draft = editContext(draft, "before", "手动前文");
+	for (const text of ["原译文", "我的改写", ""]) {
+		const changed =
+			text === "原译文" ? draft : editStudyTranslation(draft, text);
+		assert.equal(detachStudyTranslation(changed, "other", null), changed);
+		const detached = detachStudyTranslation(changed, "removed", null);
+		assert.equal(detached.translation.value, text);
+		assert.equal(detached.translation.resultId, null);
+		assert.equal(detached.translation.edited, true);
+		assert.equal(detached.before, changed.before);
+		assert.equal(detached.after, changed.after);
+		assert.equal(
+			applyStudyTranslation(detached, "target", {
+				id: "late",
+				translation: "迟到译文",
+			}),
+			detached,
+		);
+		const request = prepareStudyRequest(
+			null,
+			reference,
+			detached,
+			() => "independent",
+		);
+		assert.equal(request.translation, text);
+		assert.equal(request.translation_result_id, undefined);
+		assert.equal(request.context_before, "手动前文");
+	}
+});
+
+test("提交中及结果不确定时解除关联不能改写冻结请求，明确失败后可独立保存", () => {
+	const draft = applyStudyTranslation(createContextDraft("target"), "target", {
+		id: "removed",
+		translation: "保留译文",
+	});
+	const request = prepareStudyRequest(null, reference, draft, () => "original");
+	assert.equal(detachStudyTranslation(draft, "removed", null, true), draft);
+	assert.equal(detachStudyTranslation(draft, "removed", request), draft);
+	assert.equal(
+		prepareStudyRequest(request, reference, draft, () => "wrong"),
+		request,
+	);
+	assert.equal(request.translation_result_id, "removed");
+	assert.equal(request.request_id, "original");
+	const detached = detachStudyTranslation(draft, "removed", null);
+	// Even an already changed local draft cannot mutate the exact request used for verification.
+	assert.equal(
+		prepareStudyRequest(request, reference, detached, () => "wrong"),
+		request,
+	);
+	const fresh = prepareStudyRequest(
+		null,
+		reference,
+		detached,
+		() => "after-definite-failure",
+	);
+	assert.equal(fresh.translation, "保留译文");
+	assert.equal(fresh.translation_result_id, undefined);
+	assert.equal(fresh.request_id, "after-definite-failure");
 });

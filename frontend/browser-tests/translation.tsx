@@ -75,6 +75,7 @@ export async function translationRegression(h: BrowserHarness) {
 		source_id: "source",
 		material_id: "book",
 		material_deleted: false,
+		reader_deleted: false,
 		material_provenance: reference,
 		identity_sha256: await targetIdentity(reference),
 		text: "猫だ。",

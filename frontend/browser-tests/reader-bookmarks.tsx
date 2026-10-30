@@ -309,12 +309,12 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 				await until(
 					() =>
 						!!container.querySelector(
-							'input[aria-label="显示阅读记录页边入口"]',
+							'input[aria-label="展示阅读记录页边入口"]',
 						),
 					"Margin preference must load",
 				);
 				find<HTMLInputElement>(
-					'input[aria-label="显示阅读记录页边入口"]',
+					'input[aria-label="展示阅读记录页边入口"]',
 				).click();
 				await until(
 					() => buttons().length === 0,

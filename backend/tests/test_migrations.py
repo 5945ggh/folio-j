@@ -46,7 +46,8 @@ _ = (
 )
 BASELINE = "0001_schema_baseline"
 COPY_SETTINGS = "0002_context_copy_settings"
-HEAD = "0003_material_bookmarks"
+BOOKMARKS = "0003_material_bookmarks"
+HEAD = "0004_translation_reader_removal"
 SCRIPTS = Path(__file__).resolve().parents[1] / "alembic"
 
 
@@ -140,10 +141,16 @@ def test_empty_database_rebuilds_current_schema(
     config = _config(database, monkeypatch)
     scripts = ScriptDirectory.from_config(config)
     revisions = list(scripts.walk_revisions())
-    assert [revision.revision for revision in revisions] == [HEAD, COPY_SETTINGS, BASELINE]
-    assert revisions[0].down_revision == COPY_SETTINGS
-    assert revisions[1].down_revision == BASELINE
-    assert revisions[2].down_revision is None
+    assert [revision.revision for revision in revisions] == [
+        HEAD,
+        BOOKMARKS,
+        COPY_SETTINGS,
+        BASELINE,
+    ]
+    assert revisions[0].down_revision == BOOKMARKS
+    assert revisions[1].down_revision == COPY_SETTINGS
+    assert revisions[2].down_revision == BASELINE
+    assert revisions[3].down_revision is None
     assert scripts.get_bases() == [BASELINE]
     assert scripts.get_heads() == [HEAD]
     command.upgrade(config, "head")
@@ -387,3 +394,42 @@ def test_bookmarks_upgrade_preserves_existing_settings_and_learning_data(
     restored = _rows(database)
     restored.pop("alembic_version")
     assert restored == before
+
+
+def test_translation_removal_upgrade_preserves_history_and_adds_nullable_tombstone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "translation-removal-upgrade.db"
+    config = _config(database, monkeypatch)
+    command.upgrade(config, BOOKMARKS)
+    _seed_history(database)
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO translation_tasks (id,request_id,request_payload,source_id,material_id,"
+            "identity_sha256,payload,status,created_at) VALUES "
+            "('task','request','{}','source','material','identity','{}','succeeded','2020-01-01')"
+        )
+        connection.execute(
+            "INSERT INTO translation_results (id,task_id,translation,created_at) "
+            "VALUES ('result','task','残す訳','2020-01-01')"
+        )
+        connection.execute(
+            "INSERT INTO translation_adoptions (id,request_id,request_payload,adopted_payload,"
+            "result_id,segment_id,created_at) VALUES "
+            "('adoption','adoption-request','{}','{}','result','segment','2020-01-01')"
+        )
+    before = _rows(database)
+    original_tasks = before["translation_tasks"]
+    command.upgrade(config, HEAD)
+    after = _rows(database)
+    assert after.pop("alembic_version") == [(HEAD,)]
+    before.pop("alembic_version")
+    assert after.pop("translation_tasks") == [(*before.pop("translation_tasks")[0], None)]
+    assert after == before
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    command.downgrade(config, BOOKMARKS)
+    restored = _rows(database)
+    restored.pop("alembic_version")
+    assert restored["translation_results"][0][2] == "残す訳"
+    assert restored["translation_tasks"] == original_tasks
