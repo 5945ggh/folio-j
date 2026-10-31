@@ -1,0 +1,39 @@
+backend/src/app/services/dictionary_store.py
+  s_6bf2b238add0a2::t_29d6f440904053 28,31,76,78,85-87,90,92,114,117-121,264-270,436
+  s_6bf2b238add0a2::t_7edac9f4d9cbd4 77,79
+backend/tests/test_dictionary_styles.py
+  s_6bf2b238add0a2::t_4b8ab52ea07e24 21-32,39-50,62-86,114-115,117-118
+  s_6bf2b238add0a2::t_c47f42976a21cd 1-20,33-38,51-61,87-113,116,119-144,146-185
+  s_6bf2b238add0a2::t_7edac9f4d9cbd4 145
+frontend/src/api/schema.d.ts
+  s_6bf2b238add0a2::t_2bcd3594bf8eed 1758,1768-1808
+  s_6bf2b238add0a2::t_c101405dd4b220 1809
+backend/src/app/dictionary_schemas.py
+  s_6bf2b238add0a2::t_e0d71d07bb7ae3 10-39
+  s_6bf2b238add0a2::t_74d22f8ff60f0d 40-42,49
+backend/src/app/services/dictionary_styles.py
+  s_6bf2b238add0a2::t_43b9c9cf35c38e 1-131
+  s_6bf2b238add0a2::t_d96bd607ed8971 132-152
+backend/openapi.json
+  s_6bf2b238add0a2::t_8d6bfc9f0ab800 1180-1189,1221-1463
+docs/ARCHITECTURE.md
+  s_6bf2b238add0a2::t_231576d6bc2c5f 233
+frontend/src/materials/DictionaryCards.tsx
+  s_6bf2b238add0a2::t_8adaebb117285a 37-57,68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fd8285dc3e1b328a1fdab49a210553952de033e0",
+  "prompts": {},
+  "sessions": {
+    "s_6bf2b238add0a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1911d-7f9e-7903-b68e-cba97cbf7895",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
