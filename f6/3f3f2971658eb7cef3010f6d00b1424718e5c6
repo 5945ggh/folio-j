@@ -1,0 +1,67 @@
+docs/INFORMATION_ARCHITECTURE.md
+  s_6bf2b238add0a2::t_976917b404db27 285
+frontend/src/materials/dictionary-pages.ts
+  s_6bf2b238add0a2::t_c5598a3fd8b487 1-26
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_6bf2b238add0a2::t_976917b404db27 14
+frontend/scripts/test-browser.mjs
+  s_6bf2b238add0a2::t_8cf1428d762342 71-72
+frontend/src/materials/dictionary-layout.ts
+  s_6bf2b238add0a2::t_c5598a3fd8b487 3-8,13-17,20,24-69,72-80,94-107
+  s_6bf2b238add0a2::t_c0d4f131fcfc3a 70-71,81-93
+  s_6bf2b238add0a2::t_d76eba309689ca 108
+docs/USAGE.md
+  s_6bf2b238add0a2::t_976917b404db27 55
+docs/handovers/epub-reading/DICTIONARY_PLAN.md
+  s_6bf2b238add0a2::t_976917b404db27 15,34-39
+frontend/src/materials/dictionary.css
+  s_6bf2b238add0a2::t_84e696948fb015 130-132,149-151,212-225
+  s_6bf2b238add0a2::t_60e6d9a02775e8 106-109,111-117,122,226-251,266-270,273-276,280-281,353-356
+frontend/src/materials/DictionaryCards.tsx
+  s_6bf2b238add0a2::t_84e696948fb015 178-181
+  s_6bf2b238add0a2::t_2f89670da8e9ea 9-15,25,34,80,124,133,153,156,169-177,183-184,186-189,205-208,227-229,240-242,248-272,311-312,325-326,330,341-347,351-373,398,406-422,434-436,439-442,444,446-447,450-464
+  s_6bf2b238add0a2::t_1329792e5ec20a 466,468-470
+docs/PRD.md
+  s_6bf2b238add0a2::t_976917b404db27 192
+frontend/src/materials/MaterialReader.tsx
+  s_6bf2b238add0a2::t_c5598a3fd8b487 2225-2228
+  s_6bf2b238add0a2::t_f4c06caad8a1f5 98
+frontend/browser-tests/reader-dictionary.tsx
+  s_6bf2b238add0a2::t_047b602767b18d 377-382,413-416,419-422,433-434,436,438-441,448-451,453-455,458-461,480-482,484-489,497-503,553,555,603-612,614-617,619-621,634-638,641-643,646-649,651-654,685-695,698-707,710-715,796-804,806-812
+  s_6bf2b238add0a2::t_c5bf7b3143b1e9 366-371,535-536,544-545,554,559,570,613,624
+  s_6bf2b238add0a2::t_fd8f976e1e9994 15-17,162-176,178-182,184-194,196,210-216,218-226,330,372-376,383-388,417-418,423,432,437,442,447,452,457,462,464,483,490-491,496,534,583,586,591-592,602,618,622-623,639-640,644-645,650,655,684,696-697,708-709,716-719,795,805,813
+  s_6bf2b238add0a2::t_d037a40eb29c49 533,568-569
+  s_6bf2b238add0a2::t_a40019a445f90f 199-206,389-393,396-398,408,424-431,443-446
+  s_6bf2b238add0a2::t_9ffecde6231959 394-395,399-407,409-412
+  s_6bf2b238add0a2::t_42b13161731f3a 435,492-495,537-543,546-552,556-558,560-567,593-601,625-631,633
+  s_6bf2b238add0a2::t_995e9ae2f5c904 632
+  s_6bf2b238add0a2::t_8cf1428d762342 197-198,209
+  s_6bf2b238add0a2::t_d59c0d1b6fbefc 183
+frontend/src/materials/dictionary-pages.test.ts
+  s_6bf2b238add0a2::t_65fac112f606be 1-29
+frontend/src/materials/dictionary-passage.ts
+  s_6bf2b238add0a2::t_c5598a3fd8b487 49
+frontend/src/materials/preferences.ts
+  s_6bf2b238add0a2::t_c5598a3fd8b487 4,6,73,75-79
+frontend/src/materials/ReaderDictionary.tsx
+  s_6bf2b238add0a2::t_c5598a3fd8b487 45-46,55-56,113-116,118-121,126,145,178,254,287,325-339,357,360,390
+  s_6bf2b238add0a2::t_3f0a10674a1acd 21
+docs/ARCHITECTURE.md
+  s_6bf2b238add0a2::t_976917b404db27 231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f63f3f2971658eb7cef3010f6d00b1424718e5c6",
+  "prompts": {},
+  "sessions": {
+    "s_6bf2b238add0a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1911d-7f9e-7903-b68e-cba97cbf7895",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
