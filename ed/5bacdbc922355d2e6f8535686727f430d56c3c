@@ -1,0 +1,24 @@
+frontend/browser-tests/reader-context-copy.tsx
+  s_45757d959fb0ba::t_1a09b7b1357f2d 300-310,366,368-369,371,388,390-391,466
+  s_45757d959fb0ba::t_f3a010c472a910 446
+  s_45757d959fb0ba::t_af108e4d9e1c9b 313-315,329-332
+  s_45757d959fb0ba::t_2f669845b5e533 15,55,60-62,311-312,316-328,333-365,367,370,372-387,389,392-399
+frontend/src/materials/reader-frames.ts
+  s_45757d959fb0ba::t_bdadad304a59cd 64-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ed5bacdbc922355d2e6f8535686727f430d56c3c",
+  "prompts": {},
+  "sessions": {
+    "s_45757d959fb0ba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1923e-063e-7a61-ba90-6d4314703c65",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
