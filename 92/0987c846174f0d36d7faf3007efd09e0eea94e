@@ -1,0 +1,108 @@
+docs/INFORMATION_ARCHITECTURE.md
+  s_8ff936dc7bd2f7::t_a32f9b5ccb4f97 44
+  s_8ff936dc7bd2f7::t_059508f2c33ed4 60
+  s_8ff936dc7bd2f7::t_98a35d5aa30040 42
+  s_8ff936dc7bd2f7::t_fee6c2a8665cc8 62
+  s_b952588bff31d6::t_de656427475fdf 43,61
+frontend/src/segments/OriginalCard.tsx
+  s_8ff936dc7bd2f7::t_0f1b9f70dcab65 117
+frontend/src/chat/Workbench.tsx
+  s_8ff936dc7bd2f7::t_67136dd848369e 132
+frontend/src/catalog/SourceViews.tsx
+  s_8ff936dc7bd2f7::t_0f1b9f70dcab65 187
+  s_8ff936dc7bd2f7::t_059508f2c33ed4 564
+frontend/src/catalog/search-draft.ts
+  s_8ff936dc7bd2f7::t_1c3e102ff56539 1-47
+frontend/src/catalog/search-draft.test.ts
+  s_8ff936dc7bd2f7::t_e8a56c5d110564 23
+  s_8ff936dc7bd2f7::t_602c38c41466bc 90
+  s_8ff936dc7bd2f7::t_1c3e102ff56539 1-22,24-89,91-96
+frontend/src/catalog/SourceDirectory.tsx
+  s_8ff936dc7bd2f7::t_67136dd848369e 108
+  s_8ff936dc7bd2f7::t_2953abf8f668cd 9,109,115
+frontend/src/catalog/library-a1.css
+  s_8ff936dc7bd2f7::t_be3a026d6eb5ea 366-367
+  s_8ff936dc7bd2f7::t_98a35d5aa30040 368,393-419,425-434
+  s_8ff936dc7bd2f7::t_8277d29494e424 34,71
+  s_b952588bff31d6::t_d5a3ac535de3dc 420-424
+frontend/src/catalog/SegmentMenu.tsx
+  s_8ff936dc7bd2f7::t_67136dd848369e 37
+frontend/src/catalog/source-content.css
+  s_8ff936dc7bd2f7::t_fee6c2a8665cc8 568,572
+frontend/src/motion.css
+  s_8ff936dc7bd2f7::t_0f1b9f70dcab65 1,25-33,39-45
+  s_8ff936dc7bd2f7::t_cda6ec1d742b48 2-24,34-38,46-48
+frontend/src/analysis/AnalysisPanel.tsx
+  s_8ff936dc7bd2f7::t_67136dd848369e 463
+frontend/src/SourcePages.tsx
+  s_8ff936dc7bd2f7::t_0f1b9f70dcab65 106
+  s_8ff936dc7bd2f7::t_67136dd848369e 441
+frontend/src/Forms.tsx
+  s_8ff936dc7bd2f7::t_851d4d7d8135b6 133
+  s_8ff936dc7bd2f7::t_53fb43d49cabeb 37
+frontend/src/segments/SegmentShare.tsx
+  s_8ff936dc7bd2f7::t_0f1b9f70dcab65 152
+frontend/src/catalog/hooks.ts
+  s_8ff936dc7bd2f7::t_2953abf8f668cd 45-46
+docs/ARCHITECTURE.md
+  s_8ff936dc7bd2f7::t_a32f9b5ccb4f97 656-657
+frontend/src/Shared.tsx
+  s_8ff936dc7bd2f7::t_0f1b9f70dcab65 176,247,252,276
+frontend/src/catalog/Books.tsx
+  s_8ff936dc7bd2f7::t_67136dd848369e 164
+frontend/src/styles.css
+  s_8ff936dc7bd2f7::t_cda6ec1d742b48 3
+  s_8ff936dc7bd2f7::t_53fb43d49cabeb 379-380
+frontend/browser-tests/main.tsx
+  s_8ff936dc7bd2f7::t_2953abf8f668cd 6
+  s_8ff936dc7bd2f7::t_80c42a7e407251 5
+frontend/src/main.tsx
+  s_8ff936dc7bd2f7::t_2953abf8f668cd 3-4
+frontend/src/catalog/LibraryTools.tsx
+  s_8ff936dc7bd2f7::t_2953abf8f668cd 3,133,140
+  s_8ff936dc7bd2f7::t_cda6ec1d742b48 70,136
+frontend/src/segments/NewAnalysisActions.tsx
+  s_8ff936dc7bd2f7::t_67136dd848369e 94
+frontend/browser-tests/catalog-toolbar.tsx
+  s_8ff936dc7bd2f7::t_55deaa619f2dcf 147-179,181-209,282
+  s_8ff936dc7bd2f7::t_8aa8ebfd0a2d78 180
+  s_b952588bff31d6::t_d5a3ac535de3dc 131-135
+frontend/src/catalog/sources-s2.css
+  s_8ff936dc7bd2f7::t_8e4ce7958aad52 304-305
+  s_8ff936dc7bd2f7::t_059508f2c33ed4 281-288,290-291,296-303,306-331,339-354
+frontend/src/catalog/Controls.tsx
+  s_8ff936dc7bd2f7::t_2953abf8f668cd 2,186,192
+  s_8ff936dc7bd2f7::t_98a35d5aa30040 57-60,75-86
+  s_8ff936dc7bd2f7::t_6240a72d20deed 110,171,187
+  s_8ff936dc7bd2f7::t_059508f2c33ed4 22,29,52
+  s_8ff936dc7bd2f7::t_67136dd848369e 261
+  s_8ff936dc7bd2f7::t_df9e16c87f3f11 61-74
+frontend/src/catalog/SearchInput.tsx
+  s_8ff936dc7bd2f7::t_2953abf8f668cd 2-27,29-67
+  s_8ff936dc7bd2f7::t_80c42a7e407251 1
+  s_8ff936dc7bd2f7::t_6240a72d20deed 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "920987c846174f0d36d7faf3007efd09e0eea94e",
+  "prompts": {},
+  "sessions": {
+    "s_8ff936dc7bd2f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19092-1126-7110-a370-a26dd18e51b5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_b952588bff31d6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a190cf-03c2-7402-9b63-10ed31c19364",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
