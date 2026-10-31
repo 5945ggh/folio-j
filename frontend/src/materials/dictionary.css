@@ -103,18 +103,32 @@
 	pointer-events: none;
 	writing-mode: horizontal-tb;
 }
+.dict-deck[data-compact="false"] {
+	inset: 0;
+	display: block;
+}
 .dict-card {
+	background: color-mix(
+		in srgb,
+		var(--reader-bg) var(--dict-opacity),
+		transparent
+	);
+	-webkit-backdrop-filter: blur(9px);
+	backdrop-filter: blur(9px);
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
 	pointer-events: auto;
-	width: var(--dict-card-width);
+
 	max-height: min(480px, var(--dict-height));
 	min-height: 0;
 	font:
 		14px / 1.5 system-ui,
 		sans-serif;
 	animation: dict-appear 130ms ease-out;
+}
+.dict-deck[data-compact="false"] .dict-card {
+	position: absolute;
 }
 .dict-card[hidden] {
 	display: none;
@@ -131,6 +145,9 @@
 		11px / 1.5 system-ui,
 		sans-serif;
 	color: var(--reader-muted);
+}
+.dict-card-heading {
+	min-width: 0;
 }
 .dict-card h2 {
 	font:
@@ -192,6 +209,46 @@
 .dict-definitions [data-dict-role="def1"] + [data-dict-role="def1"] {
 	margin-top: 0.65em;
 }
+.dict-entry + .dict-entry {
+	border-top: 1px solid var(--reader-line);
+	padding-top: 10px;
+}
+.dict-entry h3 {
+	display: flex;
+	align-items: baseline;
+	gap: 7px;
+	flex-wrap: wrap;
+	margin: 2px 17px 5px;
+	font-size: 16px;
+	line-height: 1.4;
+}
+.dict-entry :where(h3) > span {
+	font: 10px / 1.3 system-ui;
+	color: var(--reader-muted);
+	font-variant-numeric: tabular-nums;
+}
+.dict-entry h3 small {
+	font: 12px / 1.4 system-ui;
+	color: var(--reader-muted);
+}
+.dict-opacity {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 6px;
+	align-items: center;
+	margin: 15px 0 9px;
+	font: 12px / 1.5 system-ui;
+}
+.dict-opacity output {
+	color: var(--reader-muted);
+	font-variant-numeric: tabular-nums;
+}
+.dict-opacity input {
+	grid-column: 1 / -1;
+	width: 100%;
+	margin: 0;
+	accent-color: var(--reader-accent);
+}
 .dict-message {
 	margin: 4px 17px 18px;
 	font-size: 13px;
@@ -206,14 +263,22 @@
 	color: var(--reader-muted);
 }
 .dict-pager {
-	gap: 4px;
+	border: 1px solid var(--reader-line);
+	border-radius: 7px;
+	color: var(--reader-muted);
+	font: 11px / 1 system-ui;
+	gap: 0;
 	font-variant-numeric: tabular-nums;
+}
+.dict-pager span {
+	min-width: 4.5ch;
+	text-align: center;
 }
 .dict-card .dict-pager button {
 	padding: 0;
 	font: 20px / 1 system-ui;
-	width: 28px;
-	height: 30px;
+	width: 24px;
+	height: 25px;
 }
 .dict-card .dict-link {
 	color: var(--reader-on-accent-soft);
@@ -285,6 +350,10 @@
 }
 @media (pointer: coarse) {
 	.dict-card .dict-actions button,
+	.dict-pager span {
+		min-width: 4.5ch;
+		text-align: center;
+	}
 	.dict-card .dict-pager button {
 		min-width: 40px;
 		min-height: 40px;

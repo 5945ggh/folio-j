@@ -68,6 +68,8 @@ const scenarios = selectBrowserScenarios(
 		[320, 900, "?suite=reader-settings"],
 		[320, 900, "?suite=reader-settings&direction=vertical-rl"],
 		[1280, 900, "?suite=reader-dictionary"],
+		[900, 900, "?suite=reader-dictionary"],
+		[740, 900, "?suite=reader-dictionary"],
 		[390, 900, "?suite=reader-dictionary"],
 		[320, 900, "?suite=reader-dictionary"],
 		[1280, 900, "?suite=reader-context-copy"],

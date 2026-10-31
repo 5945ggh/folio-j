@@ -46,6 +46,7 @@ export function dictionaryPassage(container: Element, x: number, y: number) {
 	const first = Math.max(0, offset - 128);
 	const text = chars.slice(first, offset + 129).join("");
 	return {
+		anchor: point.rect,
 		text,
 		offset: offset - first,
 		range(start: number, end: number) {

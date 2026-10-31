@@ -1,7 +1,9 @@
 export type ReaderTheme = "system" | "white" | "black";
 export type ReaderFont = "mincho" | "gothic";
 export type ReaderRuby = "show" | "on-demand" | "hide";
+export const DEFAULT_DICTIONARY_OPACITY = 92;
 export type ReaderUiPreferences = {
+	dictionaryOpacity?: number;
 	dictionaryMode?: "off" | "click" | "hover";
 	theme: ReaderTheme;
 	focus: boolean;
@@ -68,7 +70,13 @@ export function normalizeReaderUi(
 			: {};
 	// toolbarOpacity replaced toolbarTransparency on the same 0–100 scale, inverted.
 	const legacyTransparency = boundedPercent(value.toolbarTransparency);
+	const opacity = boundedPercent(value.dictionaryOpacity);
 	return {
+		...(opacity !== null &&
+		opacity >= 60 &&
+		opacity !== DEFAULT_DICTIONARY_OPACITY
+			? { dictionaryOpacity: Math.round(opacity) }
+			: {}),
 		...(value.dictionaryMode === "click" || value.dictionaryMode === "hover"
 			? { dictionaryMode: value.dictionaryMode }
 			: {}),

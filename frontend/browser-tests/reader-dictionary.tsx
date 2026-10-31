@@ -12,7 +12,9 @@ export async function readerDictionary(h: BrowserHarness) {
 	const check: BrowserHarness["check"] = h.check;
 	const paragraphs = [
 		"猫が歩く。",
-		...Array.from({ length: 36 }, () => "静かな道を歩く。"),
+		...Array.from({ length: 36 }, (_, i) =>
+			i === 17 ? "猫が歩く。" : "静かな道を歩く。",
+		),
 	];
 	const text = paragraphs.join("");
 	const chapter: Schema["MaterialChapterResponse"] = {
@@ -157,38 +159,71 @@ export async function readerDictionary(h: BrowserHarness) {
 				start >= 0 && input.text.includes(term),
 				"Mock lookup must find exact Japanese surface",
 			);
-			return Response.json({
-				matches: [
+			const match: Schema["DictionaryMatch"] = {
+				id: term,
+				dictionary_id: "synthetic",
+				term,
+				surface: term,
+				reading: root ? "ねこ" : term === "散歩" ? "さんぽ" : "みち",
+				start,
+				end: start + Array.from(term).length,
+				definitions: [
 					{
-						id: term,
-						dictionary_id: "synthetic",
-						term,
-						surface: term,
-						reading: root ? "ねこ" : term === "散歩" ? "さんぽ" : "みち",
-						start,
-						end: start + Array.from(term).length,
-						definitions: [
-							{
-								tag: "p",
-								lang: "ja",
-								role: "def2",
-								text: root ? "散歩をする動物。" : "道を歩くこと。",
-							},
-							{
-								tag: "p",
-								lang: "zh",
-								role: "dfcn",
-								text: "合成中文释义，用于检查排版。",
-							},
-							...Array.from({ length: 12 }, () => ({
-								tag: "p",
-								lang: "ja",
-								role: "exam",
-								text: "静かな道を歩く。",
-							})),
-						],
+						tag: "p",
+						lang: "ja",
+						role: "def2",
+						text: root ? "散歩をする動物。" : "道を歩くこと。",
 					},
+					{
+						tag: "p",
+						lang: "zh",
+						role: "dfcn",
+						text: "合成中文释义，用于检查排版。",
+					},
+					...Array.from({ length: 12 }, (): Schema["DictionaryNode"] => ({
+						tag: "p",
+						lang: "ja",
+						role: "exam",
+						text: "静かな道を歩く。",
+					})),
 				],
+			};
+			return Response.json({
+				matches: root
+					? [
+							match,
+							{
+								...match,
+								id: "cat-alternate-reading",
+								reading: "マオ",
+								definitions: [
+									{
+										tag: "p",
+										lang: "ja",
+										role: "def2",
+										text: "別の読みの説明。",
+									},
+								],
+							},
+							{
+								...match,
+								id: "cat-particle",
+								term: "猫が",
+								surface: "猫が",
+								end: start + 2,
+								definitions: [
+									{ tag: "p", lang: "ja", role: "def2", text: "短い説明。" },
+								],
+							},
+							{
+								...match,
+								id: "cat-walk",
+								term: "猫が歩く",
+								surface: "猫が歩く",
+								end: start + 4,
+							},
+						]
+					: [match],
 			});
 		}
 		if (path.startsWith("/api/segments/")) {
@@ -292,7 +327,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			marks: { studySegmentUnderlines: true, studySegmentMargins: false },
 		}),
 	);
-	const dispose = await h.mount(
+	let dispose = await h.mount(
 		<MaterialReader />,
 		"/materials/:id",
 		"/materials/dictionary",
@@ -328,11 +363,105 @@ export async function readerDictionary(h: BrowserHarness) {
 		range.setEnd(node, offset + 1);
 		const rect = range.getBoundingClientRect(),
 			outer = frame?.getBoundingClientRect();
-		await clickAt(
-			(outer?.left ?? 0) + rect.left + rect.width / 2,
-			(outer?.top ?? 0) + rect.top + rect.height / 2,
+		const point = {
+			x: (outer?.left ?? 0) + rect.left + rect.width / 2,
+			y: (outer?.top ?? 0) + rect.top + rect.height / 2,
+		};
+		await clickAt(point.x, point.y);
+		return point;
+	};
+	const settle = () => new Promise((resolve) => setTimeout(resolve, 160));
+	const checkCardInViewport = (card: HTMLElement) => {
+		const rect = card.getBoundingClientRect();
+		check(
+			rect.width > 0 &&
+				rect.height > 0 &&
+				rect.left >= 0 &&
+				rect.top >= 0 &&
+				rect.right <= window.innerWidth + 1 &&
+				rect.bottom <= window.innerHeight + 1,
+			`Active card must fit viewport: ${JSON.stringify(rect.toJSON())}`,
 		);
 	};
+	const checkPager = async (card: HTMLElement) => {
+		await settle();
+		const next = button("下一个候选", card);
+		check(
+			/1\s*\/\s*3/.test(card.querySelector(".dict-pager")?.textContent ?? ""),
+			"Candidate pages must count original ranges rather than dictionary entries",
+		);
+		check(
+			card.textContent?.includes("別の読みの説明。") &&
+				card.textContent.includes("マオ"),
+			"Different entries and readings for one range must appear together on its page",
+		);
+		const highlightedOriginal = () => {
+			const frame = h.container.querySelector<HTMLIFrameElement>(
+				"iframe.material-part",
+			);
+			const highlights = (
+				frame?.contentWindow as (Window & { CSS: typeof CSS }) | null
+			)?.CSS.highlights.get("folio-dictionary");
+			return highlights
+				? [...highlights].map((range) => range.toString()).join("")
+				: "";
+		};
+		check(
+			highlightedOriginal() === "猫",
+			"First page must highlight its original range",
+		);
+		check(
+			next.closest("header"),
+			"Candidate paging must be in the card header",
+		);
+		const before = next.getBoundingClientRect();
+		next.click();
+		await h.until(
+			() => card.getAttribute("aria-label") === "词卡 · 猫が",
+			"Short candidate must replace long definition",
+		);
+		await settle();
+		check(
+			highlightedOriginal() === "猫が",
+			"Paging must update actual iframe range to the short candidate",
+		);
+		check(
+			!card.textContent?.includes("別の読みの説明。"),
+			"Other-range page must replace all entries from the previous range",
+		);
+		const short = next.getBoundingClientRect();
+		check(
+			Math.abs(short.x - before.x) <= 1 && Math.abs(short.y - before.y) <= 1,
+			`Header paging coordinates must remain stable on a short candidate: ${JSON.stringify({ before: before.toJSON(), after: short.toJSON(), card: card.getBoundingClientRect().toJSON() })}`,
+		);
+		next.click();
+		await h.until(
+			() => card.getAttribute("aria-label") === "词卡 · 猫が歩く",
+			"Long candidate must replace short definition",
+		);
+		await settle();
+		check(
+			highlightedOriginal() === "猫が歩く",
+			"Paging must update actual iframe range to the longer candidate",
+		);
+		const long = next.getBoundingClientRect();
+		check(
+			Math.abs(long.x - before.x) <= 1 && Math.abs(long.y - before.y) <= 1,
+			"Header paging coordinates must remain stable after returning to a long candidate",
+		);
+		button("上一个候选", card).click();
+		await h.until(
+			() => card.getAttribute("aria-label") === "词卡 · 猫が",
+			"Previous candidate must restore short definition",
+		);
+		button("上一个候选", card).click();
+		await h.until(
+			() => card.getAttribute("aria-label") === "词卡 · 猫",
+			"Pager must return to initial candidate",
+		);
+		await settle();
+	};
+
 	try {
 		await h.until(
 			() =>
@@ -347,6 +476,30 @@ export async function readerDictionary(h: BrowserHarness) {
 		await h.until(
 			() => !!h.container.querySelector(".dict-installed"),
 			"Settings must read installed dictionary",
+		);
+		const opacity = h.container.querySelector<HTMLInputElement>(
+			'input[type="range"][aria-label="词卡背景不透明度"]',
+		);
+		check(opacity, "Dictionary settings must expose background opacity slider");
+		check(
+			Number(opacity.value) === 92 &&
+				Number(opacity.min) === 60 &&
+				Number(opacity.max) === 100,
+			"Opacity slider must expose the supported default and range",
+		);
+		h.inputValue(opacity, "76");
+		button("关闭查词设置").click();
+		await h.until(
+			() => !h.container.querySelector(".dict-config"),
+			"Dictionary settings must close before reopening",
+		);
+		button("即时查词").click();
+		await h.until(
+			() =>
+				h.container.querySelector<HTMLInputElement>(
+					'input[aria-label="词卡背景不透明度"]',
+				)?.value === "76",
+			"Opacity must survive reopening dictionary settings",
 		);
 		button("点击查词").click();
 		const frame = h.container.querySelector<HTMLIFrameElement>(
@@ -377,9 +530,44 @@ export async function readerDictionary(h: BrowserHarness) {
 		const root = h.container.querySelector<HTMLElement>(
 			'.dict-card[data-depth="0"]',
 		);
-		const prose = root?.querySelector<HTMLElement>('[data-dict-role="def2"]');
-		check(root && prose, "Japanese definition must render");
-		await glyphClick(prose, 1);
+		check(root, "Root card must render");
+		await checkPager(root);
+		const originalBackground = getComputedStyle(root).backgroundColor;
+		button("即时查词").click();
+		await h.until(
+			() => !!h.container.querySelector(".dict-config"),
+			"Open word card must allow opacity preview settings",
+		);
+		const previewOpacity = h.container.querySelector<HTMLInputElement>(
+			'input[aria-label="词卡背景不透明度"]',
+		);
+		check(previewOpacity, "Open word card settings must retain opacity slider");
+		h.inputValue(previewOpacity, "84");
+		await h.until(
+			() => getComputedStyle(root).backgroundColor !== originalBackground,
+			"Opacity slider must update the existing card background immediately",
+		);
+		check(
+			getComputedStyle(root).opacity === "1",
+			"Background opacity must preserve opaque dictionary text",
+		);
+		h.inputValue(previewOpacity, "76");
+		await h.until(
+			() => getComputedStyle(root).backgroundColor === originalBackground,
+			"Opacity preview must restore the chosen preference",
+		);
+		button("关闭查词设置").click();
+		await h.until(
+			() => !h.container.querySelector(".dict-config"),
+			"Preview settings must close",
+		);
+		check(
+			h.container.querySelector('.dict-card[data-depth="0"]') === root,
+			"Closing opacity settings must retain the opened word card",
+		);
+		const prose = root.querySelector<HTMLElement>('[data-dict-role="def2"]');
+		check(prose, "Japanese definition must render");
+		const childOrigin = await glyphClick(prose, 1);
 		await h.until(
 			() => h.container.querySelectorAll(".dict-card").length === 2,
 			"Japanese definition click must open child card",
@@ -392,24 +580,79 @@ export async function readerDictionary(h: BrowserHarness) {
 			'.dict-card[data-depth="1"]',
 		);
 		check(child, "Child card must exist");
+		await settle();
 		const a = root.getBoundingClientRect(),
 			b = child.getBoundingClientRect();
-		if (window.innerWidth >= 900)
-			check(
-				b.left >= a.right - 2,
-				"Desktop parent and child must sit side by side",
-			);
-		else
+		if (window.innerWidth < 740)
 			check(
 				b.top > a.top + 30 && b.left < a.right,
 				"Narrow screen child must step down with parent exposed",
 			);
-		check(
-			b.left >= 0 &&
-				b.right <= window.innerWidth + 1 &&
-				b.bottom <= window.innerHeight + 1,
-			"Active card must fit viewport",
-		);
+		checkCardInViewport(child);
+		if (window.innerWidth >= 740) {
+			check(
+				!(
+					childOrigin.x >= b.left &&
+					childOrigin.x <= b.right &&
+					childOrigin.y >= b.top &&
+					childOrigin.y <= b.bottom
+				),
+				"Desktop child must leave its clicked Japanese glyph exposed when surrounding space is available",
+			);
+			for (let depth = 2; depth <= 3; depth++) {
+				const parent = h.container.querySelector<HTMLElement>(
+					`.dict-card[data-depth="${depth - 1}"]`,
+				);
+				const text = parent?.querySelector<HTMLElement>(
+					'[data-dict-role="def2"]',
+				);
+				check(
+					parent && text,
+					`Depth ${depth} parent definition must remain available`,
+				);
+				const origin = await glyphClick(text);
+				await h.until(
+					() => h.container.querySelectorAll(".dict-card").length === depth + 1,
+					`Desktop Japanese prose must open depth ${depth + 1}`,
+				);
+				await settle();
+				const active = h.container.querySelector<HTMLElement>(
+					`.dict-card[data-depth="${depth}"]`,
+				);
+				check(active, "Nested active card must exist");
+				checkCardInViewport(active);
+				const box = active.getBoundingClientRect();
+				check(
+					!(
+						origin.x >= box.left &&
+						origin.x <= box.right &&
+						origin.y >= box.top &&
+						origin.y <= box.bottom
+					),
+					`Deep desktop card must leave its actual clicked Japanese glyph exposed when space is available: ${JSON.stringify({ depth, origin, box: box.toJSON(), parents: [...h.container.querySelectorAll<HTMLElement>(".dict-card")].map((card) => card.getBoundingClientRect().toJSON()) })}`,
+				);
+				check(
+					h.container.querySelector('.dict-card[data-depth="0"]') === root &&
+						root.getBoundingClientRect().width > 0,
+					"Deep desktop lookup must retain the earliest visible card and its DOM identity",
+				);
+			}
+			for (let depth = 3; depth >= 2; depth--) {
+				const active = h.container.querySelector<HTMLElement>(
+					`.dict-card[data-depth="${depth}"]`,
+				);
+				check(active, "Deep card must support returning one level");
+				button("返回上层词卡", active).click();
+				await h.until(
+					() => h.container.querySelectorAll(".dict-card").length === depth,
+					"Back must unwind one desktop level",
+				);
+			}
+			check(
+				h.container.querySelector('.dict-card[data-depth="1"]') === child,
+				"Returning from deep lookup must preserve the second card DOM",
+			);
+		}
 		const scroll = child.querySelector<HTMLElement>(".dict-scroll");
 		check(scroll, "Child must own scroll container");
 		scroll.scrollTop = 80;
@@ -438,6 +681,42 @@ export async function readerDictionary(h: BrowserHarness) {
 			)?.CSS.highlights.has("folio-dictionary"),
 			"Close must clear root highlight",
 		);
+		const viewport = h.container.querySelector<HTMLElement>(".reader-viewport");
+		const bottomLeaf = frame.contentDocument?.querySelector(
+			'[data-locator-leaf="18"]',
+		);
+		check(
+			viewport && bottomLeaf,
+			"Bottom-anchor regression needs a later original paragraph",
+		);
+		viewport.scrollTop +=
+			frame.getBoundingClientRect().top +
+			bottomLeaf.getBoundingClientRect().top -
+			window.innerHeight * 0.75;
+		await settle();
+		await glyphClick(bottomLeaf, 0, frame);
+		await h.until(
+			() =>
+				!!h.container.querySelector(
+					'.dict-card[aria-label="词卡 · 猫"] .dict-definitions',
+				),
+			"Near-bottom original must open a card above its anchor",
+		);
+		const above = h.container.querySelector<HTMLElement>(
+			'.dict-card[data-depth="0"]',
+		);
+		check(above, "Near-bottom card must exist");
+		await settle();
+		check(
+			above.getBoundingClientRect().bottom <=
+				frame.getBoundingClientRect().top +
+					bottomLeaf.getBoundingClientRect().top,
+			"Near-bottom lookup must place the card above the clicked original",
+		);
+		await checkPager(above);
+		button("关闭查词", above).click();
+		viewport.scrollTop = 0;
+		await settle();
 		// There are no margin entrances: dictionary mode must still retain access to this exact saved mark.
 		check(
 			!h.container.querySelector(".reader-study-margin"),
@@ -513,7 +792,25 @@ export async function readerDictionary(h: BrowserHarness) {
 			!h.container.querySelector(".dict-deck"),
 			"Late lookup result must not reopen a closed deck",
 		);
-		return `dictionary: real body→Japanese child→${window.innerWidth >= 900 ? "desktop pair" : "compact stack"}→back→close; saved mark + Shift click retain records; late response ignored`;
+		dispose();
+		dispose = await h.mount(
+			<MaterialReader />,
+			"/materials/:id",
+			"/materials/dictionary",
+		);
+		await h.until(
+			() => !!h.container.querySelector(".dict-trigger"),
+			"Reader must remount for preference persistence",
+		);
+		button("即时查词").click();
+		await h.until(
+			() =>
+				h.container.querySelector<HTMLInputElement>(
+					'input[aria-label="词卡背景不透明度"]',
+				)?.value === "76",
+			"Dictionary opacity must persist across Reader remounts",
+		);
+		return `dictionary: real body→Japanese child→${window.innerWidth >= 740 ? "four desktop levels" : "compact stack"}→back→close; saved mark + Shift click retain records; late response ignored`;
 	} finally {
 		dispose();
 	}

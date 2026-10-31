@@ -18,6 +18,7 @@ import {
 	importDictionary,
 	lookupDictionary,
 } from "./dictionary-api";
+import { dictionaryPages } from "./dictionary-pages";
 import type {
 	ReaderLookupHit,
 	StudyMarkHit,
@@ -41,6 +42,8 @@ export function ReaderDictionary({
 	onMode,
 	onRecord,
 	onReady,
+	opacity,
+	onOpacity,
 	restoreFocus,
 }: {
 	ref: Ref<DictionaryControl>;
@@ -49,6 +52,8 @@ export function ReaderDictionary({
 	onMode: (mode: DictionaryMode) => void;
 	onRecord: (hit: StudyMarkHit) => void;
 	onReady: (ready: boolean) => void;
+	opacity: number;
+	onOpacity: (value: number) => void;
 	restoreFocus: () => void;
 }) {
 	const client = useQueryClient();
@@ -105,13 +110,20 @@ export function ReaderDictionary({
 					?.focus({ preventScroll: true });
 			});
 	};
+	const closeMenu = () => {
+		setMenu(false);
+		trigger.current?.focus({ preventScroll: true });
+	};
 	const back = () => {
+		if (menu) {
+			closeMenu();
+			return true;
+		}
 		if (current.current.length > 1) {
 			backTo(current.current.length - 2);
 			return true;
 		}
-		if (menu) trigger.current?.focus({ preventScroll: true });
-		else if (current.current.length) restoreFocus();
+		if (current.current.length) restoreFocus();
 		return close();
 	};
 	useEffect(
@@ -130,7 +142,7 @@ export function ReaderDictionary({
 		const level = {
 			id,
 			origin,
-			matches: [],
+			pages: [],
 			index: 0,
 			pending: true,
 			message: "",
@@ -163,7 +175,7 @@ export function ReaderDictionary({
 			if (result.matches.length) {
 				publish([
 					...keep,
-					{ ...level, matches: result.matches, pending: false },
+					{ ...level, pages: dictionaryPages(result.matches), pending: false },
 				]);
 				return;
 			}
@@ -239,10 +251,7 @@ export function ReaderDictionary({
 				}
 				aria-pressed={ready && mode !== "off"}
 				aria-expanded={menu}
-				onClick={() => {
-					clearCards();
-					setMenu(!menu);
-				}}
+				onClick={() => setMenu(!menu)}
 			>
 				<svg
 					viewBox="0 0 24 24"
@@ -275,10 +284,7 @@ export function ReaderDictionary({
 									<button
 										type="button"
 										aria-label="关闭查词设置"
-										onClick={() => {
-											close();
-											trigger.current?.focus({ preventScroll: true });
-										}}
+										onClick={closeMenu}
 									>
 										×
 									</button>
@@ -316,7 +322,21 @@ export function ReaderDictionary({
 												</button>
 											))}
 										</fieldset>
-										<p>触屏轻点正文。词卡里的日文也可以点开。</p>
+										<label className="dict-opacity">
+											<span>词卡背景不透明度</span>
+											<output>{opacity}%</output>
+											<input
+												type="range"
+												aria-label="词卡背景不透明度"
+												min="60"
+												max="100"
+												step="1"
+												value={opacity}
+												onChange={(event) =>
+													onOpacity(Number(event.target.value))
+												}
+											/>
+										</label>
 									</>
 								) : (
 									<p>
@@ -334,10 +354,10 @@ export function ReaderDictionary({
 										const file = e.currentTarget.files?.[0];
 										e.currentTarget.value = "";
 										if (!file) return;
-										const intent = ticket.current;
+										const picker = e.currentTarget;
 										imported.mutate(file, {
 											onSuccess: () => {
-												if (intent !== ticket.current) return;
+												if (input.current !== picker) return;
 												if (!ready && mode === "off") setMode("click");
 												else {
 													close();
@@ -367,6 +387,7 @@ export function ReaderDictionary({
 						{levels.length > 0 && (
 							<DictionaryCards
 								levels={levels}
+								opacity={opacity}
 								title={status.data?.title ?? "本机词典"}
 								nested={(depth, origin) => void search(origin, depth)}
 								choose={backTo}

@@ -1,38 +1,110 @@
 import type { ScreenAnchor } from "./reader-study.ts";
 
-export function dictionaryLayout(
+export const compactDictionaryWidth = 740;
+const gap = 8;
+const clamp = (value: number, first: number, last: number) =>
+	Math.max(first, Math.min(value, last));
+
+export function compactDictionaryLayout(
 	anchor: ScreenAnchor,
 	width: number,
 	height: number,
-	depth: number,
 ) {
-	const inset = width < 740 ? 10 : 18;
-	const compact = width < 740;
-	const columns = compact || depth === 1 ? 1 : 2;
-	const cardWidth = Math.min(
-		compact ? 440 : 380,
-		(width - inset * 2 - (columns - 1) * 8) / columns,
-	);
-	const deckWidth = cardWidth * columns + (columns - 1) * 8;
-	const left = compact
-		? (width - deckWidth) / 2
-		: Math.max(inset, Math.min(anchor.left - 16, width - inset - deckWidth));
-	const availableBelow = height - inset - anchor.bottom - 8;
-	const availableAbove = anchor.top - inset - 8;
-	const minHeight = Math.min(height * 0.46, 340);
-	const above = availableBelow < minHeight && availableAbove > availableBelow;
+	const inset = 10;
+	const cardWidth = Math.min(440, width - inset * 2);
+	const below = height - inset - anchor.bottom - gap;
+	const above = anchor.top - inset - gap;
+	const placeAbove = below < Math.min(height * 0.46, 340) && above > below;
 	const edge = Math.max(
 		inset,
-		above ? height - anchor.top + 8 : anchor.bottom + 8,
+		placeAbove ? height - anchor.top + gap : anchor.bottom + gap,
 	);
 	const limit = Math.max(100, height - edge - inset);
 	return {
-		left,
-		width: deckWidth,
-		...(above ? { bottom: edge } : { top: edge }),
-		maxHeight: limit,
-		compact,
-		cardWidth,
-		limit,
+		left: (width - cardWidth) / 2,
+		width: cardWidth,
+		top: placeAbove
+			? Math.max(inset, height - edge - Math.min(460, limit))
+			: edge,
+		maxHeight: placeAbove ? Math.min(460, limit) : limit,
+	};
+}
+
+const intersection = (a: ScreenAnchor, b: ScreenAnchor) =>
+	Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) *
+	Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+
+/** Keep the top edge fixed across pages. Favor space beside the parent, then free space around the selected glyph. */
+export function desktopDictionaryLayout(
+	anchor: ScreenAnchor,
+	parents: ScreenAnchor[],
+	width: number,
+	height: number,
+	firstPageHeight: number,
+) {
+	const inset = 12;
+	const cardWidth = Math.min(388, (width - 2 * inset - gap) / 2);
+	const maxHeight = Math.min(460, height - 2 * inset);
+	const measured = Math.min(firstPageHeight, maxHeight);
+	const x = (v: number) => clamp(v, inset, width - cardWidth - inset);
+	const y = (v: number) => clamp(v, inset, height - measured - inset);
+	const parent = parents.at(-1);
+	if (!parent) {
+		const below = height - inset - anchor.bottom - gap;
+		const openAbove =
+			below < Math.min(measured, 270) && anchor.top - inset - gap > below;
+		const top = openAbove
+			? y(anchor.top - gap - measured)
+			: clamp(anchor.bottom + gap, inset, height - inset - 100);
+		return {
+			left: x(anchor.left - 16),
+			top,
+			width: cardWidth,
+			maxHeight: Math.min(maxHeight, height - inset - top),
+		};
+	}
+	const sideY = y(anchor.top - 26);
+	const candidates = [
+		[x(parent.right + gap), sideY],
+		[x(parent.left - cardWidth - gap), sideY],
+		[x(anchor.left - 18), y(parent.top - gap - measured)],
+		[x(anchor.left - 18), y(parent.bottom + gap)],
+		[x(anchor.left - 18), y(anchor.bottom + gap)],
+		[x(anchor.left - 18), y(anchor.top - measured - gap)],
+		[x(anchor.right + gap), sideY],
+		[x(anchor.left - cardWidth - gap), sideY],
+	] as const;
+	let best = candidates[0] as readonly [number, number],
+		bestScore = Infinity;
+	for (const [left, top] of candidates) {
+		const box = { left, top, right: left + cardWidth, bottom: top + measured };
+		const cost = parents.reduce(
+			(sum, old) =>
+				sum +
+				intersection(box, old) +
+				2 *
+					intersection(box, {
+						left: old.left,
+						right: old.right,
+						top: old.top,
+						bottom: Math.min(old.bottom, old.top + 52),
+					}),
+			0,
+		);
+		const score =
+			cost +
+			(intersection(box, anchor) > 0
+				? width * height * (parents.length + 1)
+				: 0);
+		if (score < bestScore) {
+			best = [left, top];
+			bestScore = score;
+		}
+	}
+	return {
+		left: best[0],
+		top: best[1],
+		width: cardWidth,
+		maxHeight: Math.min(maxHeight, height - inset - best[1]),
 	};
 }

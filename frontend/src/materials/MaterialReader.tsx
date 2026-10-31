@@ -95,6 +95,7 @@ import {
 import { ReaderPreferenceSubmission } from "./preference-submission";
 import {
 	type BookUiPreferences,
+	DEFAULT_DICTIONARY_OPACITY,
 	READER_UI_KEY,
 	type ReaderUiPreferences,
 	readBookUiPreferences,
@@ -2221,6 +2222,10 @@ function Reader({
 						ref={dictionary}
 						onReady={setDictionaryReady}
 						portal={shell.current}
+						opacity={ui.dictionaryOpacity ?? DEFAULT_DICTIONARY_OPACITY}
+						onOpacity={(dictionaryOpacity) =>
+							setUiPreference({ ...latest.current.ui, dictionaryOpacity })
+						}
 						mode={ui.dictionaryMode ?? "off"}
 						onMode={(mode) =>
 							setUiPreference({ ...latest.current.ui, dictionaryMode: mode })

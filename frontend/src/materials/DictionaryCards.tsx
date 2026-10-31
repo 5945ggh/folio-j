@@ -6,12 +6,13 @@ import {
 	useRef,
 	useState,
 } from "react";
-import type {
-	DictionaryMatch,
-	DictionaryNode,
-	DictionaryRequest,
-} from "./dictionary-api";
-import { dictionaryLayout } from "./dictionary-layout";
+import type { DictionaryNode, DictionaryRequest } from "./dictionary-api";
+import {
+	compactDictionaryLayout,
+	compactDictionaryWidth,
+	desktopDictionaryLayout,
+} from "./dictionary-layout";
+import type { DictionaryPage } from "./dictionary-pages";
 import {
 	type DictionaryPassage,
 	dictionaryPassage,
@@ -21,6 +22,7 @@ import type { ScreenAnchor, StudyMarkHit } from "./reader-study";
 export type LookupOrigin = {
 	input: DictionaryRequest;
 	anchor: ScreenAnchor;
+	parentBox?: ScreenAnchor;
 	record?: StudyMarkHit | null;
 	highlight?: (start: number, end: number) => void;
 	clear?: () => void;
@@ -29,7 +31,7 @@ export type LookupOrigin = {
 export type LookupLevel = {
 	id: number;
 	origin: LookupOrigin;
-	matches: DictionaryMatch[];
+	pages: DictionaryPage[];
 	index: number;
 	pending: boolean;
 	message: string;
@@ -75,7 +77,7 @@ function entryContent(nodes: DictionaryNode[], path = "") {
 }
 
 function excerpt(level: LookupLevel) {
-	const match = level.matches[level.index];
+	const match = level.pages[level.index];
 	if (!match) return null;
 	const chars = Array.from(level.origin.input.text);
 	let start = match.start,
@@ -119,6 +121,7 @@ function ReturnIcon() {
 
 export function DictionaryCards({
 	levels,
+	opacity,
 	title,
 	nested,
 	choose,
@@ -127,6 +130,7 @@ export function DictionaryCards({
 	onRecord,
 }: {
 	levels: LookupLevel[];
+	opacity: number;
 	title: string;
 	nested: (depth: number, origin: LookupOrigin) => void;
 	choose: (depth: number, index: number) => void;
@@ -146,10 +150,10 @@ export function DictionaryCards({
 	}, []);
 	useLayoutEffect(() => {
 		const root = levels[0];
-		const match = root?.matches[root.index];
+		const match = root?.pages[root.index];
 		if (match) root.origin.highlight?.(match.start, match.end);
 		const ranges = levels.slice(1).flatMap((item) => {
-			const active = item.matches[item.index];
+			const active = item.pages[item.index];
 			const range =
 				active && item.origin.passage?.range(active.start, active.end);
 			return range ? [range] : [];
@@ -162,21 +166,27 @@ export function DictionaryCards({
 	}, [levels]);
 	const root = levels[0];
 	if (!root) return null;
-	const { compact, limit, cardWidth, ...position } = dictionaryLayout(
-		root.origin.anchor,
-		viewport.width,
-		viewport.height,
-		levels.length,
-	);
-	const ancestors = Math.min(
-		levels.length - 1,
-		compact && limit >= 330 ? 2 : 1,
-	);
-	const style: CSSProperties & Record<`--dict-${string}`, string | number> = {
+	const compact = viewport.width < compactDictionaryWidth;
+	const position = compact
+		? compactDictionaryLayout(
+				root.origin.anchor,
+				viewport.width,
+				viewport.height,
+			)
+		: undefined;
+	const ancestors = position && position.maxHeight >= 330 ? 2 : 1;
+	const style: CSSProperties & {
+		"--dict-height"?: string;
+		"--dict-opacity": string;
+	} = {
 		...position,
-		"--dict-card-width": `${cardWidth}px`,
-		"--dict-height": `${limit}px`,
+		"--dict-height": position ? `${position.maxHeight}px` : undefined,
+		"--dict-opacity": `${opacity}%`,
 	};
+	const parents = levels.flatMap((item) =>
+		item.origin.parentBox ? [item.origin.parentBox] : [],
+	);
+
 	return (
 		<section
 			className="dict-deck"
@@ -192,7 +202,10 @@ export function DictionaryCards({
 					level={level}
 					depth={depth}
 					title={title}
-					hidden={depth < levels.length - 1 - ancestors}
+					hidden={compact && depth < levels.length - 1 - ancestors}
+					compact={compact}
+					viewport={viewport}
+					parents={parents.slice(0, depth)}
 					child={levels[depth + 1]}
 					nested={nested}
 					choose={choose}
@@ -211,6 +224,9 @@ function WordCard({
 	title,
 	child,
 	hidden,
+	compact,
+	viewport,
+	parents,
 	nested,
 	choose,
 	backTo,
@@ -221,12 +237,39 @@ function WordCard({
 	depth: number;
 	title: string;
 	child?: LookupLevel;
+	compact: boolean;
+	viewport: { width: number; height: number };
+	parents: ScreenAnchor[];
 	hidden: boolean;
 } & Pick<
 	Parameters<typeof DictionaryCards>[0],
 	"nested" | "choose" | "backTo" | "close" | "onRecord"
 >) {
-	const match = level.matches[level.index];
+	const page = level.pages[level.index];
+	const primary = page?.entries[0];
+	const multiple = !!page && page.entries.length > 1;
+	const titleWord = multiple ? page.surface : primary?.term;
+	const card = useRef<HTMLElement>(null);
+	const [firstHeight, setFirstHeight] = useState<number | null>(null);
+	// Measure once when this lookup resolves. Paging changes only the scrollable contents.
+	useLayoutEffect(() => {
+		if (!compact && firstHeight === null && !level.pending && card.current)
+			setFirstHeight(
+				card.current.offsetHeight +
+					(scroll.current
+						? scroll.current.scrollHeight - scroll.current.clientHeight
+						: 0),
+			);
+	}, [compact, firstHeight, level.pending]);
+	const position = compact
+		? undefined
+		: desktopDictionaryLayout(
+				level.origin.anchor,
+				parents,
+				viewport.width,
+				viewport.height,
+				firstHeight ?? 360,
+			);
 	const scroll = useRef<HTMLDivElement>(null);
 	const [selection, setSelection] = useState<Range | null>(null);
 	useEffect(() => {
@@ -265,7 +308,8 @@ function WordCard({
 		if (passage)
 			nested(depth, {
 				input: { text: passage.text, position: passage.offset },
-				anchor: level.origin.anchor,
+				anchor: passage.anchor,
+				parentBox: card.current?.getBoundingClientRect(),
 				passage,
 			});
 	};
@@ -278,10 +322,12 @@ function WordCard({
 	return (
 		<article
 			className="dict-card"
+			ref={card}
+			style={position}
 			data-depth={depth}
 			data-parent={!!child}
 			hidden={hidden}
-			aria-label={`词卡 · ${match?.term ?? glyph}`}
+			aria-label={`词卡 · ${titleWord ?? glyph}`}
 		>
 			<header className="dict-card-head">
 				<div className="dict-card-heading">
@@ -292,13 +338,39 @@ function WordCard({
 						{title}
 					</div>
 					<h2 lang="ja" tabIndex={-1}>
-						{match?.term ?? glyph}
-						{match?.reading && match.reading !== match.term && (
-							<small>{match.reading}</small>
-						)}
+						{titleWord ?? glyph}
+						{multiple && <small lang="zh">{page.entries.length} 个词条</small>}
+						{!multiple &&
+							primary?.reading &&
+							primary.reading !== primary.term && (
+								<small>{primary.reading}</small>
+							)}
 					</h2>
 				</div>
 				<div className="dict-actions">
+					{level.pages.length > 1 && (
+						<div className="dict-pager">
+							<button
+								type="button"
+								aria-label="上一个候选"
+								disabled={level.index === 0}
+								onClick={() => step(-1)}
+							>
+								‹
+							</button>
+							<span>
+								{level.index + 1} / {level.pages.length}
+							</span>
+							<button
+								type="button"
+								aria-label="下一个候选"
+								disabled={level.index + 1 >= level.pages.length}
+								onClick={() => step(1)}
+							>
+								›
+							</button>
+						</div>
+					)}
 					{depth > 0 && (
 						<button
 							type="button"
@@ -323,7 +395,7 @@ function WordCard({
 				<button
 					type="button"
 					className="dict-parent-line"
-					aria-label={`回到父卡 ${match?.term ?? ""}`}
+					aria-label={`回到父卡 ${titleWord ?? ""}`}
 					onClick={() => backTo(depth)}
 				>
 					{excerpt(child)}
@@ -331,12 +403,23 @@ function WordCard({
 				</button>
 			)}
 			<div className="dict-scroll" ref={scroll}>
-				{match && (
-					// biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: Selectable dictionary prose resolves pointer glyphs; native selections have an explicit lookup button.
-					<div className="dict-definitions" lang="ja" onClick={lookupText}>
-						{entryContent(match.definitions)}
-					</div>
-				)}
+				{page?.entries.map((entry, i) => (
+					<section className="dict-entry" key={entry.id}>
+						{multiple && (
+							<h3 lang="ja">
+								<span>{String(i + 1).padStart(2, "0")}</span>
+								{entry.term}
+								{entry.reading && entry.reading !== entry.term && (
+									<small>{entry.reading}</small>
+								)}
+							</h3>
+						)}
+						{/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: A pointer looks up a glyph; keyboard users can query an explicit selection. */}
+						<div className="dict-definitions" lang="ja" onClick={lookupText}>
+							{entryContent(entry.definitions)}
+						</div>
+					</section>
+				))}
 			</div>
 			{level.pending && (
 				<p className="dict-message" role="status">
@@ -348,65 +431,43 @@ function WordCard({
 					{level.message}
 				</p>
 			)}
-			<footer className="dict-foot">
-				{level.matches.length > 1 ? (
-					<div className="dict-pager">
+			{(level.origin.record || selection) && (
+				<footer className="dict-foot">
+					{level.origin.record && (
 						<button
 							type="button"
-							aria-label="上一个候选"
-							disabled={level.index === 0}
-							onClick={() => step(-1)}
+							className="dict-link"
+							onClick={() => {
+								if (level.origin.record) onRecord(level.origin.record);
+							}}
 						>
-							‹
+							此处记录 ↗
 						</button>
-						<span>
-							{level.index + 1} / {level.matches.length}
-						</span>
+					)}
+					{selection && (
 						<button
 							type="button"
-							aria-label="下一个候选"
-							disabled={level.index + 1 >= level.matches.length}
-							onClick={() => step(1)}
+							className="dict-link"
+							onPointerDown={(e) => e.preventDefault()}
+							onClick={() => {
+								const text = selection.toString().trim();
+								if (text && Array.from(text).length <= 8192)
+									nested(depth, {
+										input: {
+											text,
+											selection_start: 0,
+											selection_end: Array.from(text).length,
+										},
+										anchor: selection.getBoundingClientRect(),
+										parentBox: card.current?.getBoundingClientRect(),
+									});
+							}}
 						>
-							›
+							查选中文字
 						</button>
-					</div>
-				) : (
-					<span>{match ? "1 个候选" : "查词"}</span>
-				)}
-				{level.origin.record && (
-					<button
-						type="button"
-						className="dict-link"
-						onClick={() => {
-							if (level.origin.record) onRecord(level.origin.record);
-						}}
-					>
-						此处记录 ↗
-					</button>
-				)}
-				{selection && (
-					<button
-						type="button"
-						className="dict-link"
-						onPointerDown={(e) => e.preventDefault()}
-						onClick={() => {
-							const text = selection.toString().trim();
-							if (text && Array.from(text).length <= 8192)
-								nested(depth, {
-									input: {
-										text,
-										selection_start: 0,
-										selection_end: Array.from(text).length,
-									},
-									anchor: level.origin.anchor,
-								});
-						}}
-					>
-						查选中文字
-					</button>
-				)}
-			</footer>
+					)}
+				</footer>
+			)}
 		</article>
 	);
 }
