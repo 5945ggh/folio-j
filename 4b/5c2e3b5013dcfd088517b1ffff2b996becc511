@@ -1,0 +1,37 @@
+docs/INFORMATION_ARCHITECTURE.md
+  s_f1f94627ba8014::t_b3981be7fb5a94 282,284
+frontend/src/materials/chapter-records.css
+  s_f1f94627ba8014::t_b3981be7fb5a94 36,38,44-69,111
+docs/USAGE.md
+  s_f1f94627ba8014::t_b3981be7fb5a94 11
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_f1f94627ba8014::t_b3981be7fb5a94 18,63
+frontend/src/materials/ChapterRecords.tsx
+  s_f1f94627ba8014::t_b1efe46e02eb68 303-307,336,381-385,397
+  s_f1f94627ba8014::t_1a03d1974a7f8f 34-37,73-78,337-363,365-380
+frontend/browser-tests/chapter-records.tsx
+  s_f1f94627ba8014::t_a6d0e1109b299e 1,102-106,584-588,650-655,910-916,951-1024,1026-1037,1045,1047-1052,1121-1123,1165,1213,1637-1678
+  s_f1f94627ba8014::t_ecddd42bacd539 1040-1044
+frontend/src/materials/StudyPreview.tsx
+  s_f1f94627ba8014::t_498c56e8787d9a 277,293
+  s_f1f94627ba8014::t_1a03d1974a7f8f 132-136,138-139,211-212,276,278-292,294-295,304-306
+  s_f1f94627ba8014::t_b196f120d88870 59,119-122,124,207
+  s_f1f94627ba8014::t_77b54a242374a0 70-71,128
+  s_f1f94627ba8014::t_b1efe46e02eb68 3,24,40,53-54,125-127,129-131,137,140-143,209-210,213,320
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4b5c2e3b5013dcfd088517b1ffff2b996becc511",
+  "prompts": {},
+  "sessions": {
+    "s_f1f94627ba8014": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1903c-cd88-7492-a724-10411833f777",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
