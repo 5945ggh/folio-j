@@ -8,9 +8,8 @@ from typing import Any
 
 import pytest
 from httpx import AsyncClient
-from test_chat_api import accept, seed_chat
+from support_api import accept, api_client, seed_chat
 from test_manual_analyses import create_payload
-from test_source_segment import api_client
 
 from app.llm import adapters
 

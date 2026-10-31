@@ -12,7 +12,7 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-from test_source_segment import assert_utc_timestamp
+from support_api import assert_utc_timestamp
 
 from app.db import Base, create_engine
 from app.llm import adapters

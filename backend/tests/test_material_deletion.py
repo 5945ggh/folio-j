@@ -8,6 +8,8 @@ from typing import Any
 
 import pytest
 from sqlalchemy.exc import IntegrityError
+from support_api import api_client
+from support_epub import compiled
 from test_database_contract import (
     JOB_ID,
     RUN_ID,
@@ -17,8 +19,6 @@ from test_database_contract import (
     insert_run,
     rebuild_database,
 )
-from test_materials import compiled
-from test_source_segment import api_client
 
 from app.ids import new_ulid
 

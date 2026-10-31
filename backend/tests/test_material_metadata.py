@@ -11,9 +11,9 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
+from support_api import api_client
+from support_epub import compiled
 from test_covers import PNG, cover_book, jpeg_fixture
-from test_materials import compiled
-from test_source_segment import api_client
 
 from app.services.covers import MAX_COVER_BYTES, CoverExtraction, inspect_cover
 from app.services.sources import begin_write

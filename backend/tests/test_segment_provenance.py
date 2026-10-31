@@ -12,7 +12,7 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient, Response
 from sqlalchemy.exc import IntegrityError
-from test_source_segment import api_client
+from support_api import api_client
 
 from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter, CompiledResource
 from app.epub_storage import encode

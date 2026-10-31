@@ -6,7 +6,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from test_source_segment import api_client
+from pydantic import ValidationError
+from support_api import api_client
+
+from app.context_copy_schemas import ContextCopySettingsUpdate
 
 URL = "/api/settings/context-copy"
 DEFAULTS: dict[str, Any] = {
@@ -82,19 +85,14 @@ async def test_default_roundtrip_restart_and_independent_save(tmp_path: Path) ->
         assert second.json() == {**DEFAULTS, "revision": 2}
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("field", BUDGET_FIELDS)
 @pytest.mark.parametrize("value", [-1, 100001, 1.5, "3", True, None])
-async def test_budgets_are_bounded_strict_nonnegative_integers(
-    tmp_path: Path, field: str, value: Any
-) -> None:
-    async with api_client(tmp_path / "invalid.db") as client:
-        result = await client.put(URL, json=update(**{field: value}))
-        assert result.status_code == 422, result.text
-        assert (await client.get(URL)).json() == DEFAULTS
+def test_budgets_are_bounded_strict_nonnegative_integers(field: str, value: Any) -> None:
+    with pytest.raises(ValidationError) as error:
+        ContextCopySettingsUpdate.model_validate(update(**{field: value}))
+    assert {issue["loc"] for issue in error.value.errors()} == {(field,)}
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "changes",
     [
@@ -108,10 +106,32 @@ async def test_budgets_are_bounded_strict_nonnegative_integers(
         {"extra": "ignored"},
     ],
 )
-async def test_other_fields_remain_strict(tmp_path: Path, changes: dict[str, Any]) -> None:
+def test_other_fields_remain_strict(changes: dict[str, Any]) -> None:
+    with pytest.raises(ValidationError) as error:
+        ContextCopySettingsUpdate.model_validate(update(**changes))
+    assert {issue["loc"] for issue in error.value.errors()} == {(next(iter(changes)),)}
+
+
+@pytest.mark.asyncio
+async def test_invalid_api_updates_preserve_saved_settings_and_revision(tmp_path: Path) -> None:
     async with api_client(tmp_path / "invalid.db") as client:
-        assert (await client.put(URL, json=update(**changes))).status_code == 422
-        assert (await client.get(URL)).json() == DEFAULTS
+        payload = update(include_source=False, before_sentences=7, after_characters=91)
+        saved = await client.put(URL, json=payload)
+        assert saved.status_code == 200, saved.text
+        expected = {key: value for key, value in payload.items() if key != "expected_revision"}
+        assert saved.json() == {**expected, "revision": 1}
+        for field, value in (
+            ("include_source", "false"),
+            ("before_sentences", True),
+            ("before_sentences", -1),
+            ("before_sentences", 100001),
+            ("expected_revision", "1"),
+            ("extra", "ignored"),
+        ):
+            invalid = {**payload, "expected_revision": 1, field: value}
+            result = await client.put(URL, json=invalid)
+            assert result.status_code == 422, result.text
+            assert (await client.get(URL)).json() == saved.json()
 
 
 @pytest.mark.asyncio

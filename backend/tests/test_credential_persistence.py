@@ -6,7 +6,7 @@ from pathlib import Path
 
 import httpx2 as httpx
 import pytest
-from test_chat_api import accept, chat_client, seed_chat
+from support_api import accept, chat_client, seed_chat
 from test_settings_adapters import Protocol, completed_response, event, install_transport
 from test_tool_adapters import assert_no_credential, tool_response
 

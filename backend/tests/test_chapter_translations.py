@@ -13,7 +13,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
-from test_chat_api import chat_client
+from support_api import chat_client
 from test_segment_provenance import compiled_provenance, provenance, setup_material, span
 
 from app.epub_schemas import CompiledBook

@@ -7,7 +7,7 @@ from typing import Any, NoReturn
 from uuid import uuid4
 
 import pytest
-from test_chat_api import accept, chat_client
+from support_api import accept, chat_client
 from test_segment_provenance import compiled_provenance, provenance, setup_material
 
 

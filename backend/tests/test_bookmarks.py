@@ -10,8 +10,8 @@ from uuid import uuid4
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from test_materials import compiled
-from test_source_segment import api_client
+from support_api import api_client
+from support_epub import compiled
 
 from app.bookmark_schemas import BookmarkUpdate
 from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter

@@ -11,9 +11,9 @@ from pathlib import Path
 from typing import Any, NoReturn
 
 import pytest
-from test_chat_api import chat_client
+from support_api import chat_client
+from support_epub import compiled
 from test_material_statistics import seed
-from test_materials import compiled
 from test_statistics import characters, source
 from test_vocabulary import vocabulary_sample
 

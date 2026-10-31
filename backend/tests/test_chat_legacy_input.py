@@ -8,8 +8,8 @@ from typing import Any
 
 import pytest
 from chat_tool_fixture import install_text_turn
+from support_api import accept, chat_client, question_payload, seed_chat
 from test_analysis_agent import refreshed
-from test_chat_api import accept, chat_client, question_payload, seed_chat
 from test_chat_prompt_scope import accepted_input
 
 from app.jobs import runtime

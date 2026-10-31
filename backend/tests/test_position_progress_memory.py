@@ -3,7 +3,7 @@
 import gc
 import weakref
 
-from test_materials import compiled
+from support_epub import compiled
 
 from app.material_schemas import PositionAnchor
 from app.services.position_progress import chapter_progress

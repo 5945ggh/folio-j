@@ -7,13 +7,13 @@ import threading
 from pathlib import Path
 
 import pytest
+from support_api import api_client
 from test_segment_provenance import (
     compiled_provenance,
     create_segment,
     provenance,
     setup_material,
 )
-from test_source_segment import api_client
 
 from app.epub_schemas import CompiledBook
 from app.services import material_provenance as service

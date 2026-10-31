@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 from chat_tool_fixture import install_text_turn
 from sqlalchemy import event, select
-from test_chat_api import accept, chat_client, seed_chat
+from support_api import accept, chat_client, seed_chat
 
 from app.chat_models import ChatMessage, Job
 from app.jobs import agent, runtime

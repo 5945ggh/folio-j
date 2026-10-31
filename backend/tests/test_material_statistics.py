@@ -9,8 +9,8 @@ from typing import Any
 
 import pytest
 from httpx import AsyncClient
-from test_chat_api import chat_client
-from test_materials import compiled
+from support_api import chat_client
+from support_epub import compiled
 
 from app.nlp.contracts import DecodedReadings, TextResource
 from app.nlp.statistics import LexicalStatistics, TextStatistics

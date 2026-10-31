@@ -10,7 +10,7 @@ from uuid import uuid4
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
-from test_chat_api import accept, chat_client, seed_chat
+from support_api import accept, chat_client, seed_chat
 
 from app.jobs import runtime
 from app.llm import adapters

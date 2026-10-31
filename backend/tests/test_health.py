@@ -2,8 +2,7 @@ from pathlib import Path
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from test_chat_api import chat_client
-from test_source_segment import api_client
+from support_api import api_client, chat_client
 
 from app.main import create_app
 

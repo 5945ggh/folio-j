@@ -6,8 +6,8 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-from test_materials import compiled
-from test_source_segment import api_client
+from support_api import api_client
+from support_epub import compiled
 
 from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter
 

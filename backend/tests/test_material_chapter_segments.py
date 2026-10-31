@@ -10,6 +10,7 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
+from support_api import api_client
 from test_segment_provenance import (
     compiled_provenance,
     create_segment,
@@ -17,7 +18,6 @@ from test_segment_provenance import (
     setup_material,
     span,
 )
-from test_source_segment import api_client
 
 from app.epub_schemas import CompiledBook
 from app.epub_storage import encode

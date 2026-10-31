@@ -18,8 +18,8 @@ from httpx import AsyncClient
 from sqlalchemy import event
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
-from test_chat_api import chat_client
-from test_materials import compiled
+from support_api import chat_client
+from support_epub import compiled
 
 from app import epub_storage
 from app.epub_schemas import CompiledBook

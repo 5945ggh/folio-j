@@ -11,7 +11,7 @@ import httpx2 as model_httpx
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
-from test_chat_api import chat_client, seed_chat
+from support_api import chat_client, seed_chat
 from test_segment_provenance import compiled_provenance, provenance, setup_material
 from test_settings_adapters import completed_response, install_transport
 

@@ -12,8 +12,8 @@ import pytest
 from chat_tool_fixture import install_text_turn
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
+from support_api import accept, chat_client, question_payload, seed_chat
 from test_analysis_agent import refreshed
-from test_chat_api import accept, chat_client, question_payload, seed_chat
 from test_chat_prompt_scope import accepted_input
 from test_material_context_snapshot import snapshot_bytes, stored_origin
 from test_segment_provenance import compiled_provenance, create_segment, provenance, upload

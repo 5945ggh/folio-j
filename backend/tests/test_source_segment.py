@@ -2,18 +2,16 @@
 
 import re
 import sqlite3
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import pytest
-from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from support_api import api_client, assert_utc_timestamp
 
-from app.db import Base, create_engine
+from app.db import create_engine
 from app.main import create_app
 from app.models import Segment
 
@@ -40,30 +38,6 @@ def test_openapi_update_fields_are_optional_but_non_nullable() -> None:
         for field in fields:
             property_schema = schema["properties"][field]
             assert property_schema.get("type") == "string", (model, field, property_schema)
-
-
-@asynccontextmanager
-async def api_client(database: Path) -> AsyncGenerator[AsyncClient, None]:
-    """Create schema explicitly; ASGITransport does not run lifespan itself."""
-    engine = create_engine(database)
-    try:
-        async with engine.begin() as connection:
-            await connection.run_sync(Base.metadata.create_all)
-    finally:
-        await engine.dispose()
-    application = create_app(database_path=database)
-    async with application.router.lifespan_context(application):
-        async with AsyncClient(
-            transport=ASGITransport(app=application), base_url="http://test"
-        ) as client:
-            yield client
-
-
-def assert_utc_timestamp(value: str) -> None:
-    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    assert parsed.tzinfo is not None
-    offset = parsed.utcoffset()
-    assert offset is not None and offset.total_seconds() == 0
 
 
 @pytest.mark.asyncio

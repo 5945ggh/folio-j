@@ -9,8 +9,8 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy.exc import IntegrityError
-from test_chat_api import chat_client
-from test_chat_api import offline_chat_discovery as offline_chat_discovery
+from support_api import chat_client
+from support_api import offline_chat_discovery as offline_chat_discovery
 from test_segment_provenance import compiled_provenance, provenance, span
 from test_translations import request, setup
 

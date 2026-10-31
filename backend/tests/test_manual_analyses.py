@@ -14,7 +14,7 @@ from fastapi import HTTPException
 from httpx import AsyncClient
 from race_helpers import paused_task
 from sqlalchemy.ext.asyncio import AsyncSession
-from test_chat_api import chat_client
+from support_api import chat_client
 
 from app.analysis_schemas import AnalysisDetail, SectionOperation
 from app.ids import new_ulid

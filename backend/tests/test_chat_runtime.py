@@ -10,7 +10,7 @@ from uuid import uuid4
 import pytest
 from chat_tool_fixture import install_text_turn
 from httpx import AsyncClient
-from test_chat_api import accept, chat_client, seed_chat
+from support_api import accept, chat_client, seed_chat
 
 from app.jobs import agent, runtime
 from app.llm import adapters
