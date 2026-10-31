@@ -351,7 +351,7 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 			const viewport = find<HTMLElement>(".reader-viewport");
 			const singles = () =>
 				buttons().filter(
-					(node) => node.getAttribute("aria-label") === "查看此处 1 条记录",
+					(node) => node.getAttribute("aria-label") === "打开此处学习片段",
 				);
 			const first = () => {
 				const node = singles()[0];

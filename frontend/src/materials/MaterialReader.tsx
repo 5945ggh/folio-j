@@ -63,7 +63,7 @@ import {
 	usageKey,
 } from "./api";
 import { ChapterRecords } from "./ChapterRecords";
-import { sameRecordHit } from "./chapter-records";
+import { marginRecordEntry, sameMarginRecordHit } from "./chapter-records";
 import {
 	useChapterTranslations,
 	useMaterialTranslationActivity,
@@ -1984,68 +1984,74 @@ function Reader({
 					{ui.marks.studySegmentMargins &&
 						!studyTarget &&
 						!translationOpen &&
-						marginEntries.map((entry) => (
-							<button
-								key={`${entry.segmentIds.join(":")}|${entry.translationIds?.join(":") ?? ""}`}
-								type="button"
-								className="reader-study-margin"
-								data-reader-tool=""
-								style={{ left: entry.left, top: entry.top }}
-								aria-expanded={Boolean(
-									markHit && !markHit.fixed && sameRecordHit(markHit, entry),
-								)}
-								aria-label={`查看此处 ${entry.segmentIds.length + (entry.translationIds?.length ?? 0)} 条记录`}
-								onClick={(event) => {
-									const current = records.state.markHit;
-									if (
-										current &&
-										!current.fixed &&
-										sameRecordHit(current, entry)
-									) {
-										closeMarkHit();
-										return;
+						marginEntries.map((entry) => {
+							const count =
+								entry.segmentIds.length + (entry.translationIds?.length ?? 0);
+							const translation = !!entry.translationIds?.length;
+							return (
+								<button
+									key={`${entry.segmentIds.join(":")}|${entry.translationIds?.join(":") ?? ""}`}
+									type="button"
+									className="reader-study-margin"
+									data-reader-tool=""
+									style={{ left: entry.left, top: entry.top }}
+									aria-expanded={Boolean(
+										markHit && sameMarginRecordHit(markHit, entry),
+									)}
+									aria-label={
+										count > 1
+											? `查看此处 ${count} 条记录`
+											: translation
+												? "打开此处翻译"
+												: "打开此处学习片段"
 									}
-									const root = container.current;
-									if (!root) return;
-									const view = readingViewport(root, getComputedStyle(root));
-									const anchor = event.currentTarget.getBoundingClientRect();
-									openMarkHit(
-										{
-											segmentIds: entry.segmentIds,
-											translationIds: entry.translationIds,
-											anchor,
-											anchorPlacement:
-												settings.writing_mode === "vertical-rl"
-													? "margin-bottom"
-													: anchor.left >= view.right
-														? "margin-right"
-														: "margin-left",
-										},
-										event.currentTarget,
-									);
-									controller.current?.show();
-								}}
-							>
-								{entry.segmentIds.length + (entry.translationIds?.length ?? 0) >
-								1 ? (
-									entry.segmentIds.length + (entry.translationIds?.length ?? 0)
-								) : entry.translationIds?.length ? (
-									"译"
-								) : (
-									<svg
-										aria-hidden="true"
-										width="16"
-										height="16"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										strokeWidth="1.5"
-									>
-										<path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h6" />
-									</svg>
-								)}
-							</button>
-						))}
+									onClick={(event) => {
+										const current = records.state.markHit;
+										if (current && sameMarginRecordHit(current, entry)) {
+											closeMarkHit();
+											return;
+										}
+										const root = container.current;
+										if (!root) return;
+										const view = readingViewport(root, getComputedStyle(root));
+										const anchor = event.currentTarget.getBoundingClientRect();
+										openMarkHit(
+											{
+												segmentIds: entry.segmentIds,
+												translationIds: entry.translationIds,
+												anchor,
+												anchorPlacement:
+													settings.writing_mode === "vertical-rl"
+														? "margin-bottom"
+														: anchor.left >= view.right
+															? "margin-right"
+															: "margin-left",
+											},
+											event.currentTarget,
+										);
+										controller.current?.show();
+									}}
+								>
+									{count > 1 ? (
+										count
+									) : translation ? (
+										"译"
+									) : (
+										<svg
+											aria-hidden="true"
+											width="16"
+											height="16"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="1.5"
+										>
+											<path d="M5 3h10l4 4v14H5zM15 3v5h4M8 12h8M8 16h6" />
+										</svg>
+									)}
+								</button>
+							);
+						})}
 				</section>
 			)}
 			<footer
@@ -2375,6 +2381,7 @@ function Reader({
 					hitRecords.translations.length > 0) && (
 					<ChapterRecords
 						key={previewSerial}
+						marginEntry={marginRecordEntry(markHit)}
 						manualPosition={manualPosition}
 						onManualPositionChange={(value) => records.setManualPosition(value)}
 						anchor={markHit.anchor}

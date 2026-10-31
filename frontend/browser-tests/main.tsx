@@ -462,6 +462,7 @@ try {
 					}),
 				]
 			: suite === "chapter-records" ||
+					suite === "margin-record-targets" ||
 					suite === "inline-records" ||
 					suite === "translation-removal"
 				? [

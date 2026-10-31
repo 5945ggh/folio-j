@@ -6,6 +6,7 @@ import { Markdown } from "../analysis/Markdown";
 import { analysisPresentation } from "../analysis/presentation";
 import { getSegment, queries } from "../content";
 import { useViewActivity } from "../navigation/view-activity";
+import type { MarginRecordEntry } from "./chapter-records";
 import { useReaderSessionRefresh } from "./reader-session-query";
 import type { ScreenAnchor } from "./reader-study";
 import type { ChapterSegment } from "./study-api";
@@ -22,6 +23,8 @@ export type StudyPreviewProps = {
 	inactive?: boolean;
 	embedded?: boolean;
 	actionSlots?: { back: HTMLElement | null; open: HTMLElement | null };
+	marginEntry?: MarginRecordEntry;
+	relatedRecordCount?: number;
 	onExpand: () => void;
 	onCollapse: () => void;
 	onClose: () => void;
@@ -38,6 +41,8 @@ export function StudyPreview({
 	inactive: panelInactive = false,
 	embedded = false,
 	actionSlots,
+	marginEntry,
+	relatedRecordCount = items.length,
 	onExpand,
 	onCollapse,
 	onClose,
@@ -51,6 +56,7 @@ export function StudyPreview({
 	const analysisPreview = useRef<HTMLDivElement>(null);
 	const [previewClipped, setPreviewClipped] = useState(false);
 	const nextFocus = useRef<"detail" | string | null>(null);
+	const revealReturnedItem = useRef(false);
 	const listScrollTop = useRef(0);
 	const callbacks = useRef({ onClose, onEmphasize });
 	callbacks.current = { onClose, onEmphasize };
@@ -65,7 +71,13 @@ export function StudyPreview({
 		id: string;
 	} | null>(null);
 	const automaticId =
-		!fixed && items.length === 1 ? items[0]?.segment_id : null;
+		!fixed && marginEntry
+			? marginEntry.kind === "segment"
+				? marginEntry.id
+				: null
+			: !fixed && items.length === 1
+				? items[0]?.segment_id
+				: null;
 	const selected = items.find(
 		(item) =>
 			item.segment_id === (selectedId === undefined ? automaticId : selectedId),
@@ -138,6 +150,10 @@ export function StudyPreview({
 			if (destination !== "detail" && body)
 				body.scrollTop = listScrollTop.current;
 			button.focus({ preventScroll: true });
+			if (revealReturnedItem.current) {
+				button.scrollIntoView({ block: "nearest" });
+				revealReturnedItem.current = false;
+			}
 			nextFocus.current = null;
 		}
 	}, [segmentId, actionSlots?.back]);
@@ -204,9 +220,14 @@ export function StudyPreview({
 			: null;
 	const translation = saved?.translation.trim();
 	const original = saved?.text ?? selected?.excerpt ?? "";
-	const canReturn = !!selected && selectedId != null;
+	const returnToRecords =
+		selectedId === undefined &&
+		marginEntry?.kind === "segment" &&
+		relatedRecordCount > 1;
+	const canReturn = !!selected && (selectedId != null || returnToRecords);
 	const select = (id: string | null) => {
 		nextFocus.current = id ? "detail" : segmentId;
+		revealReturnedItem.current = !id && returnToRecords;
 		if (id) {
 			listScrollTop.current =
 				element.current?.closest(".reader-record-body")?.scrollTop ?? 0;
@@ -281,8 +302,8 @@ export function StudyPreview({
 					<button
 						className="reader-record-back reader-study-preview-back"
 						type="button"
-						aria-label="返回学习片段列表"
-						title="返回学习片段列表"
+						aria-label={returnToRecords ? "返回此处记录" : "返回学习片段列表"}
+						title={returnToRecords ? "返回此处记录" : "返回学习片段列表"}
 						onClick={() => select(null)}
 					>
 						<span aria-hidden="true">←</span>

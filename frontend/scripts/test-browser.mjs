@@ -101,6 +101,8 @@ const scenarios = selectBrowserScenarios(
 		[390, 900, "?suite=translation-removal"],
 		[1280, 900, "?suite=translation-removal&direction=vertical-rl"],
 		[390, 900, "?suite=translation-removal&direction=vertical-rl"],
+		[1280, 900, "?suite=margin-record-targets"],
+		[1280, 900, "?suite=margin-record-targets&direction=vertical-rl"],
 		[1280, 900, "?suite=chapter-records"],
 		[1280, 900, "?suite=chapter-records&theme=dark"],
 		[1280, 900, "?suite=chapter-records&direction=vertical-rl"],

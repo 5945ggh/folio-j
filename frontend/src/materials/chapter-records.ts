@@ -8,6 +8,38 @@ type RecordHit = {
 	anchorPlacement?: string;
 };
 
+export type MarginRecordEntry =
+	| { kind: "segment" | "translation"; id: string }
+	| { kind: "list"; tab: "segment" | "translation" };
+
+function isMarginHit(hit: RecordHit) {
+	return !hit.fixed && hit.anchorPlacement?.startsWith("margin-") === true;
+}
+
+/** Use the clicked margin's identities before overlap expansion selects its full record group. */
+export function marginRecordEntry(
+	hit: RecordHit | null,
+): MarginRecordEntry | undefined {
+	if (!hit || !isMarginHit(hit)) return undefined;
+	const { segmentIds, translationIds = [] } = hit;
+	const count = segmentIds.length + translationIds.length;
+	if (!count) return undefined;
+	if (count > 1)
+		return {
+			kind: "list",
+			tab: segmentIds.length ? "segment" : "translation",
+		};
+	const segmentId = segmentIds[0];
+	if (segmentId) return { kind: "segment", id: segmentId };
+	const translationId = translationIds[0];
+	return translationId ? { kind: "translation", id: translationId } : undefined;
+}
+
+/** A text hit with the same record IDs switches to the margin entry instead of toggling it closed. */
+export function sameMarginRecordHit(a: RecordHit, b: RecordHit): boolean {
+	return isMarginHit(a) && sameRecordHit(a, b);
+}
+
 /** Ambiguous or mixed records keep the existing chooser; only a direct translation is inline. */
 export function inlineTranslationAtHit<
 	S extends LocatedRecord & { segment_id: string },

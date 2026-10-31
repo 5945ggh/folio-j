@@ -22,6 +22,7 @@ const readerSuites = new Set([
 	"record-saving",
 	"theme",
 	"chapter-records",
+	"margin-record-targets",
 	"inline-records",
 	"navigation-feedback",
 	"route-loading",

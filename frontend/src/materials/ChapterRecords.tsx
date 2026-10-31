@@ -33,7 +33,7 @@ import "./chapter-records.css";
 
 type Props = Omit<
 	StudyPreviewProps,
-	"onEmphasize" | "embedded" | "actionSlots"
+	"onEmphasize" | "embedded" | "actionSlots" | "relatedRecordCount"
 > & {
 	chapter: Chapter;
 	sourceId: string;
@@ -64,11 +64,18 @@ export function ChapterRecords(props: Props) {
 		chapter,
 		direction,
 		anchorPlacement = "text",
+		marginEntry,
 		onClose,
 		onEmphasize,
 	} = props;
 	const [tab, setTab] = useState<"segment" | "translation">(
-		!fixed && !items.length && translations.length ? "translation" : "segment",
+		marginEntry
+			? marginEntry.kind === "list"
+				? marginEntry.tab
+				: marginEntry.kind
+			: !fixed && !items.length && translations.length
+				? "translation"
+				: "segment",
 	);
 	const [segmentBackSlot, setSegmentBackSlot] = useState<HTMLDivElement | null>(
 		null,
@@ -77,16 +84,28 @@ export function ChapterRecords(props: Props) {
 		null,
 	);
 	const [selectedId, setSelectedId] = useState<string | null | undefined>();
+	const automaticTranslationId =
+		!fixed && marginEntry
+			? marginEntry.kind === "translation"
+				? marginEntry.id
+				: null
+			: !fixed && translations.length === 1
+				? translations[0]?.identity_sha256
+				: null;
 	const selected = translations.find(
 		(item) =>
 			item.identity_sha256 ===
-			(selectedId === undefined && !fixed && translations.length === 1
-				? translations[0]?.identity_sha256
-				: selectedId),
+			(selectedId === undefined ? automaticTranslationId : selectedId),
 	);
-	const canReturn = !!selected && selectedId != null;
+	const relatedRecordCount = items.length + translations.length;
+	const returnToRecords =
+		selectedId === undefined &&
+		marginEntry?.kind === "translation" &&
+		relatedRecordCount > 1;
+	const canReturn = !!selected && (selectedId != null || returnToRecords);
 	const element = useRef<HTMLDivElement>(null);
 	const nextFocus = useRef<"detail" | string | null>(null);
+	const revealReturnedItem = useRef(false);
 	const body = useRef<HTMLDivElement>(null);
 	const callbacks = useRef({ onEmphasize, onClose });
 	callbacks.current = { onEmphasize, onClose };
@@ -132,6 +151,8 @@ export function ChapterRecords(props: Props) {
 	const returnToList = () => {
 		if (!selected || !canReturn) return;
 		nextFocus.current = selected.identity_sha256;
+		revealReturnedItem.current = returnToRecords;
+		if (returnToRecords && body.current) body.current.scrollTop = 0;
 		setSelectedId(null);
 	};
 	useLayoutEffect(() => {
@@ -150,6 +171,10 @@ export function ChapterRecords(props: Props) {
 					].find((item) => item.dataset.translationId === destination);
 		if (button) {
 			button.focus({ preventScroll: true });
+			if (revealReturnedItem.current) {
+				button.scrollIntoView({ block: "nearest" });
+				revealReturnedItem.current = false;
+			}
 			nextFocus.current = null;
 		}
 	}, [selectedId]);
@@ -309,8 +334,8 @@ export function ChapterRecords(props: Props) {
 						<button
 							type="button"
 							className="reader-record-back"
-							aria-label="返回翻译列表"
-							title="返回翻译列表"
+							aria-label={returnToRecords ? "返回此处记录" : "返回翻译列表"}
+							title={returnToRecords ? "返回此处记录" : "返回翻译列表"}
 							onClick={returnToList}
 						>
 							<span aria-hidden="true">←</span>
@@ -394,6 +419,7 @@ export function ChapterRecords(props: Props) {
 					<StudyPreview
 						{...props}
 						embedded
+						relatedRecordCount={relatedRecordCount}
 						actionSlots={{ back: segmentBackSlot, open: segmentOpenSlot }}
 						inactive={inactive || tab !== "segment"}
 						onEmphasize={(value) => onEmphasize(value, "segment")}

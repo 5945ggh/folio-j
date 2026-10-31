@@ -5,6 +5,10 @@ import type { BrowserHarness } from "./harness";
 import { inlinePerformance } from "./inline-performance";
 import { inlineRecords } from "./inline-records";
 import {
+	marginRecordFixture,
+	marginRecordTargets,
+} from "./margin-record-targets";
+import {
 	translationRemoval,
 	translationRemovalFixture,
 } from "./translation-removal";
@@ -123,6 +127,8 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 	const params = new URLSearchParams(location.search);
 	const inlineSuite = params.get("suite") === "inline-records";
 	const removalSuite = params.get("suite") === "translation-removal";
+	const marginSuite = params.get("suite") === "margin-record-targets";
+	const marginFixture = marginSuite ? marginRecordFixture(chapter) : null;
 	const performanceSuite = inlineSuite && params.has("performance");
 	const inlineParagraphs = removalSuite
 		? [...paragraphs, paragraphs[1] ?? ""]
@@ -202,6 +208,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		};
 	}
 
+	if (marginFixture) inlineChapter = marginFixture.chapter;
 	const detached = params.has("detached");
 	const evicted = params.has("evicted");
 	const direction =
@@ -219,7 +226,8 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		import("../src/materials/MaterialReader"),
 		import("../src/translation/state"),
 	]);
-	const references = paragraphs.map((_, index) => reference(index));
+	const references =
+		marginFixture?.references ?? paragraphs.map((_, index) => reference(index));
 	if (removalSuite) {
 		const repeated = reference(1);
 		const range = repeated.ranges[0];
@@ -253,7 +261,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			material_provenance,
 			identity_sha256: identities[index] ?? "",
 			text:
-				inlineSuite || removalSuite
+				inlineSuite || removalSuite || marginSuite
 					? (material_provenance.ranges[0]?.exact ?? "")
 					: (paragraphs[index] ?? ""),
 			translation:
@@ -293,7 +301,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		created_at: "2026-10-22T00:00:00Z",
 	};
 	const summaries: Schema["MaterialChapterTranslation"][] = results
-		.slice(0, 3)
+		.slice(0, marginSuite ? undefined : 3)
 		.map((result, index) => ({
 			identity_sha256: result.identity_sha256,
 			result_id: result.id,
@@ -484,7 +492,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			});
 		if (path.endsWith("/chapters/chapter/segments"))
 			return Response.json({
-				items: [segment],
+				items: marginFixture?.segments ?? [segment],
 				next_cursor: null,
 				unavailable_count: 0,
 			});
@@ -512,6 +520,35 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				revision: update.expected_revision + 1,
 				updated_at: timestamp,
 			});
+		}
+		if (marginFixture && path.startsWith("/api/segments/")) {
+			const item = marginFixture.segments.find(
+				(candidate) =>
+					path === `/api/segments/${candidate.segment_id}` ||
+					path === `/api/segments/${candidate.segment_id}/analyses`,
+			);
+			if (item)
+				return Response.json(
+					path.endsWith("/analyses")
+						? []
+						: {
+								id: item.segment_id,
+								source_id: "source",
+								text: item.excerpt,
+								translation: `片段 ${item.segment_id} 的保存译文。`,
+								transcription: "",
+								context_before: "",
+								context_after: "",
+								note: "",
+								source_ref: "",
+								revision: 0,
+								text_sha256: hash,
+								text_locked_at: null,
+								created_at: timestamp,
+								updated_at: timestamp,
+								material_provenance: item.material_provenance,
+							},
+				);
 		}
 		if (path === "/api/segments/saved")
 			return Response.json({
@@ -556,12 +593,14 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			if (!identity && acceptedTask && !generatedResult) pendingObserved = true;
 			const omitFromRecent = !identity && hideFromRecent;
 			return Response.json({
-				results: (inlineSuite
-					? []
-					: [
-							...results.slice(0, generatedResult && !omitFromRecent ? 4 : 3),
-							historical,
-						]
+				results: (marginSuite
+					? results
+					: inlineSuite
+						? []
+						: [
+								...results.slice(0, generatedResult && !omitFromRecent ? 4 : 3),
+								historical,
+							]
 				).filter((result) => !identity || result.identity_sha256 === identity),
 				tasks:
 					acceptedTask &&
@@ -606,6 +645,13 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 					?.contentDocument?.querySelector("[data-locator-leaf]"),
 			"Reader and all chapter translation pages must load",
 		);
+		if (marginFixture)
+			return await marginRecordTargets(
+				h,
+				marginFixture.segments,
+				results,
+				preview,
+			);
 		button("本章记录").click();
 		await h.until(
 			() => !!h.container.querySelector('[role="tab"]'),
