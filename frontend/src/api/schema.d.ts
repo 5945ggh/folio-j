@@ -784,6 +784,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/segments/{segment_id}/explanation-prompt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Segment Explanation Prompt */
+        get: operations["getSegmentExplanationPrompt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/segments/{segment_id}/material-provenance": {
         parameters: {
             query?: never;
@@ -3062,6 +3079,11 @@ export interface components {
             segment_id: string;
             /** Thread Count */
             thread_count: number;
+        };
+        /** SegmentExplanationPromptResponse */
+        SegmentExplanationPromptResponse: {
+            /** Prompt */
+            prompt: string;
         };
         /** SegmentProvenanceMatches */
         SegmentProvenanceMatches: {
@@ -5746,6 +5768,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SegmentDeleteImpact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getSegmentExplanationPrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentExplanationPromptResponse"];
                 };
             };
             /** @description Validation Error */

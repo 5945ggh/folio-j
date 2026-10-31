@@ -4947,6 +4947,19 @@
         "title": "SegmentDeleteImpact",
         "type": "object"
       },
+      "SegmentExplanationPromptResponse": {
+        "properties": {
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "title": "SegmentExplanationPromptResponse",
+        "type": "object"
+      },
       "SegmentProvenanceMatches": {
         "properties": {
           "segments": {
@@ -10034,6 +10047,45 @@
           }
         },
         "summary": "Segment Delete Impact"
+      }
+    },
+    "/api/segments/{segment_id}/explanation-prompt": {
+      "get": {
+        "operationId": "getSegmentExplanationPrompt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "segment_id",
+            "required": true,
+            "schema": {
+              "title": "Segment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentExplanationPromptResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Segment Explanation Prompt"
       }
     },
     "/api/segments/{segment_id}/material-provenance": {

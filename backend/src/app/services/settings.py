@@ -66,31 +66,63 @@ def fail(status: int, detail: str) -> None:
     raise HTTPException(status_code=status, detail=detail)
 
 
+def default_profile() -> ProfileInput:
+    return ProfileInput(native_language="中文", explain_language="中文", level_note="")
+
+
+def default_style() -> StyleInput:
+    body = (
+        Environment(loader=FileSystemLoader(PROMPTS), undefined=StrictUndefined)
+        .get_template("default_explanation_style_v1.j2")
+        .render()
+        .strip()
+    )
+    return StyleInput(name="默认讲解", body_md=body)
+
+
+async def explanation_preferences(
+    session: AsyncSession,
+) -> tuple[ProfileInput, StyleInput | None]:
+    """Read current learning preferences without initializing or changing settings."""
+    profile = await session.get(Profile, 1)
+    defaults = await session.get(Defaults, 1)
+    selected = (
+        await session.get(Style, defaults.style_id)
+        if defaults is not None and defaults.style_id is not None
+        else None
+    )
+    style = default_style() if defaults is None else None
+    if selected is not None:
+        style = StyleInput(name=selected.name, body_md=selected.body_md)
+    return (
+        ProfileInput(
+            native_language=profile.native_language,
+            explain_language=profile.explain_language,
+            level_note=profile.level_note,
+        )
+        if profile is not None
+        else default_profile(),
+        style,
+    )
+
+
 async def ensure_settings(
     session: AsyncSession, *, commit: bool = True
 ) -> tuple[Profile, list[Style], Defaults]:
     # The first write serializes concurrent first requests; OR IGNORE makes the
     # singleton initialization safe when several browser queries arrive together.
     await session.execute(
-        insert(Profile)
-        .values(id=1, native_language="中文", explain_language="中文", level_note="")
-        .prefix_with("OR IGNORE")
+        insert(Profile).values(id=1, **default_profile().model_dump()).prefix_with("OR IGNORE")
     )
     defaults = await session.get(Defaults, 1)
     if defaults is None:
-        body = (
-            Environment(loader=FileSystemLoader(PROMPTS), undefined=StrictUndefined)
-            .get_template("default_explanation_style_v1.j2")
-            .render()
-            .strip()
-        )
+        style = default_style()
         created = now()
         await session.execute(
             insert(Style)
             .values(
                 id=DEFAULT_STYLE_ID,
-                name="默认讲解",
-                body_md=body,
+                **style.model_dump(),
                 created_at=created,
                 updated_at=created,
             )

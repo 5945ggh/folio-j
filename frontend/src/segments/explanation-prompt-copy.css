@@ -1,0 +1,72 @@
+.app-shell.segment-study-shell .segment-prompt-feedback {
+	position: fixed;
+	z-index: 52;
+	top: 70px;
+	right: 16px;
+	width: max-content;
+	min-width: 0;
+	margin: 0;
+	max-width: min(380px, calc(100vw - 32px));
+	max-height: calc(100dvh - 86px);
+	overflow: auto;
+	box-sizing: border-box;
+	padding: 10px 12px;
+	border: 1px solid var(--border);
+	border-radius: 7px;
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: 0 5px 22px var(--color-shadow);
+	font-size: 13px;
+}
+.app-shell.segment-study-shell .segment-prompt-feedback[hidden] {
+	display: none;
+}
+.app-shell.segment-study-shell .segment-prompt-feedback-line {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.app-shell.segment-study-shell .segment-prompt-feedback p {
+	margin: 0;
+}
+.app-shell.segment-study-shell .segment-prompt-feedback button {
+	flex: 0 0 auto;
+	min-height: 32px;
+	border: 0;
+	border-radius: 5px;
+	padding: 5px 9px;
+	background: var(--sidebar);
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+.app-shell.segment-study-shell .segment-prompt-feedback-line button {
+	background: transparent;
+}
+.app-shell.segment-study-shell .segment-prompt-feedback button:focus-visible,
+.app-shell.segment-study-shell .segment-prompt-feedback textarea:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+.app-shell.segment-study-shell .segment-prompt-fallback {
+	width: min(380px, calc(100vw - 32px));
+}
+.app-shell.segment-study-shell .segment-prompt-feedback textarea {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	height: min(240px, 35dvh);
+	margin: 10px 0;
+	padding: 8px;
+	border: 1px solid var(--border);
+	border-radius: 5px;
+	background: var(--surface);
+	color: inherit;
+	font: inherit;
+	resize: vertical;
+}
+.app-shell.segment-study-shell .segment-prompt-copy-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}

@@ -174,6 +174,10 @@ class SegmentResponse(BaseModel):
     revision: int
 
 
+class SegmentExplanationPromptResponse(BaseModel):
+    prompt: str
+
+
 class SegmentProvenanceMatches(BaseModel):
     segments: list[SegmentResponse]
     truncated: bool

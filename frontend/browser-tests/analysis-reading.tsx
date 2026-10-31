@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AnalysisDetail } from "../src/analysis/api";
 import type { components } from "../src/api/schema";
+import { explanationPromptCopy } from "./explanation-prompt-copy";
 import type { BrowserHarness } from "./harness";
 import "../src/segments/layout.css";
 
@@ -61,6 +62,7 @@ const historical: AnalysisDetail = {
 };
 
 export async function analysisReading(h: BrowserHarness) {
+	await explanationPromptCopy(h);
 	const { AnalysisPanel } = await import("../src/analysis/AnalysisPanel");
 	const { NewAnalysisActions } = await import(
 		"../src/segments/NewAnalysisActions"
@@ -167,6 +169,7 @@ export async function analysisReading(h: BrowserHarness) {
 						onEdit={(document) => edits.push(document)}
 						toolbarActions={
 							<NewAnalysisActions
+								segmentId={segmentId}
 								disabled={disabled}
 								onCreate={() => creates++}
 								onExplain={() => generates++}
@@ -235,14 +238,14 @@ export async function analysisReading(h: BrowserHarness) {
 				"New analysis must open a menu before choosing a creation method",
 			);
 			await until(
-				() => document.activeElement === button("自己编写"),
+				() => document.activeElement === button("编写或粘贴讲解"),
 				"Opening creation choices must focus the first reachable menu item",
 			);
 			check(
 				container.querySelector('.segment-create-menu[role="menu"]') &&
 					container.querySelectorAll('.segment-create-menu [role="menuitem"]')
-						.length === 2,
-				"The creation menu must expose both choices with keyboard menu semantics",
+						.length === 3,
+				"The creation menu must expose all choices with keyboard menu semantics",
 			);
 			check(
 				JSON.stringify([creates, generates, edits.length]) ===
@@ -258,7 +261,7 @@ export async function analysisReading(h: BrowserHarness) {
 			);
 		};
 		await open();
-		key(button("自己编写"), "Escape");
+		key(button("编写或粘贴讲解"), "Escape");
 		await until(
 			() =>
 				!container.querySelector(":popover-open") &&
@@ -316,7 +319,7 @@ export async function analysisReading(h: BrowserHarness) {
 			`Outside clicks must dismiss creation choices without stealing focus from the clicked target: ${JSON.stringify({ bounds: bounds.toJSON(), focus: document.activeElement?.getAttribute("data-outside-create"), hit: document.elementFromPoint(x, y)?.tagName, open: Boolean(container.querySelector(":popover-open")) })}`,
 		);
 		await open();
-		button("自己编写").click();
+		button("编写或粘贴讲解").click();
 		await until(
 			() =>
 				creates === before[0] + 1 &&
@@ -809,11 +812,11 @@ export async function analysisReading(h: BrowserHarness) {
 					),
 				].find((node) => node.textContent?.trim() === "创建 AI 讲解");
 				check(
-					generate && !generate.disabled && !button("自己编写").disabled,
+					generate && !generate.disabled && !button("编写或粘贴讲解").disabled,
 					"Available material must allow both manual writing and AI explanation",
 				);
-				button("自己编写").focus();
-				key(button("自己编写"), "ArrowDown");
+				button("编写或粘贴讲解").focus();
+				key(button("编写或粘贴讲解"), "ArrowDown");
 				check(
 					document.activeElement === generate,
 					"Keyboard navigation must reach the AI explanation option",
@@ -957,7 +960,7 @@ async function savedAnalysisFocus(h: BrowserHarness) {
 				() => !!container.querySelector(".segment-create-menu:popover-open"),
 				"Real Segment must open creation choices before editing",
 			);
-			action("自己编写").click();
+			action("编写或粘贴讲解").click();
 			await until(
 				() => !!container.querySelector(".analysis-editor-dialog[open] form"),
 				"Manual choice must open the real analysis editor",

@@ -447,6 +447,7 @@ export function SegmentDetail() {
 										}
 										toolbarActions={
 											<NewAnalysisActions
+												segmentId={current.id}
 												disabled={!segment.isSuccess}
 												onCreate={() =>
 													setAnalysisEditor({

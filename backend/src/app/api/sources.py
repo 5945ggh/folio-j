@@ -10,6 +10,7 @@ from app.provenance_schemas import MaterialProvenance, SegmentProvenanceResponse
 from app.schemas import (
     SegmentCreate,
     SegmentDeleteImpact,
+    SegmentExplanationPromptResponse,
     SegmentProvenanceMatches,
     SegmentResponse,
     SegmentUpdate,
@@ -18,7 +19,7 @@ from app.schemas import (
     SourceResponse,
     SourceUpdate,
 )
-from app.services import material_provenance
+from app.services import explanation_prompts, material_provenance
 from app.services import sources as service
 
 router = APIRouter(prefix="/api")
@@ -98,6 +99,17 @@ async def create_segment(source_id: str, data: SegmentCreate, session: Session) 
 @router.get("/segments/{segment_id}", response_model=SegmentResponse, operation_id="getSegment")
 async def get_segment(segment_id: str, session: Session) -> SegmentResponse:
     return await service.get_segment(session, segment_id)
+
+
+@router.get(
+    "/segments/{segment_id}/explanation-prompt",
+    response_model=SegmentExplanationPromptResponse,
+    operation_id="getSegmentExplanationPrompt",
+)
+async def get_segment_explanation_prompt(
+    segment_id: str, session: Session
+) -> SegmentExplanationPromptResponse:
+    return await explanation_prompts.for_segment(session, segment_id)
 
 
 @router.patch(

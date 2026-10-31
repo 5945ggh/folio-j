@@ -7,12 +7,19 @@ import {
 	useState,
 } from "react";
 
+import {
+	ExplanationPromptCopyFeedback,
+	useExplanationPromptCopy,
+} from "./ExplanationPromptCopy";
+
 /** Creation belongs to the collection; callers own the execution lifecycle. */
 export function NewAnalysisActions({
+	segmentId,
 	onCreate,
 	onExplain,
 	disabled,
 }: {
+	segmentId: string;
 	onCreate: () => void;
 	onExplain: () => void;
 	disabled: boolean;
@@ -22,6 +29,7 @@ export function NewAnalysisActions({
 	const trigger = useRef<HTMLButtonElement>(null);
 	const lastItemFirst = useRef(false);
 	const [open, setOpen] = useState(false);
+	const promptCopy = useExplanationPromptCopy(segmentId, disabled);
 	const positionMenu = useCallback(() => {
 		const element = menu.current;
 		const bounds = trigger.current?.getBoundingClientRect();
@@ -140,7 +148,7 @@ export function NewAnalysisActions({
 						onCreate();
 					}}
 				>
-					自己编写
+					编写或粘贴讲解
 				</button>
 				<button
 					className="button"
@@ -155,7 +163,26 @@ export function NewAnalysisActions({
 				>
 					创建 AI 讲解
 				</button>
+				<button
+					className="button"
+					type="button"
+					role="menuitem"
+					tabIndex={-1}
+					disabled={disabled}
+					onClick={() => {
+						closeMenu();
+						void promptCopy.copy();
+					}}
+				>
+					复制讲解提示词
+				</button>
 			</div>
+			<ExplanationPromptCopyFeedback
+				state={promptCopy.state}
+				onCopy={promptCopy.copy}
+				onDismiss={promptCopy.dismiss}
+				trigger={trigger}
+			/>
 		</div>
 	);
 }
