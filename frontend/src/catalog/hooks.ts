@@ -42,6 +42,8 @@ export function useCatalogState(kind: CatalogKind, scope: string, prefix = "") {
 			);
 		setParams(updateCatalogSearch(params.toString(), patch, prefix), {
 			replace: true,
+			// Search acknowledgements must not arrive after the next native input.
+			flushSync: "q" in patch,
 		});
 	}
 	return { state, change };

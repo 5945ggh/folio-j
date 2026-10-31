@@ -34,7 +34,7 @@ export function SourceForm({
 		onSave(fields);
 	}
 	return (
-		<form className={`editor-card ${className}`} onSubmit={submit}>
+		<form className={`source-form ${className}`} onSubmit={submit}>
 			<div className="form-grid">
 				<label className="field full">
 					<span>
@@ -130,7 +130,7 @@ export function SegmentForm({
 		onSave(fields);
 	}
 	return (
-		<form className="editor-card segment-data-form" onSubmit={submit}>
+		<form className="segment-data-form" onSubmit={submit}>
 			<fieldset className="segment-data-group">
 				<legend>原文与语境</legend>
 				<details

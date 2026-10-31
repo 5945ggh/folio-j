@@ -1,4 +1,5 @@
 import { type KeyboardEvent, type ReactNode, useId, useRef } from "react";
+import { SearchInput } from "./SearchInput";
 import { type CatalogKind, type CatalogState, sortFields } from "./state";
 
 const sortLabels = {
@@ -18,12 +19,14 @@ export function Tabs({
 	items,
 	value,
 	onChange,
+	className = "",
 }: {
 	id: string;
 	label: string;
 	items: readonly { value: string; label: string; disabled?: boolean }[];
 	value: string;
 	onChange: (value: string) => void;
+	className?: string;
 }) {
 	function keydown(event: KeyboardEvent<HTMLDivElement>) {
 		const enabled = items.filter((item) => !item.disabled);
@@ -46,29 +49,41 @@ export function Tabs({
 	}
 	return (
 		<div
-			className="catalog-tabs"
+			className={`catalog-tabs ${className}`}
 			role="tablist"
 			aria-label={label}
 			onKeyDown={keydown}
 		>
-			{items.map((item) => (
-				<button
-					key={item.value}
-					id={`${id}-tab-${item.value}`}
-					role="tab"
-					aria-selected={value === item.value}
-					aria-controls={
-						item.disabled ? undefined : `${id}-panel-${item.value}`
-					}
-					tabIndex={value === item.value ? 0 : -1}
-					type="button"
-					disabled={item.disabled}
-					title={item.disabled ? "暂未开放" : undefined}
-					onClick={() => onChange(item.value)}
-				>
-					{item.label}
-				</button>
-			))}
+			{items.map((item) => {
+				const hintId = `${id}-tab-${item.value}-hint`;
+				const button = (
+					<button
+						key={item.value}
+						id={`${id}-tab-${item.value}`}
+						role="tab"
+						aria-selected={value === item.value}
+						aria-controls={
+							item.disabled ? undefined : `${id}-panel-${item.value}`
+						}
+						aria-describedby={item.disabled ? hintId : undefined}
+						tabIndex={value === item.value ? 0 : -1}
+						type="button"
+						disabled={item.disabled}
+						onClick={() => onChange(item.value)}
+					>
+						{item.label}
+					</button>
+				);
+				if (!item.disabled) return button;
+				return (
+					<span className="catalog-tab-unavailable" key={item.value}>
+						{button}
+						<span id={hintId} className="catalog-tab-hint" role="tooltip">
+							{item.label}支持会有的！
+						</span>
+					</span>
+				);
+			})}
 		</div>
 	);
 }
@@ -92,6 +107,7 @@ export function CatalogToolbar({
 		: kind === "books"
 			? "搜索书名或 Source"
 			: "搜索当前列表";
+	const searchId = useId();
 	const sortId = useId();
 	const sortTrigger = useRef<HTMLButtonElement>(null);
 	const keyboardSort = useRef(false);
@@ -152,7 +168,7 @@ export function CatalogToolbar({
 		<div
 			className={`catalog-toolbar${sourceList ? " source-list-toolbar" : ""}`}
 		>
-			<label className="catalog-search">
+			<label className="catalog-search" htmlFor={searchId}>
 				<span className="sr-only">{searchLabel}</span>
 				{sourceList && (
 					<svg
@@ -167,13 +183,13 @@ export function CatalogToolbar({
 						<path d="M21 21l-5-5M19 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0" />
 					</svg>
 				)}
-				<input
-					type="search"
+				<SearchInput
+					id={searchId}
 					placeholder={
 						sourceList || kind === "books" ? `${searchLabel}…` : "搜索…"
 					}
 					value={state.q}
-					onChange={(e) => change({ q: e.target.value })}
+					onValueChange={(q) => change({ q })}
 				/>
 			</label>
 			{sources && (
@@ -242,7 +258,7 @@ export function CatalogToolbar({
 					<div
 						id={sortId}
 						popover="auto"
-						className="library-popover source-list-sort"
+						className="library-popover source-list-sort popover-motion"
 						role="dialog"
 						aria-label={`${listLabel}排序`}
 						onToggle={(event) => {

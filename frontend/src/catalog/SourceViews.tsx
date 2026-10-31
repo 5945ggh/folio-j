@@ -184,6 +184,7 @@ function SourceBooks({
 			{expanded && (
 				<ConfirmDialog
 					className="scoped-material-dialog"
+					animateEntrance={false}
 					titleId="source-books-title"
 					restoreFocusId="source-content-tab-materials"
 					onClose={close}
@@ -560,6 +561,7 @@ export function SourceContent({
 		<>
 			<Tabs
 				id="source-content"
+				className="source-content-tabs"
 				label="来源内容"
 				items={[
 					{ value: "overview", label: "概览" },

@@ -31,6 +31,7 @@
 }
 .library-tool-group {
 	display: flex;
+	flex: none;
 	gap: 3px;
 	padding: 2px 5px;
 	border-radius: 20px;
@@ -67,6 +68,7 @@
 	height: 20px;
 }
 .library-divider {
+	flex: none;
 	width: 1px;
 	height: 19px;
 	background: var(--color-border);
@@ -110,26 +112,6 @@
 	min-width: 0;
 	padding: 12px;
 	box-shadow: 0 6px 20px light-dark(#19223514, var(--color-shadow));
-	opacity: 0;
-	transform: translateY(4px);
-}
-.library-panel:popover-open {
-	opacity: 1;
-	transform: none;
-}
-@media (prefers-reduced-motion: no-preference) {
-	.library-panel {
-		transition-property: opacity, transform, display, overlay;
-		transition-duration: 130ms;
-		transition-timing-function: ease-out;
-		transition-behavior: allow-discrete;
-	}
-}
-@starting-style {
-	.library-panel:popover-open {
-		opacity: 0;
-		transform: translateY(4px);
-	}
 }
 .library-panel strong {
 	margin-bottom: 10px;
@@ -381,6 +363,9 @@
 	font-weight: 500;
 	line-height: 1.55;
 }
+.catalog-tab-unavailable > button:disabled {
+	pointer-events: none;
+}
 .app-shell.library-a1 .catalog-tabs button {
 	min-width: 64px;
 	height: 30px;
@@ -405,7 +390,48 @@
 }
 .app-shell.library-a1 .catalog-tabs button:disabled {
 	color: var(--color-text-disabled);
-	cursor: not-allowed;
+}
+.catalog-tab-unavailable {
+	position: relative;
+	display: inline-flex;
+	cursor: default;
+}
+.catalog-tab-hint {
+	position: absolute;
+	top: calc(100% + 8px);
+	left: 50%;
+	z-index: 30;
+	width: max-content;
+	padding: 6px 10px;
+	border: 1px solid var(--color-border);
+	border-radius: 6px;
+	background: var(--color-surface-raised);
+	color: var(--color-text);
+	box-shadow: 0 4px 12px var(--color-shadow);
+	font-size: 11px;
+	font-weight: 400;
+	line-height: 1.6;
+	white-space: nowrap;
+	transform: translateX(-50%);
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+}
+.catalog-tab-unavailable:last-child > .catalog-tab-hint {
+	left: auto;
+	right: 0;
+	transform: none;
+}
+@media (hover: hover) {
+	.catalog-tab-unavailable:hover > .catalog-tab-hint {
+		opacity: 1;
+		visibility: visible;
+	}
+}
+@media (prefers-reduced-motion: no-preference) {
+	.catalog-tab-hint {
+		transition: opacity 100ms ease-out;
+	}
 }
 @media (max-width: 720px) {
 	.app-shell.library-a1 > .page-content {

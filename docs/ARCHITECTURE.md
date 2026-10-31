@@ -653,6 +653,8 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 
 `catalog/state.ts` 集中 Source 内容视图的默认排序解析、窗口展开／关闭及参数清理，并返回对应的 push／replace 选择。`useSourceContentLocation` 只负责 Router 与偏好读取适配；页面不再各自维护清理字段。来源栏查询保持独立，窗口返回保留内容筛选，显式 URL 排序优先于存储偏好；旧入口和 `expanded=book` 链接继续兼容。
 
+目录搜索共用 `catalog/SearchInput.tsx` 和 `catalog/search-draft.ts`：前者同步呈现本地草稿，后者管理组合状态、最终文本提交及去重，外部查询或路由变化重置草稿。组合结束读取输入框完整值，避免把组合事件的局部 `data` 当作查询。当前目录路由不依赖 Router loader，`useCatalogState` 对包含 `q` 的参数写入启用 `flushSync`，让 URL 回显在下一次输入前完成；应用与浏览器回归使用 `react-router/dom` 的 `RouterProvider` 提供同步更新实现。
+
 页面、路由、返回路径及 URL 状态由[阅读与导航](INFORMATION_ARCHITECTURE.md)维护，实际路由注册见[`App.tsx`](../frontend/src/App.tsx)。Occurrence 积累库与材料对话入口仍待各自切片；诊断入口按 PRD F8 确定。
 
 当前前端按页面及 `catalog`／`materials`／`chat`／`analysis`／`settings` 模块组织。API 类型在 `api/schema.d.ts` 生成，各模块 `api.ts` 封装调用，TanStack Query 维护查询与 mutation；讨论推进见 `chat/discussion.ts`，阅读位置队列见 `materials/persistence.ts`。后台状态由轮询读取。

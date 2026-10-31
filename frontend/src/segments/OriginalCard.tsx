@@ -114,6 +114,7 @@ export function OriginalCard({
 					<ConfirmDialog
 						titleId={titleId}
 						className="segment-material-dialog"
+						animateEntrance={false}
 						restoreFocusId="segment-original-trigger"
 						onClose={close}
 					>

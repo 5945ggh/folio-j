@@ -34,7 +34,7 @@ export function SegmentMenu({
 				popover="auto"
 				role="menu"
 				aria-label="片段更多操作"
-				className="library-popover segment-list-menu"
+				className="library-popover segment-list-menu popover-motion"
 				onToggle={(event) => {
 					setOpen(event.newState === "open");
 					if (event.newState !== "open") return;

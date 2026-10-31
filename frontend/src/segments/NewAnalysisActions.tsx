@@ -91,7 +91,7 @@ export function NewAnalysisActions({
 				ref={menu}
 				id={menuId}
 				popover="auto"
-				className="segment-create-menu"
+				className="segment-create-menu popover-motion"
 				role="menu"
 				aria-label="新建讲解"
 				onToggle={(event) => {

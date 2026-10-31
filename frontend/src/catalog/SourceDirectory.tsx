@@ -6,6 +6,7 @@ import { catalogKeys, catalogSources, type SourceQuery } from "./api";
 import { Pagination } from "./Controls";
 import { useCatalogScroll, useCatalogState } from "./hooks";
 import { Icon, Tool } from "./LibraryTools";
+import { SearchInput } from "./SearchInput";
 import { lastCatalogPage, sourceOverviewDestination } from "./state";
 
 export function SourceDirectory({
@@ -104,15 +105,14 @@ export function SourceDirectory({
 				</div>
 			</header>
 			{searching && (
-				<div className="s2-source-search">
-					<input
+				<div className="s2-source-search enter-motion">
+					<SearchInput
 						ref={search}
 						id={searchId}
 						aria-label="搜索来源名称或描述"
-						type="search"
 						placeholder="搜索来源…"
 						value={state.q}
-						onChange={(e) => change({ q: e.target.value })}
+						onValueChange={(q) => change({ q })}
 						onKeyDown={(event) => {
 							if (event.key !== "Escape" || event.nativeEvent.isComposing) {
 								return;

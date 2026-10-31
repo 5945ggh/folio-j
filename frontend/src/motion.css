@@ -1,0 +1,48 @@
+/* Shared motion only; each search field, popover and dialog keeps its own layout. */
+.popover-motion {
+	opacity: 0;
+	transform: translateY(4px);
+	pointer-events: none;
+}
+.popover-motion:popover-open {
+	opacity: 1;
+	transform: none;
+	pointer-events: auto;
+}
+@media (prefers-reduced-motion: no-preference) {
+	.popover-motion {
+		transition-property: opacity, transform, display, overlay;
+		transition-duration: 130ms;
+		transition-timing-function: ease-out;
+		transition-behavior: allow-discrete;
+	}
+	/* Mounted search fields enter without animating their layout dimensions. */
+	.enter-motion {
+		transition:
+			opacity 130ms ease-out,
+			transform 130ms ease-out;
+	}
+	/* Independent translate preserves a dialog's existing transform placement. */
+	.dialog-enter-motion[open] {
+		transition:
+			opacity 130ms ease-out,
+			translate 130ms ease-out;
+	}
+	.dialog-enter-motion[open]::backdrop {
+		transition: opacity 130ms ease-out;
+	}
+	@starting-style {
+		.enter-motion,
+		.popover-motion:popover-open {
+			opacity: 0;
+			transform: translateY(4px);
+		}
+		.dialog-enter-motion[open] {
+			opacity: 0;
+			translate: 0 4px;
+		}
+		.dialog-enter-motion[open]::backdrop {
+			opacity: 0;
+		}
+	}
+}

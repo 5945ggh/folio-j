@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { statusLabels, Tabs } from "./Controls";
+import { SearchInput } from "./SearchInput";
 import type { CatalogState } from "./state";
 export function Icon({
 	name,
@@ -66,7 +67,7 @@ export function Tool({
 			<div
 				id={id}
 				popover="auto"
-				className="library-popover library-panel"
+				className="library-popover library-panel popover-motion"
 				role="dialog"
 				aria-label={label}
 				onToggle={(event) => {
@@ -129,15 +130,14 @@ export function LibraryTools({
 				/>
 				<div className="library-tools">
 					{searching && (
-						<input
+						<SearchInput
 							id="library-search"
 							ref={search}
-							type="search"
-							className="library-search-input"
+							className="library-search-input enter-motion"
 							aria-label="搜索书名或来源"
 							placeholder="搜索书名或来源…"
 							value={state.q}
-							onChange={(e) => change({ q: e.target.value })}
+							onValueChange={(q) => change({ q })}
 							onKeyDown={(event) => {
 								if (event.key === "Escape" && !event.nativeEvent.isComposing) {
 									setSearching(false);

@@ -278,14 +278,56 @@
 		gap: 10px;
 	}
 }
-.sources-s2 .source-detail-content > .catalog-tabs {
-	display: inline-flex;
+.sources-s2 .source-detail-content > .source-content-tabs {
+	--source-tab-index: 0;
+	--source-tab-gap: 2px;
+	--source-tab-padding: 3px;
+	position: relative;
+	isolation: isolate;
+	display: inline-grid;
+	grid-template-columns: repeat(4, minmax(64px, 1fr));
 	border: 0;
-	gap: 2px;
-	padding: 3px;
+	gap: var(--source-tab-gap);
+	padding: var(--source-tab-padding);
 	border-radius: 8px;
 	background: var(--color-surface-muted);
 	margin-bottom: 20px;
+}
+.source-content-tabs::before {
+	content: "";
+	position: absolute;
+	z-index: 0;
+	top: var(--source-tab-padding);
+	bottom: var(--source-tab-padding);
+	left: var(--source-tab-padding);
+	width: calc(
+		(100% - 2 * var(--source-tab-padding) - 3 * var(--source-tab-gap)) /
+		4
+	);
+	border-radius: 5px;
+	background: var(--color-surface);
+	box-shadow: 0 1px 3px light-dark(#1820331c, var(--color-shadow));
+	transform: translateX(
+		calc(var(--source-tab-index) * (100% + var(--source-tab-gap)))
+	);
+	pointer-events: none;
+}
+.source-content-tabs > button {
+	position: relative;
+	z-index: 1;
+}
+.app-shell.sources-s2 .source-content-tabs > button[aria-selected="true"] {
+	background: transparent;
+	box-shadow: none;
+}
+.source-content-tabs:has(> [role="tab"]:nth-child(2)[aria-selected="true"]) {
+	--source-tab-index: 1;
+}
+.source-content-tabs:has(> [role="tab"]:nth-child(3)[aria-selected="true"]) {
+	--source-tab-index: 2;
+}
+.source-content-tabs:has(> [role="tab"]:nth-child(4)[aria-selected="true"]) {
+	--source-tab-index: 3;
 }
 .sources-s2 .source-view-panel {
 	border-top: 1px solid var(--color-border);
@@ -293,6 +335,22 @@
 }
 .sources-s2 .source-view-panel[hidden] {
 	display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+	.source-content-tabs::before {
+		transition: transform 180ms ease-out;
+	}
+	.sources-s2 .source-view-panel:not([hidden]) {
+		animation: source-view-enter 150ms ease-out;
+	}
+}
+@keyframes source-view-enter {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 .s2-directory .pagination-count {
 	flex-basis: 100%;

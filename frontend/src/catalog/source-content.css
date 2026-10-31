@@ -565,11 +565,11 @@
 .segment-origin-label:has(.segment-origin-chapter) .segment-origin-title {
 	min-width: 3em;
 	max-width: 40%;
-	flex: 0 1 30%;
+	flex: 0 1 auto;
 }
 .segment-origin-chapter {
 	min-width: 3em;
-	flex: 1 1 0;
+	flex: 0 1 auto;
 }
 .segment-origin-supplement {
 	min-width: 1.8em;

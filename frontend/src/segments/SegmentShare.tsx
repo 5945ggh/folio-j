@@ -149,7 +149,7 @@ export function SegmentShare({
 				id={id}
 				aria-labelledby={`${id}-title`}
 				aria-describedby={`${id}-description`}
-				className="segment-share-dialog"
+				className="segment-share-dialog dialog-enter-motion"
 				onKeyDown={(event) => {
 					if (event.key === "Escape") {
 						event.preventDefault();

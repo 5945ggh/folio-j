@@ -103,6 +103,7 @@ function SourceFrame({ children }: { children: ReactNode }) {
 				<ConfirmDialog
 					titleId="source-drawer-title"
 					className="s2-source-drawer"
+					animateEntrance={false}
 					onClose={() => setDrawer(false)}
 					restoreFocusId="source-drawer-trigger"
 				>
@@ -437,7 +438,7 @@ export function SourceDetail() {
 						<div
 							id={menuId}
 							ref={menu}
-							className="library-popover s2-source-menu"
+							className="library-popover s2-source-menu popover-motion"
 							role="menu"
 							popover="auto"
 							onToggle={(e) => {

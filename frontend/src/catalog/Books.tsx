@@ -161,7 +161,7 @@ export function BookCard({
 						setMenuPage("main");
 					}
 				}}
-				className="library-popover book-menu"
+				className="library-popover book-menu popover-motion"
 				role="menu"
 				aria-label={
 					menuPage === "status" ? "阅读状态" : `「${book.title}」的更多操作`

@@ -129,7 +129,7 @@ function ComposerSetting({
 				popover="auto"
 				role="dialog"
 				aria-label={panelLabel}
-				className="chat-setting-popover"
+				className="chat-setting-popover popover-motion"
 				onToggle={(event) => {
 					if (event.newState !== "open" || !panel.current) return;
 					const bounds = trigger.current?.getBoundingClientRect();

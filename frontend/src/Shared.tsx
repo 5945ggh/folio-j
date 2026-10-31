@@ -173,6 +173,7 @@ export function Shell({
 			{drawer && (
 				<ConfirmDialog
 					className="navigation-drawer"
+					animateEntrance={false}
 					titleId="navigation-title"
 					onClose={() => setDrawer(false)}
 				>
@@ -243,10 +244,12 @@ export function ConfirmDialog({
 	children,
 	className = "",
 	restoreFocusId,
+	animateEntrance = true,
 }: {
 	titleId: string;
 	className?: string;
 	restoreFocusId?: string;
+	animateEntrance?: boolean;
 	onClose: () => void;
 	children: ReactNode;
 }) {
@@ -270,7 +273,7 @@ export function ConfirmDialog({
 	return (
 		<dialog
 			ref={dialog}
-			className={`confirm-card ${className}`}
+			className={`confirm-card ${animateEntrance ? "dialog-enter-motion" : ""} ${className}`}
 			aria-labelledby={titleId}
 			onKeyDown={(event) => {
 				if (event.key !== "Tab") return;

@@ -460,7 +460,7 @@ function DocumentActions({
 				ref={menu}
 				id={menuId}
 				popover="auto"
-				className="analysis-document-menu"
+				className="analysis-document-menu popover-motion"
 				role="menu"
 				aria-label={`「${document.title}」的更多操作`}
 				onToggle={(event) => {

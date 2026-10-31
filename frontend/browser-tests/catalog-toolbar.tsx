@@ -128,6 +128,11 @@ export async function catalogToolbarRegression(
 			"Catalog must load",
 		);
 		layout();
+		for (const hint of container.querySelectorAll<HTMLElement>(
+			".catalog-tab-hint",
+		)) {
+			inViewport(hint, "Unavailable media hint");
+		}
 		const searchButton = action("搜索书名或来源");
 		searchButton.click();
 		await until(
@@ -138,6 +143,69 @@ export async function catalogToolbarRegression(
 		await until(
 			() => document.activeElement === search,
 			"Expanded search must receive focus",
+		);
+		for (const value of ["a", "ab", "abc"]) {
+			inputValue(search, value);
+			check(
+				search.value === value,
+				"Search must preserve each keystroke before URL navigation settles",
+			);
+		}
+		await queryValue("q", "abc");
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+		);
+		const beforeComposition = requests.length;
+		search.dispatchEvent(
+			new CompositionEvent("compositionstart", { bubbles: true }),
+		);
+		for (const value of ["z", "zhong", "zhongwen"]) {
+			inputValue(search, value);
+			check(search.value === value, "Search must retain the IME draft");
+		}
+		search.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "Escape",
+				bubbles: true,
+				cancelable: true,
+				isComposing: false,
+			}),
+		);
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+		);
+		check(
+			container.querySelector("#library-search") === search &&
+				document.activeElement === search &&
+				String(search.value) === "zhongwen",
+			"Escape during composition must preserve the search field, focus and IME draft",
+		);
+		check(
+			requests.length === beforeComposition,
+			"IME drafts must not trigger catalog requests",
+		);
+		const setter = Object.getOwnPropertyDescriptor(
+			HTMLInputElement.prototype,
+			"value",
+		)?.set;
+		check(setter, "Search must expose the native input value setter");
+		setter.call(search, "中文");
+		search.dispatchEvent(
+			new CompositionEvent("compositionend", { bubbles: true, data: "文" }),
+		);
+		await queryValue("q", "中文");
+		inputValue(search, "中文");
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+		);
+		check(
+			requests.filter((url) => url.searchParams.get("q") === "中文").length ===
+				1,
+			"Composition end and its follow-up input must submit the final DOM value once",
+		);
+		check(
+			document.activeElement === search && search.value === "中文",
+			"Committed IME search must preserve its value and focus",
 		);
 		layout();
 		inViewport(search, "Expanded search field");
@@ -211,7 +279,7 @@ export async function catalogToolbarRegression(
 			);
 			layout();
 		}
-		return `catalog toolbar: search expansion, viewport geometry, pointer reachability, mocked search/filter/sort, card width, add import and Escape focus verified at ${innerWidth}px`;
+		return `catalog toolbar: search expansion, immediate typing, IME commit and Escape protection, viewport geometry, pointer reachability, mocked search/filter/sort, card width, add import and Escape focus verified at ${innerWidth}px`;
 	} finally {
 		if (!preview) dispose();
 	}
