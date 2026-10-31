@@ -37,6 +37,11 @@ const BookDetailsPage = lazy(() =>
 		default: page.BookDetailsPage,
 	})),
 );
+const MaterialVocabularyPage = lazy(() =>
+	import("./catalog/MaterialVocabularyPage").then((page) => ({
+		default: page.MaterialVocabularyPage,
+	})),
+);
 
 function SourceRoute() {
 	const { id } = useParams();
@@ -73,6 +78,10 @@ export const appRoutes = createRoutesFromElements(
 		<Route path="/sources" element={<SourceIndex />} />
 		<Route path="/sources/:id" element={<SourceRoute />} />
 		<Route path="/materials/:id/details" element={<BookDetailsPage />} />
+		<Route
+			path="/materials/:id/vocabulary"
+			element={<MaterialVocabularyPage />}
+		/>
 		<Route path="/materials/:id" element={null} />
 		<Route path="/segments/:id" element={<SegmentRoute />} />
 		<Route path="/settings" element={<SettingsPage />} />

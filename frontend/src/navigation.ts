@@ -62,6 +62,7 @@ const MAX_RETURN_INSPECTIONS = 12;
 const CATALOG_ROUTE = /^\/(?:materials|sources(?:\/[A-Za-z0-9_-]+)?)$/;
 const DETAILS_ROUTE = /^\/materials\/[A-Za-z0-9_-]+\/details$/;
 const LEARNING_ROUTE = /^\/(?:materials|segments)\/[A-Za-z0-9_-]+$/;
+const VOCABULARY_ROUTE = /^\/materials\/[A-Za-z0-9_-]+\/vocabulary$/;
 
 function returnValue(value: unknown): {
 	target: ReturnTarget;
@@ -91,7 +92,7 @@ function returnValue(value: unknown): {
 	const url = new URL(to, "https://folio.invalid");
 	if (
 		url.origin !== "https://folio.invalid" ||
-		!/^\/(?:sources(?:\/[A-Za-z0-9_-]+)?|materials(?:\/[A-Za-z0-9_-]+(?:\/details)?)?|segments\/[A-Za-z0-9_-]+|settings)?$/.test(
+		!/^\/(?:sources(?:\/[A-Za-z0-9_-]+)?|materials(?:\/[A-Za-z0-9_-]+(?:\/(?:details|vocabulary))?)?|segments\/[A-Za-z0-9_-]+|settings)?$/.test(
 			url.pathname,
 		)
 	)
@@ -138,7 +139,9 @@ function returnTrail(
 		if (remaining === 1) return target;
 		if (
 			!hasParent ||
-			(!DETAILS_ROUTE.test(pathname) && !LEARNING_ROUTE.test(pathname))
+			(!DETAILS_ROUTE.test(pathname) &&
+				!LEARNING_ROUTE.test(pathname) &&
+				!VOCABULARY_ROUTE.test(pathname))
 		)
 			return target;
 		const parentValue = returnValue(parent);
@@ -148,7 +151,8 @@ function returnTrail(
 			!parentValue ||
 			(!CATALOG_ROUTE.test(parentValue.pathname) &&
 				!DETAILS_ROUTE.test(parentValue.pathname) &&
-				!LEARNING_ROUTE.test(parentValue.pathname))
+				!LEARNING_ROUTE.test(parentValue.pathname) &&
+				!VOCABULARY_ROUTE.test(parentValue.pathname))
 		)
 			return target;
 		const cleanParent = visit(parent, remaining - 1);

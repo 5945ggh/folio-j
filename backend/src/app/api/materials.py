@@ -18,14 +18,26 @@ from app.material_schemas import (
 )
 from app.material_segment_schemas import MaterialChapterSegmentsResponse
 from app.metadata_schemas import MaterialDetailsResponse, MaterialMetadataUpdate
+from app.nlp.vocabulary import VocabularySort
 from app.readings_schemas import (
     MaterialReadingsPrepare,
     MaterialReadingsResponse,
     MaterialReadingsSummary,
 )
-from app.services import material_metadata, material_segments, reader_queries, readings, statistics
+from app.services import (
+    material_metadata,
+    material_segments,
+    reader_queries,
+    readings,
+    statistics,
+    vocabulary,
+)
 from app.services import materials as service
 from app.statistics_schemas import MaterialStatisticsResponse
+from app.vocabulary_schemas import (
+    MaterialVocabularyOccurrencesResponse,
+    MaterialVocabularyResponse,
+)
 
 router = APIRouter(prefix="/api")
 Session = Annotated[AsyncSession, Depends(get_session)]
@@ -88,6 +100,64 @@ async def get_statistics(
         material_id,
         version_id,
         generation_id,
+    )
+
+
+@router.get(
+    "/materials/{material_id}/vocabulary",
+    response_model=MaterialVocabularyResponse,
+    operation_id="getMaterialVocabulary",
+)
+async def get_vocabulary(
+    material_id: str,
+    version_id: str,
+    request: Request,
+    generation_id: str | None = None,
+    q: Annotated[str, Query(max_length=160)] = "",
+    pos: Annotated[str | None, Query(min_length=1, max_length=80)] = None,
+    sort: VocabularySort = "frequency_desc",
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 40,
+) -> MaterialVocabularyResponse:
+    return await vocabulary.get_vocabulary(
+        request.app.state.session_factory,
+        request.app.state.statistics_runtime,
+        material_id,
+        version_id,
+        generation_id,
+        query=q,
+        pos=pos,
+        sort=sort,
+        offset=offset,
+        limit=limit,
+    )
+
+
+@router.get(
+    "/materials/{material_id}/vocabulary/occurrences",
+    response_model=MaterialVocabularyOccurrencesResponse,
+    operation_id="getMaterialVocabularyOccurrences",
+)
+async def get_vocabulary_occurrences(
+    material_id: str,
+    version_id: str,
+    generation_id: str,
+    word: Annotated[str, Query(min_length=1, max_length=4096)],
+    request: Request,
+    pos: Annotated[str | None, Query(min_length=1, max_length=80)] = None,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 40,
+) -> MaterialVocabularyOccurrencesResponse:
+    return await vocabulary.get_occurrences(
+        request.app.state.session_factory,
+        request.app.state.statistics_runtime,
+        material_id,
+        version_id,
+        generation_id,
+        word,
+        pos=pos,
+        offset=offset,
+        limit=limit,
     )
 
 

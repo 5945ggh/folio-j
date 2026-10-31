@@ -19,6 +19,7 @@ import { catalogToolbarRegression } from "./catalog-toolbar";
 import { chapterRecords } from "./chapter-records";
 import { explanationRegression } from "./explanation";
 import { materialImport } from "./material-import";
+import { materialVocabulary } from "./material-vocabulary";
 import { navigationFeedback } from "./navigation-feedback";
 import { positionBookmarks } from "./position-bookmarks";
 import { readerBookmarks } from "./reader-bookmarks";
@@ -413,6 +414,7 @@ async function clearStudyContext() {
 try {
 	const suite = new URLSearchParams(location.search).get("suite");
 	const standalone = new Map([
+		["material-vocabulary", materialVocabulary],
 		["settings-models", settingsModels],
 		["app-theme", appTheme],
 		["reader-images", readerImages],

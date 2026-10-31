@@ -3,11 +3,16 @@
 import hashlib
 import unicodedata
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.nlp.contracts import DecodedReadings, MaterialResourceReadings, TextResource
+from app.nlp.contracts import (
+    DecodedReadings,
+    MaterialReadingToken,
+    MaterialResourceReadings,
+    TextResource,
+)
 
 TEXT_RULE_VERSION = "text-statistics-v1"
 LEXICAL_RULE_VERSION = "lexical-statistics-v1"
@@ -71,12 +76,14 @@ def compute_text(inputs: Sequence[TextResource]) -> TextStatistics:
     )
 
 
-def compute_lexical(inputs: Sequence[TextResource], decoded: DecodedReadings) -> LexicalStatistics:
+def counted_tokens(
+    inputs: Sequence[TextResource], decoded: DecodedReadings
+) -> Iterator[tuple[TextResource, MaterialReadingToken, str]]:
+    """Validate and yield unique-resource tokens under the shared lexical rules."""
     _unique_sources(inputs)
     if len(inputs) != len(decoded.resources):
         raise ValueError("统计分析资源数量与正文不一致")
     seen: dict[str, MaterialResourceReadings] = {}
-    frequencies: Counter[str] = Counter()
     for source, resource in zip(inputs, decoded.resources, strict=True):
         if source.resource_id != resource.resource_id or source.text_sha256 != resource.text_sha256:
             raise ValueError("统计分析资源身份或正文摘要不一致")
@@ -112,9 +119,13 @@ def compute_lexical(inputs: Sequence[TextResource], decoded: DecodedReadings) ->
                 if not form or not form.strip() or form.strip() in DICTIONARY_FORM_PLACEHOLDERS
                 else form
             )
-            frequencies[key] += 1
+            yield source, token, key
         if source.text[previous:].strip():
             raise ValueError("统计分析遗漏原文结尾")
+
+
+def compute_lexical(inputs: Sequence[TextResource], decoded: DecodedReadings) -> LexicalStatistics:
+    frequencies = Counter(key for _, _, key in counted_tokens(inputs, decoded))
     total = frequencies.total()
     distinct = len(frequencies)
     singleton = sum(count == 1 for count in frequencies.values())

@@ -62,7 +62,7 @@ class StatisticsInput:
         )
 
 
-async def _identity(
+async def resolve_input(
     factory: SessionFactory, material_id: str, version_id: str, generation_id: str | None
 ) -> StatisticsInput:
     async with factory() as session:
@@ -109,7 +109,7 @@ async def _identity(
         )
 
 
-async def _bundle(factory: SessionFactory, identity: StatisticsInput) -> bytes:
+async def load_bundle(factory: SessionFactory, identity: StatisticsInput) -> bytes:
     async with factory() as session:
         result = await session.scalar(
             select(Material.compiled_bundle)
@@ -142,15 +142,14 @@ def _lexical_result(bundle: bytes, payload: bytes, configuration: str) -> bytes:
 
 
 async def _text(factory: SessionFactory, identity: StatisticsInput) -> bytes:
-    bundle = await _bundle(factory, identity)
+    bundle = await load_bundle(factory, identity)
     try:
         return await asyncio.to_thread(_text_result, bundle)
     except ValueError as exc:
         raise HTTPException(503, "正文统计失败，请重试") from exc
 
 
-async def _lexical(factory: SessionFactory, identity: StatisticsInput) -> bytes:
-    bundle = await _bundle(factory, identity)
+async def load_payload(factory: SessionFactory, identity: StatisticsInput) -> bytes:
     async with factory() as session:
         payload = await session.scalar(
             select(MaterialReadingsGeneration.payload).where(
@@ -163,6 +162,23 @@ async def _lexical(factory: SessionFactory, identity: StatisticsInput) -> bytes:
         )
         if payload is None:
             raise HTTPException(404, "分词代次不存在")
+        return payload
+
+
+async def verify_input(factory: SessionFactory, identity: StatisticsInput) -> None:
+    """Recheck visibility and exact immutable input after cached or slow reads."""
+    observed = await resolve_input(
+        factory, identity.material_id, identity.version_id, identity.generation_id
+    )
+    if observed.product_sha256 != identity.product_sha256:
+        raise HTTPException(409, "材料内容已改变")
+    if identity.generation_id is not None and observed != identity:
+        raise HTTPException(409, "分词资产已改变")
+
+
+async def _lexical(factory: SessionFactory, identity: StatisticsInput) -> bytes:
+    bundle = await load_bundle(factory, identity)
+    payload = await load_payload(factory, identity)
     assert identity.configuration is not None
     try:
         return await asyncio.to_thread(_lexical_result, bundle, payload, identity.configuration)
@@ -177,7 +193,7 @@ async def get_statistics(
     version_id: str,
     generation_id: str | None = None,
 ) -> MaterialStatisticsResponse:
-    identity = await _identity(factory, material_id, version_id, generation_id)
+    identity = await resolve_input(factory, material_id, version_id, generation_id)
     text = await runtime.get(identity.text_key(), lambda: _text(factory, identity))
     lexical = (
         await runtime.get(identity.lexical_key(), lambda: _lexical(factory, identity))
@@ -185,9 +201,7 @@ async def get_statistics(
         else None
     )
     # A new session observes Source deletion after cache hits or slow worker work.
-    observed = await _identity(factory, material_id, version_id, identity.generation_id)
-    if observed.product_sha256 != identity.product_sha256:
-        raise HTTPException(409, "材料内容已改变")
+    await verify_input(factory, identity)
     return MaterialStatisticsResponse(
         material_id=material_id,
         version_id=version_id,

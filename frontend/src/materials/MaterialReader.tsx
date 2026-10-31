@@ -18,6 +18,7 @@ import {
 	useParams,
 } from "react-router";
 import { Icon as CatalogIcon } from "../catalog/LibraryTools";
+import { refreshMaterialAnalysis } from "../catalog/statistics-query";
 import { getSource, queries, RequestError, type Segment } from "../content";
 import {
 	type ReturnDestination,
@@ -177,6 +178,12 @@ import {
 	readingViewport,
 	viewportSize,
 } from "./viewport";
+import {
+	readVocabularyReaderTarget,
+	type VocabularyReaderTarget,
+	validateVocabularyReaderTarget,
+	vocabularyReaderPosition,
+} from "./vocabulary-navigation";
 
 const defaults: Settings = DEFAULT_READING_SETTINGS;
 type ReaderPositionWriter = {
@@ -194,6 +201,7 @@ function Reader({
 	notice,
 	readingsSummary,
 	initialOrigin,
+	initialVocabulary,
 	sessionToken,
 	discard,
 	positionWriter,
@@ -210,6 +218,7 @@ function Reader({
 	copyEditRequest: number;
 	onThemeChange: (theme: "white" | "black") => void;
 	initialOrigin: SegmentProvenance | null;
+	initialVocabulary: VocabularyReaderTarget | null;
 	readingsSummary: ReadingsSummary;
 	notice: "imported" | "reused" | null;
 }) {
@@ -231,9 +240,17 @@ function Reader({
 	const translationSessions = useTranslationSessions();
 	const readingGeneration = readingsSummary.generation_id;
 	const navigate = useNavigate();
-	const initialAnchor = initialOrigin
-		? originPosition(initialOrigin, book.reading_position?.settings ?? defaults)
-		: book.reading_position;
+	const initialAnchor = initialVocabulary
+		? vocabularyReaderPosition(
+				initialVocabulary,
+				book.reading_position?.settings ?? defaults,
+			)
+		: initialOrigin
+			? originPosition(
+					initialOrigin,
+					book.reading_position?.settings ?? defaults,
+				)
+			: book.reading_position;
 	const [studyTarget, setStudyTarget] = useState<StudyTarget | null>(null);
 	const [selectionError, setSelectionError] = useState<Error | null>(null);
 	const [originError, setOriginError] = useState<Error | null>(null);
@@ -440,21 +457,28 @@ function Reader({
 		viewerEscape.current = close;
 	}, []);
 	const pendingOrigin = useRef<SegmentProvenance | null>(null);
+	const pendingVocabulary = useRef<VocabularyReaderTarget | null>(null);
 	const highlight = useRef<{
 		chapterId: string;
 		ranges: ReaderHighlightRange[];
 		kind: "study" | "search";
 	} | null>(
-		initialOrigin?.material_provenance && initialOrigin.chapter_id
+		initialVocabulary
 			? {
-					kind: "study",
-					chapterId: initialOrigin.chapter_id,
-					ranges: initialOrigin.material_provenance.ranges,
+					kind: "search",
+					chapterId: initialVocabulary.chapter_id,
+					ranges: [initialVocabulary],
 				}
-			: null,
+			: initialOrigin?.material_provenance && initialOrigin.chapter_id
+				? {
+						kind: "study",
+						chapterId: initialOrigin.chapter_id,
+						ranges: initialOrigin.material_provenance.ranges,
+					}
+				: null,
 	);
 	const navigationHighlight = useRef<NavigationHighlightLifetime | null>(null);
-	if (!navigationHighlight.current)
+	if (!navigationHighlight.current) {
 		navigationHighlight.current = new NavigationHighlightLifetime(
 			() => {
 				if (highlight.current?.kind === "search") highlight.current = null;
@@ -463,7 +487,11 @@ function Reader({
 			undefined,
 			{ opacity: (value) => frames.current.setSearchHighlightOpacity(value) },
 		);
+	}
 	useEffect(() => () => navigationHighlight.current?.dispose(), []);
+	useEffect(() => {
+		if (initialVocabulary) navigationHighlight.current?.replace();
+	}, [initialVocabulary]);
 	const latest = useRef({
 		panels,
 		chapterId,
@@ -1610,6 +1638,14 @@ function Reader({
 					};
 					pendingOrigin.current = null;
 				}
+				if (pendingVocabulary.current?.chapter_id === target.chapter_id) {
+					highlight.current = {
+						kind: "search",
+						chapterId: target.chapter_id,
+						ranges: [pendingVocabulary.current],
+					};
+					pendingVocabulary.current = null;
+				}
 				if (highlight.current?.kind === "search")
 					navigationHighlight.current?.replace();
 				else navigationHighlight.current?.clear(true);
@@ -1909,13 +1945,25 @@ function Reader({
 	useEffect(() => {
 		if (!active || previousSession.current === sessionToken) return;
 		previousSession.current = sessionToken;
+		if (initialVocabulary) {
+			pendingVocabulary.current = initialVocabulary;
+			void navigation.current.navigate({
+				type: "position",
+				target: vocabularyReaderPosition(
+					initialVocabulary,
+					latest.current.settings,
+				),
+				mark: { start: initialVocabulary.start, end: initialVocabulary.end },
+			});
+			return;
+		}
 		if (!initialOrigin) return;
 		pendingOrigin.current = initialOrigin;
 		void navigation.current.navigate({
 			type: "position",
 			target: originPosition(initialOrigin, latest.current.settings),
 		});
-	}, [active, sessionToken, initialOrigin]);
+	}, [active, sessionToken, initialOrigin, initialVocabulary]);
 
 	const backToTranslationOrigin = (result: TranslationResult) => {
 		closeMarkHit();
@@ -2889,6 +2937,7 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 		book: Material;
 		summary: ReadingsSummary;
 		origin: SegmentProvenance | null;
+		vocabulary: VocabularyReaderTarget | null;
 		token: string;
 		serial: number;
 		activation: number;
@@ -2938,6 +2987,7 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 		setFailure(null);
 		setValidated(null);
 		void (async () => {
+			const vocabulary = readVocabularyReaderTarget(location.search);
 			await waitForPositionWrites(id);
 			if (!current) return;
 			const bookKey = materialKeys.book(id);
@@ -2976,10 +3026,31 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 					throw new Error("出处绑定的材料版本不可用，不能套用到当前版本。");
 				originPosition(origin, defaults);
 			}
+			if (vocabulary) {
+				if (
+					vocabulary.material_id !== id ||
+					vocabulary.version_id !== book.version_id
+				)
+					throw new Error(
+						"词汇原文位置绑定的材料版本已不可用，请返回词汇页重新选择。",
+					);
+				const targetChapter = await client.fetchQuery({
+					queryKey: materialKeys.chapter(id, vocabulary.chapter_id),
+					queryFn: () => getChapter(id, vocabulary.chapter_id),
+					staleTime: 0,
+				});
+				validateVocabularyReaderTarget(vocabulary, book, targetChapter);
+			}
 			const summary = await prepareReadings(id, book.version_id);
 			if (summary.version_id !== book.version_id)
 				throw new Error("材料注音版本已改变，请重新打开。");
 			if (!current) return;
+			void refreshMaterialAnalysis(
+				client,
+				id,
+				book.version_id,
+				summary.generation_id,
+			);
 			const identity = {
 				materialId: id,
 				versionId: book.version_id,
@@ -3011,6 +3082,7 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 				book,
 				summary,
 				origin,
+				vocabulary,
 				token,
 				activation: previous ? previous.activation + 1 : 0,
 				serial: reuse ? previous.serial : (previous?.serial ?? 0) + 1,
@@ -3029,7 +3101,7 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 		return () => {
 			current = false;
 		};
-	}, [host.active, id, segmentId, token, client]);
+	}, [host.active, id, segmentId, token, client, location.search]);
 	const ready = host.active && validated === token && !failure;
 	const back = returnDestination(location.state, {
 		to: "/materials",
@@ -3065,6 +3137,7 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 							returnTo={back}
 							readingsSummary={session.summary}
 							initialOrigin={session.origin}
+							initialVocabulary={session.vocabulary}
 							sessionToken={session.token}
 							discard={session.discard}
 							positionWriter={session.positionWriter}

@@ -556,6 +556,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/vocabulary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Vocabulary */
+        get: operations["getMaterialVocabulary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{material_id}/vocabulary/occurrences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Vocabulary Occurrences */
+        get: operations["getMaterialVocabularyOccurrences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/provider-models/{model_id}": {
         parameters: {
             query?: never;
@@ -2263,6 +2297,123 @@ export interface components {
              */
             updated_at: string;
         };
+        /** MaterialVocabularyOccurrence */
+        MaterialVocabularyOccurrence: {
+            /** After */
+            after: string;
+            /** Before */
+            before: string;
+            /** Chapter Id */
+            chapter_id: string | null;
+            /** Chapter Title */
+            chapter_title: string | null;
+            /** End */
+            end: number;
+            /** Is Oov */
+            is_oov: boolean;
+            /** Match */
+            match: string;
+            /** Part Index */
+            part_index: number | null;
+            /** Parts Of Speech */
+            parts_of_speech: string[];
+            /** Reading */
+            reading: string;
+            /** Resource Id */
+            resource_id: string;
+            /** Spine Index */
+            spine_index: number | null;
+            /** Start */
+            start: number;
+            /** Text Sha256 */
+            text_sha256: string;
+        };
+        /** MaterialVocabularyOccurrencesResponse */
+        MaterialVocabularyOccurrencesResponse: {
+            /** Analysis Configuration */
+            analysis_configuration: string;
+            /** Generation Id */
+            generation_id: string;
+            /** Items */
+            items: components["schemas"]["MaterialVocabularyOccurrence"][];
+            /** Limit */
+            limit: number;
+            /** Material Id */
+            material_id: string;
+            /** Offset */
+            offset: number;
+            /** Pos */
+            pos: string | null;
+            /**
+             * Presentation Policy
+             * @default first_navigable_spine
+             * @constant
+             */
+            presentation_policy: "first_navigable_spine";
+            /**
+             * Rule Version
+             * @default material-vocabulary-v1:lexical-statistics-v1
+             */
+            rule_version: string;
+            /**
+             * Scope
+             * @default unique_resources
+             * @constant
+             */
+            scope: "unique_resources";
+            /** Total */
+            total: number;
+            /** Version Id */
+            version_id: string;
+            /** Word */
+            word: string;
+        };
+        /** MaterialVocabularyResponse */
+        MaterialVocabularyResponse: {
+            /** Analysis Configuration */
+            analysis_configuration: string | null;
+            /** Available Pos */
+            available_pos: string[];
+            /** Generation Id */
+            generation_id: string | null;
+            /** Items */
+            items: components["schemas"]["VocabularyItem"][];
+            /** Limit */
+            limit: number;
+            /** Material Id */
+            material_id: string;
+            /** Offset */
+            offset: number;
+            /** Pos */
+            pos: string | null;
+            /** Query */
+            query: string;
+            /**
+             * Rule Version
+             * @default material-vocabulary-v1:lexical-statistics-v1
+             */
+            rule_version: string;
+            /**
+             * Scope
+             * @default unique_resources
+             * @constant
+             */
+            scope: "unique_resources";
+            /**
+             * Sort
+             * @enum {string}
+             */
+            sort: "frequency_desc" | "frequency_asc";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "unavailable";
+            /** Total */
+            total: number;
+            /** Version Id */
+            version_id: string;
+        };
         /** MessageJobSummary */
         MessageJobSummary: {
             /** Artifacts */
@@ -3546,6 +3697,23 @@ export interface components {
              * @enum {string}
              */
             status: "queued" | "running" | "succeeded" | "failed" | "interrupted" | "cancelled";
+        };
+        /** VocabularyItem */
+        VocabularyItem: {
+            /** Frequency */
+            frequency: number;
+            /** Oov Count */
+            oov_count: number;
+            /** Parts Of Speech */
+            parts_of_speech: string[][];
+            /** Readings */
+            readings: string[];
+            /** Surfaces */
+            surfaces: string[];
+            /** Variants Truncated */
+            variants_truncated: boolean;
+            /** Word */
+            word: string;
         };
         /** WorkerHealth */
         WorkerHealth: {
@@ -4907,6 +5075,83 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MaterialUsageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialVocabulary: {
+        parameters: {
+            query: {
+                version_id: string;
+                generation_id?: string | null;
+                q?: string;
+                pos?: string | null;
+                sort?: "frequency_desc" | "frequency_asc";
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialVocabularyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMaterialVocabularyOccurrences: {
+        parameters: {
+            query: {
+                version_id: string;
+                generation_id: string;
+                word: string;
+                pos?: string | null;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialVocabularyOccurrencesResponse"];
                 };
             };
             /** @description Validation Error */

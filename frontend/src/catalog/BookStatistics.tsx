@@ -1,15 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { useId } from "react";
+import { Link, useLocation } from "react-router";
+import { returnDestination, returnState } from "../navigation";
 import { InlineError } from "../Shared";
-import { type BookStatisticsData, getBookStatistics } from "./api";
+import type { BookStatisticsData } from "./api";
 import {
 	analysisConfigurationLabel,
-	bookStatisticsKey,
 	coverageGeometry,
 	coveragePlot,
 	statisticCount,
 	statisticPercent,
 } from "./statistics";
+import { materialStatisticsOptions } from "./statistics-query";
 import "./statistics.css";
 
 function CoverageChart({ data }: { data: BookStatisticsData }) {
@@ -170,7 +172,7 @@ function StatisticsContent({ data }: { data: BookStatisticsData }) {
 					{lexical
 						? ` · 词法规则 ${lexical.rule_version.replace("lexical-statistics-", "")}`
 						: ""}
-					。结果对应本次读取的材料版本与分词结果；重新进入详情或刷新统计可读取当前结果。
+					。结果随当前材料版本与分词结果自动更新。
 				</p>
 			</details>
 		</>
@@ -186,13 +188,13 @@ export function BookStatistics({
 	versionId: string;
 	generationId?: string;
 }) {
-	const statistics = useQuery({
-		queryKey: bookStatisticsKey(materialId, versionId, generationId),
-		queryFn: ({ signal }) =>
-			getBookStatistics(materialId, versionId, generationId, signal),
-		staleTime: Number.POSITIVE_INFINITY,
-		refetchOnMount: "always",
-		refetchOnWindowFocus: false,
+	const location = useLocation();
+	const statistics = useQuery(
+		materialStatisticsOptions(materialId, versionId, generationId),
+	);
+	const back = returnDestination(location.state, {
+		to: "/materials",
+		label: "素材库",
 	});
 	return (
 		<section
@@ -205,14 +207,16 @@ export function BookStatistics({
 					<h2>正文统计</h2>
 					<p>全部可提取正文 · 按资源去重</p>
 				</div>
-				<button
-					type="button"
+				<Link
 					className="book-details-action"
-					disabled={statistics.isFetching}
-					onClick={() => void statistics.refetch()}
+					to={`/materials/${materialId}/vocabulary`}
+					state={returnState(
+						{ to: location.pathname, label: "书籍详情" },
+						back,
+					)}
 				>
-					{statistics.isFetching ? "读取中…" : "刷新统计"}
-				</button>
+					查看词汇 <span aria-hidden="true">→</span>
+				</Link>
 			</div>
 			{statistics.isPending ? (
 				<p className="book-statistics-state" role="status">

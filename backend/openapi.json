@@ -2774,6 +2774,322 @@
         "title": "MaterialUsageResponse",
         "type": "object"
       },
+      "MaterialVocabularyOccurrence": {
+        "properties": {
+          "after": {
+            "title": "After",
+            "type": "string"
+          },
+          "before": {
+            "title": "Before",
+            "type": "string"
+          },
+          "chapter_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Id"
+          },
+          "chapter_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Title"
+          },
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "is_oov": {
+            "title": "Is Oov",
+            "type": "boolean"
+          },
+          "match": {
+            "title": "Match",
+            "type": "string"
+          },
+          "part_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part Index"
+          },
+          "parts_of_speech": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Parts Of Speech",
+            "type": "array"
+          },
+          "reading": {
+            "title": "Reading",
+            "type": "string"
+          },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "spine_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spine Index"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          },
+          "text_sha256": {
+            "title": "Text Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter_id",
+          "chapter_title",
+          "part_index",
+          "spine_index",
+          "resource_id",
+          "text_sha256",
+          "start",
+          "end",
+          "before",
+          "match",
+          "after",
+          "reading",
+          "parts_of_speech",
+          "is_oov"
+        ],
+        "title": "MaterialVocabularyOccurrence",
+        "type": "object"
+      },
+      "MaterialVocabularyOccurrencesResponse": {
+        "properties": {
+          "analysis_configuration": {
+            "title": "Analysis Configuration",
+            "type": "string"
+          },
+          "generation_id": {
+            "title": "Generation Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialVocabularyOccurrence"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "pos": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pos"
+          },
+          "presentation_policy": {
+            "const": "first_navigable_spine",
+            "default": "first_navigable_spine",
+            "title": "Presentation Policy",
+            "type": "string"
+          },
+          "rule_version": {
+            "default": "material-vocabulary-v1:lexical-statistics-v1",
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "scope": {
+            "const": "unique_resources",
+            "default": "unique_resources",
+            "title": "Scope",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          },
+          "word": {
+            "title": "Word",
+            "type": "string"
+          }
+        },
+        "required": [
+          "word",
+          "pos",
+          "total",
+          "offset",
+          "limit",
+          "items",
+          "material_id",
+          "version_id",
+          "generation_id",
+          "analysis_configuration"
+        ],
+        "title": "MaterialVocabularyOccurrencesResponse",
+        "type": "object"
+      },
+      "MaterialVocabularyResponse": {
+        "properties": {
+          "analysis_configuration": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Configuration"
+          },
+          "available_pos": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Available Pos",
+            "type": "array"
+          },
+          "generation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Id"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VocabularyItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "pos": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pos"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "rule_version": {
+            "default": "material-vocabulary-v1:lexical-statistics-v1",
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "scope": {
+            "const": "unique_resources",
+            "default": "unique_resources",
+            "title": "Scope",
+            "type": "string"
+          },
+          "sort": {
+            "enum": [
+              "frequency_desc",
+              "frequency_asc"
+            ],
+            "title": "Sort",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query",
+          "pos",
+          "sort",
+          "total",
+          "offset",
+          "limit",
+          "available_pos",
+          "items",
+          "material_id",
+          "version_id",
+          "generation_id",
+          "analysis_configuration",
+          "status"
+        ],
+        "title": "MaterialVocabularyResponse",
+        "type": "object"
+      },
       "MessageJobSummary": {
         "properties": {
           "artifacts": {
@@ -6304,6 +6620,63 @@
         "title": "VerificationSummary",
         "type": "object"
       },
+      "VocabularyItem": {
+        "properties": {
+          "frequency": {
+            "minimum": 1.0,
+            "title": "Frequency",
+            "type": "integer"
+          },
+          "oov_count": {
+            "minimum": 0.0,
+            "title": "Oov Count",
+            "type": "integer"
+          },
+          "parts_of_speech": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Parts Of Speech",
+            "type": "array"
+          },
+          "readings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Readings",
+            "type": "array"
+          },
+          "surfaces": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Surfaces",
+            "type": "array"
+          },
+          "variants_truncated": {
+            "title": "Variants Truncated",
+            "type": "boolean"
+          },
+          "word": {
+            "title": "Word",
+            "type": "string"
+          }
+        },
+        "required": [
+          "word",
+          "frequency",
+          "readings",
+          "surfaces",
+          "parts_of_speech",
+          "oov_count",
+          "variants_truncated"
+        ],
+        "title": "VocabularyItem",
+        "type": "object"
+      },
       "WorkerHealth": {
         "properties": {
           "active_tasks": {
@@ -8580,6 +8953,245 @@
           }
         },
         "summary": "Set Usage"
+      }
+    },
+    "/api/materials/{material_id}/vocabulary": {
+      "get": {
+        "operationId": "getMaterialVocabulary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "generation_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Generation Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 160,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pos",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pos"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "frequency_desc",
+              "enum": [
+                "frequency_desc",
+                "frequency_asc"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 40,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialVocabularyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Vocabulary"
+      }
+    },
+    "/api/materials/{material_id}/vocabulary/occurrences": {
+      "get": {
+        "operationId": "getMaterialVocabularyOccurrences",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "generation_id",
+            "required": true,
+            "schema": {
+              "title": "Generation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "word",
+            "required": true,
+            "schema": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "title": "Word",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pos",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pos"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 40,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialVocabularyOccurrencesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Vocabulary Occurrences"
       }
     },
     "/api/provider-models/{model_id}": {

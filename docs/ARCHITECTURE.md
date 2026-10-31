@@ -266,7 +266,17 @@ GET `/api/materials/{material_id}/statistics` 接受明确的 version_id 和可�
 
 `StatisticsRuntime` 由每次应用 lifespan 创建，保存冻结结果的 JSON bytes，LRU 默认上限 128 条／8 MiB，计算并发 2、在途含等待任务最多 16；超大单结果返回但不缓存，失败不缓存。请求取消不取消同键共享计算；关闭时排空实际线程再释放数据库。每次读取及完成后使用新短会话核验可见性，缓存不能绕过 Source 删除。缺省代次在请求开始固定，途中切换仍返回原代次身份，下次读取采用新指针。
 
-前端 `catalog/BookStatistics.tsx` 在详情信息后独立加载；查询键包含材料、版本和可选代次，与目录／元信息查询分离。重新进入或显式刷新读取当前结果，普通信息编辑不重新请求统计。加载、失败、无代次与零词次分别显示，错误不继续展示缓存中的旧正文；说明区呈现实际分词配置和规则版本。纯逻辑测试、缓存竞争和浏览器证据见[B2 验收](handovers/archived/text-study/B2_ACCEPTANCE.md)。
+前端 `catalog/BookStatistics.tsx` 在详情信息后独立加载；查询键包含材料、版本和可选代次，与目录／元信息查询分离。`catalog/statistics-query.ts` 集中详情及词汇页的当前代次观察：页面可见时每 30 秒轮询，重新进入和窗口回焦时更新；准备成功且代次改变后使已有当前统计查询失效。显式代次不轮询，不提供常驻刷新按钮，错误状态可重试。普通信息编辑不使统计失效。加载、失败、无代次与零词次分别显示，错误不继续展示缓存中的旧正文；说明区呈现实际分词配置和规则版本。基础统计证据见[B2 验收](handovers/archived/text-study/B2_ACCEPTANCE.md)，自动更新与词汇的本轮检查见[词汇验收](handovers/reading-practice/VOCABULARY_ACCEPTANCE.md)。
+
+材料词汇的纯计算位于 `nlp/vocabulary.py`，格式适配与读取位于 `services/vocabulary.py`，响应包装在 `vocabulary_schemas.py`。词汇与统计共用 `nlp/statistics.py` 的 `counted_tokens`，统一验证资源、正文范围、六项词性以及有效 token 的过滤和词典形回退。先按一级词性过滤 token，再归并；搜索在完整归并组的词典形、表层与读音中做子串匹配，比较时使用 NFKC 并将片假名转换为平假名，支持假名与宽度差异，不处理罗马音。查询回显仍为 NFC，原文、资产与归并键保持原值；命中后保留筛选后的完整频次。
+
+GET `/api/materials/{material_id}/vocabulary` 必填 `version_id`，可指定 `generation_id`，接受 `q`、`pos`、`sort=frequency_desc|frequency_asc`、`offset` 和 `limit`（默认 40，上限 100）。返回确切输入身份、配置、规则版本、`scope=unique_resources`、`status=ready|unavailable`、查询条件、总词种数、分页与 `available_pos`。词性选项来自该代次全部有效词次。每行返回 `word`、`frequency`、多读音／表层／六项词性及 OOV 词次数；样本排序后分别最多 8／8／16 项，`variants_truncated` 标明截断，搜索仍覆盖完整分布。无当前代次返回 `unavailable`，已分析但无命中为 `ready` 且空页；显式代次缺失或不属于材料版本为 404，材料版本冲突为 409。
+
+GET `/api/materials/{material_id}/vocabulary/occurrences` 必填 `version_id`、`generation_id` 和归并键 `word`，可指定同一 `pos` 与分页。返回完整出现总数及分页 token 的资源摘要、码点范围、原文和前后各最多 40 码点的上下文；同一资源只计一次，与词表频次一致。`presentation_policy=first_navigable_spine` 表示选择首个能在同章连续 part 内完整呈现该 token 的位置。跨章或无合法呈现时保留 token，但章节／part／spine 字段为 null。出现查询绑定确切代次，不随当前指针切换混入新结果。
+
+词汇扫描和 EPUB 位置适配在工作线程执行，分页 JSON 复用同一个 `StatisticsRuntime`，键包含不可变输入身份、词汇规则与查询／分页条件；不新建全书 token 常驻缓存。`services/statistics.py` 提供共用的输入解析、资源加载与返回前复核，缓存命中和耗时计算均重新核验材料、来源及资产身份。两类 GET 不准备分词、不创建学习内容或 Run，也不写 usage／阅读位置。
+
+前端词汇与出现查询键包含版本、明确代次和完整查询条件，响应再次核对材料身份，出现查询另核对归并键和词性。`materials/vocabulary-navigation.ts` 创建临时 URL 精确目标；阅读入口验证材料版本、章／spine／part、资源正文摘要、范围及原文快照，复用现有定位投影与临时高亮。该目标不产生永久词条或 Occurrence，页面状态与返回路径见[材料词汇页](INFORMATION_ARCHITECTURE.md#材料词汇页)。
 
 ### 3.1.5 位置书签
 
@@ -580,6 +590,7 @@ C1 出处契约版本为 `1`，组装规则为 `concat-nfc-v1`；最多 64 段�
 /materials, /materials/{material_id}
 /materials/{material_id}/details, /materials/{material_id}/metadata
 /materials/{material_id}/statistics
+/materials/{material_id}/vocabulary, /materials/{material_id}/vocabulary/occurrences
 /materials/{material_id}/chapters/{chapter_id}
 /materials/{material_id}/chapters/{chapter_id}/segments
 /materials/{material_id}/reading-position

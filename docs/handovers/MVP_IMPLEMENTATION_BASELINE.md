@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-10-29；代码核对范围为 `main f76e2d5` 与 `21cf270`、`f454449` 的合并结果，工程检查、设置／主题定向浏览器及独立审查通过；本轮范围与限制见[设置集成复核](archived/SETTINGS_MODELS_ACCEPTANCE.md#主分支集成复核2026-10-29)。已包含[可靠性修复](archived/ARCHITECTURE_RELIABILITY_ACCEPTANCE.md)、后端细粒度读取、Reader 呈现协调及测试入口回归；模型与服务二级切换和文档整理一并纳入核对。读取优化的既有工程、浏览器与复审结果，以及性能收益与首次读取成本见[读取性能记录](archived/READER_READ_PERFORMANCE_ACCEPTANCE.md)。各能力的既有验收见下表。
+> 状态核对：2026-10-31；本轮材料词汇与统计自动更新以 `main 6c901c0` 为实施起点，工程、完整及词汇专项浏览器与独立审查已通过；验证范围见[材料词汇验收](reading-practice/VOCABULARY_ACCEPTANCE.md)。既有能力、验收与限制见下表。
 > 本文件汇总当前能力、实现缺口和验收入口。产品范围见 [PRD](../PRD.md)，领域含义见 [GLOSSARY](../GLOSSARY.md)，技术选型见 [TECH_STACK](../TECH_STACK.md)；具体实现由[架构](../ARCHITECTURE.md)维护。
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
@@ -60,7 +60,8 @@
 | 阅读器正文复制 | 已提交，工程与实际复制粘贴验证通过 | 从当前正文投影提取所选字符，去除原书与自动注音，保留换行；纯文本复制不改变选区或注音显示 | [复制验收](archived/text-study/READER_COPY_ACCEPTANCE.md) |
 | EPUB 学习衔接 | C1／C2、阅读体验调整及保存表单优化已提交，工程与浏览器验收通过 | 原生选区保存与完整回读；自动语境保守整理后计预算，只读出处显示当前材料及逻辑章位置；正文细线、真实留白页边入口与固定完整本章列表，两项显示偏好独立；保存表单支持双侧清空与显式重新摘录；材料对话和 Occurrence 继续后置 | [C1 验收](archived/text-study/C1_ACCEPTANCE.md)、[C2 验收](archived/text-study/C2_ACCEPTANCE.md)、[原阅读标记验收](archived/text-study/READER_MARKS_ACCEPTANCE.md)、[阅读体验记录](archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单验收](archived/text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
 | 阅读器原处预览 | 已提交，工程、联合浏览器验收及独立复核通过 | 单击可见标记直接紧凑回看，多片段先选，读取已有译文及多篇讲解；完整侧栏返回预览保留选择与手动位置；操作行前置，保存信息在底部折叠；页边入口随原文同步滚动，再次点击同一入口收起，原生划选保留 | [原处预览验收](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md) |
-| 文本分析与书籍统计 | 工程与浏览器验收通过 | 普通文本输入、完整分析资产读取与 EPUB 章节适配分开；详情独立展示词次／词种／汉字及覆盖曲线，有界缓存且不触发阅读打开或分词准备 | [B1 验收](archived/text-study/B1_ACCEPTANCE.md)、[B2 验收](archived/text-study/B2_ACCEPTANCE.md) |
+| 文本分析与书籍统计 | 基础统计已提交，既有工程与浏览器验收通过 | 普通文本输入、完整分析资产读取与 EPUB 章节适配分开；详情独立展示词次／词种／汉字及覆盖曲线，有界缓存且不触发阅读打开或分词准备 | [B1 验收](archived/text-study/B1_ACCEPTANCE.md)、[B2 验收](archived/text-study/B2_ACCEPTANCE.md) |
+| 材料词汇与统计自动更新 | 工程、完整及专项浏览器与独立审查通过 | 详情统计自动观察当前代次；独立词表支持词性、词频、词形／读音及出现位置，按确切版本／代次分页读取；原文核验后临时定位，返回保留条件；无词典释义、永久词条或迁移 | [本轮验收](reading-practice/VOCABULARY_ACCEPTANCE.md)、[页面契约](../INFORMATION_ARCHITECTURE.md#材料词汇页) |
 | 学习条目与积累库 | 未实现 | 尚无 Occurrence 持久化、候选工具、整理操作或积累库页面；生产字段、定位、anchor 与恢复契约待落实 | [PRD F5／F6](../PRD.md#f5-学习条目创建与整理)、[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md) |
 
 **当前限制：** 接入类型为普通可重排 EPUB；封面缓存支持有界静态 PNG／JPEG。原书 ruby 控制使用书中已有注音。2026-10-04 切片 1 用户试读确认 Yomitan 配合正常；R1.1 的扩展、实体触屏、Safari／Firefox 等验证缺口见[工程验收](archived/reader-r1/ACCEPTANCE.md#明确未验证与限制)。

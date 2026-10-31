@@ -4,6 +4,7 @@
 
 ## 阶段资料
 
+- [材料词汇与统计自动更新验收](reading-practice/VOCABULARY_ACCEPTANCE.md)：词性／词频／词形与读音查询、出现位置、原文精确跳转及返回；记录工程、专项浏览器、界面检查与独立审查结果。
 - [位置书签交互与附近提醒验收](reading-practice/BOOKMARK_REFINEMENT_ACCEPTANCE.md)：附近提醒与显式继续添加、整卡详情与选中态、快捷删除、章内进度和添加时间、应用内确认及摘要句界；工作区状态、审查与验证范围见记录。
 - [阅读翻译动画、缓存与删除验收](reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md)：本轮展开启动、共享阅读缓存预算、确切位置译文删除及学习资料保护；工程、浏览器与现用库验证范围由记录维护。
 - [阅读设置结构调查与实施进展](reading-practice/READER_SETTINGS_STRUCTURE.md)：保留 `main 7d57239` 调查及低保真记录；生产工作区已接入四组设置、会话草稿和分组恢复，离开与查询保护已完成[独立验收](reading-practice/READER_SETTINGS_ACCEPTANCE.md)，已合入本地 main。现行规则见[阅读设置交互](../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)。
