@@ -1,0 +1,38 @@
+docs/USAGE.md
+  s_b952588bff31d6::t_efe83856916a9e 29
+frontend/src/materials/context-copy.css
+  s_b952588bff31d6::t_6d9b1eee05e022 47
+frontend/browser-tests/reader-settings.tsx
+  s_b952588bff31d6::t_8de84c7b9246ba 111,436-439,574-575
+frontend/src/materials/reader-settings.css
+  s_b952588bff31d6::t_6d9b1eee05e022 3-5,25-31,33-42,45-46,48,59,73,144-148
+frontend/src/materials/ReaderControls.tsx
+  s_b952588bff31d6::t_1e7f03dde7da19 183-188,251-259,274-282,312-317,324-338,373-378,385-399
+frontend/src/materials/ReaderCopySettings.tsx
+  s_b952588bff31d6::t_1e7f03dde7da19 145-153
+  s_b952588bff31d6::t_9027124ceec31f 154-155,164
+docs/INFORMATION_ARCHITECTURE.md
+  s_b952588bff31d6::t_6d9b1eee05e022 139-140,145-149
+  s_b952588bff31d6::t_8de84c7b9246ba 151
+frontend/src/materials/reader-settings.ts
+  s_b952588bff31d6::t_8de84c7b9246ba 12
+frontend/src/materials/reader-settings.test.ts
+  s_b952588bff31d6::t_8de84c7b9246ba 86,93
+  s_b952588bff31d6::t_3fa54cf4efabc7 15-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e067456228ea521c399829b50124aa4720535041",
+  "prompts": {},
+  "sessions": {
+    "s_b952588bff31d6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a190cf-03c2-7402-9b63-10ed31c19364",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
