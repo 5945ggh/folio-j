@@ -1,0 +1,110 @@
+frontend/src/materials/study-preview.css
+  s_b952588bff31d6::t_a39d50bd6284c5 201-203
+  s_b952588bff31d6::t_ebc7f959e7a735 212-213
+frontend/src/catalog/vocabulary.css
+  s_b952588bff31d6::t_ebc7f959e7a735 56-57
+  s_b952588bff31d6::t_a39d50bd6284c5 407
+frontend/src/native-select.css
+  s_b952588bff31d6::t_d623be4fb00fc6 1-39,43-49
+  s_b952588bff31d6::t_07cc9aefcc8e35 40-42
+frontend/src/styles.css
+  s_b952588bff31d6::t_ebc7f959e7a735 348-349,1311-1312,2175-2176,2576-2577,2714
+frontend/src/translation/TranslationSettings.tsx
+  s_b952588bff31d6::t_b9af2961ffca39 128,154
+  s_b952588bff31d6::t_c2eb36518b003a 4
+frontend/src/catalog/MaterialVocabularyPage.tsx
+  s_b952588bff31d6::t_b9af2961ffca39 331,345,349,363
+  s_b952588bff31d6::t_c2eb36518b003a 5
+frontend/src/speech/index.tsx
+  s_b952588bff31d6::t_c2eb36518b003a 9,134-167
+  s_b952588bff31d6::t_ef6c4100873bb8 132-133
+frontend/src/NativeSelect.tsx
+  s_b952588bff31d6::t_d623be4fb00fc6 1-16,25-46
+  s_b952588bff31d6::t_c2eb36518b003a 17-24
+frontend/src/speech/speech.css
+  s_b952588bff31d6::t_1ea93b6c37a0b1 30-31
+  s_b952588bff31d6::t_5ba7406474b19d 145-146,153-154
+  s_b952588bff31d6::t_a39d50bd6284c5 144
+frontend/src/materials/reader-r1.css
+  s_b952588bff31d6::t_ebc7f959e7a735 392-393
+frontend/src/catalog/LibraryTools.tsx
+  s_b952588bff31d6::t_b9af2961ffca39 166,176,180,192,198,208
+  s_b952588bff31d6::t_c2eb36518b003a 2
+frontend/biome.json
+  s_b952588bff31d6::t_07cc9aefcc8e35 19-25
+frontend/src/catalog/Controls.tsx
+  s_b952588bff31d6::t_b9af2961ffca39 121,134,155,163,199,209,215,227
+  s_b952588bff31d6::t_c2eb36518b003a 2
+frontend/src/catalog/source-content.css
+  s_b952588bff31d6::t_ebc7f959e7a735 366-367
+frontend/src/translation/translation.css
+  s_b952588bff31d6::t_b3eb188c7970e1 301-303
+  s_b952588bff31d6::t_ebc7f959e7a735 298-299
+  s_b952588bff31d6::t_2bc54844fdf72c 300
+frontend/src/catalog/library-a1.css
+  s_b952588bff31d6::t_ebc7f959e7a735 106-107,131-132
+frontend/browser-tests/app-theme.tsx
+  s_b952588bff31d6::t_b3eb188c7970e1 397-402,412
+  s_b952588bff31d6::t_9952edd5b01124 403-411
+  s_b952588bff31d6::t_7a8bf0e9714f33 413-415
+  s_b952588bff31d6::t_d12d33865e235d 416
+frontend/src/catalog/ImportDialog.tsx
+  s_b952588bff31d6::t_b9af2961ffca39 142,161
+  s_b952588bff31d6::t_c2eb36518b003a 12
+frontend/src/materials/MaterialReader.tsx
+  s_b952588bff31d6::t_b9af2961ffca39 1,2659,2670
+frontend/src/settings/ModelDefaults.tsx
+  s_b952588bff31d6::t_c2eb36518b003a 4
+  s_b952588bff31d6::t_b9af2961ffca39 81,118
+frontend/src/catalog/SourceDirectory.tsx
+  s_b952588bff31d6::t_c2eb36518b003a 4
+  s_b952588bff31d6::t_b9af2961ffca39 67,76
+frontend/src/translation/AdoptTranslation.tsx
+  s_b952588bff31d6::t_c2eb36518b003a 6
+  s_b952588bff31d6::t_b9af2961ffca39 311,327
+frontend/browser-tests/main.tsx
+  s_b952588bff31d6::t_5024276ab7332b 20,415
+docs/DESIGN_SYSTEM.md
+  s_b952588bff31d6::t_1ea93b6c37a0b1 31-38
+frontend/browser-tests/native-select.tsx
+  s_b952588bff31d6::t_99c6e2334e4144 23,43,61,63-67,71,73-78,112,114-118,165-167
+  s_b952588bff31d6::t_af5b0c23b5bb6d 185,187
+  s_b952588bff31d6::t_5024276ab7332b 1-22,24-42,44-60,62,68-70,72,79-111,113,119-164,168-184,186,188-212,221,224-280
+  s_b952588bff31d6::t_4267f8230b7d12 213-220,222-223
+frontend/src/theme/AppearanceSettings.tsx
+  s_b952588bff31d6::t_b9af2961ffca39 1,17,30
+frontend/src/chat/Workbench.tsx
+  s_b952588bff31d6::t_b9af2961ffca39 1411,1422
+  s_b952588bff31d6::t_c2eb36518b003a 19
+frontend/scripts/test-browser.mjs
+  s_b952588bff31d6::t_5024276ab7332b 14-17
+frontend/src/materials/StudyPreview.tsx
+  s_b952588bff31d6::t_b9af2961ffca39 443,458
+  s_b952588bff31d6::t_c2eb36518b003a 8
+frontend/src/settings/settings-refresh.css
+  s_b952588bff31d6::t_ebc7f959e7a735 173-174,183,202-203
+  s_b952588bff31d6::t_07cc9aefcc8e35 459
+  s_b952588bff31d6::t_f4cbcd97c5eaff 204
+frontend/src/settings/providers/ProviderEditors.tsx
+  s_b952588bff31d6::t_c2eb36518b003a 5
+  s_b952588bff31d6::t_b9af2961ffca39 135,147,329,342,388,403
+frontend/src/settings/RunHistory.tsx
+  s_b952588bff31d6::t_c2eb36518b003a 3
+  s_b952588bff31d6::t_b9af2961ffca39 95,114,119,138,142,156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "93b07413c4437fb9294d2ce039e09cede5f748f4",
+  "prompts": {},
+  "sessions": {
+    "s_b952588bff31d6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a190cf-03c2-7402-9b63-10ed31c19364",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
