@@ -697,7 +697,7 @@ export async function analysisReading(h: BrowserHarness) {
 		);
 		await compactLayout(historical);
 		await versionInfo(historical);
-		button("查看当前版本").click();
+		button("回到当前版本").click();
 		await until(
 			() => !!container.querySelector("#manual-analysis-edit-analysis-first"),
 			"Viewing current must return to editable current revision",
