@@ -30,7 +30,8 @@ just gen-api      # 本地导出 OpenAPI 并生成前端类型，不需启动服
 just migrate      # 从空库建立当前 schema，或执行已有库的后续迁移
 just start        # 初始化／升级数据库并构建前端，由 FastAPI 在 8000 端口托管（默认）
 just build        # 构建前端
-just check-docs   # 检查文档本地链接
+just check-docs   # 检查公共文档本地路径，明确报告未核验的私有证据
+just check-private-evidence # 同时核验本机私有证据，缺失时报错
 just test-browser # 隔离 Chrome 中的真实组件与布局回归（可设置 CHROME_BIN）
 just check        # lint + test + build + 文档链接 + 浏览器回归
 just check-assets # 验证保留的实验和静态原型
@@ -41,6 +42,14 @@ just check-assets # 验证保留的实验和静态原型
 `just dev` 和 `just start` 使用同一后端端口，应选择一种运行方式；同一数据库只运行一个后台实例。两者都会先执行迁移，使用已有数据前须核对[升级与备份指南](UPGRADING.md)。
 
 后端 schema 变化后运行 `just gen-api`，将 OpenAPI 与前端生成类型一并提交；不要手改生成类型。工程约束、测试规则及提交要求由 [AGENTS.md](../AGENTS.md) 维护。
+
+## 文档与检查基准
+
+`just check-docs` 检查根 README、AGENTS、全部 `docs/**/*.md`（含历史归档），以及研究和原型目录的 README。公共本地路径必须存在；解析后位于 `data/acceptance-evidence/` 的链接明确属于私有证据，默认只报告未核验数量。该目录保存本机原书截图和验收产物，不随 Git 分发，不能据公共检查通过声称这些证据存在。
+
+持有相应证据时运行 `just check-private-evidence`：它同时检查公共链接和私有证据路径，任一缺失均失败。目录外的缺失路径不享有例外。两种检查都只校验本地路径，不验证标题锚点、外部 URL 或证据内容；修改这些引用时另行核对。
+
+记录检查耗时时，在同一机器和依赖环境中顺序运行，避免与其他构建或测试争用资源。`PYTEST_ADDOPTS='--durations=20' just test` 可显示最慢的后端用例；前端测试输出总耗时。保留代码基准、命令、通过／失败及重跑原因，单次结果只用于定位候选瓶颈。浏览器定向回归选择方式见下节；完整检查入口仍为 `just check`。
 
 ## 浏览器定向回归
 

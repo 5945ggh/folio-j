@@ -14,6 +14,8 @@
 
 共 67 个证据文件，迁移前后逐个核对 SHA-256。原路径、迁移路径、字节数和摘要保存在本机 `data/acceptance-evidence/manifest.json`；原验收文档的链接已更新。完整文档链接检查仍需要这些本机私有资产，纯 Git 快照不包含它们。
 
+2026-10-31 检查入口调整：上述依赖描述保留当时情况；现在公共文档检查明确跳过私有证据，持有资产时使用 `just check-private-evidence` 单独核验。命令范围与限制见[开发指南](../../DEVELOPMENT.md#文档与检查基准)。
+
 两本真实样书去重保留：第 8 卷仍在 `temp/安達としまむら8.epub`，维持可选离线回归测试的原路径；另一本保存在 `data/acceptance-evidence/samples/安達としまむら.epub`。样书均不纳入 Git。
 
 [后续讨论备忘](frontend-refresh/FUTURE_NOTES.md)从旧交接目录迁入本阶段归档，保留原文与未定案状态。学习行为、Lexeme、字幕和跨素材接口的候选想法，后续仍按实际场景讨论。

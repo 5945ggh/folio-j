@@ -76,8 +76,12 @@ check-assets:
     node references/occurrence_anchor_pilot/reading-experiment/parser-test.mjs
     uv run --project backend python references/occurrence_anchor_pilot/batch-01/validate.py
 
-# 验证规范、交接和资产索引中的本地链接。
+# 验证规范、交接和资产索引中的公共本地链接；私有证据仅计数。
 check-docs:
     uv run --project backend python scripts/check_docs.py
+
+# 验证公共本地链接，并要求私有验收证据路径存在。
+check-private-evidence:
+    uv run --project backend python scripts/check_docs.py --private-evidence
 
 check: lint test build check-docs test-browser

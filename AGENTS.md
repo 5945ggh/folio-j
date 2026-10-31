@@ -8,12 +8,16 @@
 
 用户围绕 Source 下的 Material 阅读原文，围绕 Segment 保存和回看独立讲解，并按需要讨论；人工资料保存与 AI 生成共用内容保护规则，工作台不拥有学习内容。人工入口与材料出处遵循 [PRD](docs/PRD.md)，既有实施安排见[文本与资料历史计划](docs/handovers/archived/text-study/PLAN.md)，当前是否可用以实施基线为准。不要求先有完整解析才能讨论，也不强制经过独立 AI 提取阶段。后续 Occurrence 关联原文与具体讲解版本；具体入口、读取权限与成果写入以 PRD 为准。
 
-文档入口见 [`docs/README.md`](docs/README.md)。开发任务先读以下长期规范，并按当前阶段查阅 [`docs/handovers/README.md`](docs/handovers/README.md)：
+开始任务先读本文件的硬性规则，再按改动范围从 [`docs/README.md`](docs/README.md) 查阅负责规范的相关章节。当前交付与阶段安排从 [`docs/handovers/README.md`](docs/handovers/README.md) 进入。
 
-- `docs/PRD.md`：做什么、不做什么、里程碑，以及待定事项（`[TBD-xx]`）
-- `docs/GLOSSARY.md`：领域术语与已确认的身份、归属和引用边界
-- `docs/ARCHITECTURE.md`：数据模型、模块规格、不变式、API 草图
-- `docs/TECH_STACK.md`：技术选型，以及明确不选的方案
+| 改动范围 | 必读内容 |
+| --- | --- |
+| 产品行为、资料保存与删除 | `docs/PRD.md` 对应行为、`docs/GLOSSARY.md` 身份与归属、`docs/ARCHITECTURE.md` 版本／事务／保护规则 |
+| 阅读定位、文本与异步状态 | `docs/ARCHITECTURE.md` 坐标／Unicode／恢复／写入规则、`docs/INFORMATION_ARCHITECTURE.md` 对应交互 |
+| 页面、样式与导航 | `docs/INFORMATION_ARCHITECTURE.md` 对应页面契约、`docs/DESIGN_SYSTEM.md` 视觉规则及组件实现 |
+| 模块设计、依赖与运行方式 | `docs/ARCHITECTURE.md` 对应模块、`docs/TECH_STACK.md` 已采用与明确不选的方案 |
+
+任务跨越多类时合并阅读范围；不确定现行要求时沿链接补读负责规范，不从未来规划推导额外需求。
 
 `docs/handovers/` 放阶段性实施指导；`archived/` 仅保存历史任务和实验上下文。产品行为以 PRD 为准，不能从旧 brief 恢复过时需求。已完成的工程初始化记录见 [`docs/handovers/archived/DEV_PREPARATION.md`](docs/handovers/archived/DEV_PREPARATION.md)，实施基线见 [`docs/handovers/MVP_IMPLEMENTATION_BASELINE.md`](docs/handovers/MVP_IMPLEMENTATION_BASELINE.md)；两者不替代长期规范或敲定 PRD 未决项。
 
@@ -99,7 +103,9 @@ just snapshot   # Repomix 在 .snapshots/ 生成带时间戳的 XML 仓库快照
 
 ## 完成的定义
 
-- `just lint` 和 `just test` 全部通过；
-- 新的纯逻辑有单元测试覆盖；
-- 涉及 UI 的改动，用浏览器实际打开相关页面验证过，并在总结中描述看到了什么；
-- 任务总结简要说明：做了什么、触及了哪些 TBD、有哪些已知限制。
+- 每个代码交付批次的 `just lint` 和 `just test` 全部通过；开发中先运行相关检查，最终改动通过后不因重复汇报而重跑。
+- 新增或改变行为时，明确需要防止的错误，在合适层级验证，优先扩展已有测试。机械转发、简单映射及已有充分行为覆盖的辅助逻辑，不要求逐函数新增单测；数据保护、并发、迁移和文本定位应有针对性回归。
+- 重构后的行为验证承接原有保障，再删除被替代的内部细节测试；不同层级仍保护独立错误时继续保留。
+- 涉及 UI 的改动，用浏览器实际打开相关页面验证，并说明观察结果。间距、圆角等呈现调整以视觉检查为主；异步保存、离开保护和位置恢复增加对应行为回归。
+- 文档变动运行 `just check-docs`，私有历史证据按开发指南使用 `just check-private-evidence` 单独核验；纯文档修改无需运行与内容无关的代码测试。
+- 任务总结说明行为与修改理由、关键验证和未验证项，以及触及的 TBD；新增状态或抽象时说明其职责。
