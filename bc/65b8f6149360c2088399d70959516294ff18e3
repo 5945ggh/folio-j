@@ -1,0 +1,63 @@
+backend/src/app/config.py
+  s_a21a9037f0eaeb::t_fa4e1850cc6a09 11,21,68,90-94
+  s_a21a9037f0eaeb::t_658786efc3f344 53-60
+  s_a21a9037f0eaeb::t_b214a3f45eafa0 40-52,61-65,67,69-75,77-89
+  s_a21a9037f0eaeb::t_63fea96b526a65 16-17
+scripts/run.py
+  s_a21a9037f0eaeb::t_63fea96b526a65 63-78,97-98
+docs/DEVELOPMENT.md
+  s_a21a9037f0eaeb::t_7f42e333ca2e9e 24
+  s_a21a9037f0eaeb::t_d5f705bf90a864 14,22,34
+  s_a21a9037f0eaeb::t_a7ea21e7c4b85d 18,33
+  s_a21a9037f0eaeb::t_606a64451b64e5 13
+docs/UPGRADING.md
+  s_a21a9037f0eaeb::t_a7ea21e7c4b85d 9
+  s_a21a9037f0eaeb::t_606a64451b64e5 7,11,113
+  s_a21a9037f0eaeb::t_46c77b5d057b12 10
+backend/src/app/main.py
+  s_a21a9037f0eaeb::t_223481fd858c57 41
+backend/tests/conftest.py
+  s_a21a9037f0eaeb::t_c5e5f17fec13bb 5,11-13
+  s_a21a9037f0eaeb::t_332b199d32f6a0 14-15
+backend/alembic/env.py
+  s_a21a9037f0eaeb::t_223481fd858c57 4,49
+backend/src/app/db.py
+  s_a21a9037f0eaeb::t_223481fd858c57 36
+justfile
+  s_a21a9037f0eaeb::t_fa4e1850cc6a09 28-32
+backend/tests/test_config.py
+  s_a21a9037f0eaeb::t_3e51f966ce71f6 6-7,10-17,19-26,29-30,32,35,40-53,55,57-59,61-62,64-70,73,75-83,85-91,96,99-103,105-109,113-120,122-123,125-128,138-148,150-157,186
+  s_a21a9037f0eaeb::t_81742d032c7986 129,158-163,165-181
+  s_a21a9037f0eaeb::t_606a64451b64e5 31,38,54,71,84,104,110-112,121,124,130-137,149,164
+  s_a21a9037f0eaeb::t_080020104345d0 39,56,60,72,74
+config/app.example.toml
+  s_a21a9037f0eaeb::t_606a64451b64e5 1,11
+  s_a21a9037f0eaeb::t_63fea96b526a65 2,6-8,12
+README.md
+  s_a21a9037f0eaeb::t_d5f705bf90a864 54-56,85,91
+  s_a21a9037f0eaeb::t_606a64451b64e5 53
+  s_a21a9037f0eaeb::t_7f42e333ca2e9e 58
+  s_a21a9037f0eaeb::t_eb7e8c7182bdbe 57,60-66,74-75,77,79-80
+frontend/vite.config.ts
+  s_a21a9037f0eaeb::t_63fea96b526a65 5-6,12
+docs/USAGE.md
+  s_a21a9037f0eaeb::t_d5f705bf90a864 175-178,181-184,186-191,194-197,199,201-202
+  s_a21a9037f0eaeb::t_606a64451b64e5 173,179-180,185,198,200
+  s_a21a9037f0eaeb::t_a7ea21e7c4b85d 192-193
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bc65b8f6149360c2088399d70959516294ff18e3",
+  "prompts": {},
+  "sessions": {
+    "s_a21a9037f0eaeb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1928d-b03c-74f3-bdd1-79735bd8da4e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
