@@ -1,22 +1,27 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	type Ref,
+	useCallback,
 	useEffect,
 	useImperativeHandle,
 	useRef,
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router";
+import { RequestError } from "../content";
+import type { ReturnDestination } from "../navigation";
 import {
 	DictionaryCards,
 	type LookupLevel,
 	type LookupOrigin,
 } from "./DictionaryCards";
 import {
+	type DictionaryStatus,
 	dictionaryKey,
 	getDictionary,
-	importDictionary,
 	lookupDictionary,
+	subscribeDictionaryLibrary,
 } from "./dictionary-api";
 import { dictionaryPages } from "./dictionary-pages";
 import type {
@@ -45,6 +50,8 @@ export function ReaderDictionary({
 	opacity,
 	onOpacity,
 	restoreFocus,
+	manageState,
+	onManage,
 }: {
 	ref: Ref<DictionaryControl>;
 	portal: HTMLElement | null;
@@ -55,40 +62,44 @@ export function ReaderDictionary({
 	opacity: number;
 	onOpacity: (value: number) => void;
 	restoreFocus: () => void;
+	manageState: ReturnDestination["state"];
+	onManage: () => void;
 }) {
 	const client = useQueryClient();
 	const [menu, setMenu] = useState(false);
 	const [levels, setLevels] = useState<LookupLevel[]>([]);
+	const [cardDictionary, setCardDictionary] = useState<DictionaryStatus>();
+	const [notice, setNotice] = useState("");
 	const current = useRef(levels);
 	const ticket = useRef(0);
 	const trigger = useRef<HTMLButtonElement>(null);
-	const input = useRef<HTMLInputElement>(null);
 	const status = useQuery({
 		queryKey: dictionaryKey,
 		queryFn: ({ signal }) => getDictionary(signal),
 		enabled: menu || mode !== "off",
+		refetchOnWindowFocus: true,
 		retry: false,
 		staleTime: 0,
 	});
 	const ready = status.data?.ready === true;
 	useEffect(() => onReady(ready), [onReady, ready]);
-	const imported = useMutation({
-		mutationFn: importDictionary,
-		onSuccess: (data) => {
-			client.setQueryData(dictionaryKey, data);
-		},
-	});
-	const publish = (next: LookupLevel[]) => {
+	const publish = useCallback((next: LookupLevel[]) => {
 		current.current = next;
 		setLevels(next);
-	};
-	const clearCards = () => {
+	}, []);
+	const clearCards = useCallback(() => {
 		ticket.current++;
 		if (!current.current.length) return false;
 		current.current[0]?.origin.clear?.();
 		publish([]);
 		return true;
-	};
+	}, [publish]);
+	const selection = status.data?.dictionary_id;
+	useEffect(() => {
+		// A visible card and its nested lookup stack belong to one dictionary.
+		if (cardDictionary?.dictionary_id !== selection) clearCards();
+	}, [selection, cardDictionary?.dictionary_id, clearCards]);
+	useEffect(() => subscribeDictionaryLibrary(client), [client]);
 	const close = () => {
 		if (menu) setMenu(false);
 		return clearCards() || menu;
@@ -134,7 +145,24 @@ export function ReaderDictionary({
 		[],
 	);
 	const search = async (origin: LookupOrigin, parent: number) => {
+		const selected = client.getQueryData<DictionaryStatus>(dictionaryKey);
+		if (!selected?.ready || !selected.dictionary_id) {
+			setNotice("请先在设置中选择可用词典。");
+			setMenu(true);
+			return;
+		}
+		if (
+			parent >= 0 &&
+			cardDictionary?.dictionary_id !== selected.dictionary_id
+		) {
+			clearCards();
+			setNotice("当前词典已变化，请重新点击原文查词。");
+			setMenu(true);
+			return;
+		}
 		const id = ++ticket.current;
+		setCardDictionary(selected);
+		setNotice("");
 		setMenu(false);
 		const keep = current.current
 			.slice(0, parent + 1)
@@ -163,15 +191,30 @@ export function ReaderDictionary({
 				queryKey: [
 					"dictionary",
 					"lookup",
-					status.data?.dictionary_id,
+					selected.dictionary_id,
 					origin.input,
 				],
-				queryFn: ({ signal }) => lookupDictionary(origin.input, signal),
+				queryFn: ({ signal }) =>
+					lookupDictionary(
+						{ ...origin.input, expected_dictionary_id: selected.dictionary_id },
+						signal,
+					),
 				staleTime: 60_000,
 				gcTime: 90_000,
 				retry: false,
 			});
-			if (ticket.current !== id) return;
+			if (
+				ticket.current !== id ||
+				client.getQueryData<DictionaryStatus>(dictionaryKey)?.dictionary_id !==
+					selected.dictionary_id
+			)
+				return;
+			if (
+				result.matches.some(
+					(match) => match.dictionary_id !== selected.dictionary_id,
+				)
+			)
+				throw new RequestError("当前词典已变化。", 409);
 			if (result.matches.length) {
 				publish([
 					...keep,
@@ -182,6 +225,13 @@ export function ReaderDictionary({
 			message = "这部词典里没有找到这个词。";
 		} catch (error) {
 			if (ticket.current !== id) return;
+			if (error instanceof RequestError && error.status === 409) {
+				clearCards();
+				setNotice("当前词典已变化，请重新点击原文查词。");
+				setMenu(true);
+				await status.refetch();
+				return;
+			}
 			message =
 				error instanceof Error ? error.message : "查词失败，请再试一次。";
 		}
@@ -339,66 +389,35 @@ export function ReaderDictionary({
 										</label>
 									</>
 								) : (
-									<p>
-										导入明镜日汉双解词典的 Yomitan ZIP
-										文件，即可点读正文和词卡。
-									</p>
+									<p>在设置中导入并选择词典，即可点读正文和词卡。</p>
 								)}
-								<input
-									type="file"
-									ref={input}
-									accept=".zip,application/zip"
-									aria-label="选择词典 ZIP"
-									hidden
-									onChange={(e) => {
-										const file = e.currentTarget.files?.[0];
-										e.currentTarget.value = "";
-										if (!file) return;
-										const picker = e.currentTarget;
-										imported.mutate(file, {
-											onSuccess: () => {
-												if (input.current !== picker) return;
-												if (!ready && mode === "off") setMode("click");
-												else {
-													close();
-													trigger.current?.focus({ preventScroll: true });
-												}
-											},
-										});
-									}}
-								/>
-								<button
-									type="button"
+								<Link
 									className="dict-import"
-									disabled={imported.isPending}
-									onClick={() => input.current?.click()}
+									to="/settings?section=dictionary"
+									state={manageState}
+									onClick={onManage}
 								>
-									{imported.isPending
-										? "正在建立词典索引…"
-										: status.data?.ready
-											? "替换本机词典…"
-											: "导入词典…"}
-								</button>
-								{imported.isError && (
-									<p role="alert">{imported.error.message}</p>
-								)}
+									管理词典
+								</Link>
+								{notice && <p role="status">{notice}</p>}
 							</section>
 						)}
-						{levels.length > 0 && (
-							<DictionaryCards
-								levels={levels}
-								opacity={opacity}
-								title={status.data?.title ?? "本机词典"}
-								nested={(depth, origin) => void search(origin, depth)}
-								choose={backTo}
-								backTo={backTo}
-								close={finish}
-								onRecord={(hit) => {
-									close();
-									onRecord(hit);
-								}}
-							/>
-						)}
+						{levels.length > 0 &&
+							cardDictionary?.dictionary_id === selection && (
+								<DictionaryCards
+									levels={levels}
+									opacity={opacity}
+									title={cardDictionary?.title ?? "本机词典"}
+									nested={(depth, origin) => void search(origin, depth)}
+									choose={backTo}
+									backTo={backTo}
+									close={finish}
+									onRecord={(hit) => {
+										close();
+										onRecord(hit);
+									}}
+								/>
+							)}
 					</>,
 					portal,
 				)}

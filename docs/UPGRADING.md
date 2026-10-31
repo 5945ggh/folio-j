@@ -10,7 +10,7 @@
 
 升级前停止使用目标库的服务，制作 SQLite 一致性备份，并同时备份对应凭据目录。数据库使用 WAL 模式，不要在服务仍写入时只复制主数据库文件。恢复时保持数据库与凭据目录配套；改名或换路径时，凭据目录也须对应新的数据库文件名。
 
-导入的查词索引位于数据库旁的 `<数据库文件名>.dictionary.sqlite3`。保留原始词典 ZIP 即可在阅读器重新导入。
+已安装的查词词典及当前选择保存在数据库旁的 `<数据库文件名>.dictionary.sqlite3.library/`。旧版单词典索引 `<数据库文件名>.dictionary.sqlite3` 仍在原位使用。要保留全部词典与当前选择，请在服务停止时同时备份、恢复该目录和存在的旧索引；若更改数据库文件名，两处也需对应改名。保留原始 ZIP 时，也可从「设置 → 词典」重新导入并选择。
 
 ### 制作备份
 
@@ -46,6 +46,12 @@ if credentials.exists():
     for item in (destination / "credentials").rglob("*"):
         os.chmod(item, 0o700 if item.is_dir() else 0o600)
     os.chmod(destination / "credentials", 0o700)
+index = Path(str(source) + ".dictionary.sqlite3")
+library = Path(str(index) + ".library")
+if index.is_file():
+    shutil.copy2(index, destination / "dictionary.sqlite3")
+if library.is_dir():
+    shutil.copytree(library, destination / "dictionary.sqlite3.library")
 (destination / "backup-info.txt").write_text(
     f"code_revision={revision}\nsource_database={source}\n", encoding="utf-8"
 )
@@ -53,7 +59,7 @@ print(f"备份完成：{destination}")
 PY
 ```
 
-只有输出“备份完成”才表示数据库、凭据复制及检查均已完成；中途失败时保留源库，换一个新目录重试。备份目录含未加密密钥，应私下保管。`backup-info.txt` 记录提交号与源库路径，不归档代码或本地改动；同时保留对应代码与未提交修改，恢复历史备份时使用匹配版本。
+只有输出“备份完成”才表示主库通过检查，凭据和词典也已随库复制（如有）；中途失败时保留源库，换一个新目录重试。备份目录可能含未加密密钥和私有词典，应私下保管。`backup-info.txt` 记录提交号与源库路径，不归档代码或本地改动；同时保留对应代码与未提交修改，恢复历史备份时使用匹配版本。
 
 ### 恢复到独立路径
 
@@ -75,7 +81,9 @@ if not backup.is_absolute() or not target.is_absolute():
 source = backup / "database.sqlite3"
 if not source.is_file() or not (backup / "backup-info.txt").is_file():
     raise SystemExit("备份不完整，请检查数据库与备份说明。")
-reserved = [Path(str(target) + suffix) for suffix in ("", "-wal", "-shm", ".secrets", ".worker.lock")]
+reserved = [Path(str(target) + suffix) for suffix in (
+    "", "-wal", "-shm", ".secrets", ".worker.lock", ".dictionary.sqlite3", ".dictionary.sqlite3.library",
+)]
 if any(item.exists() or item.is_symlink() for item in reserved):
     raise SystemExit("恢复目标或配套文件已存在，请选择全新路径。")
 with closing(sqlite3.connect(source.resolve().as_uri() + "?mode=ro", uri=True)) as snapshot:
@@ -91,6 +99,11 @@ if (backup / "credentials").exists():
     for item in credentials.rglob("*"):
         os.chmod(item, 0o700 if item.is_dir() else 0o600)
     os.chmod(credentials, 0o700)
+index = Path(str(target) + ".dictionary.sqlite3")
+if (backup / "dictionary.sqlite3").is_file():
+    shutil.copy2(backup / "dictionary.sqlite3", index)
+if (backup / "dictionary.sqlite3.library").is_dir():
+    shutil.copytree(backup / "dictionary.sqlite3.library", Path(str(index) + ".library"))
 print(f"恢复完成：{target}")
 PY
 ```

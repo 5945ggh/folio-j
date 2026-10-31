@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 from support_api import chat_client
-from test_dictionary_store import archive, chunks, record
+from test_dictionary_store import archive, chunks, installed_path, record
 
 from app.dictionary_schemas import DictionaryNode
 from app.services import dictionary_store
@@ -129,7 +129,7 @@ async def test_existing_v2_source_upgrades_once_per_shared_definition(
     store = DictionaryStore(tmp_path / "dictionary.sqlite3")
     await store.import_stream(chunks(archive([record("雨", definitions=[styled_definition()])])))
     expected = (await store.find_terms(["雨"]))[0].definitions
-    with sqlite3.connect(store.path) as connection:
+    with sqlite3.connect(installed_path(store, await store.status())) as connection:
         identity, compressed = connection.execute("SELECT id, payload FROM definitions").fetchone()
         envelope = json.loads(zlib.decompress(compressed))
         envelope.pop("tree_version")
@@ -156,7 +156,7 @@ async def test_existing_v2_source_upgrades_once_per_shared_definition(
         after_first = calls
         second = await snapshot.load_definitions(entries)
         assert second[0].definitions is first[0].definitions and calls == after_first
-    with sqlite3.connect(store.path) as connection:
+    with sqlite3.connect(installed_path(store, await store.status())) as connection:
         assert connection.execute("SELECT payload FROM definitions").fetchone()[0] == zlib.compress(
             json.dumps(envelope).encode()
         )

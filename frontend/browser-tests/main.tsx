@@ -14,6 +14,7 @@ import { overviewImportRegression } from "./catalog-overview";
 import { reusedImportRegression } from "./catalog-reuse";
 import { catalogToolbarRegression } from "./catalog-toolbar";
 import { chapterRecords } from "./chapter-records";
+import { dictionarySettings } from "./dictionary-settings";
 import { explanationRegression } from "./explanation";
 import { materialImport } from "./material-import";
 import { materialVocabulary } from "./material-vocabulary";
@@ -416,6 +417,7 @@ try {
 		["native-select", nativeSelectRegression],
 		["material-vocabulary", materialVocabulary],
 		["settings-models", settingsModels],
+		["dictionary-settings", dictionarySettings],
 		["app-theme", appTheme],
 		["reader-images", readerImages],
 		["position-bookmarks", positionBookmarks],

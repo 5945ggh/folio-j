@@ -6,6 +6,7 @@ import { DeviceSpeechSettings } from "../speech";
 import { AppearanceSettings } from "../theme/AppearanceSettings";
 import { TranslationSettingsSection } from "../translation/TranslationSettings";
 import { getProviders, getSettings, settingsKeys } from "./api";
+import { DictionarySettings } from "./DictionarySettings";
 import { LearningSettings } from "./LearningSettings";
 import { ModelDefaults } from "./ModelDefaults";
 import { PermissionSettings } from "./PermissionSettings";
@@ -22,13 +23,19 @@ export function SettingsPage() {
 	const translation = section === "translation";
 	const speech = section === "speech";
 	const appearance = section === "appearance";
+	const dictionary = section === "dictionary";
 	const models =
-		!learning && !permissions && !translation && !speech && !appearance;
+		!learning &&
+		!permissions &&
+		!translation &&
+		!speech &&
+		!appearance &&
+		!dictionary;
 	const services = section === "providers";
 	const settings = useQuery({
 		queryKey: settingsKeys.settings,
 		queryFn: getSettings,
-		enabled: !appearance,
+		enabled: !appearance && !dictionary,
 	});
 	const providers = useQuery({
 		queryKey: settingsKeys.providers,
@@ -74,6 +81,12 @@ export function SettingsPage() {
 						对话与权限
 					</Link>
 					<Link
+						to="/settings?section=dictionary"
+						aria-current={dictionary ? "page" : undefined}
+					>
+						词典
+					</Link>
+					<Link
 						to="/settings?section=translation"
 						aria-current={translation ? "page" : undefined}
 					>
@@ -87,7 +100,9 @@ export function SettingsPage() {
 					</Link>
 				</nav>
 				<div className="settings-content">
-					{history ? (
+					{dictionary ? (
+						<DictionarySettings />
+					) : history ? (
 						<>
 							<ModelSettingsNavigation services />
 							<Link

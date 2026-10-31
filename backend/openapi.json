@@ -1006,9 +1006,100 @@
         "title": "DefaultsResponse",
         "type": "object"
       },
+      "DictionaryLibrary": {
+        "properties": {
+          "active_dictionary_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Dictionary Id"
+          },
+          "dictionaries": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryLibraryItem"
+            },
+            "title": "Dictionaries",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dictionaries",
+          "active_dictionary_id"
+        ],
+        "title": "DictionaryLibrary",
+        "type": "object"
+      },
+      "DictionaryLibraryImport": {
+        "properties": {
+          "already_installed": {
+            "title": "Already Installed",
+            "type": "boolean"
+          },
+          "dictionary_id": {
+            "title": "Dictionary Id",
+            "type": "string"
+          },
+          "library": {
+            "$ref": "#/components/schemas/DictionaryLibrary"
+          }
+        },
+        "required": [
+          "library",
+          "dictionary_id",
+          "already_installed"
+        ],
+        "title": "DictionaryLibraryImport",
+        "type": "object"
+      },
+      "DictionaryLibraryItem": {
+        "properties": {
+          "dictionary_id": {
+            "title": "Dictionary Id",
+            "type": "string"
+          },
+          "entry_count": {
+            "title": "Entry Count",
+            "type": "integer"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dictionary_id",
+          "title",
+          "revision",
+          "entry_count"
+        ],
+        "title": "DictionaryLibraryItem",
+        "type": "object"
+      },
       "DictionaryLookupRequest": {
         "additionalProperties": false,
         "properties": {
+          "expected_dictionary_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Dictionary Id"
+          },
           "position": {
             "anyOf": [
               {
@@ -1459,6 +1550,22 @@
           }
         },
         "title": "DictionaryNodeStyle",
+        "type": "object"
+      },
+      "DictionarySelection": {
+        "additionalProperties": false,
+        "properties": {
+          "dictionary_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Dictionary Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dictionary_id"
+        ],
+        "title": "DictionarySelection",
         "type": "object"
       },
       "DictionaryStatus": {
@@ -7714,6 +7821,91 @@
           }
         },
         "summary": "Import Dictionary"
+      }
+    },
+    "/api/dictionary/library": {
+      "get": {
+        "operationId": "getDictionaryLibrary",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionaryLibrary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Library"
+      }
+    },
+    "/api/dictionary/library/import": {
+      "post": {
+        "operationId": "importDictionaryLibrary",
+        "requestBody": {
+          "content": {
+            "application/zip": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionaryLibraryImport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Import Library Dictionary"
+      }
+    },
+    "/api/dictionary/library/selection": {
+      "put": {
+        "operationId": "selectDictionaryLibrary",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DictionarySelection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionaryLibrary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Select Library"
       }
     },
     "/api/dictionary/lookup": {

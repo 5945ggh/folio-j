@@ -57,6 +57,28 @@ class DictionaryStatus(BaseModel):
     ready: bool = False
 
 
+class DictionaryLibraryItem(BaseModel):
+    dictionary_id: str
+    title: str
+    revision: str
+    entry_count: int
+
+
+class DictionaryLibrary(BaseModel):
+    dictionaries: list[DictionaryLibraryItem]
+    active_dictionary_id: str | None
+
+
+class DictionaryLibraryImport(BaseModel):
+    library: DictionaryLibrary
+    dictionary_id: str
+    already_installed: bool
+
+
+class DictionarySelection(StrictInput):
+    dictionary_id: str = Field(min_length=1, max_length=64)
+
+
 class DictionaryTokenHint(StrictInput):
     """Aligned source boundaries with independently optional lexical evidence."""
 
@@ -71,6 +93,7 @@ class DictionaryTokenHint(StrictInput):
 
 
 class DictionaryLookupRequest(StrictInput):
+    expected_dictionary_id: str | None = Field(default=None, min_length=1, max_length=64)
     text: str = Field(min_length=1, max_length=8192)
     position: int | None = Field(default=None, ge=0)
     selection_start: int | None = Field(default=None, ge=0)

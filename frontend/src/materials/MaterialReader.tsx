@@ -2220,6 +2220,12 @@ function Reader({
 					</button>
 					<ReaderDictionary
 						ref={dictionary}
+						manageState={returnState(
+							{ to: `/materials/${book.id}`, label: book.title },
+							returnTo,
+							"/settings",
+						)}
+						onManage={leave}
 						onReady={setDictionaryReady}
 						portal={shell.current}
 						opacity={ui.dictionaryOpacity ?? DEFAULT_DICTIONARY_OPACITY}

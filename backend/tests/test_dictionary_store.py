@@ -15,6 +15,7 @@ import pytest
 from fastapi import HTTPException
 from support_api import chat_client
 
+from app.dictionary_schemas import DictionaryStatus
 from app.services import dictionary_store
 from app.services.dictionary_store import DictionaryStore
 
@@ -48,6 +49,19 @@ async def chunks(value: bytes) -> AsyncGenerator[bytes]:
     midpoint = len(value) // 2
     yield value[:midpoint]
     yield value[midpoint:]
+
+
+def installed_path(store: DictionaryStore, status: DictionaryStatus) -> Path:
+    return store.library_path / f"{status.dictionary_id}.sqlite3"
+
+
+def seed_legacy(store: DictionaryStore, raw: bytes) -> DictionaryStatus:
+    source = store.path.with_suffix(".zip")
+    source.write_bytes(raw)
+    try:
+        return dictionary_store._build(source, store.path)  # pyright: ignore[reportPrivateUsage]
+    finally:
+        source.unlink()
 
 
 @pytest.mark.asyncio
@@ -98,7 +112,7 @@ async def test_persists_every_record_safe_tree_and_invalid_sequence(tmp_path: Pa
     assert nodes[2].content[0].lang == "ja" and nodes[2].content[1].lang == "zh"
     assert nodes[3].tag == "span" and nodes[3].content[0].text == "文字链接"
     assert "do-not-render" not in entries[0].definitions[0].model_dump_json()
-    with sqlite3.connect(store.path) as connection:
+    with sqlite3.connect(installed_path(store, await store.status())) as connection:
         saved = connection.execute(
             "SELECT original, payload FROM entries JOIN definitions "
             "ON definition_id = definitions.id WHERE entries.id = 1"
@@ -138,7 +152,7 @@ async def test_failed_import_keeps_published_index_and_bounds(
     monkeypatch.setattr(dictionary_store, "MAX_UPLOAD_BYTES", 256 * 1024 * 1024)
     monkeypatch.setattr(dictionary_store, "MAX_BANK_BYTES", 1)
     with pytest.raises(HTTPException):
-        await store.import_stream(chunks(archive([record("雨")])))
+        await store.import_stream(chunks(archive([record("別")], title="超限新词典")))
     assert await store.status() == original
     assert not await asyncio.to_thread(lambda: list(tmp_path.glob(".dictionary-*")))
 
@@ -238,7 +252,7 @@ async def test_metadata_queries_decode_only_selected_shared_definitions(
             )
         )
     )
-    with sqlite3.connect(store.path) as connection:
+    with sqlite3.connect(installed_path(store, await store.status())) as connection:
         assert connection.execute("SELECT count(*) FROM entries").fetchone()[0] == 256
         assert connection.execute("SELECT count(*) FROM definitions").fetchone()[0] == 1
     calls: list[int] = []
@@ -265,7 +279,7 @@ async def test_metadata_queries_decode_only_selected_shared_definitions(
 async def test_obsolete_index_is_retained_until_successful_reimport(tmp_path: Path) -> None:
     store = DictionaryStore(tmp_path / "dictionary.sqlite3")
     raw = archive([record("雨")])
-    original = await store.import_stream(chunks(raw))
+    original = await asyncio.to_thread(seed_legacy, store, raw)
     with sqlite3.connect(store.path) as connection:
         connection.execute("UPDATE metadata SET version = 'old'")
     assert not (await store.status()).ready

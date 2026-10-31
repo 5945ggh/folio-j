@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING, cast
 
+from fastapi import HTTPException
 from sudachipy import dictionary
 
 from app.dictionary_schemas import (
@@ -375,9 +376,13 @@ async def lookup(
     store: DictionaryStore, request: DictionaryLookupRequest
 ) -> DictionaryLookupResponse:
     """Recall covering source spans, rank actual hits, then expand complete sequence cards."""
-    candidates = await asyncio.to_thread(_candidates, request)
-    keys = sorted({c.key for c in candidates})
     async with store.snapshot() as snapshot:
+        if request.expected_dictionary_id is not None:
+            status = await snapshot.status()
+            if not status.ready or status.dictionary_id != request.expected_dictionary_id:
+                raise HTTPException(status_code=409, detail="当前词典已改变，请重新查词")
+        candidates = await asyncio.to_thread(_candidates, request)
+        keys = sorted({c.key for c in candidates})
         entries = await snapshot.find_terms(keys)
         ordered = await asyncio.to_thread(_best_matches, entries, candidates)
         sequences = [

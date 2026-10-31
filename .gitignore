@@ -66,3 +66,6 @@ coverage/
 
 # Private EPUB samples and compiled publication text (slice 0 only)
 /prototypes/epub-reading/public/books/local/
+
+# Reader-owned dictionary indexes and active selection.
+/data/*.dictionary.sqlite3.library/

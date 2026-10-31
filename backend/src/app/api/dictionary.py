@@ -3,8 +3,11 @@
 from fastapi import APIRouter, Request
 
 from app.dictionary_schemas import (
+    DictionaryLibrary,
+    DictionaryLibraryImport,
     DictionaryLookupRequest,
     DictionaryLookupResponse,
+    DictionarySelection,
     DictionaryStatus,
 )
 from app.services.dictionary_store import DictionaryStore
@@ -43,3 +46,30 @@ async def lookup_dictionary(
     from app.services.dictionary_lookup import lookup
 
     return await lookup(store(request), body)
+
+
+@router.get("/library", response_model=DictionaryLibrary, operation_id="getDictionaryLibrary")
+async def get_library(request: Request) -> DictionaryLibrary:
+    return await store(request).library()
+
+
+@router.post(
+    "/library/import",
+    response_model=DictionaryLibraryImport,
+    operation_id="importDictionaryLibrary",
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {"application/zip": {"schema": {"type": "string", "format": "binary"}}},
+        }
+    },
+)
+async def import_library_dictionary(request: Request) -> DictionaryLibraryImport:
+    return await store(request).import_library_stream(request.stream())
+
+
+@router.put(
+    "/library/selection", response_model=DictionaryLibrary, operation_id="selectDictionaryLibrary"
+)
+async def select_library(body: DictionarySelection, request: Request) -> DictionaryLibrary:
+    return await store(request).select(body.dictionary_id)

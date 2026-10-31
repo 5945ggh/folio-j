@@ -1,3 +1,4 @@
+import { Outlet } from "react-router";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
@@ -9,6 +10,7 @@ const stamp = "2026-10-31T00:00:00Z";
 /** Exercise the actual Reader, iframe glyph projection and nested dictionary cards without a network. */
 export async function readerDictionary(h: BrowserHarness) {
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
+	const { SettingsPage } = await import("../src/settings/SettingsPage");
 	const check: BrowserHarness["check"] = h.check;
 	const paragraphs = [
 		"猫が歩く。",
@@ -129,6 +131,8 @@ export async function readerDictionary(h: BrowserHarness) {
 	const segmentReads: string[] = [];
 	const requests: Schema["DictionaryLookupRequest"][] = [];
 	let statusReads = 0;
+	let activeDictionaryId = "synthetic";
+	let activeDictionaryTitle = "合成测试词典";
 	let hold = false;
 	const deferred: { release?: () => void } = {};
 	h.mock(async (request) => {
@@ -137,14 +141,31 @@ export async function readerDictionary(h: BrowserHarness) {
 			statusReads++;
 			return Response.json({
 				ready: true,
-				dictionary_id: "synthetic",
-				title: "合成测试词典",
+				dictionary_id: activeDictionaryId,
+				title: activeDictionaryTitle,
 				revision: "1",
 				entry_count: 3,
 			});
 		}
+		if (path === "/api/dictionary/library" && request.method === "GET")
+			return Response.json({
+				dictionaries: [
+					{
+						dictionary_id: activeDictionaryId,
+						title: activeDictionaryTitle,
+						revision: "1",
+						entry_count: 3,
+					},
+				],
+				active_dictionary_id: activeDictionaryId,
+			});
 		if (path === "/api/dictionary/lookup" && request.method === "POST") {
 			const input: Schema["DictionaryLookupRequest"] = await request.json();
+			check(
+				"expected_dictionary_id" in input &&
+					input.expected_dictionary_id === activeDictionaryId,
+				"Every lookup must freeze the active dictionary identity",
+			);
 			requests.push(input);
 			if (hold)
 				await new Promise<void>((resolve) => {
@@ -161,7 +182,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			);
 			const match: Schema["DictionaryMatch"] = {
 				id: term,
-				dictionary_id: "synthetic",
+				dictionary_id: input.expected_dictionary_id,
 				term,
 				surface: term,
 				reading: root ? "ねこ" : term === "散歩" ? "さんぽ" : "みち",
@@ -178,7 +199,10 @@ export async function readerDictionary(h: BrowserHarness) {
 						tag: "p",
 						lang: "zh",
 						role: "dfcn",
-						text: "合成中文释义，用于检查排版。",
+						text:
+							input.expected_dictionary_id === "synthetic"
+								? "合成中文释义，用于检查排版。"
+								: "第二本词典的独立释义。",
 					},
 					...Array.from({ length: 12 }, (): Schema["DictionaryNode"] => ({
 						tag: "p",
@@ -792,12 +816,70 @@ export async function readerDictionary(h: BrowserHarness) {
 			!h.container.querySelector(".dict-deck"),
 			"Late lookup result must not reopen a closed deck",
 		);
+		if (innerWidth === 1280) {
+			hold = false;
+			await glyphClick(nextLeaf, 3, frame);
+			await h.until(
+				() =>
+					h.container
+						.querySelector(".dict-card")
+						?.textContent?.includes("合成中文释义，用于检查排版。") === true,
+				"A dictionary card must open before cross-tab library changes",
+			);
+			const previousCard = h.container.querySelector(".dict-card");
+			const broadcast = () =>
+				window.dispatchEvent(
+					new StorageEvent("storage", {
+						key: "folio-j:dictionary-library-changed",
+						newValue: String(Date.now()),
+						storageArea: localStorage,
+					}),
+				);
+			const beforeImport = statusReads;
+			broadcast();
+			await h.until(
+				() => statusReads > beforeImport,
+				"Importing an unselected dictionary in another tab must recheck the active identity",
+			);
+			await settle();
+			check(
+				previousCard?.isConnected &&
+					previousCard === h.container.querySelector(".dict-card") &&
+					previousCard.textContent?.includes("合成测试词典") &&
+					previousCard.textContent.includes("合成中文释义，用于检查排版。"),
+				"A library change retaining the same active dictionary must preserve the current word card",
+			);
+			activeDictionaryId = "synthetic-next";
+			activeDictionaryTitle = "第二本合成词典";
+			broadcast();
+			await h.until(
+				() => !h.container.querySelector(".dict-deck"),
+				"Changing the active dictionary in another tab must clear the previous cards",
+			);
+			const beforeLookup = requests.length;
+			await glyphClick(nextLeaf, 3, frame);
+			await h.until(
+				() =>
+					h.container
+						.querySelector(".dict-card")
+						?.textContent?.includes("第二本词典的独立释义。") === true,
+				"The next lookup must fetch definitions from the new dictionary",
+			);
+			const nextCard = h.container.querySelector(".dict-card");
+			check(
+				requests.length === beforeLookup + 1 &&
+					requests.at(-1)?.expected_dictionary_id === activeDictionaryId &&
+					nextCard?.textContent?.includes(activeDictionaryTitle) &&
+					!nextCard.textContent.includes("合成中文释义，用于检查排版。"),
+				"A dictionary switch must bypass old lookup cache and pair the new title with only its own definitions",
+			);
+			button("关闭查词").click();
+		}
 		dispose();
-		dispose = await h.mount(
-			<MaterialReader />,
-			"/materials/:id",
-			"/materials/dictionary",
-		);
+		dispose = await h.mount(<Outlet />, "/", "/materials/dictionary", [
+			{ path: "materials/:id", element: <MaterialReader /> },
+			{ path: "settings", element: <SettingsPage /> },
+		]);
 		await h.until(
 			() => !!h.container.querySelector(".dict-trigger"),
 			"Reader must remount for preference persistence",
@@ -809,6 +891,37 @@ export async function readerDictionary(h: BrowserHarness) {
 					'input[aria-label="词卡背景不透明度"]',
 				)?.value === "76",
 			"Dictionary opacity must persist across Reader remounts",
+		);
+		const manage = [
+			...h.container.querySelectorAll<HTMLAnchorElement>(".dict-config a"),
+		].find((link) => link.textContent?.trim() === "管理词典");
+		check(
+			manage?.getAttribute("href") === "/settings?section=dictionary",
+			"The Reader dictionary menu must link to central dictionary settings",
+		);
+		check(
+			!h.container.querySelector('.dict-config input[type="file"]'),
+			"Dictionary imports must live in central settings",
+		);
+		manage.click();
+		await h.until(
+			() =>
+				!!h.container.querySelector(
+					`input[aria-label="使用${activeDictionaryTitle}"]`,
+				),
+			"The Reader management link must open the installed dictionary library",
+		);
+		const back = h.container.querySelector<HTMLAnchorElement>(
+			'a[aria-label="返回阅读"]',
+		);
+		check(
+			back?.getAttribute("href") === "/materials/dictionary",
+			"Dictionary settings reached from a book must provide its return reading link",
+		);
+		back.click();
+		await h.until(
+			() => !!h.container.querySelector(".dict-trigger"),
+			"Returning from dictionary settings must reopen the source book",
 		);
 		return `dictionary: real body→Japanese child→${window.innerWidth >= 740 ? "four desktop levels" : "compact stack"}→back→close; saved mark + Shift click retain records; late response ignored`;
 	} finally {

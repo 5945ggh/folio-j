@@ -125,6 +125,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dictionary/library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Library */
+        get: operations["getDictionaryLibrary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dictionary/library/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Library Dictionary */
+        post: operations["importDictionaryLibrary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dictionary/library/selection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Select Library */
+        put: operations["selectDictionaryLibrary"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dictionary/lookup": {
         parameters: {
             query?: never;
@@ -1710,8 +1761,36 @@ export interface components {
             /** Style Id */
             style_id: string | null;
         };
+        /** DictionaryLibrary */
+        DictionaryLibrary: {
+            /** Active Dictionary Id */
+            active_dictionary_id: string | null;
+            /** Dictionaries */
+            dictionaries: components["schemas"]["DictionaryLibraryItem"][];
+        };
+        /** DictionaryLibraryImport */
+        DictionaryLibraryImport: {
+            /** Already Installed */
+            already_installed: boolean;
+            /** Dictionary Id */
+            dictionary_id: string;
+            library: components["schemas"]["DictionaryLibrary"];
+        };
+        /** DictionaryLibraryItem */
+        DictionaryLibraryItem: {
+            /** Dictionary Id */
+            dictionary_id: string;
+            /** Entry Count */
+            entry_count: number;
+            /** Revision */
+            revision: string;
+            /** Title */
+            title: string;
+        };
         /** DictionaryLookupRequest */
         DictionaryLookupRequest: {
+            /** Expected Dictionary Id */
+            expected_dictionary_id?: string | null;
             /** Position */
             position?: number | null;
             /** Selection End */
@@ -1806,6 +1885,11 @@ export interface components {
             textAlign?: ("left" | "right" | "center" | "start" | "end" | "justify") | null;
             /** Verticalalign */
             verticalAlign?: ("baseline" | "sub" | "super" | "text-top" | "text-bottom" | "middle" | "top" | "bottom") | null;
+        };
+        /** DictionarySelection */
+        DictionarySelection: {
+            /** Dictionary Id */
+            dictionary_id: string;
         };
         /** DictionaryStatus */
         DictionaryStatus: {
@@ -4227,6 +4311,83 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DictionaryStatus"];
+                };
+            };
+        };
+    };
+    getDictionaryLibrary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLibrary"];
+                };
+            };
+        };
+    };
+    importDictionaryLibrary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/zip": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLibraryImport"];
+                };
+            };
+        };
+    };
+    selectDictionaryLibrary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DictionarySelection"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLibrary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
