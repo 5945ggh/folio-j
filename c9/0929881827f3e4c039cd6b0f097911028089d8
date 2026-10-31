@@ -1,0 +1,62 @@
+docs/USAGE.md
+  s_f1f94627ba8014::t_61ecf0f8211c07 11
+frontend/browser-tests/reader-bookmarks.tsx
+  s_f1f94627ba8014::t_9f097dc97d3067 354
+docs/INFORMATION_ARCHITECTURE.md
+  s_f1f94627ba8014::t_61ecf0f8211c07 278,282,326
+frontend/src/materials/MaterialReader.tsx
+  s_f1f94627ba8014::t_70d20237b4afa0 1987,1990-1991,2053-2054
+  s_f1f94627ba8014::t_5a0afbcc07f33d 2384
+  s_f1f94627ba8014::t_b8f0f09cdead0c 1988-1989,1992-2006,2008-2052
+  s_f1f94627ba8014::t_f021b07d431c82 66
+frontend/src/materials/StudyPreview.tsx
+  s_f1f94627ba8014::t_7c0a4522a6c3eb 74-80,223-226
+  s_f1f94627ba8014::t_455f6c3912dbbd 9,26-27,44-45,227,305-306
+  s_f1f94627ba8014::t_71925ed97b6f0e 59,153-156,230
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_f1f94627ba8014::t_8ea3658c61bc91 63
+frontend/src/materials/ChapterRecords.tsx
+  s_f1f94627ba8014::t_71925ed97b6f0e 108,154-155,174-177
+  s_f1f94627ba8014::t_7c0a4522a6c3eb 73-78,87-94,98,101-104
+  s_f1f94627ba8014::t_455f6c3912dbbd 36,67,72,100,105,337-338,422
+frontend/src/materials/chapter-records.test.ts
+  s_f1f94627ba8014::t_ba9e8d4b24ee0b 6,12,37-49,51-66,68-83,121-149,154-162,167-186,190-198
+  s_f1f94627ba8014::t_b8f0f09cdead0c 93-105,107-110,114-117
+  s_f1f94627ba8014::t_4844da3d530603 50,67,150-153,163-166,187-189
+  s_f1f94627ba8014::t_f021b07d431c82 8,84-92,106,111-113,118-120
+frontend/browser-tests/inline-records.tsx
+  s_f1f94627ba8014::t_9f097dc97d3067 484
+  s_f1f94627ba8014::t_45f946932c8a3d 380
+frontend/browser-tests/margin-record-targets.tsx
+  s_f1f94627ba8014::t_aa8e51e8834800 189-206,285,288,311,314,364
+  s_f1f94627ba8014::t_abf50f592b3786 1-20,22-37,40-47,49-70,72-83,85,88-102,104-110,112-115,121-126,129-131,134-136,142-148,150-160,162-164,166-176,178,180-183,185-188,207-210,212-221,223-226,228-232,234-241,243-258,260-270,272-278,280-284,286-287,289-291,293-303,305-310,312-313,315-363,365
+  s_f1f94627ba8014::t_6263447f6412a5 21,38-39,48,71,84,86-87,103,111,116-120,127-128,132-133,137-141,149,161,165,177,179,184,211,222,227,233,242,259,271,279,292,304
+frontend/src/materials/chapter-records.ts
+  s_f1f94627ba8014::t_5a0afbcc07f33d 11-14,19-22,25-37
+  s_f1f94627ba8014::t_974ebca5c37bbd 15-18,23-24,40
+  s_f1f94627ba8014::t_f021b07d431c82 38-39,41-42
+frontend/browser-tests/chapter-records.tsx
+  s_f1f94627ba8014::t_c5fb9a03e8acb0 7-10,130-131,211,229-230,264,304,495,524-552,596-603,648-654
+frontend/browser-tests/main.tsx
+  s_f1f94627ba8014::t_35064d13d0bbc8 465
+frontend/browser-tests/reader-context-copy-fixture.ts
+  s_f1f94627ba8014::t_192bd9bb8e2524 25
+frontend/scripts/test-browser.mjs
+  s_f1f94627ba8014::t_163e109df98c81 104-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c90929881827f3e4c039cd6b0f097911028089d8",
+  "prompts": {},
+  "sessions": {
+    "s_f1f94627ba8014": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1903c-cd88-7492-a724-10411833f777",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
