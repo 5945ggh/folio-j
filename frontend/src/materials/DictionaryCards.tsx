@@ -133,9 +133,40 @@ export function DictionaryCards({
 	}, [levels]);
 	const deck = useRef<HTMLElement>(null);
 	const [stackPoint, setStackPoint] = useState<ReaderCardPosition | null>(null);
+	const [minimumStackHeight, setMinimumStackHeight] = useState(120);
+	const compact = viewport.width < compactDictionaryWidth;
+	const manuallyPlacedStack = compact && stackPoint !== null;
+	useLayoutEffect(() => {
+		if (!manuallyPlacedStack || levels.length < 2) {
+			setMinimumStackHeight(120);
+			return;
+		}
+		const node = deck.current;
+		if (!node) return;
+		const measure = () => {
+			const foreground = node.querySelector<HTMLElement>(
+				".dict-card:last-child",
+			);
+			const scroll = foreground?.querySelector<HTMLElement>(".dict-scroll");
+			if (!foreground || !scroll) return;
+			// Reserve the exposed parents, all foreground controls and a readable
+			// definition viewport, even when the current card has been squeezed shut.
+			const controls =
+				Math.max(foreground.offsetHeight, foreground.scrollHeight) -
+				scroll.clientHeight;
+			setMinimumStackHeight(
+				foreground.offsetTop + controls + Math.min(120, scroll.scrollHeight),
+			);
+		};
+		measure();
+		const observer = new ResizeObserver(measure);
+		observer.observe(node);
+		for (const child of node.querySelectorAll(".dict-card > *"))
+			observer.observe(child);
+		return () => observer.disconnect();
+	}, [manuallyPlacedStack, levels]);
 	const root = levels[0];
 	if (!root) return null;
-	const compact = viewport.width < compactDictionaryWidth;
 	const automatic = compact
 		? compactDictionaryLayout(
 				root.origin.anchor,
@@ -145,7 +176,13 @@ export function DictionaryCards({
 		: undefined;
 	const position =
 		automatic && stackPoint
-			? movedDictionaryLayout(stackPoint, automatic.width, viewport, true)
+			? movedDictionaryLayout(
+					stackPoint,
+					automatic.width,
+					viewport,
+					true,
+					minimumStackHeight,
+				)
 			: automatic;
 	const ancestors = position && position.maxHeight >= 330 ? 2 : 1;
 	const style: CSSProperties & {
@@ -281,10 +318,12 @@ function WordCard({
 		compact ? moveStack : setManual,
 		false, // Left/right belong to candidate paging in a dictionary card.
 	);
+	const header = useRef<HTMLElement>(null);
 	// A lookup can finish after the reader has already switched to a panel.
 	const takeInitialFocus = useRef(focusOnMount);
 	useLayoutEffect(() => {
-		if (takeInitialFocus.current) card.current?.focus({ preventScroll: true });
+		if (takeInitialFocus.current)
+			header.current?.focus({ preventScroll: true });
 	}, []);
 	const scroll = useRef<HTMLDivElement>(null);
 	const [selection, setSelection] = useState<Range | null>(null);
@@ -310,7 +349,7 @@ function WordCard({
 		if (next < 0 || next >= level.pages.length) return;
 		// Keep focus in this card if a pager button becomes disabled.
 		if (document.activeElement?.closest(".dict-pager"))
-			card.current?.focus({ preventScroll: true });
+			header.current?.focus({ preventScroll: true });
 		choose(depth, next);
 		if (scroll.current) scroll.current.scrollTop = 0;
 	};
@@ -350,6 +389,7 @@ function WordCard({
 			aria-label={`词卡 · ${titleWord ?? glyph}`}
 		>
 			<header
+				ref={header}
 				className="dict-card-head"
 				tabIndex={0}
 				title={compact ? "拖动卡头移动整组词卡" : "拖动卡头移动词卡"}

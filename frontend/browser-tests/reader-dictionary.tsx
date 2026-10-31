@@ -12,6 +12,8 @@ export async function readerDictionary(h: BrowserHarness) {
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
 	const { SettingsPage } = await import("../src/settings/SettingsPage");
 	const check: BrowserHarness["check"] = h.check;
+	const image =
+		"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aot0AAAAASUVORK5CYII=";
 	const paragraphs = [
 		"猫が歩く。",
 		...Array.from({ length: 36 }, (_, i) =>
@@ -44,12 +46,12 @@ export async function readerDictionary(h: BrowserHarness) {
 				end: Array.from(text).length,
 				leaf_start: 0,
 				leaf_end: paragraphs.length,
-				html: paragraphs
+				html: `<img data-epub-image="45" width="44" height="44" style="position:absolute;right:12px;top:100px" src="${image}" alt="原文插图">${paragraphs
 					.map(
 						(value, i) =>
 							`<p><span data-locator-leaf="${i}">${value}</span></p>`,
 					)
-					.join(""),
+					.join("")}`,
 			},
 		],
 	};
@@ -236,7 +238,12 @@ export async function readerDictionary(h: BrowserHarness) {
 								surface: "猫が",
 								end: start + 2,
 								definitions: [
-									{ tag: "p", lang: "ja", role: "def2", text: "短い説明。" },
+									{
+										tag: "p",
+										lang: "ja",
+										role: "def2",
+										text: "散歩の短い説明。",
+									},
 								],
 							},
 							{
@@ -287,6 +294,27 @@ export async function readerDictionary(h: BrowserHarness) {
 			});
 		if (path === "/api/settings/context-copy")
 			return Response.json(defaultContextCopySettings);
+		if (path.endsWith("/illustrations/locate"))
+			return Response.json({
+				material_id: book.id,
+				version_id: "v1",
+				total: 1,
+				offset: 0,
+				limit: 1,
+				items: [
+					{
+						ordinal: 0,
+						chapter_id: "chapter",
+						chapter_title: "第一章",
+						part_index: 0,
+						spine_index: 0,
+						resource_id: "r",
+						image_id: 45,
+						alt: "原文插图",
+						content_url: "/browser-tests/dictionary-image-fixture.png",
+					},
+				],
+			});
 		if (path.endsWith("/illustrations"))
 			return Response.json({
 				material_id: book.id,
@@ -377,6 +405,15 @@ export async function readerDictionary(h: BrowserHarness) {
 		window as Window & { browserPointer?: (events: unknown[]) => Promise<void> }
 	).browserPointer;
 	check(pointer, "Browser runner must supply trusted pointer dispatch");
+	const browserKey = (
+		window as Window & {
+			browserKey?: (
+				key: "Tab" | "Escape" | "Shift",
+				type?: "keyDown" | "keyUp",
+			) => Promise<void>;
+		}
+	).browserKey;
+	check(browserKey, "Dictionary focus needs native keyboard dispatch");
 	const clickAt = async (x: number, y: number) => {
 		await pointer([
 			{ type: "mouseMoved", x, y },
@@ -610,6 +647,17 @@ export async function readerDictionary(h: BrowserHarness) {
 			'.dict-card[data-depth="0"]',
 		);
 		check(root, "Root card must render");
+		check(
+			root.contains(document.activeElement),
+			"A new root card must receive keyboard focus",
+		);
+		await browserKey("Tab");
+		await h.until(
+			() =>
+				root.contains(document.activeElement) &&
+				document.activeElement instanceof HTMLButtonElement,
+			"Tab from a new card must reach its first enabled action without leaving the card",
+		);
 		await checkPager(root);
 		if (window.innerWidth >= 740) {
 			const headerTitle = root.querySelector<HTMLElement>("h2");
@@ -867,10 +915,6 @@ export async function readerDictionary(h: BrowserHarness) {
 			await clickAt(box.left + box.width / 2, box.top + box.height / 2);
 			await settle();
 		};
-		const browserKey = (
-			window as Window & { browserKey?: (key: "Escape") => Promise<void> }
-		).browserKey;
-		check(browserKey, "Overlay order needs native Escape dispatch");
 		const settings = () =>
 			h.container.querySelector('[role="dialog"][aria-label="阅读设置"]');
 		const gallery = () =>
@@ -990,6 +1034,56 @@ export async function readerDictionary(h: BrowserHarness) {
 			h.container.querySelector('.dict-card[aria-label="词卡 · 猫"]') === root,
 			"Back must preserve parent DOM identity",
 		);
+		if (window.innerWidth === 390) {
+			button("下一个候选", root).click();
+			await h.until(
+				() => root.getAttribute("aria-label") === "词卡 · 猫が",
+				"Bottom-edge regression needs a short parent candidate",
+			);
+			await settle();
+			const shortBox = root.getBoundingClientRect();
+			await dragCard(root, 0, window.innerHeight - 10 - shortBox.bottom);
+			check(
+				root.getBoundingClientRect().bottom >= window.innerHeight - 15,
+				"A short single card must remain draggable to the bottom edge",
+			);
+			const shortProse = root.querySelector<HTMLElement>(
+				'[data-dict-role="def2"]',
+			);
+			check(shortProse, "Short parent must expose Japanese text for lookup");
+			await glyphClick(shortProse, 1);
+			await h.until(
+				() => h.container.querySelectorAll(".dict-card").length === 2,
+				"Bottom-edge parent must open its long child",
+			);
+			await settle();
+			const bottomChild = h.container.querySelector<HTMLElement>(
+				'.dict-card[data-depth="1"]',
+			);
+			const childScroll =
+				bottomChild?.querySelector<HTMLElement>(".dict-scroll");
+			check(
+				bottomChild && childScroll,
+				"Bottom-edge child must own its content",
+			);
+			check(
+				childScroll.clientHeight >= 60 &&
+					childScroll.scrollHeight > childScroll.clientHeight,
+				"Opening a child after dragging a short card down must retain a readable scroll viewport",
+			);
+			childScroll.scrollTop = 80;
+			check(
+				childScroll.scrollTop > 0,
+				"Bottom-edge child definitions must scroll",
+			);
+			check(
+				bottomChild.getBoundingClientRect().top >
+					root.getBoundingClientRect().top + 30,
+				"Bottom-edge expansion must keep the parent step exposed",
+			);
+			checkCardInViewport(root);
+			checkCardInViewport(bottomChild);
+		}
 		button("关闭查词", root).click();
 		await h.until(
 			() => !h.container.querySelector(".dict-deck"),
@@ -1072,6 +1166,12 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		button("Shift 悬浮").click();
 		if (window.innerWidth >= 740) {
+			await glyphClick(leaf, 2, frame);
+			check(
+				document.activeElement === frame,
+				"The original iframe must own focus before pressing Shift",
+			);
+			await browserKey("Shift", "keyDown");
 			await pointer([
 				{ type: "mouseMoved", ...glyphPoint(leaf, 0, frame), modifiers: 8 },
 			]);
@@ -1089,6 +1189,29 @@ export async function readerDictionary(h: BrowserHarness) {
 				'[data-dict-role="def2"]',
 			);
 			check(hoverRoot && hoverProse, "Shift hover needs Japanese root prose");
+			check(
+				hoverRoot.contains(document.activeElement),
+				"The opened word card must own focus before releasing Shift outside the iframe",
+			);
+			const beforeRelease = requests.length;
+			let releasedOutsideFrame = false;
+			const released = (event: KeyboardEvent) => {
+				if (event.key === "Shift" && event.isTrusted)
+					releasedOutsideFrame = true;
+			};
+			document.addEventListener("keyup", released, { once: true });
+			await pointer([
+				{ type: "mouseMoved", ...glyphPoint(leaf, 2, frame), modifiers: 8 },
+			]);
+			await browserKey("Shift", "keyUp");
+			await new Promise((resolve) => setTimeout(resolve, 400));
+			document.removeEventListener("keyup", released);
+			check(
+				releasedOutsideFrame &&
+					requests.length === beforeRelease &&
+					hoverRoot.isConnected,
+				"Releasing Shift in the focused outer card must cancel pending iframe hover and preserve the opened card",
+			);
 			const chinese = hoverRoot.querySelector<HTMLElement>(
 				'[lang="zh"][data-dict-role="dfcn"]',
 			);
@@ -1222,6 +1345,74 @@ export async function readerDictionary(h: BrowserHarness) {
 			!h.container.querySelector(".dict-deck"),
 			"Late lookup result must not reopen a closed deck",
 		);
+		if (window.innerWidth === 1280) {
+			hold = false;
+			await glyphClick(nextLeaf, 3, frame);
+			await h.until(
+				() => !!h.container.querySelector(".dict-definitions"),
+				"Modal focus regression needs a resolved parent card",
+			);
+			const parentProse = h.container.querySelector(
+				'.dict-card[data-depth="0"] [data-dict-role="def2"]',
+			);
+			const originalImage = frame.contentDocument?.querySelector(
+				"img[data-epub-image]",
+			);
+			check(
+				parentProse && originalImage,
+				"Parent prose and original image must remain visible",
+			);
+			hold = true;
+			const previousRelease = deferred.release;
+			// Offset one has not been queried in this definition, so this child cannot use cached data.
+			await glyphClick(parentProse, 1);
+			await h.until(
+				() => !!deferred.release && deferred.release !== previousRelease,
+				"Nested lookup must wait before opening the image viewer",
+			);
+			const imageBox = originalImage.getBoundingClientRect();
+			const frameBox = frame.getBoundingClientRect();
+			await clickAt(
+				frameBox.left + imageBox.left + imageBox.width / 2,
+				frameBox.top + imageBox.top + imageBox.height / 2,
+			);
+			const viewer = () =>
+				h.container.querySelector(
+					'[aria-modal="true"].reader-query-image-viewer',
+				);
+			await h.until(
+				() => !!viewer()?.contains(document.activeElement),
+				"Clicking the original image must focus its modal viewer",
+			);
+			const viewerFocus = document.activeElement;
+			check(deferred.release, "Pending child response must have a release");
+			deferred.release();
+			hold = false;
+			await h.until(
+				() => h.container.querySelectorAll(".dict-card").length === 2,
+				"The delayed child must resolve while the image viewer remains open",
+			);
+			check(
+				viewer()?.contains(document.activeElement) &&
+					document.activeElement === viewerFocus,
+				"A delayed word card must not steal keyboard focus from the modal image viewer",
+			);
+			await browserKey("Tab");
+			check(
+				viewer()?.contains(document.activeElement),
+				"Tab must remain within the image viewer after the child lookup resolves",
+			);
+			await browserKey("Escape");
+			await h.until(
+				() => !viewer(),
+				"Escape must close the image viewer before the word card stack",
+			);
+			check(
+				h.container.querySelectorAll(".dict-card").length === 2,
+				"Closing the image viewer must preserve the resolved dictionary stack",
+			);
+			button("关闭查词").click();
+		}
 		if (innerWidth === 1280) {
 			hold = false;
 			await glyphClick(nextLeaf, 3, frame);

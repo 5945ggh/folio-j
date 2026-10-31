@@ -344,28 +344,21 @@ export default function ObservedMarkdown(props) {
 					message.method === "Runtime.bindingCalled" &&
 					message.params.name === "__dispatchBrowserKey"
 				) {
-					const { id, key } = JSON.parse(message.params.payload);
+					const { id, key, type } = JSON.parse(message.params.payload);
 					void (async () => {
-						await command(
-							"Input.dispatchKeyEvent",
-							{
-								type: "keyDown",
-								key,
-								code: key,
-								windowsVirtualKeyCode: key === "Escape" ? 27 : 9,
-							},
-							message.sessionId,
-						);
-						await command(
-							"Input.dispatchKeyEvent",
-							{
-								type: "keyUp",
-								key,
-								code: key,
-								windowsVirtualKeyCode: key === "Escape" ? 27 : 9,
-							},
-							message.sessionId,
-						);
+						for (const eventType of type ? [type] : ["keyDown", "keyUp"])
+							await command(
+								"Input.dispatchKeyEvent",
+								{
+									type: eventType,
+									key,
+									code: key === "Shift" ? "ShiftLeft" : key,
+									windowsVirtualKeyCode:
+										key === "Escape" ? 27 : key === "Shift" ? 16 : 9,
+									modifiers: key === "Shift" && eventType === "keyDown" ? 8 : 0,
+								},
+								message.sessionId,
+							);
 						await command(
 							"Runtime.evaluate",
 							{ expression: `window.__keyResolvers.get(${id})()` },
@@ -435,7 +428,7 @@ export default function ObservedMarkdown(props) {
 			await command(
 				"Page.addScriptToEvaluateOnNewDocument",
 				{
-					source: `window.__keyResolvers = new Map(); window.browserKey = (key) => new Promise((resolve) => { const id = window.__keyResolvers.size + 1; window.__keyResolvers.set(id, resolve); window.__dispatchBrowserKey(JSON.stringify({id,key})); });`,
+					source: `window.__keyResolvers = new Map(); window.browserKey = (key, type) => new Promise((resolve) => { const id = window.__keyResolvers.size + 1; window.__keyResolvers.set(id, resolve); window.__dispatchBrowserKey(JSON.stringify({id,key,type})); });`,
 				},
 				sessionId,
 			);

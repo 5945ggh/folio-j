@@ -59,6 +59,9 @@ function documentFixture(text = "") {
 		images: [image],
 	});
 	return {
+		outerDocument: Object.assign(new EventTarget(), {
+			defaultView: new EventTarget(),
+		}),
 		doc: doc as unknown as Document,
 		event: doc,
 		image,
@@ -107,6 +110,7 @@ for (const change of [
 				unbound = 0,
 				ready = 0;
 			const element = {
+				ownerDocument: h.outerDocument,
 				contentDocument: h.doc,
 				isConnected: true,
 				style: {},
@@ -220,6 +224,7 @@ test("current frame resources become ready once and frame replacement releases t
 		const first = documentFixture(),
 			next = documentFixture();
 		const element = {
+			ownerDocument: first.outerDocument,
 			contentDocument: first.doc,
 			isConnected: true,
 			style: {},
@@ -343,11 +348,13 @@ test("strict study validation requires every current part and snapshot without d
 		const h1 = documentFixture("甲乙"),
 			h2 = documentFixture("丙丁");
 		const element1 = {
+			ownerDocument: h1.outerDocument,
 			contentDocument: h1.doc,
 			isConnected: true,
 			style: {},
 		} as unknown as HTMLIFrameElement;
 		const element2 = {
+			ownerDocument: h2.outerDocument,
 			contentDocument: h2.doc,
 			isConnected: true,
 			style: {},
@@ -425,6 +432,7 @@ function feedbackFixture(t: TestContext) {
 	t.after(() => frames.clear());
 	const h = documentFixture("甲乙");
 	const element = {
+		ownerDocument: h.outerDocument,
 		contentDocument: h.doc,
 		isConnected: true,
 		style: {},

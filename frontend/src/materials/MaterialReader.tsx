@@ -2248,7 +2248,7 @@ function Reader({
 					<ReaderDictionary
 						ref={dictionary}
 						onActivate={() => setRightToolInFront(false)}
-						behindPanel={panelAboveCards}
+						behindPanel={panelAboveCards || directImage !== undefined}
 						manageState={returnState(
 							{ to: `/materials/${book.id}`, label: book.title },
 							returnTo,

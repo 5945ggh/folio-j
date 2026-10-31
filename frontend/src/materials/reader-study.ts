@@ -792,6 +792,16 @@ export class ReaderStudy {
 			pendingHover = null;
 			pendingNode = null;
 		};
+		// A word card can own keyboard focus while the mouse points into this iframe.
+		const outerDocument = input.element.ownerDocument;
+		const outerModifiers = (event: KeyboardEvent) => {
+			if (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey)
+				cancelHover();
+			if (event.type === "keyup" && !event.shiftKey && keyActive) {
+				keyActive = false;
+				schedule();
+			}
+		};
 		let selectionTimer: ReturnType<typeof setTimeout> | null = null;
 		let disposed = false;
 		let pointer = false,
@@ -823,6 +833,9 @@ export class ReaderStudy {
 				cancel();
 				for (const [type, listener] of listeners)
 					input.doc.removeEventListener(type, listener);
+				outerDocument.removeEventListener("keydown", outerModifiers, true);
+				outerDocument.removeEventListener("keyup", outerModifiers, true);
+				outerDocument.defaultView?.removeEventListener("blur", cancelHover);
 				input.viewport?.removeEventListener("scroll", scroll);
 				this.hits.delete(input.index);
 				this.dismissLookup();
@@ -1065,6 +1078,9 @@ export class ReaderStudy {
 			input.doc.addEventListener(type, listener, {
 				passive: type !== "pointerup",
 			});
+		outerDocument.addEventListener("keydown", outerModifiers, true);
+		outerDocument.addEventListener("keyup", outerModifiers, true);
+		outerDocument.defaultView?.addEventListener("blur", cancelHover);
 		input.viewport?.addEventListener("scroll", scroll, { passive: true });
 		this.refresh();
 		return frame.dispose;
