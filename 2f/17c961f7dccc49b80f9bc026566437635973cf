@@ -1,0 +1,20 @@
+frontend/browser-tests/segment-share.tsx
+  s_fb59dca13bb2c8::t_a0442e5074e01a 119-121
+  s_fb59dca13bb2c8::t_842a16f348727a 118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2f17c961f7dccc49b80f9bc026566437635973cf",
+  "prompts": {},
+  "sessions": {
+    "s_fb59dca13bb2c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19196-9a55-7f03-9f1f-538e6d3cdb11",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
