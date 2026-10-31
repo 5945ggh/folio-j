@@ -1,0 +1,26 @@
+docs/INFORMATION_ARCHITECTURE.md
+  s_f1f94627ba8014::t_ed72b1f0f600db 213
+docs/USAGE.md
+  s_f1f94627ba8014::t_ed72b1f0f600db 15
+frontend/src/segments/layout.css
+  s_f1f94627ba8014::t_07e16cd381c937 151-153,155-163,167-170,173-175,177
+frontend/src/SegmentPage.tsx
+  s_f1f94627ba8014::t_07e16cd381c937 394-396,400,404
+  s_f1f94627ba8014::t_5e905aefd23fab 390-393,397-399,401-403
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "342393b5af0383c05e5a6ce59cfb928724358eb4",
+  "prompts": {},
+  "sessions": {
+    "s_f1f94627ba8014": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1903c-cd88-7492-a724-10411833f777",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
