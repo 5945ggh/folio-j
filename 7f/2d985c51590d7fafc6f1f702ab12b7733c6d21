@@ -1,0 +1,116 @@
+backend/tests/test_material_chapter_segments.py
+  s_647501cafac3f7::t_ef2812de58ce8e 13
+backend/tests/test_catalog.py
+  s_647501cafac3f7::t_ef2812de58ce8e 7
+  s_647501cafac3f7::t_1ba02e042292ee 6
+backend/tests/test_context_copy_settings.py
+  s_647501cafac3f7::t_989dd30e8a7613 9-12,90-93,109-116,118-134
+backend/tests/test_worker_supervision.py
+  s_647501cafac3f7::t_ef2812de58ce8e 15
+backend/tests/test_material_metadata_concurrency.py
+  s_647501cafac3f7::t_ef2812de58ce8e 11-12
+backend/tests/test_chapter_positions.py
+  s_647501cafac3f7::t_ef2812de58ce8e 11
+  s_647501cafac3f7::t_1ba02e042292ee 10
+backend/tests/test_translation_prefill.py
+  s_647501cafac3f7::t_1ba02e042292ee 12-13
+docs/handovers/MAINTENANCE_OPTIMIZATION.md
+  s_647501cafac3f7::t_4d8aa0a731efdf 3,66-67
+  s_647501cafac3f7::t_cf612c312c0c1b 49-65
+backend/tests/test_reader_views.py
+  s_647501cafac3f7::t_1ba02e042292ee 21-22
+backend/tests/support_api.py
+  s_647501cafac3f7::t_1ba02e042292ee 1-124
+backend/tests/test_chat_runtime.py
+  s_647501cafac3f7::t_1ba02e042292ee 13
+backend/tests/test_chat_api.py
+  s_647501cafac3f7::t_ef2812de58ce8e 10-11
+backend/tests/test_health.py
+  s_647501cafac3f7::t_ef2812de58ce8e 5
+backend/tests/test_stream_progress.py
+  s_647501cafac3f7::t_1ba02e042292ee 12
+backend/tests/test_position_progress_memory.py
+  s_647501cafac3f7::t_1ba02e042292ee 6
+backend/tests/test_segment_context_settings.py
+  s_647501cafac3f7::t_989dd30e8a7613 9-12,90-93,109-116,118-134
+backend/tests/test_catalog_provenance.py
+  s_647501cafac3f7::t_ef2812de58ce8e 10
+backend/tests/test_covers.py
+  s_647501cafac3f7::t_ef2812de58ce8e 10
+  s_647501cafac3f7::t_1ba02e042292ee 9
+backend/tests/test_material_deletion.py
+  s_647501cafac3f7::t_ef2812de58ce8e 11-12
+backend/tests/test_chat_legacy_input.py
+  s_647501cafac3f7::t_1ba02e042292ee 11
+backend/tests/test_analysis_rename.py
+  s_647501cafac3f7::t_1ba02e042292ee 11
+backend/tests/test_chat_material_provenance.py
+  s_647501cafac3f7::t_1ba02e042292ee 15
+backend/tests/test_chat_races.py
+  s_647501cafac3f7::t_1ba02e042292ee 10
+backend/tests/test_analysis_agent.py
+  s_647501cafac3f7::t_1ba02e042292ee 13
+backend/tests/test_materials.py
+  s_647501cafac3f7::t_ef2812de58ce8e 17,19
+  s_647501cafac3f7::t_1ba02e042292ee 16
+backend/tests/test_source_segment.py
+  s_647501cafac3f7::t_ef2812de58ce8e 12,14
+backend/tests/test_bookmarks.py
+  s_647501cafac3f7::t_ef2812de58ce8e 14
+  s_647501cafac3f7::t_1ba02e042292ee 13
+backend/tests/test_translations.py
+  s_647501cafac3f7::t_1ba02e042292ee 14
+backend/tests/test_worker_dispatch.py
+  s_647501cafac3f7::t_ef2812de58ce8e 11
+backend/tests/test_material_vocabulary.py
+  s_647501cafac3f7::t_1ba02e042292ee 14-15
+docs/handovers/README.md
+  s_647501cafac3f7::t_cf612c312c0c1b 7
+backend/tests/test_material_context_snapshot.py
+  s_647501cafac3f7::t_1ba02e042292ee 10
+backend/tests/test_material_statistics.py
+  s_647501cafac3f7::t_1ba02e042292ee 12-13
+backend/tests/support_epub.py
+  s_647501cafac3f7::t_1ba02e042292ee 1-44
+backend/tests/test_translation_removal.py
+  s_647501cafac3f7::t_1ba02e042292ee 11-12
+backend/tests/test_manual_analyses.py
+  s_647501cafac3f7::t_1ba02e042292ee 17
+backend/tests/test_chat_prompt_scope.py
+  s_647501cafac3f7::t_1ba02e042292ee 12
+backend/tests/test_analysis_workflow_acceptance.py
+  s_647501cafac3f7::t_1ba02e042292ee 13
+backend/tests/test_material_metadata.py
+  s_647501cafac3f7::t_ef2812de58ce8e 15
+  s_647501cafac3f7::t_1ba02e042292ee 14
+backend/tests/test_credential_persistence.py
+  s_647501cafac3f7::t_1ba02e042292ee 9
+backend/tests/test_settings_api.py
+  s_647501cafac3f7::t_1ba02e042292ee 15
+backend/tests/test_chapter_translations.py
+  s_647501cafac3f7::t_1ba02e042292ee 16
+backend/tests/test_reader_queries.py
+  s_647501cafac3f7::t_1ba02e042292ee 9
+  s_647501cafac3f7::t_ef2812de58ce8e 10
+backend/tests/test_segment_provenance.py
+  s_647501cafac3f7::t_1ba02e042292ee 15
+backend/tests/test_material_readings.py
+  s_647501cafac3f7::t_1ba02e042292ee 9
+  s_647501cafac3f7::t_ef2812de58ce8e 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7f2d985c51590d7fafc6f1f702ab12b7733c6d21",
+  "prompts": {},
+  "sessions": {
+    "s_647501cafac3f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19001-1a71-7073-bc4c-27f4af4d76bb",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
