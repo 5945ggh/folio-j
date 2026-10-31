@@ -198,6 +198,9 @@
 .reader-r1 .reader-study-preview-analysis-heading h3 {
 	margin-bottom: 5px;
 }
+.reader-r1 .reader-study-preview-analysis-heading > .native-select {
+	width: 100%;
+}
 .reader-r1 .reader-study-preview-analysis-heading strong {
 	font-size: 13px;
 	font-weight: 600;
@@ -206,7 +209,8 @@
 	width: 100%;
 	min-width: 0;
 	font-size: 12px;
-	padding: 7px;
+	padding-block: 7px;
+	padding-inline-start: 10px;
 	border: 1px solid var(--reader-line);
 	border-radius: 6px;
 	background: var(--reader-bg);

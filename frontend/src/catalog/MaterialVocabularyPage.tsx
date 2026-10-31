@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { vocabularyReaderHref } from "../materials/vocabulary-navigation";
+import { NativeSelect } from "../NativeSelect";
 import { returnDestination, returnState } from "../navigation";
 import { InlineError, Shell } from "../Shared";
 import { bookDetailsKey, getBookDetails } from "./api";
@@ -327,7 +328,7 @@ function VocabularyExplorer({
 				</form>
 				<label className="vocabulary-filter">
 					<span>词性</span>
-					<select
+					<NativeSelect
 						aria-label="词性"
 						value={state.pos}
 						onChange={(event) => change({ pos: event.target.value })}
@@ -341,11 +342,11 @@ function VocabularyExplorer({
 								{pos}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 				<label className="vocabulary-filter">
 					<span>排序</span>
-					<select
+					<NativeSelect
 						aria-label="词频排序"
 						value={state.sort}
 						onChange={(event) =>
@@ -359,7 +360,7 @@ function VocabularyExplorer({
 					>
 						<option value="frequency_desc">出现次数 · 从多到少</option>
 						<option value="frequency_asc">出现次数 · 从少到多</option>
-					</select>
+					</NativeSelect>
 				</label>
 			</div>
 			<div className="vocabulary-result-summary" role="status">

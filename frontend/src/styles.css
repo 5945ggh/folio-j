@@ -345,7 +345,8 @@ a {
 .field textarea,
 .field select {
 	width: 100%;
-	padding: 10px 11px;
+	padding-block: 10px;
+	padding-inline: 11px var(--native-select-padding-end, 11px);
 	border: 1px solid light-dark(#dce1e4, var(--color-border));
 	border-radius: 5px;
 	color: light-dark(#292c2e, var(--color-text-strong));
@@ -1307,7 +1308,8 @@ a {
 }
 .chat-first-generation select {
 	width: 100%;
-	padding: 8px;
+	padding-block: 8px;
+	padding-inline-start: 8px;
 	border: 1px solid light-dark(#dedee1, var(--color-border));
 	border-radius: 5px;
 	background: var(--color-surface);
@@ -2170,7 +2172,8 @@ a {
 .material-tools select,
 .material-settings select {
 	max-width: min(65vw, 450px);
-	padding: 9px;
+	padding-block: 9px;
+	padding-inline-start: 9px;
 	border: 1px solid light-dark(#d7d9d1, var(--color-border));
 	border-radius: 6px;
 	background: var(--color-surface);
@@ -2570,7 +2573,8 @@ a {
 	flex-basis: 100%;
 }
 .source-context .catalog-toolbar select {
-	padding: 5px;
+	padding-block: 5px;
+	padding-inline-start: 5px;
 	min-height: 32px;
 	font-size: 11px;
 }
@@ -2707,7 +2711,7 @@ a {
 	.catalog-search {
 		flex-basis: 100%;
 	}
-	.catalog-toolbar select {
+	.catalog-toolbar .native-select {
 		max-width: 160px;
 	}
 	.book-grid {

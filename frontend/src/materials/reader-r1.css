@@ -389,7 +389,8 @@
 	border: 1px solid var(--reader-line);
 	border-radius: 6px;
 	background: var(--reader-bg);
-	padding: 6px;
+	padding-block: 6px;
+	padding-inline-start: 10px;
 }
 .reader-panel-body input[type="range"] {
 	width: 100%;

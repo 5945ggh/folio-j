@@ -5,6 +5,7 @@ import { analysisKeys, getAnalysis, listAnalyses } from "../analysis/api";
 import { Markdown } from "../analysis/Markdown";
 import { analysisPresentation } from "../analysis/presentation";
 import { getSegment, queries } from "../content";
+import { NativeSelect } from "../NativeSelect";
 import { useViewActivity } from "../navigation/view-activity";
 import type { MarginRecordEntry } from "./chapter-records";
 import { useReaderSessionRefresh } from "./reader-session-query";
@@ -439,7 +440,7 @@ export function StudyPreview({
 											>
 												选择讲解
 											</label>
-											<select
+											<NativeSelect
 												id={pickerId}
 												value={analysis.id}
 												onChange={(event) =>
@@ -454,7 +455,7 @@ export function StudyPreview({
 														{item.title}
 													</option>
 												))}
-											</select>
+											</NativeSelect>
 										</>
 									) : (
 										<strong>{analysis.title}</strong>

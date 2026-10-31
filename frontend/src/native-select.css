@@ -1,0 +1,49 @@
+.native-select {
+	--native-select-padding-end: 40px;
+	--native-select-arrow-color: var(
+		--reader-muted,
+		var(--color-text-muted, currentColor)
+	);
+	position: relative;
+	display: inline-grid;
+	grid-template-columns: minmax(0, 1fr);
+	min-inline-size: 0;
+	max-inline-size: 100%;
+	vertical-align: middle;
+}
+.native-select > select {
+	appearance: none;
+	inline-size: 100%;
+	min-inline-size: 0;
+	padding-inline-end: var(--native-select-padding-end);
+	text-overflow: ellipsis;
+	cursor: pointer;
+}
+.native-select > svg {
+	position: absolute;
+	inset-inline-end: 14px;
+	top: 50%;
+	width: 14px;
+	height: 14px;
+	transform: translateY(-50%);
+	color: var(--native-select-arrow-color);
+	pointer-events: none;
+}
+.native-select > select:disabled {
+	cursor: default;
+	opacity: 0.55;
+}
+.native-select:has(> select:disabled) > svg {
+	opacity: 0.55;
+}
+@media (forced-colors: active) {
+	.native-select {
+		--native-select-padding-end: 10px;
+	}
+	.native-select > select {
+		appearance: auto;
+	}
+	.native-select > svg {
+		display: none;
+	}
+}

@@ -363,7 +363,8 @@
 }
 .source-list-sort .source-sort-field select {
 	min-height: 32px;
-	padding: 5px 8px;
+	padding-block: 5px;
+	padding-inline-start: 8px;
 	border: 0;
 	background: transparent;
 	color: var(--color-text);

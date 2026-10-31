@@ -11,6 +11,10 @@ const { selectBrowserScenarios, browserScreenshotName } = await import(
 );
 const scenarios = selectBrowserScenarios(
 	[
+		[1280, 900, "?suite=native-select&theme=light"],
+		[1280, 900, "?suite=native-select&theme=dark"],
+		[320, 900, "?suite=native-select&theme=light"],
+		[320, 900, "?suite=native-select&theme=dark"],
 		[1280, 900, "?suite=app-theme&system=light"],
 		[1280, 900, "?suite=app-theme&system=dark"],
 		[390, 900, "?suite=app-theme&system=light"],

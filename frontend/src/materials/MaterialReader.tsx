@@ -1,3 +1,4 @@
+import { NativeSelect } from "../NativeSelect";
 import "./reader-r1.css";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -2655,7 +2656,7 @@ function Reader({
 					</dl>
 					<label>
 						阅读状态
-						<select
+						<NativeSelect
 							aria-label="阅读状态"
 							value={usage.data?.status ?? "not_started"}
 							disabled={!usage.isSuccess || usageBusy}
@@ -2666,7 +2667,7 @@ function Reader({
 							<option value="not_started">未开始</option>
 							<option value="in_progress">进行中</option>
 							<option value="completed">已完成</option>
-						</select>
+						</NativeSelect>
 					</label>
 					<dl className="reader-book-info">
 						<dt>阅读位置保存状态</dt>

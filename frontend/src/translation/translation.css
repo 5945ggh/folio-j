@@ -295,7 +295,12 @@
 	color: var(--reader-fg, var(--color-text-strong));
 	border: 1px solid var(--reader-line, var(--color-border));
 	border-radius: 6px;
-	padding: 7px;
+	padding-block: 7px;
+	padding-inline: 7px var(--native-select-padding-end, 7px);
+}
+.translation-card .native-select {
+	display: grid;
+	width: 100%;
 }
 .translation-card input[type="checkbox"] {
 	width: auto;

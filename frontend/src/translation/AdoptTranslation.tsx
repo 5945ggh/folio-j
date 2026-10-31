@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link } from "react-router";
 import { getSegment, queries, RequestError } from "../content";
 import { matchMaterialSegments } from "../materials/study-api";
+import { NativeSelect } from "../NativeSelect";
 import { InlineError } from "../Shared";
 import {
 	type AdoptionInput,
@@ -307,7 +308,7 @@ export function AdoptTranslation({
 			{candidates.isPending && <p role="status">正在核对相同出处片段…</p>}
 			<label>
 				保存到
-				<select
+				<NativeSelect
 					disabled={save.isPending || session.pending || uncertain}
 					value={chosen}
 					onChange={(event) => {
@@ -323,7 +324,7 @@ export function AdoptTranslation({
 							已有片段：{s.text.slice(0, 35)}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 			</label>
 			{chosen && (
 				<>

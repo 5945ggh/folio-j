@@ -170,7 +170,8 @@
 .settings-page .settings-field select {
 	width: 100%;
 	min-width: 0;
-	padding: 8px 11px;
+	padding-block: 8px;
+	padding-inline: 11px var(--native-select-padding-end, 11px);
 	min-height: 38px;
 	border: 1px solid var(--settings-line);
 	border-radius: 7px;
@@ -179,7 +180,7 @@
 	font: inherit;
 	font-size: 13px;
 }
-.settings-page .settings-preference-row > .settings-control {
+.settings-page .settings-preference-row > .native-select {
 	max-width: 230px;
 	width: 48%;
 }
@@ -197,6 +198,9 @@
 	width: 54%;
 	max-width: 310px;
 	min-width: 0;
+}
+.settings-page .settings-model-control > .native-select {
+	width: 100%;
 }
 .settings-page .settings-model-control small {
 	display: block;
@@ -452,7 +456,7 @@
 	.settings-page .settings-field :is(input, select, textarea) {
 		font-size: 16px;
 	}
-	.settings-page .settings-preference-row > .settings-control,
+	.settings-page .settings-preference-row > .native-select,
 	.settings-page .settings-preference-row.background textarea,
 	.settings-page .settings-model-control {
 		width: 100%;

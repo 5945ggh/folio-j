@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { NativeSelect } from "../NativeSelect";
 import { statusLabels, Tabs } from "./Controls";
 import { SearchInput } from "./SearchInput";
 import type { CatalogState } from "./state";
@@ -162,7 +163,7 @@ export function LibraryTools({
 						<Tool name="filter" label="筛选书籍">
 							<label>
 								所属来源
-								<select
+								<NativeSelect
 									value={state.source_id}
 									onChange={(e) => change({ source_id: e.target.value })}
 								>
@@ -172,11 +173,11 @@ export function LibraryTools({
 											{s.title}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 							<label>
 								阅读状态
-								<select
+								<NativeSelect
 									value={state.status}
 									onChange={(e) =>
 										change({ status: e.target.value as CatalogState["status"] })
@@ -188,13 +189,13 @@ export function LibraryTools({
 											{l}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 						</Tool>
 						<Tool name="sort" label="排序">
 							<label>
 								排序依据
-								<select
+								<NativeSelect
 									value={state.sort}
 									onChange={(e) =>
 										change({ sort: e.target.value as CatalogState["sort"] })
@@ -204,7 +205,7 @@ export function LibraryTools({
 									<option value="created_at">添加时间</option>
 
 									<option value="last_opened_at">最近打开</option>
-								</select>
+								</NativeSelect>
 							</label>
 							<div className="library-sort-direction-field">
 								<span>排序方向</span>

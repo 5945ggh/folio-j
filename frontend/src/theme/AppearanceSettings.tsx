@@ -1,3 +1,4 @@
+import { NativeSelect } from "../NativeSelect";
 import { useAppTheme } from "./browser";
 
 export function AppearanceSettings() {
@@ -13,7 +14,7 @@ export function AppearanceSettings() {
 						<strong>颜色模式</strong>
 						<small>仅保存在当前浏览器，选择后立即生效。</small>
 					</span>
-					<select
+					<NativeSelect
 						className="settings-control"
 						aria-label="应用颜色模式"
 						value={theme.preference}
@@ -26,7 +27,7 @@ export function AppearanceSettings() {
 						<option value="light">浅色</option>
 						<option value="dark">深色</option>
 						<option value="system">跟随系统</option>
-					</select>
+					</NativeSelect>
 				</label>
 				<p className="settings-appearance-note settings-hint">
 					阅读器的纸面颜色仍在阅读设置中单独选择。

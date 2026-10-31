@@ -16,6 +16,7 @@ import {
 import { analysisKeys, getAnalysis } from "../analysis/api";
 import { Markdown } from "../analysis/Markdown";
 import { queries, RequestError, type Segment } from "../content";
+import { NativeSelect } from "../NativeSelect";
 import { InlineError } from "../Shared";
 import { getProviders, getSettings, settingsKeys } from "../settings/api";
 import {
@@ -1407,7 +1408,7 @@ export function Workbench({
 							<h3>创建 AI 讲解</h3>
 							<p>选择模型后，在新对话中创建并保存一份独立讲解。</p>
 							<label htmlFor="explanation-model">模型</label>
-							<select
+							<NativeSelect
 								id="explanation-model"
 								value={firstModelId ?? ""}
 								onChange={(event) => setFirstModelId(event.target.value)}
@@ -1418,7 +1419,7 @@ export function Workbench({
 										{provider.name} / {model.model_id}
 									</option>
 								))}
-							</select>
+							</NativeSelect>
 							{defaults.isError && <InlineError error={defaults.error} />}
 							{providers.isError && <InlineError error={providers.error} />}
 							{threads.isError && <InlineError error={threads.error} />}

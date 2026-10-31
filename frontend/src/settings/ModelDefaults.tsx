@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { Link } from "react-router";
+import { NativeSelect } from "../NativeSelect";
 import { InlineError } from "../Shared";
 import { type Provider, patchSettings, type Settings } from "./api";
 import {
@@ -77,7 +78,7 @@ export function ModelDefaults({
 					<small>{description}</small>
 				</span>
 				<span className="settings-model-control">
-					<select
+					<NativeSelect
 						className="settings-control"
 						value={draft.fields[purpose] ?? ""}
 						onChange={(event) =>
@@ -114,7 +115,7 @@ export function ModelDefaults({
 								)
 							);
 						})}
-					</select>
+					</NativeSelect>
 					{selected && (
 						<small className="settings-hint settings-model-identity">
 							{selected.provider.name} · {selected.model.model_id}

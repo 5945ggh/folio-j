@@ -6,6 +6,7 @@ import {
 	useState,
 	useSyncExternalStore,
 } from "react";
+import { NativeSelect } from "../NativeSelect";
 import { getSpeechController } from "./browser";
 import {
 	MAX_SPEECH_RATE,
@@ -128,44 +129,42 @@ function SpeechSettingsForm({ compact = false }: { compact?: boolean }) {
 			)}
 			<div className="device-speech-voice">
 				<label htmlFor={`${id}-voice`}>日语声音</label>
-				<div className="device-speech-voice-select">
-					<select
-						id={`${id}-voice`}
-						disabled={!state.supported}
-						value={
-							state.preferences.voice
-								? selected
-									? String(state.voices.indexOf(selected))
-									: "missing"
-								: "auto"
-						}
-						onChange={(event) => {
-							controller.setVoice(
-								event.target.value === "auto"
-									? null
-									: (state.voices[Number(event.target.value)] ?? null),
-							);
-							announcePreferenceChange();
-						}}
-					>
-						<option value="auto">自动选择（优先本地）</option>
-						{state.preferences.voice && !selected && (
-							<option value="missing" disabled>
-								{state.preferences.voice.name}（当前不可用）
-							</option>
-						)}
-						{state.voices.map((voice, index) => (
-							<option
-								key={`${voice.voiceURI}-${voice.name}-${voice.lang}`}
-								value={index}
-							>
-								{voice.name} · {voice.lang} ·{" "}
-								{voice.localService ? "本地声音" : "远端声音"}
-							</option>
-						))}
-					</select>
-					<SpeechIcon action="chevron" />
-				</div>
+				<NativeSelect
+					wrapperClassName="device-speech-voice-select"
+					id={`${id}-voice`}
+					disabled={!state.supported}
+					value={
+						state.preferences.voice
+							? selected
+								? String(state.voices.indexOf(selected))
+								: "missing"
+							: "auto"
+					}
+					onChange={(event) => {
+						controller.setVoice(
+							event.target.value === "auto"
+								? null
+								: (state.voices[Number(event.target.value)] ?? null),
+						);
+						announcePreferenceChange();
+					}}
+				>
+					<option value="auto">自动选择（优先本地）</option>
+					{state.preferences.voice && !selected && (
+						<option value="missing" disabled>
+							{state.preferences.voice.name}（当前不可用）
+						</option>
+					)}
+					{state.voices.map((voice, index) => (
+						<option
+							key={`${voice.voiceURI}-${voice.name}-${voice.lang}`}
+							value={index}
+						>
+							{voice.name} · {voice.lang} ·{" "}
+							{voice.localService ? "本地声音" : "远端声音"}
+						</option>
+					))}
+				</NativeSelect>
 				{selected && (
 					<p className="device-speech-voice-detail">
 						<svg

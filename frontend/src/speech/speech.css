@@ -27,7 +27,8 @@
 .device-speech-popover > button {
 	min-height: 34px;
 	max-width: 100%;
-	padding: 0.35rem 0.6rem;
+	padding-block: 0.35rem;
+	padding-inline: 0.6rem var(--native-select-padding-end, 0.6rem);
 	border: 1px solid var(--speech-line);
 	border-radius: 6px;
 	background: var(--speech-bg);
@@ -140,16 +141,17 @@
 	display: block;
 	margin-bottom: 9px;
 }
-.device-speech-voice-select {
-	position: relative;
+.native-select.device-speech-voice-select {
+	--native-select-arrow-color: var(--speech-muted);
+	width: 100%;
 }
 .device-speech-voice-select > select {
 	display: block;
-	appearance: none;
 	width: 100%;
 	min-width: 0;
 	min-height: 42px;
-	padding: 10px 36px 10px 12px;
+	padding-block: 10px;
+	padding-inline-start: 12px;
 	border: 1px solid color-mix(in srgb, var(--speech-fg) 16%, var(--speech-bg));
 	border-radius: 9px;
 	background: var(--speech-bg);
@@ -164,16 +166,6 @@
 .device-speech-voice-select > select:disabled {
 	opacity: 0.55;
 	cursor: not-allowed;
-}
-.device-speech-voice-select > svg {
-	position: absolute;
-	top: 50%;
-	right: 12px;
-	width: 16px;
-	height: 16px;
-	transform: translateY(-50%);
-	color: var(--speech-muted);
-	pointer-events: none;
 }
 .device-speech-voice .device-speech-voice-detail {
 	display: flex;

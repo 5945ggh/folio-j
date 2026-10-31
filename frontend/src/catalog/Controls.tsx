@@ -1,4 +1,5 @@
 import { type KeyboardEvent, type ReactNode, useId, useRef } from "react";
+import { NativeSelect } from "../NativeSelect";
 import { SearchInput } from "./SearchInput";
 import { type CatalogKind, type CatalogState, sortFields } from "./state";
 
@@ -117,7 +118,7 @@ export function CatalogToolbar({
 				<span className={sourceList ? undefined : "sr-only"}>
 					{sourceList ? "排序依据" : "排序字段"}
 				</span>
-				<select
+				<NativeSelect
 					value={state.sort}
 					onChange={(e) =>
 						change({ sort: e.target.value as CatalogState["sort"] })
@@ -130,7 +131,7 @@ export function CatalogToolbar({
 								: sortLabels[field]}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 			</label>
 			{sourceList ? (
 				<div className="source-sort-direction-field">
@@ -151,7 +152,7 @@ export function CatalogToolbar({
 			) : (
 				<label>
 					<span className="sr-only">排序方向</span>
-					<select
+					<NativeSelect
 						value={state.order}
 						onChange={(e) =>
 							change({ order: e.target.value as CatalogState["order"] })
@@ -159,7 +160,7 @@ export function CatalogToolbar({
 					>
 						<option value="asc">升序</option>
 						<option value="desc">降序</option>
-					</select>
+					</NativeSelect>
 				</label>
 			)}
 		</>
@@ -195,7 +196,7 @@ export function CatalogToolbar({
 			{sources && (
 				<label>
 					<span className="sr-only">Source 筛选</span>
-					<select
+					<NativeSelect
 						value={state.source_id}
 						onChange={(e) => change({ source_id: e.target.value })}
 					>
@@ -205,13 +206,13 @@ export function CatalogToolbar({
 								{source.title}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 			)}
 			{kind === "books" && (
 				<label>
 					<span className="sr-only">阅读状态筛选</span>
-					<select
+					<NativeSelect
 						value={state.status}
 						onChange={(e) =>
 							change({ status: e.target.value as CatalogState["status"] })
@@ -223,7 +224,7 @@ export function CatalogToolbar({
 								{label}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 			)}
 			{sourceList ? (

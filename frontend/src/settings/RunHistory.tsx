@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { NativeSelect } from "../NativeSelect";
 import { dateLabel, InlineError } from "../Shared";
 import {
 	getRun,
@@ -91,7 +92,7 @@ export function RunHistory({
 				{!providerId && (
 					<label className="settings-field">
 						<span>服务</span>
-						<select
+						<NativeSelect
 							value={selectedProvider}
 							onChange={(event) =>
 								changeFilter(() => {
@@ -110,12 +111,12 @@ export function RunHistory({
 								!providers.some(
 									(provider) => provider.id === selectedProvider,
 								) && <option value={selectedProvider}>已删除服务</option>}
-						</select>
+						</NativeSelect>
 					</label>
 				)}
 				<label className="settings-field">
 					<span>模型</span>
-					<select
+					<NativeSelect
 						value={selectedModel}
 						onChange={(event) =>
 							changeFilter(() => setSelectedModel(event.target.value))
@@ -134,11 +135,11 @@ export function RunHistory({
 							!modelOptions.some((model) => model.id === selectedModel) && (
 								<option value={selectedModel}>已删除模型登记</option>
 							)}
-					</select>
+					</NativeSelect>
 				</label>
 				<label className="settings-field">
 					<span>状态</span>
-					<select
+					<NativeSelect
 						value={selectedStatus}
 						onChange={(event) =>
 							changeFilter(() =>
@@ -152,7 +153,7 @@ export function RunHistory({
 								{label}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 			</div>
 			{runs.isPending ? (

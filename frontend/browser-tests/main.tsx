@@ -17,6 +17,7 @@ import { chapterRecords } from "./chapter-records";
 import { explanationRegression } from "./explanation";
 import { materialImport } from "./material-import";
 import { materialVocabulary } from "./material-vocabulary";
+import { nativeSelectRegression } from "./native-select";
 import { navigationFeedback } from "./navigation-feedback";
 import { positionBookmarks } from "./position-bookmarks";
 import { readerBookmarks } from "./reader-bookmarks";
@@ -411,6 +412,7 @@ async function clearStudyContext() {
 try {
 	const suite = new URLSearchParams(location.search).get("suite");
 	const standalone = new Map([
+		["native-select", nativeSelectRegression],
 		["material-vocabulary", materialVocabulary],
 		["settings-models", settingsModels],
 		["app-theme", appTheme],

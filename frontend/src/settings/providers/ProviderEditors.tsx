@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useRef, useState } from "react";
 import { api } from "../../api/client";
 import { requireData } from "../../content";
+import { NativeSelect } from "../../NativeSelect";
 import { InlineError } from "../../Shared";
 import {
 	type Model,
@@ -131,7 +132,7 @@ export function ProviderEditor({
 									</label>
 									<label className="settings-field">
 										<span>默认协议</span>
-										<select
+										<NativeSelect
 											value={fields.protocol}
 											onChange={(event) =>
 												setFields({
@@ -143,7 +144,7 @@ export function ProviderEditor({
 										>
 											<option value="chat_completions">Chat Completions</option>
 											<option value="responses">Responses</option>
-										</select>
+										</NativeSelect>
 									</label>
 									<label className="settings-field full">
 										<span>API 地址</span>
@@ -325,7 +326,7 @@ export function ModelEditor({
 							</label>
 							<label className="settings-field">
 								<span>协议覆盖</span>
-								<select
+								<NativeSelect
 									value={fields.protocol_override ?? ""}
 									onChange={(event) =>
 										setFields({
@@ -338,7 +339,7 @@ export function ModelEditor({
 									<option value="">继承服务默认协议</option>
 									<option value="chat_completions">Chat Completions</option>
 									<option value="responses">Responses</option>
-								</select>
+								</NativeSelect>
 							</label>
 							<label className="settings-field">
 								<span>Temperature（可选）</span>
@@ -384,7 +385,7 @@ export function ModelEditor({
 							</label>
 							<label className="settings-field">
 								<span>推理强度（可选）</span>
-								<select
+								<NativeSelect
 									value={fields.reasoning_effort ?? ""}
 									onChange={(event) =>
 										setFields({
@@ -399,7 +400,7 @@ export function ModelEditor({
 									<option value="low">low</option>
 									<option value="medium">medium</option>
 									<option value="high">high</option>
-								</select>
+								</NativeSelect>
 							</label>
 							<label className="provider-check">
 								<input

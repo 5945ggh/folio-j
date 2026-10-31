@@ -9,6 +9,7 @@ import {
 	type SourceFields,
 } from "../content";
 import { SourceForm } from "../Forms";
+import { NativeSelect } from "../NativeSelect";
 import { ConfirmDialog, InlineError } from "../Shared";
 import { catalogKeys } from "./api";
 import { useMaterialImport } from "./ImportCards";
@@ -138,7 +139,7 @@ export function ImportDialog({
 								</button>
 							)}
 						</div>
-						<select
+						<NativeSelect
 							id={sourceSelectId}
 							ref={sourceSelect}
 							required
@@ -157,7 +158,7 @@ export function ImportDialog({
 									{source.title}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</div>
 					{sources.isError && <InlineError error={sources.error} />}
 				</div>

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { RequestError } from "../content";
+import { NativeSelect } from "../NativeSelect";
 import { InlineError } from "../Shared";
 import { getProviders, getSettings, settingsKeys } from "../settings/api";
 import { useSettingsDraft } from "../settings/SettingsForms";
@@ -124,7 +125,7 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 				>
 					<label className="settings-preference-row">
 						<span>翻译模型</span>
-						<select
+						<NativeSelect
 							className="settings-control"
 							value={draft.model_id ?? ""}
 							onChange={(event) =>
@@ -150,7 +151,7 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 									))}
 								</optgroup>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 					{availableChatModel && (
 						<button

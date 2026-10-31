@@ -394,6 +394,26 @@ export async function appTheme(h: BrowserHarness, preview = false) {
 					"Preview provider dialog must open",
 				);
 			}
+			if (params.get("panel") === "book-info") {
+				find<HTMLButtonElement>('button[aria-label="书籍信息"]').click();
+				await h.until(
+					() => !!h.container.querySelector('select[aria-label="阅读状态"]'),
+					"Preview book information must open",
+				);
+				const panel = find<HTMLElement>(
+					'[role="dialog"][aria-label="书籍信息"]',
+				);
+				await h.until(
+					() =>
+						getComputedStyle(panel).opacity === "1" &&
+						[panel, find(".reader-r1")].every((node) =>
+							node
+								.getAnimations()
+								.every((animation) => animation.playState === "finished"),
+						),
+					"Preview must wait for Reader and information panel entrance motion",
+				);
+			}
 			return `app theme preview ${entry}, ${controller.getSnapshot().mode}, ${innerWidth}px`;
 		}
 		check(

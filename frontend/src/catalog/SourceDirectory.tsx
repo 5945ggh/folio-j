@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
+import { NativeSelect } from "../NativeSelect";
 import { InlineError } from "../Shared";
 import { catalogKeys, catalogSources, type SourceQuery } from "./api";
 import { Pagination } from "./Controls";
@@ -63,7 +64,7 @@ export function SourceDirectory({
 					<Tool name="sort" label="来源排序">
 						<label>
 							排序依据
-							<select
+							<NativeSelect
 								value={state.sort}
 								onChange={(e) =>
 									change({ sort: e.target.value as typeof state.sort })
@@ -72,7 +73,7 @@ export function SourceDirectory({
 								<option value="title">名称</option>
 								<option value="created_at">创建时间</option>
 								<option value="updated_at">更新时间</option>
-							</select>
+							</NativeSelect>
 						</label>
 						<div className="library-sort-direction-field">
 							<span>排序方向</span>
