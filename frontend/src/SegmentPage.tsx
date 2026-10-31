@@ -387,11 +387,22 @@ export function SegmentDetail() {
 						>
 							<div className="segment-reader-inner">
 								<header className="segment-identity">
-									<Link to={`/sources/${current.source_id}`}>
-										{source.data?.title ?? "所属来源"}
+									<Link
+										to={`/sources/${current.source_id}`}
+										title={source.data?.title}
+									>
+										{source.data?.title ? (
+											<>
+												<span className="segment-source-label">所属来源：</span>
+												<span className="segment-source-name">
+													{source.data.title}
+												</span>
+											</>
+										) : (
+											"查看所属来源"
+										)}
+										<span aria-hidden="true">→</span>
 									</Link>
-									<span aria-hidden="true">／</span>
-									<span>片段</span>
 								</header>
 								<SegmentMaterialOrigin segment={current} />
 								<OriginalCard

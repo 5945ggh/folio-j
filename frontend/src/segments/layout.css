@@ -139,12 +139,8 @@
 }
 .app-shell.segment-study-shell .segment-identity {
 	display: flex;
-	align-items: center;
-	gap: 10px;
 	min-width: 0;
 	margin-bottom: 14px;
-	color: var(--faint);
-	font-size: 11px;
 }
 .app-shell.segment-study-shell
 	.segment-reader-inner
@@ -152,17 +148,33 @@
 	margin-bottom: 12px;
 }
 .app-shell.segment-study-shell .segment-identity a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 28px;
 	min-width: 0;
+	max-width: 100%;
+	color: var(--text-soft);
+	font-size: 13px;
+	text-decoration: none;
+}
+.app-shell.segment-study-shell .segment-source-label {
+	flex: none;
+}
+.app-shell.segment-study-shell .segment-source-name {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	color: inherit;
-	font-size: inherit;
-	text-decoration: none;
+	font-weight: 550;
+}
+.app-shell.segment-study-shell .segment-identity a > [aria-hidden] {
+	margin-inline-start: 5px;
 }
 .app-shell.segment-study-shell .segment-identity a:hover {
-	color: var(--text-soft);
+	color: var(--text);
+}
+.app-shell.segment-study-shell .segment-identity a:hover .segment-source-name {
 	text-decoration: underline;
+	text-underline-offset: 3px;
 }
 .app-shell.segment-study-shell .segment-analyses {
 	margin-top: 40px;
