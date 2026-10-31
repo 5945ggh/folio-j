@@ -1,4 +1,5 @@
 import type { components } from "../src/api/schema";
+import { DEFAULT_READING_SETTINGS } from "../src/materials/reader-settings";
 import type { BrowserHarness } from "./harness";
 
 type Schema = components["schemas"];
@@ -469,9 +470,12 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 			await h.until(
 				() =>
 					saved.length > beforeReset &&
-					saved.at(-1)?.settings?.font_size === 22 &&
-					saved.at(-1)?.settings?.line_height === 2 &&
-					saved.at(-1)?.settings?.writing_mode === "horizontal-tb",
+					saved.at(-1)?.settings?.font_size ===
+						DEFAULT_READING_SETTINGS.font_size &&
+					saved.at(-1)?.settings?.line_height ===
+						DEFAULT_READING_SETTINGS.line_height &&
+					saved.at(-1)?.settings?.writing_mode ===
+						DEFAULT_READING_SETTINGS.writing_mode,
 				"Each real reset, including identical defaults, must complete restoration and save",
 			);
 			await assertLayout("horizontal-tb", `恢复默认 ${attempt + 1}`, false);
