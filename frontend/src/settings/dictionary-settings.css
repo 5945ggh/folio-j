@@ -23,26 +23,34 @@
 	padding: 2px 6px;
 	background: var(--color-surface-subtle);
 }
+.dictionary-row {
+	display: flex;
+	align-items: center;
+	padding-inline-end: 12px;
+	overflow: hidden;
+}
 .dictionary-choice {
+	flex: 1;
+	min-width: 0;
 	padding: 16px;
 	display: flex;
 	align-items: center;
 	gap: 13px;
 	cursor: pointer;
 }
-.dictionary-choice + .dictionary-choice {
+.dictionary-row + .dictionary-row {
 	border-top: 1px solid var(--settings-line);
 }
 .dictionary-choice:hover {
 	background: var(--color-surface-subtle);
 }
-.dictionary-choice:first-child {
+.dictionary-row:first-child {
 	border-radius: 10px 10px 0 0;
 }
-.dictionary-choice:last-child {
+.dictionary-row:last-child {
 	border-radius: 0 0 10px 10px;
 }
-.dictionary-choice:only-child {
+.dictionary-row:only-child {
 	border-radius: 10px;
 }
 .dictionary-symbol {
@@ -97,20 +105,20 @@
 	outline: 2px solid var(--color-focus);
 	outline-offset: -2px;
 }
-.dictionary-empty {
-	padding: 30px 18px;
+.settings-page .dictionary-empty {
+	padding: 40px 24px;
 	display: grid;
 	justify-items: center;
 	gap: 10px;
 	text-align: center;
 }
-.dictionary-empty svg {
+.dictionary-empty > svg {
 	color: var(--settings-muted);
 }
 .dictionary-empty strong {
 	font-weight: 500;
 }
-.dictionary-empty p,
+.dictionary-empty > p,
 .dictionary-format {
 	color: var(--settings-muted);
 	font-size: 12px;
@@ -128,4 +136,81 @@
 }
 .dictionary-failure .inline-error {
 	margin-bottom: 6px;
+}
+
+.dictionary-empty .settings-button {
+	margin-block: 10px 4px;
+}
+.dictionary-row .dictionary-menu-trigger {
+	flex: none;
+	padding: 3px 8px;
+	min-width: 30px;
+}
+.dictionary-menu {
+	inset: auto;
+	position: fixed;
+	margin: 0;
+	padding: 4px;
+	border: 1px solid var(--settings-line);
+	border-radius: 8px;
+	background: var(--color-surface);
+	color: var(--color-text);
+	box-shadow: 0 6px 24px var(--color-shadow);
+}
+.dictionary-menu button {
+	border: 0;
+	border-radius: 5px;
+	background: transparent;
+	color: var(--color-danger);
+	padding: 9px 14px;
+	font: inherit;
+	font-size: 13px;
+	cursor: pointer;
+}
+.dictionary-menu button:hover {
+	background: var(--color-surface-subtle);
+}
+.dictionary-replacement {
+	display: grid;
+	gap: 8px;
+	margin: 20px 0;
+}
+.dictionary-replacement .native-select {
+	min-width: 0;
+}
+.dictionary-replacement select {
+	width: 100%;
+	min-height: 38px;
+	padding-block: 8px;
+	padding-inline-start: 10px;
+	border: 1px solid var(--settings-line);
+	border-radius: 6px;
+	background: var(--color-surface);
+	color: var(--color-text);
+	font: inherit;
+}
+.settings-page .dictionary-delete-dialog h2 {
+	overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+	.dictionary-row {
+		padding-inline-end: 8px;
+	}
+	.dictionary-choice {
+		padding: 16px 10px;
+		gap: 9px;
+		flex-wrap: wrap;
+	}
+	.dictionary-details {
+		flex-basis: calc(100% - 50px);
+	}
+	.dictionary-current {
+		margin-inline-start: 45px;
+	}
+	.dictionary-choice input {
+		margin-inline-start: auto;
+	}
+	.settings-page .dictionary-empty {
+		padding: 32px 20px;
+	}
 }

@@ -295,3 +295,345 @@ async def test_expected_id_binds_open_snapshot_even_when_selection_changes(
     )
     assert {item.dictionary_id for item in result.matches} == {first.dictionary_id}
     assert (await store.library()).active_dictionary_id == second.dictionary_id
+
+
+@pytest.mark.asyncio
+async def test_delete_api_requires_explicit_replacement_and_clears_last_dictionary(
+    tmp_path: Path,
+) -> None:
+    async with chat_client(tmp_path / "app.db") as (client, _):
+        first = await client.post(
+            "/api/dictionary/library/import", content=archive([record("雨")], title="第一部")
+        )
+        first_id = first.json()["dictionary_id"]
+        second = await client.post(
+            "/api/dictionary/library/import", content=archive([record("猫")], title="第二部")
+        )
+        second_id = second.json()["dictionary_id"]
+        library = second.json()["library"]
+        for replacement in [None, "missing", first_id]:
+            params = {"replacement_dictionary_id": replacement} if replacement else {}
+            rejected = await client.delete(f"/api/dictionary/library/{first_id}", params=params)
+            assert rejected.status_code == 422, rejected.text
+            assert (await client.get("/api/dictionary/library")).json() == library
+        deleted = await client.delete(
+            f"/api/dictionary/library/{first_id}",
+            params={"replacement_dictionary_id": second_id},
+        )
+        assert deleted.status_code == 200, deleted.text
+        assert deleted.json()["active_dictionary_id"] == second_id
+        assert [item["dictionary_id"] for item in deleted.json()["dictionaries"]] == [second_id]
+        stale = await client.post(
+            "/api/dictionary/lookup", json={"text": "雨", "expected_dictionary_id": first_id}
+        )
+        assert stale.status_code == 409
+        assert (await client.post("/api/dictionary/lookup", json={"text": "猫"})).json()["matches"]
+        last = await client.delete(f"/api/dictionary/library/{second_id}")
+        assert last.json() == {"dictionaries": [], "active_dictionary_id": None}
+        assert (await client.get("/api/dictionary")).json()["ready"] is False
+        assert (await client.post("/api/dictionary/lookup", json={"text": "猫"})).json() == {
+            "matches": []
+        }
+        assert (await client.delete(f"/api/dictionary/library/{second_id}")).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_inactive_removes_index_and_preserves_learning_file(tmp_path: Path) -> None:
+    learning = tmp_path / "app.db"
+    learning.write_bytes(b"independent learning database")
+    store = DictionaryStore(tmp_path / "app.db.dictionary.sqlite3")
+    first = await store.import_library_stream(chunks(archive([record("雨")], title="第一部")))
+    second = await store.import_library_stream(chunks(archive([record("猫")], title="第二部")))
+    with pytest.raises(HTTPException) as rejected:
+        await store.delete(second.dictionary_id, first.dictionary_id)
+    assert rejected.value.status_code == 422
+    result = await store.delete(second.dictionary_id)
+    assert result.active_dictionary_id == first.dictionary_id
+    assert [item.dictionary_id for item in result.dictionaries] == [first.dictionary_id]
+    assert not (store.library_path / (second.dictionary_id + ".sqlite3")).exists()
+    assert not list(store.library_path.glob("*.deleting-*"))
+    assert learning.read_bytes() == b"independent learning database"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("catalog_exists", [False, True])
+async def test_delete_legacy_does_not_revive_after_restart_and_allows_reimport(
+    tmp_path: Path, catalog_exists: bool
+) -> None:
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    raw = archive([record("雨")])
+    original = await asyncio.to_thread(seed_legacy, store, raw)
+    if catalog_exists:
+        await store.select(original.dictionary_id or "")
+    async with store.snapshot() as retained:
+        deleted = await store.delete(original.dictionary_id or "")
+        assert deleted.active_dictionary_id is None
+        assert not store.path.exists()
+        assert [entry.term for entry in await retained.find_terms(["雨"])] == ["雨"]
+        assert (await retained.load_definitions(await retained.find_terms(["雨"])))[0].definitions
+    restarted = DictionaryStore(store.path)
+    assert not (await restarted.library()).dictionaries
+    assert not (await restarted.status()).ready
+    imported = await restarted.import_library_stream(chunks(raw))
+    assert imported.already_installed is False
+    assert imported.library.active_dictionary_id == original.dictionary_id
+    assert [entry.term for entry in await restarted.find_terms(["雨"])] == ["雨"]
+
+
+@pytest.mark.asyncio
+async def test_delete_rejects_damaged_replacement_without_changing_selection(
+    tmp_path: Path,
+) -> None:
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    first = await store.import_library_stream(chunks(archive([record("雨")], title="第一部")))
+    second = await store.import_library_stream(chunks(archive([record("猫")], title="第二部")))
+    (store.library_path / (second.dictionary_id + ".sqlite3")).write_bytes(b"damaged")
+    before = await store.library()
+    with pytest.raises(HTTPException) as rejected:
+        await store.delete(first.dictionary_id, second.dictionary_id)
+    assert rejected.value.status_code == 422
+    assert await store.library() == before
+    assert [entry.term for entry in await store.find_terms(["雨"])] == ["雨"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure", ["move", "commit"])
+async def test_failed_delete_restores_catalog_and_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    import aiosqlite
+
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    first = await store.import_library_stream(chunks(archive([record("雨")])))
+    path = store.library_path / (first.dictionary_id + ".sqlite3")
+    original = path.read_bytes()
+    if failure == "move":
+        original_replace = dictionary_store.os.replace
+
+        def fail_move(source: Path, target: Path) -> None:
+            if ".deleting-" in target.name:
+                raise OSError("injected staging failure")
+            original_replace(source, target)
+
+        monkeypatch.setattr(dictionary_store.os, "replace", fail_move)
+    else:
+        original_commit = aiosqlite.Connection.commit
+
+        async def fail_deleted_commit(connection: aiosqlite.Connection) -> None:
+            async with connection.execute("SELECT count(*) FROM dictionaries") as cursor:
+                row = await cursor.fetchone()
+            if row and row[0] == 0:
+                raise OSError("injected commit failure")
+            await original_commit(connection)
+
+        original_rollback = aiosqlite.Connection.rollback
+
+        async def verify_restored_before_unlock(connection: aiosqlite.Connection) -> None:
+            assert path.read_bytes() == original
+            await original_rollback(connection)
+
+        monkeypatch.setattr(aiosqlite.Connection, "commit", fail_deleted_commit)
+        monkeypatch.setattr(aiosqlite.Connection, "rollback", verify_restored_before_unlock)
+    with pytest.raises(OSError):
+        await store.delete(first.dictionary_id)
+    assert await store.library() == first.library
+    assert path.read_bytes() == original
+    assert [entry.term for entry in await store.find_terms(["雨"])] == ["雨"]
+    assert not list(store.library_path.glob("*.deleting-*"))
+
+
+@pytest.mark.asyncio
+async def test_interrupted_staging_remains_readable_and_can_be_deleted(tmp_path: Path) -> None:
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    first = await store.import_library_stream(chunks(archive([record("雨")])))
+    path = store.library_path / (first.dictionary_id + ".sqlite3")
+    retained = path.with_name(path.name + ".deleting-interrupted")
+    path.rename(retained)  # Simulate a process exit before catalog commit.
+    restarted = DictionaryStore(store.path)
+    assert (await restarted.status()).dictionary_id == first.dictionary_id
+    assert [entry.term for entry in await restarted.find_terms(["雨"])] == ["雨"]
+    assert not (await restarted.delete(first.dictionary_id)).dictionaries
+    assert not retained.exists()
+
+
+@pytest.mark.asyncio
+async def test_import_build_does_not_block_delete_and_late_import_becomes_first(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    first = await store.import_library_stream(chunks(archive([record("雨")], title="第一部")))
+    entered, release = threading.Event(), threading.Event()
+    original_build = dictionary_store._build  # pyright: ignore[reportPrivateUsage]
+
+    def paused_build(source: Path, target: Path) -> Any:
+        result = original_build(source, target)
+        entered.set()
+        if not release.wait(timeout=10):
+            raise AssertionError("builder was not released")
+        return result
+
+    monkeypatch.setattr(dictionary_store, "_build", paused_build)
+    other = DictionaryStore(store.path)
+    task = asyncio.create_task(
+        other.import_library_stream(chunks(archive([record("猫")], title="第二部")))
+    )
+    try:
+        assert await asyncio.to_thread(entered.wait, 10)
+        async with store.snapshot() as retained:
+            deleted = await asyncio.wait_for(store.delete(first.dictionary_id), timeout=1)
+            assert not deleted.dictionaries
+            assert [entry.term for entry in await retained.find_terms(["雨"])] == ["雨"]
+    finally:
+        release.set()
+    imported = await task
+    assert imported.library.active_dictionary_id == imported.dictionary_id
+    assert [entry.term for entry in await store.find_terms(["猫"])] == ["猫"]
+    assert not list(store.library_path.glob("*.deleting-*"))
+
+
+@pytest.mark.asyncio
+async def test_concurrent_deletions_validate_replacement_in_same_transaction(
+    tmp_path: Path,
+) -> None:
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    first = await store.import_library_stream(chunks(archive([record("雨")], title="第一部")))
+    second = await store.import_library_stream(chunks(archive([record("猫")], title="第二部")))
+    results = await asyncio.gather(
+        store.delete(first.dictionary_id, second.dictionary_id),
+        DictionaryStore(store.path).delete(second.dictionary_id),
+        return_exceptions=True,
+    )
+    assert all(
+        not isinstance(result, Exception) or isinstance(result, HTTPException) for result in results
+    )
+    library = await store.library()
+    ids = {item.dictionary_id for item in library.dictionaries}
+    assert library.active_dictionary_id in ids if ids else library.active_dictionary_id is None
+    if ids:
+        assert ids == {first.dictionary_id}
+        assert (await store.status()).dictionary_id == first.dictionary_id
+    else:
+        assert not (await store.status()).ready
+
+
+@pytest.mark.asyncio
+async def test_failed_postcommit_cleanup_does_not_revive_and_is_retried_after_reimport(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    raw = archive([record("雨")])
+    first = await store.import_library_stream(chunks(raw))
+    original_unlink = Path.unlink
+
+    def fail_cleanup(path: Path, missing_ok: bool = False) -> None:
+        if ".deleting-" in path.name:
+            raise OSError("injected postcommit cleanup failure")
+        original_unlink(path, missing_ok=missing_ok)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "unlink", fail_cleanup)
+        assert not (await store.delete(first.dictionary_id)).dictionaries
+    assert list(store.library_path.glob("*.deleting-*"))
+    restarted = DictionaryStore(store.path)
+    assert not (await restarted.status()).ready
+    imported = await restarted.import_library_stream(chunks(raw))
+    assert not imported.already_installed
+    assert [entry.term for entry in await restarted.find_terms(["雨"])] == ["雨"]
+    await restarted.delete(first.dictionary_id)
+    assert not list(store.library_path.glob("*.deleting-*"))
+
+
+@pytest.mark.asyncio
+async def test_old_cleanup_cannot_remove_concurrent_delete_rollback_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import aiosqlite
+
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    raw = archive([record("雨")])
+    first = await store.import_library_stream(chunks(raw))
+    entered, release, cleaned = threading.Event(), threading.Event(), threading.Event()
+    original_unlink = Path.unlink
+    original_commit = aiosqlite.Connection.commit
+    blocked_path: list[Path] = []
+
+    def paused_cleanup(path: Path, missing_ok: bool = False) -> None:
+        if ".deleting-" in path.name and not blocked_path:
+            blocked_path.append(path)
+            entered.set()
+            if not release.wait(timeout=10):
+                raise AssertionError("cleanup was not released")
+            original_unlink(path, missing_ok=missing_ok)
+            cleaned.set()
+        else:
+            original_unlink(path, missing_ok=missing_ok)
+
+    async def fail_second_delete_commit(connection: aiosqlite.Connection) -> None:
+        async with connection.execute("SELECT count(*) FROM dictionaries") as cursor:
+            row = await cursor.fetchone()
+        if row and row[0] == 0:
+            release.set()
+            assert await asyncio.to_thread(cleaned.wait, 10)
+            raise OSError("injected second deletion commit failure")
+        await original_commit(connection)
+
+    monkeypatch.setattr(Path, "unlink", paused_cleanup)
+    first_delete = asyncio.create_task(store.delete(first.dictionary_id))
+    try:
+        assert await asyncio.to_thread(entered.wait, 10)
+        other = DictionaryStore(store.path)
+        imported = await other.import_library_stream(chunks(raw))
+        monkeypatch.setattr(aiosqlite.Connection, "commit", fail_second_delete_commit)
+        with pytest.raises(OSError):
+            await other.delete(first.dictionary_id)
+        assert await other.library() == imported.library
+        assert [entry.term for entry in await other.find_terms(["雨"])] == ["雨"]
+    finally:
+        release.set()
+        await first_delete
+    assert not list(store.library_path.glob("*.deleting-*"))
+
+
+@pytest.mark.asyncio
+async def test_opening_snapshot_and_delete_are_coordinated_without_holding_reader_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    first = await store.import_library_stream(chunks(archive([record("雨")])))
+    index = store.library_path / (first.dictionary_id + ".sqlite3")
+    entered, release, opened, finish = (asyncio.Event() for _ in range(4))
+    original_snapshot = store._file_snapshot  # pyright: ignore[reportPrivateUsage]
+
+    @asynccontextmanager
+    async def paused_open(path: Path) -> AsyncGenerator[DictionarySnapshot]:
+        if path == index:
+            entered.set()
+            await release.wait()
+        async with original_snapshot(path) as snapshot:
+            yield snapshot
+
+    async def read_snapshot() -> list[str]:
+        async with store.snapshot() as snapshot:
+            opened.set()
+            await finish.wait()
+            return [entry.term for entry in await snapshot.find_terms(["雨"])]
+
+    monkeypatch.setattr(store, "_file_snapshot", paused_open)
+    reader = asyncio.create_task(read_snapshot())
+    delete: asyncio.Task[Any] | None = None
+    try:
+        await asyncio.wait_for(entered.wait(), timeout=1)
+        delete = asyncio.create_task(DictionaryStore(store.path).delete(first.dictionary_id))
+        await asyncio.sleep(0.05)
+        assert not delete.done()
+        release.set()
+        await asyncio.wait_for(opened.wait(), timeout=1)
+        assert not (await asyncio.wait_for(delete, timeout=1)).dictionaries
+        finish.set()
+        assert await reader == ["雨"]
+    finally:
+        release.set()
+        finish.set()
+        await reader
+        if delete is not None:
+            await delete

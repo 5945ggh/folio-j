@@ -7908,6 +7908,63 @@
         "summary": "Select Library"
       }
     },
+    "/api/dictionary/library/{dictionary_id}": {
+      "delete": {
+        "operationId": "deleteDictionaryLibrary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dictionary_id",
+            "required": true,
+            "schema": {
+              "title": "Dictionary Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "replacement_dictionary_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Replacement Dictionary Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionaryLibrary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Library"
+      }
+    },
     "/api/dictionary/lookup": {
       "post": {
         "operationId": "lookupDictionary",

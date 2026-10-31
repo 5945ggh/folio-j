@@ -1,6 +1,8 @@
 """Thin routes for reader-owned local dictionary imports and lookups."""
 
-from fastapi import APIRouter, Request
+from typing import Annotated
+
+from fastapi import APIRouter, Query, Request
 
 from app.dictionary_schemas import (
     DictionaryLibrary,
@@ -73,3 +75,16 @@ async def import_library_dictionary(request: Request) -> DictionaryLibraryImport
 )
 async def select_library(body: DictionarySelection, request: Request) -> DictionaryLibrary:
     return await store(request).select(body.dictionary_id)
+
+
+@router.delete(
+    "/library/{dictionary_id}",
+    response_model=DictionaryLibrary,
+    operation_id="deleteDictionaryLibrary",
+)
+async def delete_library(
+    dictionary_id: str,
+    request: Request,
+    replacement_dictionary_id: Annotated[str | None, Query(min_length=1, max_length=64)] = None,
+) -> DictionaryLibrary:
+    return await store(request).delete(dictionary_id, replacement_dictionary_id)

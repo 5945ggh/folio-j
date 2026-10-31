@@ -41,6 +41,19 @@ export async function selectDictionary(id: string) {
 	return requireData(data, error, response.status);
 }
 
+export async function deleteDictionary(id: string, replacementId?: string) {
+	const { data, error, response } = await api.DELETE(
+		"/api/dictionary/library/{dictionary_id}",
+		{
+			params: {
+				path: { dictionary_id: id },
+				query: { replacement_dictionary_id: replacementId },
+			},
+		},
+	);
+	return requireData(data, error, response.status);
+}
+
 export async function updateDictionaryLibrary(
 	client: QueryClient,
 	data: DictionaryLibrary,

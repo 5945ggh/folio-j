@@ -1,3 +1,4 @@
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { Outlet } from "react-router";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
@@ -11,6 +12,14 @@ const stamp = "2026-10-31T00:00:00Z";
 export async function readerDictionary(h: BrowserHarness) {
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
 	const { SettingsPage } = await import("../src/settings/SettingsPage");
+	const { updateDictionaryLibrary } = await import(
+		"../src/materials/dictionary-api"
+	);
+	let readerClient: QueryClient | undefined;
+	function ReaderUnderTest() {
+		readerClient = useQueryClient();
+		return <MaterialReader />;
+	}
 	const check: BrowserHarness["check"] = h.check;
 	const image =
 		"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aot0AAAAASUVORK5CYII=";
@@ -133,8 +142,9 @@ export async function readerDictionary(h: BrowserHarness) {
 	const segmentReads: string[] = [];
 	const requests: Schema["DictionaryLookupRequest"][] = [];
 	let statusReads = 0;
-	let activeDictionaryId = "synthetic";
-	let activeDictionaryTitle = "合成测试词典";
+	let lookupResponses = 0;
+	let activeDictionaryId: string | null = "synthetic";
+	let activeDictionaryTitle: string | null = "合成测试词典";
 	let hold = false;
 	const deferred: { release?: () => void } = {};
 	h.mock(async (request) => {
@@ -142,29 +152,32 @@ export async function readerDictionary(h: BrowserHarness) {
 		if (path === "/api/dictionary" && request.method === "GET") {
 			statusReads++;
 			return Response.json({
-				ready: true,
+				ready: activeDictionaryId !== null,
 				dictionary_id: activeDictionaryId,
 				title: activeDictionaryTitle,
-				revision: "1",
-				entry_count: 3,
+				revision: activeDictionaryId ? "1" : null,
+				entry_count: activeDictionaryId ? 3 : 0,
 			});
 		}
 		if (path === "/api/dictionary/library" && request.method === "GET")
 			return Response.json({
-				dictionaries: [
-					{
-						dictionary_id: activeDictionaryId,
-						title: activeDictionaryTitle,
-						revision: "1",
-						entry_count: 3,
-					},
-				],
+				dictionaries: activeDictionaryId
+					? [
+							{
+								dictionary_id: activeDictionaryId,
+								title: activeDictionaryTitle,
+								revision: "1",
+								entry_count: 3,
+							},
+						]
+					: [],
 				active_dictionary_id: activeDictionaryId,
 			});
 		if (path === "/api/dictionary/lookup" && request.method === "POST") {
 			const input: Schema["DictionaryLookupRequest"] = await request.json();
 			check(
 				"expected_dictionary_id" in input &&
+					typeof input.expected_dictionary_id === "string" &&
 					input.expected_dictionary_id === activeDictionaryId,
 				"Every lookup must freeze the active dictionary identity",
 			);
@@ -214,6 +227,7 @@ export async function readerDictionary(h: BrowserHarness) {
 					})),
 				],
 			};
+			lookupResponses++;
 			return Response.json({
 				matches: root
 					? [
@@ -389,7 +403,7 @@ export async function readerDictionary(h: BrowserHarness) {
 		}),
 	);
 	let dispose = await h.mount(
-		<MaterialReader />,
+		<ReaderUnderTest />,
 		"/materials/:id",
 		"/materials/dictionary",
 	);
@@ -1446,12 +1460,58 @@ export async function readerDictionary(h: BrowserHarness) {
 					previousCard.textContent.includes("合成中文释义，用于检查排版。"),
 				"A library change retaining the same active dictionary must preserve the current word card",
 			);
+			const previousProse = previousCard.querySelector(
+				'[data-dict-role="def2"]',
+			);
+			check(
+				previousProse && readerClient,
+				"Deletion must start with a live reader and word card",
+			);
+			hold = true;
+			const previousRelease = deferred.release;
+			await glyphClick(previousProse, 3);
+			await h.until(
+				() => !!deferred.release && deferred.release !== previousRelease,
+				"A nested lookup must remain in flight when its dictionary is deleted",
+			);
 			activeDictionaryId = "synthetic-next";
 			activeDictionaryTitle = "第二本合成词典";
-			broadcast();
+			const replacement = {
+				dictionary_id: activeDictionaryId,
+				title: activeDictionaryTitle,
+				revision: "1",
+				entry_count: 3,
+			};
+			// The same-tab deletion mutation publishes its authoritative replacement.
+			await updateDictionaryLibrary(readerClient, {
+				dictionaries: [replacement],
+				active_dictionary_id: activeDictionaryId,
+			});
 			await h.until(
 				() => !h.container.querySelector(".dict-deck"),
-				"Changing the active dictionary in another tab must clear the previous cards",
+				"Deleting the active dictionary must clear its cards when a replacement is selected",
+			);
+			check(
+				!(
+					frame.contentWindow as (Window & { CSS: typeof CSS }) | null
+				)?.CSS.highlights.has("folio-dictionary"),
+				"Deleting the active dictionary must clear its original-text highlight",
+			);
+			check(
+				deferred.release,
+				"Deleted dictionary lookup must have a held response",
+			);
+			const beforeReplacementResponse = lookupResponses;
+			deferred.release();
+			hold = false;
+			await h.until(
+				() => lookupResponses === beforeReplacementResponse + 1,
+				"The deleted dictionary's response must finish before checking that its cards stay closed",
+			);
+			await settle();
+			check(
+				!h.container.querySelector(".dict-deck"),
+				"A late response from a deleted dictionary must not restore its cards",
 			);
 			const beforeLookup = requests.length;
 			await glyphClick(nextLeaf, 3, frame);
@@ -1463,6 +1523,7 @@ export async function readerDictionary(h: BrowserHarness) {
 				"The next lookup must fetch definitions from the new dictionary",
 			);
 			const nextCard = h.container.querySelector(".dict-card");
+			check(nextCard, "The replacement dictionary must have a resolved card");
 			check(
 				requests.length === beforeLookup + 1 &&
 					requests.at(-1)?.expected_dictionary_id === activeDictionaryId &&
@@ -1470,7 +1531,70 @@ export async function readerDictionary(h: BrowserHarness) {
 					!nextCard.textContent.includes("合成中文释义，用于检查排版。"),
 				"A dictionary switch must bypass old lookup cache and pair the new title with only its own definitions",
 			);
-			button("关闭查词").click();
+			const nextProse = nextCard.querySelector('[data-dict-role="def2"]');
+			check(
+				nextProse,
+				"The last installed dictionary must expose nested lookup prose",
+			);
+			hold = true;
+			const lastRelease = deferred.release;
+			await glyphClick(nextProse, 3);
+			await h.until(
+				() => !!deferred.release && deferred.release !== lastRelease,
+				"The last dictionary must have an in-flight lookup before deletion in another tab",
+			);
+			activeDictionaryId = null;
+			activeDictionaryTitle = null;
+			const beforeDeletion = statusReads;
+			broadcast();
+			await h.until(
+				() =>
+					statusReads > beforeDeletion &&
+					!h.container.querySelector(".dict-deck") &&
+					button("即时查词").getAttribute("aria-pressed") === "false",
+				"Deleting the last dictionary in another tab must clear cards and disable reader lookup",
+			);
+			check(deferred.release, "The last dictionary must have a held response");
+			const beforeEmptyResponse = lookupResponses;
+			deferred.release();
+			hold = false;
+			await h.until(
+				() => lookupResponses === beforeEmptyResponse + 1,
+				"The last deleted dictionary's response must finish",
+			);
+			await settle();
+			check(
+				!h.container.querySelector(".dict-deck"),
+				"A late response after the last dictionary is deleted must not restore cards",
+			);
+			const beforeDisabledLookup = requests.length;
+			await glyphClick(nextLeaf, 3, frame);
+			await settle();
+			check(
+				requests.length === beforeDisabledLookup &&
+					!h.container.querySelector(".dict-deck"),
+				"Reader body clicks must not query a deleted dictionary while none is ready",
+			);
+			button("即时查词").click();
+			await h.until(
+				() =>
+					h.container
+						.querySelector(".dict-config")
+						?.textContent?.includes("在设置中导入并选择词典") === true,
+				"An empty library must show the dictionary setup guidance",
+			);
+			check(
+				!h.container.querySelector(".dict-modes"),
+				"An empty library must not expose lookup modes as ready",
+			);
+			button("关闭查词设置").click();
+			// Restore an installed dictionary for the existing settings-return regression.
+			activeDictionaryId = replacement.dictionary_id;
+			activeDictionaryTitle = replacement.title;
+			await updateDictionaryLibrary(readerClient, {
+				dictionaries: [replacement],
+				active_dictionary_id: activeDictionaryId,
+			});
 		}
 		dispose();
 		dispose = await h.mount(<Outlet />, "/", "/materials/dictionary", [

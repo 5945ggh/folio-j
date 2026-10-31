@@ -16,10 +16,11 @@ import unicodedata
 import zipfile
 import zlib
 from collections.abc import AsyncGenerator, AsyncIterator
-from contextlib import asynccontextmanager, closing
+from contextlib import AsyncExitStack, asynccontextmanager, closing
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal, cast
+from uuid import uuid4
 
 import aiosqlite
 from fastapi import HTTPException
@@ -282,8 +283,8 @@ class DictionaryStore:
     """Immutable indexes with one transactional library and active selection.
 
     The original single index remains in place and is exposed without reimport.
-    Catalog commits only reference complete files. Healthy indexes are never replaced
-    or removed, so an open lookup retains the exact dictionary it started with.
+    Catalog commits only reference complete files. Healthy indexes are never replaced.
+    Open SQLite connections retain their exact dictionary after deletion unlinks the index.
     """
 
     def __init__(self, path: Path) -> None:
@@ -295,7 +296,10 @@ class DictionaryStore:
     @asynccontextmanager
     async def _file_snapshot(self, path: Path) -> AsyncGenerator[DictionarySnapshot]:
         try:
-            resolved = await asyncio.to_thread(path.resolve)
+            # A process interrupted between staging a deletion and catalog commit
+            # leaves the old generation readable until its next mutation.
+            candidate = await asyncio.to_thread(self._readable_path, path)
+            resolved = await asyncio.to_thread(candidate.resolve)
             connection = await aiosqlite.connect(resolved.as_uri() + "?mode=ro", uri=True)
         except aiosqlite.OperationalError:
             yield DictionarySnapshot(None)
@@ -329,46 +333,74 @@ class DictionaryStore:
             {item.dictionary_id: self.path},
         )
 
-    async def _catalog(self) -> tuple[DictionaryLibrary, dict[str, Path]]:
+    @staticmethod
+    def _readable_path(path: Path) -> Path:
+        if path.exists():
+            return path
+        return next(path.parent.glob(path.name + ".deleting-*"), path)
+
+    @staticmethod
+    def _retained_paths(path: Path) -> list[Path]:
+        return list(path.parent.glob(path.name + ".deleting-*"))
+
+    @staticmethod
+    def _deleting_path(path: Path) -> Path:
+        return path.with_name(path.name + ".deleting-" + uuid4().hex)
+
+    @asynccontextmanager
+    async def _catalog_view(
+        self,
+    ) -> AsyncGenerator[tuple[DictionaryLibrary, dict[str, Path]]]:
         try:
             connection = await aiosqlite.connect(
                 self.catalog_path.resolve().as_uri() + "?mode=ro", uri=True
             )
         except aiosqlite.OperationalError:
-            return await self._legacy_library()
+            yield await self._legacy_library()
+            return
         try:
             # Both reads observe the same committed catalog generation.
             await connection.execute("BEGIN")
-            async with connection.execute(
-                "SELECT dictionary_id, title, revision, entry_count, filename "
-                "FROM dictionaries ORDER BY rowid"
-            ) as cursor:
-                rows = await cursor.fetchall()
-            async with connection.execute("SELECT dictionary_id FROM active") as cursor:
-                active = await cursor.fetchone()
-            return (
-                DictionaryLibrary(
-                    dictionaries=[
-                        DictionaryLibraryItem(
-                            dictionary_id=row[0], title=row[1], revision=row[2], entry_count=row[3]
-                        )
-                        for row in rows
-                    ],
-                    active_dictionary_id=str(active[0]) if active else None,
-                ),
-                {
-                    str(row[0]): self.path if row[4] == "legacy" else self.library_path / row[4]
-                    for row in rows
-                },
-            )
+            yield await self._read_catalog(connection)
         except aiosqlite.OperationalError as exc:
             # A concurrent first writer has created the catalog file but has not
             # committed its schema yet, or its first transaction rolled back.
             if "no such table" not in str(exc):
                 raise
-            return await self._legacy_library()
+            yield await self._legacy_library()
+            return
         finally:
             await connection.close()
+
+    async def _read_catalog(
+        self, connection: aiosqlite.Connection
+    ) -> tuple[DictionaryLibrary, dict[str, Path]]:
+        async with connection.execute(
+            "SELECT dictionary_id, title, revision, entry_count, filename "
+            "FROM dictionaries ORDER BY rowid"
+        ) as cursor:
+            rows = await cursor.fetchall()
+        async with connection.execute("SELECT dictionary_id FROM active") as cursor:
+            active = await cursor.fetchone()
+        return (
+            DictionaryLibrary(
+                dictionaries=[
+                    DictionaryLibraryItem(
+                        dictionary_id=row[0], title=row[1], revision=row[2], entry_count=row[3]
+                    )
+                    for row in rows
+                ],
+                active_dictionary_id=str(active[0]) if active else None,
+            ),
+            {
+                str(row[0]): self.path if row[4] == "legacy" else self.library_path / row[4]
+                for row in rows
+            },
+        )
+
+    async def _catalog(self) -> tuple[DictionaryLibrary, dict[str, Path]]:
+        async with self._catalog_view() as view:
+            return view
 
     async def library(self) -> DictionaryLibrary:
         library, _ = await self._catalog()
@@ -376,18 +408,26 @@ class DictionaryStore:
 
     @asynccontextmanager
     async def snapshot(self) -> AsyncGenerator[DictionarySnapshot]:
-        library, paths = await self._catalog()
-        path = paths.get(library.active_dictionary_id) if library.active_dictionary_id else None
-        if path is None:
-            yield DictionarySnapshot(None)
-        else:
-            async with self._file_snapshot(path) as snapshot:
-                status = await snapshot.status()
-                yield (
-                    snapshot
-                    if status.dictionary_id == library.active_dictionary_id
+        # Hold the tiny catalog read transaction only until the index connection
+        # is open. Deletion takes an exclusive catalog lock before moving files.
+        async with AsyncExitStack() as stack:
+            async with self._catalog_view() as (library, paths):
+                path = (
+                    paths.get(library.active_dictionary_id)
+                    if library.active_dictionary_id
+                    else None
+                )
+                snapshot = (
+                    await stack.enter_async_context(self._file_snapshot(path))
+                    if path is not None
                     else DictionarySnapshot(None)
                 )
+                status = await snapshot.status()
+            yield (
+                snapshot
+                if status.dictionary_id == library.active_dictionary_id
+                else DictionarySnapshot(None)
+            )
 
     async def status(self) -> DictionaryStatus:
         async with self.snapshot() as snapshot:
@@ -405,13 +445,17 @@ class DictionaryStore:
         self,
         installed: DictionaryStatus | None = None,
         active_id: str | None = None,
-        replace_index: bool = False,
+        prepared_index: Path | None = None,
     ) -> tuple[DictionaryLibrary, bool]:
         self.library_path.mkdir(parents=True, exist_ok=True)
-        legacy = await self._legacy_status()
         async with aiosqlite.connect(self.catalog_path) as connection:
             await connection.execute("PRAGMA busy_timeout = 30000")
-            await connection.execute("BEGIN IMMEDIATE")
+            await connection.execute("BEGIN EXCLUSIVE")
+            async with connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='dictionaries'"
+            ) as cursor:
+                initialized = await cursor.fetchone() is not None
+            legacy = await self._legacy_status() if not initialized else DictionaryStatus()
             await connection.execute(
                 "CREATE TABLE IF NOT EXISTS dictionaries(dictionary_id TEXT PRIMARY KEY, "
                 "title TEXT NOT NULL, revision TEXT NOT NULL, entry_count INTEGER NOT NULL, "
@@ -424,7 +468,7 @@ class DictionaryStore:
             async with connection.execute("SELECT count(*) FROM dictionaries") as cursor:
                 row = await cursor.fetchone()
             count = int(row[0]) if row else 0
-            if count == 0 and legacy.ready and legacy.dictionary_id:
+            if not initialized and legacy.ready and legacy.dictionary_id:
                 await connection.execute(
                     "INSERT INTO dictionaries VALUES (?, ?, ?, ?, 'legacy')",
                     (legacy.dictionary_id, legacy.title, legacy.revision, legacy.entry_count),
@@ -439,6 +483,16 @@ class DictionaryStore:
                     "SELECT 1 FROM dictionaries WHERE dictionary_id = ?", (installed.dictionary_id,)
                 ) as cursor:
                     already_installed = await cursor.fetchone() is not None
+                if prepared_index is None:
+                    async with connection.execute(
+                        "SELECT filename FROM dictionaries WHERE dictionary_id = ?",
+                        (installed.dictionary_id,),
+                    ) as cursor:
+                        current = await cursor.fetchone()
+                    if current is None:
+                        raise HTTPException(
+                            status_code=409, detail="词典库已变化，请重新导入该词典"
+                        )
                 await connection.execute(
                     "INSERT OR IGNORE INTO dictionaries VALUES (?, ?, ?, ?, ?)",
                     (
@@ -449,7 +503,8 @@ class DictionaryStore:
                         installed.dictionary_id + ".sqlite3",
                     ),
                 )
-                if replace_index:
+                if prepared_index is not None:
+                    await asyncio.to_thread(self._publish_index, prepared_index, installed)
                     await connection.execute(
                         "UPDATE dictionaries SET filename = ? WHERE dictionary_id = ?",
                         (installed.dictionary_id + ".sqlite3", installed.dictionary_id),
@@ -458,26 +513,24 @@ class DictionaryStore:
                     active_id = installed.dictionary_id
             if active_id is not None:
                 async with connection.execute(
-                    "SELECT 1 FROM dictionaries WHERE dictionary_id = ?", (active_id,)
+                    "SELECT filename FROM dictionaries WHERE dictionary_id = ?", (active_id,)
                 ) as cursor:
                     found = await cursor.fetchone()
                 if not found:
                     raise _invalid("所选词典尚未安装，请重新选择")
+                selected_path = self.path if found[0] == "legacy" else self.library_path / found[0]
+                async with self._file_snapshot(selected_path) as snapshot:
+                    selected = await snapshot.status()
+                if not selected.ready or selected.dictionary_id != active_id:
+                    raise _invalid("所选词典索引不可用，请重新导入该词典")
                 await connection.execute(
                     "INSERT OR REPLACE INTO active VALUES (1, ?)", (active_id,)
                 )
+            library, _ = await self._read_catalog(connection)
             await connection.commit()
-        return await self.library(), already_installed
+        return library, already_installed
 
     async def select(self, dictionary_id: str) -> DictionaryLibrary:
-        _, paths = await self._catalog()
-        path = paths.get(dictionary_id)
-        if path is None:
-            raise _invalid("所选词典尚未安装，请重新选择")
-        async with self._file_snapshot(path) as snapshot:
-            status = await snapshot.status()
-        if not status.ready or status.dictionary_id != dictionary_id:
-            raise _invalid("所选词典索引不可用，请重新导入该词典")
         library, _ = await self._write_catalog(active_id=dictionary_id)
         return library
 
@@ -537,21 +590,25 @@ class DictionaryStore:
             async with self._file_snapshot(paths[identity]) as snapshot:
                 status = await snapshot.status()
                 valid = status.ready and status.dictionary_id == identity
-        result = (
-            DictionaryStatus(**existing.model_dump(), ready=True)
-            if existing and valid
-            else await asyncio.to_thread(self._build_and_publish, source)
-        )
-        library, already_installed = await self._write_catalog(
-            installed=result,
-            active_id=result.dictionary_id if activate else None,
-            replace_index=not valid,
-        )
-        return DictionaryLibraryImport(
-            library=library, dictionary_id=identity, already_installed=already_installed
-        )
+        prepared: Path | None = None
+        try:
+            if existing and valid:
+                result = DictionaryStatus(**existing.model_dump(), ready=True)
+            else:
+                result, prepared = await asyncio.to_thread(self._build_index, source)
+            library, already_installed = await self._write_catalog(
+                installed=result,
+                active_id=result.dictionary_id if activate else None,
+                prepared_index=prepared,
+            )
+            return DictionaryLibraryImport(
+                library=library, dictionary_id=identity, already_installed=already_installed
+            )
+        finally:
+            if prepared is not None:
+                await asyncio.to_thread(prepared.unlink, missing_ok=True)
 
-    def _build_and_publish(self, source: Path) -> DictionaryStatus:
+    def _build_index(self, source: Path) -> tuple[DictionaryStatus, Path]:
         self.library_path.mkdir(parents=True, exist_ok=True)
         fd, raw_path = tempfile.mkstemp(
             prefix=".dictionary-index-", suffix=".sqlite3", dir=self.library_path
@@ -562,31 +619,7 @@ class DictionaryStore:
             result = _build(source, target)
             with target.open("rb") as completed:
                 os.fsync(completed.fileno())
-            published = self.library_path / (str(result.dictionary_id) + ".sqlite3")
-            try:
-                # A concurrent identical import cannot replace an open snapshot.
-                os.link(target, published)
-            except FileExistsError:
-                # Repair a missing/invalid derived index on explicit same-ZIP import.
-                # Healthy immutable indexes (including unregistered crash orphans)
-                # stay in place, even when another process publishes the same ZIP.
-                healthy = False
-                try:
-                    with closing(sqlite3.connect(published)) as existing:
-                        metadata = existing.execute(
-                            "SELECT dictionary_id, version FROM metadata"
-                        ).fetchone()
-                        healthy = metadata == (result.dictionary_id, INDEX_VERSION)
-                except sqlite3.DatabaseError:
-                    pass
-                if not healthy:
-                    os.replace(target, published)
-            directory_fd = os.open(self.library_path, os.O_RDONLY)
-            try:
-                os.fsync(directory_fd)
-            finally:
-                os.close(directory_fd)
-            return result
+            return result, target
         except (
             zipfile.BadZipFile,
             KeyError,
@@ -598,9 +631,131 @@ class DictionaryStore:
             sqlite3.Error,
             zlib.error,
         ) as exc:
-            raise _invalid() from exc
-        finally:
             target.unlink(missing_ok=True)
+            raise _invalid() from exc
+        except BaseException:
+            target.unlink(missing_ok=True)
+            raise
+
+    def _publish_index(self, target: Path, result: DictionaryStatus) -> None:
+        published = self.library_path / (str(result.dictionary_id) + ".sqlite3")
+        try:
+            os.link(target, published)
+        except FileExistsError:
+            healthy = False
+            try:
+                with closing(sqlite3.connect(published)) as existing:
+                    metadata = existing.execute(
+                        "SELECT dictionary_id, version FROM metadata"
+                    ).fetchone()
+                    healthy = metadata == (result.dictionary_id, INDEX_VERSION)
+            except sqlite3.DatabaseError:
+                pass
+            if not healthy:
+                os.replace(target, published)
+        directory_fd = os.open(self.library_path, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+
+    async def delete(
+        self, dictionary_id: str, replacement_dictionary_id: str | None = None
+    ) -> DictionaryLibrary:
+        # Bootstrap legacy state once. An initialized empty catalog is authoritative
+        # and must never rediscover a deleted legacy dictionary.
+        await self._write_catalog()
+        task = asyncio.create_task(self._delete(dictionary_id, replacement_dictionary_id))
+        try:
+            return await asyncio.shield(task)
+        except asyncio.CancelledError:
+            await task
+            raise
+
+    async def _delete(
+        self, dictionary_id: str, replacement_dictionary_id: str | None
+    ) -> DictionaryLibrary:
+        staged: list[tuple[Path, Path]] = []
+        cleanup: set[Path] = set()
+        async with aiosqlite.connect(self.catalog_path) as connection:
+            await connection.execute("PRAGMA busy_timeout = 30000")
+            await connection.execute("BEGIN EXCLUSIVE")
+            try:
+                async with connection.execute(
+                    "SELECT dictionary_id, filename FROM dictionaries"
+                ) as cursor:
+                    rows = {str(row[0]): str(row[1]) for row in await cursor.fetchall()}
+                if dictionary_id not in rows:
+                    raise HTTPException(
+                        status_code=404, detail="词典已删除或尚未安装，请刷新词典列表"
+                    )
+                async with connection.execute("SELECT dictionary_id FROM active") as cursor:
+                    active = await cursor.fetchone()
+                is_active = active is not None and active[0] == dictionary_id
+                if replacement_dictionary_id is not None:
+                    if not is_active or replacement_dictionary_id == dictionary_id:
+                        raise _invalid("替代词典仅用于删除当前词典，请重新选择")
+                    filename = rows.get(replacement_dictionary_id)
+                    if filename is None:
+                        raise _invalid("替代词典尚未安装，请重新选择")
+                    path = self.path if filename == "legacy" else self.library_path / filename
+                    async with self._file_snapshot(path) as snapshot:
+                        status = await snapshot.status()
+                    if not status.ready or status.dictionary_id != replacement_dictionary_id:
+                        raise _invalid("替代词典索引不可用，请重新导入该词典")
+                elif is_active and len(rows) > 1:
+                    raise _invalid("删除当前词典前请选择替代词典")
+                if is_active:
+                    await connection.execute("DELETE FROM active")
+                    if replacement_dictionary_id is not None:
+                        await connection.execute(
+                            "INSERT INTO active VALUES (1, ?)", (replacement_dictionary_id,)
+                        )
+                await connection.execute(
+                    "DELETE FROM dictionaries WHERE dictionary_id = ?", (dictionary_id,)
+                )
+                filename = rows[dictionary_id]
+                paths = {self.library_path / (dictionary_id + ".sqlite3")}
+                if filename == "legacy":
+                    paths.add(self.path)
+                else:
+                    paths.add(self.library_path / filename)
+                # Also remove a repaired legacy original with the same identity.
+                legacy = await self._legacy_status()
+                if legacy.dictionary_id == dictionary_id:
+                    paths.add(self.path)
+                for path in paths:
+                    # Old committed cleanup failures and interrupted staging use
+                    # unique names. Only the current file participates in rollback.
+                    cleanup.update(await asyncio.to_thread(self._retained_paths, path))
+                    retained = self._deleting_path(path)
+                    if await asyncio.to_thread(path.exists):
+                        await asyncio.to_thread(os.replace, path, retained)
+                        staged.append((path, retained))
+                        cleanup.add(retained)
+                    else:
+                        recovered = await asyncio.to_thread(self._readable_path, path)
+                        if recovered != path:
+                            staged.append((path, recovered))
+                library, _ = await self._read_catalog(connection)
+                await connection.commit()
+            except BaseException:
+                try:
+                    # Keep the directory lock through restoration so another
+                    # publisher cannot race rollback and have its file overwritten.
+                    for path, retained in reversed(staged):
+                        await asyncio.to_thread(os.replace, retained, path)
+                finally:
+                    await connection.rollback()
+                raise
+        for retained in cleanup:
+            try:
+                await asyncio.to_thread(retained.unlink, missing_ok=True)
+            except OSError:
+                # The committed library is authoritative. A later deletion of this
+                # identity retries cleanup; no learning data is involved.
+                pass
+        return library
 
 
 def _build(source: Path, target: Path) -> DictionaryStatus:
