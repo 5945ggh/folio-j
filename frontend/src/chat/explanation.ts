@@ -2,11 +2,17 @@ import type { Job, JobInput, Thread } from "./api.ts";
 import type { DiscussionCoordinator } from "./discussion.ts";
 
 type SubmissionResult = Awaited<ReturnType<DiscussionCoordinator["submit"]>>;
+export type ExplanationProgress =
+	| "prompt"
+	| "thread"
+	| "checking"
+	| "submitting";
 type Dependencies = {
 	readPrompt: () => Promise<{ question: string }>;
 	createThread: (requestId: string, modelId: string) => Promise<Thread>;
 	submit: (threadId: string, input: JobInput) => Promise<SubmissionResult>;
 	findByRequest: (threadId: string, requestId: string) => Promise<Job>;
+	onProgress?: (token: string, progress: ExplanationProgress) => void;
 };
 type Result = {
 	item: Thread;
@@ -43,12 +49,17 @@ export class ExplanationRequests {
 		if (request.pending) return request.pending;
 		const frozen = request;
 		const pending = (async () => {
-			if (frozen.question === undefined)
+			if (frozen.question === undefined) {
+				this.dependencies.onProgress?.(token, "prompt");
 				frozen.question = (await this.dependencies.readPrompt()).question;
-			frozen.item ??= await this.dependencies.createThread(
-				token,
-				frozen.modelId,
-			);
+			}
+			if (!frozen.item) {
+				this.dependencies.onProgress?.(token, "thread");
+				frozen.item = await this.dependencies.createThread(
+					token,
+					frozen.modelId,
+				);
+			}
 			frozen.input ??= {
 				request_id: token,
 				expected_thread_revision: frozen.item.revision,
@@ -57,6 +68,7 @@ export class ExplanationRequests {
 				stream: true,
 			};
 			let existing: Job | null = null;
+			this.dependencies.onProgress?.(token, "checking");
 			try {
 				existing = await this.dependencies.findByRequest(frozen.item.id, token);
 			} catch (error) {
@@ -72,6 +84,7 @@ export class ExplanationRequests {
 				frozen.question = existing.question;
 				frozen.input = { ...frozen.input, question: existing.question };
 			}
+			if (!existing) this.dependencies.onProgress?.(token, "submitting");
 			const result = existing
 				? { job: existing, pending: null }
 				: await this.dependencies.submit(frozen.item.id, frozen.input);

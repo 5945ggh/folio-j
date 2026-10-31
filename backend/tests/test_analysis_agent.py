@@ -40,6 +40,7 @@ def scripted_turn(
         tools: list[dict[str, Any]],
         tool_choice: str = "auto",
         on_progress: Callable[[str], Awaitable[None]] | None = None,
+        on_tool_name: Callable[[str], Awaitable[None]] | None = None,
     ) -> adapters.ToolTurn:
         assert key == "fictional-chat-secret"
         assert script, "unexpected model call"
@@ -890,6 +891,7 @@ async def test_stop_fences_save_call_even_when_model_returns_late(
         tools: list[dict[str, Any]],
         tool_choice: str = "auto",
         on_progress: Callable[[str], Awaitable[None]] | None = None,
+        on_tool_name: Callable[[str], Awaitable[None]] | None = None,
     ) -> adapters.ToolTurn:
         nonlocal entries
         entries += 1
@@ -1096,7 +1098,15 @@ async def test_stop_after_save_retains_artifact_and_continuation_fact(
             tools: list[dict[str, Any]],
             tool_choice: str = "auto",
             on_progress: Callable[[str], Awaitable[None]] | None = None,
+            on_tool_name: Callable[[str], Awaitable[None]] | None = None,
         ) -> adapters.ToolTurn:
+            if not captured:
+                assert on_tool_name is not None
+                await on_tool_name("save_analysis")
+                writing = (await client.get(f"/api/jobs/{job['id']}")).json()
+                assert writing["active_step"] == "writing_analysis"
+                assert not writing["artifacts"]
+                assert not writing["assistant_message"]["content"]
             if len(captured) == 1:
                 started.set()
                 while not release.is_set():
@@ -1111,6 +1121,7 @@ async def test_stop_after_save_retains_artifact_and_continuation_fact(
                 tools=tools,
                 tool_choice=tool_choice,
                 on_progress=on_progress,
+                on_tool_name=on_tool_name,
             )
 
         monkeypatch.setattr(adapters, "complete_with_tools", delayed)
@@ -1119,6 +1130,7 @@ async def test_stop_after_save_retains_artifact_and_continuation_fact(
         try:
             await asyncio.wait_for(started.wait(), timeout=2)
             saved = (await client.get(f"/api/jobs/{job['id']}")).json()
+            assert saved["active_step"] == "model_call"
             artifact = saved["artifacts"][0]
             stopped = await client.post(f"/api/jobs/{job['id']}/stop")
             assert stopped.status_code == 200

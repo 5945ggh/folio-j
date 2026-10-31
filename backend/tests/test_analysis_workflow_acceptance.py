@@ -120,6 +120,7 @@ async def test_review_approval_is_idempotent_and_saves_one_revision(
         tools: list[dict[str, Any]],
         tool_choice: str = "auto",
         on_progress: Any = None,
+        on_tool_name: Any = None,
     ) -> adapters.ToolTurn:
         nonlocal calls
         calls += 1
@@ -185,6 +186,7 @@ async def test_review_rejection_with_instructions_keeps_original(
         tools: list[dict[str, Any]],
         tool_choice: str = "auto",
         on_progress: Any = None,
+        on_tool_name: Any = None,
     ) -> adapters.ToolTurn:
         nonlocal calls
         calls += 1
@@ -247,6 +249,7 @@ async def test_tool_cannot_read_other_segment_analysis(
         tools: list[dict[str, Any]],
         tool_choice: str = "auto",
         on_progress: Any = None,
+        on_tool_name: Any = None,
     ) -> adapters.ToolTurn:
         nonlocal calls, tool_output
         calls += 1
@@ -291,6 +294,7 @@ async def test_review_resume_keeps_shared_eight_call_budget(
         tools: list[dict[str, Any]],
         tool_choice: str = "auto",
         on_progress: Any = None,
+        on_tool_name: Any = None,
     ) -> adapters.ToolTurn:
         nonlocal count
         count += 1

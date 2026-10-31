@@ -241,6 +241,11 @@ async def test_chat_stream_merges_indexed_calls_and_replays_reasoning(
     install_transport(monkeypatch, handler)
     progress: list[str] = []
 
+    names: list[str] = []
+
+    async def on_tool_name(name: str) -> None:
+        names.append(name)
+
     async def on_progress(value: str) -> None:
         progress.append(value)
 
@@ -250,7 +255,9 @@ async def test_chat_stream_merges_indexed_calls_and_replays_reasoning(
         messages=MESSAGES,
         tools=TOOLS,
         on_progress=on_progress,
+        on_tool_name=on_tool_name,
     )
+    assert names == ["read_analysis", "read_analysis"]
     assert result.completed
     assert result.text == "准备读取"
     assert progress == ["准备", "准备读取"]
@@ -333,6 +340,11 @@ async def test_responses_stream_retains_reasoning_and_terminal_calls(
     install_transport(monkeypatch, handler)
     progress: list[str] = []
 
+    names: list[str] = []
+
+    async def on_tool_name(name: str) -> None:
+        names.append(name)
+
     async def on_progress(value: str) -> None:
         progress.append(value)
 
@@ -342,7 +354,9 @@ async def test_responses_stream_retains_reasoning_and_terminal_calls(
         messages=MESSAGES,
         tools=TOOLS,
         on_progress=on_progress,
+        on_tool_name=on_tool_name,
     )
+    assert names == ["read_analysis"]
     assert result.completed
     assert result.text == "准备读取"
     assert progress == ["准备", "准备读取"]

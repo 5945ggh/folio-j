@@ -135,6 +135,12 @@ async def _claim(
         )
         session.add(run)
         job.status = "running"
+        state["active_step"] = (
+            "applying_review"
+            if state.get("review_proposal") and state.get("decision") == "approve"
+            else "model_call"
+        )
+        job.execution_state = state
         job.execution_token = token
         job.started_at = started
         job.version += 1

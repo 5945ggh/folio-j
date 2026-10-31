@@ -47,7 +47,9 @@ import {
 	threadChanged,
 	usableThread,
 } from "./discussion";
-import { ExplanationRequests } from "./explanation";
+import { type ExplanationProgress, ExplanationRequests } from "./explanation";
+import type { ReplyOperation } from "./progress";
+import { ReplyProgress } from "./ReplyProgress";
 import { describeReview } from "./review";
 
 type Pending = PendingSubmission;
@@ -60,6 +62,7 @@ type ExplanationAttempt = {
 	input: ExplanationInput;
 	error: Error | null;
 	pending: boolean;
+	progress?: ExplanationProgress;
 };
 const emptyDraft: Draft = { question: "" };
 
@@ -184,25 +187,6 @@ function DiscussionReference({ segment }: { segment: Segment }) {
 	);
 }
 
-function jobLabel(job: Job): string {
-	switch (job.status) {
-		case "queued":
-			return "排队中";
-		case "running":
-			return job.kind === "generate_analysis" ? "生成讲解中" : "回答中";
-		case "waiting_review":
-			return "等待审核";
-		case "stopping":
-			return "正在停止";
-		case "succeeded":
-			return "已完成";
-		case "failed":
-			return "失败";
-		case "interrupted":
-			return "已中断";
-	}
-}
-
 function FailedJob({
 	summary,
 	onRetry,
@@ -232,11 +216,15 @@ function FailedJob({
 const MessageItem = memo(function MessageItem({
 	message,
 	activeJob,
+	updateFailed,
+	operation,
 	onRetry,
 	onOpenArtifact,
 }: {
 	message: Message;
 	activeJob?: Job;
+	updateFailed?: boolean;
+	operation?: ReplyOperation;
 	onRetry: (draft: Draft) => void;
 	onOpenArtifact: (analysisId: string, revisionId: string, job?: Job) => void;
 }) {
@@ -262,19 +250,22 @@ const MessageItem = memo(function MessageItem({
 			className={`chat-message ${current.role}`}
 			aria-label={current.role === "user" ? "你的消息" : "助手消息"}
 		>
-			<div className="chat-message-heading">
-				{current.role === "assistant" && current.status !== "complete" && (
-					<span>
-						{activeJob && activeJob.assistant_message.id === current.id
-							? jobLabel(activeJob)
-							: current.status === "failed"
-								? "失败"
-								: current.status === "interrupted"
-									? "已中断"
-									: "回答中"}
-					</span>
-				)}
-			</div>
+			{current.role === "assistant" &&
+				(activeJob ? (
+					<ReplyProgress
+						job={activeJob}
+						updateFailed={updateFailed}
+						operation={operation}
+					/>
+				) : current.status !== "complete" ? (
+					<p className="chat-reply-progress">
+						{current.status === "failed"
+							? "本轮失败"
+							: current.status === "interrupted"
+								? "本轮已中断"
+								: "正在读取本轮状态"}
+					</p>
+				) : null)}
 			{current.content ? (
 				current.role === "assistant" ? (
 					<div className="chat-message-content chat-markdown">
@@ -283,12 +274,6 @@ const MessageItem = memo(function MessageItem({
 				) : (
 					<p className="chat-message-content">{current.content}</p>
 				)
-			) : current.role === "assistant" ? (
-				<p className="chat-placeholder">
-					{activeJob?.kind === "generate_analysis"
-						? "正在生成讲解…"
-						: "等待回答…"}
-				</p>
 			) : null}
 			{current.role === "assistant" && current.content && (
 				<div className="chat-message-actions">
@@ -693,6 +678,16 @@ function ThreadPanel({
 								? active.data
 								: undefined
 						}
+						updateFailed={active.isError}
+						operation={
+							active.data?.assistant_message.id === message.id
+								? decision.isPending
+									? "decision"
+									: stop.isPending
+										? "stop"
+										: undefined
+								: undefined
+						}
 						onRetry={setDraft}
 						onOpenArtifact={onOpenArtifact}
 					/>
@@ -745,16 +740,6 @@ function ThreadPanel({
 						</div>
 					</section>
 				)}
-				{active.data?.status === "queued" && (
-					<p className="chat-job-state" role="status">
-						已收到请求，正在等待开始。
-					</p>
-				)}
-				{active.data?.status === "stopping" && (
-					<p className="chat-job-state" role="status">
-						正在停止本轮…
-					</p>
-				)}
 				{active.isError && <InlineError error={active.error} />}
 			</section>
 			<div className="chat-composer">
@@ -786,6 +771,11 @@ function ThreadPanel({
 					}}
 				/>
 
+				{sending && !pending?.uncertain && (
+					<p className="chat-reply-progress" role="status">
+						正在提交本轮请求…
+					</p>
+				)}
 				{pending?.uncertain && (
 					<div className="chat-uncertain" role="status">
 						<strong>正在核实提交</strong>
@@ -1113,6 +1103,12 @@ export function Workbench({
 	const explanationRequests = useRef<ExplanationRequests | null>(null);
 	if (!explanationRequests.current)
 		explanationRequests.current = new ExplanationRequests({
+			onProgress: (token, progress) => {
+				setExplanationAttempts((old) => {
+					const attempt = old[token];
+					return attempt ? { ...old, [token]: { ...attempt, progress } } : old;
+				});
+			},
 			readPrompt: () =>
 				client.fetchQuery({
 					queryKey: chatKeys.explanationPrompt,
@@ -1343,8 +1339,22 @@ export function Workbench({
 					)}
 				</div>
 				<div className="chat-main">
-					{Object.values(explanationAttempts).some((item) => item.pending) && (
-						<p role="status">正在创建 AI 讲解…</p>
+					{Object.values(explanationAttempts).map((attempt) =>
+						attempt.pending ? (
+							<p
+								className="chat-reply-progress chat-preparation"
+								role="status"
+								key={attempt.input.token}
+							>
+								{attempt.progress === "thread"
+									? "正在准备新的讲解对话…"
+									: attempt.progress === "checking"
+										? "正在核实本次讲解请求…"
+										: attempt.progress === "submitting"
+											? "正在提交讲解请求…"
+											: "正在读取讲解请求…"}
+							</p>
+						) : null,
 					)}
 					{Object.values(explanationAttempts).map(({ input, error }) =>
 						error ? (
@@ -1376,6 +1386,22 @@ export function Workbench({
 							onJobAccepted={onJobAccepted}
 							onOpenArtifact={onOpenArtifact}
 						/>
+					) : explainToken &&
+						explanationAttempts[explainToken] ? null : explainToken &&
+						(defaults.isPending ||
+							providers.isPending ||
+							(selected && selectedInfo.isPending) ||
+							(needsExplanationModel &&
+								availableModels.some(
+									({ model }) => model.id === explanationModel,
+								))) ? (
+						<p className="chat-reply-progress chat-preparation" role="status">
+							{defaults.isPending ||
+							providers.isPending ||
+							(selected && selectedInfo.isPending)
+								? "正在读取模型设置…"
+								: "正在准备讲解请求…"}
+						</p>
 					) : explainToken ? (
 						<div className="chat-first-generation">
 							<h3>创建 AI 讲解</h3>

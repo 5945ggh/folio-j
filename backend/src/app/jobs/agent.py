@@ -9,7 +9,7 @@ from time import monotonic
 from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import HTTPException
-from sqlalchemy import select, text, update
+from sqlalchemy import case, func, select, text, update
 
 from app.analysis_schemas import SectionOperation
 from app.chat_models import ChatMessage, ChatThread, Job
@@ -76,7 +76,31 @@ class _StreamProgress:
         self.persisted: str | None = None
         self.last_write: float | None = None
         self.closed = False
+        self.writing_analysis = False
         self.lock = asyncio.Lock()
+
+    async def tool_name(self, name: str) -> None:
+        """Only publish a known activity, never partial tool arguments or reasoning."""
+        from app.jobs.runtime import execution_authorized
+
+        if self.closed or self.writing_analysis or name != "save_analysis":
+            return
+        self.writing_analysis = True
+        async with self.app.state.session_factory() as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
+            if not await execution_authorized(session, self.job_id, self.token):
+                return
+            await session.execute(
+                update(Job)
+                .where(Job.id == self.job_id)
+                .values(
+                    execution_state=func.json_set(
+                        Job.execution_state, "$.active_step", "writing_analysis"
+                    ),
+                    version=Job.version + 1,
+                )
+            )
+            await session.commit()
 
     async def __call__(self, value: str) -> None:
         if self.closed:
@@ -102,7 +126,13 @@ class _StreamProgress:
             value = self.latest
             if value is None or value == self.persisted:
                 return
-            await _progress(self.app, self.job_id, self.token, value)
+            await _progress(
+                self.app,
+                self.job_id,
+                self.token,
+                value,
+                first_output=bool(value) and not self.persisted,
+            )
             self.persisted = value
             self.last_write = monotonic()
 
@@ -146,6 +176,7 @@ async def _invoke(
                 tools=tools,
                 tool_choice=tool_choice,
                 on_progress=progress,
+                on_tool_name=progress.tool_name,
             )
 
         task = asyncio.create_task(call())
@@ -234,7 +265,16 @@ async def _finish_run(
         if persist_messages:
             state["protocol_messages"] = messages
         state["model_seconds"] = float(state.get("model_seconds", 0.0)) + elapsed
-        state["active_step"] = "tool_dispatch" if turn.calls else "answering"
+        step = "tool_dispatch" if turn.calls else "answering"
+        if len(turn.calls) == 1 and turn.completed:
+            name = turn.calls[0]["name"]
+            if name == "save_analysis":
+                step = "saving_analysis"
+            elif name in {"list_analyses", "read_analysis"}:
+                step = "reading_analysis"
+            elif name in EDIT_NAMES:
+                step = "preparing_edit"
+        state["active_step"] = step
         job.execution_state = state
         job.version += 1
         await session.commit()
@@ -253,6 +293,8 @@ async def _next_run(
         if job is None or job.status != "running" or job.execution_token != token:
             return False
         model = job.model_snapshot
+        job.execution_state = {**(job.execution_state or {}), "active_step": "model_call"}
+        job.version += 1
         created = now()
         session.add(
             Run(
@@ -349,7 +391,9 @@ async def _terminate(
         await session.commit()
 
 
-async def _progress(app: "FastAPI", job_id: str, token: str, text_value: str) -> None:
+async def _progress(
+    app: "FastAPI", job_id: str, token: str, text_value: str, *, first_output: bool
+) -> None:
     from app.jobs.runtime import execution_authorized
 
     if len(text_value) > OUTPUT_CHAR_LIMIT:
@@ -376,7 +420,20 @@ async def _progress(app: "FastAPI", job_id: str, token: str, text_value: str) ->
             await session.execute(
                 update(Run).where(Run.id == run_id).values(output_text=text_value)
             )
-        await session.execute(update(Job).where(Job.id == job_id).values(version=Job.version + 1))
+        # The message may still contain text from a previous model call. Only this
+        # invocation's visible output changes its phase, never a buffered prior chunk.
+        progress = update(Job).where(Job.id == job_id).values(version=Job.version + 1)
+        if first_output:
+            progress = progress.values(
+                execution_state=case(
+                    (
+                        func.json_extract(Job.execution_state, "$.active_step") == "model_call",
+                        func.json_set(Job.execution_state, "$.active_step", "streaming"),
+                    ),
+                    else_=Job.execution_state,
+                ),
+            )
+        await session.execute(progress)
         await session.commit()
 
 
@@ -630,7 +687,9 @@ async def execute_agent_job(
             state = dict(job.execution_state or {})
             state["review_proposal"] = None
             state["protocol_messages"] = messages
+            state["active_step"] = "model_call"
             job.execution_state = state
+            job.version += 1
             await session.commit()
         await _persist_messages(app, job_id, token, messages)
     needs_run = False

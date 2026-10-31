@@ -1828,19 +1828,6 @@ a {
 	padding: 0;
 	background: transparent;
 }
-.chat-message-heading:empty {
-	display: none;
-}
-.chat-message-heading {
-	display: flex;
-	justify-content: space-between;
-	gap: 12px;
-	color: light-dark(#9b9ba0, var(--color-text-faint));
-	font-size: 10px;
-}
-.chat-message-heading span {
-	color: light-dark(#9a7545, var(--color-warning));
-}
 .chat-message-content {
 	margin: 0;
 	color: var(--workspace-content-text);
@@ -1872,10 +1859,48 @@ a {
 .chat-markdown .analysis-markdown > :last-child {
 	margin-bottom: 0;
 }
-.chat-placeholder {
-	margin: 8px 0 0;
-	color: light-dark(#aaaab0, var(--color-text-faint));
+.chat-reply-progress {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 4px 12px;
+	margin: 0 0 8px;
+	color: var(--color-text-secondary);
+	font-size: 12px;
+	line-height: 1.6;
+	overflow-wrap: anywhere;
+}
+.chat-reply-progress[data-status="failed"],
+.chat-reply-progress[data-status="interrupted"] {
+	color: var(--color-danger);
+}
+.chat-reply-progress > [role="status"] {
+	font-weight: 500;
+}
+.chat-reply-progress:is(
+		[data-status="queued"],
+		[data-status="running"],
+		[data-status="stopping"]
+	)
+	> [role="status"]::before {
+	display: inline-block;
+	width: 5px;
+	height: 5px;
+	margin: 0 7px 2px 0;
+	border-radius: 50%;
+	background: currentColor;
+	content: "";
+}
+.chat-reply-elapsed {
+	flex: none;
+	color: var(--color-text-muted);
 	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+.chat-preparation {
+	flex: none;
+	margin: 16px;
 }
 .chat-failure-detail {
 	margin-top: 12px;
@@ -1884,11 +1909,6 @@ a {
 }
 .segment-shell .chat-failure-detail p {
 	white-space: pre-wrap;
-}
-.chat-job-state {
-	margin: 0;
-	color: var(--color-warning);
-	font-size: 10px;
 }
 .chat-message-actions {
 	display: flex;

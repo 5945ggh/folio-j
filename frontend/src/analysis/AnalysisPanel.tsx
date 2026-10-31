@@ -249,7 +249,7 @@ export function AnalysisPanel({
 											className="analysis-quiet-button"
 											onClick={() => onSelect(document.id, null)}
 										>
-											查看当前版本
+											回到当前版本
 										</button>
 									</>
 								)}

@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import type { Job, Message } from "../src/chat/api";
 import type { BrowserHarness } from "./harness";
 import { materialSegment } from "./segment-materials";
@@ -20,6 +20,9 @@ export async function workbenchRender(h: BrowserHarness) {
 	const { chatKeys } = await import("../src/chat/api");
 	const { container, mount, until, inputValue, mock } = h;
 	const check: BrowserHarness["check"] = h.check;
+	const originalTheme = document.documentElement.dataset.theme;
+	if (new URLSearchParams(location.search).get("theme") === "dark")
+		document.documentElement.dataset.theme = "dark";
 	const thread = { ...makeThread(), active_job_id: "job" };
 	const historic: Message[] = Array.from({ length: 40 }, (_, index) => ({
 		id: `stable-${index}`,
@@ -39,12 +42,15 @@ export async function workbenchRender(h: BrowserHarness) {
 	}));
 	let job: Job = {
 		...makeJob("running"),
+		created_at: new Date(Date.now() - 12000).toISOString(),
+		active_step: "model_call",
 		assistant_message: {
 			...makeJob("running").assistant_message,
 			ordinal: 42,
 			content: "## 活动回复第一段",
 		},
 	};
+	let queryClient: QueryClient | undefined;
 	let jobGets = 0;
 	let copied = "";
 	const clipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
@@ -73,6 +79,7 @@ export async function workbenchRender(h: BrowserHarness) {
 	});
 	function Screen() {
 		const client = useQueryClient();
+		queryClient = client;
 		return (
 			<div style={{ height: "700px" }}>
 				<button
@@ -198,9 +205,113 @@ export async function workbenchRender(h: BrowserHarness) {
 			countStable() === initial,
 			"Failure retry draft update must not reparse stable Markdown",
 		);
-		return `workbench render ${window.innerWidth}px: 40 historic replies; input/active stream/progress/copy/retry = 0 historic Markdown reparses; active text is parsed and progress reuses it`;
+		const progress = () =>
+			container.querySelector(".chat-reply-progress[data-status]");
+		check(
+			progress()?.textContent?.includes("正在处理本轮请求"),
+			"Unknown activity must use neutral fallback",
+		);
+		const phase = () => progress()?.querySelector('[role="status"]');
+		check(
+			getComputedStyle(phase() as Element, "::before").content === '""',
+			"Active processing must have a static activity dot",
+		);
+		const clock = () => progress()?.querySelector(".chat-reply-elapsed");
+		const beforeTick = clock()?.textContent;
+		check(
+			beforeTick?.startsWith("已用 "),
+			"Active reply must show elapsed wall time",
+		);
+		check(
+			clock()?.getAttribute("aria-live") === "off",
+			"Clock ticks must not be announced every second",
+		);
+		await until(
+			() => clock()?.textContent !== beforeTick,
+			"Reply elapsed time must advance",
+		);
+		check(
+			countStable() === initial &&
+				window.__chatMarkdownParses?.["## 活动回复第二段"] === activeParses,
+			"Clock ticks must not reparse any reply Markdown",
+		);
+		const update = async (changes: Partial<Job>, label: string) => {
+			job = { ...job, ...changes, version: job.version + 1 };
+			check(queryClient, "Missing mounted query client");
+			await queryClient.invalidateQueries({ queryKey: chatKeys.job(job.id) });
+			await until(
+				() =>
+					progress()?.querySelector('[role="status"]')?.textContent === label,
+				`Expected actual activity: ${label}`,
+			);
+			check(
+				!container.querySelector(".chat-placeholder,.chat-job-state"),
+				"Reply activity must have only one current progress line",
+			);
+		};
+		await update({ active_step: "writing_analysis" }, "正在撰写讲解");
+		check(
+			!container.querySelector(".chat-artifact-button"),
+			"Writing tool arguments must not claim an explanation was saved",
+		);
+		await update({ active_step: "saving_analysis" }, "正在保存讲解");
+		await update(
+			{
+				active_step: "model_call",
+				runs: [
+					{ id: "run1", purpose: "chat", status: "succeeded" },
+					{ id: "run2", purpose: "chat", status: "running" },
+				],
+			},
+			"等待模型继续回复",
+		);
+		await update(
+			{ status: "waiting_review", active_step: "streaming" },
+			"等待你审核修改",
+		);
+		check(
+			!!container.querySelector(".chat-review-card"),
+			"Review waiting must retain review controls",
+		);
+		check(
+			getComputedStyle(phase() as Element, "::before").content === "none",
+			"Review waiting must not look like active processing",
+		);
+		await update({ status: "stopping" }, "正在停止本轮");
+		await update(
+			{
+				status: "interrupted",
+				finished_at: new Date(Date.parse(job.created_at) + 31000).toISOString(),
+			},
+			"本轮已中断",
+		);
+		check(
+			clock()?.textContent === "已用 0:31",
+			"Terminal clock must use server finish time",
+		);
+		const stoppedClock = clock()?.textContent;
+		await new Promise((resolve) => setTimeout(resolve, 1100));
+		check(
+			clock()?.textContent === stoppedClock,
+			"Terminal clock must remain stopped",
+		);
+		const bounds = progress()?.getBoundingClientRect();
+		check(
+			bounds &&
+				bounds.width <= container.clientWidth &&
+				bounds.right <= window.innerWidth,
+			"Progress line must fit a narrow discussion panel",
+		);
+		check(
+			getComputedStyle(progress() as Element).animationName === "none",
+			"Progress must not depend on animation",
+		);
+		return `workbench render ${window.innerWidth}px: Markdown reused across input/stream/progress/copy/retry/clock; one factual progress line, writing/saving/multiple calls/review/stop/terminal clock and narrow layout verified`;
 	} finally {
 		dispose();
+		if (originalTheme === undefined)
+			delete document.documentElement.dataset.theme;
+		else document.documentElement.dataset.theme = originalTheme;
 		if (clipboard) Object.defineProperty(navigator, "clipboard", clipboard);
 		else Reflect.deleteProperty(navigator, "clipboard");
 	}

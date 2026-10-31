@@ -329,6 +329,11 @@ async function runExplanation(
 				() => creations.length === index,
 				"Both rapid clicks must begin fresh thread creation",
 			);
+			check(
+				container.textContent?.includes("正在准备新的讲解对话…") &&
+					!container.querySelector("#explanation-model"),
+				"Accepted shortcut preparation must show its actual phase without an actionable model selector",
+			);
 		}
 		check(
 			submissions.length === 2 && releases.length === 2,

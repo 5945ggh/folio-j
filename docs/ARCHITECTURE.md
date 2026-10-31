@@ -484,6 +484,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 - 当前Job使用queued／running／waiting_review／stopping／succeeded／failed／interrupted状态；lifespan先取得同一数据库的单进程排他锁，再恢复中断状态并启动调度。调度按持久queued任务领取，问答／Analysis与2A验证共用并发上限2。2B交付时每Job一次生成、60秒调用预算；当前工具循环使用第3.5节统一预算，不新建第二套并发名额或独立重试循环。实际实现见[`jobs/runtime.py`](../backend/src/app/jobs/runtime.py)与[`jobs/agent.py`](../backend/src/app/jobs/agent.py)，2B历史边界见[归档契约](handovers/archived/STAGE_2B_ASYNC_QA.md)。
 - 调用入口和停止／来源／片段删除的提交共用短进程互斥，并在进入适配器前核对持久状态；互斥不覆盖网络等待。每次进度／终态写入检查execution_token、活动Job身份与对象未删除；停止先持久撤销token，再取消执行，收尾后释放线程。当前多个Run及已保存成果分别留存，助手消息、Job终态与线程释放由收尾事务维护，不能用2B单次调用的终态规则推断整轮成果回滚。
+- 问答沿用 Job 的 `active_step` 上报活动。每次模型调用重新进入等待；收到可见正文才标记接收中，流式协议识别到讲解保存工具名时可标记撰写中。只在模型完整返回工具调用后进入工具处理阶段；成果身份以保存事务的 `artifacts` 为准。
 - 流式进度在单次调用内聚合，持久写入间隔至少250ms，结束或异常立即刷新已有脱敏正文；每次写入仍核对持久授权，停止或删除后的缓冲与迟到回调不能落库。
 - 所有新Job.kind均为`chat_reply`，覆盖普通讨论、快捷讲解与显式保存。旧`generate_analysis`记录保留读取，未完成旧任务被中断并释放线程，不再启动旧writer；旧工具调用返回不支持，不隐式恢复分支。可选提取仍为预留。离开页面不取消普通任务。
 - 接受事务检查线程空闲，数据库唯一活动Job约束和active_job_id阻止同线程运行／待审时接收新轮；审核决定走既有Job，不建立消息队列。独立线程按全局资源调度。用户草稿与等待行为见[PRD 6.6](PRD.md#66-异步操作与离开页面)。

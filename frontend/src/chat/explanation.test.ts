@@ -3,10 +3,54 @@ import { test } from "node:test";
 import { QueryClient } from "@tanstack/react-query";
 import type { Job, JobInput, Thread } from "./api.ts";
 import { DiscussionCoordinator } from "./discussion.ts";
-import { ExplanationRequests } from "./explanation.ts";
+import {
+	type ExplanationProgress,
+	ExplanationRequests,
+} from "./explanation.ts";
 
 const thread = (id: string) => ({ id, revision: 3 }) as Thread;
 const job = { id: "job", status: "queued", version: 1 } as Job;
+
+test("快捷请求进度只跟随已开始的操作，重试不重报已完成步骤", async () => {
+	const stages: ExplanationProgress[] = [];
+	let created = false;
+	const requests = new ExplanationRequests({
+		onProgress: (token, progress) => {
+			assert.equal(token, "intent");
+			stages.push(progress);
+		},
+		readPrompt: async () => {
+			assert.deepEqual(stages, ["prompt"]);
+			return { question: "冻结的问题" };
+		},
+		createThread: async () => {
+			assert.equal(stages.at(-1), "thread");
+			if (!created) {
+				created = true;
+				throw new Error("创建响应丢失");
+			}
+			return thread("new-thread");
+		},
+		findByRequest: async () => {
+			assert.equal(stages.at(-1), "checking");
+			throw { status: 404 };
+		},
+		submit: async () => {
+			assert.equal(stages.at(-1), "submitting");
+			return { job, pending: null };
+		},
+	});
+	await assert.rejects(requests.start("intent", "model", 1));
+	assert.deepEqual(stages, ["prompt", "thread"]);
+	await requests.start("intent", "model", 1);
+	assert.deepEqual(stages, [
+		"prompt",
+		"thread",
+		"thread",
+		"checking",
+		"submitting",
+	]);
+});
 
 test("每个点击独立完成普通提交，同意图不重复，不依赖可见线程", async () => {
 	const calls: Array<[string, string]> = [];

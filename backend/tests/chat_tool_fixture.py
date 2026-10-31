@@ -23,6 +23,7 @@ def install_text_turn(
         tools: list[dict[str, Any]],
         tool_choice: str = "auto",
         on_progress: Callable[[str], Awaitable[None]] | None = None,
+        on_tool_name: Callable[[str], Awaitable[None]] | None = None,
     ) -> adapters.ToolTurn:
         assert tools and tool_choice in {"auto", "none"}
 

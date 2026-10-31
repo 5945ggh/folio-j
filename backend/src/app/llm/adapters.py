@@ -58,6 +58,7 @@ async def complete_with_tools(
     tools: list[dict[str, Any]],
     tool_choice: str = "auto",
     on_progress: Callable[[str], Awaitable[None]] | None = None,
+    on_tool_name: Callable[[str], Awaitable[None]] | None = None,
 ) -> ToolTurn:
     """Request a complete tool-capable turn; incomplete output is never dispatched."""
     timeout = _timeout(snapshot)
@@ -117,6 +118,8 @@ async def complete_with_tools(
                             if fragment.function is not None:
                                 if fragment.function.name:
                                     entry["function"]["name"] += fragment.function.name
+                                    if on_tool_name is not None:
+                                        await on_tool_name(entry["function"]["name"])
                                 if fragment.function.arguments:
                                     entry["function"]["arguments"] += fragment.function.arguments
                         if choice.finish_reason is not None:
@@ -236,6 +239,9 @@ async def complete_with_tools(
                         parts.append(event.delta)
                         if on_progress is not None:
                             await on_progress(_safe_progress("".join(parts), api_key))
+                    elif event.type == "response.output_item.added":
+                        if event.item.type == "function_call" and on_tool_name is not None:
+                            await on_tool_name(event.item.name)
                     elif event.type == "response.output_item.done":
                         output_items[event.output_index] = event.item.model_dump(exclude_none=True)
                     elif event.type == "response.function_call_arguments.done":

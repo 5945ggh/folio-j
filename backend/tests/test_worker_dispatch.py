@@ -49,6 +49,7 @@ async def test_api_dispatches_chat_and_resumes_after_review_approval(
         tools: list[dict[str, Any]],
         tool_choice: str = "auto",
         on_progress: Callable[[str], Awaitable[None]] | None = None,
+        on_tool_name: Callable[[str], Awaitable[None]] | None = None,
     ) -> adapters.ToolTurn:
         nonlocal calls
         calls += 1

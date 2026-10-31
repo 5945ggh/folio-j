@@ -42,11 +42,13 @@ async def test_stream_coalesces_500_chunks_and_queries_only_authorization_fields
     receiving_chunks = False
     original_progress = vars(agent)["_progress"]
 
-    async def record_progress(app: Any, job_id: str, token: str, value: str) -> None:
+    async def record_progress(
+        app: Any, job_id: str, token: str, value: str, *, first_output: bool
+    ) -> None:
         flushed.append((clock[0], value))
         if receiving_chunks:
             callback_flushes.append((clock[0], value))
-        await original_progress(app, job_id, token, value)
+        await original_progress(app, job_id, token, value, first_output=first_output)
 
     monkeypatch.setattr(agent, "_progress", record_progress)
 
@@ -243,8 +245,10 @@ async def test_supervisor_flushes_pending_text_while_upstream_is_idle(
     latest = "首段之后到达、随后上游暂停的第二段"
     original_progress = vars(agent)["_progress"]
 
-    async def record_progress(app: Any, job_id: str, token: str, value: str) -> None:
-        await original_progress(app, job_id, token, value)
+    async def record_progress(
+        app: Any, job_id: str, token: str, value: str, *, first_output: bool
+    ) -> None:
+        await original_progress(app, job_id, token, value, first_output=first_output)
         if value == latest:
             flushed.set()
 
@@ -271,6 +275,7 @@ async def test_supervisor_flushes_pending_text_while_upstream_is_idle(
             await asyncio.wait_for(ready.wait(), timeout=2)
             before = (await client.get(f"/api/jobs/{job['id']}")).json()
             assert before["assistant_message"]["content"] == "首段"
+            assert before["active_step"] == "streaming"
             clock[0] = 1.0
             await asyncio.wait_for(flushed.wait(), timeout=2)
             current = (await client.get(f"/api/jobs/{job['id']}")).json()
