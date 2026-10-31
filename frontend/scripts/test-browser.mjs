@@ -81,6 +81,11 @@ const scenarios = selectBrowserScenarios(
 		[390, 900, "?suite=position-bookmarks"],
 		[1280, 900, "?suite=position-bookmarks&direction=vertical-rl"],
 		[390, 900, "?suite=position-bookmarks&direction=vertical-rl"],
+		[1280, 900, "?suite=position-bookmarks&theme=light"],
+		[390, 900, "?suite=position-bookmarks&direction=vertical-rl&theme=light"],
+		[320, 900, "?suite=position-bookmarks&theme=light"],
+		[1280, 900, "?suite=position-bookmarks&compact"],
+		[1280, 900, "?suite=position-bookmarks&theme=light&compact"],
 		[1280, 900, "?suite=inline-records"],
 		[1280, 900, "?suite=inline-records&performance"],
 		[1280, 900, "?suite=inline-records&performance&reduced-motion"],
@@ -157,6 +162,23 @@ try {
 			watch: null,
 		},
 		plugins: [
+			{
+				name: "block-unmocked-browser-test-api",
+				configureServer(testServer) {
+					// Runs before Vite's proxy middleware, including proxies merged from the app config.
+					testServer.middlewares.use((request, response, next) => {
+						const pathname = new URL(request.url ?? "/", "http://offline.test")
+							.pathname;
+						if (pathname !== "/api" && !pathname.startsWith("/api/"))
+							return next();
+						const detail = `Offline browser test blocked unmocked API request: ${request.method} ${pathname}`;
+						console.error(detail);
+						response.statusCode = 500;
+						response.setHeader("Content-Type", "application/json");
+						response.end(JSON.stringify({ detail }));
+					});
+				},
+			},
 			{
 				name: "count-chat-markdown-parses",
 				enforce: "pre",
@@ -310,6 +332,39 @@ export default function ObservedMarkdown(props) {
 				}
 				if (
 					message.method === "Runtime.bindingCalled" &&
+					message.params.name === "__dispatchBrowserKey"
+				) {
+					const { id, key } = JSON.parse(message.params.payload);
+					void (async () => {
+						await command(
+							"Input.dispatchKeyEvent",
+							{
+								type: "keyDown",
+								key,
+								code: key,
+								windowsVirtualKeyCode: key === "Escape" ? 27 : 9,
+							},
+							message.sessionId,
+						);
+						await command(
+							"Input.dispatchKeyEvent",
+							{
+								type: "keyUp",
+								key,
+								code: key,
+								windowsVirtualKeyCode: key === "Escape" ? 27 : 9,
+							},
+							message.sessionId,
+						);
+						await command(
+							"Runtime.evaluate",
+							{ expression: `window.__keyResolvers.get(${id})()` },
+							message.sessionId,
+						);
+					})();
+				}
+				if (
+					message.method === "Runtime.bindingCalled" &&
 					message.params.name === "__dispatchBrowserTheme"
 				) {
 					const { id, mode } = JSON.parse(message.params.payload);
@@ -362,6 +417,18 @@ export default function ObservedMarkdown(props) {
 			await command("Page.enable", {}, sessionId);
 			await command("Page.bringToFront", {}, sessionId);
 			await command("Runtime.enable", {}, sessionId);
+			await command(
+				"Runtime.addBinding",
+				{ name: "__dispatchBrowserKey" },
+				sessionId,
+			);
+			await command(
+				"Page.addScriptToEvaluateOnNewDocument",
+				{
+					source: `window.__keyResolvers = new Map(); window.browserKey = (key) => new Promise((resolve) => { const id = window.__keyResolvers.size + 1; window.__keyResolvers.set(id, resolve); window.__dispatchBrowserKey(JSON.stringify({id,key})); });`,
+				},
+				sessionId,
+			);
 			await command(
 				"Runtime.addBinding",
 				{ name: "__dispatchBrowserPointer" },

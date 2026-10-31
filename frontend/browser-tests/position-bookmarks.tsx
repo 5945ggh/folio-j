@@ -1,3 +1,5 @@
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
@@ -15,6 +17,8 @@ const text = paragraphs.join("");
 const offsetAt = (index: number) => paragraphs.slice(0, index).join("").length;
 const title = "第一章・庭の記憶";
 const imageTitle = "第二章・挿絵";
+const stressExcerpt = `${paragraphs[8]}${"遠い日の記憶をたどりながら、庭の小道をゆっくり歩いた。".repeat(12)}摘要の終わり。`;
+const stressNote = `冒頭の記憶${"。窓辺の描写と庭の風景を比較して読み返す".repeat(24)}。备注の終わり。`;
 const image =
 	"data:image/svg+xml," +
 	encodeURIComponent(
@@ -89,21 +93,54 @@ const chapters: Schema["MaterialChapterResponse"][] = [
 /** Real reader controls, source frames and persistence; every HTTP request stays offline. */
 export async function positionBookmarks(h: BrowserHarness) {
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
+	const { bookmarkDraftSession } = await import(
+		"../src/materials/bookmark-drafts"
+	);
+	const { bookmarkKeys } = await import("../src/materials/bookmarks-api");
 	const check: BrowserHarness["check"] = h.check;
 	const { container, until, inputValue } = h;
 	const parameters = new URLSearchParams(location.search);
 	const vertical = parameters.get("direction") === "vertical-rl";
 	const detailed = !vertical && innerWidth > 720;
 	const nativeConfirm = window.confirm;
-	let confirmationAccepted = false;
 	let confirmations = 0;
 	window.confirm = () => {
 		confirmations++;
-		return confirmationAccepted;
+		throw new Error(
+			"Bookmark deletion must use the built-in confirmation dialog",
+		);
 	};
 	const capture = parameters.has("capture") || parameters.has("preview");
+	const longExcerpt = parameters.has("compact")
+		? `${paragraphs[8]}遠い日の記憶をたどりながら、庭の小道をゆっくり歩いた。窓辺に揺れる木漏れ日を見て、もう少しここにいたいと思った。`
+		: stressExcerpt;
+	const longNote = parameters.has("compact")
+		? "冒頭の記憶。窓辺の描写と庭の風景を比較して読み返す。"
+		: stressNote;
 	localStorage.clear();
-	localStorage.setItem("folio-reader-ui-v1", JSON.stringify({ focus: false }));
+	localStorage.setItem(
+		"folio-reader-ui-v1",
+		JSON.stringify({
+			focus: false,
+			theme: parameters.get("theme") === "light" ? "white" : "black",
+		}),
+	);
+	const browserKey = (
+		window as Window & { browserKey?: (key: "Escape" | "Tab") => Promise<void> }
+	).browserKey;
+	const browserPointer = (
+		window as Window & {
+			browserPointer?: (
+				events: {
+					type: string;
+					x: number;
+					y: number;
+					button?: "left";
+					clickCount?: number;
+				}[],
+			) => Promise<void>;
+		}
+	).browserPointer;
 	const settings: Schema["ReadingSettings"] = {
 		font_size: 22,
 		line_height: 2,
@@ -127,6 +164,8 @@ export async function positionBookmarks(h: BrowserHarness) {
 		material_id: materialId,
 		position,
 		chapter_title: position.chapter_id === "text-chapter" ? title : imageTitle,
+		chapter_progress:
+			position.kind === "text" ? (position.offset ?? 0) / text.length : 0.45,
 		excerpt:
 			position.kind === "text"
 				? (paragraphs[
@@ -139,7 +178,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		updated_at: timestamp,
 	});
 	const records = [
-		makeBookmark("early", anchor(8), "冒頭の記憶"),
+		{ ...makeBookmark("early", anchor(8), longNote), excerpt: longExcerpt },
 		makeBookmark("late", anchor(65), "後で読み返す"),
 		makeBookmark("illustration", {
 			version_id: "v1",
@@ -179,11 +218,16 @@ export async function positionBookmarks(h: BrowserHarness) {
 	const writes: Schema["ReadingPositionUpdate"][] = [];
 	const creates: Schema["BookmarkCreate"][] = [];
 	const patches: Schema["BookmarkUpdate"][] = [];
+	const deletes: string[] = [];
+	const deleteRequests: { id: string; expected_revision: number }[] = [];
 	let listReads = 0;
+	let listPageLimit: number | undefined;
 	let listUnavailable = false;
 	let singleReads = 0;
 	let opened = 0;
 	let nextPatch: "ok" | "failure" | "conflict" = "ok";
+	let nextDelete: "ok" | "failure" | "conflict" = "ok";
+	let nextCreate: "ok" | "nearby" | "failure" = "nearby";
 	let releaseCreate: (() => void) | undefined;
 	let holdCreate = true;
 	let createSerial = 0;
@@ -277,8 +321,8 @@ export async function positionBookmarks(h: BrowserHarness) {
 					version_id: "v1",
 					total: ordered.length,
 					offset,
-					limit,
-					items: ordered.slice(offset, offset + limit),
+					limit: listPageLimit ?? limit,
+					items: ordered.slice(offset, offset + (listPageLimit ?? limit)),
 				});
 			}
 			if (request.method === "POST") {
@@ -288,7 +332,11 @@ export async function positionBookmarks(h: BrowserHarness) {
 					await new Promise<void>((resolve) => {
 						releaseCreate = resolve;
 					});
-				if (detailed && creates.length === 1)
+				const behavior = nextCreate;
+				nextCreate = "ok";
+				if (behavior === "nearby" && !body.allow_nearby)
+					return Response.json({ kind: "nearby", bookmark: records[0] });
+				if (behavior === "failure")
 					return Response.json({ detail: "首次响应失败" }, { status: 503 });
 				const record = makeBookmark(`created-${++createSerial}`, body.position);
 				records.push(record);
@@ -318,6 +366,11 @@ export async function positionBookmarks(h: BrowserHarness) {
 						{ status: 409 },
 					);
 				}
+				if (update.expected_revision !== bookmark.revision)
+					return Response.json(
+						{ detail: "书签已被其他操作修改" },
+						{ status: 409 },
+					);
 				check(
 					update.expected_revision === bookmark.revision,
 					"Saving a note must use its current revision",
@@ -327,6 +380,27 @@ export async function positionBookmarks(h: BrowserHarness) {
 				return Response.json(bookmark);
 			}
 			if (request.method === "DELETE") {
+				deletes.push(bookmark.id);
+				const expectedRevision = Number(
+					url.searchParams.get("expected_revision"),
+				);
+				deleteRequests.push({
+					id: bookmark.id,
+					expected_revision: expectedRevision,
+				});
+				const behavior = nextDelete;
+				nextDelete = "ok";
+				if (behavior === "failure")
+					return Response.json({ detail: "離線削除失敗" }, { status: 503 });
+				if (behavior === "conflict") {
+					bookmark.revision++;
+					return Response.json({ detail: "书签已更新" }, { status: 409 });
+				}
+				if (expectedRevision !== bookmark.revision)
+					return Response.json(
+						{ detail: "书签已被其他操作修改" },
+						{ status: 409 },
+					);
 				check(
 					Number(url.searchParams.get("expected_revision")) ===
 						bookmark.revision,
@@ -336,12 +410,41 @@ export async function positionBookmarks(h: BrowserHarness) {
 				return new Response(null, { status: 204 });
 			}
 		}
+		if (
+			path.startsWith(`/api/materials/${materialId}/bookmarks/`) &&
+			request.method === "GET"
+		) {
+			singleReads++;
+			return Response.json({ detail: "书签已不存在" }, { status: 404 });
+		}
 		throw new Error(
 			`Unmocked position-bookmark request ${request.method} ${path}`,
 		);
 	});
+	let queryClient: QueryClient | undefined;
+	function ReaderScenario() {
+		const client = useQueryClient();
+		useEffect(() => {
+			queryClient = client;
+			return () => {
+				queryClient = undefined;
+			};
+		}, [client]);
+		return <MaterialReader />;
+	}
+	const refreshList = async () => {
+		check(queryClient, "Mounted reader must expose its actual query client");
+		const before = listReads;
+		await queryClient.invalidateQueries({
+			queryKey: bookmarkKeys.list(materialId, "v1"),
+		});
+		await until(
+			() => listReads > before,
+			"Background invalidation must refetch the active bookmark list",
+		);
+	};
 	let dispose = await h.mount(
-		<MaterialReader />,
+		<ReaderScenario />,
 		"/materials/:id",
 		`/materials/${materialId}`,
 	);
@@ -378,6 +481,48 @@ export async function positionBookmarks(h: BrowserHarness) {
 	};
 	const edit = () =>
 		find<HTMLTextAreaElement>('textarea[aria-label="书签备注"]');
+	const detail = () =>
+		container.querySelector<HTMLElement>(
+			'.reader-bookmark-detail[role="dialog"]:popover-open',
+		);
+	const openDetail = async (item: HTMLLIElement) => {
+		const opener = item.querySelector<HTMLButtonElement>(
+			".reader-bookmark-open",
+		);
+		check(opener, "Each bookmark needs a separate detail action");
+		opener.focus();
+		opener.click();
+		await until(
+			() => !!detail()?.querySelector(".reader-bookmark-detail-excerpt"),
+			"Bookmark detail must open and finish current-item validation",
+		);
+		return detail() as HTMLElement;
+	};
+	const closeDetail = async () => {
+		if (!detail()) return;
+		button("关闭书签详情", detail() as HTMLElement).click();
+		await until(() => !detail(), "Bookmark detail must close");
+	};
+	const beginEdit = async (item: HTMLLIElement) => {
+		await closeDetail();
+		const opened = await openDetail(item);
+		if (!opened.querySelector('textarea[aria-label="书签备注"]'))
+			button(
+				opened.textContent?.includes("编辑备注") ? "编辑备注" : "添加备注",
+				opened,
+			).click();
+		await until(
+			() => !!container.querySelector('textarea[aria-label="书签备注"]'),
+			"Bookmark editor must open",
+		);
+	};
+	const confirmDelete = async () => {
+		const confirmation = container.querySelector<HTMLDialogElement>(
+			"dialog.reader-bookmark-confirm[open]",
+		);
+		check(confirmation, "Deletion must open a built-in modal confirmation");
+		button("删除书签", confirmation).click();
+	};
 	const viewport = () => find<HTMLElement>(".reader-viewport");
 	const frames = () => [
 		...container.querySelectorAll<HTMLIFrameElement>("iframe.material-part"),
@@ -418,6 +563,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		);
 	};
 	const closeNavigation = async () => {
+		await closeDetail();
 		button("关闭书内导航").click();
 		await until(
 			() => !container.querySelector('[role="dialog"]:not([inert])'),
@@ -432,7 +578,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		const originalVisible = visibleParagraphs();
 		button("添加当前位置书签").click();
 		await until(
-			() => creates.length === 1,
+			() => Number(creates.length) === 1,
 			"Toolbar add must submit a bookmark",
 		);
 		const firstCreate = creates[0];
@@ -457,39 +603,134 @@ export async function positionBookmarks(h: BrowserHarness) {
 			"Reader must move while bookmark creation remains pending",
 		);
 		check(
-			JSON.stringify(firstCreate.position) === frozen && creates.length === 1,
+			JSON.stringify(firstCreate.position) === frozen &&
+				Number(creates.length) === 1,
 			"Pending creation must retain the clicked anchor during subsequent scrolling",
 		);
 		check(releaseCreate, "Pending create release must exist");
 		holdCreate = false;
 		releaseCreate();
-		if (detailed) {
-			await until(
-				() => !!container.querySelector(".reader-bookmark-notice [role=alert]"),
-				"Failed creation must offer retry for the original location",
-			);
-			button("添加当前位置书签").click();
-			check(
-				creates.length === 1,
-				"A failed frozen request must require an explicit retry instead of adding the later reading position",
-			);
-			button("重试保存书签").click();
-			await until(
-				() => creates.length === 2,
-				"Creation retry must submit the frozen request",
-			);
-			check(
-				creates[1]?.request_id === firstCreate.request_id &&
-					JSON.stringify(creates[1]?.position) === frozen,
-				"Creation retry must preserve both anchor and idempotency identity after scrolling",
-			);
-		}
+		await until(
+			() =>
+				!!container
+					.querySelector(".reader-bookmark-notice")
+					?.textContent?.includes("附近已有书签"),
+			"Nearby response must show an explicit choice",
+		);
+		check(
+			records.length === 3 &&
+				!container
+					.querySelector(".reader-bookmark-notice")
+					?.textContent?.includes("已添加书签"),
+			"Nearby detection must not create a bookmark or announce success",
+		);
+		const beforeNearbyView = visibleParagraphs().join(",");
+		button("查看已有").click();
+		await until(
+			() => !!detail()?.querySelector(".reader-bookmark-detail-excerpt"),
+			"View existing must open and validate bookmark details",
+		);
+		check(
+			visibleParagraphs().join(",") === beforeNearbyView &&
+				!container.querySelector(".reader-return-origin"),
+			"Viewing an existing nearby bookmark must not navigate",
+		);
+		check(
+			detail()?.textContent?.includes(longExcerpt) &&
+				detail()?.textContent?.includes(longNote),
+			"Nearby details must show the complete excerpt and note",
+		);
+		await closeNavigation();
+
+		nextCreate = "nearby";
+		button("添加当前位置书签").click();
+		await until(
+			() =>
+				!!container
+					.querySelector(".reader-bookmark-notice")
+					?.textContent?.includes("附近已有书签"),
+			"A new add must work after viewing an existing bookmark",
+		);
+		button("关闭书签提示").click();
+		await until(
+			() => !container.querySelector(".reader-bookmark-notice"),
+			"Dismissing nearby choice must close it",
+		);
+		check(
+			records.length === 3 && Number(creates.length) === 2,
+			"Dismissing nearby choice must not write a bookmark",
+		);
+
+		nextCreate = "nearby";
+		button("添加当前位置书签").click();
+		await until(
+			() =>
+				Number(creates.length) === 3 &&
+				!!container
+					.querySelector(".reader-bookmark-notice")
+					?.textContent?.includes("附近已有书签"),
+			"Dismissal must allow another independent add",
+		);
+		const forcedRequest = creates[2];
+		check(
+			forcedRequest && forcedRequest.request_id !== firstCreate.request_id,
+			"A new attempt must receive a new request identity",
+		);
+		const forcedPosition = JSON.stringify(forcedRequest.position);
+		const beforeForceScroll = visibleParagraphs().join(",");
+		if (vertical) viewport().scrollLeft += viewport().clientWidth;
+		else viewport().scrollTop -= viewport().clientHeight;
+		viewport().dispatchEvent(new Event("scroll"));
+		await until(
+			() => visibleParagraphs().join(",") !== beforeForceScroll,
+			"Reader must scroll while nearby confirmation is pending",
+		);
+		nextCreate = "failure";
+		button("仍然添加").click();
+		await until(
+			() =>
+				Number(creates.length) === 4 &&
+				!!container.querySelector(".reader-bookmark-notice [role=alert]"),
+			"Forced add failure must offer an explicit retry",
+		);
+		check(
+			creates[3]?.allow_nearby === true &&
+				creates[3]?.request_id === forcedRequest.request_id &&
+				JSON.stringify(creates[3]?.position) === forcedPosition,
+			"Forced addition must preserve the first anchor and request identity after scrolling",
+		);
+		button("添加当前位置书签").click();
+		check(
+			Number(creates.length) === 4,
+			"A pending failed creation must block sampling a new position",
+		);
+		button("重试保存书签").click();
+		await until(
+			() => Number(creates.length) === 5,
+			"Forced creation must retry",
+		);
+		check(
+			creates[4]?.allow_nearby === true &&
+				creates[4]?.request_id === forcedRequest.request_id &&
+				JSON.stringify(creates[4]?.position) === forcedPosition,
+			"Retry after force failure must retain allow_nearby, UUID and original position",
+		);
 		await until(
 			() =>
 				!!container
 					.querySelector('[role="status"]')
 					?.textContent?.includes("已添加书签"),
 			"Successful addition must show a light confirmation",
+		);
+		const noticeExcerpt = find<HTMLElement>(".reader-bookmark-notice span");
+		check(
+			getComputedStyle(noticeExcerpt).whiteSpace === "nowrap" ||
+				getComputedStyle(noticeExcerpt).webkitLineClamp === "1",
+			"Successful toast must limit the excerpt to one line",
+		);
+		check(
+			button("添加备注").classList.contains("reader-bookmark-note-action"),
+			"Quick note must use the visible blue note action",
 		);
 		button("添加备注").click();
 		await until(
@@ -518,6 +759,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 				) && !container.querySelector('textarea[aria-label="书签备注"]'),
 			"Quick note must persist",
 		);
+		await closeDetail();
 		await openBookmarks();
 		check(
 			items()
@@ -545,6 +787,307 @@ export async function positionBookmarks(h: BrowserHarness) {
 		check(
 			itemContaining(note).textContent?.includes("段落"),
 			"A text bookmark must show nearby original text",
+		);
+		const longItem = itemContaining("冒頭の記憶");
+		const excerptPreview = longItem.querySelector<HTMLElement>(
+			".reader-bookmark-excerpt",
+		);
+		const notePreview = longItem.querySelector<HTMLElement>(
+			".reader-bookmark-note",
+		);
+		check(
+			excerptPreview && notePreview,
+			"List must show separate excerpt and note previews",
+		);
+		check(
+			getComputedStyle(excerptPreview).webkitLineClamp === "2",
+			"List excerpt must be capped at two lines",
+		);
+		check(
+			getComputedStyle(notePreview).webkitLineClamp === "1" ||
+				getComputedStyle(notePreview).whiteSpace === "nowrap",
+			"List note must be capped at one line",
+		);
+		check(
+			longItem.textContent?.includes("章内约 8%"),
+			"List progress must refer to the bookmark chapter",
+		);
+		const beforeDetailPosition = visibleParagraphs().join(",");
+		longItem.scrollIntoView({ block: "nearest" });
+		let lastCardBounds = "";
+		let stableCardFrames = 0;
+		await until(() => {
+			const bounds = JSON.stringify(longItem.getBoundingClientRect().toJSON());
+			stableCardFrames = bounds === lastCardBounds ? stableCardFrames + 1 : 0;
+			lastCardBounds = bounds;
+			return (
+				stableCardFrames >= 3 &&
+				container
+					.getAnimations({ subtree: true })
+					.every((animation) => animation.playState !== "running")
+			);
+		}, "Navigation and card geometry must settle before dispatching a real padding click");
+		const cardBounds = longItem.getBoundingClientRect();
+		const opener = longItem.querySelector<HTMLButtonElement>(
+			".reader-bookmark-open",
+		);
+		check(opener, "Card must retain a semantic keyboard button");
+		const corner = { x: cardBounds.left + 4, y: cardBounds.top + 4 };
+		check(
+			document
+				.elementFromPoint(corner.x, corner.y)
+				?.closest(".reader-bookmark-open") === opener,
+			"Card padding must belong to its detail action",
+		);
+		opener.focus({ preventScroll: true });
+		if (browserPointer) {
+			await browserPointer([
+				{ type: "mouseMoved", ...corner },
+				{ type: "mousePressed", ...corner, button: "left", clickCount: 1 },
+				{ type: "mouseReleased", ...corner, button: "left", clickCount: 1 },
+			]);
+		} else opener.click();
+		await until(
+			() => !!detail()?.querySelector(".reader-bookmark-detail-excerpt"),
+			"Clicking card padding must open the complete detail",
+		);
+		const fullDetail = detail() as HTMLElement;
+		check(
+			longItem.dataset.selected === "true",
+			"Open detail must persistently emphasize its card",
+		);
+		const unselected = items().find((item) => item !== longItem);
+		check(
+			unselected &&
+				getComputedStyle(unselected).borderColor !==
+					getComputedStyle(longItem).borderColor,
+			"Selected card must have a distinct border after focus moves into detail",
+		);
+		const createdTime = fullDetail.querySelector<HTMLTimeElement>("time");
+		check(
+			createdTime?.dateTime === timestamp &&
+				!!createdTime.textContent?.includes("2026"),
+			"Detail must display the actual creation date and time",
+		);
+		const footer = fullDetail.querySelector<HTMLElement>(
+			".reader-bookmark-detail-actions",
+		);
+		check(
+			footer &&
+				footer.getBoundingClientRect().bottom <= innerHeight &&
+				footer.getBoundingClientRect().height > 0,
+			"Long detail must keep its action footer visible",
+		);
+		await until(
+			() => fullDetail.contains(document.activeElement),
+			"Opening detail must move keyboard focus into it",
+		);
+		check(
+			visibleParagraphs().join(",") === beforeDetailPosition,
+			"Clicking the card main area must show details without navigation",
+		);
+		check(
+			fullDetail.textContent?.includes(longExcerpt) &&
+				fullDetail.textContent?.includes(longNote),
+			"Detail must retain the complete excerpt and note beyond list truncation",
+		);
+		const detailBounds = fullDetail.getBoundingClientRect();
+		check(
+			detailBounds.left >= -1 &&
+				detailBounds.right <= innerWidth + 1 &&
+				detailBounds.top >= -1 &&
+				detailBounds.bottom <= innerHeight + 1 &&
+				fullDetail.scrollWidth <= fullDetail.clientWidth + 1,
+			"Long details must fit narrow and wide viewports without horizontal overflow",
+		);
+		if (browserKey) {
+			await browserKey("Tab");
+			check(
+				fullDetail.contains(document.activeElement),
+				"Tab from the detail close action must remain in its controls",
+			);
+			await browserKey("Escape");
+		} else {
+			check(
+				parameters.has("preview"),
+				"Automated runner must expose native keyboard dispatch",
+			);
+			button("关闭书签详情", fullDetail).click();
+		}
+		await until(() => !detail(), "Escape must close bookmark details");
+		await until(
+			() =>
+				document.activeElement ===
+				longItem.querySelector(".reader-bookmark-open"),
+			"Closing detail must restore focus to its card action",
+		);
+		await until(
+			() => !longItem.hasAttribute("data-selected"),
+			"Closing detail must clear persistent selection",
+		);
+		const quick = makeBookmark("quick-delete", anchor(11), "快捷删除测试");
+		records.push(quick);
+		await refreshList();
+		await until(
+			() => items().length === records.length,
+			"Shortcut deletion fixture must load",
+		);
+		const quickItem = itemContaining(quick.note);
+		const shortcut = quickItem.querySelector<HTMLButtonElement>(
+			".reader-bookmark-quick-delete",
+		);
+		check(shortcut, "Every card must offer a shortcut delete icon");
+		quickItem.scrollIntoView({ block: "nearest" });
+		const shortcutBounds = shortcut.getBoundingClientRect();
+		const jumpBounds = quickItem
+			.querySelector<HTMLElement>(".reader-bookmark-jump")
+			?.getBoundingClientRect();
+		check(
+			jumpBounds &&
+				shortcutBounds.left < jumpBounds.left &&
+				Math.abs(shortcutBounds.top - jumpBounds.top) < 8,
+			"Delete shortcut must sit at the lower left beside the jump action",
+		);
+		shortcut.focus();
+		shortcut.click();
+		await until(
+			() => !!container.querySelector("dialog.reader-bookmark-confirm[open]"),
+			"Shortcut deletion must open the shared confirmation",
+		);
+		check(
+			!detail() && quickItem.dataset.selected === "true",
+			"Shortcut must not open or navigate the detail",
+		);
+		const quickDialog = find<HTMLDialogElement>(
+			"dialog.reader-bookmark-confirm[open]",
+		);
+		check(
+			document.activeElement === button("取消", quickDialog),
+			"Shortcut deletion must default to Cancel",
+		);
+		button("取消", quickDialog).click();
+		await until(
+			() => !container.querySelector("dialog.reader-bookmark-confirm[open]"),
+			"Shortcut cancel must keep its card",
+		);
+		check(
+			records.includes(quick) &&
+				document.activeElement === shortcut &&
+				!quickItem.hasAttribute("data-selected"),
+			"Cancel must retain bookmark and restore shortcut focus",
+		);
+		shortcut.click();
+		await until(
+			() => !!container.querySelector("dialog.reader-bookmark-confirm[open]"),
+			"Shortcut can reopen confirmation",
+		);
+		await confirmDelete();
+		await until(
+			() =>
+				!records.includes(quick) &&
+				!container.querySelector("dialog.reader-bookmark-confirm[open]") &&
+				items().length === records.length,
+			"Shortcut confirmation must delete only its bookmark",
+		);
+		try {
+			await until(
+				() =>
+					document.activeElement ===
+					container.querySelector('ol[aria-label="位置书签"]'),
+				"Deleted shortcut must restore focus to the stable list",
+			);
+		} catch (failure) {
+			throw new Error(
+				`${String(failure)}; active=${document.activeElement?.outerHTML.slice(0, 400)}; list=${container.querySelector('ol[aria-label="位置书签"]')?.outerHTML.slice(0, 200)}`,
+			);
+		}
+		const refreshed = makeBookmark(
+			"refresh-target",
+			anchor(18),
+			"刷新前的备注",
+		);
+		records.push(refreshed);
+		await refreshList();
+		await until(
+			() => items().length === records.length,
+			"External bookmark creation must appear after successful list refetch",
+		);
+		await openDetail(itemContaining("刷新前的备注"));
+		await until(
+			() => !!detail()?.textContent?.includes("刷新前的备注"),
+			"Refresh fixture detail must show its initial snapshot",
+		);
+		refreshed.note = "远端更新后的完整备注";
+		refreshed.excerpt = "远端更新后的完整原文摘要。";
+		refreshed.revision++;
+		await refreshList();
+		await until(
+			() =>
+				!!detail()?.textContent?.includes(refreshed.note) &&
+				!!detail()?.textContent?.includes(refreshed.excerpt),
+			"Successful list refetch must revalidate an open detail and show the current note and excerpt",
+		);
+		const readsBeforePartialPage = singleReads;
+		listPageLimit = 1;
+		await refreshList();
+		await until(
+			() => items().length === 1 && singleReads > readsBeforePartialPage,
+			"A partial first page must still trigger independent detail validation",
+		);
+		check(
+			!!detail()?.textContent?.includes(refreshed.note) &&
+				!items().some((item) => item.textContent?.includes(refreshed.note)),
+			"A valid selected bookmark outside loaded pages must remain open",
+		);
+		listPageLimit = undefined;
+		await refreshList();
+		await until(
+			() => items().length === records.length,
+			"Restoring full pagination must reload the complete fixture list",
+		);
+		button("编辑备注", detail() as HTMLElement).click();
+		await until(
+			() => !!container.querySelector('textarea[aria-label="书签备注"]'),
+			"Refresh protection must exercise an active note editor",
+		);
+		const draftBeforeRefresh = "后台刷新期间仍保留的本地草稿";
+		inputValue(edit(), draftBeforeRefresh);
+		const editorRevision = refreshed.revision;
+		refreshed.note = "另一窗口在编辑期间更新的备注";
+		refreshed.revision++;
+		const readsBeforeEditingRefresh = singleReads;
+		await refreshList();
+		await until(
+			() => singleReads > readsBeforeEditingRefresh,
+			"List refetch must independently validate the bookmark while its editor is open",
+		);
+		check(
+			edit().value === draftBeforeRefresh,
+			"Successful background refresh must preserve the active local draft",
+		);
+		const patchesBeforeRefreshSave = patches.length;
+		button("保存备注").click();
+		await until(
+			() =>
+				patches.length > patchesBeforeRefreshSave &&
+				!!detail()?.textContent?.includes("读取最新书签"),
+			"Saving after an external edit must require conflict recovery",
+		);
+		check(
+			patches.at(-1)?.expected_revision === editorRevision &&
+				edit().value === draftBeforeRefresh,
+			"Background refresh must not silently rebase the draft revision or replace its text",
+		);
+		records.splice(records.indexOf(refreshed), 1);
+		await refreshList();
+		await until(
+			() => !detail() && items().length === records.length,
+			"A successful list refetch followed by item 404 must close a deleted bookmark detail",
+		);
+		check(
+			bookmarkDraftSession(materialId, "v1").read(refreshed).note ===
+				draftBeforeRefresh,
+			"Closing an unavailable bookmark detail must preserve its local note draft",
 		);
 		const tabs = [
 			...container.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
@@ -590,7 +1133,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 			"Bookmark panel must fit the viewport",
 		);
 		if (detailed) {
-			button("编辑备注", itemContaining(note)).click();
+			await beginEdit(itemContaining(note));
 			await until(
 				() => !!container.querySelector('textarea[aria-label="书签备注"]'),
 				"Saved note must be editable",
@@ -610,7 +1153,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 				createdExcerpt,
 				"Created bookmark must retain its original excerpt",
 			);
-			button("添加备注", itemContaining(createdExcerpt)).click();
+			await beginEdit(itemContaining(createdExcerpt));
 			await until(
 				() => !!container.querySelector('textarea[aria-label="书签备注"]'),
 				"Cleared note must be editable again",
@@ -629,8 +1172,10 @@ export async function positionBookmarks(h: BrowserHarness) {
 				edit().value === "保存失败也保留的草稿",
 				"Save failure must preserve the edited note",
 			);
+			await closeDetail();
 			button("目录", dialog).click();
 			button("书签", dialog).click();
+			await beginEdit(itemContaining(createdExcerpt));
 			await until(
 				() =>
 					container.querySelector<HTMLTextAreaElement>(
@@ -646,7 +1191,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 					!container.querySelector('textarea[aria-label="书签备注"]'),
 				"Retry must persist the retained draft",
 			);
-			button("编辑备注", itemContaining("保存失败也保留的草稿")).click();
+			await beginEdit(itemContaining("保存失败也保留的草稿"));
 			await until(
 				() => !!container.querySelector('textarea[aria-label="书签备注"]'),
 				"Conflict editor must open",
@@ -664,6 +1209,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 			);
 			await closeNavigation();
 			await openBookmarks();
+			await beginEdit(itemContaining("保存失败也保留的草稿"));
 			await until(
 				() =>
 					container.querySelector<HTMLTextAreaElement>(
@@ -690,14 +1236,17 @@ export async function positionBookmarks(h: BrowserHarness) {
 					!container.querySelector('textarea[aria-label="书签备注"]'),
 				"Explicit save after reread must use the latest revision",
 			);
-			button("编辑备注", itemContaining("冲突后的本地草稿")).click();
+			await beginEdit(itemContaining("冲突后的本地草稿"));
 			await until(
 				() => !!container.querySelector('textarea[aria-label="书签备注"]'),
 				"Editor must reopen before source availability changes",
 			);
 			inputValue(edit(), "来源暂不可用时保留的草稿");
 			listUnavailable = true;
-			const navigation = find<HTMLElement>('[role="dialog"]:not([inert])');
+			const navigation = find<HTMLElement>(
+				'.reader-query-navigation[role="dialog"]:not([inert])',
+			);
+			await closeDetail();
 			button("目录", navigation).click();
 			await until(
 				() =>
@@ -720,12 +1269,13 @@ export async function positionBookmarks(h: BrowserHarness) {
 			listUnavailable = false;
 			button("重试读取书签").click();
 			await until(
-				() =>
-					items().length === records.length &&
-					container.querySelector<HTMLTextAreaElement>(
-						'textarea[aria-label="书签备注"]',
-					)?.value === "来源暂不可用时保留的草稿",
-				"Successful retry must restore the list and its retained note draft",
+				() => items().length === records.length,
+				"Successful retry must restore the bookmark list",
+			);
+			await beginEdit(itemContaining("冲突后的本地草稿"));
+			check(
+				edit().value === "来源暂不可用时保留的草稿",
+				"Successful retry must restore the retained note draft",
 			);
 			button("取消编辑").click();
 		}
@@ -765,7 +1315,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		);
 		await openBookmarks();
 		if (detailed) {
-			button("编辑备注", itemContaining("冲突后的本地草稿")).click();
+			await beginEdit(itemContaining("冲突后的本地草稿"));
 			await until(
 				() => !!container.querySelector('textarea[aria-label="书签备注"]'),
 				"Draft editor must open before chapter change",
@@ -784,7 +1334,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		button("添加当前位置书签").click();
 		await until(
 			() =>
-				creates.length === beforeImageCreate + 1 &&
+				Number(creates.length) === beforeImageCreate + 1 &&
 				records.some((record) => record.id === "created-2"),
 			"Adding at an image must create an image bookmark",
 		);
@@ -796,6 +1346,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		);
 		await openBookmarks();
 		if (detailed) {
+			await beginEdit(itemContaining("冲突后的本地草稿"));
 			await until(
 				() =>
 					container.querySelector<HTMLTextAreaElement>(
@@ -806,7 +1357,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 			button("取消编辑").click();
 			const imageItem = items().at(-1);
 			check(imageItem, "New image bookmark must appear in the list");
-			button("添加备注", imageItem).click();
+			await beginEdit(imageItem);
 			await until(
 				() => !!container.querySelector('textarea[aria-label="书签备注"]'),
 				"List action must edit the newly created image bookmark",
@@ -824,6 +1375,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 				!container.querySelector(".reader-bookmark-notice"),
 				"Saving through the list must remove the old creation notice and its stale revision",
 			);
+			await closeDetail();
 			button("添加当前位置书签").click();
 			await until(
 				() =>
@@ -834,31 +1386,215 @@ export async function positionBookmarks(h: BrowserHarness) {
 			await openBookmarks();
 			const newest = items().at(-1);
 			check(newest, "Newest image bookmark must appear in the list");
-			confirmationAccepted = true;
-			button("删除书签", newest).click();
+			await openDetail(newest);
+			button("删除书签", detail() as HTMLElement).click();
+			await until(
+				() => !!container.querySelector("dialog.reader-bookmark-confirm[open]"),
+				"New bookmark delete must request confirmation",
+			);
+			await confirmDelete();
 			await until(
 				() =>
 					!records.some((record) => record.id === "created-3") &&
 					!container.querySelector(".reader-bookmark-notice"),
-				"Deleting a just-created bookmark through the list must remove its old notice",
+				"Deleting a just-created bookmark must remove its stale creation notice",
 			);
-			confirmationAccepted = false;
 		}
-		const beforeCancelledDelete = confirmations;
-		button("删除书签", itemContaining("後で読み返す")).click();
-		check(
-			confirmations === beforeCancelledDelete + 1 &&
-				records.some((record) => record.id === "late"),
-			"Cancelling deletion must retain the bookmark",
+		await closeDetail();
+		await openDetail(itemContaining("後で読み返す"));
+		const beforeCancelledDelete = deletes.length;
+		button("删除书签", detail() as HTMLElement).click();
+		await until(
+			() => !!container.querySelector("dialog.reader-bookmark-confirm[open]"),
+			"Delete must open an in-app confirmation",
 		);
-		confirmationAccepted = true;
-		button("删除书签", itemContaining("後で読み返す")).click();
+		const cancelledDialog = find<HTMLDialogElement>(
+			"dialog.reader-bookmark-confirm[open]",
+		);
+		check(
+			cancelledDialog.contains(document.activeElement),
+			"Delete confirmation must take keyboard focus",
+		);
+		const danger = button("删除书签", cancelledDialog);
+		const checkDeleteContrast = (state: string) => {
+			const canvas = document.createElement("canvas");
+			canvas.width = canvas.height = 1;
+			const context = canvas.getContext("2d");
+			check(context, "Contrast check requires a canvas color resolver");
+			const luminance = (color: string) => {
+				context.clearRect(0, 0, 1, 1);
+				context.fillStyle = color;
+				context.fillRect(0, 0, 1, 1);
+				const pixel = context.getImageData(0, 0, 1, 1).data;
+				check(pixel[3] === 255, "Delete confirmation colors must be opaque");
+				const channel = (value: number) =>
+					value / 255 <= 0.04045
+						? value / 255 / 12.92
+						: ((value / 255 + 0.055) / 1.055) ** 2.4;
+				return (
+					channel(pixel[0] ?? 0) * 0.2126 +
+					channel(pixel[1] ?? 0) * 0.7152 +
+					channel(pixel[2] ?? 0) * 0.0722
+				);
+			};
+			const style = getComputedStyle(danger);
+			const foreground = luminance(style.color);
+			const background = luminance(style.backgroundColor);
+			const contrast =
+				(Math.max(foreground, background) + 0.05) /
+				(Math.min(foreground, background) + 0.05);
+			check(
+				contrast >= 4.5,
+				`Delete button ${state} contrast must remain readable in this paper theme; got ${contrast.toFixed(2)}`,
+			);
+		};
+		checkDeleteContrast("default");
+
+		if (browserPointer) {
+			const bounds = danger.getBoundingClientRect();
+			await browserPointer([
+				{
+					type: "mouseMoved",
+					x: bounds.left + bounds.width / 2,
+					y: bounds.top + bounds.height / 2,
+				},
+			]);
+			await new Promise((resolve) => setTimeout(resolve, 200));
+			check(
+				danger.matches(":hover"),
+				"Native pointer must actually hover over delete confirmation",
+			);
+			checkDeleteContrast("hover");
+		}
+		button("取消", cancelledDialog).click();
+		await until(
+			() => !container.querySelector("dialog.reader-bookmark-confirm[open]"),
+			"Cancel must close only delete confirmation",
+		);
+		check(
+			deletes.length === beforeCancelledDelete &&
+				records.some((record) => record.id === "late") &&
+				!!detail(),
+			"Cancelling deletion must preserve the bookmark and detail",
+		);
+		nextDelete = "failure";
+		const deletionTarget = records.find((record) => record.id === "late");
+		check(deletionTarget, "Deletion conflict fixture must exist");
+		const confirmedRevision = deletionTarget.revision;
+		const confirmedExcerpt = deletionTarget.excerpt;
+		button("删除书签", detail() as HTMLElement).click();
+		await until(
+			() => !!container.querySelector("dialog.reader-bookmark-confirm[open]"),
+			"Retryable delete must request confirmation",
+		);
+		await confirmDelete();
+		await until(
+			() =>
+				!!container.querySelector(
+					'dialog.reader-bookmark-confirm[open] [role="alert"]',
+				),
+			"Failed delete must keep its confirmation and show the error inside it",
+		);
+		check(
+			records.some((record) => record.id === "late"),
+			"A failed deletion must preserve persistent state",
+		);
+		deletionTarget.note = "後で読み返す・別窗口更新";
+		deletionTarget.excerpt = "削除確認中に更新された原文。";
+		deletionTarget.revision++;
+		const readsBeforeConfirmRefresh = singleReads;
+		await refreshList();
+		await until(
+			() => singleReads > readsBeforeConfirmRefresh,
+			"Successful list refetch must validate the open deletion confirmation independently",
+		);
+		const frozenConfirmation = find<HTMLDialogElement>(
+			"dialog.reader-bookmark-confirm[open]",
+		);
+		check(
+			frozenConfirmation.textContent?.includes(confirmedExcerpt) &&
+				!frozenConfirmation.textContent?.includes(deletionTarget.excerpt),
+			"A pending deletion confirmation must retain the preview originally confirmed by the user",
+		);
+		const deletesBeforeRealConflict = deleteRequests.length;
+		await confirmDelete();
+		await until(
+			() =>
+				deleteRequests.length > deletesBeforeRealConflict &&
+				!!container
+					.querySelector("dialog.reader-bookmark-confirm[open]")
+					?.textContent?.includes("书签已更新"),
+			"Delete conflict must retain its confirmation and offer a latest-version read inside it",
+		);
+		check(
+			deleteRequests.at(-1)?.expected_revision === confirmedRevision,
+			"Automatic detail refresh must not silently raise the deletion revision the user confirmed",
+		);
+		const beforeDeleteRead = singleReads;
+		button(
+			"读取最新书签",
+			find("dialog.reader-bookmark-confirm[open]"),
+		).click();
+		await until(
+			() =>
+				singleReads > beforeDeleteRead &&
+				!detail()?.querySelector('[role="alert"]'),
+			"Delete recovery must reread the current revision",
+		);
+		check(
+			find("dialog.reader-bookmark-confirm[open]").textContent?.includes(
+				deletionTarget.excerpt,
+			),
+			"Explicit latest-version read must update the confirmation preview before another decision",
+		);
+		await until(
+			() => !!container.querySelector("dialog.reader-bookmark-confirm[open]"),
+			"Recovered delete must keep confirmation for a fresh explicit decision",
+		);
+		await confirmDelete();
 		await until(
 			() =>
 				!records.some((record) => record.id === "late") &&
 				!container.textContent?.includes("後で読み返す"),
-			"Delete must remove the selected bookmark from persistent state and list",
+			"Confirmed delete must remove the bookmark from persistent state and list",
 		);
+		check(
+			deleteRequests.at(-1)?.expected_revision === deletionTarget.revision,
+			"Only explicit conflict recovery may confirm deletion against the latest revision",
+		);
+		check(
+			confirmations === 0,
+			"Bookmark deletion must never invoke window.confirm",
+		);
+		if (detailed) {
+			await closeNavigation();
+			const beforeExpiry = records.length;
+			nextCreate = "nearby";
+			button("添加当前位置书签").click();
+			await until(
+				() =>
+					!!container
+						.querySelector(".reader-bookmark-notice")
+						?.textContent?.includes("附近已有书签"),
+				"Expiry scenario must show nearby choice",
+			);
+			await new Promise((resolve) => setTimeout(resolve, 8500));
+			check(
+				!container.querySelector(".reader-bookmark-notice") &&
+					records.length === beforeExpiry,
+				"Timing out nearby choice must abandon creation without a bookmark write",
+			);
+			nextCreate = "nearby";
+			button("添加当前位置书签").click();
+			await until(
+				() =>
+					!!container
+						.querySelector(".reader-bookmark-notice")
+						?.textContent?.includes("附近已有书签"),
+				"Expiry must unlock another independent bookmark action",
+			);
+			button("关闭书签提示").click();
+		}
 		const readsBeforeRemount = listReads;
 		dispose();
 		dispose = await h.mount(
@@ -892,7 +1628,8 @@ export async function positionBookmarks(h: BrowserHarness) {
 			originalVisible.includes(30),
 			"Fixture must exercise the original reading source",
 		);
-		return `position bookmarks (${innerWidth}px, ${vertical ? "vertical" : "horizontal"}): frozen add, quick note, ordered persistent list, direction-independent jump/return, image position, deletion${detailed ? ", empty note, failed/conflicting saves retain drafts and chapter changes preserve edits" : ""}`;
+		await openDetail(itemContaining("冒頭の記憶"));
+		return `position bookmarks (${innerWidth}px, ${vertical ? "vertical" : "horizontal"}, ${parameters.get("theme") === "light" ? "light" : "dark"}): nearby no-write/view/dismiss, frozen force/retry, quick note, chapter progress, truncated list/full detail, native Escape/focus, ordered persistence, layout-independent jump/return, image position, built-in delete cancel/failure/conflict/confirm${detailed ? ", expiry, empty note, failed/conflicting saves retain drafts and chapter changes preserve edits" : ""}`;
 	} finally {
 		window.confirm = nativeConfirm;
 		if (!capture) dispose();

@@ -478,6 +478,30 @@ class ReaderViews:
         await self._check(identity, position=True)
         return identity, location
 
+    async def bookmark_progresses(
+        self, material_id: str, positions: list[PositionAnchor]
+    ) -> list[float | None]:
+        """Project a bounded bookmark page without exposing or copying the book tree."""
+        frozen = [position.model_copy(deep=True) for position in positions]
+        return await self._request(partial(self._bookmark_progresses, material_id, frozen))
+
+    async def _bookmark_progresses(
+        self, material_id: str, positions: list[PositionAnchor]
+    ) -> list[float | None]:
+        identity = await self._identity(material_id)
+        if any(position.version_id != identity.version_id for position in positions):
+            raise HTTPException(409, "材料版本已改变，请重新打开")
+        if not positions:
+            return []
+        view = await self._book(identity)
+
+        def project() -> list[float | None]:
+            return [chapter_progress(view.book, position) for position in positions]
+
+        result = await self._project(project)
+        await self._check(identity)
+        return result
+
     async def chapter_readings(
         self,
         material_id: str,

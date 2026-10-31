@@ -308,7 +308,9 @@ export function ReaderNavigationPanel(
 			>
 				<ReaderBookmarksContent
 					bookmarks={props.bookmarks}
-					active={props.tab === "bookmarks" && !props.inactive}
+					active={
+						props.tab === "bookmarks" && !props.inactive && !props.closing
+					}
 					settings={props.settings}
 					navigationError={props.navigationError}
 					onNavigate={props.onNavigate}

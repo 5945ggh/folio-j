@@ -4,6 +4,7 @@ import { errorMessage, requireData } from "../content";
 
 export type Bookmark = components["schemas"]["BookmarkResponse"];
 export type BookmarkCreate = components["schemas"]["BookmarkCreate"];
+export type BookmarkCreateResult = Awaited<ReturnType<typeof createBookmark>>;
 export type BookmarkPosition = Bookmark["position"];
 export const bookmarkKeys = {
 	list: (materialId: string, versionId: string) =>
@@ -39,11 +40,16 @@ export async function createBookmark(materialId: string, body: BookmarkCreate) {
 	);
 	return requireData(data, error, response.status);
 }
-export async function getBookmark(materialId: string, id: string) {
+export async function getBookmark(
+	materialId: string,
+	id: string,
+	signal?: AbortSignal,
+) {
 	const { data, error, response } = await api.GET(
 		"/api/materials/{material_id}/bookmarks/{bookmark_id}",
 		{
 			params: { path: { material_id: materialId, bookmark_id: id } },
+			signal,
 		},
 	);
 	return requireData(data, error, response.status);

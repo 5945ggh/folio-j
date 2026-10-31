@@ -1396,6 +1396,11 @@ export interface components {
         };
         /** BookmarkCreate */
         BookmarkCreate: {
+            /**
+             * Allow Nearby
+             * @default false
+             */
+            allow_nearby: boolean;
             position: components["schemas"]["PositionAnchor"];
             /**
              * Request Id
@@ -1403,8 +1408,19 @@ export interface components {
              */
             request_id: string;
         };
+        /** BookmarkNearbyResponse */
+        BookmarkNearbyResponse: {
+            bookmark: components["schemas"]["BookmarkResponse"];
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "nearby";
+        };
         /** BookmarkResponse */
         BookmarkResponse: {
+            /** Chapter Progress */
+            chapter_progress?: number | null;
             /** Chapter Title */
             chapter_title: string;
             /**
@@ -4063,7 +4079,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BookmarkResponse"];
+                    "application/json": components["schemas"]["BookmarkResponse"] | components["schemas"]["BookmarkNearbyResponse"];
                 };
             };
             /** @description Validation Error */

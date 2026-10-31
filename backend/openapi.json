@@ -381,6 +381,11 @@
       "BookmarkCreate": {
         "additionalProperties": false,
         "properties": {
+          "allow_nearby": {
+            "default": false,
+            "title": "Allow Nearby",
+            "type": "boolean"
+          },
           "position": {
             "$ref": "#/components/schemas/PositionAnchor"
           },
@@ -397,8 +402,39 @@
         "title": "BookmarkCreate",
         "type": "object"
       },
+      "BookmarkNearbyResponse": {
+        "properties": {
+          "bookmark": {
+            "$ref": "#/components/schemas/BookmarkResponse"
+          },
+          "kind": {
+            "const": "nearby",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "bookmark"
+        ],
+        "title": "BookmarkNearbyResponse",
+        "type": "object"
+      },
       "BookmarkResponse": {
         "properties": {
+          "chapter_progress": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Progress"
+          },
           "chapter_title": {
             "title": "Chapter Title",
             "type": "string"
@@ -7140,7 +7176,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BookmarkResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BookmarkResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BookmarkNearbyResponse"
+                    }
+                  ],
+                  "title": "Response Creatematerialbookmark"
                 }
               }
             },

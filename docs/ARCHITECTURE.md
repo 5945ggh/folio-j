@@ -272,9 +272,13 @@ GET `/api/materials/{material_id}/statistics` 接受明确的 version_id 和可�
 
 `material_bookmarks` 绑定 Material 与不可变版本，保存 `PositionAnchor`、章名、摘要、备注、创建请求与独立 revision。书中排序使用章序、part 序、资源码点、同点图片顺序及图片局部进度，ID 为最后稳定排序键。阅读停留和排版保存不更新书签；跳转通过现有 `ReaderNavigation`，采用当前设置，不将书签创建时设置恢复到正文。
 
-`ReaderViews.bookmark_location` 在已校验编译视图上验证文本或图片位置，派生排序和摘要；计算在写锁外执行，写入短事务重新核验材料身份与可见性。`bookmark_positions.py` 集中固定预算：当前位置前最多 40、后最多 120 个 Unicode 码点，同章可跨相邻 part，合计最多 160 码点，整理空白，不包含 ruby 或应用附加文字。无附近文字的图片可取原图 alt，仍受总预算约束。
+`ReaderViews` 在已校验编译视图上验证文本或图片位置，派生排序、摘要与章内进度；计算在写锁外执行，写入短事务重新核验材料身份与可见性。`bookmark_positions.py` 集中摘要及附近判定规则：新摘要总预算 120 个 Unicode 码点，同章可跨相邻 part，围绕当前位置优先选择句末或换行边界，长句再使用逗号，必要时硬截断并标示省略；整理空白，不包含 ruby 或应用附加文字。无附近文字的图片可取原图 alt，仍受总预算约束。既有摘要保持原值，章内进度从当前不可变材料及书签锚点派生，不增加存储字段。
 
-接口以 `/api/materials/{material_id}/bookmarks` 为前缀：GET 按 `version_id`、`offset`、`limit` 分页（默认 40、最多 100）；POST 接收冻结的 `request_id` 与 `position`；`/{bookmark_id}` 提供 GET、PATCH 备注及 DELETE。创建按材料与 UUID 去重，同请求不同位置拒绝；已删除请求不能重建。备注 NFC 规范化、最多 5000 码点，PATCH 和 DELETE 携带 `expected_revision`，陈旧请求返回 409。成功添加和编辑不产生 Run、Segment 或阅读位置写入。
+接口以 `/api/materials/{material_id}/bookmarks` 为前缀：GET 按 `version_id`、`offset`、`limit` 分页（默认 40、最多 100）；POST 接收冻结的 `request_id`、`position` 及默认 false 的 `allow_nearby`；`/{bookmark_id}` 提供 GET、PATCH 备注及 DELETE。书签响应包含可空的 `chapter_progress`，沿用现有原文进度规则，不将章内比例当作全书比例。
+
+创建先按材料与 UUID 核对幂等，同请求不同位置拒绝，已删除请求不能重建。新请求在写事务内检查附近活跃书签：同版本、章节、part、资源及位置种类，文字相距不超过 24 码点且中间没有句末或换行；图片为相同图片且局部进度差不超过 0.05。附近检查返回最近的已有书签，以 `{kind: "nearby", bookmark: ...}` 区分成功创建，不写入、不合并或修改已有记录。`allow_nearby=true` 显式继续创建，保留首次位置及请求 UUID；重试先处理已经成功的同请求记录，避免再次提示或重复创建。附近判断不使用摘要文本、排版设置或显示百分比。
+
+备注 NFC 规范化、最多 5000 码点，PATCH 和 DELETE 携带 `expected_revision`，陈旧请求返回 409。成功添加和编辑不产生 Run、Segment 或阅读位置写入。
 
 书签独立删除设置 `deleted_at`。所有读取和修改检查材料与 Source 可见性；材料删除保留行及备注，不在重新导入时换绑。`0003_material_bookmarks` 从现有复制配置迁移继续增量建表，原有数据与配置保持。前端经生成 DTO 和 TanStack Query 访问，列表分页与备注草稿按材料版本及书签身份隔离。
 
