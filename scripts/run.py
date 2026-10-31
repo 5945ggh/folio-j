@@ -60,6 +60,22 @@ def main() -> int:
         )
         return 1
 
+    api_url = f"http://{settings.server.host}:{settings.server.port}"
+    access_url = (
+        f"http://{settings.server.host}:{settings.server.dev_port}"
+        if mode == "dev"
+        else api_url
+    )
+    print(f"数据库：{settings.database.path.resolve()}", flush=True)
+    print(f"启动访问地址：{access_url}", flush=True)
+    if mode == "dev":
+        print(f"API 文档：{api_url}/api/docs", flush=True)
+    port_fields = "port（应用）或 dev_port（开发页面）" if mode == "dev" else "port"
+    print(
+        f"若提示端口被占用，请修改 app.toml 的 [server].{port_fields} 后重启。",
+        flush=True,
+    )
+
     command = [
         sys.executable,
         "-m",
@@ -78,9 +94,8 @@ def main() -> int:
         processes.append(subprocess.Popen(command, cwd=ROOT, start_new_session=True))
         if mode == "dev":
             environment = os.environ.copy()
-            environment["FOLIO_API_TARGET"] = (
-                f"http://{settings.server.host}:{settings.server.port}"
-            )
+            environment["FOLIO_API_TARGET"] = api_url
+            environment["FOLIO_DEV_PORT"] = str(settings.server.dev_port)
             processes.append(
                 subprocess.Popen(
                     ["pnpm", "--dir", "frontend", "dev"],

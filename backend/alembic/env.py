@@ -1,6 +1,7 @@
 """Alembic async migration environment."""
 
 import asyncio
+import sys
 
 from sqlalchemy import Connection
 
@@ -45,6 +46,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_migrations_online() -> None:
     settings = load_settings()
+    print(f"迁移使用的数据库：{settings.database.path}", file=sys.stderr, flush=True)
     engine = create_engine(settings.database.path)
     try:
         async with engine.connect() as connection:

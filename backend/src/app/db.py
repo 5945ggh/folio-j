@@ -33,7 +33,7 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
 
 def create_engine(database_path: Path) -> AsyncEngine:
     """Create a WAL-enabled SQLite engine without opening it on import."""
-    database_path.parent.mkdir(parents=True, exist_ok=True)
+    database_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     url = URL.create("sqlite+aiosqlite", database=str(database_path))
     engine = create_async_engine(url)
 

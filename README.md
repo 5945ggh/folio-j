@@ -50,34 +50,45 @@ Folio-J 遵循沉浸式学习的要义，以帮助学习者恢复对原文的理
 
 请确保本地已安装 **Python 3.11**、**Node.js 24**、`uv` 和 `pnpm 10`。
 
-克隆仓库后，若已安装 `just`，可直接运行：
+**第一次执行迁移或启动前，先确认数据位置。** 新安装默认把数据库保存在 `~/Folio-J-Data/app.db`，以后更换程序目录仍可使用这份数据。想换位置时，先按[应用配置](docs/USAGE.md#应用配置)创建或编辑 `~/Folio-J-Data/app.toml`，将 `[database].path` 设为包含文件名的绝对路径（可用 `~/`）。
+
+**已经保存过数据时，先备份再更新。** 未显式指定数据库且当前程序目录有旧 `data/app.db` 时，会继续使用该旧库。换到新程序目录前，请按[升级与备份指南](docs/UPGRADING.md)固定旧库的绝对路径，或备份后恢复整组数据。
+
+已安装 `just` 时，在仓库根目录运行以下命令安装依赖并查看选中的数据库路径。
+
 ```bash
-just setup   # 安装前后端依赖
-just start   # 初始化/升级数据库，构建前端并启动服务
+just setup
+```
+
+如果调整了配置，可用 `just data-path` 再次核对。确认位置后，启动应用。
+
+```bash
+just start
 ```
 
 若未安装 `just`，可在仓库根目录依次执行：
 
 ```bash
-# 1. 安装锁定的后端与前端依赖
 uv sync --project backend --locked
 pnpm --dir frontend install --frozen-lockfile
+uv run --project backend python -m app.config
+```
 
-# 2. 初始化／升级数据库
+确认显示的数据位置后，再运行以下命令。
+
+```bash
 uv run --directory backend alembic upgrade head
-
-# 3. 构建前端并启动应用
 pnpm --dir frontend build
 uv run --project backend python scripts/run.py start
 ```
 
-启动完成后，打开 [http://127.0.0.1:8000](http://127.0.0.1:8000)。在终端按 `Ctrl-C` 停止服务。
+启动时终端会显示实际数据库路径和访问地址。默认打开 [http://127.0.0.1:8010](http://127.0.0.1:8010)；更改端口后以终端地址为准。在终端按 `Ctrl-C` 停止服务。
 
 ### 2. 首次使用与模型配置（BYOK）
 
 * **开始阅读：** 在“素材库”新建一个来源并导入 EPUB；也可以直接进入“来源目录”手动添加日文片段。
 * **按需配置 AI：** 纯阅读、保存片段和手写 Markdown 讲解**无需配置任何模型**。如需使用划选翻译或 AI 讨论，请在「设置」中接入你自己的 OpenAI 兼容模型服务（请求直连你配置的服务，可能产生相应 API 费用）。
-* **数据与升级：** 默认数据保存在本机 `data/app.db`。已有数据的用户更新并启动前，先阅读[升级与备份指南](docs/UPGRADING.md)。
+* **数据与升级：** 数据库、模型凭据与已安装词典需配套备份，具体步骤见[升级与备份指南](docs/UPGRADING.md)。
 
 ---
 

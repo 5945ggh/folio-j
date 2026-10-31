@@ -10,16 +10,18 @@
 
 Python 默认版本同时固定在根目录的 [.python-version](../.python-version) 和 [backend/.python-version](../backend/.python-version)，确保 `uv --project backend` 及后端目录内的命令使用同一版本。Python 包最低支持 3.11，Node 版本见 [.nvmrc](../.nvmrc)。依赖分别锁定在 [backend/uv.lock](../backend/uv.lock) 和 [frontend/pnpm-lock.yaml](../frontend/pnpm-lock.yaml)。
 
+首次执行迁移或启动前，先确认数据库位置：新安装默认使用 `~/Folio-J-Data/app.db`，需要自定义时先按[应用配置](USAGE.md#应用配置)编辑 `~/Folio-J-Data/app.toml`。未显式配置路径且程序目录已有 `data/app.db` 时，继续使用该旧库；已有数据先按[升级与备份](UPGRADING.md)备份。开发时可用 `FOLIO_J_DATABASE_PATH` 指向独立测试库，避免修改日常数据。
+
 在仓库根目录运行：
 
 ```sh
-just setup   # 安装锁定的后端与前端依赖
+just setup   # 安装锁定的后端与前端依赖，显示选中的数据库路径
 just dev     # 初始化／升级数据库，启动 FastAPI + Vite 热重载
 ```
 
-开发页面为 [http://127.0.0.1:5173](http://127.0.0.1:5173)，API 文档为 [http://127.0.0.1:8000/api/docs](http://127.0.0.1:8000/api/docs)。`Ctrl-C` 一并停止前后端子进程。
+开发页面为 [http://127.0.0.1:5187](http://127.0.0.1:5187)，API 文档为 [http://127.0.0.1:8010/api/docs](http://127.0.0.1:8010/api/docs)。更改端口后以终端显示的访问地址为准，终端同时显示实际数据库路径。`Ctrl-C` 一并停止前后端子进程。
 
-后端绑定 `127.0.0.1`，数据保存在本地 SQLite。`just dev` 的前端代理随后端配置端口变化；端口和独立数据库的配置方式见[使用指南](USAGE.md#应用配置)。
+后端绑定 `127.0.0.1`，数据保存在本地 SQLite。`[server].port` 配置后端端口，`dev_port` 配置开发页面端口；`just dev` 的前端代理随后端配置端口变化。端口和独立数据库的配置方式见[使用指南](USAGE.md#应用配置)。
 
 ## 常用命令
 
@@ -28,7 +30,8 @@ just lint         # Ruff、pyright strict、Biome、TypeScript 与原型语法�
 just test         # 后端与前端纯逻辑测试，禁止真实网络和模型调用
 just gen-api      # 本地导出 OpenAPI 并生成前端类型，不需启动服务
 just migrate      # 从空库建立当前 schema，或执行已有库的后续迁移
-just start        # 初始化／升级数据库并构建前端，由 FastAPI 在 8000 端口托管（默认）
+just data-path    # 查看当前配置会使用哪个数据库
+just start        # 初始化／升级数据库并构建前端，由 FastAPI 在 8010 端口托管（默认）
 just build        # 构建前端
 just check-docs   # 检查公共文档本地路径，明确报告未核验的私有证据
 just check-private-evidence # 同时核验本机私有证据，缺失时报错

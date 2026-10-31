@@ -2,9 +2,15 @@
 
 import socket
 from collections.abc import Iterator
+from pathlib import Path
 from typing import NoReturn
 
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def isolate_user_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("HOME", str(tmp_path))
 
 
 def _deny_network(*_args: object, **_kwargs: object) -> NoReturn:

@@ -38,7 +38,7 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         path = (
             database_path if database_path is not None else load_settings().database.path
         ).resolve()
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         lock_path = path.with_name(path.name + ".worker.lock")
         lock_fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
         try:
