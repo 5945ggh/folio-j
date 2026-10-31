@@ -1,0 +1,23 @@
+backend/src/app/services/dictionary_deinflection.py
+  s_aa9d8d61517b17::t_d2869bc660ca96 1-29
+backend/src/app/services/dictionary_lookup.py
+  s_aa9d8d61517b17::t_c01bb4e38017da 24,48,208-212,272-285,288-297,356-360
+backend/tests/test_dictionary_potential.py
+  s_aa9d8d61517b17::t_33a3154647cb2e 1-224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c03c6abdb794a4ca7853456f9e8be0bdeabd7d50",
+  "prompts": {},
+  "sessions": {
+    "s_aa9d8d61517b17": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19292-b590-7c90-8bb4-b0f276c899b9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
