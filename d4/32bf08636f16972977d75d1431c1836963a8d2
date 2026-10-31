@@ -1,0 +1,31 @@
+docs/INFORMATION_ARCHITECTURE.md
+  s_f69ef2cc86c423::t_6a47dbcb8bcff7 304
+docs/ARCHITECTURE.md
+  s_f69ef2cc86c423::t_0a0f580fa6862b 386,389,391,393,479-480,484-485
+  s_f69ef2cc86c423::t_5937bea057814d 486
+  s_f69ef2cc86c423::t_1f65c978f1b867 325,345-346,382,384,488,720
+docs/USAGE.md
+  s_f69ef2cc86c423::t_6a47dbcb8bcff7 125
+docs/PRD.md
+  s_f69ef2cc86c423::t_3cd123647acc73 432,443-444
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_f69ef2cc86c423::t_f5cadaba4b6140 118
+docs/GLOSSARY.md
+  s_f69ef2cc86c423::t_0ced0d16b7e9df 34,71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d432bf08636f16972977d75d1431c1836963a8d2",
+  "prompts": {},
+  "sessions": {
+    "s_f69ef2cc86c423": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a190db-cc4e-7b93-8581-775be1eb0a40",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
