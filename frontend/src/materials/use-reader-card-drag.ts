@@ -18,6 +18,7 @@ export function useReaderCardDrag(
 	enabled: boolean,
 	clamp: (position: ReaderCardPosition) => ReaderCardPosition,
 	onChange: (position: ReaderCardPosition) => void,
+	keyboardMove = true,
 ) {
 	const current = useRef({ clamp, onChange });
 	current.current = { clamp, onChange };
@@ -125,6 +126,7 @@ export function useReaderCardDrag(
 			onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => {
 				if (
 					!enabled ||
+					!keyboardMove ||
 					event.target !== event.currentTarget ||
 					event.altKey ||
 					event.ctrlKey ||

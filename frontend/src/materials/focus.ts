@@ -4,6 +4,7 @@ export const FOCUS_TIMING = {
 	clickDelay: 240,
 	drag: 6,
 	longPress: 500,
+	dictionaryHover: 140,
 } as const;
 export type Point = { x: number; y: number };
 export function distance(a: Point, b: Point): number {

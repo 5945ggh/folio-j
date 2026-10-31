@@ -1,7 +1,8 @@
 export type ReaderTheme = "system" | "white" | "black";
 export type ReaderFont = "mincho" | "gothic";
 export type ReaderRuby = "show" | "on-demand" | "hide";
-export const DEFAULT_DICTIONARY_OPACITY = 92;
+export const DEFAULT_DICTIONARY_OPACITY = 72;
+export const MIN_DICTIONARY_OPACITY = 20;
 export type ReaderUiPreferences = {
 	dictionaryOpacity?: number;
 	dictionaryMode?: "off" | "click" | "hover";
@@ -73,7 +74,7 @@ export function normalizeReaderUi(
 	const opacity = boundedPercent(value.dictionaryOpacity);
 	return {
 		...(opacity !== null &&
-		opacity >= 60 &&
+		opacity >= MIN_DICTIONARY_OPACITY &&
 		opacity !== DEFAULT_DICTIONARY_OPACITY
 			? { dictionaryOpacity: Math.round(opacity) }
 			: {}),

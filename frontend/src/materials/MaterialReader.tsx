@@ -393,6 +393,11 @@ function Reader({
 	);
 	const bookmarks = useReaderBookmarks(book.id, book.version_id);
 	const [panels, setPanels] = useState<ReaderPanelsState>(EMPTY_READER_PANELS);
+	const [rightToolInFront, setRightToolInFront] = useState(false);
+	const panelAboveCards =
+		rightToolInFront &&
+		panels.activeSide === "right" &&
+		(panels.right === "settings" || panels.right === "gallery");
 	const leftView = useReaderPresence(panels.left);
 	const rightView = useReaderPresence(panels.right);
 	const [compactPanels, setCompactPanels] = useState(
@@ -511,6 +516,7 @@ function Reader({
 	}, [initialVocabulary]);
 	const latest = useRef({
 		panels,
+		panelAboveCards,
 		chapterId,
 		compactPanels,
 		theme,
@@ -524,6 +530,7 @@ function Reader({
 	});
 	latest.current = {
 		panels,
+		panelAboveCards,
 		chapterId,
 		compactPanels,
 		theme,
@@ -553,7 +560,12 @@ function Reader({
 	}, []);
 	const selectPanel = useCallback(
 		(next: ReaderPanelKind, toggle = false) => {
-			dictionary.current?.close();
+			if (next === "settings" || next === "gallery") {
+				dictionary.current?.dismissMenu();
+				setRightToolInFront(true);
+			} else {
+				dictionary.current?.close();
+			}
 			records.panelSelected(next);
 			jumpReading.current.pause();
 			invalidateNavigation();
@@ -668,6 +680,10 @@ function Reader({
 			onEscapeOverlay: () => {
 				if (viewerEscape.current) {
 					viewerEscape.current();
+					return true;
+				}
+				if (latest.current.panelAboveCards && dictionary.current?.isOpen()) {
+					closePanel("right");
 					return true;
 				}
 				if (dictionary.current?.back() || records.escape()) return true;
@@ -1799,6 +1815,23 @@ function Reader({
 		selectPanel("settings");
 		controller.current?.show();
 	}, [active, copyEditRequest, selectPanel]);
+	const activateReaderTool = (target: Element) => {
+		if (target.closest(".dict-deck, .dict-config, .dict-trigger")) {
+			setRightToolInFront(false);
+			return;
+		}
+		const side = target.closest<HTMLElement>(
+			"[data-reader-panel-side]:not([inert])",
+		)?.dataset.readerPanelSide;
+		if (side !== "left" && side !== "right") return;
+		if (side === "right") {
+			dictionary.current?.dismissMenu();
+			setRightToolInFront(true);
+		}
+		setPanels((current) =>
+			current.activeSide === side ? current : { ...current, activeSide: side },
+		);
+	};
 	return (
 		<main
 			ref={shell}
@@ -1809,17 +1842,11 @@ function Reader({
 			data-left-open={!!panels.left}
 			data-right-open={!!panels.right}
 			data-active-side={panels.activeSide}
-			onFocusCapture={(event) => {
-				const side = (event.target as Element).closest<HTMLElement>(
-					"[data-reader-panel-side]",
-				)?.dataset.readerPanelSide;
-				if (side === "left" || side === "right")
-					setPanels((current) =>
-						current.activeSide === side
-							? current
-							: { ...current, activeSide: side },
-					);
-			}}
+			data-panel-above-cards={panelAboveCards || undefined}
+			onFocusCapture={(event) => activateReaderTool(event.target)}
+			onPointerDownCapture={(event) =>
+				activateReaderTool(event.target as Element)
+			}
 			style={
 				{
 					"--reader-width": `${bookUi.width}px`,
@@ -2220,6 +2247,8 @@ function Reader({
 					</button>
 					<ReaderDictionary
 						ref={dictionary}
+						onActivate={() => setRightToolInFront(false)}
+						behindPanel={panelAboveCards || directImage !== undefined}
 						manageState={returnState(
 							{ to: `/materials/${book.id}`, label: book.title },
 							returnTo,

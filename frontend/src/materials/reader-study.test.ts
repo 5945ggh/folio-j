@@ -122,6 +122,9 @@ function harness(
 		entries: [{ node, start: 0, end: 4 }],
 	};
 	const element = {
+		ownerDocument: Object.assign(new EventTarget(), {
+			defaultView: new EventTarget(),
+		}),
 		getBoundingClientRect: () => ({ left: 100, top: 200 }),
 		clientLeft: 0,
 		clientTop: 0,
