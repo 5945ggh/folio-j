@@ -1,4 +1,8 @@
 import type { Provider, Settings, SettingsPatch } from "../src/settings/api";
+import type {
+	SegmentContextSettings,
+	SegmentContextSettingsUpdate,
+} from "../src/settings/segment-context-api";
 import type { BrowserHarness } from "./harness";
 import { provider, settings } from "./workbench";
 
@@ -45,6 +49,15 @@ export async function settingsModels(h: BrowserHarness) {
 	let persisted: Settings = structuredClone(settings);
 	const patches: SettingsPatch[] = [];
 	let providers: Provider[] = [provider];
+	let holdPatch: Promise<void> | undefined;
+	let context: SegmentContextSettings = {
+		enabled: true,
+		before_sentences: 1,
+		after_sentences: 1,
+		before_characters: 200,
+		after_characters: 200,
+		revision: 0,
+	};
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
 		if (request.method === "GET" && path === "/api/settings")
@@ -53,11 +66,26 @@ export async function settingsModels(h: BrowserHarness) {
 			return Response.json(providers);
 		if (request.method === "GET" && path === "/api/runs")
 			return Response.json([]);
+		if (path === "/api/settings/segment-context") {
+			if (request.method === "GET") return Response.json(context);
+			if (request.method === "PUT") {
+				const { expected_revision, ...changes } =
+					(await request.json()) as SegmentContextSettingsUpdate;
+				check(
+					expected_revision === context.revision,
+					"Context saves must use the accepted revision",
+				);
+				context = { ...changes, revision: expected_revision + 1 };
+				return Response.json(context);
+			}
+		}
 		if (request.method === "PATCH" && path === "/api/settings") {
 			const patch = (await request.json()) as SettingsPatch;
+			if (holdPatch) await holdPatch;
 			patches.push(patch);
 			persisted = {
 				...persisted,
+				profile: patch.profile ?? persisted.profile,
 				defaults: { ...persisted.defaults, ...patch.defaults },
 			};
 			return Response.json(persisted);
@@ -67,8 +95,21 @@ export async function settingsModels(h: BrowserHarness) {
 	let dispose = await h.mount(<SettingsPage />, "/settings", "/settings");
 	try {
 		await h.until(
+			() => !!h.container.querySelector("#learning-settings-form"),
+			"The general settings entry must open learning preferences",
+		);
+		check(
+			h.container
+				.querySelector('.settings-tabs a[aria-current="page"]')
+				?.getAttribute("href") === "/settings?section=learning" &&
+				!h.container.querySelector(".settings-page-head p") &&
+				!h.container.querySelector("#model-defaults-form"),
+			"Learning must be the active first category with a concise heading",
+		);
+		find<HTMLAnchorElement>('a[href="/settings?section=models"]').click();
+		await h.until(
 			() => !!h.container.querySelector("#model-defaults-form"),
-			"The existing settings URL must open default models",
+			"The explicit models entry must open default models",
 		);
 		check(
 			tab("默认模型").getAttribute("aria-current") === "page" &&
@@ -189,6 +230,11 @@ export async function settingsModels(h: BrowserHarness) {
 			patches.length === 1,
 			"Discarding drafts and navigating must not write settings",
 		);
+		find<HTMLAnchorElement>('.app-navigation a[href="/settings"]').click();
+		await h.until(
+			() => !!h.container.querySelector("#learning-settings-form"),
+			"Returning through general settings must reset to learning preferences",
+		);
 	} finally {
 		dispose();
 	}
@@ -218,7 +264,11 @@ export async function settingsModels(h: BrowserHarness) {
 	}
 	for (const configuration of [[], [{ ...provider, enabled: false }]]) {
 		providers = configuration;
-		dispose = await h.mount(<SettingsPage />, "/settings", "/settings");
+		dispose = await h.mount(
+			<SettingsPage />,
+			"/settings",
+			"/settings?section=models",
+		);
 		try {
 			await h.until(
 				() => !!h.container.querySelector("#model-defaults-form"),
@@ -249,5 +299,128 @@ export async function settingsModels(h: BrowserHarness) {
 			dispose();
 		}
 	}
-	return "model/service settings: default save isolation, both draft navigation guards, service management, legacy history entry/return, and empty-model recovery";
+	dispose = await h.mount(
+		<SettingsPage />,
+		"/settings",
+		"/settings?section=learning",
+	);
+	try {
+		await h.until(
+			() => !!h.container.querySelector("#learning-settings-form input"),
+			"Learning preferences must render their real controls",
+		);
+		const form = find<HTMLFormElement>("#learning-settings-form");
+		const rows = form.querySelectorAll<HTMLElement>(".settings-preference-row");
+		check(rows.length === 3, "Learning background must contain all three rows");
+		for (const row of rows) {
+			const copy = row.querySelector<HTMLElement>(".settings-row-copy");
+			const control = row.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+				"input, textarea",
+			);
+			check(
+				copy && control,
+				"Each preference must retain its copy and control",
+			);
+			const bounds = row.getBoundingClientRect();
+			const field = control.getBoundingClientRect();
+			check(
+				field.width > 100 &&
+					field.left >= bounds.left - 1 &&
+					field.right <= bounds.right + 1 &&
+					row.scrollWidth <= row.clientWidth + 1,
+				`${control.tagName}: learning control must fit its ${innerWidth}px row`,
+			);
+			const description = copy.getBoundingClientRect();
+			if (innerWidth > 620) {
+				check(
+					description.width >= 120 && description.right <= field.left,
+					`Learning copy must remain readable beside ${control.tagName} at ${innerWidth}px`,
+				);
+			} else {
+				check(
+					description.bottom <= field.top &&
+						Math.abs(description.width - field.width) <= 1,
+					"On narrow screens, each field must fill the row below its description",
+				);
+			}
+		}
+		check(
+			document.documentElement.scrollWidth <= innerWidth + 1,
+			"Learning preferences must not overflow the viewport",
+		);
+		const note = find<HTMLTextAreaElement>("#learning-settings-form textarea");
+		note.focus();
+		h.inputValue(note, "能看懂短句");
+		note.blur();
+		await h.until(
+			() => persisted.profile.level_note === "能看懂短句",
+			"Finishing a profile field saves it",
+		);
+		find<HTMLInputElement>('input[name="default-style"]:not(:checked)').click();
+		await h.until(
+			() => persisted.defaults.style_id === null,
+			"Selecting a preset saves immediately",
+		);
+		const toggle = find<HTMLInputElement>(
+			'#segment-context-settings-form [role="switch"]',
+		);
+		toggle.click();
+		await h.until(
+			() => !context.enabled,
+			"Switching off saves the context preference",
+		);
+		const limit = find<HTMLInputElement>(
+			"#segment-context-settings-form input[type=number]",
+		);
+		check(
+			limit.getBoundingClientRect().width > 0,
+			"Context limits must remain visible",
+		);
+		limit.focus();
+		h.inputValue(limit, "");
+		limit.blur();
+		await h.until(
+			() =>
+				!!h.container.querySelector(
+					"#segment-context-settings-form [role=alert]",
+				),
+			"An empty limit must show a validation message",
+		);
+		check(context.before_sentences === 1, "Invalid context must remain local");
+		limit.focus();
+		h.inputValue(limit, "0");
+		limit.blur();
+		await h.until(
+			() => context.before_sentences === 0,
+			"A corrected zero limit must save on blur",
+		);
+		let finishPatch!: () => void;
+		holdPatch = new Promise((resolve) => {
+			finishPatch = resolve;
+		});
+		find<HTMLInputElement>('input[name="default-style"]:not(:checked)').click();
+		await h.until(
+			() => form.parentElement?.textContent?.includes("正在保存…") === true,
+			"The in-flight autosave must remain visible",
+		);
+		find<HTMLAnchorElement>(
+			'.settings-tabs a[href="/settings?section=appearance"]',
+		).click();
+		check(
+			form.isConnected && !guard(),
+			"Pending autosave must retain the page without a confirmation",
+		);
+		finishPatch();
+		await h.until(
+			() => !!h.container.querySelector("#appearance-heading"),
+			"Navigation should resume after the preference is saved",
+		);
+		check(
+			persisted.defaults.style_id === "style",
+			"Leaving must retain the selected preset",
+		);
+	} finally {
+		dispose();
+	}
+	return "settings defaults to learning without last-category memory; explicit model/service settings: default save isolation, both draft navigation guards, service management, legacy history entry/return, empty-model recovery, and learning preference copy/control layout";
 }

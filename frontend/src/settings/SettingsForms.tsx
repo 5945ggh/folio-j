@@ -20,6 +20,7 @@ import {
 } from "./draft";
 
 type RegisteredDraft = {
+	autosave?: boolean;
 	id: string;
 	label: string;
 	dirty: boolean;
@@ -85,7 +86,22 @@ export function SettingsDraftProvider({ children }: { children: ReactNode }) {
 	);
 	const [saving, setSaving] = useState(false);
 	const [failed, setFailed] = useState(false);
-	const pending = saving || entries().some((draft) => draft.pending);
+	const registered = entries();
+	const pending = saving || registered.some((draft) => draft.pending);
+	const onlyAutosaves =
+		registered.some((draft) => draft.autosave) &&
+		registered.every(
+			(draft) => draft.autosave || !(draft.dirty || draft.pending),
+		);
+	const continueAfterAutosave =
+		onlyAutosaves && !registered.some((draft) => draft.dirty || draft.pending);
+	const waitForAutosave = onlyAutosaves && pending && !saving;
+	const showGuard =
+		blocker.state === "blocked" && !waitForAutosave && !continueAfterAutosave;
+	useEffect(() => {
+		if (blocker.state === "blocked" && continueAfterAutosave && !saving)
+			blocker.proceed();
+	}, [blocker, continueAfterAutosave, saving]);
 	async function saveAndLeave() {
 		setSaving(true);
 		setFailed(false);
@@ -106,7 +122,7 @@ export function SettingsDraftProvider({ children }: { children: ReactNode }) {
 	return (
 		<DraftContext value={register}>
 			{children}
-			{blocker.state === "blocked" && (
+			{showGuard && (
 				<ConfirmDialog
 					className="settings-dialog settings-leave-dialog"
 					titleId="settings-leave-title"

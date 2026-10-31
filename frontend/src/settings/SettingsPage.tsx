@@ -17,15 +17,16 @@ import { SettingsDraftProvider } from "./SettingsForms";
 export function SettingsPage() {
 	const [searchParams] = useSearchParams();
 	const section = searchParams.get("section");
-	const learning = section === "learning";
+	const models =
+		section === "models" || section === "providers" || section === "history";
 	const permissions = section === "permissions";
 	const history = section === "history";
 	const translation = section === "translation";
 	const speech = section === "speech";
 	const appearance = section === "appearance";
 	const dictionary = section === "dictionary";
-	const models =
-		!learning &&
+	const learning =
+		!models &&
 		!permissions &&
 		!translation &&
 		!speech &&
@@ -65,7 +66,10 @@ export function SettingsPage() {
 					>
 						学习偏好
 					</Link>
-					<Link to="/settings" aria-current={models ? "page" : undefined}>
+					<Link
+						to="/settings?section=models"
+						aria-current={models ? "page" : undefined}
+					>
 						模型与服务
 					</Link>
 					<Link
@@ -119,34 +123,33 @@ export function SettingsPage() {
 						</>
 					) : (
 						<>
-							<div className="settings-page-head">
-								<h2>
-									{appearance
-										? "外观"
-										: translation
-											? "翻译"
-											: speech
-												? "设备朗读"
-												: learning
-													? "学习偏好"
+							{!learning && (
+								<div className="settings-page-head">
+									<h2>
+										{appearance
+											? "外观"
+											: translation
+												? "翻译"
+												: speech
+													? "设备朗读"
 													: permissions
 														? "对话与权限"
 														: "模型与服务"}
-								</h2>
-								<p>
-									{appearance
-										? "选择适合当前环境的颜色模式。"
-										: translation
-											? "管理独立翻译方案与语境。"
-											: speech
-												? "选择当前浏览器提供的日语声音。"
-												: learning
-													? "让讲解适合你的学习背景和阅读习惯。"
+									</h2>
+
+									<p>
+										{appearance
+											? "选择适合当前环境的颜色模式。"
+											: translation
+												? "管理独立翻译方案与语境。"
+												: speech
+													? "选择当前浏览器提供的日语声音。"
 													: permissions
 														? "设置新对话使用工具时的默认权限。"
 														: "选择任务默认模型，管理接入的模型服务。"}
-								</p>
-							</div>
+									</p>
+								</div>
+							)}
 							{models && <ModelSettingsNavigation services={services} />}
 							{!appearance && !services && settings.isPending && (
 								<p className="settings-loading" role="status">
@@ -225,7 +228,10 @@ export function SettingsPage() {
 function ModelSettingsNavigation({ services }: { services: boolean }) {
 	return (
 		<nav className="settings-subnav" aria-label="模型与服务分类">
-			<Link to="/settings" aria-current={!services ? "page" : undefined}>
+			<Link
+				to="/settings?section=models"
+				aria-current={!services ? "page" : undefined}
+			>
 				默认模型
 			</Link>
 			<Link
