@@ -1,0 +1,80 @@
+frontend/src/settings/settings-refresh.css
+  s_70226c21ff2c4d::t_ca92866bed8281 126-134,136,138-152
+  s_6965c9e4c09cb1::t_28a0b98382e191 135,154-157,541-608
+  s_6965c9e4c09cb1::t_e753daec71b43c 137
+  s_70226c21ff2c4d::t_580577510f7f56 153,158-174
+  s_70226c21ff2c4d::t_02ed3d0c9650f4 232,509
+frontend/src/settings/LearningSettings.tsx
+  s_6965c9e4c09cb1::t_d96d3432b2145e 53,55,58,67,73,76,82,176,180,183,229
+  s_70226c21ff2c4d::t_898e641d705a11 49-51,65-66,71-72,74-75,77-81,83-130,132-147,173-175,177-179,181
+  s_70226c21ff2c4d::t_6aef19a1aeafda 54,56-57,63-64,148,172,239
+  s_6965c9e4c09cb1::t_44c8dde4635e06 6
+  s_70226c21ff2c4d::t_f0475057c9e927 61-62,131,149-150,152-168,170-171,251
+  s_6965c9e4c09cb1::t_28a0b98382e191 16,31-36,39,41,43,45,59-60,68-70,169,184
+  s_6965c9e4c09cb1::t_7cd7e8ad555d89 44,151
+docs/PRD.md
+  s_6965c9e4c09cb1::t_e753daec71b43c 338
+frontend/src/settings/autosave-queue.test.ts
+  s_6965c9e4c09cb1::t_e753daec71b43c 1-6,12,14,16,19,21-26,32,34,36,39-40,42-43
+  s_6965c9e4c09cb1::t_568730dd929659 7-11,13,15,17-18,20,27-31,33,35,37-38,41
+frontend/src/settings/SettingsForms.tsx
+  s_6965c9e4c09cb1::t_e753daec71b43c 23,89,101,104
+  s_6965c9e4c09cb1::t_568730dd929659 91-97,102-103
+  s_6965c9e4c09cb1::t_44c8dde4635e06 90,98-100,125
+frontend/src/settings/SettingsPage.tsx
+  s_6965c9e4c09cb1::t_28a0b98382e191 126-134,138-146,150-152
+  s_6965c9e4c09cb1::t_2ea37640baa4cb 20-21,28-29,69-72,231-234
+frontend/src/settings/autosave-queue.ts
+  s_6965c9e4c09cb1::t_d96d3432b2145e 1,5-24
+  s_6965c9e4c09cb1::t_28a0b98382e191 2-4
+frontend/src/settings/AutosavingSettings.tsx
+  s_6965c9e4c09cb1::t_28a0b98382e191 7-10,18-24,39-41,60,62-68,70-73,76-108
+  s_6965c9e4c09cb1::t_e753daec71b43c 49,61
+  s_6965c9e4c09cb1::t_d96d3432b2145e 1-6,11-17,25-38,42-48,50-59,69,74-75,109-112
+docs/USAGE.md
+  s_6965c9e4c09cb1::t_e753daec71b43c 139
+  s_70226c21ff2c4d::t_0d9b6bc607d786 140-141
+frontend/src/settings/SegmentContextSettings.tsx
+  s_70226c21ff2c4d::t_4f736e0e62043e 28
+  s_6965c9e4c09cb1::t_44c8dde4635e06 116
+  s_70226c21ff2c4d::t_99798874191ebf 31-33,137-145,147-149,153-154
+  s_6965c9e4c09cb1::t_28a0b98382e191 1-2,5,24,26,49-59,64-92,94-96,100,103,106-115,117-136,146,150-152,156-162
+  s_70226c21ff2c4d::t_0c16ba706fbe6e 21,25,155
+docs/INFORMATION_ARCHITECTURE.md
+  s_70226c21ff2c4d::t_0d9b6bc607d786 23-24,26,108,321
+  s_6965c9e4c09cb1::t_e753daec71b43c 106
+  s_6965c9e4c09cb1::t_08c646c38ff1b9 107
+frontend/browser-tests/settings-models.tsx
+  s_70226c21ff2c4d::t_f0475057c9e927 366,372-374,378
+  s_70226c21ff2c4d::t_24438f8e9dd15c 320-323
+  s_6965c9e4c09cb1::t_568730dd929659 2-5,53-60,69-81,88,350-362,364-365,368-371,375-377,379-381,383-395
+  s_6965c9e4c09cb1::t_c277ac2bfc7f8c 52,84,97,101,234,396-420
+  s_70226c21ff2c4d::t_02ed3d0c9650f4 333-334,336,338-343
+  s_70226c21ff2c4d::t_1a6317ad4b1f15 302-319,324-332,335,337,344-349,363,422-424
+  s_70226c21ff2c4d::t_21c6ea56c31f17 100,108,237,271,367,382,421
+  s_6965c9e4c09cb1::t_187024ebb0aca8 98-99,102-107,109,112,233,235-236,267-270,425
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b5ac4b787275bd4ab6d2dcececb91388399f0f47",
+  "prompts": {},
+  "sessions": {
+    "s_6965c9e4c09cb1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a191dc-96dc-7dc2-8d82-9548ccf16e4b",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_70226c21ff2c4d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a191c6-93c8-71b0-bf76-c8a947c2c183",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
