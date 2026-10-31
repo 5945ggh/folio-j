@@ -1,0 +1,61 @@
+frontend/src/styles.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 59,1416,2042
+frontend/src/materials/reader-bookmarks.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 133
+frontend/src/materials/reader-panels.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 73,419
+frontend/src/materials/reader-r1.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 107
+frontend/src/materials/dictionary.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 142
+docs/INFORMATION_ARCHITECTURE.md
+  s_a89fe0c8c1b9ce::t_ba864c4d2916df 44
+frontend/src/segments/share.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 205
+frontend/src/translation/translation-settings.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 48
+frontend/src/materials/context-copy-feedback.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 34
+frontend/src/catalog/library-a1.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 59
+frontend/src/segments/explanation-prompt-copy.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 48
+frontend/src/catalog/source-content.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 14,275
+frontend/src/materials/chapter-records.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 33
+frontend/src/settings/dictionary-settings.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 97
+frontend/src/catalog/import-dialog.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 72,113
+frontend/src/speech/speech.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 273,414
+frontend/src/catalog/Controls.tsx
+  s_a89fe0c8c1b9ce::t_ba864c4d2916df 83
+frontend/src/materials/study-overlays.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 54,201
+frontend/src/catalog/vocabulary.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 347
+frontend/src/settings/settings-refresh.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 150,262,317,577
+frontend/src/catalog/sources-s2.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 92
+frontend/src/translation/translation.css
+  s_a89fe0c8c1b9ce::t_7cb284c119e7d6 333
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "433e063e209f4b98c47f26962239c5fdfaf8e1a6",
+  "prompts": {},
+  "sessions": {
+    "s_a89fe0c8c1b9ce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1925c-0def-7e50-a91d-ef5b672324d4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
