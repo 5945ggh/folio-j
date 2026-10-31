@@ -1,0 +1,66 @@
+backend/src/app/schemas.py
+  s_f1f94627ba8014::t_f74c79b3710869 177-180
+backend/src/app/api/sources.py
+  s_f1f94627ba8014::t_f74c79b3710869 13,22,104-112
+  s_f1f94627ba8014::t_fd6208fb4ea996 113-114
+docs/INFORMATION_ARCHITECTURE.md
+  s_f1f94627ba8014::t_ed72b1f0f600db 229-231
+frontend/src/api/schema.d.ts
+  s_f1f94627ba8014::t_60c1ee893c8df5 787-803,3083-3087,5775-5803
+  s_f1f94627ba8014::t_387c42d4f13f49 5804-5805
+backend/tests/test_explanation_prompt.py
+  s_f1f94627ba8014::t_ad654ff50df298 46-57,75-96,112-122,138-143,150-152,157-158
+  s_f1f94627ba8014::t_68fbb7cfafda3d 7,99-104
+  s_f1f94627ba8014::t_0414361911705a 1-6,8-45,58-74,97-98,105-111,123-137,144-149,153-156,159-175
+frontend/src/segments/NewAnalysisActions.tsx
+  s_f1f94627ba8014::t_672ed61422ba10 10-14,17,22,32,151,166-178,180-185
+frontend/browser-tests/analysis-reading.tsx
+  s_f1f94627ba8014::t_0715c8f4fff8b1 4,65
+  s_f1f94627ba8014::t_672ed61422ba10 172,241,247-248,264,322,815,818-819,963
+backend/openapi.json
+  s_f1f94627ba8014::t_60c1ee893c8df5 4950-4962,10052-10088
+  s_f1f94627ba8014::t_f3a4e09e96d816 10089-10090
+backend/src/app/services/explanation_prompts.py
+  s_f1f94627ba8014::t_ad654ff50df298 11
+  s_f1f94627ba8014::t_f74c79b3710869 1-10,12-36
+frontend/src/SegmentPage.tsx
+  s_f1f94627ba8014::t_672ed61422ba10 450
+backend/src/app/services/settings.py
+  s_f1f94627ba8014::t_0414361911705a 94-96,105
+  s_f1f94627ba8014::t_f74c79b3710869 69-93,97-104,106-108,119,125
+  s_f1f94627ba8014::t_ad654ff50df298 115
+docs/PRD.md
+  s_f1f94627ba8014::t_ed72b1f0f600db 501-502
+frontend/src/segments/explanation-prompt-copy.css
+  s_f1f94627ba8014::t_672ed61422ba10 1-72
+backend/prompts/chat/external_explanation_v1.j2
+  s_f1f94627ba8014::t_1f571db0383ae7 4
+  s_f1f94627ba8014::t_f74c79b3710869 1-3,5-14
+frontend/browser-tests/explanation-prompt-copy.tsx
+  s_f1f94627ba8014::t_a183761dec54c7 5-7
+  s_f1f94627ba8014::t_0715c8f4fff8b1 1-4,8-261
+frontend/src/segments/ExplanationPromptCopy.tsx
+  s_f1f94627ba8014::t_a183761dec54c7 79-87
+  s_f1f94627ba8014::t_0715c8f4fff8b1 2-8,44,166,191-195
+  s_f1f94627ba8014::t_672ed61422ba10 1,9-43,45-60,77,90-165,167-190,196-224
+  s_f1f94627ba8014::t_6b289552c0713e 61-76,78,88-89
+docs/USAGE.md
+  s_f1f94627ba8014::t_ed72b1f0f600db 141
+  s_f1f94627ba8014::t_b4e5b541aabe28 142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c2ac97766218250b5bccc37c4a002c62ccbd4759",
+  "prompts": {},
+  "sessions": {
+    "s_f1f94627ba8014": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1903c-cd88-7492-a724-10411833f777",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
