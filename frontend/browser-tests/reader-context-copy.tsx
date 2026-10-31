@@ -12,6 +12,7 @@ const paragraphs = [
 	"猫が歩く。",
 	"後ろ一。",
 	"後ろ二。",
+	"庭には犬と猫が歩く。",
 ];
 const text = paragraphs.join("");
 const preferenceKey = "folio-reader-context-copy-v1";
@@ -51,12 +52,14 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 				start: 0,
 				end: text.length,
 				leaf_start: 0,
-				leaf_end: 7,
+				leaf_end: 12,
 				html: paragraphs
 					.map((value, index) =>
 						index === 3
 							? '<p data-paragraph="3"><ruby><span data-locator-leaf="3">猫</span><rt>ねこ</rt></ruby><span data-locator-leaf="4">が歩く。</span></p>'
-							: `<p data-paragraph="${index}"><span data-locator-leaf="${index > 3 ? index + 1 : index}">${value}</span></p>`,
+							: index === 6
+								? '<p data-paragraph="6"><span data-locator-leaf="7">庭には</span><ruby><span data-locator-leaf="8">犬</span><rt>いぬ</rt></ruby><span data-locator-leaf="9">と</span><ruby><span data-locator-leaf="10">猫</span><rt>ねこ</rt></ruby><span data-locator-leaf="11">が歩く。</span></p>'
+								: `<p data-paragraph="${index}"><span data-locator-leaf="${index > 3 ? index + 1 : index}">${value}</span></p>`,
 					)
 					.join(""),
 			},
@@ -294,6 +297,106 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			"Context copy must retain exact native selection",
 		);
 	};
+	const ordinaryCopy = (doc: Document) => {
+		const data = new DataTransfer();
+		doc.dispatchEvent(
+			new ClipboardEvent("copy", {
+				bubbles: true,
+				cancelable: true,
+				clipboardData: data,
+			}),
+		);
+		return data.getData("text/plain");
+	};
+	const dragAfterRuby = async () => {
+		const browserPointer = (
+			window as Window & {
+				browserPointer?: (events: unknown[]) => Promise<void>;
+			}
+		).browserPointer;
+		const frame = h.container.querySelector<HTMLIFrameElement>(
+			"iframe.material-part",
+		);
+		const doc = frame?.contentDocument;
+		const native = doc?.getSelection();
+		const paragraph = doc?.querySelector('[data-paragraph="6"]');
+		const leaf = paragraph?.querySelector('[data-locator-leaf="11"]');
+		const node = leaf?.firstChild;
+		check(
+			browserPointer && frame && doc && native && paragraph && node,
+			"Ruby drag regression requires native browser pointer and loaded text",
+		);
+		check(
+			node.textContent === "が歩く。",
+			"Ruby drag must target the plain tail",
+		);
+		paragraph.scrollIntoView({ block: "center", inline: "center" });
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+		);
+		const character = (offset: number) => {
+			const range = doc.createRange();
+			range.setStart(node, offset);
+			range.setEnd(node, offset + 1);
+			return range.getBoundingClientRect();
+		};
+		const first = character(0);
+		const last = character(2);
+		const bounds = frame.getBoundingClientRect();
+		const vertical = direction === "vertical-rl";
+		// Start just before the native caret midpoint, after two earlier ruby bases.
+		const start = {
+			x: bounds.left + first.left + first.width * (vertical ? 0.5 : 0.49),
+			y: bounds.top + first.top + first.height * (vertical ? 0.49 : 0.5),
+		};
+		const end = {
+			x: bounds.left + last.left + last.width * (vertical ? 0.5 : 0.99),
+			y: bounds.top + last.top + last.height * (vertical ? 0.99 : 0.5),
+		};
+		native.removeAllRanges();
+		await browserPointer([
+			{ type: "mouseMoved", ...start },
+			{
+				type: "mousePressed",
+				...start,
+				button: "left",
+				buttons: 1,
+				clickCount: 1,
+			},
+			{
+				type: "mouseMoved",
+				...end,
+				button: "left",
+				buttons: 1,
+			},
+			{
+				type: "mouseReleased",
+				...end,
+				button: "left",
+				buttons: 0,
+				clickCount: 1,
+			},
+		]);
+		await h.until(
+			() => !!h.container.querySelector('[aria-label="选区操作"]'),
+			"Dragging after ruby must expose the actual reader selection toolbar",
+		);
+		check(
+			native.toString() === "が歩く",
+			`${direction}: native drag after ruby must select exactly が歩く, got ${JSON.stringify(native.toString())}`,
+		);
+		const copied = ordinaryCopy(doc);
+		check(
+			copied === "が歩く",
+			`${direction}: ordinary copy after native ruby drag must equal が歩く, got ${JSON.stringify(copied)}`,
+		);
+		doc
+			.querySelector('[data-paragraph="3"]')
+			?.scrollIntoView({ block: "center", inline: "center" });
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+		);
+	};
 	const toolbarFits = () => {
 		const toolbar = h.container.querySelector<HTMLElement>(
 			'[aria-label="选区操作"]',
@@ -340,6 +443,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			() => !h.container.textContent?.includes("正在读取复制设置"),
 			"Initial settings read must settle",
 		);
+		if (!preview) await dragAfterRuby();
 		const selected = await select();
 		toolbarFits();
 		const count = copies.length;
@@ -358,16 +462,8 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		);
 		assertSelection(selected);
 		// Existing native copy remains selected original only, using synthetic clipboard data.
-		const data = new DataTransfer();
-		selected.doc.dispatchEvent(
-			new ClipboardEvent("copy", {
-				bubbles: true,
-				cancelable: true,
-				clipboardData: data,
-			}),
-		);
 		check(
-			data.getData("text/plain") === paragraphs[3],
+			ordinaryCopy(selected.doc) === paragraphs[3],
 			"Ordinary copy must remain selected original only and exclude ruby readings",
 		);
 		if (preview)
