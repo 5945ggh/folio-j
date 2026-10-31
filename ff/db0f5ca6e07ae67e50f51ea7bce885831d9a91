@@ -1,0 +1,84 @@
+frontend/src/materials/MaterialReader.tsx
+  s_6bf2b238add0a2::t_97d24e0a8b9974 398-399,1823-1825,1831-1833,1846-1849
+  s_6bf2b238add0a2::t_2483289a422761 396-397,400,519,533,563-568,685-688,1818-1822,1826-1830,1834,1845,2250-2251
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_6bf2b238add0a2::t_4bef10c015c9ed 3,14
+frontend/src/materials/reader-study.ts
+  s_6bf2b238add0a2::t_a180e60b66a6b5 925
+frontend/src/materials/preferences.ts
+  s_6bf2b238add0a2::t_6e9d0469e677eb 5,77
+  s_6bf2b238add0a2::t_ffbdb5a8d5158d 4
+frontend/src/materials/use-reader-card-drag.ts
+  s_6bf2b238add0a2::t_6e9d0469e677eb 21,129
+frontend/src/materials/focus.ts
+  s_6bf2b238add0a2::t_a180e60b66a6b5 7
+frontend/src/materials/DictionaryDefinitions.tsx
+  s_6bf2b238add0a2::t_39fd6bdf0bc9ba 177
+  s_6bf2b238add0a2::t_bc6c517d81e3ba 328
+  s_6bf2b238add0a2::t_6ee8af83df10fa 1-4,6-7,9-16,18-84,87-89,94-98,100-102,105,182,198-205,207-212,214-215,217,221-222,235,245-255,264-266,269-272,279-283,290-306,310-317,319-320,327,330-337
+  s_6bf2b238add0a2::t_a180e60b66a6b5 122,174,218-219,277,288,308
+  s_6bf2b238add0a2::t_68a86ade01e082 85-86,206,213
+  s_6bf2b238add0a2::t_9744c32a14dd48 5,17,99,103,220,223-230
+  s_6bf2b238add0a2::t_c275a41b57c1d1 232-234
+  s_6bf2b238add0a2::t_b806a363237244 124-129
+  s_6bf2b238add0a2::t_5d67b5338ad71f 273
+  s_6bf2b238add0a2::t_ce2d2549cb75e0 8,90-93,104,106-121,123,130-173,175-176,178-181,183-197,216,231,236-244,256-263,267-268,274-276,278,284-287,289,307,309,318,321-326,329
+docs/USAGE.md
+  s_6bf2b238add0a2::t_c091c0fe66006c 59-60
+  s_6bf2b238add0a2::t_a886f6a77e340b 57-58,62-63
+  s_6bf2b238add0a2::t_ffbdb5a8d5158d 61
+docs/INFORMATION_ARCHITECTURE.md
+  s_6bf2b238add0a2::t_c091c0fe66006c 288
+docs/PRD.md
+  s_6bf2b238add0a2::t_a886f6a77e340b 194
+frontend/src/materials/dictionary-layout.ts
+  s_6bf2b238add0a2::t_3f1865b8a2709f 1-4,21-30,32-37
+  s_6bf2b238add0a2::t_336fc08d0e90f0 39
+  s_6bf2b238add0a2::t_1754e3e7570086 12-20,31,38
+frontend/src/materials/ReaderDictionary.tsx
+  s_6bf2b238add0a2::t_3f1865b8a2709f 392,420
+  s_6bf2b238add0a2::t_6e9d0469e677eb 27
+  s_6bf2b238add0a2::t_6ee8af83df10fa 421
+  s_6bf2b238add0a2::t_2483289a422761 40,47-48,61-62,154,283,312-315
+  s_6bf2b238add0a2::t_97d24e0a8b9974 419
+docs/handovers/epub-reading/DICTIONARY_PLAN.md
+  s_6bf2b238add0a2::t_a886f6a77e340b 16
+  s_6bf2b238add0a2::t_4bef10c015c9ed 48-53
+  s_6bf2b238add0a2::t_c091c0fe66006c 54-55
+frontend/src/materials/dictionary.css
+  s_6bf2b238add0a2::t_2483289a422761 110-113
+  s_6bf2b238add0a2::t_26b454aac4163d 137-144,149-152,158-176
+frontend/browser-tests/reader-dictionary.tsx
+  s_6bf2b238add0a2::t_02a3aad7dada9a 1095-1101,1106-1110,1115,1119,1134-1136,1145-1146,1152-1155,1160,1167,1175-1176
+  s_6bf2b238add0a2::t_45bf3d92709319 387,399,403-409
+  s_6bf2b238add0a2::t_666a8ac3cf0663 891-897,905-908,911-914,916-919,922-925,976-979
+  s_6bf2b238add0a2::t_b0e964613eeb01 743,1074-1078,1083,1087,1091,1127-1130,1181-1183
+  s_6bf2b238add0a2::t_cd8bcb4818b512 642
+  s_6bf2b238add0a2::t_5c0953a0e35ce5 766-773,779-781,787-791
+  s_6bf2b238add0a2::t_c1402e58f30c58 290-298,864-877,879-890,898-904,909-910,915,920-921,984
+  s_6bf2b238add0a2::t_8d03e04661342a 414-452,565,569,580,614-619,624-629,632-641,643-646,651,656-657,662-667,672,677-686,690-701,707,727,1298
+  s_6bf2b238add0a2::t_ffbdb5a8d5158d 564
+  s_6bf2b238add0a2::t_5ce837d36b1f4b 620-623,630-631,647-650,652-655,658-661,668-671,673-676,687-689,702-706,774-778,782-786,1079-1082,1084-1086,1088-1090,1092-1094,1102-1105,1111-1114,1116-1118,1120-1126,1131-1133,1137-1144,1147-1151,1156-1159,1161-1166,1168-1174,1177-1180
+  s_6bf2b238add0a2::t_ff569ba5dd2cf7 878,975,980-983,1332
+  s_6bf2b238add0a2::t_2c65159574750b 926-974
+frontend/src/materials/DictionaryCards.tsx
+  s_6bf2b238add0a2::t_3f1865b8a2709f 3-4,10-11,16,19-21,23,28,88,99,134-135,139,146-149,159-171,175,193-195,197,217-219,233-235,257-258,262,267-283,286,288,308-317,319,321-323,326-330,333-335,343-345,352-357,381-382,394-395,446-459
+  s_6bf2b238add0a2::t_df6ecfbcd5d7fb 320
+  s_6bf2b238add0a2::t_2483289a422761 86,98,185,209,227,284-285,287
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ffdb0f5ca6e07ae67e50f51ea7bce885831d9a91",
+  "prompts": {},
+  "sessions": {
+    "s_6bf2b238add0a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1911d-7f9e-7903-b68e-cba97cbf7895",
+        "model": "gpt-6-astra"
+      },
+      "human_author": null
+    }
+  }
+}
