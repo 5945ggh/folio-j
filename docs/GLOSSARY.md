@@ -5,7 +5,7 @@
 
 ## 1. 来源、片段与语境（已对齐）
 
-片段学习围绕 **Source 下的 Segment 阅读原文、保存和回看独立讲解、按需讨论并积累学习点**。Segment 是这类活动的共同起点；工作台承载讨论，不决定讲解或讨论内容的归属。讲解可由人工输入、外部 Markdown 导入或模型生成。阅读对话与原文引用方向见[原生阅读方向讨论稿](handovers/epub-reading/DIRECTION.md)，不要求每次阅读提问先创建 Segment。
+片段学习围绕 **Source 下的 Segment 阅读原文、保存和回看独立讲解、按需讨论并积累学习点**。Segment 是这类活动的共同起点；工作台承载讨论，不决定讲解或讨论内容的归属。讲解可由人工输入、外部 Markdown 导入或模型生成。阅读对话与原文引用方向见[原生阅读方向讨论稿](handovers/archived/epub-reading/DIRECTION.md)，不要求每次阅读提问先创建 Segment。
 
 「来源目录」以 Source 组织材料与学习片段；入口与来源空间导航见[信息架构](INFORMATION_ARCHITECTURE.md)和 [PRD 4.2.1](PRD.md#421-本轮材料目录与阅读管理)。手动录入与从材料选取均以 Segment 为学习目标，阶段范围见 [PRD 4.7](PRD.md#47-当前-epub-阶段安排)，交付状态见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
@@ -31,7 +31,7 @@ Segment 的目标原文在尚未触发固定时可编辑。已确认三种固定
 
 ## 2. 素材与材料
 
-**含义与主要方向已对齐，实施契约按切片收口。** 素材是用户提供的原始输入，可来自 EPUB、TXT、字幕及音视频配套资源。素材本身保持不可变。本阶段托管 EPUB 副本，现行存储契约见[架构](ARCHITECTURE.md#31-实体)，设计理由见[历史方案](handovers/epub-reading/MATERIAL_BASELINE.md)；当前具体实现采用数据库内原始字节，其他素材类型仍未接入。不限定长期一个文件对应一份素材。
+**含义与主要方向已对齐，实施契约按切片收口。** 素材是用户提供的原始输入，可来自 EPUB、TXT、字幕及音视频配套资源。素材本身保持不可变。本阶段托管 EPUB 副本，现行存储契约见[架构](ARCHITECTURE.md#31-实体)，设计理由见[历史方案](handovers/archived/epub-reading/MATERIAL_BASELINE.md)；当前具体实现采用数据库内原始字节，其他素材类型仍未接入。不限定长期一个文件对应一份素材。
 
 材料是素材经过应用处理后，可由应用利用的形态。它可以保留原始内容及呈现资源，并组织阅读、选取、语境获取和定位所需的处理结果；不要求改写素材或统一变为纯文本。Source 继续表达来源范围，Segment 继续表达选定的学习目标。
 

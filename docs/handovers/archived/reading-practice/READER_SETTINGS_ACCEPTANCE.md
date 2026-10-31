@@ -1,6 +1,6 @@
 # 阅读设置四组与会话草稿验收
 
-> 2026-10-29；验收对象为 `codex/reader-settings-structure` 在 `main 7d57239` 上的阅读设置改动，当时尚未合入 main；2026-10-30 已与书签一起集成，见[整合核验](BOOKMARKS_ACCEPTANCE.md#2026-10-30-原目录集成)。下方工程与浏览器记录对应细调前的 `4b978be`，最终界面调整另见末节。结构依据见[调查与原型记录](READER_SETTINGS_STRUCTURE.md)，现行规则见[阅读设置分组与会话](../../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)。
+> 2026-10-29；验收对象为 `codex/reader-settings-structure` 在 `main 7d57239` 上的阅读设置改动，当时尚未合入 main；2026-10-30 已与书签一起集成，见[整合核验](BOOKMARKS_ACCEPTANCE.md#2026-10-30-原目录集成)。下方工程与浏览器记录对应细调前的 `4b978be`，最终界面调整另见末节。结构依据见[调查与原型记录](READER_SETTINGS_STRUCTURE.md)，现行规则见[阅读设置分组与会话](../../../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)。
 
 ## 实施范围
 

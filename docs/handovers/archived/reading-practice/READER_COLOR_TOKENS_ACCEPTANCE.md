@@ -1,6 +1,6 @@
 # 阅读器配色收拢验收
 
-2026-10-30，基于 `main 5db2742` 完成快捷入口与配色收拢，经 `codex/saved-segment-shortcut` 整理提交并快进合入本地 main；用户原有 README 调整单独提交。现行约定见[设计系统](../../DESIGN_SYSTEM.md#阅读器的强调色与标记)。
+2026-10-30，基于 `main 5db2742` 完成快捷入口与配色收拢，经 `codex/saved-segment-shortcut` 整理提交并快进合入本地 main；用户原有 README 调整单独提交。现行约定见[设计系统](../../../DESIGN_SYSTEM.md#阅读器的强调色与标记)。
 
 ## 变化
 

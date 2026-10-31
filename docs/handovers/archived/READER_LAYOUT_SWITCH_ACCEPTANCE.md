@@ -20,6 +20,8 @@
 
 ## 结构建议与范围
 
+后续进展：本节建议已由[Reader 呈现协调收拢](READER_PRESENTATION_REFACTOR_ACCEPTANCE.md)落实，以下保留故障修复时的评估与范围。
+
 建议分步推进：先让导航结果携带此次已加载并校验的 Chapter／part，删除页面二次查缓存及回退到旧章 part 的逻辑；再集中正文替换、重排、暂离的顺序约束。Navigation、Layout、Frames 保留为内部实现，新的协调 interface 应拥有 generation、呈现回执、资源就绪和稳定采样时机。
 
 本次切换路径不经过导航的缓存重查；导航结果优化不能直接修复此故障。先交付小范围故障修复，再单独实施结构调整。不新增依赖、接口、迁移或 TBD；未验证 Safari、Firefox、实体触屏或浏览器扩展组合。

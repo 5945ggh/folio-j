@@ -10,10 +10,10 @@
 | 如何保留数据、升级和恢复旧库 | [升级与备份](UPGRADING.md) | 数据与凭据备份、迁移入口、旧开发库处理边界 |
 | 为什么做、长期怎样演进 | [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) | 动机、取舍与待验证设想；方向不自动成为实施要求 |
 | 文本处理与学习资料如何解耦 | [文本分析与统计契约](ARCHITECTURE.md#314-文本分析与统计契约)、[文本与资料历史计划](handovers/archived/text-study/PLAN.md) | 现行契约由架构与 PRD 维护；历史计划保留切片依赖、实施依据与验收入口，当前交付状态见实施基线 |
-| 怎样按词性、词频、词形或读音查看一本书的词汇并返回原文 | [材料词汇页](INFORMATION_ARCHITECTURE.md#材料词汇页)、[使用指南](USAGE.md#查看统计与材料词汇) | 页面、筛选与返回规则由阅读与导航维护，频次与身份口径见 PRD／架构，验证范围见[本轮验收](handovers/reading-practice/VOCABULARY_ACCEPTANCE.md) |
+| 怎样按词性、词频、词形或读音查看一本书的词汇并返回原文 | [材料词汇页](INFORMATION_ARCHITECTURE.md#材料词汇页)、[使用指南](USAGE.md#查看统计与材料词汇) | 页面、筛选与返回规则由阅读与导航维护，频次与身份口径见 PRD／架构，验证范围见[本轮验收](handovers/archived/reading-practice/VOCABULARY_ACCEPTANCE.md) |
 | EPUB 阅读与学习衔接如何继续推进 | [EPUB 原生阅读阶段](handovers/epub-reading/README.md) | 切片顺序、准备条件，以及注音、选区学习、材料对话和讲解形成的边界 |
-| 实际阅读中发现的复制、书签与搜索需求怎样落地 | [实际阅读评测计划](handovers/reading-practice/PLAN.md) | 已确认用途、三阶段实施顺序与各阶段验收重点 |
-| 阅读设置如何分组，作用域与保存方式如何表达 | [阅读设置交互](INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)、[结构调查与实施进展](handovers/reading-practice/READER_SETTINGS_STRUCTURE.md) | 现行分组、保存范围与会话规则由阅读与导航维护；结构资料保留调查基准和低保真记录，生产验收状态见实施基线 |
+| 实际阅读中的搜索与设置需求怎样继续推进 | [实际阅读评测计划](handovers/reading-practice/PLAN.md) | 扩展书内搜索的准备条件、设置迁移候选与数据保护；已完成能力见实施基线 |
+| 阅读设置如何分组，作用域与保存方式如何表达 | [阅读设置交互](INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)、[历史结构调查](handovers/archived/reading-practice/READER_SETTINGS_STRUCTURE.md) | 现行分组、保存范围与会话规则由阅读与导航维护；历史资料保留调查与低保真记录，未决迁移候选由阅读评测计划承接 |
 | 目录、书籍管理、阅读器和注音有哪些现行契约 | [架构](ARCHITECTURE.md#31-实体)、[阅读与导航](INFORMATION_ARCHITECTURE.md) | 服务接口、缓存与发布机制、页面操作及状态恢复；验收限制从实施基线查找 |
 | 首轮承诺什么行为、哪些决定未定 | [PRD.md](PRD.md) | 范围、产品行为、内容保护、验收与 `[TBD-xx]`；决定依据链接原始方案和验收，P0 不表示已经交付 |
 | 名词指什么、身份与引用如何区分 | [GLOSSARY.md](GLOSSARY.md) | 定义、不变式、词表和反例；完整操作流程引用 PRD |

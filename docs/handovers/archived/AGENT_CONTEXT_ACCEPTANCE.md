@@ -1,6 +1,8 @@
 # Agent 上下文与讲解流程验收
 
-日期：2026-10-27至2026-10-28。起点：`886cae9`；改动位于`codex/agent-context-events`，尚未提交。实现契约见[架构 4.1](../ARCHITECTURE.md#41-上下文管理器servicescontextpy)。
+日期：2026-10-27至2026-10-28。起点：`886cae9`；改动位于`codex/agent-context-events`，尚未提交。实现契约见[架构 4.1](../../ARCHITECTURE.md#41-上下文管理器servicescontextpy)。
+
+以上为起始工作区记录，最终提交与主分支整合见本文末节；当前交付以[实施基线](../MVP_IMPLEMENTATION_BASELINE.md)为准。
 
 ## 范围与决定
 

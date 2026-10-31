@@ -26,4 +26,4 @@
 - 独立复审提出的章首意图保护已修复并复核通过，无其他可行动问题。
 - 不新增依赖、后端接口、迁移或 TBD。Safari、Firefox、实体触屏及浏览器扩展组合未实测。
 
-本地 main 原有未推送提交保留，未推送远端；当前交付状态以[实施基线](MVP_IMPLEMENTATION_BASELINE.md)为准。
+本地 main 原有未推送提交保留，未推送远端；当前交付状态以[实施基线](../MVP_IMPLEMENTATION_BASELINE.md)为准。

@@ -246,7 +246,7 @@ TanStack Query key 包含材料／版本／查询／分页，输入法组合期�
 
 `MaterialReader.tsx` 保留文字／图片定位、出处校验、非阅读轴清零、章末补偿和界面反馈。DOM adapter 返回定位结果，`ReaderPresentation` 在布局完成后执行当前导航回执，再更新高亮、标记及阅读进度；普通重排不重复消费回执。导航 module 继续核对 surface、目标内容身份和原点修订，只有实际返回定位成功才消费原点，失败保留并提示重试。文字矩形在增加正文留白前检查原始几何，零尺寸或非有限矩形不冒充定位成功。
 
-正文暂离取消延迟保存并使旧导航回执失效，只保存已成功呈现的位置；保留待呈现目标、尚未消费的物理章首意图、iframe 和资源就绪集合。恢复后重提布局并绑定新回执，期间到达的当前资源仍可用于恢复。主动离页保存旧稳定位置时，不能覆盖尚未呈现的新目标。真正卸载延迟到下一任务释放 Frames；StrictMode 的 effect 重放或重新激活会取消释放，避免清空仍保留的 Document。协调 interface 的测试与浏览器证据见[呈现协调验收](handovers/READER_PRESENTATION_REFACTOR_ACCEPTANCE.md)，原导航深化与注音兼容限制分别见[导航验收](handovers/archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)和[全量注音验收](handovers/archived/full-ruby/ACCEPTANCE.md)。
+正文暂离取消延迟保存并使旧导航回执失效，只保存已成功呈现的位置；保留待呈现目标、尚未消费的物理章首意图、iframe 和资源就绪集合。恢复后重提布局并绑定新回执，期间到达的当前资源仍可用于恢复。主动离页保存旧稳定位置时，不能覆盖尚未呈现的新目标。真正卸载延迟到下一任务释放 Frames；StrictMode 的 effect 重放或重新激活会取消释放，避免清空仍保留的 Document。协调 interface 的测试与浏览器证据见[呈现协调验收](handovers/archived/READER_PRESENTATION_REFACTOR_ACCEPTANCE.md)，原导航深化与注音兼容限制分别见[导航验收](handovers/archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)和[全量注音验收](handovers/archived/full-ruby/ACCEPTANCE.md)。
 
 `return-origin.ts` 的 `JumpReadingSession` 管理连续查阅与继续阅读的边界，阈值集中在 `JUMP_READING_POLICY`。页面将正文 wheel／阅读键／触摸移动及滚动条操作关联到稳定视口采样，横竖排统一为正向阅读轴；每次输入仅允许后续 800ms 内的位移计入，净前进至少一视口且首末移动跨越 5 秒后确认继续阅读。移动间隔超过两分钟重建候选，页面失焦／隐藏、工具开关及几何恢复丢弃未确认信号与旧几何基准。确认不清空原返回点，下一次通过目标校验的导航才替换为当时的稳定位置并重置检测；失败请求保留信号。章首显式撤销与返回定位成功后消费原点的规则沿用原逻辑。
 
@@ -266,7 +266,7 @@ GET `/api/materials/{material_id}/statistics` 接受明确的 version_id 和可�
 
 `StatisticsRuntime` 由每次应用 lifespan 创建，保存冻结结果的 JSON bytes，LRU 默认上限 128 条／8 MiB，计算并发 2、在途含等待任务最多 16；超大单结果返回但不缓存，失败不缓存。请求取消不取消同键共享计算；关闭时排空实际线程再释放数据库。每次读取及完成后使用新短会话核验可见性，缓存不能绕过 Source 删除。缺省代次在请求开始固定，途中切换仍返回原代次身份，下次读取采用新指针。
 
-前端 `catalog/BookStatistics.tsx` 在详情信息后独立加载；查询键包含材料、版本和可选代次，与目录／元信息查询分离。`catalog/statistics-query.ts` 集中详情及词汇页的当前代次观察：页面可见时每 30 秒轮询，重新进入和窗口回焦时更新；准备成功且代次改变后使已有当前统计查询失效。显式代次不轮询，不提供常驻刷新按钮，错误状态可重试。普通信息编辑不使统计失效。加载、失败、无代次与零词次分别显示，错误不继续展示缓存中的旧正文；说明区呈现实际分词配置和规则版本。基础统计证据见[B2 验收](handovers/archived/text-study/B2_ACCEPTANCE.md)，自动更新与词汇的本轮检查见[词汇验收](handovers/reading-practice/VOCABULARY_ACCEPTANCE.md)。
+前端 `catalog/BookStatistics.tsx` 在详情信息后独立加载；查询键包含材料、版本和可选代次，与目录／元信息查询分离。`catalog/statistics-query.ts` 集中详情及词汇页的当前代次观察：页面可见时每 30 秒轮询，重新进入和窗口回焦时更新；准备成功且代次改变后使已有当前统计查询失效。显式代次不轮询，不提供常驻刷新按钮，错误状态可重试。普通信息编辑不使统计失效。加载、失败、无代次与零词次分别显示，错误不继续展示缓存中的旧正文；说明区呈现实际分词配置和规则版本。基础统计证据见[B2 验收](handovers/archived/text-study/B2_ACCEPTANCE.md)，自动更新与词汇的本轮检查见[词汇验收](handovers/archived/reading-practice/VOCABULARY_ACCEPTANCE.md)。
 
 材料词汇的纯计算位于 `nlp/vocabulary.py`，格式适配与读取位于 `services/vocabulary.py`，响应包装在 `vocabulary_schemas.py`。词汇与统计共用 `nlp/statistics.py` 的 `counted_tokens`，统一验证资源、正文范围、六项词性以及有效 token 的过滤和词典形回退。先按一级词性过滤 token，再归并；搜索在完整归并组的词典形、表层与读音中做子串匹配，比较时使用 NFKC 并将片假名转换为平假名，支持假名与宽度差异，不处理罗马音。查询回显仍为 NFC，原文、资产与归并键保持原值；命中后保留筛选后的完整频次。
 
@@ -366,7 +366,7 @@ erDiagram
 
 同协议历史保留实际reasoning与工具字段。旧版本或协议切换时，无法合法重放的原生消息作为按原顺序保留的历史资料追加，不伪造私有推理或用摘要替代内容。已保存但收尾失败的成果在下一轮以持久事实恢复。渲染后的messages、工具定义和模板版本写入快照及Run；长期依据为[主对话system](../backend/prompts/chat/system_v8.j2)、[本轮输入模板](../backend/prompts/chat/user_v4.j2)、[工具定义](../backend/prompts/chat/tools_v5.json)、[快捷问题](../backend/prompts/chat/explanation_request_v1.j2)及[上下文实现](../backend/src/app/services/context.py)。历史转换与成果恢复另使用`chat/history_material_v1.j2`、`recovered_artifacts_v1.j2`；临时聚合审阅快照不是生产依据。
 
-旧任务执行以已保存的实际messages、tools或prompt为准，不从旧模板文件重新渲染。旧模板保留用于源码与阶段记录对照，其中`translation/v1.txt`另由兼容性测试读取以构造旧任务快照；具体引用及保留用途见[旧模板核对记录](handovers/AGENT_CONTEXT_ACCEPTANCE.md#旧模板引用与保留核对)。历史记录中的旧文本仍可随冻结历史回放，文件是否参与当前加载与历史文本是否保留分别判断。
+旧任务执行以已保存的实际messages、tools或prompt为准，不从旧模板文件重新渲染。旧模板保留用于源码与阶段记录对照，其中`translation/v1.txt`另由兼容性测试读取以构造旧任务快照；具体引用及保留用途见[旧模板核对记录](handovers/archived/AGENT_CONTEXT_ACCEPTANCE.md#旧模板引用与保留核对)。历史记录中的旧文本仍可随冻结历史回放，文件是否参与当前加载与历史文本是否保留分别判断。
 
 **持久讲解格式契约**（占位，`[TBD-07]`）：
 
@@ -717,7 +717,7 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 | 方向 | 预留点 |
 |---|---|
 | 知识点软聚类与 IR | 保留 anchor 检索信息；将来依据实例归属需求设计聚类和用户判断，不在写入时预设同一性 |
-| lexeme 挂载 | 全量注音已保存版本化 token 派生结果，位置与原文版本独立稳定；跨出现位置的 lexeme 归并仍未实现。现行派生数据契约见[全量注音与分词资产](#313-全量注音与分词资产)，设计理由见[EPUB 历史材料方案](handovers/epub-reading/MATERIAL_BASELINE.md#8-分词与派生数据的后续接入) |
+| lexeme 挂载 | 全量注音已保存版本化 token 派生结果，位置与原文版本独立稳定；跨出现位置的 lexeme 归并仍未实现。现行派生数据契约见[全量注音与分词资产](#313-全量注音与分词资产)，设计理由见[EPUB 历史材料方案](handovers/archived/epub-reading/MATERIAL_BASELINE.md#8-分词与派生数据的后续接入) |
 | 主动学习与 SRS | 从具体练习方式确定内容与调度契约；Occurrence 可提供原文和讲解依据，不直接等于卡片，`learning` 不自动启动排期 |
 | 素材与多模态 | 已接入 EPUB 托管、选区创建 Segment 与精确出处往返；消息引用及其他媒体按后续需求接入。`source_ref` 当前保留自由文本出处 |
 | 听写诊断 | 保留用户提供的听写，后续按需求讨论与原文对齐及学习反馈，不自动更新用户画像 |

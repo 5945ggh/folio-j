@@ -1,10 +1,10 @@
 # EPUB 阶段开发主代理交接提示词
 
-> 2026-10-29 更新。供接手当前 EPUB 阶段使用；实现状态与验收依据见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)，开发顺序见[阶段入口](README.md#下一阶段接力顺序)。C1／C2 已交付；材料对话等后续切片尚未启动，启动前先收口切片 3 的交互、上下文、权限和费用。
+> 2026-10-31 更新。供接手当前 EPUB 阶段使用；实现状态与验收依据见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)，未完成事项与开发顺序见[阶段入口](README.md#下一阶段接力顺序)。
 
 请接手 `/Users/ningcc/Products/folio-j` 的 EPUB 原生阅读阶段，作为主代理负责范围、契约、任务派遣与集成验收。
 
-先读仓库 AGENTS 和[文档导航](../../README.md)，再读 MVP 实施基线、本目录的[阶段安排](README.md)、[材料定位基线](MATERIAL_BASELINE.md)与[架构](../../ARCHITECTURE.md)。查询 C1／C2 的历史取舍时，再按需读[文本和资料历史计划](../archived/text-study/PLAN.md)。开始工作时核对当前分支及未提交改动，沿用已有实现并保留其他任务的修改。
+先读仓库 AGENTS 和[文档导航](../../README.md)，再读 MVP 实施基线、本目录的[阶段安排](README.md)与本切片涉及的[架构契约](../../ARCHITECTURE.md)。查询定位设计或 C1／C2 的历史取舍时，再按需读[材料定位方案](../archived/epub-reading/MATERIAL_BASELINE.md)和[文本与资料历史计划](../archived/text-study/PLAN.md)。开始工作时核对当前分支及未提交改动，沿用已有实现并保留其他任务的修改。
 
 ## 接手动作
 

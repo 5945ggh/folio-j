@@ -1,6 +1,6 @@
 # 位置书签交互与附近提醒验收
 
-> 2026-10-30；基于 `main e19bfb8`，在 `codex/bookmark-refinement` 完成实现，工程检查、浏览器验收与独立复核通过，2026-10-31 收口合入本地 `main`。当前行为见 [PRD 4.9](../../PRD.md#49-阅读摘录书签与记录检索)，交付状态见[实施基线](../MVP_IMPLEMENTATION_BASELINE.md)。
+> 2026-10-30；基于 `main e19bfb8`，在 `codex/bookmark-refinement` 完成实现，工程检查、浏览器验收与独立复核通过，2026-10-31 收口合入本地 `main`。当前行为见 [PRD 4.9](../../../PRD.md#49-阅读摘录书签与记录检索)，交付状态见[实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。
 
 ## 范围与规则
 
@@ -16,12 +16,12 @@
 
 | 检查 | 结果 | 证据 |
 | --- | --- | --- |
-| `just test` | 后端 982 项、前端 746 项通过 | [日志](../../../data/acceptance-evidence/bookmark-refinement-20261030/test.log) |
-| `just lint` | Ruff、pyright、Biome、TypeScript 及原型语法检查通过 | [日志](../../../data/acceptance-evidence/bookmark-refinement-20261030/lint.log) |
-| `just build` | 生产构建通过 | [日志](../../../data/acceptance-evidence/bookmark-refinement-20261030/build.log) |
-| `just check-docs`、`git diff --check` | 本地路径链接与 diff 格式通过；本轮标题锚点另行核对 | [链接日志](../../../data/acceptance-evidence/bookmark-refinement-20261030/docs.log) |
-| 位置书签浏览器 | 7／7 场景通过 | [日志](../../../data/acceptance-evidence/bookmark-refinement-20261030/browser.log) |
-| 相邻导航与阅读设置浏览器 | 导航 5／5、阅读设置 6／6 通过 | [导航](../../../data/acceptance-evidence/bookmark-refinement-20261030/navigation-browser.log)、[阅读设置](../../../data/acceptance-evidence/bookmark-refinement-20261030/settings-browser.log) |
+| `just test` | 后端 982 项、前端 746 项通过 | [日志](../../../../data/acceptance-evidence/bookmark-refinement-20261030/test.log) |
+| `just lint` | Ruff、pyright、Biome、TypeScript 及原型语法检查通过 | [日志](../../../../data/acceptance-evidence/bookmark-refinement-20261030/lint.log) |
+| `just build` | 生产构建通过 | [日志](../../../../data/acceptance-evidence/bookmark-refinement-20261030/build.log) |
+| `just check-docs`、`git diff --check` | 本地路径链接与 diff 格式通过；本轮标题锚点另行核对 | [链接日志](../../../../data/acceptance-evidence/bookmark-refinement-20261030/docs.log) |
+| 位置书签浏览器 | 7／7 场景通过 | [日志](../../../../data/acceptance-evidence/bookmark-refinement-20261030/browser.log) |
+| 相邻导航与阅读设置浏览器 | 导航 5／5、阅读设置 6／6 通过 | [导航](../../../../data/acceptance-evidence/bookmark-refinement-20261030/navigation-browser.log)、[阅读设置](../../../../data/acceptance-evidence/bookmark-refinement-20261030/settings-browser.log) |
 
 后端覆盖文本／图片附近阈值、句界与身份隔离、写入并发、继续添加及幂等回放、已删书签忽略、120 码点预算、Unicode、章末和闭合符、同章跨 part、旧摘要保持与进度派生。前端纯逻辑覆盖创建意图、迟到响应阶段隔离及宽窄屏浮窗定位。
 
@@ -29,7 +29,7 @@
 
 详情刷新回归覆盖远端修改后同步内容、首分页缺少选中项仍保持详情、刷新不覆盖编辑草稿和提交版本、远端删除后关闭详情但保留草稿、确认框中的内容及 revision 冻结，以及真实 409 后显式重载再确认。
 
-主代理在应用内浏览器亲自查看 1280px 白纸面的侧栏与详情，按 Escape 只关闭详情，列表仍保留；重新打开详情，编辑并保存备注后，详情及列表显示新备注。手动打开删除框看到应用内出处、备注和取消／删除按钮，取消后书签保留。切到 390 × 844 后，详情左右留边、关闭和操作可达；再通过工具栏添加，成功提示摘要为一行省略，备注入口为蓝色。截图参考：[宽浅色](../../../data/acceptance-evidence/bookmark-refinement-20261030/wide-light.png)、[窄浅色](../../../data/acceptance-evidence/bookmark-refinement-20261030/narrow-light.png)、[宽深色](../../../data/acceptance-evidence/bookmark-refinement-20261030/wide-dark.png)、[窄深色](../../../data/acceptance-evidence/bookmark-refinement-20261030/narrow-dark.png)。截图使用长历史摘要及长备注压力样例；新摘要仍遵循 120 码点预算。
+主代理在应用内浏览器亲自查看 1280px 白纸面的侧栏与详情，按 Escape 只关闭详情，列表仍保留；重新打开详情，编辑并保存备注后，详情及列表显示新备注。手动打开删除框看到应用内出处、备注和取消／删除按钮，取消后书签保留。切到 390 × 844 后，详情左右留边、关闭和操作可达；再通过工具栏添加，成功提示摘要为一行省略，备注入口为蓝色。截图参考：[宽浅色](../../../../data/acceptance-evidence/bookmark-refinement-20261030/wide-light.png)、[窄浅色](../../../../data/acceptance-evidence/bookmark-refinement-20261030/narrow-light.png)、[宽深色](../../../../data/acceptance-evidence/bookmark-refinement-20261030/wide-dark.png)、[窄深色](../../../../data/acceptance-evidence/bookmark-refinement-20261030/narrow-dark.png)。截图使用长历史摘要及长备注压力样例；新摘要仍遵循 120 码点预算。
 
 所有最终浏览器场景使用合成材料和离线接口，未向日常库写入测试记录。验收服务仅监听本机。证据保存在私有目录 `data/acceptance-evidence/bookmark-refinement-20261030/`。
 
@@ -57,15 +57,15 @@
 
 | 检查 | 最终结果 | 证据 |
 | --- | --- | --- |
-| `just lint` | 全部通过 | [日志](../../../data/acceptance-evidence/bookmark-card-detail-20261031/lint.log) |
-| `just test` | 后端 982、前端 746 项通过 | [日志](../../../data/acceptance-evidence/bookmark-card-detail-20261031/test.log) |
-| `just build` | 通过 | [日志](../../../data/acceptance-evidence/bookmark-card-detail-20261031/build.log) |
-| 位置书签浏览器 | 9／9 场景通过 | [日志](../../../data/acceptance-evidence/bookmark-card-detail-20261031/browser.log) |
-| `just check-docs`、`git diff --check` | 本地路径与 diff 格式通过；新增标题锚点另行核对 | [链接日志](../../../data/acceptance-evidence/bookmark-card-detail-20261031/docs.log) |
+| `just lint` | 全部通过 | [日志](../../../../data/acceptance-evidence/bookmark-card-detail-20261031/lint.log) |
+| `just test` | 后端 982、前端 746 项通过 | [日志](../../../../data/acceptance-evidence/bookmark-card-detail-20261031/test.log) |
+| `just build` | 通过 | [日志](../../../../data/acceptance-evidence/bookmark-card-detail-20261031/build.log) |
+| 位置书签浏览器 | 9／9 场景通过 | [日志](../../../../data/acceptance-evidence/bookmark-card-detail-20261031/browser.log) |
+| `just check-docs`、`git diff --check` | 本地路径与 diff 格式通过；新增标题锚点另行核对 | [链接日志](../../../../data/acceptance-evidence/bookmark-card-detail-20261031/docs.log) |
 
 保留原有七场长内容、横竖排、浅深纸面与窄屏回归，增加浅深纸面的标准长度内容示例。新增断言覆盖原生鼠标点击卡片留白、持久选中与关闭清除、左下快捷删除、取消回原按钮、确认仅删除目标并回焦列表、真实添加时间、长内容下底部操作可达；既有删除失败／409 及备注草稿保护继续通过。独立 CR 及回焦修正后的定点复核均通过。
 
-主代理在实际浏览器查看深色宽屏及 390 × 844 窄屏：章节和时间为辅助信息，原文与备注有独立层级，空备注入口紧凑；快捷删除不打开详情，取消后记录保留且清除选中态；手动确认删除后剩余三张卡片，焦点回到列表。最终截图为[深色标准示例](../../../data/acceptance-evidence/bookmark-card-detail-20261031/detail-dark.png)、[浅色标准示例](../../../data/acceptance-evidence/bookmark-card-detail-20261031/detail-light.png)、[320px 浅色长内容](../../../data/acceptance-evidence/bookmark-card-detail-20261031/detail-narrow-light.png)。
+主代理在实际浏览器查看深色宽屏及 390 × 844 窄屏：章节和时间为辅助信息，原文与备注有独立层级，空备注入口紧凑；快捷删除不打开详情，取消后记录保留且清除选中态；手动确认删除后剩余三张卡片，焦点回到列表。最终截图为[深色标准示例](../../../../data/acceptance-evidence/bookmark-card-detail-20261031/detail-dark.png)、[浅色标准示例](../../../../data/acceptance-evidence/bookmark-card-detail-20261031/detail-light.png)、[320px 浅色长内容](../../../../data/acceptance-evidence/bookmark-card-detail-20261031/detail-narrow-light.png)。
 
 本轮不新增依赖、数据库迁移或 TBD。最终验收继续使用隔离接口和合成材料，未向日常库写入测试记录；实体触屏未实测。
 

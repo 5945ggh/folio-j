@@ -1,6 +1,8 @@
 # 阅读设置：现状调查与结构方案
 
-> 调查日期：2026-10-29；调查基准 `main 7d57239`，包含复制配置持久化 `14fb998`。第 1–7 节保留调查时的实现事实、推荐结构与决策依据，第 8 节保留低保真原型记录；其中七组平铺、关闭即丢草稿和总恢复均指调查时实现。生产工作区进展见第 9 节，当前规则见 [PRD](../../PRD.md)、[阅读与导航](../../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)，交付与验收状态见[实施基线](../MVP_IMPLEMENTATION_BASELINE.md)。
+> 2026-10-31 归档。四组设置与会话保护的现行规则见[阅读设置交互](../../../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)；缺省值来源及存储迁移候选已承接到[活动计划](../../reading-practice/PLAN.md#阅读设置待评估事项)。下文保留调查、原型与实施记录。
+
+> 调查日期：2026-10-29；调查基准 `main 7d57239`，包含复制配置持久化 `14fb998`。第 1–7 节保留调查时的实现事实、推荐结构与决策依据，第 8 节保留低保真原型记录；其中七组平铺、关闭即丢草稿和总恢复均指调查时实现。生产工作区进展见第 9 节，当前规则见 [PRD](../../../PRD.md)、[阅读与导航](../../../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)，交付与验收状态见[实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。
 
 ## 1. 调查结论（main 7d57239）
 
@@ -38,17 +40,17 @@
 | 复制后文字符上限 | 200；同上 | 同上 | 同上 |
 | 复制附带出处 | 开 | 同上 | 同上 |
 
-调查依据（以下路径随生产实现演进，不是历史快照）：控件见 [ReaderControls](../../../frontend/src/materials/ReaderControls.tsx) 和 [ReaderCopySettings](../../../frontend/src/materials/ReaderCopySettings.tsx)；浏览器键与默认值见 [preferences](../../../frontend/src/materials/preferences.ts)；调查时 Reader 初始化、提交和总恢复见 [MaterialReader](../../../frontend/src/materials/MaterialReader.tsx)；注音等待及意图失效见 [preference-submission](../../../frontend/src/materials/preference-submission.ts)。
+调查依据（以下路径随生产实现演进，不是历史快照）：控件见 [ReaderControls](../../../../frontend/src/materials/ReaderControls.tsx) 和 [ReaderCopySettings](../../../../frontend/src/materials/ReaderCopySettings.tsx)；浏览器键与默认值见 [preferences](../../../../frontend/src/materials/preferences.ts)；调查时 Reader 初始化、提交和总恢复见 [MaterialReader](../../../../frontend/src/materials/MaterialReader.tsx)；注音等待及意图失效见 [preference-submission](../../../../frontend/src/materials/preference-submission.ts)。
 
 需要保留的事实：
 
-- 字号／行距的 Reader 首次使用与恢复默认是 22／2.0，后端 [ReadingSettings](../../../backend/src/app/material_schemas.py) 的缺省参数是 20／1.8。两者用途不同，后续应明确默认值来源；结构调整不顺带修改已有值。
+- 字号／行距的 Reader 首次使用与恢复默认是 22／2.0，后端 [ReadingSettings](../../../../backend/src/app/material_schemas.py) 的缺省参数是 20／1.8。两者用途不同，后续应明确默认值来源；结构调整不顺带修改已有值。
 - 浏览器外观保存失败时，本页仍使用所选值；全局浏览器外观有 storage 事件同步，本书浏览器偏好没有对应监听。
 - 数据库排版设置复用阅读位置的版本与写队列，冲突会影响位置保存，不等同于复制表单的冲突恢复。
 - 复制查询与保存以 revision 防止旧结果回退，实际复制只读取已保存值。跨浏览器共用数据库不表示已有实时推送。
 - 调查时复制表单关闭即放弃未保存修改；保存期间只禁用内部字段，外层关闭和工具切换仍可用。关闭不撤销已经发出的保存请求。左侧目录／搜索与右侧设置共存，切章不必卸载设置；会话保留不构成草稿恢复承诺。
 
-复制的状态依据见 [context-copy-draft](../../../frontend/src/settings/context-copy-draft.ts)、[context-copy-cache](../../../frontend/src/settings/context-copy-cache.ts)、[context-copy-query](../../../frontend/src/settings/context-copy-query.ts) 及[数据库验收](CONTEXT_COPY_DATABASE_ACCEPTANCE.md)。调查时普通设置页的离开保护尚未用于 Reader 的复制表单。
+复制的状态依据见 [context-copy-draft](../../../../frontend/src/settings/context-copy-draft.ts)、[context-copy-cache](../../../../frontend/src/settings/context-copy-cache.ts)、[context-copy-query](../../../../frontend/src/settings/context-copy-query.ts) 及[数据库验收](CONTEXT_COPY_DATABASE_ACCEPTANCE.md)。调查时普通设置页的离开保护尚未用于 Reader 的复制表单。
 
 ## 3. 推荐的信息结构
 
@@ -222,7 +224,7 @@
 
 ## 9. 生产工作区进展（2026-10-29）
 
-`codex/reader-settings-structure` 从 `main 7d57239` 开始实施。工作区已接入四组阅读设置、默认折叠的低频控件与复制组、分组恢复和会话编辑状态；具体页面与保存契约已同步到[阅读与导航](../../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)，操作步骤见[使用指南](../../USAGE.md#目录搜索与阅读设置)。生产样式沿用 Reader 现有控件、留白和语义颜色，低保真原型只提供结构与操作路径参考。
+`codex/reader-settings-structure` 从 `main 7d57239` 开始实施。工作区已接入四组阅读设置、默认折叠的低频控件与复制组、分组恢复和会话编辑状态；具体页面与保存契约已同步到[阅读与导航](../../../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)，操作步骤见[使用指南](../../../USAGE.md#目录搜索与阅读设置)。生产样式沿用 Reader 现有控件、留白和语义颜色，低保真原型只提供结构与操作路径参考。
 
 本轮保留原有设置能力及存储：字号／行距／方向随本书阅读位置保存，字体／宽度／注音保存在当前浏览器的本书版本，界面偏好用于当前浏览器的所有书籍，复制沿用数据库个人默认值。复制草稿提升到阅读会话，关闭面板、换工具或切章保留；离开 Reader 路由或换书进入保护。前三组恢复只改自身字段，复制恢复只改草稿。后端、schema、默认参数和迁移均不变，未触及既有 TBD。
 

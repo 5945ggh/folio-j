@@ -124,7 +124,7 @@ Folio-J 面向希望通过兴趣导向而不是难度导向选择日语原版内
 
 词性先筛选词次，再按词典形归并并计算频次；相同归并键保留实际出现的多种词性、读音与表层词形。搜索匹配该组的词典形、任一表层或读音，平假名／片假名及宽度差异等价，不支持罗马音；命中后仍展示该词在当前词性筛选下的完整频次。例如搜索「食べた」命中「食べる」时，出现列表包含同组的其他词形。搜索比较不改写原文、token 或归并键。词汇出现位置按资源身份去重，与统计一致；重复 spine 选择第一个可完整定位的呈现位置，没有合法呈现时保留词次并说明无法定位。
 
-从出现位置明确前往原文后，按材料版本、资源摘要、范围和原文快照核验，成功才定位并临时高亮；返回词汇页保留筛选、排序、页码与所选词。词汇页只读，不创建永久词条、学习片段或 Occurrence，不改变阅读打开或位置；明确进入阅读器后沿用阅读行为。无分析代次、分析后无有效词次、筛选无结果及失败分别呈现。本轮不接入词典释义。页面与返回规则见[材料词汇页](INFORMATION_ARCHITECTURE.md#材料词汇页)，实现与验收范围见[本轮记录](handovers/reading-practice/VOCABULARY_ACCEPTANCE.md)。
+从出现位置明确前往原文后，按材料版本、资源摘要、范围和原文快照核验，成功才定位并临时高亮；返回词汇页保留筛选、排序、页码与所选词。词汇页只读，不创建永久词条、学习片段或 Occurrence，不改变阅读打开或位置；明确进入阅读器后沿用阅读行为。无分析代次、分析后无有效词次、筛选无结果及失败分别呈现。本轮不接入词典释义。页面与返回规则见[材料词汇页](INFORMATION_ARCHITECTURE.md#材料词汇页)，实现与验收范围见[本轮记录](handovers/archived/reading-practice/VOCABULARY_ACCEPTANCE.md)。
 
 ### 4.3 语境与学习条目边界
 
@@ -174,7 +174,7 @@ JSON 文档树及教学 payload 的生产用途留待主动学习交互确定，
 
 ### 4.7 当前 EPUB 阶段安排
 
-本阶段接通“导入 EPUB → 阅读原文 → 按需学习／讨论与形成讲解 → 返回原处”，沿用 Source、Segment、Analysis 与编辑审核能力，保留手动片段入口。F5／F6 的 Occurrence 与积累库继续作为后续目标；SRS／ITS、视频／asbplayer 和 MCP 不作为本阶段交付条件。阶段取舍见[原生阅读方向](handovers/epub-reading/DIRECTION.md)，后续顺序及材料对话的准备条件见[阶段入口](handovers/epub-reading/README.md)。
+本阶段接通“导入 EPUB → 阅读原文 → 按需学习／讨论与形成讲解 → 返回原处”，沿用 Source、Segment、Analysis 与编辑审核能力，保留手动片段入口。F5／F6 的 Occurrence 与积累库继续作为后续目标；SRS／ITS、视频／asbplayer 和 MCP 不作为本阶段交付条件。阶段取舍见[原生阅读方向](handovers/archived/epub-reading/DIRECTION.md)，后续顺序及材料对话的准备条件见[阶段入口](handovers/epub-reading/README.md)。
 
 #### 材料、位置与阅读
 

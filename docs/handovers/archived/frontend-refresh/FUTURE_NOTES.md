@@ -73,7 +73,7 @@ SudachiPy 官方 API 分别提供 `dictionary_form()` 与 `normalized_form()`；
 
 建议分开讨论：一次具体 token 出现、词形表示、跨出现聚合的词汇身份、词典条目及以后知识点之间的关系。版本可以不进入最终 lexeme ID，但输入正文、处理器／词典版本、切分模式、规范化配置应进入派生结果的来源记录。领域身份规则自身若调整，需要明确如何关联旧身份，不能静默重写历史。
 
-**已有仓库边界：** `docs/handovers/epub-reading/MATERIAL_BASELINE.md` 第 8 节已经区分 token 与候选 lexeme 归并信息，并要求 sidecar 记录处理来源；分词不改变定位正文、材料版本或已有引用。保留这些边界，不把讨论中的新三元组自动写进 GLOSSARY 的“已确认”定义。
+**已有仓库边界：** [材料定位方案第 8 节](../epub-reading/MATERIAL_BASELINE.md#8-分词与派生数据的后续接入)已经区分 token 与候选 lexeme 归并信息，并要求 sidecar 记录处理来源；分词不改变定位正文、材料版本或已有引用。保留这些边界，不把讨论中的新三元组自动写进 GLOSSARY 的“已确认”定义。
 
 ## 3. 音视频、外部目录与字幕
 

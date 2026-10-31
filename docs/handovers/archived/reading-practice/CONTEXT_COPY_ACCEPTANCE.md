@@ -1,6 +1,6 @@
 # 带上下文复制验收
 
-> 日期：2026-10-29。基准为 `main 29ce249`，验证对象为 `codex/reader-context-copy` 分支工作区。产品范围见 [PRD 4.9](../../PRD.md#49-阅读摘录书签与记录检索)，后续顺序见[计划](PLAN.md)。
+> 日期：2026-10-29。基准为 `main 29ce249`，验证对象为 `codex/reader-context-copy` 分支工作区。产品范围见 [PRD 4.9](../../../PRD.md#49-阅读摘录书签与记录检索)，后续顺序见[计划](../../reading-practice/PLAN.md)。
 
 本记录保留首版浏览器存储及当时的验证事实。配置随后改为数据库持久化，现行保存与升级规则见[后续验收](CONTEXT_COPY_DATABASE_ACCEPTANCE.md)。
 

@@ -32,7 +32,7 @@ C1／C2 完成后，三条路径应可独立使用；现有导入、注音、讨
 | [sources.py](../../../../backend/src/app/services/sources.py)、[chat.py](../../../../backend/src/app/services/chat.py) | Segment 原文目前在聊天受理时锁定；revision 包含备注等变化 | 扩大原文保护触发范围；人工保存校验原文摘要，不把记录 revision 当正文版本 |
 | [SegmentPage](../../../../frontend/src/SegmentPage.tsx)、[AnalysisPanel](../../../../frontend/src/analysis/AnalysisPanel.tsx)、[Workbench](../../../../frontend/src/chat/Workbench.tsx) | 讲解已独立查询；面板混合生成控制，隐藏工作台仍挂载 | 讲解浏览独立组合；讨论首次需要时启动，启动后收起保活 |
 | [MaterialReader](../../../../frontend/src/materials/MaterialReader.tsx) | 已复用布局、位置队列、返回点和偏好提交；每个 chapter part 使用独立 iframe | 提取 iframe 装载／事件／就绪／销毁协调，不重写现有状态机 |
-| [材料定位契约](../../epub-reading/MATERIAL_BASELINE.md) | 已规定有序多资源范围、码点与快照校验；生产 Segment 尚无精确出处 | 落实出处存储、严格校验、原生选择与返回；不另建通用引用注册系统 |
+| [材料定位契约](../epub-reading/MATERIAL_BASELINE.md) | 已规定有序多资源范围、码点与快照校验；生产 Segment 尚无精确出处 | 落实出处存储、严格校验、原生选择与返回；不另建通用引用注册系统 |
 
 EPUB 的 resources 按 spine 出现保存，可能含相同 resource_id 的重复条目。B1 保留这一输入语义；B2 明确统计去重规则，C1／C2 区分原文资源与阅读序列中的出现位置。
 
