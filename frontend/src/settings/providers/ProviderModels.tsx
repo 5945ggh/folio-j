@@ -17,19 +17,6 @@ import {
 	isActiveVerification,
 	type VerificationState,
 } from "../verification";
-import type { ProviderDiscovery } from "./ProviderDiscovery";
-
-export function TimeStamp({ value }: { value: string }) {
-	const date = new Date(value);
-	return (
-		<time dateTime={value} title={date.toLocaleString("zh-CN")}>
-			{new Intl.DateTimeFormat("zh-CN", {
-				dateStyle: "medium",
-				timeStyle: "short",
-			}).format(date)}
-		</time>
-	);
-}
 
 function ActionMenu({
 	label,
@@ -62,7 +49,25 @@ function ActionMenu({
 		};
 	}, []);
 	return (
-		<details className="provider-action-menu" ref={ref}>
+		<details
+			className="provider-action-menu"
+			ref={ref}
+			onToggle={(event) => {
+				const menu = event.currentTarget;
+				if (!menu.open) return;
+				const dialog = menu.closest("dialog")?.getBoundingClientRect();
+				const panel = menu.querySelector<HTMLElement>(
+					".provider-action-menu-panel",
+				);
+				if (!dialog || !panel) return;
+				const trigger = menu.getBoundingClientRect();
+				const below = dialog.bottom - trigger.bottom;
+				menu.toggleAttribute(
+					"data-above",
+					below < panel.offsetHeight + 6 && trigger.top - dialog.top > below,
+				);
+			}}
+		>
 			<summary
 				className="settings-button secondary"
 				tabIndex={0}
@@ -82,159 +87,44 @@ function closeMenu(event: MouseEvent<HTMLButtonElement>) {
 
 export function ProviderModels({
 	provider,
-	discovery,
 	onAdd,
 	onEdit,
 	onDelete,
 }: {
 	provider: Provider;
-	discovery: ProviderDiscovery;
 	onAdd: () => void;
 	onEdit: (model: Model) => void;
 	onDelete: (model: Model) => void;
 }) {
-	const {
-		available,
-		selected,
-		registering,
-		registrationError,
-		refresh,
-		registerSelected,
-	} = discovery;
 	return (
 		<div className="provider-models-view">
 			<div className="provider-section-heading">
-				<div>
-					<h3>已登记模型</h3>
-					<p className="settings-hint">
-						{provider.models.length} 个模型，按普通文本与流式文本分别验证。
-					</p>
-				</div>
+				<h3>已登记模型</h3>
 				<button
 					type="button"
-					className="settings-button secondary"
-					disabled={registering}
+					className="settings-button primary"
 					onClick={onAdd}
 				>
-					手动登记模型
+					<span aria-hidden="true">＋</span> 登记模型
 				</button>
 			</div>
-			{provider.models.length === 0 ? (
-				<div className="provider-empty">
-					<p>尚未登记模型。</p>
-					<p className="settings-hint">
-						从下方发现列表选择，或手动填写上游模型 ID。
-					</p>
-				</div>
-			) : (
+			{provider.models.length ? (
 				<div className="provider-model-list">
 					{provider.models.map((model) => (
 						<ModelRow
 							key={model.id}
 							model={model}
 							providerEnabled={provider.enabled}
-							managementPending={registering}
 							onEdit={() => onEdit(model)}
 							onDelete={() => onDelete(model)}
 						/>
 					))}
 				</div>
+			) : (
+				<p className="provider-empty settings-hint">
+					还没有已登记的模型。可以从服务列表选择，或手动填写模型 ID。
+				</p>
 			)}
-			<p className="provider-capability-note">
-				当前仅验证普通文本与流式文本。结构化输出验证尚未开放。
-			</p>
-			<section
-				className="provider-discovery"
-				aria-labelledby={`discovery-${provider.id}`}
-			>
-				<div className="provider-section-heading">
-					<div>
-						<h3 id={`discovery-${provider.id}`}>模型发现</h3>
-						<p className="settings-hint">
-							{provider.discovery_status === "succeeded"
-								? "最近拉取成功"
-								: provider.discovery_status === "failed"
-									? "拉取失败，保留缓存"
-									: "尚未拉取"}{" "}
-							· 已发现 {new Set(provider.discovered_models).size} · 待登记{" "}
-							{available.length}
-						</p>
-					</div>
-					<button
-						className="settings-button secondary"
-						type="button"
-						disabled={refresh.isPending || registering}
-						onClick={() => refresh.mutate()}
-					>
-						{refresh.isPending ? "拉取中…" : "拉取模型列表"}
-					</button>
-				</div>
-				{provider.last_discovered_at && (
-					<p className="settings-hint">
-						最近拉取 <TimeStamp value={provider.last_discovered_at} />
-					</p>
-				)}
-				{provider.discovery_error && (
-					<p className="provider-warning" role="status">
-						{provider.discovery_error}
-					</p>
-				)}
-				<InlineError error={refresh.error} />
-				{provider.discovered_models.length > 0 && (
-					<details className="provider-discovered-models">
-						<summary tabIndex={0}>查看发现列表并登记模型</summary>
-						<p className="settings-hint">
-							列表接口可访问不代表文本能力已验证。已登记的模型不能重复选择。
-						</p>
-						<div className="provider-discovery-list">
-							{[...new Set(provider.discovered_models)].map((id) => {
-								const registered = provider.models.some(
-									(model) => model.model_id === id,
-								);
-								return (
-									<label className="provider-discovery-item" key={id}>
-										<input
-											type="checkbox"
-											disabled={registered || registering}
-											checked={registered || selected.includes(id)}
-											onChange={(event) =>
-												discovery.select(id, event.target.checked)
-											}
-										/>
-										<span>{id}</span>
-										<small>{registered ? "已登记" : "待添加"}</small>
-									</label>
-								);
-							})}
-						</div>
-						<div className="settings-actions">
-							<button
-								className="settings-button primary"
-								type="button"
-								disabled={selected.length === 0 || registering}
-								onClick={() => void registerSelected()}
-							>
-								{registering ? "登记中…" : `登记所选（${selected.length}）`}
-							</button>
-							{selected.length > 0 && (
-								<button
-									type="button"
-									className="settings-button secondary"
-									disabled={registering}
-									onClick={discovery.clear}
-								>
-									清除选择
-								</button>
-							)}
-						</div>
-					</details>
-				)}
-				{registrationError && (
-					<p className="provider-warning" role="status">
-						{registrationError}
-					</p>
-				)}
-			</section>
 		</div>
 	);
 }
@@ -242,13 +132,11 @@ export function ProviderModels({
 function ModelRow({
 	model,
 	providerEnabled,
-	managementPending,
 	onEdit,
 	onDelete,
 }: {
 	model: Model;
 	providerEnabled: boolean;
-	managementPending: boolean;
 	onEdit: () => void;
 	onDelete: () => void;
 }) {
@@ -269,9 +157,6 @@ function ModelRow({
 	const streamState: VerificationState = optimistic.includes("stream")
 		? "queued"
 		: (streamSummary?.status ?? model.stream_status);
-	const latest = [textSummary, streamSummary]
-		.filter((item) => item !== null)
-		.sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
 	const busy =
 		isActiveVerification(textState) || isActiveVerification(streamState);
 	const toggle = useMutation({
@@ -321,7 +206,6 @@ function ModelRow({
 		},
 	});
 	const disabled =
-		managementPending ||
 		!providerEnabled ||
 		!model.enabled ||
 		busy ||
@@ -369,23 +253,11 @@ function ModelRow({
 			<div className="provider-model-heading">
 				<div className="provider-model-name">
 					<strong>{model.model_id}</strong>
-					{!model.enabled && <span className="settings-badge">已停用</span>}
-					<small>
-						{model.effective_protocol === "responses"
-							? "Responses"
-							: "Chat Completions"}
-						{model.protocol_override ? " · 模型覆盖" : " · 继承服务"}
-					</small>
+					<span className="provider-model-state">
+						{model.enabled ? "已启用" : "已停用"}
+					</span>
 				</div>
 				<div className="settings-actions provider-model-actions">
-					<button
-						type="button"
-						className="settings-button secondary"
-						disabled={managementPending || verify.isPending || toggle.isPending}
-						onClick={onEdit}
-					>
-						设置
-					</button>
 					<ActionMenu
 						label={`${model.model_id} 文本验证`}
 						glyph={busy ? "验证中…" : "验证 ▾"}
@@ -420,13 +292,24 @@ function ModelRow({
 						>
 							验证两项文本（2 次调用）
 						</button>
+						<small className="provider-verification-note">
+							暂未提供结构化输出验证。
+						</small>
 					</ActionMenu>
 					<ActionMenu label={`${model.model_id} 更多操作`}>
 						<button
 							type="button"
-							disabled={
-								managementPending || toggle.isPending || verify.isPending
-							}
+							disabled={verify.isPending || toggle.isPending}
+							onClick={(event) => {
+								closeMenu(event);
+								onEdit();
+							}}
+						>
+							编辑参数
+						</button>
+						<button
+							type="button"
+							disabled={toggle.isPending || verify.isPending}
 							onClick={(event) => {
 								closeMenu(event);
 								toggle.mutate();
@@ -437,12 +320,7 @@ function ModelRow({
 						<button
 							type="button"
 							className="provider-danger-text"
-							disabled={
-								managementPending ||
-								busy ||
-								verify.isPending ||
-								toggle.isPending
-							}
+							disabled={busy || verify.isPending || toggle.isPending}
 							onClick={(event) => {
 								closeMenu(event);
 								onDelete();
@@ -458,11 +336,6 @@ function ModelRow({
 					{status("text", textState)}
 					{status("stream", streamState)}
 				</div>
-				{latest && (
-					<p className="provider-model-latest">
-						最近验证 <TimeStamp value={latest.created_at} />
-					</p>
-				)}
 			</div>
 			<InlineError error={verify.error ?? toggle.error} />
 			{selectedSummary && (

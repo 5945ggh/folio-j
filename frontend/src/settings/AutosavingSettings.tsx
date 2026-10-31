@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { InlineError } from "../Shared";
 import { createAutosaveQueue } from "./autosave-queue";
 import { useSettingsDraft, useSettingsFields } from "./SettingsForms";
@@ -9,12 +9,31 @@ export function useAutosavingFields<T extends object>(
 	initial: T,
 	write: (value: T, accept: (persisted: T) => void) => Promise<void>,
 	invalidMessage: string,
+	review?: {
+		required: (error: Error) => boolean;
+		render: (
+			error: Error,
+			fields: T,
+			retry: (value: T) => void,
+			discard: () => void,
+		) => ReactNode;
+	},
 ) {
 	const form = useRef<HTMLFormElement>(null);
-	const fields = useSettingsFields(initial);
 	const [pending, setPending] = useState(false);
+	const fields = useSettingsFields(initial, pending);
 	const [error, setError] = useState<Error | null>(null);
 	const [invalid, setInvalid] = useState(false);
+	const [showSaved, setShowSaved] = useState(false);
+	useEffect(() => {
+		if (!fields.saved || fields.dirty || pending) {
+			setShowSaved(false);
+			return;
+		}
+		setShowSaved(true);
+		const timer = window.setTimeout(() => setShowSaved(false), 2500);
+		return () => window.clearTimeout(timer);
+	}, [fields.saved, fields.dirty, pending]);
 	const commit = (value: T) =>
 		write(value, (persisted) => fields.accept(value, persisted));
 	const latestCommit = useRef(commit);
@@ -44,12 +63,13 @@ export function useAutosavingFields<T extends object>(
 			setPending(false);
 		}
 	}
+	const reviewError = error && review?.required(error) ? error : null;
 	function finishEditing() {
 		if (fields.dirty || pending) void save();
 		else if (form.current?.checkValidity()) setInvalid(false);
 	}
 	function select(value: T) {
-		fields.change(value);
+		fields.change(value, true);
 		void save(value);
 	}
 	function discard() {
@@ -63,17 +83,30 @@ export function useAutosavingFields<T extends object>(
 		label,
 		dirty: fields.dirty,
 		pending,
-		save: () => save(fields.fields, true),
+		save: () =>
+			reviewError ? Promise.resolve(false) : save(fields.fields, true),
 		discard,
 	});
 	return {
 		...fields,
+		pending,
 		form,
+		needsReview: !!reviewError,
 		finishEditing,
 		select,
 		feedback: (
 			<>
-				{error && (
+				{reviewError &&
+					review?.render(
+						reviewError,
+						fields.fields,
+						(value) => {
+							fields.change(value);
+							void save(value, true);
+						},
+						discard,
+					)}
+				{error && !reviewError && (
 					<div className="settings-actions">
 						<InlineError error={error} />
 						<button
@@ -102,7 +135,7 @@ export function useAutosavingFields<T extends object>(
 						? "正在保存…"
 						: fields.dirty
 							? "有未保存的修改"
-							: fields.saved
+							: showSaved && fields.saved && !error && !invalid
 								? "已自动保存"
 								: ""}
 				</span>

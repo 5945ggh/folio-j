@@ -1,27 +1,148 @@
+import "./translation-settings.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Link } from "react-router";
 import { RequestError } from "../content";
 import { NativeSelect } from "../NativeSelect";
 import { InlineError } from "../Shared";
+import { useAutosavingFields } from "../settings/AutosavingSettings";
 import { getProviders, getSettings, settingsKeys } from "../settings/api";
-import { useSettingsDraft } from "../settings/SettingsForms";
 import {
 	getTranslationSettings,
 	saveTranslationSettings,
 	type TranslationSettings,
-	type TranslationSettingsInput,
 	translationSettingsKey,
 } from "./api";
 
+const ranges = [
+	{
+		label: "前文",
+		sentences: "before_sentences",
+		characters: "before_characters",
+	},
+	{
+		label: "后文",
+		sentences: "after_sentences",
+		characters: "after_characters",
+	},
+] as const;
+
+function ConflictReview({
+	message,
+	fields,
+	modelLabel,
+	confirm,
+	discard,
+}: {
+	message: string;
+	fields: TranslationSettings;
+	modelLabel: (id: string | null) => string;
+	confirm: (fields: TranslationSettings) => void;
+	discard: () => void;
+}) {
+	const client = useQueryClient();
+	const read = useMutation({
+		mutationFn: () =>
+			client.fetchQuery({
+				queryKey: translationSettingsKey,
+				queryFn: getTranslationSettings,
+				staleTime: 0,
+				retry: false,
+			}),
+	});
+	const latest = read.data;
+	const differences = latest
+		? [
+				["译成", latest.target_language, fields.target_language],
+				["翻译模型", modelLabel(latest.model_id), modelLabel(fields.model_id)],
+				...ranges.flatMap(({ label, sentences, characters }) => [
+					[
+						`${label}句数`,
+						String(latest[sentences]),
+						String(fields[sentences]),
+					],
+					[
+						`${label}字符上限`,
+						String(latest[characters]),
+						String(fields[characters]),
+					],
+				]),
+			].filter(([, stored, local]) => stored !== local)
+		: [];
+	return (
+		<section
+			className="settings-state translation-conflict"
+			aria-label="翻译设置冲突对照"
+		>
+			<p role="alert">{message}。你的修改仍保留在这里。</p>
+			{latest ? (
+				<>
+					{differences.length ? (
+						<table>
+							<thead>
+								<tr>
+									<th>设置项</th>
+									<th>已保存</th>
+									<th>你的修改</th>
+								</tr>
+							</thead>
+							<tbody>
+								{differences.map(([label, stored, local]) => (
+									<tr key={label}>
+										<th scope="row">{label}</th>
+										<td>{stored}</td>
+										<td>{local}</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					) : (
+						<p>当前填写的设置与已保存的内容一致。</p>
+					)}
+					<div className="settings-actions">
+						{differences.length > 0 && (
+							<button
+								type="button"
+								className="settings-button primary"
+								onClick={() =>
+									confirm({
+										...fields,
+										revision: latest.revision,
+										name: latest.name,
+									})
+								}
+							>
+								保存我的修改
+							</button>
+						)}
+						<button
+							type="button"
+							className="settings-button secondary"
+							onClick={discard}
+						>
+							采用已保存设置
+						</button>
+					</div>
+				</>
+			) : (
+				<button
+					type="button"
+					className="settings-button secondary"
+					onClick={() => read.mutate()}
+					disabled={read.isPending}
+				>
+					{read.isPending ? "正在读取…" : "查看差异"}
+				</button>
+			)}
+			<InlineError error={read.error} />
+		</section>
+	);
+}
+
 function SettingsForm({ initial }: { initial: TranslationSettings }) {
 	const client = useQueryClient();
-	const [baseline, setBaseline] = useState(initial);
-	const [draft, setDraft] = useState<TranslationSettingsInput>({
-		...initial,
-		expected_revision: initial.revision,
-	});
-	const [saved, setSaved] = useState(false);
-	const [latest, setLatest] = useState<TranslationSettings | null>(null);
+	const acceptedRevision = useRef(initial.revision);
+	const [editingRange, setEditingRange] = useState(false);
 	const providers = useQuery({
 		queryKey: settingsKeys.providers,
 		queryFn: getProviders,
@@ -30,263 +151,212 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 		queryKey: settingsKeys.settings,
 		queryFn: getSettings,
 	});
-	const fields = (value: Omit<TranslationSettingsInput, "expected_revision">) =>
-		JSON.stringify([
-			value.name,
-			value.model_id,
-			value.target_language,
-			value.before_sentences,
-			value.after_sentences,
-			value.before_characters,
-			value.after_characters,
-		]);
-	const dirty = fields(draft) !== fields(baseline);
-	const update = (values: Partial<TranslationSettingsInput>) => {
-		setDraft({ ...draft, ...values });
-		setSaved(false);
-	};
-	const save = useMutation({
-		mutationFn: saveTranslationSettings,
-		onSuccess: (value) => {
-			setLatest(null);
-			setBaseline(value);
-			setDraft({ ...value, expected_revision: value.revision });
-			setSaved(true);
-			client.setQueryData(translationSettingsKey, value);
-		},
-		onError: (error) => {
-			if (error instanceof RequestError && error.status === 409)
-				setLatest(null);
-		},
-	});
-	const conflict =
-		save.error instanceof RequestError && save.error.status === 409;
-	const readLatest = useMutation({
-		mutationFn: getTranslationSettings,
-		onSuccess: setLatest,
-	});
-	const modelLabel = (id: string | null | undefined) => {
-		const provider = providers.data?.find((p) =>
-			p.models.some((m) => m.id === id),
-		);
-		const model = provider?.models.find((m) => m.id === id);
-		return provider && model
-			? `${provider.name} / ${model.model_id}`
-			: id
-				? `${id}（不可用）`
-				: "未选择";
-	};
-	const chatModelId = settings.data?.defaults.chat_model_id;
-	const availableChatModel = providers.data?.some(
-		(p) => p.enabled && p.models.some((m) => m.id === chatModelId && m.enabled),
+	const models = providers.data?.flatMap((p) =>
+		p.models.map((m) => ({
+			id: m.id,
+			label: `${p.name} / ${m.model_id}`,
+			enabled: p.enabled && m.enabled,
+		})),
 	);
-	const submit = async (revision = baseline.revision, confirmed = false) => {
-		if (conflict && !confirmed) return false;
-		try {
-			await save.mutateAsync({
-				expected_revision: revision,
-				name: confirmed ? (latest?.name ?? draft.name) : draft.name,
-				model_id: draft.model_id,
-				target_language: draft.target_language,
-				before_sentences: draft.before_sentences,
-				after_sentences: draft.after_sentences,
-				before_characters: draft.before_characters,
-				after_characters: draft.after_characters,
+	const modelLabel = (id: string | null) =>
+		models?.find((model) => model.id === id)?.label ??
+		(id ? `${id}（不可用）` : "未选择");
+	const draft = useAutosavingFields(
+		"translation",
+		"翻译",
+		initial,
+		async (fields, accept) => {
+			const result = await saveTranslationSettings({
+				expected_revision: Math.max(acceptedRevision.current, fields.revision),
+				name: fields.name,
+				model_id: fields.model_id,
+				target_language: fields.target_language,
+				before_sentences: fields.before_sentences,
+				after_sentences: fields.after_sentences,
+				before_characters: fields.before_characters,
+				after_characters: fields.after_characters,
 			});
-			return true;
-		} catch {
-			return false;
-		}
-	};
-	useSettingsDraft({
-		id: "translation",
-		label: "翻译",
-		dirty,
-		pending: save.isPending,
-		save: () => submit(),
-		discard: () =>
-			setDraft({ ...baseline, expected_revision: baseline.revision }),
-	});
+			acceptedRevision.current = result.revision;
+			await client.cancelQueries({ queryKey: translationSettingsKey });
+			accept(result);
+			client.setQueryData<TranslationSettings>(
+				translationSettingsKey,
+				(current) =>
+					current && current.revision > result.revision ? current : result,
+			);
+		},
+		"请填写目标语言和有效的前后文范围。",
+		{
+			required: (error) =>
+				error instanceof RequestError && error.status === 409,
+			render: (error, fields, confirm, discard) => (
+				<ConflictReview
+					message={error.message}
+					fields={fields}
+					modelLabel={modelLabel}
+					confirm={confirm}
+					discard={discard}
+				/>
+			),
+		},
+	);
+	const value = draft.fields;
+	const chatModel = models?.find(
+		(m) => m.enabled && m.id === settings.data?.defaults.chat_model_id,
+	);
 	return (
-		<section className="settings-section">
-			<h3>默认翻译方案</h3>
-			<p className="settings-hint">
-				独立保存所选模型；之后更改讨论模型不会改变翻译方案。
-			</p>
-			<form
-				onSubmit={(event) => {
-					event.preventDefault();
-					void submit();
+		<form
+			className="translation-settings"
+			ref={draft.form}
+			onSubmit={(event) => {
+				event.preventDefault();
+				draft.finishEditing();
+			}}
+		>
+			<section
+				className="learning-group"
+				aria-labelledby="translation-reading-heading"
+				onChangeCapture={() => {
+					if (!draft.needsReview) setEditingRange(false);
 				}}
 			>
-				<fieldset
-					disabled={save.isPending}
-					style={{ border: 0, padding: 0, margin: 0 }}
-				>
+				<h2 id="translation-reading-heading" className="learning-group-title">
+					阅读翻译
+				</h2>
+				<p className="settings-hint settings-section-note">
+					在书中选中文字并翻译时，使用这里的语言和模型。
+				</p>
+				<div className="settings-group">
 					<label className="settings-preference-row">
-						<span>翻译模型</span>
-						<NativeSelect
-							className="settings-control"
-							value={draft.model_id ?? ""}
-							onChange={(event) =>
-								update({ model_id: event.target.value || null })
-							}
-						>
-							<option value="">未选择</option>
-							{draft.model_id &&
-								!providers.data?.some((p) =>
-									p.models.some((m) => m.id === draft.model_id),
-								) && <option value={draft.model_id}>已选模型不可用</option>}
-							{providers.data?.map((p) => (
-								<optgroup key={p.id} label={p.name}>
-									{p.models.map((m) => (
-										<option
-											key={m.id}
-											value={m.id}
-											disabled={!p.enabled || !m.enabled}
-										>
-											{p.name} / {m.model_id}
-											{!p.enabled || !m.enabled ? "（已停用）" : ""}
-										</option>
-									))}
-								</optgroup>
-							))}
-						</NativeSelect>
-					</label>
-					{availableChatModel && (
-						<button
-							className="settings-button secondary"
-							type="button"
-							onClick={() => update({ model_id: chatModelId })}
-						>
-							使用讨论模型
-						</button>
-					)}
-					<InlineError error={providers.error ?? settings.error} />
-					<label className="settings-preference-row">
-						<span>目标语言</span>
+						<span className="settings-row-copy">
+							<strong>译成</strong>
+						</span>
 						<input
 							className="settings-control"
 							required
+							pattern={".*\\S.*"}
 							maxLength={100}
-							value={draft.target_language}
+							value={value.target_language}
 							onChange={(event) =>
-								update({ target_language: event.target.value })
+								draft.change({ ...value, target_language: event.target.value })
 							}
+							onBlur={draft.finishEditing}
 						/>
 					</label>
-					<h4>翻译语境</h4>
-					<p className="settings-hint">
-						两项上限同时生效，任一为 0 时不摘录该侧。只影响之后的新翻译。
-					</p>
-					{(["before", "after"] as const).map((side) => (
-						<div key={side} className="settings-preference-row">
-							<span>{side === "before" ? "前文" : "后文"}</span>
-							<label>
-								句数{" "}
-								<input
-									aria-label={`${side === "before" ? "前文" : "后文"}句数`}
-									className="settings-control"
-									type="number"
-									min={0}
-									max={100}
-									value={draft[`${side}_sentences`]}
-									onChange={(event) =>
-										update({
-											[`${side}_sentences`]: event.target.valueAsNumber,
-										})
-									}
-								/>
-							</label>
-							<label>
-								字符上限{" "}
-								<input
-									aria-label={`${side === "before" ? "前文" : "后文"}字符上限`}
-									className="settings-control"
-									type="number"
-									min={0}
-									max={initial.max_context_characters}
-									value={draft[`${side}_characters`]}
-									onChange={(event) =>
-										update({
-											[`${side}_characters`]: event.target.valueAsNumber,
-										})
-									}
-								/>
-							</label>
-						</div>
-					))}
-					<InlineError error={save.error} />
-					{conflict && (
-						<section aria-label="翻译设置冲突对照">
-							<p>
-								翻译设置已在其他页面更新。草稿仍保留，请读取并核对当前配置。
-							</p>
-							<button
-								type="button"
-								disabled={readLatest.isPending}
-								onClick={() => readLatest.mutate()}
+					<div className="settings-preference-row">
+						<label className="settings-row-copy" htmlFor="translation-model">
+							<strong>翻译模型</strong>
+						</label>
+						<div className="translation-model-field">
+							<NativeSelect
+								id="translation-model"
+								className="settings-control"
+								disabled={
+									!models || (!value.model_id && !models.some((m) => m.enabled))
+								}
+								value={value.model_id ?? ""}
+								onChange={(event) =>
+									draft.select({
+										...value,
+										model_id: event.target.value || null,
+									})
+								}
 							>
-								{readLatest.isPending
-									? "正在读取当前设置…"
-									: "读取当前设置（保留草稿）"}
-							</button>
-							<InlineError error={readLatest.error} />
-							{latest && (
-								<>
-									<h4>当前已保存配置（版本 {latest.revision}）</h4>
-									<dl>
-										<dt>模型</dt>
-										<dd>{modelLabel(latest.model_id)}</dd>
-										<dt>目标语言</dt>
-										<dd>{latest.target_language}</dd>
-										<dt>前文</dt>
-										<dd>
-											{latest.before_sentences} 句，最多{" "}
-											{latest.before_characters} 字符
-										</dd>
-										<dt>后文</dt>
-										<dd>
-											{latest.after_sentences} 句，最多{" "}
-											{latest.after_characters} 字符
-										</dd>
-									</dl>
-									<h4>待保存草稿</h4>
-									<p>
-										{modelLabel(draft.model_id)} · {draft.target_language}
-									</p>
-									<p>
-										前文 {draft.before_sentences} 句 / {draft.before_characters}{" "}
-										字符；后文 {draft.after_sentences} 句 /{" "}
-										{draft.after_characters} 字符
-									</p>
-									<button
-										className="settings-button primary"
-										type="button"
-										disabled={save.isPending || readLatest.isPending}
-										onClick={() => void submit(latest.revision, true)}
-									>
-										按当前版本保存草稿
-									</button>
-								</>
+								<option value="">未选择</option>
+								{value.model_id &&
+									!models?.some((m) => m.id === value.model_id) && (
+										<option value={value.model_id}>
+											{providers.isPending ? "正在读取模型…" : "已选模型不可用"}
+										</option>
+									)}
+								{models?.map((m) => (
+									<option key={m.id} value={m.id} disabled={!m.enabled}>
+										{m.label}
+										{m.enabled ? "" : "（已停用）"}
+									</option>
+								))}
+							</NativeSelect>
+							{chatModel && value.model_id !== chatModel.id && (
+								<button
+									className="translation-model-action"
+									type="button"
+									onClick={() => {
+										if (!draft.needsReview) setEditingRange(false);
+										draft.select({ ...value, model_id: chatModel.id });
+									}}
+								>
+									选用当前讨论模型
+								</button>
 							)}
-						</section>
-					)}
-					<div className="settings-save-bar">
-						<button
-							className="settings-button primary"
-							type="submit"
-							disabled={save.isPending || !dirty || conflict}
-						>
-							{save.isPending ? "保存中…" : "保存翻译设置"}
-						</button>
-						{saved && <span role="status">已保存</span>}
+							{models && !models.some((m) => m.enabled) && (
+								<Link
+									className="translation-model-action"
+									to="/settings?section=providers"
+								>
+									前往服务管理
+								</Link>
+							)}
+							<InlineError error={providers.error ?? settings.error} />
+						</div>
 					</div>
-				</fieldset>
-			</form>
-		</section>
+				</div>
+				{!editingRange && draft.feedback}
+			</section>
+			<section
+				className="learning-group"
+				aria-labelledby="translation-range-heading"
+				onChangeCapture={() => {
+					if (!draft.needsReview) setEditingRange(true);
+				}}
+			>
+				<h2 id="translation-range-heading" className="learning-group-title">
+					前后文范围
+				</h2>
+				<p className="settings-hint settings-section-note">
+					附近的原文可以帮助判断省略的主语和词义。译文只包含选中的文字。
+				</p>
+				<div className="learning-context-ranges">
+					{ranges.map(({ label, sentences, characters }) => (
+						<fieldset key={label} className="settings-group">
+							<legend>{label}</legend>
+							{(
+								[
+									[sentences, "句数上限", 100],
+									[characters, "字符上限", value.max_context_characters],
+								] as const
+							).map(([key, name, max]) => (
+								<label className="settings-field" key={key}>
+									{name}
+									<input
+										type="number"
+										aria-label={label + name}
+										required
+										min={0}
+										max={max}
+										step={1}
+										value={Number.isNaN(value[key]) ? "" : value[key]}
+										onChange={(event) =>
+											draft.change({
+												...value,
+												[key]: event.target.valueAsNumber,
+											})
+										}
+										onBlur={draft.finishEditing}
+									/>
+								</label>
+							))}
+						</fieldset>
+					))}
+				</div>
+				<p className="settings-hint">
+					每侧达到任一上限就停止取文。填 0 会跳过该侧。字符数包含空白与标点。
+				</p>
+				{editingRange && draft.feedback}
+			</section>
+		</form>
 	);
 }
+
 export function TranslationSettingsSection() {
 	const settings = useQuery({
 		queryKey: translationSettingsKey,
@@ -294,14 +364,27 @@ export function TranslationSettingsSection() {
 	});
 	return (
 		<>
-			{settings.isPending && <p role="status">正在加载翻译设置…</p>}
-			<InlineError error={settings.error} />
-			{settings.isError && (
-				<button type="button" onClick={() => void settings.refetch()}>
-					重试翻译设置
-				</button>
+			{settings.isPending && (
+				<p className="settings-loading" role="status">
+					正在加载翻译设置…
+				</p>
 			)}
-			{settings.data && <SettingsForm initial={settings.data} />}
+			{settings.data ? (
+				<SettingsForm initial={settings.data} />
+			) : (
+				settings.isError && (
+					<div className="settings-state">
+						<InlineError error={settings.error} />
+						<button
+							type="button"
+							className="settings-button secondary"
+							onClick={() => void settings.refetch()}
+						>
+							重试翻译设置
+						</button>
+					</div>
+				)
+			)}
 		</>
 	);
 }

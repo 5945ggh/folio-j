@@ -41,6 +41,7 @@
 | --- | --- |
 | 带上下文复制 | [首版验收](archived/reading-practice/CONTEXT_COPY_ACCEPTANCE.md)、[数据库持久化与现用库升级](archived/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md) |
 | 阅读设置 | [结构调查与原型记录](archived/reading-practice/READER_SETTINGS_STRUCTURE.md)、[结构与会话保护验收](archived/reading-practice/READER_SETTINGS_ACCEPTANCE.md) |
+| 应用设置 | [自动保存、服务管理与验证记录整理验收](archived/settings-refresh/POLISH_ACCEPTANCE.md) |
 | 位置书签 | [首版与主分支集成](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md)、[附近提醒与详情改进](archived/reading-practice/BOOKMARK_REFINEMENT_ACCEPTANCE.md) |
 | 翻译、配色与词汇 | [翻译动画、缓存与删除](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md)、[阅读器颜色 token](archived/reading-practice/READER_COLOR_TOKENS_ACCEPTANCE.md)、[材料词汇与统计更新](archived/reading-practice/VOCABULARY_ACCEPTANCE.md) |
 

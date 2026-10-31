@@ -1,14 +1,14 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { NativeSelect } from "../NativeSelect";
-import { InlineError } from "../Shared";
-import { type Provider, patchSettings, type Settings } from "./api";
+import { useAutosavingFields } from "./AutosavingSettings";
 import {
-	SettingsSaveBar,
-	useSettingsDraft,
-	useSettingsFields,
-} from "./SettingsForms";
+	type Provider,
+	patchSettings,
+	type Settings,
+	settingsKeys,
+} from "./api";
 import { commitSettingsResponse } from "./settings-cache";
 
 type ModelFields = Pick<
@@ -28,32 +28,41 @@ export function ModelDefaults({
 	providers: Provider[];
 }) {
 	const client = useQueryClient();
-	const draft = useSettingsFields(modelFields(settings));
-	const form = useRef<HTMLFormElement>(null);
-	const save = useMutation({
-		mutationFn: (defaults: ModelFields) => patchSettings({ defaults }),
-	});
-	async function persist() {
-		if (!settings || !form.current?.reportValidity()) return false;
-		const submitted = draft.fields;
-		try {
-			const result = await save.mutateAsync(submitted);
-			await commitSettingsResponse(client, result, () =>
-				draft.accept(submitted, modelFields(result)),
+	const edited = useRef(new Map<keyof ModelFields, string | null>());
+	const draft = useAutosavingFields(
+		"model-defaults",
+		"模型配置",
+		modelFields(settings),
+		async (fields, accept) => {
+			const current = modelFields(
+				client.getQueryData<Settings>(settingsKeys.settings),
 			);
-			return true;
-		} catch {
-			return false;
-		}
-	}
-	useSettingsDraft({
-		id: "model-defaults",
-		label: "默认模型",
-		dirty: draft.dirty,
-		pending: save.isPending,
-		save: persist,
-		discard: draft.reset,
-	});
+			const changes: Partial<ModelFields> = {};
+			const submitted = [...edited.current.keys()];
+			for (const key of submitted) {
+				if (fields[key] !== current[key]) changes[key] = fields[key];
+			}
+			const acceptSaved = (saved: ModelFields) => {
+				for (const key of submitted) {
+					if (edited.current.get(key) === fields[key])
+						edited.current.delete(key);
+				}
+				accept(saved);
+			};
+			if (Object.keys(changes).length) {
+				const result = await patchSettings({ defaults: changes });
+				await commitSettingsResponse(client, result, () =>
+					acceptSaved(modelFields(result)),
+				);
+			} else {
+				acceptSaved(current);
+			}
+		},
+		"请选择可用的模型。",
+	);
+	useEffect(() => {
+		if (!draft.dirty && !draft.pending) edited.current.clear();
+	}, [draft.dirty, draft.pending]);
 	const choices = providers.flatMap((provider) =>
 		provider.models.map((model) => ({ model, provider })),
 	);
@@ -81,12 +90,14 @@ export function ModelDefaults({
 					<NativeSelect
 						className="settings-control"
 						value={draft.fields[purpose] ?? ""}
-						onChange={(event) =>
-							draft.change({
+						onChange={(event) => {
+							const value = event.target.value || null;
+							edited.current.set(purpose, value);
+							draft.select({
 								...draft.fields,
-								[purpose]: event.target.value || null,
-							})
-						}
+								[purpose]: value,
+							});
+						}}
 					>
 						<option value="">未选择</option>
 						{draft.fields[purpose] && !selected && (
@@ -154,40 +165,30 @@ export function ModelDefaults({
 					aria-labelledby="default-models-heading"
 				>
 					<div className="settings-section-heading">
-						<h3 id="default-models-heading">默认模型</h3>
+						<h3 id="default-models-heading">按用途选择模型</h3>
 					</div>
 					<form
 						id="model-defaults-form"
-						ref={form}
+						ref={draft.form}
 						onSubmit={(event) => {
 							event.preventDefault();
-							void persist();
+							draft.finishEditing();
 						}}
 					>
-						<fieldset disabled={save.isPending}>
-							<div className="settings-group">
-								{modelSelect(
-									"讲解模型",
-									"analysis_model_id",
-									"单独发起讲解时使用。",
-								)}
-								{modelSelect(
-									"讨论模型",
-									"chat_model_id",
-									"新对话预选的讨论模型。",
-								)}
-							</div>
-						</fieldset>
+						<div className="settings-group">
+							{modelSelect(
+								"讨论模型",
+								"chat_model_id",
+								"新对话和「创建 AI 讲解」默认使用这个模型。",
+							)}
+							{modelSelect(
+								"讲解模型（旧版）",
+								"analysis_model_id",
+								"保留旧版独立讲解的模型选择。",
+							)}
+						</div>
 					</form>
-					<InlineError error={save.error} />
-					<SettingsSaveBar
-						formId="model-defaults-form"
-						saveLabel="保存默认模型"
-						dirty={draft.dirty}
-						saved={draft.saved}
-						pending={save.isPending}
-						onReset={draft.reset}
-					/>
+					{draft.feedback}
 					<p className="settings-hint settings-section-note">
 						已有对话继续使用各自的模型；已接受的任务不受影响。
 					</p>

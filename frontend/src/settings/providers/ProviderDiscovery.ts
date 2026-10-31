@@ -71,7 +71,7 @@ export function useProviderDiscovery(provider: Provider) {
 			return requireData(data, error, response.status);
 		},
 		onSuccess: () => {
-			void client.invalidateQueries({ queryKey: settingsKeys.providers });
+			return client.invalidateQueries({ queryKey: settingsKeys.providers });
 		},
 	});
 	return {

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { NativeSelect } from "../NativeSelect";
-import { dateLabel, InlineError } from "../Shared";
+import { InlineError } from "../Shared";
 import {
 	getRun,
 	getRuns,
@@ -21,15 +21,21 @@ const labels: Record<string, string> = {
 	interrupted: "已中断",
 };
 const PAGE_SIZE = 10;
+const timestamp = new Intl.DateTimeFormat("zh-CN", {
+	dateStyle: "medium",
+	timeStyle: "short",
+});
 
 export function RunHistory({
 	providerId,
 	providers = [],
 	models,
+	onShowModels,
 }: {
 	providerId?: string;
 	providers?: Provider[];
 	models?: Model[];
+	onShowModels?: () => void;
 }) {
 	const [selected, setSelected] = useState<string | null>(null);
 	const [page, setPage] = useState(0);
@@ -48,7 +54,35 @@ export function RunHistory({
 		(model) =>
 			!filters.provider_id || model.provider_id === filters.provider_id,
 	);
-	const headingId = `runs-heading-${providerId ?? "all"}`;
+	const [filtersOpen, setFiltersOpen] = useState(false);
+	const filtersId = `runs-filters-${providerId ?? "all"}`;
+	function pickProvider(id: string) {
+		setSelectedProvider(id);
+		setSelectedModel("");
+	}
+	const activeFilters = [
+		{
+			key: "provider",
+			value: selectedProvider,
+			label:
+				providers.find((p) => p.id === selectedProvider)?.name ?? "已删除服务",
+			clear: () => pickProvider(""),
+		},
+		{
+			key: "model",
+			value: selectedModel,
+			label:
+				modelOptions.find((m) => m.id === selectedModel)?.model_id ??
+				"已删除模型",
+			clear: () => setSelectedModel(""),
+		},
+		{
+			key: "status",
+			value: selectedStatus,
+			label: labels[selectedStatus],
+			clear: () => setSelectedStatus(""),
+		},
+	].filter((item) => item.value);
 	function changeFilter(update: () => void) {
 		update();
 		setPage(0);
@@ -73,89 +107,107 @@ export function RunHistory({
 	return (
 		<section
 			className="settings-section provider-run-history"
-			aria-labelledby={headingId}
+			aria-label="验证记录"
 		>
-			<div className="provider-section-heading">
-				<h2 id={headingId}>验证记录</h2>
+			<div className="provider-history-toolbar" data-expanded={filtersOpen}>
 				<button
-					className="settings-button secondary"
+					className="settings-button secondary history-filter-toggle"
 					type="button"
-					onClick={() => void runs.refetch()}
+					aria-expanded={filtersOpen}
+					aria-controls={filtersId}
+					onClick={() => setFiltersOpen(!filtersOpen)}
 				>
-					刷新记录
+					筛选{activeFilters.length ? `（${activeFilters.length}）` : ""}
 				</button>
-			</div>
-			<p className="settings-hint">
-				验证由本地后台执行，离开页面后仍可回来查看。已删除服务和模型的历史记录会保留。
-			</p>
-			<div className="provider-run-filters">
-				{!providerId && (
+				<div className="provider-run-filters" id={filtersId}>
+					{!providerId && (
+						<label className="settings-field">
+							<span>服务</span>
+							<NativeSelect
+								value={selectedProvider}
+								onChange={(event) =>
+									changeFilter(() => pickProvider(event.target.value))
+								}
+							>
+								<option value="">全部服务（含已删除）</option>
+								{providers.map((provider) => (
+									<option key={provider.id} value={provider.id}>
+										{provider.name}
+									</option>
+								))}
+								{selectedProvider &&
+									!providers.some(
+										(provider) => provider.id === selectedProvider,
+									) && <option value={selectedProvider}>已删除服务</option>}
+							</NativeSelect>
+						</label>
+					)}
 					<label className="settings-field">
-						<span>服务</span>
+						<span>模型</span>
 						<NativeSelect
-							value={selectedProvider}
+							value={selectedModel}
 							onChange={(event) =>
-								changeFilter(() => {
-									setSelectedProvider(event.target.value);
-									setSelectedModel("");
-								})
+								changeFilter(() => setSelectedModel(event.target.value))
 							}
 						>
-							<option value="">全部服务（含已删除）</option>
-							{providers.map((provider) => (
-								<option key={provider.id} value={provider.id}>
-									{provider.name}
+							<option value="">全部模型（含已删除）</option>
+							{modelOptions.map((model) => (
+								<option key={model.id} value={model.id}>
+									{!filters.provider_id
+										? `${providers.find((provider) => provider.id === model.provider_id)?.name ?? "服务"} / `
+										: ""}
+									{model.model_id}
 								</option>
 							))}
-							{selectedProvider &&
-								!providers.some(
-									(provider) => provider.id === selectedProvider,
-								) && <option value={selectedProvider}>已删除服务</option>}
+							{selectedModel &&
+								!modelOptions.some((model) => model.id === selectedModel) && (
+									<option value={selectedModel}>已删除模型登记</option>
+								)}
 						</NativeSelect>
 					</label>
-				)}
-				<label className="settings-field">
-					<span>模型</span>
-					<NativeSelect
-						value={selectedModel}
-						onChange={(event) =>
-							changeFilter(() => setSelectedModel(event.target.value))
-						}
-					>
-						<option value="">全部模型（含已删除）</option>
-						{modelOptions.map((model) => (
-							<option key={model.id} value={model.id}>
-								{!filters.provider_id
-									? `${providers.find((provider) => provider.id === model.provider_id)?.name ?? "服务"} / `
-									: ""}
-								{model.model_id}
-							</option>
-						))}
-						{selectedModel &&
-							!modelOptions.some((model) => model.id === selectedModel) && (
-								<option value={selectedModel}>已删除模型登记</option>
-							)}
-					</NativeSelect>
-				</label>
-				<label className="settings-field">
-					<span>状态</span>
-					<NativeSelect
-						value={selectedStatus}
-						onChange={(event) =>
-							changeFilter(() =>
-								setSelectedStatus(event.target.value as Run["status"] | ""),
-							)
-						}
-					>
-						<option value="">全部状态</option>
-						{Object.entries(labels).map(([value, label]) => (
-							<option key={value} value={value}>
-								{label}
-							</option>
-						))}
-					</NativeSelect>
-				</label>
+					<label className="settings-field">
+						<span>状态</span>
+						<NativeSelect
+							value={selectedStatus}
+							onChange={(event) =>
+								changeFilter(() =>
+									setSelectedStatus(event.target.value as Run["status"] | ""),
+								)
+							}
+						>
+							<option value="">全部状态</option>
+							{Object.entries(labels).map(([value, label]) => (
+								<option key={value} value={value}>
+									{label}
+								</option>
+							))}
+						</NativeSelect>
+					</label>
+				</div>
+				<button
+					className="settings-button secondary history-refresh"
+					type="button"
+					disabled={runs.isFetching}
+					onClick={() => void runs.refetch()}
+				>
+					刷新
+				</button>
 			</div>
+			{activeFilters.length > 0 && (
+				<div className="history-filter-chips">
+					{activeFilters.map((item) => (
+						<button
+							key={item.key}
+							type="button"
+							aria-label={`移除筛选：${item.label}`}
+							onClick={() => changeFilter(item.clear)}
+						>
+							{item.label}
+							<span aria-hidden="true"> ×</span>
+						</button>
+					))}
+				</div>
+			)}
 			{runs.isPending ? (
 				<p className="loading">正在加载验证记录…</p>
 			) : runs.isError ? (
@@ -179,12 +231,42 @@ export function RunHistory({
 					)}
 				</>
 			) : visibleRuns.length === 0 ? (
-				<div className="empty-state">
-					<p>
-						{Object.keys(filters).length > 0
-							? "没有符合筛选条件的验证记录。"
-							: "还没有验证记录。"}
-					</p>
+				<div className="history-empty">
+					{activeFilters.length > 0 ? (
+						<>
+							<p>没有符合筛选条件的验证记录。</p>
+							<button
+								type="button"
+								className="settings-button secondary"
+								onClick={() =>
+									changeFilter(() => {
+										setSelectedProvider("");
+										setSelectedModel("");
+										setSelectedStatus("");
+									})
+								}
+							>
+								清除筛选
+							</button>
+						</>
+					) : page > 0 ? (
+						<p>这一页没有验证记录。</p>
+					) : (
+						<>
+							<p>
+								{providerId ? "这个服务还没有验证记录。" : "还没有验证记录。"}
+							</p>
+							{onShowModels && (
+								<button
+									type="button"
+									className="settings-button secondary"
+									onClick={onShowModels}
+								>
+									前往模型
+								</button>
+							)}
+						</>
+					)}
 				</div>
 			) : (
 				<div className="settings-list">
@@ -198,11 +280,13 @@ export function RunHistory({
 							>
 								<span>
 									<strong>
-										{run.provider_name} / {run.model_id}
+										{!providerId && `${run.provider_name} / `}
+										{run.model_id} · {run.stream ? "流式文本" : "普通文本"}
 									</strong>
 									<small>
-										{run.stream ? "流式文本" : "普通文本"} ·{" "}
-										{dateLabel(run.created_at)}
+										<time dateTime={run.created_at}>
+											{timestamp.format(new Date(run.created_at))}
+										</time>
 									</small>
 								</span>
 								<span className={`run-status ${run.status}`}>
@@ -264,35 +348,49 @@ export function RunDetail({ id }: { id: string }) {
 			</div>
 		);
 	const item = run.data;
+	const failed = item.status === "failed" || item.status === "interrupted";
 	return (
 		<div className="run-detail">
-			<p>
-				{item.stream ? "流式文本" : "普通文本"} · 协议：{item.protocol} · Prompt
-				版本：{item.prompt_version} · 状态：
-				{labels[item.status] ?? item.status}
-			</p>
+			{failed && (
+				<div>
+					<h4>{item.status === "interrupted" ? "中断原因" : "失败原因"}</h4>
+					<p>{item.error || "本次验证未记录具体原因。"}</p>
+				</div>
+			)}
 			{item.output_text && (
 				<div>
-					<h4>正文输出</h4>
+					<h4>{failed ? "部分回复" : "模型回复"}</h4>
 					<pre>{item.output_text}</pre>
 				</div>
 			)}
-			{item.error && (
-				<div>
-					<h4>{item.status === "interrupted" ? "中断原因" : "失败原因"}</h4>
-					<p role="alert">{item.error}</p>
-				</div>
-			)}
-			{item.usage && (
+			{!item.output_text && !failed && (
 				<p>
-					用量：输入 {item.usage.input_tokens ?? "未知"}、输出{" "}
-					{item.usage.output_tokens ?? "未知"}、合计{" "}
-					{item.usage.total_tokens ?? "未知"} token
+					{item.status === "succeeded"
+						? "本次验证未返回正文。"
+						: `${labels[item.status]}，结果会自动更新。`}
 				</p>
 			)}
-			{!item.output_text && !item.error && (
-				<p>尚无正文输出；任务状态会自动更新。</p>
-			)}
+			<details className="history-call-detail">
+				<summary>调用详情</summary>
+				<dl>
+					<dt>协议</dt>
+					<dd>
+						{item.protocol === "responses"
+							? "Responses"
+							: item.protocol === "chat_completions"
+								? "Chat Completions"
+								: item.protocol}
+					</dd>
+					<dt>提示词版本</dt>
+					<dd>{item.prompt_version}</dd>
+					<dt>用量</dt>
+					<dd>
+						{item.usage
+							? `输入 ${item.usage.input_tokens ?? "未知"} · 输出 ${item.usage.output_tokens ?? "未知"} · 合计 ${item.usage.total_tokens ?? "未知"} token`
+							: "未提供"}
+					</dd>
+				</dl>
+			</details>
 		</div>
 	);
 }

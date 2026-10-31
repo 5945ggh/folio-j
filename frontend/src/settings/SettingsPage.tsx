@@ -36,7 +36,7 @@ export function SettingsPage() {
 	const settings = useQuery({
 		queryKey: settingsKeys.settings,
 		queryFn: getSettings,
-		enabled: !appearance && !dictionary,
+		enabled: !appearance && !dictionary && !translation,
 	});
 	const providers = useQuery({
 		queryKey: settingsKeys.providers,
@@ -123,40 +123,39 @@ export function SettingsPage() {
 						</>
 					) : (
 						<>
-							{!learning && (
+							{!learning && !translation && (
 								<div className="settings-page-head">
 									<h2>
 										{appearance
 											? "外观"
-											: translation
-												? "翻译"
-												: speech
-													? "设备朗读"
-													: permissions
-														? "对话与权限"
-														: "模型与服务"}
+											: speech
+												? "设备朗读"
+												: permissions
+													? "对话与权限"
+													: "模型与服务"}
 									</h2>
 
 									<p>
 										{appearance
 											? "选择适合当前环境的颜色模式。"
-											: translation
-												? "管理独立翻译方案与语境。"
-												: speech
-													? "选择当前浏览器提供的日语声音。"
-													: permissions
-														? "设置新对话使用工具时的默认权限。"
-														: "选择任务默认模型，管理接入的模型服务。"}
+											: speech
+												? "选择当前浏览器提供的日语声音。"
+												: permissions
+													? "设置新对话使用工具时的默认权限。"
+													: "选择任务默认模型，管理接入的模型服务。"}
 									</p>
 								</div>
 							)}
 							{models && <ModelSettingsNavigation services={services} />}
-							{!appearance && !services && settings.isPending && (
-								<p className="settings-loading" role="status">
-									正在加载设置…
-								</p>
-							)}
-							{!appearance && !services && settings.isError && (
+							{!appearance &&
+								!translation &&
+								!services &&
+								settings.isPending && (
+									<p className="settings-loading" role="status">
+										正在加载设置…
+									</p>
+								)}
+							{!appearance && !translation && !services && settings.isError && (
 								<section className="settings-state">
 									<InlineError error={settings.error} />
 									<button
@@ -232,7 +231,7 @@ function ModelSettingsNavigation({ services }: { services: boolean }) {
 				to="/settings?section=models"
 				aria-current={!services ? "page" : undefined}
 			>
-				默认模型
+				模型配置
 			</Link>
 			<Link
 				to="/settings?section=providers"

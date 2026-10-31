@@ -24,9 +24,21 @@ export function draftDirty<T>(draft: Draft<T>) {
 	return !equal(draft.value, draft.baseline);
 }
 
-export function editDraft<T>(draft: Draft<T>, value: T): Draft<T> {
-	if (draft.sourcePending && equal(value, draft.baseline))
+export function editDraft<T>(
+	draft: Draft<T>,
+	value: T,
+	preserveInput = false,
+): Draft<T> {
+	if (!preserveInput && draft.sourcePending && equal(value, draft.baseline))
 		return resetDraft(draft);
+	if (preserveInput && draft.sourcePending)
+		return {
+			...draft,
+			value,
+			baseline: draft.source,
+			sourcePending: false,
+			saved: false,
+		};
 	return { ...draft, value, saved: false };
 }
 
@@ -41,14 +53,24 @@ export function resetDraft<T>(draft: Draft<T>): Draft<T> {
 	};
 }
 
-export function receiveDraft<T>(draft: Draft<T>, value: T): Draft<T> {
+export function receiveDraft<T>(
+	draft: Draft<T>,
+	value: T,
+	preserveInput = false,
+): Draft<T> {
+	const dirty = draftDirty(draft);
 	// Query observer notifications can lag behind a locally accepted save.
-	if (equal(draft.source, value)) return draft;
-	if (draftDirty(draft))
+	if (
+		equal(draft.source, value) &&
+		!(draft.sourcePending && !dirty && !preserveInput)
+	)
+		return draft;
+	if (dirty || preserveInput)
 		return {
 			...draft,
+			baseline: preserveInput ? value : draft.baseline,
 			source: value,
-			sourcePending: !equal(draft.baseline, value),
+			sourcePending: !preserveInput && !equal(draft.baseline, value),
 		};
 	if (equal(draft.baseline, value))
 		return { ...draft, source: value, sourcePending: false };

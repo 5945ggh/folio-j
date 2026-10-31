@@ -52,6 +52,58 @@ test("the previous query snapshot cannot reset a locally accepted save", () => {
 	assert.equal(afterQueryNotification.saved, true);
 });
 
+test("a refresh cannot replace a queued return to the baseline while saving", () => {
+	const original = { name: "a" };
+	const firstSave = { name: "b" };
+	let draft = editDraft(createDraft(original), firstSave);
+	draft = editDraft(draft, original, true);
+	assert.equal(draftDirty(draft), false);
+	draft = receiveDraft(draft, firstSave, true);
+	assert.deepEqual(draft.value, original);
+	assert.deepEqual(draft.baseline, firstSave);
+	assert.deepEqual(draft.source, firstSave);
+	draft = completeDraft(draft, firstSave, firstSave);
+	assert.deepEqual(draft.value, original);
+	assert.equal(draftDirty(draft), true);
+	draft = completeDraft(draft, original, original);
+	draft = receiveDraft(draft, { ...firstSave }, true);
+	assert.deepEqual(draft.value, original);
+	assert.equal(draft.saved, true);
+	draft = receiveDraft(draft, { ...original });
+	assert.deepEqual(draft.value, original);
+	assert.deepEqual(draft.source, original);
+	assert.equal(draftDirty(draft), false);
+	assert.equal(draft.saved, true);
+});
+
+test("an explicit return to the baseline is preserved after a remote refresh", () => {
+	const original = { name: "a" };
+	const remote = { name: "b" };
+	const refreshed = receiveDraft(
+		editDraft(createDraft(original), { name: "typing" }),
+		remote,
+	);
+	assert.deepEqual(editDraft(refreshed, original).value, remote);
+	const selected = editDraft(refreshed, original, true);
+	assert.deepEqual(selected.value, original);
+	assert.deepEqual(selected.baseline, remote);
+	assert.equal(draftDirty(selected), true);
+	assert.deepEqual(receiveDraft(selected, remote, true).value, original);
+});
+
+test("a failed save retains preserved input as dirty against the observed server snapshot", () => {
+	const original = { name: "a" };
+	const remote = { name: "b" };
+	const held = receiveDraft(createDraft(original), remote, true);
+	assert.deepEqual(held.value, original);
+	assert.deepEqual(held.baseline, remote);
+	assert.equal(draftDirty(held), true);
+	const failed = receiveDraft(held, remote);
+	assert.deepEqual(failed.value, original);
+	assert.equal(draftDirty(failed), true);
+	assert.deepEqual(resetDraft(failed).value, remote);
+});
+
 test("discarding local edits adopts a newer snapshot observed while dirty", () => {
 	const old = { name: "old" };
 	const remote = { name: "remote" };

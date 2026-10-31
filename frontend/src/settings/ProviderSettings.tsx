@@ -1,15 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api } from "../api/client";
 import { errorMessage, requireData } from "../content";
 import { ConfirmDialog, InlineError } from "../Shared";
 import { type Model, type Provider, settingsKeys } from "./api";
 import { summarizeProvider } from "./provider-presentation";
-import { useProviderDiscovery } from "./providers/ProviderDiscovery";
 import { ModelEditor, ProviderEditor } from "./providers/ProviderEditors";
 import { ProviderModels } from "./providers/ProviderModels";
 import { RunHistory } from "./RunHistory";
-import { useSettingsDraft } from "./SettingsForms";
 import "./provider-settings.css";
 
 const protocolName = (protocol: Provider["protocol"]) =>
@@ -99,12 +97,7 @@ export function ProviderSettings({ providers }: { providers: Provider[] }) {
 type ProviderView = "models" | "connection" | "history";
 type Editor =
 	| {
-			kind:
-				| "provider"
-				| "key"
-				| "add-model"
-				| "delete-provider"
-				| "close-selection";
+			kind: "provider" | "key" | "add-model" | "delete-provider";
 	  }
 	| { kind: "model" | "delete-model"; model: Model };
 
@@ -118,33 +111,20 @@ function ProviderDetail({
 	const client = useQueryClient();
 	const [view, setView] = useState<ProviderView>("models");
 	const [editor, setEditor] = useState<Editor | null>(null);
-	const discovery = useProviderDiscovery(provider);
-	useSettingsDraft({
-		id: `provider-discovery-${provider.id}`,
-		label: `${provider.name} 的模型登记`,
-		dirty: discovery.selected.length > 0,
-		pending: discovery.registering,
-		save: discovery.registerSelected,
-		discard: discovery.clear,
-	});
-	function requestClose() {
-		if (discovery.registering) return;
-		if (discovery.selected.length > 0) setEditor({ kind: "close-selection" });
-		else onClose();
-	}
+	const modelsTab = useRef<HTMLButtonElement>(null);
 	const toggle = useMutation({
-		mutationFn: async () => {
+		mutationFn: async (enabled: boolean) => {
 			const { data, error, response } = await api.PATCH(
 				"/api/providers/{provider_id}",
 				{
 					params: { path: { provider_id: provider.id } },
-					body: { enabled: !provider.enabled },
+					body: { enabled },
 				},
 			);
 			return requireData(data, error, response.status);
 		},
-		onSuccess: () => {
-			void client.invalidateQueries({ queryKey: settingsKeys.providers });
+		onSuccess: async () => {
+			await client.invalidateQueries({ queryKey: settingsKeys.providers });
 			void client.invalidateQueries({ queryKey: settingsKeys.settings });
 		},
 	});
@@ -167,60 +147,6 @@ function ProviderDetail({
 		},
 	});
 	const returnToDetail = () => setEditor(null);
-	if (editor?.kind === "close-selection")
-		return (
-			<ConfirmDialog
-				key="close-provider-selection"
-				className="settings-dialog provider-delete-dialog"
-				titleId={`close-provider-${provider.id}`}
-				onClose={() => {
-					if (!discovery.registering) returnToDetail();
-				}}
-			>
-				<h2 id={`close-provider-${provider.id}`}>还有尚未登记的模型</h2>
-				<p>可以登记所选模型后关闭，或放弃这次选择。</p>
-				<InlineError
-					error={
-						discovery.registrationError
-							? new Error(discovery.registrationError)
-							: null
-					}
-				/>
-				<div className="settings-actions">
-					<button
-						type="button"
-						className="settings-button primary"
-						disabled={discovery.registering}
-						onClick={async () => {
-							if (await discovery.registerSelected()) onClose();
-							else returnToDetail();
-						}}
-					>
-						{discovery.registering ? "登记中…" : "登记并关闭"}
-					</button>
-					<button
-						type="button"
-						className="settings-button danger"
-						disabled={discovery.registering}
-						onClick={() => {
-							discovery.clear();
-							onClose();
-						}}
-					>
-						放弃选择
-					</button>
-					<button
-						type="button"
-						className="settings-button secondary"
-						data-dialog-cancel
-						disabled={discovery.registering}
-						onClick={returnToDetail}
-					>
-						返回服务详情
-					</button>
-				</div>
-			</ConfirmDialog>
-		);
 	if (editor?.kind === "provider" || editor?.kind === "key")
 		return (
 			<ProviderEditor
@@ -233,7 +159,7 @@ function ProviderDetail({
 		return (
 			<ModelEditor
 				model={editor.kind === "model" ? editor.model : undefined}
-				providerId={provider.id}
+				provider={provider}
 				onClose={returnToDetail}
 			/>
 		);
@@ -285,7 +211,7 @@ function ProviderDetail({
 			key="provider-detail"
 			className="settings-dialog provider-detail-dialog"
 			titleId={`provider-detail-${provider.id}`}
-			onClose={requestClose}
+			onClose={onClose}
 			restoreFocusId={`provider-open-${provider.id}`}
 		>
 			<div className="settings-dialog-heading">
@@ -301,8 +227,7 @@ function ProviderDetail({
 					type="button"
 					aria-label="关闭服务详情"
 					data-dialog-cancel
-					disabled={discovery.registering}
-					onClick={requestClose}
+					onClick={onClose}
 				>
 					×
 				</button>
@@ -320,6 +245,7 @@ function ProviderDetail({
 				).map(([key, label]) => (
 					<button
 						key={key}
+						ref={key === "models" ? modelsTab : undefined}
 						className={view === key ? "is-current" : ""}
 						type="button"
 						aria-current={view === key ? "page" : undefined}
@@ -332,7 +258,6 @@ function ProviderDetail({
 			<div hidden={view !== "models"}>
 				<ProviderModels
 					provider={provider}
-					discovery={discovery}
 					onAdd={() => setEditor({ kind: "add-model" })}
 					onEdit={(model) => setEditor({ kind: "model", model })}
 					onDelete={(model) => {
@@ -343,70 +268,78 @@ function ProviderDetail({
 			</div>
 			{view === "connection" && (
 				<div className="provider-connection-view">
-					<dl className="provider-connection-list">
-						<div>
-							<dt>名称</dt>
-							<dd>{provider.name}</dd>
+					<section aria-labelledby="provider-connection-title">
+						<div className="provider-section-heading">
+							<h3 id="provider-connection-title">连接信息</h3>
+							<button
+								type="button"
+								className="settings-button secondary"
+								disabled={toggle.isPending}
+								onClick={() => setEditor({ kind: "provider" })}
+							>
+								编辑连接
+							</button>
 						</div>
-						<div>
-							<dt>API 地址</dt>
-							<dd>{provider.base_url}</dd>
+						<dl className="settings-group provider-connection-list">
+							<div>
+								<dt>API 地址</dt>
+								<dd>{provider.base_url}</dd>
+							</div>
+							<div>
+								<dt>默认协议</dt>
+								<dd>{protocolName(provider.protocol)}</dd>
+							</div>
+						</dl>
+					</section>
+					<section aria-labelledby="provider-key-title">
+						<h3 className="provider-block-title" id="provider-key-title">
+							访问密钥
+						</h3>
+						<div className="settings-group provider-option-row">
+							<div>
+								<strong>API Key</strong>
+								<span className="settings-hint">
+									{provider.has_api_key ? "已配置" : "未配置"}
+								</span>
+							</div>
+							<button
+								type="button"
+								className="settings-button secondary"
+								disabled={toggle.isPending}
+								onClick={() => setEditor({ kind: "key" })}
+							>
+								{provider.has_api_key ? "更换密钥" : "添加密钥"}
+							</button>
 						</div>
-						<div>
-							<dt>默认协议</dt>
-							<dd>{protocolName(provider.protocol)}</dd>
-						</div>
-						<div>
-							<dt>API Key</dt>
-							<dd>{provider.has_api_key ? "已配置" : "未配置（可选）"}</dd>
-						</div>
-						<div>
-							<dt>服务状态</dt>
-							<dd>{provider.enabled ? "已启用" : "已停用"}</dd>
-						</div>
-					</dl>
-					<div className="settings-actions">
-						<button
-							className="settings-button secondary"
-							type="button"
-							disabled={discovery.registering || toggle.isPending}
-							onClick={() => setEditor({ kind: "provider" })}
-						>
-							编辑连接
-						</button>
-						<button
-							className="settings-button secondary"
-							type="button"
-							disabled={discovery.registering || toggle.isPending}
-							onClick={() => setEditor({ kind: "key" })}
-						>
-							更新 API Key
-						</button>
-						<button
-							className="settings-button secondary"
-							type="button"
-							disabled={discovery.registering || toggle.isPending}
-							onClick={() => toggle.mutate()}
-						>
-							{toggle.isPending
-								? "更新中…"
-								: provider.enabled
-									? "停用服务"
-									: "启用服务"}
-						</button>
-					</div>
+					</section>
+					<section aria-labelledby="provider-management-title">
+						<h3 className="provider-block-title" id="provider-management-title">
+							服务管理
+						</h3>
+						<label className="settings-group provider-option-row">
+							<span>
+								<strong>启用此服务</strong>
+								<small className="settings-hint">
+									停用后，此服务下的模型将无法用于新请求。
+								</small>
+							</span>
+							<input
+								type="checkbox"
+								role="switch"
+								className="learning-context-switch"
+								aria-checked={provider.enabled}
+								checked={provider.enabled}
+								disabled={toggle.isPending}
+								onChange={(e) => toggle.mutate(e.target.checked)}
+							/>
+						</label>
+					</section>
 					<InlineError error={toggle.error} />
 					<div className="provider-danger-zone">
-						<div>
-							<strong>删除服务</strong>
-							<p className="settings-hint">
-								同时删除登记模型，引用它们的用途默认值将失效。历史验证记录会保留。
-							</p>
-						</div>
 						<button
 							className="settings-button danger"
 							type="button"
-							disabled={discovery.registering || toggle.isPending}
+							disabled={toggle.isPending}
 							onClick={() => {
 								remove.reset();
 								setEditor({ kind: "delete-provider" });
@@ -418,7 +351,14 @@ function ProviderDetail({
 				</div>
 			)}
 			{view === "history" && (
-				<RunHistory providerId={provider.id} providers={[provider]} />
+				<RunHistory
+					providerId={provider.id}
+					providers={[provider]}
+					onShowModels={() => {
+						setView("models");
+						modelsTab.current?.focus();
+					}}
+				/>
 			)}
 		</ConfirmDialog>
 	);

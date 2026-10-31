@@ -41,16 +41,19 @@ export function useSettingsDraft(draft: RegisteredDraft) {
 	useEffect(() => register?.(ref), [register, draft.dirty, draft.pending]);
 }
 
-export function useSettingsFields<T>(initial: T) {
+export function useSettingsFields<T>(initial: T, preserveInput = false) {
 	const [state, setState] = useState(() => createDraft(initial));
 	useEffect(() => {
-		setState((current) => receiveDraft(current, initial));
-	}, [initial]);
+		setState((current) => receiveDraft(current, initial, preserveInput));
+	}, [initial, preserveInput]);
 	return {
 		fields: state.value,
 		dirty: draftDirty(state),
 		saved: state.saved,
-		change: (value: T) => setState((current) => editDraft(current, value)),
+		change: (value: T, preserveValue = false) =>
+			setState((current) =>
+				editDraft(current, value, preserveInput || preserveValue),
+			),
 		reset: () => setState((current) => resetDraft(current)),
 		accept: (submitted: T, persisted: T) =>
 			setState((current) => completeDraft(current, submitted, persisted)),

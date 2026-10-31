@@ -983,6 +983,12 @@ export async function translationRegression(h: BrowserHarness) {
 	};
 	const writes: components["schemas"]["TranslationSettingsUpdate"][] = [];
 	let settingReads = 0;
+	let savedRevision = newer.revision;
+	const writeCount = () => writes.length;
+	let releaseModelSave = () => {};
+	const modelSave = new Promise<void>((resolve) => {
+		releaseModelSave = resolve;
+	});
 	mock(async (request) => {
 		const url = new URL(request.url);
 		if (url.pathname === "/api/providers")
@@ -991,11 +997,14 @@ export async function translationRegression(h: BrowserHarness) {
 					id: "provider",
 					name: "回归服务",
 					enabled: true,
-					models: [{ id: "model", model_id: "test-model", enabled: true }],
+					models: [
+						{ id: "model", model_id: "test-model", enabled: true },
+						{ id: "chat", model_id: "chat-model", enabled: true },
+					],
 				},
 			]);
 		if (url.pathname === "/api/settings")
-			return Response.json({ defaults: { chat_model_id: "model" } });
+			return Response.json({ defaults: { chat_model_id: "chat" } });
 		if (
 			url.pathname === "/api/settings/translation" &&
 			request.method === "GET"
@@ -1016,9 +1025,10 @@ export async function translationRegression(h: BrowserHarness) {
 			const body =
 				(await request.json()) as components["schemas"]["TranslationSettingsUpdate"];
 			writes.push(body);
-			return writes.length === 1
+			if (writeCount() === 3) await modelSave;
+			return writeCount() === 1
 				? Response.json({ detail: "翻译设置已更新" }, { status: 409 })
-				: Response.json({ ...newer, ...body, revision: 3 });
+				: Response.json({ ...newer, ...body, revision: ++savedRevision });
 		}
 		throw new Error(
 			`Unexpected settings request ${request.method} ${url.pathname}`,
@@ -1039,7 +1049,7 @@ export async function translationRegression(h: BrowserHarness) {
 			"Single default should not expose scheme naming",
 		);
 		await until(
-			() => container.textContent?.includes("使用讨论模型") ?? false,
+			() => container.textContent?.includes("选用当前讨论模型") ?? false,
 			"Available discussion model shortcut should show",
 		);
 		check(
@@ -1049,33 +1059,43 @@ export async function translationRegression(h: BrowserHarness) {
 			"Model option must identify provider",
 		);
 		const language = [...container.querySelectorAll("label")]
-			.find((label) => label.textContent?.includes("目标语言"))
+			.find((label) => label.textContent?.includes("译成"))
 			?.querySelector<HTMLInputElement>("input");
 		check(language, "Language input exists");
+		const budget = container.querySelector<HTMLInputElement>(
+			'input[aria-label="前文句数上限"]',
+		);
+		check(
+			budget && budget.getBoundingClientRect().width > 0,
+			"Translation limits must be editable on entry",
+		);
+		language.focus();
 		inputValue(language, "英语");
 		await new Promise((resolve) => setTimeout(resolve, 0));
-		click("保存翻译设置");
+		check(
+			writeCount() === 0,
+			"Typing must keep the local draft until editing finishes",
+		);
+		language.blur();
 		await until(
-			() =>
-				container.textContent?.includes("翻译设置已在其他页面更新") ?? false,
+			() => container.textContent?.includes("你的修改仍保留在这里") ?? false,
 			"409 should retain draft and require comparison",
 		);
 		check(language.value === "英语", "409 replaced local settings draft");
-		click("读取当前设置（保留草稿）");
+		click("查看差异");
 		await until(
 			() =>
 				container.textContent?.includes("当前设置读取失败，请重试。") ?? false,
 			"Failed current-settings read should be visible and recoverable",
 		);
-		click("读取当前设置（保留草稿）");
+		click("查看差异");
 		await until(
-			() =>
-				container.textContent?.includes("当前已保存配置（版本 2）") ?? false,
+			() => container.textContent?.includes("采用已保存设置") ?? false,
 			"Current configuration must be visible before overwrite approval",
 		);
 		check(
 			container.textContent?.includes("韩语") &&
-				container.textContent?.includes("500 字符"),
+				container.textContent?.includes("500"),
 			"Comparison should show current language and context",
 		);
 		check(
@@ -1083,32 +1103,60 @@ export async function translationRegression(h: BrowserHarness) {
 			"Reading current settings replaced the draft",
 		);
 		check(
-			writes.length === 1,
+			writeCount() === 1,
 			"Reading current revision must not submit a draft",
 		);
-		const regular = [...container.querySelectorAll("button")].find(
-			(button) => button.textContent === "保存翻译设置",
-		);
-		check(
-			regular?.disabled,
-			"Normal save must stay blocked while conflict is unresolved",
-		);
-		click("按当前版本保存草稿");
+		language.focus();
+		inputValue(language, "法语");
+		language.blur();
+		check(writeCount() === 1, "Blur cannot confirm a conflicting overwrite");
+		click("保存我的修改");
 		await until(
 			() =>
 				[...container.querySelectorAll('[role="status"]')].some(
-					(node) => node.textContent === "已保存",
+					(node) => node.textContent === "已自动保存",
 				),
 			"Explicit overwrite should complete",
 		);
 		check(
 			writes[1]?.expected_revision === 2 &&
-				writes[1]?.target_language === "英语",
+				writes[1]?.target_language === "法语",
 			"Explicit confirmation must submit the draft against shown current revision",
 		);
 		check(
 			writes[1]?.name === "保留的方案名称",
 			"Hidden scheme name must remain stored",
+		);
+		click("选用当前讨论模型");
+		await until(
+			() => writes[2]?.model_id === "chat",
+			"Choosing the discussion model saves immediately",
+		);
+		check(
+			!container.textContent?.includes("选用当前讨论模型"),
+			"Hide the shortcut when the models match",
+		);
+		budget.focus();
+		inputValue(budget, "");
+		budget.blur();
+		check(writeCount() === 3, "An empty numeric draft must not be saved");
+		budget.focus();
+		inputValue(budget, "6");
+		budget.blur();
+		check(
+			writeCount() === 3,
+			"A newer edit should wait for the pending model save",
+		);
+		releaseModelSave();
+		await until(
+			() => writes[3]?.before_sentences === 6,
+			"Finished context edit must autosave",
+		);
+		check(
+			writes[3]?.expected_revision === 4 &&
+				budget.value === "6" &&
+				writes[3]?.model_id === "chat",
+			"Later autosaves must use the last accepted revision",
 		);
 	} finally {
 		cleanup();
