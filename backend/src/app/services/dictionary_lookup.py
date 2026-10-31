@@ -21,6 +21,7 @@ from app.dictionary_schemas import (
 )
 from app.nlp.contracts import MaterialReadingToken
 from app.nlp.tokenization import Analyzer, tokenize_chunk
+from app.services.dictionary_deinflection import godan_potential_base
 
 if TYPE_CHECKING:
     from app.services.dictionary_store import DictionaryEntry, DictionaryStore
@@ -44,6 +45,7 @@ class _Candidate:
     lemma: str = ""
     pos: tuple[str, ...] = ()
     term_only: bool = False
+    required_rule: str = ""
 
 
 def _key(value: str) -> str:
@@ -203,6 +205,11 @@ def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
     for index, token in enumerate(tokens):
         if not _word_text(token.surface):
             continue
+        potential_bases = {
+            base
+            for form in (token.dictionary_form, token.normalized_form)
+            if (base := godan_potential_base(form, token.pos)) is not None
+        }
         # Token-boundary compounds complement literal character spans. The last lexical
         # token supplies its lemma; auxiliary suffixes retain their actual source extent.
         ends = [token.end]
@@ -262,9 +269,32 @@ def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
                             restored or form != token.surface,
                         )
                     )
+                for base in potential_bases:
+                    # Keep the original lemma as stronger ranking evidence. A possible
+                    # v5 base must match that spelling and the dictionary's v5 rule.
+                    add(
+                        _Candidate(
+                            prefix + base,
+                            start,
+                            end,
+                            lemma=prefix + token.dictionary_form,
+                            pos=tuple(token.pos),
+                            term_only=True,
+                            required_rule="v5",
+                        )
+                    )
     return sorted(
         candidates,
-        key=lambda c: (c.start, c.end, c.key, c.reading, c.lemma, c.pos, c.term_only),
+        key=lambda c: (
+            c.start,
+            c.end,
+            c.key,
+            c.reading,
+            c.lemma,
+            c.pos,
+            c.term_only,
+            c.required_rule,
+        ),
     )
 
 
@@ -322,6 +352,11 @@ def _best_matches(
             candidate
             for candidate in by_key.get(_key(entry.reading), [])
             if not candidate.term_only
+        ]
+        options = [
+            candidate
+            for candidate in options
+            if not candidate.required_rule or candidate.required_rule in entry.rules.split()
         ]
         if not options:
             continue
