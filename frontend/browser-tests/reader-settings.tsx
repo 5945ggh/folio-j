@@ -379,6 +379,25 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		);
 		const originalFrame = frame(),
 			originalDocument = frame().contentDocument;
+		if (!vertical) {
+			const bounds = viewport().getBoundingClientRect();
+			check(
+				bounds.top === 0 && Math.abs(bounds.bottom - innerHeight) <= 1,
+				"Horizontal reading must extend behind chrome to both screen edges",
+			);
+			const tools = find<HTMLElement>(".reader-bottom nav");
+			const box = tools.getBoundingClientRect();
+			check(
+				document
+					.elementsFromPoint(innerWidth / 2, box.top + box.height / 2)
+					.includes(originalFrame) &&
+					document.elementFromPoint(innerWidth / 2, innerHeight - 2) ===
+						originalFrame,
+				"Middle-chapter text must remain behind the toolbar and reachable below it",
+			);
+		}
+		if (preview && params.get("panel") === "reading")
+			return "reader chrome preview: middle-chapter text behind floating tools";
 		await open();
 		const panel = find<HTMLElement>('[role="dialog"][aria-label="阅读设置"]');
 		for (const label of ["更多排版", "更多界面", "带上下文复制"])
@@ -479,6 +498,50 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			getComputedStyle(panel).colorScheme.includes(dark ? "dark" : "light"),
 			"Settings must inherit Reader paper color scheme",
 		);
+		const opacity = find<HTMLInputElement>(
+			'input[aria-label="工具栏背景不透明度"]',
+		);
+		const geometry = () =>
+			JSON.stringify({
+				frame: frame().getBoundingClientRect().toJSON(),
+				viewport: viewport().getBoundingClientRect().toJSON(),
+				top: viewport().scrollTop,
+				left: viewport().scrollLeft,
+			});
+		const beforeOpacity = geometry();
+		const canvas = document.createElement("canvas").getContext("2d");
+		check(canvas, "Toolbar alpha check requires a canvas color parser");
+		for (const value of [0, 50, 100, 55]) {
+			h.inputValue(opacity, String(value));
+			await h.until(
+				() =>
+					JSON.parse(localStorage.getItem(uiKey) ?? "{}").toolbarOpacity ===
+					value,
+				"Toolbar background opacity must apply immediately",
+			);
+			for (const selector of [".reader-top", ".reader-bottom nav"]) {
+				const chrome = find<HTMLElement>(selector);
+				canvas.clearRect(0, 0, 1, 1);
+				canvas.fillStyle = getComputedStyle(chrome).backgroundColor;
+				canvas.fillRect(0, 0, 1, 1);
+				check(
+					Math.abs(
+						(canvas.getImageData(0, 0, 1, 1).data[3] ?? Number.NaN) / 255 -
+							value / 100,
+					) < 0.01 &&
+						getComputedStyle(chrome).opacity === "1" &&
+						getComputedStyle(find("button:not(:disabled)", chrome)).opacity ===
+							"1",
+					"Opacity must tint only the chrome background, leaving controls clear",
+				);
+			}
+			check(
+				geometry() === beforeOpacity &&
+					frame() === originalFrame &&
+					frame().contentDocument === originalDocument,
+				"Opacity must preserve text geometry, scroll position and iframe identity",
+			);
+		}
 		if (preview) {
 			if (params.get("panel") !== "expanded") {
 				for (const label of ["更多排版", "更多界面", "带上下文复制"])
@@ -918,6 +981,26 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 					?.contentDocument?.querySelector("[data-locator-leaf]"),
 			"Other book must load",
 		);
+		if (!vertical) {
+			await h.until(
+				() => positions.has("other"),
+				"Other book must finish restoring before scrolling to its end",
+			);
+			viewport().scrollTop = viewport().scrollHeight;
+			await h.until(() => {
+				const last = frame().contentDocument?.querySelector(
+					'[data-locator-leaf="119"]',
+				);
+				if (!last) return false;
+				const bottom =
+					frame().getBoundingClientRect().top +
+					last.getBoundingClientRect().bottom;
+				return (
+					bottom > 70 &&
+					bottom < find(".reader-bottom nav").getBoundingClientRect().top
+				);
+			}, "Trailing scroll space must reveal the complete last line above the toolbar");
+		}
 		await go("/settings/context-copy");
 		await h.until(
 			() => route === "/settings/context-copy",

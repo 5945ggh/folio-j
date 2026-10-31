@@ -176,14 +176,17 @@
 .reader-r1 .reader-viewport {
 	position: absolute;
 	z-index: 0;
-	top: var(--reader-top-space);
-	bottom: var(--reader-bottom-space);
+	top: 0;
+	bottom: 0;
 	left: 50%;
 	transform: translateX(-50%);
 	width: min(100%, calc(var(--reader-width) + 128px));
 	height: auto;
 	margin: 0;
-	padding: 0 clamp(32px, calc((100vw - var(--reader-width)) / 2), 64px);
+	/* Scroll the first/last-page breathing room with the text behind the chrome. */
+	padding: var(--reader-top-space)
+		clamp(32px, calc((100vw - var(--reader-width)) / 2), 64px)
+		var(--reader-bottom-space);
 	border: 0;
 	border-radius: 0;
 	background: var(--reader-bg);
@@ -193,6 +196,7 @@
 	overscroll-behavior: contain;
 }
 .reader-r1 .reader-viewport.material-vertical {
+	top: var(--reader-top-space);
 	bottom: calc(var(--reader-bottom-space) - 52px);
 	padding: 0 0 52px;
 	left: 32px;

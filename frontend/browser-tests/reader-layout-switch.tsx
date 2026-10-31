@@ -294,6 +294,12 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 			visibleParagraphs().includes(200),
 			"Delayed readings mount must establish a usable recovery baseline for resize",
 		);
+		const beforeRestoreSize = saved.length;
+		viewport.style.removeProperty("height");
+		await h.until(
+			() => saved.length > beforeRestoreSize,
+			"Removing the temporary resize must restore the responsive reading viewport",
+		);
 		if (preview)
 			return "reader layout switch fixture: chapter midpoint with study marks";
 		const settings = h.container.querySelector<HTMLButtonElement>(
