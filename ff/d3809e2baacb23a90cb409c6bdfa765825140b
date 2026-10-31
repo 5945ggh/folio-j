@@ -1,0 +1,96 @@
+frontend/src/chat/progress.ts
+  s_f1f94627ba8014::t_b66dfd8813262d 1-12,14-17,19,24-42,45,47-74
+  s_f1f94627ba8014::t_4006f1ee4b805e 13,18,20-23,46
+  s_f1f94627ba8014::t_a0d40b8ef89fe7 43-44
+frontend/src/chat/explanation.ts
+  s_f1f94627ba8014::t_8f8f3c70741ef0 15,52-53,55-57,62,71,87
+  s_f1f94627ba8014::t_a0d40b8ef89fe7 5-9,58-61
+docs/ARCHITECTURE.md
+  s_f1f94627ba8014::t_ed72b1f0f600db 487
+backend/tests/test_analysis_workflow_acceptance.py
+  s_f1f94627ba8014::t_de1fac60141f75 123,189,252,297
+frontend/src/chat/ReplyProgress.tsx
+  s_f1f94627ba8014::t_4006f1ee4b805e 14,18,32
+  s_f1f94627ba8014::t_3361fae156579d 6
+  s_f1f94627ba8014::t_b66dfd8813262d 1-5,7-13,15-17,19-31,33-45
+backend/tests/test_tool_adapters.py
+  s_f1f94627ba8014::t_72892f704dd725 244-248,258,260,343-347,357,359
+frontend/browser-tests/explanation.tsx
+  s_f1f94627ba8014::t_65dafb4d00604e 332-336
+frontend/browser-tests/workbench-render.tsx
+  s_f1f94627ba8014::t_65dafb4d00604e 1,23-25,45-46,53,82,219-220,238-241,251-252,257,280,292-293,298,309,314
+  s_f1f94627ba8014::t_142316c55b2278 214-218,275-278
+  s_f1f94627ba8014::t_a6f1da7bf39785 208-213,221-237,242-250,253-256,258-265,267-274,279,281-291,294-297,299-308,312-313
+  s_f1f94627ba8014::t_ecd71ecd677594 266
+backend/tests/test_stream_progress.py
+  s_f1f94627ba8014::t_5e905aefd23fab 45-47,248-250
+  s_f1f94627ba8014::t_72892f704dd725 51,251,278
+backend/src/app/jobs/agent.py
+  s_f1f94627ba8014::t_ec6f1d45a720d7 84-85,90-92,95
+  s_f1f94627ba8014::t_2785c4b7f2bad9 394-396,425-427,436,690,692
+  s_f1f94627ba8014::t_5e905aefd23fab 97-99,129-135,429-432,435
+  s_f1f94627ba8014::t_2afb607ac33eba 12,79,82-83,86-89,93-94,96,100-104,179,268-277,296-297,423-424,428,433-434
+backend/src/app/llm/adapters.py
+  s_f1f94627ba8014::t_2afb607ac33eba 61,121-122,242-244
+backend/src/app/jobs/runtime.py
+  s_f1f94627ba8014::t_2afb607ac33eba 138-143
+frontend/src/styles.css
+  s_f1f94627ba8014::t_3361fae156579d 1880-1885
+  s_f1f94627ba8014::t_792dec1cf894a2 1862-1876,1894-1896,1898-1900
+  s_f1f94627ba8014::t_4006f1ee4b805e 1877-1879,1886-1893
+  s_f1f94627ba8014::t_8f8f3c70741ef0 1901-1903
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_f1f94627ba8014::t_44ba96299dfc45 18
+frontend/src/chat/progress.test.ts
+  s_f1f94627ba8014::t_a0d40b8ef89fe7 4-8,11-14,26-27,29-34,47-57,72-75,94-98,101-109,112-119
+  s_f1f94627ba8014::t_12143cffe90e2f 78,91-92
+  s_f1f94627ba8014::t_2be240baa16a8e 79-90
+  s_f1f94627ba8014::t_ecd71ecd677594 71
+  s_f1f94627ba8014::t_67ed18705891c6 1-3,9-10,15-25,28,35-46,58-70,76-77,93,99-100,110-111,120-124
+backend/tests/test_worker_dispatch.py
+  s_f1f94627ba8014::t_de1fac60141f75 52
+frontend/scripts/test-browser.mjs
+  s_f1f94627ba8014::t_65dafb4d00604e 78
+frontend/src/chat/Workbench.tsx
+  s_f1f94627ba8014::t_3361fae156579d 255-259,682-688
+  s_f1f94627ba8014::t_a0d40b8ef89fe7 775-777,1109,1344-1348,1389,1391-1392,1398,1404
+  s_f1f94627ba8014::t_a6f1da7bf39785 1395-1397
+  s_f1f94627ba8014::t_8f8f3c70741ef0 50,65,1106-1108,1110-1111,1342-1343,1349-1357
+  s_f1f94627ba8014::t_d2e15739f443f3 1399-1401
+  s_f1f94627ba8014::t_4006f1ee4b805e 51,220,227
+  s_f1f94627ba8014::t_60c1ee893c8df5 52,219,226,253-254,260-268,681,774,778
+  s_f1f94627ba8014::t_a52ce11703ddd2 1390,1402-1403
+  s_f1f94627ba8014::t_eab5b2d9c568ea 1393-1394
+  s_f1f94627ba8014::t_ba7ae1d98656c4 689-690
+frontend/src/chat/explanation.test.ts
+  s_f1f94627ba8014::t_ce66cb25d73ddd 14-45,53
+  s_f1f94627ba8014::t_e1ebc2aaf53da5 6-9,46-52
+  s_f1f94627ba8014::t_e9ca07209b3994 54
+backend/tests/test_analysis_agent.py
+  s_f1f94627ba8014::t_ec6f1d45a720d7 1103-1109,1124,1133
+  s_f1f94627ba8014::t_de1fac60141f75 43,894,1101
+backend/tests/chat_tool_fixture.py
+  s_f1f94627ba8014::t_de1fac60141f75 26
+docs/INFORMATION_ARCHITECTURE.md
+  s_f1f94627ba8014::t_33867fa0bf24dd 233-234
+docs/PRD.md
+  s_f1f94627ba8014::t_83489cce64d545 568
+docs/USAGE.md
+  s_f1f94627ba8014::t_c71582222ff908 139-140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ffd3809e2baacb23a90cb409c6bdfa765825140b",
+  "prompts": {},
+  "sessions": {
+    "s_f1f94627ba8014": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1903c-cd88-7492-a724-10411833f777",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
