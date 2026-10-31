@@ -44,7 +44,7 @@
 	display: grid;
 	gap: 8px;
 	margin: 10px 0 0;
-	font-size: 12px;
+	font-size: 13px;
 }
 .reader-copy-budget input[type="number"] {
 	width: 100%;

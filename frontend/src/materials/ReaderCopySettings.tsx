@@ -142,7 +142,17 @@ export function ReaderCopySettings({
 				}}
 			>
 				<summary>
-					<span className="reader-settings-disclosure-label">带上下文复制</span>
+					<span className="reader-settings-field-label">
+						<span className="reader-settings-disclosure-label">
+							带上下文复制
+						</span>
+						<span
+							className="reader-settings-scope"
+							title="保存后用于所有书籍；连接同一资料库的浏览器共用这份设置。"
+						>
+							所有书籍
+						</span>
+					</span>
 					<span className="reader-settings-summary">
 						{editor.query.data
 							? `已保存 · ${contextCopySummary(editor.query.data)}`
@@ -150,9 +160,8 @@ export function ReaderCopySettings({
 					</span>
 				</summary>
 				<div className="reader-settings-more">
-					<p className="reader-settings-scope">个人默认 · 所有书籍</p>
 					<p>
-						使用同一后端的浏览器共用。修改和重置均在保存后生效，关闭面板保留本次阅读中的修改。
+						保存后用于所有书籍，连接同一资料库的浏览器共用。关闭面板会保留未保存的修改。
 					</p>
 					{fields && (
 						<form

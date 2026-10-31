@@ -108,7 +108,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		updated_at: stamp,
 		settings: {
 			font_size: 26,
-			line_height: 2.4,
+			line_height: 2,
 			writing_mode: vertical ? "vertical-rl" : "horizontal-tb",
 		},
 	};
@@ -433,6 +433,10 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			);
 		}
 		const lineHeight = find<HTMLInputElement>('input[aria-label="行距"]');
+		check(
+			lineHeight.value === "2",
+			"A saved line height must remain unchanged when the Reader default changes",
+		);
 		lineHeight.focus();
 		check(
 			document.activeElement !== lineHeight,
@@ -567,6 +571,8 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		await h.until(
 			() =>
 				find<HTMLInputElement>('input[aria-label="字号"]').value === "22" &&
+				find<HTMLInputElement>('input[aria-label="行距"]').value === "2.4" &&
+				positions.get(materialId)?.settings?.line_height === 2.4 &&
 				positions.get(materialId)?.settings?.writing_mode === "horizontal-tb",
 			"Typography reset must restore existing defaults",
 		);

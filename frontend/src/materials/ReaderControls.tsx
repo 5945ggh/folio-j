@@ -180,13 +180,18 @@ export function ReaderSettings({
 				>
 					<div className="reader-settings-heading">
 						<h3 id="reader-typography-title">排版</h3>
+						<span
+							className="reader-settings-scope"
+							title="字号、行距和文字方向仅对这本书生效，随阅读位置保存。"
+						>
+							这本书
+						</span>
 						<ReaderSettingsReset
 							label="排版"
 							description="恢复字号、方向、行距、字体与正文宽度。"
 							onReset={() => onResetGroup("typography")}
 						/>
 					</div>
-					<p className="reader-settings-scope">本书</p>
 					<label className="reader-settings-slider">
 						字号{" "}
 						<output>
@@ -242,11 +247,16 @@ export function ReaderSettings({
 								}
 							/>
 						</label>
-						<p className="reader-settings-scope">
-							以下仅用于本书版本 · 当前浏览器
-						</p>
 						<div className="reader-field">
-							<span>字体</span>
+							<span className="reader-settings-field-label">
+								字体
+								<span
+									className="reader-settings-scope"
+									title="字体仅对这本书的当前版本生效，保存在当前浏览器中。"
+								>
+									仅此浏览器
+								</span>
+							</span>
 							<fieldset className="reader-options" aria-label="字体">
 								{(["mincho", "gothic"] as const).map((v, i) => (
 									<button
@@ -261,7 +271,15 @@ export function ReaderSettings({
 							</fieldset>
 						</div>
 						<label className="reader-settings-slider">
-							正文宽度{" "}
+							<span className="reader-settings-field-label">
+								正文宽度
+								<span
+									className="reader-settings-scope"
+									title="正文宽度仅对这本书的当前版本生效，保存在当前浏览器中。"
+								>
+									仅此浏览器
+								</span>
+							</span>
 							<output>
 								{bookUi.width}
 								<span> px</span>
@@ -291,25 +309,33 @@ export function ReaderSettings({
 				>
 					<div className="reader-settings-heading">
 						<h3 id="reader-ruby-title">注音</h3>
+						<span
+							className="reader-settings-scope"
+							title="仅对这本书的当前版本生效，保存在当前浏览器中。"
+						>
+							这本书 · 此浏览器
+						</span>
 						<ReaderSettingsReset
 							label="注音"
 							description="恢复原书注音与显示方式。"
 							onReset={() => onResetGroup("ruby")}
 						/>
 					</div>
-					<p className="reader-settings-scope">本书版本 · 当前浏览器</p>
-					<fieldset className="reader-options" aria-label="注音显示">
-						{(["show", "on-demand", "hide"] as const).map((v, i) => (
-							<button
-								key={v}
-								type="button"
-								aria-pressed={bookUi.ruby === v}
-								onClick={() => onBookUi({ ...bookUi, ruby: v })}
-							>
-								{["显示", "按需", "隐藏"][i]}
-							</button>
-						))}
-					</fieldset>
+					<div className="reader-field">
+						<span>显示方式</span>
+						<fieldset className="reader-options" aria-label="注音显示">
+							{(["show", "on-demand", "hide"] as const).map((v, i) => (
+								<button
+									key={v}
+									type="button"
+									aria-pressed={bookUi.ruby === v}
+									onClick={() => onBookUi({ ...bookUi, ruby: v })}
+								>
+									{["显示", "按需", "隐藏"][i]}
+								</button>
+							))}
+						</fieldset>
+					</div>
 					{rubyStatus}
 					<div className="reader-field">
 						<span>注音范围</span>
@@ -344,25 +370,33 @@ export function ReaderSettings({
 				>
 					<div className="reader-settings-heading">
 						<h3 id="reader-interface-title">阅读界面</h3>
+						<span
+							className="reader-settings-scope"
+							title="对当前浏览器中的所有书籍生效，不影响其他浏览器。"
+						>
+							所有书籍 · 此浏览器
+						</span>
 						<ReaderSettingsReset
 							label="阅读界面"
 							description="恢复纸面、工具栏不透明度与记录显示。"
 							onReset={() => onResetGroup("interface")}
 						/>
 					</div>
-					<p className="reader-settings-scope">所有书籍 · 当前浏览器</p>
-					<fieldset className="reader-options" aria-label="纸面主题">
-						{(["white", "black", "system"] as const).map((v, i) => (
-							<button
-								key={v}
-								type="button"
-								aria-pressed={ui.theme === v}
-								onClick={() => onUi({ ...ui, theme: v })}
-							>
-								{["白", "黑", "跟随系统"][i]}
-							</button>
-						))}
-					</fieldset>
+					<div className="reader-field">
+						<span>纸面</span>
+						<fieldset className="reader-options" aria-label="纸面主题">
+							{(["white", "black", "system"] as const).map((v, i) => (
+								<button
+									key={v}
+									type="button"
+									aria-pressed={ui.theme === v}
+									onClick={() => onUi({ ...ui, theme: v })}
+								>
+									{["白", "黑", "跟随系统"][i]}
+								</button>
+							))}
+						</fieldset>
+					</div>
 					<SettingsDisclosure
 						label="更多界面设置"
 						summary={`下划线${ui.marks.studySegmentUnderlines ? "开" : "关"} · 页边入口${ui.marks.studySegmentMargins ? "开" : "关"}`}

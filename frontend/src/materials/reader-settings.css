@@ -1,5 +1,8 @@
 .reader-settings {
 	min-inline-size: 0;
+	font-family: system-ui, sans-serif;
+	font-size: 13px;
+	line-height: 1.6;
 }
 .reader-settings .reader-settings-group {
 	min-inline-size: 0;
@@ -19,14 +22,30 @@
 	line-height: 1.5;
 }
 .reader-settings .reader-settings-scope {
-	margin: 4px 0 14px;
-	font-size: 10px;
-	line-height: 1.6;
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	padding: 2px 6px;
+	border: 1px solid var(--reader-line);
+	border-radius: 4px;
+	background: var(--reader-soft);
 	color: var(--reader-muted);
+	font-size: 11px;
+	font-weight: 400;
+	line-height: 1.4;
+	white-space: nowrap;
+}
+.reader-settings-field-label {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
 }
 .reader-settings .reader-field {
+	flex-direction: column;
+	align-items: stretch;
 	margin: 14px 0;
-	gap: 10px;
+	gap: 8px;
 }
 .reader-settings .reader-options {
 	min-width: 0;
@@ -37,7 +56,7 @@
 .reader-settings .reader-options > button {
 	min-block-size: 38px;
 	padding: 8px 6px;
-	font-size: 12px;
+	font-size: 13px;
 	white-space: nowrap;
 }
 .reader-settings label.reader-settings-slider {
@@ -51,7 +70,7 @@
 	font-variant-numeric: tabular-nums;
 }
 .reader-settings-slider output span {
-	font-size: 10px;
+	font-size: 11px;
 }
 .reader-settings-slider input[type="range"] {
 	grid-column: 1 / -1;
@@ -122,8 +141,11 @@
 .reader-settings-heading {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
+	gap: 8px;
+	margin-bottom: 14px;
+}
+.reader-settings-heading > .reader-settings-reset-button {
+	margin-inline-start: auto;
 }
 .reader-settings .reader-settings-reset-button {
 	flex: none;
@@ -194,9 +216,6 @@
 	}
 	.reader-settings .reader-field {
 		gap: 8px;
-	}
-	.reader-settings .reader-field > span {
-		font-size: 12px;
 	}
 	.reader-copy-leave .reader-copy-leave-actions > button {
 		flex: 1 1 auto;

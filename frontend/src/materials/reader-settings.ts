@@ -9,7 +9,7 @@ import {
 
 export const DEFAULT_READING_SETTINGS: Settings = {
 	font_size: 22,
-	line_height: 2,
+	line_height: 2.4,
 	writing_mode: "horizontal-tb",
 };
 
