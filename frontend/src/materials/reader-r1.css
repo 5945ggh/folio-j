@@ -104,7 +104,7 @@
 	text-decoration: none;
 }
 .reader-r1 :focus-visible {
-	outline: 2px solid var(--reader-focus);
+	outline: 1px solid var(--reader-focus);
 	outline-offset: 2px;
 }
 /* Keep frame content (presentation.ts) and reader chrome tints in step. */

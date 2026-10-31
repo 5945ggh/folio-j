@@ -202,7 +202,7 @@
 	cursor: pointer;
 }
 .app-shell.segment-study-shell .segment-share-mode:has(:focus-visible) {
-	outline: 2px solid light-dark(#747982, var(--color-focus));
+	outline: 1px solid light-dark(#747982, var(--color-focus));
 	outline-offset: 3px;
 }
 @media (max-width: 520px), (max-height: 500px) {

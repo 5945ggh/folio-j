@@ -80,7 +80,7 @@ export function Tabs({
 					<span className="catalog-tab-unavailable" key={item.value}>
 						{button}
 						<span id={hintId} className="catalog-tab-hint" role="tooltip">
-							{item.label}支持会有的！
+							{item.label}支持会有的 (´▽｀)
 						</span>
 					</span>
 				);

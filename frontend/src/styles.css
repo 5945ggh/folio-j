@@ -56,7 +56,7 @@ a {
 	text-decoration: none;
 }
 :focus-visible {
-	outline: 2px solid var(--color-focus);
+	outline: 1px solid var(--color-focus);
 	outline-offset: 3px;
 }
 .topbar {
@@ -1413,7 +1413,7 @@ a {
 	background: light-dark(#6487aa, var(--color-focus));
 }
 .conversation-resizer:focus-visible {
-	outline: 2px solid light-dark(#6487aa, var(--color-focus));
+	outline: 1px solid light-dark(#6487aa, var(--color-focus));
 	outline-offset: -2px;
 }
 .segment-conversation[hidden] {
@@ -2039,7 +2039,7 @@ a {
 }
 
 .original-content:focus-visible {
-	outline: 2px solid light-dark(#8ca5bd, var(--color-focus));
+	outline: 1px solid light-dark(#8ca5bd, var(--color-focus));
 	outline-offset: 3px;
 }
 @media (max-width: 999px) {
