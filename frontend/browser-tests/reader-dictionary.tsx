@@ -287,6 +287,15 @@ export async function readerDictionary(h: BrowserHarness) {
 			});
 		if (path === "/api/settings/context-copy")
 			return Response.json(defaultContextCopySettings);
+		if (path.endsWith("/illustrations"))
+			return Response.json({
+				material_id: book.id,
+				version_id: "v1",
+				total: 0,
+				offset: 0,
+				limit: 40,
+				items: [],
+			});
 		if (path === "/api/materials/dictionary") return Response.json(book);
 		if (path === "/api/sources/source")
 			return Response.json({
@@ -375,7 +384,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			{ type: "mouseReleased", x, y, button: "left", clickCount: 1 },
 		]);
 	};
-	const glyphClick = async (
+	const glyphPoint = (
 		element: Element,
 		offset = 0,
 		frame?: HTMLIFrameElement,
@@ -387,14 +396,60 @@ export async function readerDictionary(h: BrowserHarness) {
 		range.setEnd(node, offset + 1);
 		const rect = range.getBoundingClientRect(),
 			outer = frame?.getBoundingClientRect();
-		const point = {
+		return {
 			x: (outer?.left ?? 0) + rect.left + rect.width / 2,
 			y: (outer?.top ?? 0) + rect.top + rect.height / 2,
 		};
+	};
+	const glyphClick = async (
+		element: Element,
+		offset = 0,
+		frame?: HTMLIFrameElement,
+	) => {
+		const point = glyphPoint(element, offset, frame);
 		await clickAt(point.x, point.y);
 		return point;
 	};
 	const settle = () => new Promise((resolve) => setTimeout(resolve, 160));
+	const key = (
+		target: EventTarget,
+		value: string,
+		options: KeyboardEventInit = {},
+	) =>
+		target.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: value,
+				bubbles: true,
+				cancelable: true,
+				...options,
+			}),
+		);
+	const dragCard = async (card: HTMLElement, dx: number, dy: number) => {
+		const header = card.querySelector<HTMLElement>(".dict-card-head");
+		check(header, "Card must expose its title header");
+		const box = header.getBoundingClientRect();
+		const x = box.left + 28,
+			y = box.top + 19;
+		check(
+			header.contains(document.elementFromPoint(x, y)) &&
+				!document.elementFromPoint(x, y)?.closest("button"),
+			"Drag must begin on a visible non-button part of the card header",
+		);
+		await pointer([
+			{ type: "mouseMoved", x, y },
+			{ type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 },
+			{ type: "mouseMoved", x: x + dx, y: y + dy, button: "left", buttons: 1 },
+			{
+				type: "mouseReleased",
+				x: x + dx,
+				y: y + dy,
+				button: "left",
+				buttons: 0,
+				clickCount: 1,
+			},
+		]);
+		await settle();
+	};
 	const checkCardInViewport = (card: HTMLElement) => {
 		const rect = card.getBoundingClientRect();
 		check(
@@ -506,12 +561,12 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		check(opacity, "Dictionary settings must expose background opacity slider");
 		check(
-			Number(opacity.value) === 92 &&
-				Number(opacity.min) === 60 &&
+			Number(opacity.value) === 72 &&
+				Number(opacity.min) === 20 &&
 				Number(opacity.max) === 100,
 			"Opacity slider must expose the supported default and range",
 		);
-		h.inputValue(opacity, "76");
+		h.inputValue(opacity, "20");
 		button("关闭查词设置").click();
 		await h.until(
 			() => !h.container.querySelector(".dict-config"),
@@ -522,7 +577,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			() =>
 				h.container.querySelector<HTMLInputElement>(
 					'input[aria-label="词卡背景不透明度"]',
-				)?.value === "76",
+				)?.value === "20",
 			"Opacity must survive reopening dictionary settings",
 		);
 		button("点击查词").click();
@@ -556,6 +611,100 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		check(root, "Root card must render");
 		await checkPager(root);
+		if (window.innerWidth >= 740) {
+			const headerTitle = root.querySelector<HTMLElement>("h2");
+			check(headerTitle, "Word title must provide card focus");
+			headerTitle.focus();
+			key(headerTitle, "ArrowLeft");
+			await settle();
+			check(
+				root.getAttribute("aria-label") === "词卡 · 猫",
+				"Left boundary must not wrap",
+			);
+			for (const options of [
+				{ shiftKey: true },
+				{ ctrlKey: true },
+				{ altKey: true },
+				{ metaKey: true },
+				{ isComposing: true },
+			])
+				key(headerTitle, "ArrowRight", options);
+			key(document.body, "ArrowRight");
+			const selectedProse = root.querySelector('[data-dict-role="def2"]');
+			check(selectedProse, "Selection guard needs Japanese prose");
+			const range = document.createRange();
+			range.selectNodeContents(selectedProse);
+			document.getSelection()?.addRange(range);
+			key(headerTitle, "ArrowRight");
+			await settle();
+			check(
+				root.getAttribute("aria-label") === "词卡 · 猫",
+				"Selection, composition, modifiers and outside UI must retain the candidate",
+			);
+			document.getSelection()?.removeAllRanges();
+			const beforeKeys = root.getBoundingClientRect();
+			key(headerTitle, "ArrowRight");
+			await h.until(
+				() => root.getAttribute("aria-label") === "词卡 · 猫が",
+				"Focused right arrow must choose the next original range",
+			);
+			key(headerTitle, "ArrowRight");
+			await h.until(
+				() => root.getAttribute("aria-label") === "词卡 · 猫が歩く",
+				"Repeated right arrow must reach the last range",
+			);
+			key(headerTitle, "ArrowRight");
+			await settle();
+			check(
+				root.getAttribute("aria-label") === "词卡 · 猫が歩く",
+				"Right boundary must not wrap",
+			);
+			check(
+				Math.abs(root.getBoundingClientRect().left - beforeKeys.left) <= 1 &&
+					Math.abs(root.getBoundingClientRect().top - beforeKeys.top) <= 1,
+				"Arrow paging must keep the card position",
+			);
+			key(headerTitle, "ArrowLeft");
+			await h.until(
+				() => root.getAttribute("aria-label") === "词卡 · 猫が",
+				"Left arrow must return one range",
+			);
+			key(headerTitle, "ArrowLeft");
+			await h.until(
+				() => root.getAttribute("aria-label") === "词卡 · 猫",
+				"Left arrow must restore the initial range",
+			);
+			const beforeDrag = root.getBoundingClientRect();
+			const beforeRequests = requests.length;
+			await dragCard(root, 64, 38);
+			const moved = root.getBoundingClientRect();
+			check(
+				Math.abs(moved.left - beforeDrag.left) > 20 &&
+					Math.abs(moved.top - beforeDrag.top) > 20,
+				"Dragging the desktop card header must move the word card",
+			);
+			check(
+				requests.length === beforeRequests &&
+					root.getAttribute("aria-label") === "词卡 · 猫" &&
+					h.container.querySelectorAll(".dict-card").length === 1,
+				"Header dragging must neither open a word nor page candidates",
+			);
+			checkCardInViewport(root);
+			await checkPager(root);
+			check(
+				Math.abs(root.getBoundingClientRect().left - moved.left) <= 1 &&
+					Math.abs(root.getBoundingClientRect().top - moved.top) <= 1,
+				"Candidate paging must preserve the manually dragged position",
+			);
+			await dragCard(root, -2000, -2000);
+			checkCardInViewport(root);
+			const clamped = root.getBoundingClientRect();
+			await dragCard(
+				root,
+				beforeDrag.left - clamped.left,
+				beforeDrag.top - clamped.top,
+			);
+		}
 		const originalBackground = getComputedStyle(root).backgroundColor;
 		button("即时查词").click();
 		await h.until(
@@ -575,7 +724,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			getComputedStyle(root).opacity === "1",
 			"Background opacity must preserve opaque dictionary text",
 		);
-		h.inputValue(previewOpacity, "76");
+		h.inputValue(previewOpacity, "20");
 		await h.until(
 			() => getComputedStyle(root).backgroundColor === originalBackground,
 			"Opacity preview must restore the chosen preference",
@@ -591,6 +740,7 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		const prose = root.querySelector<HTMLElement>('[data-dict-role="def2"]');
 		check(prose, "Japanese definition must render");
+
 		const childOrigin = await glyphClick(prose, 1);
 		await h.until(
 			() => h.container.querySelectorAll(".dict-card").length === 2,
@@ -613,6 +763,32 @@ export async function readerDictionary(h: BrowserHarness) {
 				"Narrow screen child must step down with parent exposed",
 			);
 		checkCardInViewport(child);
+		if (window.innerWidth === 390) {
+			const parentBefore = root.getBoundingClientRect(),
+				childBefore = child.getBoundingClientRect();
+			await dragCard(child, 0, parentBefore.top > 45 ? -28 : 28);
+			const parentAfter = root.getBoundingClientRect(),
+				childAfter = child.getBoundingClientRect();
+			check(
+				Math.abs(childAfter.top - childBefore.top) > 5 &&
+					Math.abs(
+						childAfter.top -
+							childBefore.top -
+							(parentAfter.top - parentBefore.top),
+					) <= 1,
+				"Dragging a compact foreground header must move parent and child together",
+			);
+			check(
+				Math.abs(
+					childAfter.top -
+						parentAfter.top -
+						(childBefore.top - parentBefore.top),
+				) <= 1,
+				"Compact dragging must preserve the exposed parent step",
+			);
+			checkCardInViewport(root);
+			checkCardInViewport(child);
+		}
 		if (window.innerWidth >= 740) {
 			check(
 				!(
@@ -685,7 +861,127 @@ export async function readerDictionary(h: BrowserHarness) {
 			h.container.querySelectorAll(".dict-card").length === 2,
 			"Card scrolling must retain parent and child",
 		);
-		button("返回上层词卡", child).click();
+		const trustedClick = async (label: string) => {
+			const target = button(label);
+			const box = target.getBoundingClientRect();
+			await clickAt(box.left + box.width / 2, box.top + box.height / 2);
+			await settle();
+		};
+		const browserKey = (
+			window as Window & { browserKey?: (key: "Escape") => Promise<void> }
+		).browserKey;
+		check(browserKey, "Overlay order needs native Escape dispatch");
+		const settings = () =>
+			h.container.querySelector('[role="dialog"][aria-label="阅读设置"]');
+		const gallery = () =>
+			h.container.querySelector(".reader-gallery-grid") ??
+			[...h.container.querySelectorAll(".reader-query-dialog")].find((panel) =>
+				panel.textContent?.includes("本书暂无可查看插图"),
+			);
+		const childScroll = scroll.scrollTop;
+		const checkStack = (message: string) =>
+			check(
+				root.isConnected &&
+					child.isConnected &&
+					h.container.querySelectorAll(".dict-card").length === 2 &&
+					scroll.scrollTop === childScroll,
+				message,
+			);
+		await trustedClick("阅读设置");
+		await h.until(
+			() => !!settings(),
+			"Reading settings must open beside cards",
+		);
+		checkStack(
+			"Opening reading settings must preserve nested cards and scroll",
+		);
+		await trustedClick("插图库");
+		await h.until(
+			() => !!gallery() && !settings(),
+			"Gallery must replace reading settings through the actual toolbar",
+		);
+		checkStack("Switching right panels must preserve nested cards and scroll");
+		await browserKey("Escape");
+		await h.until(
+			() => !gallery(),
+			"Escape must close the newer right panel first",
+		);
+		checkStack("Panel-first Escape must retain the nested dictionary stack");
+		await trustedClick("阅读设置");
+		await h.until(
+			() => !!settings(),
+			"Reading settings must reopen with cards",
+		);
+		await trustedClick("关闭阅读设置");
+		await h.until(
+			() => !settings(),
+			"Close button must dismiss reading settings",
+		);
+		checkStack("Explicit panel close must preserve nested cards and scroll");
+		await trustedClick("插图库");
+		await h.until(
+			() => !!gallery(),
+			"Gallery must reopen before card activation",
+		);
+		let restoredChild = child;
+		if (window.innerWidth >= 1280) {
+			const childTitle = child.querySelector<HTMLElement>("h2");
+			const rootTitle = root.querySelector<HTMLElement>("h2");
+			check(childTitle && rootTitle, "Cards must expose titles for activation");
+			const titleBox = childTitle.getBoundingClientRect();
+			const parentBox = rootTitle.getBoundingClientRect();
+			check(
+				document
+					.elementFromPoint(titleBox.left + 8, titleBox.top + 8)
+					?.closest(".reader-query-dialog"),
+				"Newer gallery must receive pointer input where it overlaps the child card",
+			);
+			check(
+				root.contains(
+					document.elementFromPoint(parentBox.left + 8, parentBox.top + 8),
+				),
+				"Card activation must use the visibly exposed parent title",
+			);
+			await clickAt(parentBox.left + 8, parentBox.top + 8);
+			await settle();
+			check(
+				child.contains(
+					document.elementFromPoint(titleBox.left + 8, titleBox.top + 8),
+				),
+				"Activating the exposed parent must bring cards above the overlapping gallery",
+			);
+			await clickAt(titleBox.left + 8, titleBox.top + 8);
+			await browserKey("Escape");
+			await h.until(
+				() => !child.isConnected && root.isConnected,
+				"Activating a card must let Escape unwind only the child",
+			);
+			check(gallery(), "Card-first Escape must preserve the right panel");
+			await glyphClick(prose, 1);
+			await h.until(
+				() => h.container.querySelectorAll(".dict-card").length === 2,
+				"Nested lookup must remain available while the right panel is open",
+			);
+			const opened = h.container.querySelector<HTMLElement>(
+				'.dict-card[data-depth="1"]',
+			);
+			check(opened, "Nested lookup must restore its child");
+			restoredChild = opened;
+			check(
+				gallery(),
+				"Opening a nested word card must retain the right panel",
+			);
+		}
+		await trustedClick("插图库");
+		await h.until(
+			() => !gallery(),
+			"Toolbar toggle must close the retained gallery",
+		);
+		check(
+			root.isConnected && restoredChild.isConnected,
+			"Toggling the gallery must preserve both dictionary cards",
+		);
+		button("返回上层词卡", restoredChild).click();
 		await h.until(
 			() => h.container.querySelectorAll(".dict-card").length === 1,
 			"Back must restore parent card",
@@ -775,6 +1071,116 @@ export async function readerDictionary(h: BrowserHarness) {
 			"Dictionary mode controls must open",
 		);
 		button("Shift 悬浮").click();
+		if (window.innerWidth >= 740) {
+			await pointer([
+				{ type: "mouseMoved", ...glyphPoint(leaf, 0, frame), modifiers: 8 },
+			]);
+			await h.until(
+				() =>
+					!!h.container.querySelector(
+						'.dict-card[aria-label="词卡 · 猫"] .dict-definitions',
+					),
+				"Shift hover must open the original word before testing nested hover",
+			);
+			const hoverRoot = h.container.querySelector<HTMLElement>(
+				'.dict-card[data-depth="0"]',
+			);
+			const hoverProse = hoverRoot?.querySelector<HTMLElement>(
+				'[data-dict-role="def2"]',
+			);
+			check(hoverRoot && hoverProse, "Shift hover needs Japanese root prose");
+			const chinese = hoverRoot.querySelector<HTMLElement>(
+				'[lang="zh"][data-dict-role="dfcn"]',
+			);
+			check(chinese, "Hover cancellation needs a Chinese definition");
+			const hoverPoint = glyphPoint(hoverProse, 1);
+			await pointer([
+				{ type: "mouseMoved", ...hoverPoint, modifiers: 8 },
+				{ type: "mouseMoved", ...glyphPoint(chinese), modifiers: 8 },
+			]);
+			await new Promise((resolve) => setTimeout(resolve, 400));
+			check(
+				h.container.querySelectorAll(".dict-card").length === 1,
+				"Moving into Chinese prose must cancel a pending Japanese hover and keep Chinese selectable",
+			);
+			await pointer([
+				{ type: "mouseMoved", ...hoverPoint, modifiers: 8 },
+				{ type: "mouseMoved", x: 1, y: 1, modifiers: 8 },
+			]);
+			await new Promise((resolve) => setTimeout(resolve, 400));
+			check(
+				h.container.querySelectorAll(".dict-card").length === 1,
+				"Leaving the card must cancel a pending nested hover",
+			);
+			await pointer([{ type: "mouseMoved", ...hoverPoint, modifiers: 8 }]);
+			document.dispatchEvent(
+				new KeyboardEvent("keyup", { key: "Shift", bubbles: true }),
+			);
+			await new Promise((resolve) => setTimeout(resolve, 400));
+			check(
+				h.container.querySelectorAll(".dict-card").length === 1,
+				"Releasing Shift must cancel pending nested hover",
+			);
+			await pointer([
+				{ type: "mouseMoved", ...glyphPoint(hoverProse, 1), modifiers: 8 },
+			]);
+			await h.until(
+				() => h.container.querySelectorAll(".dict-card").length === 2,
+				"Shift hover on Japanese card prose must open a child without clicking",
+			);
+			const hoverChild = h.container.querySelector<HTMLElement>(
+				'.dict-card[data-depth="1"]',
+			);
+			check(hoverChild, "Nested Shift card must exist");
+			await pointer([{ type: "mouseMoved", ...hoverPoint, modifiers: 0 }]);
+			await settle();
+			check(
+				hoverChild.isConnected,
+				"Releasing Shift must preserve an already opened child",
+			);
+			check(
+				hoverChild.contains(document.activeElement),
+				"New child must receive keyboard focus",
+			);
+			key(document.activeElement ?? document.body, "ArrowRight");
+			await settle();
+			check(
+				hoverRoot.getAttribute("aria-label") === "词卡 · 猫" &&
+					hoverChild.isConnected,
+				"A child at its candidate boundary must not page its parent",
+			);
+			const parentTitle = hoverRoot.querySelector<HTMLElement>("h2");
+			check(parentTitle, "Parent title must remain accessible");
+			const parentTitleBox = parentTitle.getBoundingClientRect();
+			await clickAt(parentTitleBox.left + 8, parentTitleBox.top + 8);
+			check(
+				hoverRoot.contains(document.activeElement),
+				"Clicking the parent header must focus the parent card",
+			);
+			key(document.activeElement ?? document.body, "ArrowRight");
+			await h.until(
+				() =>
+					hoverRoot.getAttribute("aria-label") === "词卡 · 猫が" &&
+					!hoverChild.isConnected,
+				"Focused parent paging must update its range and remove descendants of the old range",
+			);
+			key(document.activeElement ?? document.body, "ArrowLeft");
+			await h.until(
+				() => hoverRoot.getAttribute("aria-label") === "词卡 · 猫",
+				"Parent keyboard focus must survive paging",
+			);
+			const clickProse = hoverRoot.querySelector<HTMLElement>(
+				'[data-dict-role="def2"]',
+			);
+			check(clickProse, "Parent Japanese prose must survive paging");
+			await glyphClick(clickProse, 1);
+			await h.until(
+				() => h.container.querySelectorAll(".dict-card").length === 2,
+				"Ordinary Japanese prose click must still open a child after releasing Shift",
+			);
+			button("关闭查词").click();
+		}
+
 		const countBeforeOrdinaryClick = requests.length;
 		await glyphClick(leaf, 0, frame);
 		await h.until(
@@ -889,7 +1295,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			() =>
 				h.container.querySelector<HTMLInputElement>(
 					'input[aria-label="词卡背景不透明度"]',
-				)?.value === "76",
+				)?.value === "20",
 			"Dictionary opacity must persist across Reader remounts",
 		);
 		const manage = [
@@ -923,7 +1329,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			() => !!h.container.querySelector(".dict-trigger"),
 			"Returning from dictionary settings must reopen the source book",
 		);
-		return `dictionary: real body→Japanese child→${window.innerWidth >= 740 ? "four desktop levels" : "compact stack"}→back→close; saved mark + Shift click retain records; late response ignored`;
+		return `dictionary: real body→Japanese child→${window.innerWidth >= 740 ? "four desktop levels" : "compact stack"}→back→close; settings/gallery coexistence and active-layer Escape; saved mark + Shift click retain records; late response ignored`;
 	} finally {
 		dispose();
 	}

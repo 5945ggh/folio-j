@@ -1,28 +1,31 @@
 import {
 	type CSSProperties,
-	type MouseEvent,
+	type KeyboardEvent,
+	type RefObject,
 	useEffect,
 	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
-import type { DictionaryNode, DictionaryRequest } from "./dictionary-api";
+import { DictionaryDefinitions } from "./DictionaryDefinitions";
+import type { DictionaryRequest } from "./dictionary-api";
 import {
 	compactDictionaryLayout,
 	compactDictionaryWidth,
 	desktopDictionaryLayout,
+	movedDictionaryLayout,
 } from "./dictionary-layout";
 import type { DictionaryPage } from "./dictionary-pages";
-import {
-	type DictionaryPassage,
-	dictionaryPassage,
-} from "./dictionary-passage";
+import type { DictionaryPassage } from "./dictionary-passage";
+import type { DictionaryMode } from "./ReaderDictionary";
+import type { ReaderCardPosition } from "./reader-card-drag";
 import type { ScreenAnchor, StudyMarkHit } from "./reader-study";
+import { useReaderCardDrag } from "./use-reader-card-drag";
 
 export type LookupOrigin = {
 	input: DictionaryRequest;
 	anchor: ScreenAnchor;
-	parentBox?: ScreenAnchor;
+	parentBoxes?: ScreenAnchor[];
 	record?: StudyMarkHit | null;
 	highlight?: (start: number, end: number) => void;
 	clear?: () => void;
@@ -36,46 +39,6 @@ export type LookupLevel = {
 	pending: boolean;
 	message: string;
 };
-function definitionStyle(
-	style: DictionaryNode["style"],
-): CSSProperties | undefined {
-	if (!style) return undefined;
-	const properties = Object.fromEntries(
-		Object.entries(style).filter(([, value]) => value != null),
-	);
-	// The dictionary supplies the light-paper colors. Keep their hue legible on dark paper.
-	for (const [key, paper, percent] of [
-		["color", "--reader-fg", 48],
-		["backgroundColor", "--reader-bg", 24],
-		["borderColor", "--reader-fg", 52],
-	] as const) {
-		const color = style[key];
-		if (color)
-			properties[key] =
-				`light-dark(${color}, color-mix(in srgb, ${color} ${percent}%, var(${paper})))`;
-	}
-	return properties;
-}
-
-function entryContent(nodes: DictionaryNode[], path = "") {
-	return nodes.map((node, i) => {
-		const key = `${path}.${i}`;
-		const Tag = node.tag ?? "span";
-		if (Tag === "br") return <br key={key} />;
-		return (
-			<Tag
-				key={key}
-				lang={node.lang ?? undefined}
-				data-dict-role={node.role ?? undefined}
-				style={definitionStyle(node.style)}
-			>
-				{node.text}
-				{node.content && entryContent(node.content, key)}
-			</Tag>
-		);
-	});
-}
-
 function excerpt(level: LookupLevel) {
 	const match = level.pages[level.index];
 	if (!match) return null;
@@ -120,7 +83,9 @@ function ReturnIcon() {
 }
 
 export function DictionaryCards({
+	behindPanel,
 	levels,
+	mode,
 	opacity,
 	title,
 	nested,
@@ -130,6 +95,8 @@ export function DictionaryCards({
 	onRecord,
 }: {
 	levels: LookupLevel[];
+	behindPanel: boolean;
+	mode: DictionaryMode;
 	opacity: number;
 	title: string;
 	nested: (depth: number, origin: LookupOrigin) => void;
@@ -164,16 +131,22 @@ export function DictionaryCards({
 			CSS.highlights?.delete("folio-card-word");
 		};
 	}, [levels]);
+	const deck = useRef<HTMLElement>(null);
+	const [stackPoint, setStackPoint] = useState<ReaderCardPosition | null>(null);
 	const root = levels[0];
 	if (!root) return null;
 	const compact = viewport.width < compactDictionaryWidth;
-	const position = compact
+	const automatic = compact
 		? compactDictionaryLayout(
 				root.origin.anchor,
 				viewport.width,
 				viewport.height,
 			)
 		: undefined;
+	const position =
+		automatic && stackPoint
+			? movedDictionaryLayout(stackPoint, automatic.width, viewport, true)
+			: automatic;
 	const ancestors = position && position.maxHeight >= 330 ? 2 : 1;
 	const style: CSSProperties & {
 		"--dict-height"?: string;
@@ -183,12 +156,23 @@ export function DictionaryCards({
 		"--dict-height": position ? `${position.maxHeight}px` : undefined,
 		"--dict-opacity": `${opacity}%`,
 	};
-	const parents = levels.flatMap((item) =>
-		item.origin.parentBox ? [item.origin.parentBox] : [],
-	);
+	// Freeze the actual ancestor boxes for this lookup, including any manual moves.
+	const openChild = (depth: number, origin: LookupOrigin) => {
+		const cards = Array.from(
+			deck.current?.querySelectorAll<HTMLElement>(".dict-card") ?? [],
+		);
+		nested(depth, {
+			...origin,
+			parentBoxes: cards
+				.slice(0, depth + 1)
+				.filter((node) => !node.hidden)
+				.map((node) => node.getBoundingClientRect()),
+		});
+	};
 
 	return (
 		<section
+			ref={deck}
 			className="dict-deck"
 			role="dialog"
 			data-compact={compact}
@@ -198,6 +182,7 @@ export function DictionaryCards({
 		>
 			{levels.map((level, depth) => (
 				<WordCard
+					focusOnMount={!behindPanel}
 					key={level.id}
 					level={level}
 					depth={depth}
@@ -205,9 +190,11 @@ export function DictionaryCards({
 					hidden={compact && depth < levels.length - 1 - ancestors}
 					compact={compact}
 					viewport={viewport}
-					parents={parents.slice(0, depth)}
+					mode={mode}
+					deck={deck}
+					moveStack={setStackPoint}
 					child={levels[depth + 1]}
-					nested={nested}
+					nested={openChild}
 					choose={choose}
 					backTo={backTo}
 					close={close}
@@ -219,6 +206,7 @@ export function DictionaryCards({
 }
 
 function WordCard({
+	focusOnMount,
 	level,
 	depth,
 	title,
@@ -226,7 +214,9 @@ function WordCard({
 	hidden,
 	compact,
 	viewport,
-	parents,
+	mode,
+	deck,
+	moveStack,
 	nested,
 	choose,
 	backTo,
@@ -234,12 +224,15 @@ function WordCard({
 	onRecord,
 }: {
 	level: LookupLevel;
+	focusOnMount: boolean;
 	depth: number;
 	title: string;
 	child?: LookupLevel;
 	compact: boolean;
 	viewport: { width: number; height: number };
-	parents: ScreenAnchor[];
+	deck: RefObject<HTMLElement | null>;
+	moveStack: (point: ReaderCardPosition) => void;
+	mode: DictionaryMode;
 	hidden: boolean;
 } & Pick<
 	Parameters<typeof DictionaryCards>[0],
@@ -261,15 +254,38 @@ function WordCard({
 						: 0),
 			);
 	}, [compact, firstHeight, level.pending]);
-	const position = compact
+	const [manual, setManual] = useState<ReaderCardPosition | null>(null);
+	const automatic = compact
 		? undefined
 		: desktopDictionaryLayout(
 				level.origin.anchor,
-				parents,
+				level.origin.parentBoxes ?? [],
 				viewport.width,
 				viewport.height,
 				firstHeight ?? 360,
 			);
+	const position =
+		manual && automatic
+			? movedDictionaryLayout(manual, automatic.width, viewport, false)
+			: automatic;
+	const movable = compact ? deck : card;
+	const drag = useReaderCardDrag(
+		movable,
+		!hidden,
+		(point) => {
+			const box = movable.current?.getBoundingClientRect();
+			return box
+				? movedDictionaryLayout(point, box.width, viewport, compact, box.height)
+				: point;
+		},
+		compact ? moveStack : setManual,
+		false, // Left/right belong to candidate paging in a dictionary card.
+	);
+	// A lookup can finish after the reader has already switched to a panel.
+	const takeInitialFocus = useRef(focusOnMount);
+	useLayoutEffect(() => {
+		if (takeInitialFocus.current) card.current?.focus({ preventScroll: true });
+	}, []);
 	const scroll = useRef<HTMLDivElement>(null);
 	const [selection, setSelection] = useState<Range | null>(null);
 	useEffect(() => {
@@ -289,33 +305,34 @@ function WordCard({
 		document.addEventListener("selectionchange", changed);
 		return () => document.removeEventListener("selectionchange", changed);
 	}, []);
-	const lookupText = (event: MouseEvent<HTMLDivElement>) => {
+	const step = (delta: number) => {
+		const next = level.index + delta;
+		if (next < 0 || next >= level.pages.length) return;
+		// Keep focus in this card if a pager button becomes disabled.
+		if (document.activeElement?.closest(".dict-pager"))
+			card.current?.focus({ preventScroll: true });
+		choose(depth, next);
+		if (scroll.current) scroll.current.scrollTop = 0;
+	};
+	const turnPage = (event: KeyboardEvent<HTMLElement>) => {
 		if (
-			event.button !== 0 ||
-			event.detail > 1 ||
-			event.shiftKey ||
+			(event.key !== "ArrowLeft" && event.key !== "ArrowRight") ||
+			event.target !== document.activeElement ||
+			event.defaultPrevented ||
+			event.nativeEvent.isComposing ||
+			event.altKey ||
 			event.ctrlKey ||
 			event.metaKey ||
-			event.altKey ||
-			!document.getSelection()?.isCollapsed
+			event.shiftKey ||
+			!document.getSelection()?.isCollapsed ||
+			(event.target as Element).closest(
+				"textarea,input,select,[contenteditable=true]",
+			)
 		)
 			return;
-		const passage = dictionaryPassage(
-			event.currentTarget,
-			event.clientX,
-			event.clientY,
-		);
-		if (passage)
-			nested(depth, {
-				input: { text: passage.text, position: passage.offset },
-				anchor: passage.anchor,
-				parentBox: card.current?.getBoundingClientRect(),
-				passage,
-			});
-	};
-	const step = (delta: number) => {
-		choose(depth, level.index + delta);
-		if (scroll.current) scroll.current.scrollTop = 0;
+		event.preventDefault();
+		event.stopPropagation();
+		step(event.key === "ArrowRight" ? 1 : -1);
 	};
 	const glyph =
 		Array.from(level.origin.input.text)[level.origin.input.position ?? 0] ?? "";
@@ -323,13 +340,21 @@ function WordCard({
 		<article
 			className="dict-card"
 			ref={card}
+			tabIndex={-1}
+			onKeyDown={turnPage}
+			data-dragging={drag.dragging || undefined}
 			style={position}
 			data-depth={depth}
 			data-parent={!!child}
 			hidden={hidden}
 			aria-label={`词卡 · ${titleWord ?? glyph}`}
 		>
-			<header className="dict-card-head">
+			<header
+				className="dict-card-head"
+				tabIndex={0}
+				title={compact ? "拖动卡头移动整组词卡" : "拖动卡头移动词卡"}
+				{...drag.handlers}
+			>
 				<div className="dict-card-heading">
 					<div className="dict-imprint">
 						<span className="dict-seal" aria-hidden="true">
@@ -353,6 +378,8 @@ function WordCard({
 							<button
 								type="button"
 								aria-label="上一个候选"
+								aria-keyshortcuts="ArrowLeft"
+								title="上一个候选（←）"
 								disabled={level.index === 0}
 								onClick={() => step(-1)}
 							>
@@ -364,6 +391,8 @@ function WordCard({
 							<button
 								type="button"
 								aria-label="下一个候选"
+								aria-keyshortcuts="ArrowRight"
+								title="下一个候选（→）"
 								disabled={level.index + 1 >= level.pages.length}
 								onClick={() => step(1)}
 							>
@@ -414,10 +443,20 @@ function WordCard({
 								)}
 							</h3>
 						)}
-						{/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: A pointer looks up a glyph; keyboard users can query an explicit selection. */}
-						<div className="dict-definitions" lang="ja" onClick={lookupText}>
-							{entryContent(entry.definitions)}
-						</div>
+						<DictionaryDefinitions
+							nodes={entry.definitions}
+							mode={mode}
+							enabled={!hidden && !(compact && child)}
+							child={child}
+							pending={level.pending}
+							onLookup={(passage) =>
+								nested(depth, {
+									input: { text: passage.text, position: passage.offset },
+									anchor: passage.anchor,
+									passage,
+								})
+							}
+						/>
 					</section>
 				))}
 			</div>
@@ -459,7 +498,6 @@ function WordCard({
 											selection_end: Array.from(text).length,
 										},
 										anchor: selection.getBoundingClientRect(),
-										parentBox: card.current?.getBoundingClientRect(),
 									});
 							}}
 						>

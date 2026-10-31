@@ -922,7 +922,7 @@ export class ReaderStudy {
 								} catch {
 									/* Stale text is never guessed. */
 								}
-							}, 140);
+							}, FOCUS_TIMING.dictionaryHover);
 					}
 				} catch {
 					cancelHover();

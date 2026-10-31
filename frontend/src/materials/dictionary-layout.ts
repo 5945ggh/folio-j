@@ -1,9 +1,41 @@
+import {
+	clampReaderCardPosition,
+	type ReaderCardPosition,
+} from "./reader-card-drag.ts";
 import type { ScreenAnchor } from "./reader-study.ts";
 
 export const compactDictionaryWidth = 740;
 const gap = 8;
 const clamp = (value: number, first: number, last: number) =>
 	Math.max(first, Math.min(value, last));
+
+/** Keep the whole visible card on screen while dragging, and its header reachable after resizing. */
+export function movedDictionaryLayout(
+	point: ReaderCardPosition,
+	cardWidth: number,
+	viewport: { width: number; height: number },
+	compact: boolean,
+	keepHeight = 120,
+) {
+	const inset = compact ? 10 : 12;
+	const { left, top } = clampReaderCardPosition(
+		point,
+		{
+			left: inset,
+			right: viewport.width - inset - cardWidth,
+			top: inset,
+			bottom: viewport.height - inset,
+		},
+		keepHeight,
+	);
+	const available = Math.max(0, viewport.height - inset - top);
+	return {
+		left,
+		top,
+		width: cardWidth,
+		maxHeight: compact ? available : Math.min(460, available),
+	};
+}
 
 export function compactDictionaryLayout(
 	anchor: ScreenAnchor,

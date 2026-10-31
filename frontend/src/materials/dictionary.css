@@ -107,6 +107,10 @@
 	inset: 0;
 	display: block;
 }
+.reader-r1[data-panel-above-cards="true"] .dict-deck {
+	/* The active side panel is at 7. The toolbar stays accessible above both. */
+	z-index: 6;
+}
 .dict-card {
 	background: color-mix(
 		in srgb,
@@ -130,14 +134,45 @@
 .dict-deck[data-compact="false"] .dict-card {
 	position: absolute;
 }
+.dict-deck[data-compact="false"] .dict-card:focus-within {
+	z-index: 1;
+}
+.dict-card:focus-visible,
+.dict-card-head:focus-visible {
+	outline: 2px solid var(--reader-accent);
+	outline-offset: -2px;
+}
 .dict-card[hidden] {
 	display: none;
 }
 .dict-card-head {
+	position: relative;
+	cursor: grab;
+	user-select: none;
+	touch-action: none;
 	gap: 8px;
 	padding: 14px 14px 9px 17px;
 	flex: none;
 	align-items: flex-start;
+}
+.dict-card-head::before {
+	content: "";
+	position: absolute;
+	top: 5px;
+	left: 50%;
+	width: 23px;
+	height: 3px;
+	transform: translateX(-50%);
+	border-radius: 2px;
+	background: var(--reader-line);
+	pointer-events: none;
+}
+.dict-card-head:hover::before,
+.dict-card[data-dragging] .dict-card-head::before {
+	background: var(--reader-muted);
+}
+.dict-card[data-dragging] .dict-card-head {
+	cursor: grabbing;
 }
 .dict-imprint {
 	gap: 7px;

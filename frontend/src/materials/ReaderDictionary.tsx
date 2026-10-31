@@ -24,6 +24,7 @@ import {
 	subscribeDictionaryLibrary,
 } from "./dictionary-api";
 import { dictionaryPages } from "./dictionary-pages";
+import { MIN_DICTIONARY_OPACITY } from "./preferences";
 import type {
 	ReaderLookupHit,
 	StudyMarkHit,
@@ -36,12 +37,15 @@ export type DictionaryControl = {
 	lookup: (hit: ReaderLookupHit | null) => void;
 	selection: (value: StudySelection) => void;
 	close: () => boolean;
+	dismissMenu: () => void;
 	back: () => boolean;
 	isOpen: () => boolean;
 };
 
 export function ReaderDictionary({
 	ref,
+	onActivate,
+	behindPanel,
 	portal,
 	mode,
 	onMode,
@@ -54,6 +58,8 @@ export function ReaderDictionary({
 	onManage,
 }: {
 	ref: Ref<DictionaryControl>;
+	onActivate: () => void;
+	behindPanel: boolean;
 	portal: HTMLElement | null;
 	mode: DictionaryMode;
 	onMode: (mode: DictionaryMode) => void;
@@ -145,6 +151,7 @@ export function ReaderDictionary({
 		[],
 	);
 	const search = async (origin: LookupOrigin, parent: number) => {
+		onActivate();
 		const selected = client.getQueryData<DictionaryStatus>(dictionaryKey);
 		if (!selected?.ready || !selected.dictionary_id) {
 			setNotice("请先在设置中选择可用词典。");
@@ -273,6 +280,7 @@ export function ReaderDictionary({
 			);
 		},
 		close,
+		dismissMenu: () => setMenu(false),
 		back,
 		isOpen: () => menu || current.current.length > 0,
 	}));
@@ -301,7 +309,10 @@ export function ReaderDictionary({
 				}
 				aria-pressed={ready && mode !== "off"}
 				aria-expanded={menu}
-				onClick={() => setMenu(!menu)}
+				onClick={() => {
+					onActivate();
+					setMenu(!menu);
+				}}
 			>
 				<svg
 					viewBox="0 0 24 24"
@@ -378,7 +389,7 @@ export function ReaderDictionary({
 											<input
 												type="range"
 												aria-label="词卡背景不透明度"
-												min="60"
+												min={MIN_DICTIONARY_OPACITY}
 												max="100"
 												step="1"
 												value={opacity}
@@ -405,6 +416,9 @@ export function ReaderDictionary({
 						{levels.length > 0 &&
 							cardDictionary?.dictionary_id === selection && (
 								<DictionaryCards
+									behindPanel={behindPanel}
+									key={levels[0]?.id}
+									mode={mode}
 									levels={levels}
 									opacity={opacity}
 									title={cardDictionary?.title ?? "本机词典"}
