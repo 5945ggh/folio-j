@@ -1,0 +1,27 @@
+docs/README.md
+  s_647501cafac3f7::t_75f3d811245be9 9
+docs/DEVELOPMENT.md
+  s_647501cafac3f7::t_8d662b46ebd477 58
+  s_647501cafac3f7::t_75f3d811245be9 60-71,77-80,82-96,98-111
+  s_647501cafac3f7::t_8ba9af80fc2be2 72-76,97
+  s_647501cafac3f7::t_7101f68b193608 81
+  s_647501cafac3f7::t_8493b4a67ea3f5 59
+docs/handovers/MAINTENANCE_OPTIMIZATION.md
+  s_647501cafac3f7::t_8ba9af80fc2be2 50-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0c2ab85fcdddc841fff1284515b5a05847a8d4bd",
+  "prompts": {},
+  "sessions": {
+    "s_647501cafac3f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19001-1a71-7073-bc4c-27f4af4d76bb",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
