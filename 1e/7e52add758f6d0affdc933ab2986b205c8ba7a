@@ -1,0 +1,43 @@
+frontend/browser-tests/reader-dictionary.tsx
+  s_fb59dca13bb2c8::t_636786f400e302 1361-1364
+  s_fb59dca13bb2c8::t_c1340187624bc3 241-246,1063-1064,1066-1069,1075-1078
+  s_fb59dca13bb2c8::t_a7353baa8308e8 15-16,49,54,297-317,409,414-415,650-653,655-660,1348-1360,1365,1367-1369,1371-1399,1401-1404,1406-1415
+  s_fb59dca13bb2c8::t_bdd0109b79bd19 1366,1370
+  s_fb59dca13bb2c8::t_3ff5ae48976327 1192-1214
+  s_fb59dca13bb2c8::t_5fd0d4ddcaf685 1169-1174
+  s_fb59dca13bb2c8::t_0ebf92dcc2f23a 408,410-413,416,654,1400,1405
+  s_fb59dca13bb2c8::t_789a473ac20989 1037-1062,1065,1070-1074,1079-1086
+frontend/src/materials/reader-frames.test.ts
+  s_fb59dca13bb2c8::t_160ecbfdfbf9c1 62-64,113,227,351,357,435
+frontend/src/materials/reader-study.test.ts
+  s_fb59dca13bb2c8::t_8eeff08b3fe9e0 125-127
+frontend/scripts/test-browser.mjs
+  s_fb59dca13bb2c8::t_3ff5ae48976327 347,349-361,431
+frontend/src/materials/reader-study.ts
+  s_fb59dca13bb2c8::t_78236d27f88c3a 795-799,804,836-838,1081-1083
+  s_fb59dca13bb2c8::t_09c6e1ab321b93 800-803
+frontend/src/materials/DictionaryCards.tsx
+  s_fb59dca13bb2c8::t_dd77783ed10d19 138,140,157-159,167
+  s_fb59dca13bb2c8::t_feb5268ef1899b 147-149
+  s_fb59dca13bb2c8::t_636786f400e302 325-326
+  s_fb59dca13bb2c8::t_cb9c617f070d68 321,352,392
+  s_fb59dca13bb2c8::t_571d32153b521b 136-137,139,141-146,150-156,160-166,179-185
+frontend/src/materials/MaterialReader.tsx
+  s_fb59dca13bb2c8::t_cb9c617f070d68 2251
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1e7e52add758f6d0affdc933ab2986b205c8ba7a",
+  "prompts": {},
+  "sessions": {
+    "s_fb59dca13bb2c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19196-9a55-7f03-9f1f-538e6d3cdb11",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
