@@ -1,0 +1,311 @@
+.reader-r1 .dict-trigger {
+	display: inline-grid;
+	place-items: center;
+}
+.dict-config,
+.dict-card {
+	box-sizing: border-box;
+	background: var(--reader-bg);
+	border: 1px solid color-mix(in srgb, var(--reader-fg) 15%, var(--reader-bg));
+	color: var(--reader-fg);
+	box-shadow:
+		0 7px 26px var(--reader-shadow),
+		0 1px 3px var(--reader-shadow);
+	border-radius: 13px;
+}
+.dict-config {
+	position: absolute;
+	bottom: calc(69px + env(safe-area-inset-bottom, 0px));
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 50;
+	width: min(320px, calc(100vw - 24px));
+	padding: 18px;
+	font:
+		13px / 1.6 system-ui,
+		sans-serif;
+}
+.dict-config header,
+.dict-card-head,
+.dict-actions,
+.dict-pager,
+.dict-foot,
+.dict-installed,
+.dict-imprint {
+	display: flex;
+	align-items: center;
+}
+.dict-config header,
+.dict-card-head,
+.dict-foot {
+	justify-content: space-between;
+}
+.dict-config h2 {
+	font-size: 18px;
+	line-height: 1.5;
+	margin: 3px 0;
+}
+.dict-config p {
+	color: var(--reader-muted);
+	margin: 10px 0;
+}
+:where(.dict-config header) > button,
+.dict-actions button {
+	font: 20px / 1 system-ui;
+	color: var(--reader-muted);
+}
+.dict-config .dict-import {
+	color: var(--reader-on-accent-soft);
+	padding: 5px 0;
+	font-size: 12px;
+}
+.dict-config .dict-modes {
+	border: 0;
+	margin: 0;
+	min-width: 0;
+	display: flex;
+	gap: 2px;
+	background: var(--reader-soft);
+	padding: 3px;
+	border-radius: 8px;
+}
+.dict-modes button {
+	flex: 1;
+	white-space: nowrap;
+	font-size: 12px;
+}
+.dict-modes button[aria-pressed="true"] {
+	background: var(--reader-bg);
+	color: var(--reader-on-accent-soft);
+	box-shadow: 0 1px 4px var(--reader-shadow);
+}
+.dict-installed {
+	gap: 6px;
+	font-size: 13px;
+}
+.dict-installed > span,
+.dict-seal {
+	display: inline-grid;
+	place-items: center;
+	width: 18px;
+	height: 18px;
+	border: 1px solid currentColor;
+	border-radius: 4px 2px;
+	color: var(--reader-on-accent-soft);
+	font: 13px / 1 serif;
+}
+.dict-deck {
+	position: fixed;
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	z-index: 49;
+	pointer-events: none;
+	writing-mode: horizontal-tb;
+}
+.dict-card {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	pointer-events: auto;
+	width: var(--dict-card-width);
+	max-height: min(480px, var(--dict-height));
+	min-height: 0;
+	font:
+		14px / 1.5 system-ui,
+		sans-serif;
+	animation: dict-appear 130ms ease-out;
+}
+.dict-card[hidden] {
+	display: none;
+}
+.dict-card-head {
+	gap: 8px;
+	padding: 14px 14px 9px 17px;
+	flex: none;
+	align-items: flex-start;
+}
+.dict-imprint {
+	gap: 7px;
+	font:
+		11px / 1.5 system-ui,
+		sans-serif;
+	color: var(--reader-muted);
+}
+.dict-card h2 {
+	font:
+		600 27px / 1.35 "Yu Mincho",
+		"Hiragino Mincho ProN",
+		serif;
+	margin: 5px 0 1px;
+	overflow-wrap: anywhere;
+}
+.dict-card h2 small {
+	font:
+		400 12px / 1.5 system-ui,
+		sans-serif;
+	margin-inline-start: 9px;
+	color: var(--reader-muted);
+}
+.dict-actions {
+	flex: none;
+	gap: 1px;
+}
+.dict-card .dict-actions button {
+	display: inline-grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+}
+.dict-scroll {
+	overflow: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+	min-height: 0;
+}
+.dict-definitions {
+	padding: 0 17px 13px;
+	font:
+		16px / 1.8 "Hiragino Sans",
+		"Yu Gothic",
+		sans-serif;
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+	cursor: text;
+	user-select: text;
+}
+.dict-definitions [data-dict-role="head"] {
+	font-size: 14px;
+	font-weight: 600;
+	padding-bottom: 5px;
+	margin-bottom: 5px;
+	border-bottom: 1px solid var(--reader-line);
+}
+.dict-definitions [lang="zh"] {
+	color: var(--reader-on-accent-soft);
+}
+.dict-definitions [data-dict-role="exam"] {
+	font-size: 0.92em;
+	color: var(--reader-muted);
+}
+.dict-definitions [data-dict-role="def1"] + [data-dict-role="def1"] {
+	margin-top: 0.65em;
+}
+.dict-message {
+	margin: 4px 17px 18px;
+	font-size: 13px;
+	color: var(--reader-muted);
+}
+.dict-foot {
+	flex: none;
+	min-height: 34px;
+	border-top: 1px solid var(--reader-line);
+	padding: 0 10px;
+	font-size: 11px;
+	color: var(--reader-muted);
+}
+.dict-pager {
+	gap: 4px;
+	font-variant-numeric: tabular-nums;
+}
+.dict-card .dict-pager button {
+	padding: 0;
+	font: 20px / 1 system-ui;
+	width: 28px;
+	height: 30px;
+}
+.dict-card .dict-link {
+	color: var(--reader-on-accent-soft);
+	font-size: 12px;
+}
+.dict-card .dict-parent-line {
+	display: none;
+}
+.dict-definitions ::highlight(folio-card-word) {
+	background-color: var(--reader-selection-bg);
+}
+.dict-excerpt mark {
+	color: var(--reader-fg);
+	background: var(--reader-selection-bg);
+	border-radius: 2px;
+}
+.dict-deck[data-compact="true"] {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 0;
+}
+.dict-deck[data-compact="true"] .dict-card {
+	width: 100%;
+	max-height: min(460px, var(--dict-height));
+}
+.dict-deck[data-compact="true"] .dict-card + .dict-card:not([hidden]) {
+	margin-top: -6px;
+	position: relative;
+}
+.dict-deck[data-compact="true"] .dict-card[data-parent="true"] {
+	flex: none;
+	padding-bottom: 7px;
+}
+.dict-deck[data-compact="true"] .dict-card[data-parent="true"] .dict-card-head {
+	padding: 7px 13px 1px;
+}
+.dict-deck[data-compact="true"] .dict-card[data-parent="true"] h2 {
+	font-size: 19px;
+	margin: 0;
+}
+.dict-deck[data-compact="true"]
+	.dict-card[data-parent="true"]
+	:is(.dict-imprint, .dict-actions, .dict-scroll, .dict-foot) {
+	display: none;
+}
+.dict-deck[data-compact="true"] .dict-parent-line {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	text-align: left;
+	min-height: 30px;
+	padding: 2px 13px 7px;
+	color: var(--reader-muted);
+	font-size: 13px;
+	width: 100%;
+	gap: 8px;
+}
+.dict-excerpt {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+	font-size: 14px;
+	line-height: 1.55;
+}
+.dict-parent-line > svg {
+	flex: none;
+}
+@media (pointer: coarse) {
+	.dict-card .dict-actions button,
+	.dict-card .dict-pager button {
+		min-width: 40px;
+		min-height: 40px;
+	}
+}
+@media (max-width: 370px) {
+	.reader-r1 .reader-bottom nav {
+		gap: 1px;
+	}
+	.reader-r1 .reader-bottom nav button {
+		width: 31px;
+	}
+}
+@keyframes dict-appear {
+	from {
+		opacity: 0;
+		transform: translateY(3px);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.dict-card {
+		animation: none;
+	}
+}

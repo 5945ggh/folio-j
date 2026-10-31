@@ -24,6 +24,7 @@ import { readerBookmarks } from "./reader-bookmarks";
 import { readerClipboard } from "./reader-clipboard";
 import { readerContextCopy } from "./reader-context-copy";
 import { defaultReaderContextCopyResponse } from "./reader-context-copy-fixture";
+import { readerDictionary } from "./reader-dictionary";
 import { readerImages } from "./reader-images";
 import { readerLayoutSwitch } from "./reader-layout-switch";
 import { readerSession } from "./reader-session";
@@ -420,6 +421,7 @@ try {
 		["position-bookmarks", positionBookmarks],
 		["reader-layout-switch", readerLayoutSwitch],
 		["reader-context-copy", readerContextCopy],
+		["reader-dictionary", readerDictionary],
 		["reader-settings", readerSettings],
 		["reader-image-performance", readerImages],
 		["catalog-overview", overviewImportRegression],

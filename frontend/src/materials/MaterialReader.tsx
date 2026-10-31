@@ -107,6 +107,7 @@ import { ReaderBookmarkNotice, useReaderBookmarks } from "./ReaderBookmarks";
 import { ContextCopyFeedback, useReaderContextCopy } from "./ReaderContextCopy";
 import { ReaderIcon, ReaderPanel, ReaderSettings } from "./ReaderControls";
 import { ReaderCopyLeaveGuard } from "./ReaderCopyLeaveGuard";
+import { type DictionaryControl, ReaderDictionary } from "./ReaderDictionary";
 import { ReaderLeaveProvider } from "./ReaderLeaveProvider";
 import {
 	ReaderDirectImageViewer,
@@ -256,6 +257,8 @@ function Reader({
 	const { selection, markHit, manualPosition, inlineRequest, previewSerial } =
 		recordState;
 	const frames = useRef(new ReaderFrames());
+	const dictionary = useRef<DictionaryControl>(null);
+	const [dictionaryReady, setDictionaryReady] = useState(false);
 	const recordContext = useRef<ReaderRecordContext | null>(null);
 	const [records] = useState(
 		() =>
@@ -532,7 +535,7 @@ function Reader({
 		studyActive: translationOpen || studyTarget !== null,
 	};
 	const dismissReadingBackground = useCallback(
-		() => records.dismissBackground(),
+		() => dictionary.current?.close() || records.dismissBackground(),
 		[records],
 	);
 	const setUiPreference = useCallback((next: ReaderUiPreferences) => {
@@ -549,6 +552,7 @@ function Reader({
 	}, []);
 	const selectPanel = useCallback(
 		(next: ReaderPanelKind, toggle = false) => {
+			dictionary.current?.close();
 			records.panelSelected(next);
 			jumpReading.current.pause();
 			invalidateNavigation();
@@ -653,6 +657,7 @@ function Reader({
 			onFocusChange: (enabled) =>
 				setUiPreference({ ...latest.current.ui, focus: enabled }),
 			hasOverlay: () =>
+				!!dictionary.current?.isOpen() ||
 				latest.current.studyActive ||
 				records.active ||
 				latest.current.directImage !== undefined ||
@@ -664,7 +669,7 @@ function Reader({
 					viewerEscape.current();
 					return true;
 				}
-				if (records.escape()) return true;
+				if (dictionary.current?.back() || records.escape()) return true;
 				if (latest.current.panels.activeSide) {
 					closePanel(latest.current.panels.activeSide);
 					return true;
@@ -788,8 +793,10 @@ function Reader({
 			!chapterTranslations.isFetching,
 	};
 	const openMarkHit = useCallback(
-		(value: StudyMarkHit, trigger: HTMLButtonElement | null = null) =>
-			records.openPreview(value, trigger),
+		(value: StudyMarkHit, trigger: HTMLButtonElement | null = null) => {
+			dictionary.current?.close();
+			records.openPreview(value, trigger);
+		},
 		[records],
 	);
 	const closeMarkHit = useCallback(() => records.closePreview(), [records]);
@@ -798,9 +805,31 @@ function Reader({
 			materialId: book.id,
 			versionId: book.version_id,
 			chapterId,
-			onSelection: (value) => records.selectionChanged(value),
+			dictionaryMode:
+				active && dictionaryReady && !studyTarget
+					? (ui.dictionaryMode ?? "off")
+					: "off",
+			onLookup: (hit) => {
+				if (hit) {
+					if (
+						recordState.markHit &&
+						!recordState.markHit.fixed &&
+						!recordState.manualPosition
+					)
+						records.closePreview();
+					records.clearToolbar();
+				}
+				dictionary.current?.lookup(hit);
+			},
+			onSelection: (value) => {
+				if (value) dictionary.current?.close();
+				records.selectionChanged(value);
+			},
 			onEntries: setMarginEntries,
-			onMarks: (value) => records.markChanged(value),
+			onMarks: (value) => {
+				if (value) dictionary.current?.close();
+				records.markChanged(value);
+			},
 			onBackgroundTap: dismissReadingBackground,
 		});
 	});
@@ -2188,6 +2217,19 @@ function Reader({
 					>
 						<ReaderIcon name="image" />
 					</button>
+					<ReaderDictionary
+						ref={dictionary}
+						onReady={setDictionaryReady}
+						portal={shell.current}
+						mode={ui.dictionaryMode ?? "off"}
+						onMode={(mode) =>
+							setUiPreference({ ...latest.current.ui, dictionaryMode: mode })
+						}
+						onRecord={openMarkHit}
+						restoreFocus={() =>
+							container.current?.focus({ preventScroll: true })
+						}
+					/>
 					<button
 						type="button"
 						aria-label="阅读设置"
@@ -2276,6 +2318,14 @@ function Reader({
 			)}
 			{selection && !studyTarget && (
 				<SelectionToolbar
+					onLookup={
+						dictionaryReady && ui.dictionaryMode && ui.dictionaryMode !== "off"
+							? () => {
+									records.clearToolbar();
+									dictionary.current?.selection(selection);
+								}
+							: undefined
+					}
 					anchor={selection.anchor}
 					copying={contextCopy.busy}
 					onCopy={() => {

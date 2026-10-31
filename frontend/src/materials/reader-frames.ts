@@ -682,6 +682,10 @@ export class ReaderFrames {
 				valid: () => context.active?.() !== false && valid(),
 				projection: () => this.freshProjection(index, data),
 				viewport: context.root(),
+				tokens: () =>
+					context.readings?.resources.find(
+						(item) => item.resource_id === data.parts[index]?.resource_id,
+					)?.tokens ?? [],
 			});
 			void Promise.all([
 				doc.fonts.ready,

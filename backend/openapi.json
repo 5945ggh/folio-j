@@ -1006,6 +1006,312 @@
         "title": "DefaultsResponse",
         "type": "object"
       },
+      "DictionaryLookupRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "position": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "selection_end": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selection End"
+          },
+          "selection_start": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selection Start"
+          },
+          "text": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "tokens": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryTokenHint"
+            },
+            "maxItems": 4096,
+            "title": "Tokens",
+            "type": "array"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "DictionaryLookupRequest",
+        "type": "object"
+      },
+      "DictionaryLookupResponse": {
+        "properties": {
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryMatch"
+            },
+            "title": "Matches",
+            "type": "array"
+          }
+        },
+        "required": [
+          "matches"
+        ],
+        "title": "DictionaryLookupResponse",
+        "type": "object"
+      },
+      "DictionaryMatch": {
+        "properties": {
+          "definitions": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryNode"
+            },
+            "title": "Definitions",
+            "type": "array"
+          },
+          "dictionary_id": {
+            "title": "Dictionary Id",
+            "type": "string"
+          },
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "reading": {
+            "title": "Reading",
+            "type": "string"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          },
+          "surface": {
+            "title": "Surface",
+            "type": "string"
+          },
+          "term": {
+            "title": "Term",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "dictionary_id",
+          "term",
+          "reading",
+          "start",
+          "end",
+          "surface",
+          "definitions"
+        ],
+        "title": "DictionaryMatch",
+        "type": "object"
+      },
+      "DictionaryNode": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryNode"
+            },
+            "title": "Content",
+            "type": "array"
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ja",
+                  "zh"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lang"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "head",
+                  "def1",
+                  "def2",
+                  "dfcn",
+                  "exam",
+                  "exjp",
+                  "excn"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "tag": {
+            "default": "span",
+            "enum": [
+              "div",
+              "p",
+              "span",
+              "ul",
+              "ol",
+              "li",
+              "br",
+              "ruby",
+              "rt"
+            ],
+            "title": "Tag",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "title": "DictionaryNode",
+        "type": "object"
+      },
+      "DictionaryStatus": {
+        "properties": {
+          "dictionary_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dictionary Id"
+          },
+          "entry_count": {
+            "default": 0,
+            "title": "Entry Count",
+            "type": "integer"
+          },
+          "ready": {
+            "default": false,
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "DictionaryStatus",
+        "type": "object"
+      },
+      "DictionaryTokenHint": {
+        "additionalProperties": false,
+        "description": "Aligned source boundaries with independently optional lexical evidence.",
+        "properties": {
+          "dictionary_form": {
+            "maxLength": 8192,
+            "title": "Dictionary Form",
+            "type": "string"
+          },
+          "end": {
+            "minimum": 0.0,
+            "title": "End",
+            "type": "integer"
+          },
+          "is_oov": {
+            "title": "Is Oov",
+            "type": "boolean"
+          },
+          "normalized_form": {
+            "maxLength": 8192,
+            "title": "Normalized Form",
+            "type": "string"
+          },
+          "pos": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Pos",
+            "type": "array"
+          },
+          "reading": {
+            "maxLength": 8192,
+            "title": "Reading",
+            "type": "string"
+          },
+          "start": {
+            "minimum": 0.0,
+            "title": "Start",
+            "type": "integer"
+          },
+          "surface": {
+            "maxLength": 8192,
+            "title": "Surface",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "surface"
+        ],
+        "title": "DictionaryTokenHint",
+        "type": "object"
+      },
       "ExplanationPromptResponse": {
         "properties": {
           "question": {
@@ -7108,6 +7414,91 @@
           }
         },
         "summary": "Explanation Prompt"
+      }
+    },
+    "/api/dictionary": {
+      "get": {
+        "operationId": "getDictionary",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionaryStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Dictionary"
+      }
+    },
+    "/api/dictionary/import": {
+      "post": {
+        "operationId": "importDictionary",
+        "requestBody": {
+          "content": {
+            "application/zip": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionaryStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Import Dictionary"
+      }
+    },
+    "/api/dictionary/lookup": {
+      "post": {
+        "operationId": "lookupDictionary",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DictionaryLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionaryLookupResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lookup Dictionary"
       }
     },
     "/api/health": {

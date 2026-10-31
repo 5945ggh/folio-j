@@ -100,6 +100,7 @@ function AnchoredStudyTool({
 }
 
 export function SelectionToolbar({
+	onLookup,
 	anchor,
 	onSave,
 	onTranslate,
@@ -108,6 +109,7 @@ export function SelectionToolbar({
 	copying = false,
 	onClose,
 }: {
+	onLookup?: () => void;
 	onTranslate?: () => void;
 	onSpeak?: () => void;
 	onCopy?: () => void;
@@ -123,6 +125,15 @@ export function SelectionToolbar({
 			role="toolbar"
 			onClose={onClose}
 		>
+			{onLookup && (
+				<button
+					type="button"
+					onMouseDown={(event) => event.preventDefault()}
+					onClick={onLookup}
+				>
+					查词
+				</button>
+			)}
 			{onCopy && (
 				<button
 					type="button"

@@ -1,4 +1,4 @@
-import type { Chapter } from "./api.ts";
+import type { Chapter, ReadingsToken } from "./api.ts";
 import { type Projection, visibleContentRect } from "./dom.ts";
 import {
 	captureSelectionGuard,
@@ -14,9 +14,12 @@ import {
 	projectedBaseRanges,
 	uncoveredStudyRanges,
 } from "./highlight.ts";
+import { rawBoundary } from "./position.ts";
+import { readerLookupWindow } from "./reader-lookup-window.ts";
 import { captureNativeSelection, referenceParts } from "./reader-selection.ts";
 import type { MaterialProvenance, StudyTarget } from "./study-api.ts";
 import { type StudyMarginEntry, studyMarginEntries } from "./study-margin.ts";
+import { textPointAt } from "./text-point.ts";
 import { readingViewport } from "./viewport.ts";
 
 export type ScreenAnchor = {
@@ -40,7 +43,19 @@ export type StudyMarkHit = {
 	fixed?: boolean;
 	anchorPlacement?: "text" | "margin-left" | "margin-right" | "margin-bottom";
 };
+export type ReaderLookupHit = {
+	text: string;
+	offset: number;
+	tokens: ReadingsToken[];
+	anchor: ScreenAnchor;
+	studyHit: StudyMarkHit | null;
+	/** Coordinates are relative to text, as returned by dictionary lookup. */
+	highlight: (start: number, end: number) => void;
+	clearHighlight: () => void;
+};
 export type StudyBinding = {
+	dictionaryMode?: "off" | "click" | "hover";
+	onLookup?: (hit: ReaderLookupHit | null) => void;
 	materialId: string;
 	versionId: string;
 	chapterId: string;
@@ -57,6 +72,7 @@ type StudyFrame = {
 	valid: () => boolean;
 	projection: () => Projection;
 	viewport?: HTMLElement | null;
+	tokens?: () => readonly ReadingsToken[];
 };
 type MountedFrame = StudyFrame & { dispose: () => void; cancel: () => void };
 type MarkTarget = { id: string; kind: StudyMarkKind };
@@ -192,6 +208,10 @@ function selectionKey(event: KeyboardEvent): boolean {
 /** Frame adapter for native selection and persisted marks; callers only see values and screen rectangles. */
 export class ReaderStudy {
 	private binding: StudyBinding | null = null;
+	private lookupTicket = 0;
+	private hoverKey: string | null = null;
+	private lookupCoverage: { frame: number; start: number; end: number } | null =
+		null;
 	private readonly frames = new Map<number, MountedFrame>();
 	private config: {
 		chapter: Chapter;
@@ -231,6 +251,8 @@ export class ReaderStudy {
 			binding?.materialId !== this.binding?.materialId ||
 			binding?.versionId !== this.binding?.versionId ||
 			binding?.chapterId !== this.binding?.chapterId;
+		if (changed || binding?.dictionaryMode !== this.binding?.dictionaryMode)
+			this.dismissLookup();
 		this.binding = binding;
 		if (changed) {
 			this.layoutScroll.clear();
@@ -273,6 +295,7 @@ export class ReaderStudy {
 		this.binding?.onMarks(null);
 	}
 	clear(): void {
+		this.dismissLookup();
 		this.layoutScroll.clear();
 		this.hits.clear();
 		this.emphasized = null;
@@ -292,6 +315,7 @@ export class ReaderStudy {
 		return hadSelection;
 	}
 	geometryChanged(refresh = true): void {
+		this.dismissLookup();
 		this.hits.clear();
 		if (!this.preservingPreview) this.emphasized = null;
 		for (const frame of this.frames.values()) frame.cancel();
@@ -487,6 +511,145 @@ export class ReaderStudy {
 			);
 		} else this.binding?.onEntries?.([]);
 	}
+	private clearLookupHighlights(): void {
+		for (const frame of this.frames.values()) {
+			const view = frame.doc.defaultView as
+				| (Window & { CSS?: { highlights?: Map<string, unknown> } })
+				| null;
+			view?.CSS?.highlights?.delete("folio-dictionary");
+		}
+	}
+	private dismissLookup(notify = true): void {
+		this.lookupTicket++;
+		this.hoverKey = null;
+		this.lookupCoverage = null;
+		this.clearLookupHighlights();
+		if (notify) this.binding?.onLookup?.(null);
+	}
+	private lookupAt(
+		frame: StudyFrame,
+		event: PointerEvent,
+		studyHit: StudyMarkHit | null,
+	): boolean {
+		if (!this.binding?.onLookup) return false;
+		const projection = frame.projection();
+		const hit = textPointAt(
+			frame.doc,
+			event.clientX,
+			event.clientY,
+			projection,
+		);
+		if (
+			!hit ||
+			hit.rawStart === undefined ||
+			!isReaderFrameTarget(frame.doc, hit.node)
+		)
+			return false;
+		if (
+			event.clientX < 0 ||
+			event.clientY < 0 ||
+			event.clientX >= frame.element.clientWidth ||
+			event.clientY >= frame.element.clientHeight
+		)
+			return false;
+		const part = frame.chapter.parts[frame.index];
+		const resource = frame.chapter.resources.find(
+			(item) => item.id === part?.resource_id,
+		);
+		if (!part || !resource) return false;
+		const local = rawBoundary(projection.raw, hit.rawStart);
+		const key = `${frame.index}:${local}`;
+		if (
+			event.type === "pointermove" &&
+			(key === this.hoverKey ||
+				(this.lookupCoverage?.frame === frame.index &&
+					local >= this.lookupCoverage.start &&
+					local < this.lookupCoverage.end))
+		)
+			return true;
+		const source = Array.from(resource.text);
+		if (
+			projection.raw.normalize("NFC") !==
+			source.slice(part.start, part.end).join("")
+		)
+			return false;
+		// Preserve context on both sides so a click in the middle can find a compound.
+		const absolute = part.start + local;
+		const window = readerLookupWindow(projection, hit.node, local);
+		const start = part.start + window.start;
+		const end = part.start + window.end;
+		const text = source.slice(start, end).join("");
+		const tokens = (frame.tokens?.() ?? [])
+			.filter(
+				(token) =>
+					token.start >= start &&
+					token.end <= end &&
+					token.end > token.start &&
+					source.slice(token.start, token.end).join("") === token.surface,
+			)
+			.map((token) => ({
+				...token,
+				start: token.start - start,
+				end: token.end - start,
+			}));
+		this.dismissLookup(false);
+		this.hoverKey = key;
+		const ticket = this.lookupTicket;
+		this.binding.onLookup({
+			text,
+			offset: absolute - start,
+			tokens,
+			anchor: screenAnchor(frame.element, hit.rect),
+			studyHit,
+			clearHighlight: () => {
+				if (ticket === this.lookupTicket) this.dismissLookup(false);
+			},
+			highlight: (left, right) => {
+				if (
+					ticket !== this.lookupTicket ||
+					!this.current(frame) ||
+					!Number.isInteger(left) ||
+					!Number.isInteger(right) ||
+					left < 0 ||
+					right <= left ||
+					right > end - start
+				)
+					return;
+				this.clearLookupHighlights();
+				this.lookupCoverage = {
+					frame: frame.index,
+					start: start - part.start + left,
+					end: start - part.start + right,
+				};
+				const ranges = projectedBaseRanges(
+					frame.doc,
+					frame.projection(),
+					start - part.start + left,
+					start - part.start + right,
+				);
+				const view = frame.doc.defaultView as
+					| (Window & {
+							Highlight?: new (...ranges: Range[]) => unknown;
+							CSS?: { highlights?: Map<string, unknown> };
+					  })
+					| null;
+				if (!view?.Highlight || !view.CSS?.highlights) return;
+				let style = frame.doc.getElementById("folio-dictionary-style");
+				if (!style) {
+					style = frame.doc.createElement("style");
+					style.id = "folio-dictionary-style";
+					frame.doc.head.append(style);
+				}
+				style.textContent =
+					"::highlight(folio-dictionary){background:var(--reader-selection-bg);}";
+				view.CSS.highlights.set(
+					"folio-dictionary",
+					new view.Highlight(...ranges),
+				);
+			},
+		});
+		return true;
+	}
 	/** A caret is only a candidate: require the pointer to be inside a real base-character rect. */
 	private markAt(frame: StudyFrame, event: PointerEvent): StudyMarkHit | null {
 		const marks = this.hits.get(frame.index);
@@ -620,6 +783,15 @@ export class ReaderStudy {
 	}
 	mount(input: StudyFrame): () => void {
 		this.frames.get(input.index)?.dispose();
+		let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+		let pendingHover: string | null = null;
+		let pendingNode: Text | null = null;
+		const cancelHover = () => {
+			if (hoverTimer !== null) clearTimeout(hoverTimer);
+			hoverTimer = null;
+			pendingHover = null;
+			pendingNode = null;
+		};
 		let selectionTimer: ReturnType<typeof setTimeout> | null = null;
 		let disposed = false;
 		let pointer = false,
@@ -636,6 +808,7 @@ export class ReaderStudy {
 			selectionTimer = null;
 		};
 		const cancel = () => {
+			cancelHover();
 			cancelSelection();
 			pointer = false;
 			tap = null;
@@ -652,6 +825,7 @@ export class ReaderStudy {
 					input.doc.removeEventListener(type, listener);
 				input.viewport?.removeEventListener("scroll", scroll);
 				this.hits.delete(input.index);
+				this.dismissLookup();
 				clearStudyHighlights(input.doc, true);
 				if (this.frames.get(input.index) === frame) {
 					this.frames.delete(input.index);
@@ -680,6 +854,7 @@ export class ReaderStudy {
 				selectionTimer = setTimeout(notify, SELECTION_SETTLE_MS);
 		};
 		const down = (raw: Event) => {
+			cancelHover();
 			const event = raw as PointerEvent;
 			tap = null;
 			if (
@@ -708,6 +883,51 @@ export class ReaderStudy {
 			this.binding?.onSelection(null);
 		};
 		const move = (raw: Event) => {
+			const event = raw as PointerEvent;
+			if (
+				this.binding?.dictionaryMode === "hover" &&
+				this.current(frame) &&
+				event.pointerType === "mouse" &&
+				event.shiftKey &&
+				!event.altKey &&
+				!event.ctrlKey &&
+				!event.metaKey &&
+				!event.buttons &&
+				!pointer &&
+				!this.hasSelection() &&
+				originalTarget(event) &&
+				isReaderFrameTarget(input.doc, event.target)
+			) {
+				try {
+					const hit = textPointAt(frame.doc, event.clientX, event.clientY);
+					const key = hit ? `${hit.start}` : null;
+					if (key !== pendingHover || hit?.node !== pendingNode) {
+						cancelHover();
+						pendingHover = key;
+						pendingNode = hit?.node ?? null;
+						if (key)
+							hoverTimer = setTimeout(() => {
+								hoverTimer = null;
+								pendingHover = null;
+								pendingNode = null;
+								if (
+									!this.current(frame) ||
+									this.binding?.dictionaryMode !== "hover" ||
+									pointer ||
+									this.hasSelection()
+								)
+									return;
+								try {
+									this.lookupAt(frame, event, this.markAt(frame, event));
+								} catch {
+									/* Stale text is never guessed. */
+								}
+							}, 140);
+					}
+				} catch {
+					cancelHover();
+				}
+			} else cancelHover();
 			if (
 				tap &&
 				distance(tap.point, point(raw as PointerEvent)) >= FOCUS_TIMING.drag
@@ -752,6 +972,20 @@ export class ReaderStudy {
 			} catch {
 				/* Stale projection is never guessed. */
 			}
+			if (
+				this.binding?.dictionaryMode === "click" ||
+				(this.binding?.dictionaryMode === "hover" &&
+					event.pointerType === "touch")
+			) {
+				try {
+					if (this.lookupAt(frame, event, hit)) {
+						event.preventDefault();
+						return;
+					}
+				} catch {
+					/* A stale projection is never guessed. */
+				}
+			}
 			if (hit) {
 				event.preventDefault();
 				this.binding?.onMarks(hit);
@@ -777,6 +1011,7 @@ export class ReaderStudy {
 		const keyup = (raw: Event) => {
 			if (!this.current(frame)) return;
 			const event = raw as KeyboardEvent;
+			if (event.key === "Shift") cancelHover();
 			if (selectionKey(event) || keyActive) {
 				keyActive = false;
 				schedule();
@@ -803,6 +1038,7 @@ export class ReaderStudy {
 			}
 			if (viewport) this.layoutScroll.delete(viewport);
 			cancel();
+			this.dismissLookup();
 			this.binding?.onSelection(null);
 			this.dismissMarks();
 		};
@@ -811,6 +1047,13 @@ export class ReaderStudy {
 			["pointerup", up],
 			["pointermove", move],
 			["pointercancel", cancel],
+			["pointerleave", cancelHover],
+			[
+				"pointerout",
+				(event) => {
+					if (!(event as PointerEvent).relatedTarget) cancelHover();
+				},
+			],
 			["selectionchange", selectionChanged],
 			["keydown", keydown],
 			["keyup", keyup],

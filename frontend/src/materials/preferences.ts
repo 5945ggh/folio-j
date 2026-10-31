@@ -2,6 +2,7 @@ export type ReaderTheme = "system" | "white" | "black";
 export type ReaderFont = "mincho" | "gothic";
 export type ReaderRuby = "show" | "on-demand" | "hide";
 export type ReaderUiPreferences = {
+	dictionaryMode?: "off" | "click" | "hover";
 	theme: ReaderTheme;
 	focus: boolean;
 	toolbarOpacity: number;
@@ -68,6 +69,9 @@ export function normalizeReaderUi(
 	// toolbarOpacity replaced toolbarTransparency on the same 0–100 scale, inverted.
 	const legacyTransparency = boundedPercent(value.toolbarTransparency);
 	return {
+		...(value.dictionaryMode === "click" || value.dictionaryMode === "hover"
+			? { dictionaryMode: value.dictionaryMode }
+			: {}),
 		marks: {
 			studySegmentUnderlines:
 				typeof marks.studySegmentUnderlines === "boolean"

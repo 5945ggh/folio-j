@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.api.analyses import router as analyses_router
 from app.api.bookmarks import router as bookmarks_router
+from app.api.dictionary import router as dictionary_router
 from app.api.health import router as health_router
 from app.api.materials import router as materials_router
 from app.api.settings import router as settings_router
@@ -25,6 +26,7 @@ from app.jobs.supervision import BackgroundWorker, workers
 from app.services import translations
 from app.services.analyses import AnalysisWriteError
 from app.services.chat import ChatError
+from app.services.dictionary_store import DictionaryStore
 from app.services.reader_views import ReaderViews
 from app.services.settings import interrupt_unfinished
 from app.services.statistics_runtime import StatisticsRuntime
@@ -51,6 +53,9 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         statistics_runtime = StatisticsRuntime()
         application.state.statistics_runtime = statistics_runtime
         application.state.database_path = path
+        application.state.dictionary_store = DictionaryStore(
+            path.with_name(path.name + ".dictionary.sqlite3")
+        )
         application.state.verification_semaphore = asyncio.Semaphore(2)
         application.state.chat_dispatch_lock = asyncio.Lock()
         application.state.translation_semaphore = asyncio.Semaphore(1)
@@ -133,6 +138,7 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         )
 
     application.include_router(health_router)
+    application.include_router(dictionary_router)
     from app.api.catalog import router as catalog_router
 
     application.include_router(catalog_router)

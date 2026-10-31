@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Chapter } from "./api.ts";
+import type { Chapter, ReadingsToken } from "./api.ts";
 import type { Projection } from "./dom.ts";
 import { snapshotReaderFrameTargets } from "./focus.ts";
 import { DEFAULT_BOOK_UI } from "./preferences.ts";
 import { applyFramePresentation } from "./presentation.ts";
-import { ReaderStudy, type StudyMark } from "./reader-study.ts";
+import {
+	type ReaderLookupHit,
+	ReaderStudy,
+	type StudyMark,
+} from "./reader-study.ts";
 
 function harness(
 	beforeMount?: (doc: Document, leaf: Element) => void,
@@ -129,6 +133,7 @@ function harness(
 		marks: [],
 	};
 	beforeMount?.(doc as unknown as Document, leaf as unknown as Element);
+	const tokens: ReadingsToken[] = [];
 	const study = new ReaderStudy();
 	const binding = {
 		materialId: "m",
@@ -146,6 +151,7 @@ function harness(
 		valid: () => valid,
 		projection: () => projection,
 		viewport,
+		tokens: () => tokens,
 	});
 	const mark = (id: string, start: number, end: number): StudyMark => ({
 		segment_id: id,
@@ -224,6 +230,8 @@ function harness(
 			valid = false;
 		},
 		node,
+		projection,
+		tokens,
 	};
 }
 
@@ -1151,3 +1159,270 @@ for (const mode of [
 		assert.equal(h.callbacks.marks.filter(Boolean).length, 0);
 	});
 }
+
+test("dictionary tap consumes only pointerup, returns existing record and highlights the actual result", () => {
+	const h = harness();
+	const values: (ReaderLookupHit | null)[] = [];
+	h.study.bind({
+		...h.binding,
+		dictionaryMode: "click",
+		onLookup: (hit) => values.push(hit),
+	});
+	h.study.setMarks(h.chapter, [h.mark("saved", 0, 3)], true, "white");
+	const down = h.event("pointerdown", { at: 0 });
+	const up = h.event("pointerup", { at: 100 });
+	assert.equal(down.defaultPrevented, false);
+	assert.equal(up.defaultPrevented, true);
+	const hit = values.at(-1);
+	assert.ok(hit);
+	assert.equal(hit.text, "甲乙丙丁");
+	assert.equal(hit.offset, 1);
+	assert.deepEqual(hit.studyHit?.segmentIds, ["saved"]);
+	assert.deepEqual(hit.anchor, {
+		left: 110,
+		right: 120,
+		top: 200,
+		bottom: 220,
+	});
+	hit.highlight(1, 3);
+	assert.ok(
+		h.styles
+			.get("folio-dictionary-style")
+			?.textContent.includes("var(--reader-selection-bg)"),
+	);
+	const painted = h.highlights.get("folio-dictionary") as { ranges: Range[] };
+	assert.equal(painted.ranges[0]?.startOffset, 1);
+	assert.equal(painted.ranges[0]?.endOffset, 3);
+	assert.deepEqual(h.callbacks.marks, [null]);
+	h.study.bind({ ...h.binding, dictionaryMode: "off" });
+	assert.equal(h.highlights.has("folio-dictionary"), false);
+	hit.highlight(0, 1);
+	assert.equal(h.highlights.has("folio-dictionary"), false);
+	h.detach();
+});
+
+for (const kind of [
+	"drag",
+	"longpress",
+	"selection",
+	"link",
+	"scroll",
+	"whitespace",
+] as const) {
+	test(`dictionary preserves native ${kind}`, () => {
+		const h = harness();
+		const values: (ReaderLookupHit | null)[] = [];
+		h.study.bind({
+			...h.binding,
+			dictionaryMode: "click",
+			onLookup: (hit) => values.push(hit),
+		});
+		if (kind === "link") h.leaf.closest = () => ({});
+		if (kind === "selection") h.selection();
+		h.event("pointerdown", { at: 0 });
+		if (kind === "drag") h.event("pointermove", { clientX: 30 });
+		if (kind === "scroll") h.event("wheel");
+		const up = h.event("pointerup", {
+			at: kind === "longpress" ? 2000 : 100,
+			clientX: kind === "whitespace" ? 55 : 15,
+		});
+		assert.equal(values.filter(Boolean).length, 0);
+		if (kind !== "selection") assert.equal(up.defaultPrevented, false);
+		h.detach();
+	});
+}
+
+test("Shift hover deduplicates a glyph, keeps the card after releasing Shift, and leaves marked clicks available", (t) => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const h = harness();
+	const values: (ReaderLookupHit | null)[] = [];
+	h.study.bind({
+		...h.binding,
+		dictionaryMode: "hover",
+		onLookup: (hit) => values.push(hit),
+	});
+	h.study.setMarks(h.chapter, [h.mark("saved", 0, 3)], true, "white");
+	h.event("pointermove", { pointerType: "touch", shiftKey: true });
+	t.mock.timers.tick(150);
+	h.event("pointermove", { pointerType: "mouse", shiftKey: false });
+	t.mock.timers.tick(150);
+	assert.equal(values.filter(Boolean).length, 0);
+	h.event("pointermove", { pointerType: "mouse", shiftKey: true });
+	t.mock.timers.tick(150);
+	h.event("pointermove", { pointerType: "mouse", shiftKey: true, clientX: 16 });
+	t.mock.timers.tick(150);
+	h.event("pointermove", { pointerType: "mouse", shiftKey: false });
+	t.mock.timers.tick(150);
+	h.event("keyup", { key: "Shift" });
+	assert.equal(values.filter(Boolean).length, 1);
+	assert.ok(values.at(-1));
+	h.event("pointermove", { pointerType: "mouse", shiftKey: true, clientX: 25 });
+	t.mock.timers.tick(150);
+	assert.equal(values.filter(Boolean).length, 2);
+	assert.ok(values.at(-1));
+	h.event("pointerdown", { at: 0 });
+	h.event("pointerup", { at: 100 });
+	assert.equal(
+		(h.callbacks.marks.at(-1) as { segmentIds: string[] }).segmentIds[0],
+		"saved",
+	);
+	h.detach();
+});
+
+test("dictionary uses global NFC code points and keeps large passages within a bounded query window", () => {
+	const h = harness();
+	h.node.data = `😀か\u3099${"字".repeat(2000)}`;
+	Object.assign(h.node, { length: h.node.data.length });
+	h.projection.raw = h.node.data;
+	const entry = h.projection.entries[0];
+	const resource = h.chapter.resources[0];
+	const part = h.chapter.parts[0];
+	assert.ok(entry && resource && part);
+	entry.end = h.node.data.length;
+	resource.text = h.node.data.normalize("NFC");
+	part.end = Array.from(resource.text).length;
+	const values: (ReaderLookupHit | null)[] = [];
+	h.study.bind({
+		...h.binding,
+		dictionaryMode: "click",
+		onLookup: (hit) => values.push(hit),
+	});
+	// Caret uses UTF-16 offset 3, within the decomposed Japanese glyph.
+	h.event("pointerdown", { at: 0, clientX: 35 });
+	h.event("pointerup", { at: 100, clientX: 35 });
+	const hit = values.at(-1);
+	assert.ok(hit);
+	assert.equal(hit.offset, 1);
+	assert.equal(Array.from(hit.text).length, 512);
+	assert.equal(Array.from(hit.text)[hit.offset], "が");
+	hit.highlight(1, 2);
+	const painted = h.highlights.get("folio-dictionary") as { ranges: Range[] };
+	assert.equal(painted.ranges[0]?.startOffset, 2);
+	assert.equal(painted.ranges[0]?.endOffset, 4);
+	h.detach();
+});
+
+test("dictionary forwards only aligned canonical tokens and close invalidates pending highlights", (t) => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const h = harness();
+	h.tokens.push({
+		start: 0,
+		end: 3,
+		surface: "甲乙丙",
+		reading: "コウオツヘイ",
+		dictionary_form: "甲乙丙",
+		normalized_form: "甲乙丙",
+		pos: ["名詞"],
+		is_oov: false,
+	});
+	h.tokens.push({
+		...(h.tokens[0] as ReadingsToken),
+		start: 1,
+		surface: "wrong",
+	});
+	let hit: ReaderLookupHit | null = null;
+	h.study.bind({
+		...h.binding,
+		dictionaryMode: "hover",
+		onLookup: (value) => {
+			hit = value;
+		},
+	});
+	h.event("pointermove", { pointerType: "mouse", shiftKey: true });
+	t.mock.timers.tick(150);
+	const first = hit as ReaderLookupHit | null;
+	assert.ok(first);
+	assert.equal(first.tokens.length, 1);
+	assert.equal(first.tokens[0]?.dictionary_form, "甲乙丙");
+	first.highlight(0, 3);
+	assert.equal(h.highlights.has("folio-dictionary"), true);
+	first.clearHighlight();
+	first.highlight(0, 3);
+	assert.equal(h.highlights.has("folio-dictionary"), false);
+	h.event("pointermove", { pointerType: "mouse", shiftKey: true });
+	t.mock.timers.tick(150);
+	assert.notEqual(hit, first);
+	h.detach();
+});
+
+test("dictionary bases vertical hit and anchor on the glyph rectangle and rejects column gaps", (t) => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const h = harness();
+	h.setRects((start, end) => [
+		{
+			left: 0,
+			right: 20,
+			top: start * 10,
+			bottom: end * 10,
+			width: 20,
+			height: (end - start) * 10,
+		},
+	]);
+	Object.assign(h.doc, {
+		caretPositionFromPoint: (_x: number, y: number) => ({
+			offsetNode: h.node,
+			offset: Math.floor(y / 10),
+		}),
+	});
+	const hits: ReaderLookupHit[] = [];
+	h.study.bind({
+		...h.binding,
+		dictionaryMode: "hover",
+		onLookup: (value) => {
+			if (value) hits.push(value);
+		},
+	});
+	h.event("pointermove", {
+		pointerType: "mouse",
+		shiftKey: true,
+		clientX: 5,
+		clientY: 25,
+	});
+	t.mock.timers.tick(150);
+	assert.equal(hits[0]?.offset, 2);
+	assert.deepEqual(hits[0]?.anchor, {
+		left: 100,
+		right: 120,
+		top: 220,
+		bottom: 230,
+	});
+	h.event("pointermove", {
+		pointerType: "mouse",
+		shiftKey: true,
+		clientX: 25,
+		clientY: 25,
+	});
+	t.mock.timers.tick(150);
+	assert.equal(hits.length, 1);
+	h.detach();
+});
+
+test("hover waits for a settled glyph, reuses the matched word, and cancels pending work when leaving the frame", (t) => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const h = harness();
+	const hits: ReaderLookupHit[] = [];
+	h.study.bind({
+		...h.binding,
+		dictionaryMode: "hover",
+		onLookup: (hit) => {
+			if (hit) hits.push(hit);
+		},
+	});
+	h.event("pointermove", { pointerType: "mouse", shiftKey: true, clientX: 5 });
+	t.mock.timers.tick(90);
+	h.event("pointermove", { pointerType: "mouse", shiftKey: true, clientX: 15 });
+	t.mock.timers.tick(90);
+	assert.equal(hits.length, 0);
+	t.mock.timers.tick(50);
+	assert.equal(hits.length, 1);
+	hits[0]?.highlight(0, 3);
+	h.event("pointermove", { pointerType: "mouse", shiftKey: true, clientX: 25 });
+	t.mock.timers.tick(150);
+	assert.equal(hits.length, 1);
+	h.event("pointermove", { pointerType: "mouse", shiftKey: true, clientX: 35 });
+	h.event("pointerleave");
+	t.mock.timers.tick(150);
+	assert.equal(hits.length, 1);
+	assert.equal(h.highlights.has("folio-dictionary"), true);
+	h.detach();
+});

@@ -41,6 +41,8 @@ coverage/
 /data/llm_cache/
 /data/*.secrets/
 /data/*.worker.lock
+/data/.dictionary-upload-*
+/data/.dictionary-index-*
 *.log
 
 # Editor / IDE state

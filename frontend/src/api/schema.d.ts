@@ -91,6 +91,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dictionary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dictionary */
+        get: operations["getDictionary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dictionary/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Dictionary */
+        post: operations["importDictionary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dictionary/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lookup Dictionary */
+        post: operations["lookupDictionary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -1658,6 +1709,101 @@ export interface components {
             permission_mode: "review" | "full_access";
             /** Style Id */
             style_id: string | null;
+        };
+        /** DictionaryLookupRequest */
+        DictionaryLookupRequest: {
+            /** Position */
+            position?: number | null;
+            /** Selection End */
+            selection_end?: number | null;
+            /** Selection Start */
+            selection_start?: number | null;
+            /** Text */
+            text: string;
+            /** Tokens */
+            tokens?: components["schemas"]["DictionaryTokenHint"][];
+        };
+        /** DictionaryLookupResponse */
+        DictionaryLookupResponse: {
+            /** Matches */
+            matches: components["schemas"]["DictionaryMatch"][];
+        };
+        /** DictionaryMatch */
+        DictionaryMatch: {
+            /** Definitions */
+            definitions: components["schemas"]["DictionaryNode"][];
+            /** Dictionary Id */
+            dictionary_id: string;
+            /** End */
+            end: number;
+            /** Id */
+            id: string;
+            /** Reading */
+            reading: string;
+            /** Start */
+            start: number;
+            /** Surface */
+            surface: string;
+            /** Term */
+            term: string;
+        };
+        /** DictionaryNode */
+        DictionaryNode: {
+            /** Content */
+            content?: components["schemas"]["DictionaryNode"][];
+            /** Lang */
+            lang?: ("ja" | "zh") | null;
+            /** Role */
+            role?: ("head" | "def1" | "def2" | "dfcn" | "exam" | "exjp" | "excn") | null;
+            /**
+             * Tag
+             * @default span
+             * @enum {string}
+             */
+            tag: "div" | "p" | "span" | "ul" | "ol" | "li" | "br" | "ruby" | "rt";
+            /** Text */
+            text?: string | null;
+        };
+        /** DictionaryStatus */
+        DictionaryStatus: {
+            /** Dictionary Id */
+            dictionary_id?: string | null;
+            /**
+             * Entry Count
+             * @default 0
+             */
+            entry_count: number;
+            /**
+             * Ready
+             * @default false
+             */
+            ready: boolean;
+            /** Revision */
+            revision?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /**
+         * DictionaryTokenHint
+         * @description Aligned source boundaries with independently optional lexical evidence.
+         */
+        DictionaryTokenHint: {
+            /** Dictionary Form */
+            dictionary_form?: string;
+            /** End */
+            end: number;
+            /** Is Oov */
+            is_oov?: boolean;
+            /** Normalized Form */
+            normalized_form?: string;
+            /** Pos */
+            pos?: string[];
+            /** Reading */
+            reading?: string;
+            /** Start */
+            start: number;
+            /** Surface */
+            surface: string;
         };
         /** ExplanationPromptResponse */
         ExplanationPromptResponse: {
@@ -3994,6 +4140,83 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExplanationPromptResponse"];
+                };
+            };
+        };
+    };
+    getDictionary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryStatus"];
+                };
+            };
+        };
+    };
+    importDictionary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/zip": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryStatus"];
+                };
+            };
+        };
+    };
+    lookupDictionary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DictionaryLookupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryLookupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
