@@ -56,9 +56,8 @@ def _headings(lines: list[str]) -> list[Heading]:
     return result
 
 
-def normalize(source: str, prev: NormalizedDoc | None = None) -> NormalizedDoc:
-    """Return deterministic blocks; ``prev`` does not imply identity matching."""
-    _ = prev
+def normalize(source: str) -> NormalizedDoc:
+    """Return deterministic, lossless blocks without assigning persistent identities."""
     lines = split_source_lines(source)
     headings = _headings(lines)
     h2 = [heading for heading in headings if heading.level == 2]

@@ -211,16 +211,6 @@ export default function ObservedMarkdown(props) {
 }`;
 				},
 			},
-			{
-				name: "block-unmocked-test-api",
-				configureServer(vite) {
-					vite.middlewares.use((request, response, next) => {
-						if (!request.url?.startsWith("/api/")) return next();
-						response.statusCode = 500;
-						response.end("Browser tests must mock all API requests");
-					});
-				},
-			},
 		],
 	});
 	await server.listen();

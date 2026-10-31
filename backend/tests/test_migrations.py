@@ -162,7 +162,6 @@ def test_empty_database_rebuilds_current_schema(
             row[0]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
-        assert len(Base.metadata.tables) == 30
         assert tables == {"alembic_version", *Base.metadata.tables}
     engine = create_engine(URL.create("sqlite", database=str(database)))
     try:

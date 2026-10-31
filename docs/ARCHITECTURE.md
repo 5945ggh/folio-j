@@ -402,7 +402,7 @@ erDiagram
 
 ### 4.3 规范化器（`services/normalizer.py`）
 
-签名：`normalize(source: str, prev: NormalizedDoc | None = None) -> NormalizedDoc`，是纯函数。
+签名：`normalize(source: str) -> NormalizedDoc`，是纯函数。
 
 规则：
 
@@ -410,7 +410,7 @@ erDiagram
 2. 按**行**切分：第一个 h2 之前的所有行构成 `preamble`（可以为空）；从每个 h2 所在行到下一个 h2 之前的行构成一个学习对象（LO）。
 3. h3 只作为 LO 内部的子索引（记录标题和行号），不单独切块。
 4. 编号：LO 的 `display_no` 依次为 `LO-1..n`，preamble 为 `P`。每个块有 `uid`（ULID）和 `handle`（`s_` 加 uid 的 4 至 6 位后缀，在同一文档内保证唯一），供 LLM 引用。
-5. `prev`参数保留但不参与当前纯切分；修订时由持久化服务依据明确编辑操作保持未变动块的`uid`和`handle`，**不做内容相似度匹配**。
+5. 修订时由持久化服务依据明确编辑操作保持未变动块的`uid`和`handle`，**不做内容相似度匹配**。
 6. 警告（只记录，不阻断）：没有 h2、出现 h1、LO 正文为空、LO 标题重复。
 
 首次持久身份由`services/analyses.py`分配；纯函数内部不生成随机ULID。持久化层在新修订中显式延续未修改块身份。行切分只识别CommonMark的CRLF／CR／LF，保留原始文本，不将Unicode段落分隔符误作Markdown换行。

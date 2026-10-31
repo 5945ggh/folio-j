@@ -29,11 +29,9 @@ from app.services.sources import begin_write, delete_segment
 @settings(max_examples=80)
 @given(st.text(max_size=400))
 def test_normalizer_properties(source: str) -> None:
-    original = source
     first = normalize(source)
     second = normalize(source)
-    assert source == original  # R3: the input is never rewritten.
-    assert "".join(block.raw for block in first.blocks) == source  # R1.
+    assert "".join(block.raw for block in first.blocks) == source  # R1/R3: lossless output.
     assert first == second  # R2: all boundaries and headings are deterministic.
 
 
