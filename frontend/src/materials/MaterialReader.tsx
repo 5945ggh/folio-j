@@ -63,13 +63,8 @@ import {
 	usageKey,
 } from "./api";
 import { ChapterRecords } from "./ChapterRecords";
+import { sameRecordHit } from "./chapter-records";
 import {
-	inlineTranslationAtHit,
-	recordsAtHit,
-	sameRecordHit,
-} from "./chapter-records";
-import {
-	type ChapterTranslation,
 	useChapterTranslations,
 	useMaterialTranslationActivity,
 } from "./chapter-translations-query";
@@ -137,6 +132,11 @@ import {
 	type ReaderPresentationState,
 	type ReaderRestoreIntent,
 } from "./reader-presentation";
+import {
+	EMPTY_READER_RECORD_STATE,
+	type ReaderRecordContext,
+	ReaderRecordPresentation,
+} from "./reader-record-presentation";
 import { readerResourceCache } from "./reader-resource-cache";
 import type { ReaderHighlightRange } from "./reader-selection";
 import {
@@ -149,11 +149,7 @@ import {
 	DEFAULT_READING_SETTINGS,
 	restoreReaderSettingsGroup,
 } from "./reader-settings";
-import type {
-	ScreenAnchor,
-	StudyMarkHit,
-	StudySelection,
-} from "./reader-study";
+import type { ScreenAnchor, StudyMarkHit } from "./reader-study";
 import { JumpReadingSession, returnOriginLabel } from "./return-origin";
 import { SavedSegmentNotice, SelectionToolbar } from "./StudyOverlays";
 import { StudySegmentPanel } from "./StudySegmentPanel";
@@ -189,11 +185,6 @@ const defaults: Settings = DEFAULT_READING_SETTINGS;
 type ReaderPositionWriter = {
 	current: PositionQueue<Position> | null;
 	healthy: boolean;
-};
-type InlineTranslationRequest = {
-	chapterId: string;
-	item: ChapterTranslation;
-	hit: StudyMarkHit;
 };
 function Reader({
 	book,
@@ -254,21 +245,36 @@ function Reader({
 	const [studyTarget, setStudyTarget] = useState<StudyTarget | null>(null);
 	const [selectionError, setSelectionError] = useState<Error | null>(null);
 	const [originError, setOriginError] = useState<Error | null>(null);
-	const [selection, setSelection] = useState<StudySelection | null>(null);
+	const [recordState, setRecordState] = useState(EMPTY_READER_RECORD_STATE);
+	const { selection, markHit, manualPosition, inlineRequest, previewSerial } =
+		recordState;
+	const frames = useRef(new ReaderFrames());
+	const recordContext = useRef<ReaderRecordContext | null>(null);
+	const [records] = useState(
+		() =>
+			new ReaderRecordPresentation({
+				current: () => {
+					if (!recordContext.current)
+						throw new Error("Reader record context is unavailable");
+					return {
+						...recordContext.current,
+						active: activeRef.current,
+						alive: alive.current,
+					};
+				},
+				frames: frames.current,
+				closeStudyPanel: () =>
+					setPanels((current) =>
+						current.right === "study"
+							? closeReaderPanel(current, "right")
+							: current,
+					),
+				hideTranslation: () => setTranslationOpen(false),
+				showTools: () => controller.current?.show(),
+				changed: setRecordState,
+			}),
+	);
 	const [marginEntries, setMarginEntries] = useState<StudyMarginEntry[]>([]);
-	const markTrigger = useRef<HTMLButtonElement | null>(null);
-	const [markHit, setMarkHit] = useState<StudyMarkHit | null>(null);
-	const [manualPosition, setManualPosition] = useState<{
-		left: number;
-		top: number;
-	} | null>(null);
-	const [inlineRequest, setInlineRequest] =
-		useState<InlineTranslationRequest | null>(null);
-	const [previewSerial, setPreviewSerial] = useState(0);
-	const previewEmphasis = useRef<{
-		id: string;
-		kind: "segment" | "translation";
-	} | null>(null);
 	const [markError, setMarkError] = useState<Error | null>(null);
 	const [savedNotice, setSavedNotice] = useState<{
 		id: string;
@@ -502,18 +508,8 @@ function Reader({
 		directImage,
 		presented,
 		ui,
-		selectionActive: selection !== null,
-		markActive: markHit !== null,
-		markHit,
-		manualPosition,
-		inlineRequest,
 		translationTarget,
-		studyTargetActive: studyTarget !== null,
-		studyActive:
-			translationOpen ||
-			studyTarget !== null ||
-			selection !== null ||
-			markHit !== null,
+		studyActive: translationOpen || studyTarget !== null,
 	});
 	latest.current = {
 		panels,
@@ -525,45 +521,13 @@ function Reader({
 		directImage,
 		presented,
 		ui,
-		selectionActive: selection !== null,
-		markActive: markHit !== null,
-		markHit,
-		manualPosition,
-		inlineRequest,
 		translationTarget,
-		studyTargetActive: studyTarget !== null,
-		studyActive:
-			translationOpen ||
-			studyTarget !== null ||
-			selection !== null ||
-			markHit !== null,
+		studyActive: translationOpen || studyTarget !== null,
 	};
-	const closeCompactPreview = useCallback(() => {
-		if (
-			!latest.current.markHit ||
-			latest.current.manualPosition ||
-			latest.current.markHit.fixed ||
-			latest.current.panels.right === "study"
-		)
-			return false;
-		setMarkHit(null);
-		previewEmphasis.current = null;
-		frames.current.emphasizeStudyMark(null);
-		return true;
-	}, []);
-	const closeInlineTranslation = useCallback(() => {
-		setInlineRequest(null);
-		if (latest.current.inlineRequest) {
-			previewEmphasis.current = null;
-			frames.current.emphasizeStudyMark(null);
-		}
-	}, []);
-	const dismissReadingBackground = useCallback(() => {
-		const hadToolbar = latest.current.selectionActive;
-		const clearedSelection = frames.current.clearStudySelection();
-		const closedPreview = closeCompactPreview();
-		return hadToolbar || clearedSelection || closedPreview;
-	}, [closeCompactPreview]);
+	const dismissReadingBackground = useCallback(
+		() => records.dismissBackground(),
+		[records],
+	);
 	const setUiPreference = useCallback((next: ReaderUiPreferences) => {
 		setUi(next);
 		setStorageFailed(!writeReaderUiPreferences(next));
@@ -578,17 +542,7 @@ function Reader({
 	}, []);
 	const selectPanel = useCallback(
 		(next: ReaderPanelKind, toggle = false) => {
-			setSelection(null);
-			if (
-				!(
-					latest.current.panels.right === "study" &&
-					(next === "toc" || next === "bookmarks" || next === "search")
-				)
-			) {
-				setMarkHit(null);
-				previewEmphasis.current = null;
-				frames.current.emphasizeStudyMark(null);
-			}
+			records.panelSelected(next);
 			jumpReading.current.pause();
 			invalidateNavigation();
 			navigation.current.dismissError();
@@ -597,18 +551,11 @@ function Reader({
 			);
 			controller.current?.show();
 		},
-		[invalidateNavigation],
+		[invalidateNavigation, records],
 	);
 	const closePanel = useCallback(
 		(side?: ReaderPanelSide, invalidate = true) => {
-			if (
-				(!side || side === "right") &&
-				latest.current.panels.right === "study"
-			) {
-				setMarkHit(null);
-				previewEmphasis.current = null;
-				frames.current.emphasizeStudyMark(null);
-			}
+			records.panelClosed(side);
 			jumpReading.current.pause();
 			if (invalidate) invalidateNavigation();
 			setPanels((current) =>
@@ -616,7 +563,7 @@ function Reader({
 			);
 			controller.current?.show();
 		},
-		[invalidateNavigation],
+		[invalidateNavigation, records],
 	);
 	useEffect(() => {
 		const escapeViewer = (event: KeyboardEvent) => {
@@ -700,6 +647,7 @@ function Reader({
 				setUiPreference({ ...latest.current.ui, focus: enabled }),
 			hasOverlay: () =>
 				latest.current.studyActive ||
+				records.active ||
 				latest.current.directImage !== undefined ||
 				latest.current.panels.left !== null ||
 				latest.current.panels.right !== null ||
@@ -709,33 +657,7 @@ function Reader({
 					viewerEscape.current();
 					return true;
 				}
-				if (latest.current.selectionActive) {
-					setSelection(null);
-					return true;
-				}
-				if (latest.current.inlineRequest) {
-					closeInlineTranslation();
-					return true;
-				}
-				if (
-					latest.current.markActive &&
-					!(
-						latest.current.panels.right === "study" &&
-						latest.current.compactPanels &&
-						latest.current.panels.activeSide === "left"
-					)
-				) {
-					setMarkHit(null);
-					previewEmphasis.current = null;
-					frames.current.emphasizeStudyMark(null);
-					setPanels((current) =>
-						current.right === "study"
-							? closeReaderPanel(current, "right")
-							: current,
-					);
-					markTrigger.current?.focus({ preventScroll: true });
-					return true;
-				}
+				if (records.escape()) return true;
 				if (latest.current.panels.activeSide) {
 					closePanel(latest.current.panels.activeSide);
 					return true;
@@ -750,13 +672,7 @@ function Reader({
 			focus.dispose();
 			controller.current = null;
 		};
-	}, [
-		active,
-		closePanel,
-		closeInlineTranslation,
-		dismissReadingBackground,
-		setUiPreference,
-	]);
+	}, [active, closePanel, records, dismissReadingBackground, setUiPreference]);
 	useEffect(() => {
 		controller.current?.setFocus(ui.focus);
 	}, [ui.focus]);
@@ -830,7 +746,6 @@ function Reader({
 	const viewportReady =
 		chapter.isSuccess && (bookUi.rubyScope !== "all" || readings.isSuccess);
 	const container = useRef<HTMLElement>(null);
-	const frames = useRef(new ReaderFrames());
 	const presentation = useRef(
 		new ReaderPresentation(presentationState, initialAnchor, {
 			frames: frames.current,
@@ -846,137 +761,48 @@ function Reader({
 		presentation.current.setActive(active, discard.current);
 		return () => presentation.current.setActive(false, discard.current);
 	}, [active, discard]);
+	recordContext.current = {
+		active,
+		alive: alive.current,
+		materialId: book.id,
+		versionId: book.version_id,
+		chapterId,
+		chapter: chapter.data,
+		direction: settings.writing_mode,
+		panels,
+		compactPanels,
+		studyTargetActive: studyTarget !== null,
+		segments: marks.items,
+		translations: chapterTranslations.items,
+		settled:
+			!marks.loading &&
+			!marks.isFetching &&
+			!chapterTranslations.loading &&
+			!chapterTranslations.isFetching,
+	};
 	const openMarkHit = useCallback(
-		(value: StudyMarkHit, trigger: HTMLButtonElement | null = null) => {
-			closeInlineTranslation();
-			setTranslationOpen(false);
-			markTrigger.current = trigger;
-			previewEmphasis.current = null;
-			frames.current.emphasizeStudyMark(null);
-			frames.current.clearStudySelection();
-			setPanels((current) =>
-				current.right === "study"
-					? closeReaderPanel(current, "right")
-					: current,
-			);
-			setPreviewSerial((serial) => serial + 1);
-			setMarkHit(value);
-		},
-		[closeInlineTranslation],
+		(value: StudyMarkHit, trigger: HTMLButtonElement | null = null) =>
+			records.openPreview(value, trigger),
+		[records],
 	);
-	const openTextMark = useCallback(
-		(value: StudyMarkHit) => {
-			const item = !latest.current.manualPosition
-				? inlineTranslationAtHit(
-						marks.items,
-						chapterTranslations.items,
-						value,
-						latest.current.settings.writing_mode,
-					)
-				: null;
-			if (!item) {
-				openMarkHit(value);
-				return;
-			}
-			if (
-				latest.current.inlineRequest?.item.identity_sha256 ===
-				item.identity_sha256
-			) {
-				closeInlineTranslation();
-				return;
-			}
-			setMarkHit(null);
-			setTranslationOpen(false);
-			frames.current.clearStudySelection();
-			setPanels((current) =>
-				current.right === "study"
-					? closeReaderPanel(current, "right")
-					: current,
-			);
-			previewEmphasis.current = {
-				id: item.identity_sha256,
-				kind: "translation",
-			};
-			frames.current.emphasizeStudyMark(item.identity_sha256, "translation");
-			setInlineRequest({ chapterId, item, hit: value });
-		},
-		[
-			marks.items,
-			chapterTranslations.items,
-			chapterId,
-			openMarkHit,
-			closeInlineTranslation,
-		],
-	);
+	const closeMarkHit = useCallback(() => records.closePreview(), [records]);
 	useLayoutEffect(() => {
 		frames.current.bindStudy({
 			materialId: book.id,
 			versionId: book.version_id,
 			chapterId,
-			onSelection: (value) => {
-				if (!alive.current || !activeRef.current) return;
-				setSelection(value);
-				if (value) {
-					if (
-						!latest.current.markHit?.fixed &&
-						!latest.current.manualPosition &&
-						!latest.current.inlineRequest &&
-						latest.current.panels.right !== "study"
-					) {
-						setMarkHit(null);
-						previewEmphasis.current = null;
-						frames.current.emphasizeStudyMark(null);
-					}
-					controller.current?.show();
-				}
-			},
+			onSelection: (value) => records.selectionChanged(value),
 			onEntries: setMarginEntries,
-			onMarks: (value) => {
-				if (!alive.current || !activeRef.current) return;
-				if (value) {
-					if (!latest.current.studyTargetActive) openTextMark(value);
-				} else if (
-					latest.current.panels.right === "study" ||
-					latest.current.manualPosition ||
-					latest.current.inlineRequest ||
-					latest.current.markHit?.fixed
-				) {
-					frames.current.emphasizeStudyMark(
-						previewEmphasis.current?.id ?? null,
-						previewEmphasis.current?.kind,
-					);
-				} else {
-					setMarkHit(null);
-					previewEmphasis.current = null;
-				}
-			},
+			onMarks: (value) => records.markChanged(value),
 			onBackgroundTap: dismissReadingBackground,
 		});
 	});
-	const hitRecords = useMemo(
-		() => recordsAtHit(marks.items, chapterTranslations.items, markHit),
-		[marks.items, chapterTranslations.items, markHit],
-	);
+	const hitRecords = records.hitRecords;
 	const visibleHitItems = hitRecords.segments;
-	const closeMarkHit = useCallback(() => {
-		closeInlineTranslation();
-		setManualPosition(null);
-		setMarkHit(null);
-		previewEmphasis.current = null;
-		frames.current.emphasizeStudyMark(null);
-		setPanels((current) =>
-			current.right === "study" ? closeReaderPanel(current, "right") : current,
-		);
-		markTrigger.current?.focus({ preventScroll: true });
-	}, [closeInlineTranslation]);
 	const forgetTranslation = useCallback<TranslationRemoved>(
 		(removed, reference) => {
 			selectedTranslations.current.forget(removed.identity_sha256);
-			if (
-				latest.current.inlineRequest?.item.identity_sha256 ===
-				removed.identity_sha256
-			)
-				closeInlineTranslation();
+			records.translationRemoved(removed.identity_sha256);
 			if (
 				latest.current.translationTarget &&
 				translationTargetKey(latest.current.translationTarget.reference) ===
@@ -985,19 +811,9 @@ function Reader({
 				setTranslationOpen(false);
 				setTranslationTarget(null);
 			}
-			if (
-				previewEmphasis.current?.kind === "translation" &&
-				previewEmphasis.current.id === removed.identity_sha256
-			) {
-				previewEmphasis.current = null;
-				frames.current.emphasizeStudyMark(null);
-			}
 		},
-		[closeInlineTranslation],
+		[records],
 	);
-	useEffect(() => {
-		if (!markHit) setManualPosition(null);
-	}, [markHit]);
 	const inlineResult = useQuery({
 		queryKey: ["translation-result", inlineRequest?.item.result_id],
 		queryFn: ({ signal }) =>
@@ -1011,37 +827,8 @@ function Reader({
 		retry: false,
 	});
 	useEffect(() => {
-		if (
-			markHit &&
-			!markHit.fixed &&
-			!marks.loading &&
-			!marks.isFetching &&
-			!chapterTranslations.loading &&
-			!chapterTranslations.isFetching &&
-			visibleHitItems.length === 0 &&
-			hitRecords.translations.length === 0
-		)
-			closeMarkHit();
-	}, [
-		markHit,
-		marks.loading,
-		marks.isFetching,
-		chapterTranslations.loading,
-		chapterTranslations.isFetching,
-		hitRecords.translations.length,
-		visibleHitItems.length,
-		closeMarkHit,
-	]);
-	// biome-ignore lint/correctness/useExhaustiveDependencies: a chapter switch invalidates the fixed list even when its old frame has already gone.
-	useEffect(() => {
-		closeInlineTranslation();
-		setManualPosition(null);
-		setMarkHit(null);
-		previewEmphasis.current = null;
-		setPanels((current) =>
-			current.right === "study" ? closeReaderPanel(current, "right") : current,
-		);
-	}, [chapterId]);
+		records.reconcile();
+	});
 	const queue = useRef<PositionQueue<Position> | null>(null);
 	if (!queue.current)
 		queue.current = new PositionQueue(
@@ -1804,62 +1591,16 @@ function Reader({
 		capture,
 		restore,
 	]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: the record module reads these committed content and visibility values through current().
 	useLayoutEffect(() => {
-		const data = chapter.data;
-		if (!active || !data) return;
-		if (
-			!inlineRequest ||
-			inlineRequest.chapterId !== chapterId ||
-			settings.writing_mode !== "horizontal-tb"
-		) {
-			frames.current.setInlineTranslation(data, null, mutateInlineLayout);
-			if (inlineRequest) closeInlineTranslation();
-			return;
-		}
-		const item = inlineRequest.item;
-		if (
-			!chapterTranslations.loading &&
-			!chapterTranslations.isFetching &&
-			!marks.loading &&
-			!marks.isFetching &&
-			!inlineTranslationAtHit(
-				marks.items,
-				chapterTranslations.items,
-				inlineRequest.hit,
-				settings.writing_mode,
-			)
-		) {
-			closeInlineTranslation();
-			return;
-		}
-		const result = inlineResult.data;
-		if (inlineResult.isError) {
-			openMarkHit(inlineRequest.hit);
-			return;
-		}
-		if (!result) {
-			frames.current.setInlineTranslation(data, null, mutateInlineLayout);
-			return;
-		}
-		const matching =
-			!result.reader_deleted &&
-			result.id === item.result_id &&
-			result.identity_sha256 === item.identity_sha256 &&
-			result.material_provenance.material_id === book.id &&
-			result.material_provenance.version_id === book.version_id;
-		if (
-			!matching ||
-			!frames.current.setInlineTranslation(
-				data,
-				{
-					reference: result.material_provenance,
-					text: result.translation,
-				},
-				mutateInlineLayout,
-			)
-		)
-			openMarkHit(inlineRequest.hit);
+		records.presentInline(
+			inlineRequest,
+			inlineResult.data,
+			inlineResult.isError,
+			mutateInlineLayout,
+		);
 	}, [
+		records,
 		active,
 		inlineRequest,
 		inlineResult.data,
@@ -1876,8 +1617,6 @@ function Reader({
 		book.id,
 		book.version_id,
 		mutateInlineLayout,
-		closeInlineTranslation,
-		openMarkHit,
 	]);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: wait for React to commit the updated margin coordinates.
 	useLayoutEffect(() => {
@@ -2257,7 +1996,7 @@ function Reader({
 								)}
 								aria-label={`查看此处 ${entry.segmentIds.length + (entry.translationIds?.length ?? 0)} 条记录`}
 								onClick={(event) => {
-									const current = latest.current.markHit;
+									const current = records.state.markHit;
 									if (
 										current &&
 										!current.fixed &&
@@ -2492,7 +2231,7 @@ function Reader({
 					onCancel={() => setStudyTarget(null)}
 					onSaved={(segment: Segment, kind) => {
 						setStudyTarget(null);
-						setSelection(null);
+						records.clearToolbar();
 						frames.current.clearStudySelection();
 						setSavedNotice({ id: segment.id, kind, serial: Date.now() });
 						void client.invalidateQueries({
@@ -2564,7 +2303,7 @@ function Reader({
 								.open({ kind: "selection", newSelection: true });
 							setTranslationAnchor(selection.anchor);
 							setTranslationOpen(true);
-							setSelection(null);
+							records.clearToolbar();
 							closeMarkHit();
 							closePanel();
 							setSelectionError(null);
@@ -2588,14 +2327,14 @@ function Reader({
 								text: targetText(target.reference),
 								label: "阅读选区",
 							});
-							setSelection(null);
+							records.clearToolbar();
 						} catch (failure) {
 							setSelectionError(
 								failure instanceof Error ? failure : new Error(String(failure)),
 							);
 						}
 					}}
-					onClose={() => setSelection(null)}
+					onClose={() => records.clearToolbar()}
 					onSave={() => {
 						try {
 							if (
@@ -2612,7 +2351,7 @@ function Reader({
 									chapter.data,
 								),
 							);
-							setSelection(null);
+							records.clearToolbar();
 							closeMarkHit();
 							setSelectionError(null);
 							controller.current?.show();
@@ -2637,7 +2376,7 @@ function Reader({
 					<ChapterRecords
 						key={previewSerial}
 						manualPosition={manualPosition}
-						onManualPositionChange={setManualPosition}
+						onManualPositionChange={(value) => records.setManualPosition(value)}
 						anchor={markHit.anchor}
 						anchorPlacement={markHit.anchorPlacement}
 						fixed={markHit.fixed}
@@ -2680,10 +2419,9 @@ function Reader({
 									: current,
 							)
 						}
-						onEmphasize={(id, kind = "segment") => {
-							previewEmphasis.current = id ? { id, kind } : null;
-							frames.current.emphasizeStudyMark(id, kind);
-						}}
+						onEmphasize={(id, kind = "segment") =>
+							records.emphasizePreview(previewSerial, id, kind)
+						}
 					/>
 				)}
 			{savedNotice && (

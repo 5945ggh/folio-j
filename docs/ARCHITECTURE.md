@@ -569,7 +569,9 @@ C1 出处契约版本为 `1`，组装规则为 `concat-nfc-v1`；最多 64 段�
 
 `focus` 与 `ReaderStudy` 在手势开始时保存原生选区端点和文字，完成普通轻点后只清理既有选区，期间形成的新选区、拖动与长按继续交给浏览器。`clearStudySelection()` 返回是否清除选区，Reader 将清选区与收起紧凑预览接为同一背景动作；消费点击后不再切换工具栏。
 
-`inlineTranslationAtHit` 仅将横排正文的无片段、单一翻译目标路由到段尾展示，页边、竖排、混合及歧义目标沿用记录浮窗。Reader 用 TanStack Query 读取确切 result_id，校验结果身份后通过 `ReaderFrames.setInlineTranslation` 展示完整译文，查询失败回到原有详情反馈；迟到结果不能恢复已关闭或换章的目标。`InlineTranslation` 只在验证过的完整段落或独立换行叶之后插入自身节点，不移动原文节点，不增加 locator；插入边界及作者祖先存在 transform、独立 scale／rotate、perspective 或非原比例 zoom 时返回浮卡，避免把屏幕尺寸重复写入 CSS 排版。原段正底边距在显示层移到译文后，保留原段 style。插入和移除各由 Reader 包裹一次布局重测及 canonical 原文屏幕像素补偿。生成节点按自身登记识别，译文选区不能生成原文出处，纯译文复制与 canonical 原文复制分别处理。
+`ReaderRecordPresentation` 拥有选区工具条、记录命中、停驻位置、行间请求及预览身份，通过选择、命中、关闭、面板切换、刷新和删除等动作统一协调。原生选区与固定列表、停驻或展开预览可以共存；关闭工具条不自动删除原生选区。同步更新自身快照后才调用 frame 清理，旧预览的强调回调与旧行间请求不能影响新目标。页面保留 Query、DOM 布局和面板 adapter，材料／版本隔离沿用外层 Reader 身份；保存及翻译草稿继续由原有会话管理。
+
+`inlineTranslationAtHit` 仅将横排正文的无片段、单一翻译目标路由到段尾展示，页边、竖排、混合及歧义目标沿用记录浮窗。Reader 用 TanStack Query 读取确切 result_id，交由记录呈现 module 校验当前请求和结果身份，再通过 `ReaderFrames.setInlineTranslation` 展示完整译文，查询失败回到原有详情反馈；迟到结果不能恢复已关闭或换章的目标。`InlineTranslation` 只在验证过的完整段落或独立换行叶之后插入自身节点，不移动原文节点，不增加 locator；插入边界及作者祖先存在 transform、独立 scale／rotate、perspective 或非原比例 zoom 时返回浮卡，避免把屏幕尺寸重复写入 CSS 排版。原段正底边距在显示层移到译文后，保留原段 style。插入和移除各由 Reader 包裹一次布局重测及 canonical 原文屏幕像素补偿。生成节点按自身登记识别，译文选区不能生成原文出处，纯译文复制与 canonical 原文复制分别处理。
 
 `ReaderFlowMotion` 将译文真实高度、上下 padding、透明度及所在 iframe 的真实高度统一为 260ms。展开先做一次完整目标测量，再由浏览器将译文从当前高度增至目标；收起同时将高度、padding 和透明度减至零，完成后只移除空盒。后文和后续 iframe 随真实排版空间自然移动。各文档按本轮已流逝时间校准动画，避免 iframe timeline 原点差异；反向时恢复 CSS transition 的完整时长，避免浏览器自动缩短淡入淡出。相同目标的无变化更新不重启动画。
 
