@@ -55,7 +55,60 @@ just check-assets # 验证保留的实验和静态原型
 
 `BROWSER_TEST_SUITE=reader-layout-switch just test-browser` 运行该组的所有窗口与方向组合。`BROWSER_TEST_QUERY='?direction=vertical-rl&suite=reader-session' just test-browser` 按完整查询选择场景，参数顺序和空值标记的写法不影响匹配。两个筛选同时设置时取交集；没有匹配场景会在启动 Chrome 前失败。完成后输出实际通过场数。
 
-每次运行使用独立的 Chrome profile 与 Vite 缓存。设置 `BROWSER_TEST_SCREENSHOT_DIR=/绝对路径` 保存场景截图，文件名包含窗口宽高和完整查询身份，避免方向、主题或其他标记不同的场景相互覆盖。历史 `BROWSER_TEST_BASELINE` 仅用于下节的 Reader 测量，不用于普通回归或分享预览。
+每次运行使用独立的 Chrome profile 与 Vite 缓存。设置 `BROWSER_TEST_SCREENSHOT_DIR=/绝对路径` 保存场景截图，文件名包含窗口宽高和完整查询身份，避免方向、主题或其他标记不同的场景相互覆盖。历史 `BROWSER_TEST_BASELINE` 仅用于[阅读会话性能测量](#阅读会话性能测量)。
+
+## 真实学习闭环验收
+
+用实际浏览器、FastAPI 和临时 SQLite 库验证从 EPUB 保存片段、写入讲解、重启后找回讲解并返回原句的流程。样书 [synthetic-reading.epub](../prototypes/epub-reading/fixtures/synthetic-reading.epub) 随 Git 提供，书名为「日語定位合成樣書」。全程使用人工讲解，无需模型配置。
+
+### 启动临时实例
+
+在仓库根目录打开专用终端。首次检出先执行 `just setup` 安装锁定依赖，然后运行以下命令。记下打印的临时目录，稍后重启时使用。
+
+```sh
+just build
+loop_dir=$(mktemp -d /tmp/folio-j-learning.XXXXXXXX)
+printf '验收目录 %s\n' "$loop_dir"
+```
+
+直接导入仓库中的样书即可。如需重新生成，在同一终端运行 `python3 scripts/make_epub_fixtures.py --output "$loop_dir/books"`，选用其中的 `synthetic-reading.epub`。
+
+```sh
+FOLIO_J_DATABASE_PATH="${loop_dir:?}/learning.db" just migrate &&
+  FOLIO_J_DATABASE_PATH="$loop_dir/learning.db" uv run --project backend uvicorn app.main:app --host 127.0.0.1 --port 8017
+```
+
+等终端显示 `Uvicorn running on http://127.0.0.1:8017` 后，打开[验收实例](http://127.0.0.1:8017)，确认素材库为空。若启动时提示端口已被使用，启动、重启及浏览器地址都换成同一个空闲端口。
+
+### 保存片段和讲解
+
+1. 在素材库点「导入 EPUB」，选上面的样书。点「新建来源」，命名为「闭环验收」，创建来源后点「导入」。等准备完成，点书卡开始阅读。
+2. 从底部「目录」进入「第二章」。在「次の章でも日本語を読む。」下方，用鼠标划选完整的 **引用の文章。**，包括句号。点选区工具条的「保存」，核对目标原文后点「保存片段」。从保存提示点「打开片段 →」。若提示已消失，点刚保存的正文标记，再从预览打开片段。
+3. 选「＋ 新建讲解 → 编写或粘贴讲解」，标题填 `引用の文章・回读`，粘贴下面两段 Markdown，点「保存讲解」。确认讲解页显示标题及两段内容。
+
+   ```markdown
+   ## 句意
+   引用的文字。
+
+   ## 表达
+   「の」连接「引用」和「文章」。
+   ```
+
+4. 点片段出处的「在原文中定位 →」，回到书中后点「上一章」。看到「第一章」和「同じ言葉。」后，从阅读器左上角返回并关闭验收标签页。此时最后阅读的章与片段出处不同。
+
+### 重启后从来源找回
+
+在运行服务的终端按 `Ctrl-C`，等服务退出。在**同一终端、仓库根目录**执行下面的命令。若换了终端，先把 `loop_dir` 设为刚才打印的绝对目录。`test -s` 确认原数据库存在且非空，成功后才启动服务。
+
+```sh
+test -s "${loop_dir:?}/learning.db" &&
+  FOLIO_J_DATABASE_PATH="$loop_dir/learning.db" uv run --project backend uvicorn app.main:app --host 127.0.0.1 --port 8017
+```
+
+1. 新开标签页访问验收实例首页，从主导航进入「来源目录 → 闭环验收」。在概览的「最近更新的讲解」打开 `引用の文章・回读`。核对片段原文为「引用の文章。」，讲解中「句意」和「表达」下的文字与保存时一致。
+2. 点材料出处的「在原文中定位 →」。阅读器应打开「日語定位合成樣書」的「第二章」，被标记的是「次の章でも日本語を読む。」下方的「引用の文章。」整句。点这处正文标记，确认能就地预览同一标题和讲解内容。
+
+验收结束后按 `Ctrl-C` 停止临时实例。保留打印的目录即可再次打开这次的资料。
 
 ## 阅读会话性能测量
 
