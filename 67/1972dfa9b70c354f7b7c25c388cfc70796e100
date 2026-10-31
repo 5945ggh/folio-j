@@ -1,0 +1,19 @@
+frontend/browser-tests/analysis-reading.tsx
+  s_b952588bff31d6::t_80c0772a8b50fb 700
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "671972dfa9b70c354f7b7c25c388cfc70796e100",
+  "prompts": {},
+  "sessions": {
+    "s_b952588bff31d6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a190cf-03c2-7402-9b63-10ed31c19364",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
