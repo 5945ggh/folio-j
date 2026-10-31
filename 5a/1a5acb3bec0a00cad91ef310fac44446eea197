@@ -1,0 +1,25 @@
+backend/tests/test_analyses.py
+  s_647501cafac3f7::t_7d8cadd1998b5d 34
+docs/ARCHITECTURE.md
+  s_647501cafac3f7::t_7d8cadd1998b5d 405,413
+docs/handovers/MAINTENANCE_OPTIMIZATION.md
+  s_647501cafac3f7::t_e92927f05b7511 31-38
+backend/src/app/services/normalizer.py
+  s_647501cafac3f7::t_1ca83afcea63bd 59-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5a1a5acb3bec0a00cad91ef310fac44446eea197",
+  "prompts": {},
+  "sessions": {
+    "s_647501cafac3f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19001-1a71-7073-bc4c-27f4af4d76bb",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
