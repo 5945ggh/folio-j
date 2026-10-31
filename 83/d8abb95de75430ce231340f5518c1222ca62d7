@@ -1,0 +1,88 @@
+docs/handovers/archived/reading-practice/BOOKMARKS_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 1-76
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 8,14,17-21,23-24,26,31-32,51,56,62
+  s_f69ef2cc86c423::t_87669b2f956a11 3
+docs/handovers/archived/epub-reading/MATERIAL_BASELINE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 3-5,22,41,58,83,107,113,126,130,159
+docs/GLOSSARY.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 8
+  s_f69ef2cc86c423::t_14a7f47a24a7b0 34
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 7
+  s_f69ef2cc86c423::t_39c1ca39a38797 3
+docs/handovers/reading-practice/PLAN.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 11,19,34
+  s_f69ef2cc86c423::t_87669b2f956a11 9,13,15,17,21-26,28
+docs/handovers/archived/epub-reading/SLICE_1_DRAFT.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 9
+docs/handovers/archived/reading-practice/READER_COLOR_TOKENS_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 1-21
+docs/handovers/archived/text-study/PLAN.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 35
+docs/ARCHITECTURE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 249,269,369
+  s_f69ef2cc86c423::t_8f36e0964f6234 720
+references/folio-reading-aids-v0.1/README.md
+  s_f69ef2cc86c423::t_75beefd689154b 7-8,47,49
+docs/handovers/archived/MAINTENANCE_OPTIMIZATION.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 20-21,26,44,52
+docs/handovers/archived/AGENT_CONTEXT_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 3-5
+docs/handovers/archived/READER_LAYOUT_SWITCH_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 23-24
+docs/handovers/archived/reading-practice/READER_SETTINGS_STRUCTURE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 3-5,43,47,53,227
+docs/handovers/archived/TEST_CLEANUP_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 1-37
+docs/handovers/archived/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 1-45
+docs/README.md
+  s_f69ef2cc86c423::t_ab5881a0e6d492 15
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 13,16
+docs/handovers/archived/epub-reading/DIRECTION.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 3-5,9,19,35,70,86,92
+docs/handovers/archived/reading-practice/CONTEXT_COPY_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 1-50
+references/folio-reading-aids-v0.1/DESIGN.md
+  s_f69ef2cc86c423::t_75beefd689154b 7-8
+docs/handovers/archived/reading-practice/BOOKMARK_REFINEMENT_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 1-74
+docs/PRD.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 127,177
+docs/handovers/epub-reading/README.md
+  s_f69ef2cc86c423::t_39c1ca39a38797 12,29,31-35,37,39,41,47-52,54,58,64-65,68,72-76,85
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 21-22,70
+  s_f69ef2cc86c423::t_549b0db45449ef 53,55-56
+  s_f69ef2cc86c423::t_1370f165b5bd19 69
+docs/handovers/archived/reading-practice/VOCABULARY_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 1-41
+docs/handovers/archived/frontend-refresh/FUTURE_NOTES.md
+  s_f69ef2cc86c423::t_cf6c0dbe08e75c 76
+docs/handovers/text-study/C2_EXACT_CASES.md
+  s_f69ef2cc86c423::t_87669b2f956a11 3,64,70
+docs/handovers/archived/reading-practice/READER_SETTINGS_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 1-67
+docs/handovers/archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 1-52
+docs/handovers/README.md
+  s_f69ef2cc86c423::t_ecec7b2de8f3b2 3,5,7-13,17,19,21,23,25,27-39,41-44,46,48-54
+docs/handovers/archived/READER_PRESENTATION_REFACTOR_ACCEPTANCE.md
+  s_f69ef2cc86c423::t_86b3fcfd4310f9 1-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "83d8abb95de75430ce231340f5518c1222ca62d7",
+  "prompts": {},
+  "sessions": {
+    "s_f69ef2cc86c423": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a190db-cc4e-7b93-8581-775be1eb0a40",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
