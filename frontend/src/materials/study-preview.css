@@ -47,27 +47,6 @@
 	font-size: 12px;
 	font-weight: 600;
 }
-.reader-r1 .reader-study-preview-back {
-	padding: 6px 0;
-	color: var(--reader-muted);
-	font-size: 11px;
-}
-.reader-r1 .reader-study-preview-toolbar {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	flex-wrap: wrap;
-	flex-shrink: 0;
-	gap: 8px;
-	padding: 10px 18px 0;
-}
-.reader-r1 .reader-study-preview-open {
-	margin-left: auto;
-	padding: 6px 10px;
-	border-color: var(--reader-line);
-	font-size: 12px;
-	font-weight: 500;
-}
 .reader-r1 .reader-study-preview-actions {
 	display: flex;
 	align-items: center;

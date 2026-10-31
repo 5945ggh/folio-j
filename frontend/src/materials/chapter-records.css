@@ -33,12 +33,39 @@
 	outline: 2px solid var(--reader-fg);
 	outline-offset: -3px;
 }
-.reader-record-tabs {
+.reader-record-tabs-row {
 	display: flex;
+	align-items: center;
 	gap: 4px;
 	padding: 3px 12px;
 	border-bottom: 1px solid var(--reader-line);
 	flex-shrink: 0;
+}
+.reader-record-tabs {
+	display: flex;
+	gap: 4px;
+}
+.reader-record-segment-back-slot:not([hidden]) {
+	display: contents;
+}
+.reader-record-segment-open-slot {
+	margin-left: auto;
+}
+.reader-r1 .reader-study-preview-open {
+	padding: 3px 0 3px 7px;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	color: var(--reader-muted);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 1.5;
+	white-space: nowrap;
+}
+.reader-r1 .reader-study-preview-open:hover {
+	color: var(--reader-fg);
+	text-decoration: underline;
+	text-underline-offset: 3px;
 }
 .reader-r1 .reader-record-tabs button {
 	display: inline-flex;
@@ -81,12 +108,7 @@
 	align-items: center;
 	gap: 5px;
 }
-.reader-r1 .reader-record-back {
-	align-self: flex-start;
-	margin: 6px 6px 0;
-	font-size: 12px;
-}
-.reader-r1 .reader-record-title > .reader-record-back {
+.reader-r1 .reader-record-title .reader-record-back {
 	align-self: auto;
 	width: 26px;
 	height: 26px;

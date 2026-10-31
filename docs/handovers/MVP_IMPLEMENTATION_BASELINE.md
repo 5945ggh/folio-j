@@ -15,7 +15,7 @@
 
 | 能力 | 状态 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- | --- |
-| 片段讲解入口与回复反馈 | 已在以 `7f2d985` 为起点的本地分支实现 | 可复制完整提示词到外部 AI、从片段直达所属来源；普通问答和快捷生成讲解共享活动与耗时。未实测真实模型的响应节奏 | [使用步骤](../USAGE.md#片段讨论与讲解)、[页面契约](../INFORMATION_ARCHITECTURE.md#讲解浏览人工保存与按需讨论)、[浏览器回归](../../frontend/browser-tests/workbench-render.tsx) |
+| 片段讲解入口与回复反馈 | 已合入本地 main（`2b51ea6`） | 可复制完整提示词到外部 AI、从片段直达所属来源；普通问答和快捷生成讲解共享活动与耗时。未实测真实模型的响应节奏 | [使用步骤](../USAGE.md#片段讨论与讲解)、[页面契约](../INFORMATION_ARCHITECTURE.md#讲解浏览人工保存与按需讨论)、[浏览器回归](../../frontend/browser-tests/workbench-render.tsx) |
 | 片段目录出处与删除 | 已合入本地 main，工程、定向浏览器及独立审查通过 | 概览／列表统一具体出处与时间，列表和详情共用删除确认及完整影响复核；讲解删除文字使用危险操作色；无数据库迁移 | [本轮验收](archived/SEGMENT_CATALOG_ACCEPTANCE.md) |
 | 阅读器配色 token 收拢 | 已合入本地 main，工程与定向浏览器检查通过 | 保存提示保留紧凑布局并复用蓝色；工具、浮层、书签及图片查看器按语义归并原值，译文焦点和朗读滑块跟随 Reader 作用域；多套配色入口尚未实现 | [本轮验收](reading-practice/READER_COLOR_TOKENS_ACCEPTANCE.md)、[颜色约定](../DESIGN_SYSTEM.md#阅读器的强调色与标记) |
 | 阅读翻译动画、共享缓存与删除 | 已合入本地 main，工程、浏览器与现用库核验通过 | 展开复用锚点并统一零态启动；Query 与图片共用 64 MiB／512 项估算保留预算，活跃工作集单列；按确切出处删除已有阅读历史和标记，停止重译，保留片段、讲解与关联快照；新增 0004 增量迁移 | [本轮验收](reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md)、[PRD 4.8](../PRD.md#48-阅读翻译与设备朗读) |
@@ -60,7 +60,7 @@
 | 全量注音 | 已提交、工程验收通过 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](archived/full-ruby/ACCEPTANCE.md) |
 | 阅读器正文复制 | 已提交，工程与实际复制粘贴验证通过 | 从当前正文投影提取所选字符，去除原书与自动注音，保留换行；纯文本复制不改变选区或注音显示 | [复制验收](archived/text-study/READER_COPY_ACCEPTANCE.md) |
 | EPUB 学习衔接 | C1／C2、阅读体验调整及保存表单优化已提交，工程与浏览器验收通过 | 原生选区保存与完整回读；自动语境保守整理后计预算，只读出处显示当前材料及逻辑章位置；正文细线、真实留白页边入口与固定完整本章列表，两项显示偏好独立；保存表单支持双侧清空与显式重新摘录；材料对话和 Occurrence 继续后置 | [C1 验收](archived/text-study/C1_ACCEPTANCE.md)、[C2 验收](archived/text-study/C2_ACCEPTANCE.md)、[原阅读标记验收](archived/text-study/READER_MARKS_ACCEPTANCE.md)、[阅读体验记录](archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单验收](archived/text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
-| 阅读器原处预览 | 已提交，工程、联合浏览器验收及独立复核通过 | 单击可见标记直接紧凑回看，多片段先选，读取已有译文及多篇讲解；完整侧栏返回预览保留选择与手动位置；操作行前置，保存信息在底部折叠；页边入口随原文同步滚动，再次点击同一入口收起，原生划选保留 | [原处预览验收](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md) |
+| 阅读器原处预览 | 已提交，工程、联合浏览器验收及独立复核通过 | 单击可见标记直接紧凑回看，多片段先选，读取已有译文及多篇讲解；完整侧栏返回预览保留选择与手动位置；列表返回位于标题左侧，打开片段位于类型标签行右侧，保存信息在底部折叠；页边入口随原文同步滚动，再次点击同一入口收起，原生划选保留 | [原处预览验收](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md)、[记录浮窗回归](../../frontend/browser-tests/chapter-records.tsx) |
 | 文本分析与书籍统计 | 基础统计已提交，既有工程与浏览器验收通过 | 普通文本输入、完整分析资产读取与 EPUB 章节适配分开；详情独立展示词次／词种／汉字及覆盖曲线，有界缓存且不触发阅读打开或分词准备 | [B1 验收](archived/text-study/B1_ACCEPTANCE.md)、[B2 验收](archived/text-study/B2_ACCEPTANCE.md) |
 | 材料词汇与统计自动更新 | 工程、完整及专项浏览器与独立审查通过 | 详情统计自动观察当前代次；独立词表支持词性、词频、词形／读音及出现位置，按确切版本／代次分页读取；原文核验后临时定位，返回保留条件；无词典释义、永久词条或迁移 | [本轮验收](reading-practice/VOCABULARY_ACCEPTANCE.md)、[页面契约](../INFORMATION_ARCHITECTURE.md#材料词汇页) |
 | 学习条目与积累库 | 未实现 | 尚无 Occurrence 持久化、候选工具、整理操作或积累库页面；生产字段、定位、anchor 与恢复契约待落实 | [PRD F5／F6](../PRD.md#f5-学习条目创建与整理)、[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md) |

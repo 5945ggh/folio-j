@@ -1,3 +1,4 @@
+import { Route, Routes, useLocation } from "react-router";
 import type { components } from "../src/api/schema";
 import { projectPart } from "../src/materials/dom";
 import type { BrowserHarness } from "./harness";
@@ -97,6 +98,11 @@ const chapter: Schema["MaterialChapterResponse"] = {
 		},
 	],
 };
+
+function OpenedSegmentRoute() {
+	const location = useLocation();
+	return <output data-opened-segment={location.pathname + location.search} />;
+}
 
 /** Local silent implementation: browser regression and preview never speak. */
 function silentSpeech() {
@@ -575,8 +581,11 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		);
 	});
 	let dispose = await h.mount(
-		<MaterialReader />,
-		"/materials/:id",
+		<Routes>
+			<Route path="/materials/:id" element={<MaterialReader />} />
+			<Route path="/segments/:id" element={<OpenedSegmentRoute />} />
+		</Routes>,
+		"*",
 		"/materials/chapter-records",
 	);
 	const button = (label: string, scope: ParentNode = h.container) => {
@@ -638,7 +647,12 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				"Removal confirmation must open for preview",
 			);
 		}
-		if (preview)
+		if (
+			preview &&
+			!["segment-chapter", "segment-contextual"].includes(
+				params.get("panel") ?? "",
+			)
+		)
 			return "chapter records preview: real MaterialReader, paginated exact references, local API and silent speech";
 		const frame = h.container.querySelector<HTMLIFrameElement>(
 			"iframe.material-part",
@@ -893,6 +907,13 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				}),
 			"Learning list date must include year, month, day, hour and minute",
 		);
+		check(
+			!h.container.querySelector(".reader-study-preview-open") &&
+				!h.container.querySelector('[aria-label="返回学习片段列表"]'),
+			"Learning segment list must omit detail navigation actions",
+		);
+		const candidateText = candidate.textContent;
+		candidate.focus();
 		candidate.click();
 		const markdown = () =>
 			h.container.querySelector<HTMLElement>(".reader-study-preview-markdown");
@@ -927,30 +948,108 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			return ending.top >= body.top && ending.bottom <= body.bottom + 1;
 		}, "Chapter explanation ending must be visible after scrolling to the bottom");
 		chapterBody.scrollTop = 0;
-		const open = h.container.querySelector<HTMLElement>(
-			".reader-study-preview-open",
+		const checkSegmentActions = (canReturn: boolean) => {
+			const panel = h.container.querySelector<HTMLElement>(
+				".reader-chapter-records",
+			);
+			const open = panel?.querySelector<HTMLElement>(
+				".reader-study-preview-open",
+			);
+			const tabs = panel?.querySelector<HTMLElement>('[role="tablist"]');
+			const back = panel?.querySelector<HTMLElement>(
+				'[aria-label="返回学习片段列表"]',
+			);
+			const heading = panel?.querySelector<HTMLElement>(
+				".reader-record-title strong",
+			);
+			check(
+				panel && open && tabs && heading,
+				"Selected segment needs its host navigation actions",
+			);
+			const openBounds = open.getBoundingClientRect();
+			const tabsBounds = tabs.getBoundingClientRect();
+			const panelBounds = panel.getBoundingClientRect();
+			check(
+				!tabs.contains(open) &&
+					Math.abs(
+						(openBounds.top +
+							openBounds.bottom -
+							tabsBounds.top -
+							tabsBounds.bottom) /
+							2,
+					) <= 3 &&
+					openBounds.left >= tabsBounds.right - 1 &&
+					openBounds.right > (panelBounds.left + panelBounds.right) / 2 &&
+					!panel.querySelector(".reader-study-preview-toolbar"),
+				"Open segment must share the tabs row at the far right outside tablist without a separate toolbar",
+			);
+			check(
+				Boolean(back) === canReturn,
+				"Only listed segment details may offer return to the list",
+			);
+			if (back) {
+				const backBounds = back.getBoundingClientRect();
+				const headingBounds = heading.getBoundingClientRect();
+				check(
+					panel.querySelector(":scope > header")?.contains(back) &&
+						backBounds.right <= headingBounds.left + 1 &&
+						Math.abs(
+							(backBounds.top +
+								backBounds.bottom -
+								headingBounds.top -
+								headingBounds.bottom) /
+								2,
+						) <= 3 &&
+						!back.textContent?.includes("学习片段列表"),
+					"Segment return icon must sit before the host title without adding visible label text",
+				);
+			}
+		};
+		checkSegmentActions(true);
+		if (preview && params.get("panel") === "segment-chapter")
+			return "chapter segment details preview: title return, tabs-row open action, complete explanation";
+		await h.until(
+			() =>
+				document.activeElement?.getAttribute("aria-label") ===
+				"返回学习片段列表",
+			"Selecting a learning list row must focus the host return icon",
 		);
-		const originalBounds = h.container
-			.querySelector(".reader-study-preview-original")
-			?.getBoundingClientRect();
-		const tabsBounds = h.container
-			.querySelector(".reader-record-tabs")
-			?.getBoundingClientRect();
+		button("返回学习片段列表").click();
+		await h.until(
+			() =>
+				document.activeElement?.matches(
+					".reader-study-preview-candidates button",
+				) === true && document.activeElement.textContent === candidateText,
+			"Returning from segment details must restore focus to the original list row",
+		);
 		check(
-			open && originalBounds && tabsBounds,
-			"Selected learning segment needs its open action, source and tabs",
+			!h.container.querySelector(".reader-study-preview-open"),
+			"Returning to list must remove the open action",
 		);
-		const openBounds = open.getBoundingClientRect();
-		const compactBounds = h.container
-			.querySelector(".reader-chapter-records")
-			?.getBoundingClientRect();
+		(document.activeElement as HTMLButtonElement).click();
+		await h.until(
+			() => markdown()?.textContent?.includes("完整讲解终点。") === true,
+			"Reopening the same row must load its explanation",
+		);
+		button("翻译").click();
+		await h.until(
+			() => !!h.container.querySelector(".reader-record-translation"),
+			"Translation tab must show its own rows",
+		);
 		check(
-			compactBounds &&
-				openBounds.top >= tabsBounds.bottom - 1 &&
-				openBounds.bottom <= originalBounds.top + 1 &&
-				openBounds.right > (compactBounds.left + compactBounds.right) / 2,
-			"Open segment action must sit on the right below tabs and before original source",
+			[
+				...h.container.querySelectorAll<HTMLElement>(
+					'.reader-study-preview-open, [aria-label="返回学习片段列表"]',
+				),
+			].every((action) => !action.getClientRects().length),
+			"Translation tab must not expose inactive segment navigation actions",
 		);
+		button("学习片段").click();
+		await h.until(
+			() => markdown()?.textContent?.includes("完整讲解终点。") === true,
+			"Returning to segment tab must retain the selected details",
+		);
+		checkSegmentActions(true);
 		const picker = h.container.querySelector<HTMLSelectElement>(
 			".reader-study-preview-analysis select",
 		);
@@ -1019,6 +1118,9 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				markdown()?.dataset.clipped === "true",
 			"Contextual record must open the long explanation preview",
 		);
+		checkSegmentActions(false);
+		if (preview && params.get("panel") === "segment-contextual")
+			return "contextual segment preview: direct details without return action, tabs-row open action";
 		const dragHeader = h.container.querySelector<HTMLElement>(
 			".reader-chapter-records > header",
 		);
@@ -1060,6 +1162,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				expandedPanel.getBoundingClientRect().height > 520,
 			"Expanded sidebar must use available viewport height beyond former 520px and 60% caps",
 		);
+		checkSegmentActions(false);
 		const body = h.container.querySelector<HTMLElement>(".reader-record-body");
 		check(
 			body && body.scrollHeight > body.clientHeight,
@@ -1107,6 +1210,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 						?.style.left === manualPosition),
 			"Return must preserve selected segment, explanation, tab and manual position",
 		);
+		checkSegmentActions(false);
 		button("关闭阅读记录").click();
 		await h.until(
 			() => !h.container.querySelector(".reader-chapter-records"),
@@ -1530,7 +1634,48 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				}
 			}
 		}
-		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: chapter header without expand/collapse, clean record rows, minute dates, right-side segment action, measured long/short clipping, full-height reading reaches ending, return preserves segment/analysis/tab/manual position, close icon, selection→chapter record→selection shares edited context with floating host kept mounted, two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
+		button("关闭阅读设置").click();
+		button("本章记录").click();
+		await h.until(
+			() => !!h.container.querySelector('[role="tab"][aria-label="学习片段"]'),
+			"Chapter list must reopen for the segment route assertion",
+		);
+		button("学习片段").click();
+		await h.until(
+			() =>
+				!!h.container.querySelector(".reader-study-preview-candidates button"),
+			"Learning list must load before opening selected explanation",
+		);
+		(
+			h.container.querySelector<HTMLButtonElement>(
+				".reader-study-preview-candidates button",
+			) as HTMLButtonElement
+		).click();
+		await h.until(
+			() =>
+				!!h.container.querySelector(".reader-study-preview-analysis select"),
+			"Saved segment must offer its explanation selector",
+		);
+		const finalPicker = h.container.querySelector<HTMLSelectElement>(
+			".reader-study-preview-analysis select",
+		);
+		check(finalPicker, "Saved segment must expose selectable explanations");
+		finalPicker.value = "preview-short";
+		finalPicker.dispatchEvent(new Event("change", { bubbles: true }));
+		await h.until(
+			() => markdown()?.textContent?.includes("短讲解正文。") === true,
+			"Selecting a different explanation must finish before opening the segment",
+		);
+		button("打开片段 →").click();
+		await h.until(
+			() =>
+				h.container
+					.querySelector("[data-opened-segment]")
+					?.getAttribute("data-opened-segment") ===
+				"/segments/saved?analysis=preview-short&revision=revision-short&chat=0",
+			"Open segment must navigate with the selected explanation and exact revision",
+		);
+		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: chapter header without expand/collapse, clean record rows, minute dates, title-row list return with restored row focus, tabs-row segment action outside tablist and hidden on translation/list, exact selected analysis/revision route, measured long/short clipping, full-height reading reaches ending, return preserves segment/analysis/tab/manual position, close icon, selection→chapter record→selection shares edited context with floating host kept mounted, two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
 	} finally {
 		if (!preview) dispose();
 	}

@@ -31,7 +31,10 @@ import { studySidebarPosition } from "./study-overlays";
 import { useReaderCardDrag } from "./use-reader-card-drag";
 import "./chapter-records.css";
 
-type Props = Omit<StudyPreviewProps, "onEmphasize" | "embedded"> & {
+type Props = Omit<
+	StudyPreviewProps,
+	"onEmphasize" | "embedded" | "actionSlots"
+> & {
 	chapter: Chapter;
 	sourceId: string;
 	direction: "horizontal-tb" | "vertical-rl";
@@ -66,6 +69,12 @@ export function ChapterRecords(props: Props) {
 	} = props;
 	const [tab, setTab] = useState<"segment" | "translation">(
 		!fixed && !items.length && translations.length ? "translation" : "segment",
+	);
+	const [segmentBackSlot, setSegmentBackSlot] = useState<HTMLDivElement | null>(
+		null,
+	);
+	const [segmentOpenSlot, setSegmentOpenSlot] = useState<HTMLDivElement | null>(
+		null,
 	);
 	const [selectedId, setSelectedId] = useState<string | null | undefined>();
 	const selected = translations.find(
@@ -291,6 +300,11 @@ export function ChapterRecords(props: Props) {
 				{...dragHandlers}
 			>
 				<div className="reader-record-title">
+					<div
+						ref={setSegmentBackSlot}
+						className="reader-record-segment-back-slot"
+						hidden={tab !== "segment"}
+					/>
 					{tab === "translation" && canReturn && (
 						<button
 							type="button"
@@ -319,43 +333,56 @@ export function ChapterRecords(props: Props) {
 					</button>
 				</div>
 			</header>
-			<div className="reader-record-tabs" role="tablist" aria-label="记录类型">
-				{(["segment", "translation"] as const).map((kind) => (
-					<button
-						key={kind}
-						id={`${id}-${kind}`}
-						role="tab"
-						type="button"
-						aria-label={kind === "segment" ? "学习片段" : "翻译"}
-						aria-selected={tab === kind}
-						aria-controls={`${id}-${kind}-panel`}
-						onClick={() => changeTab(kind)}
-						onKeyDown={(event) => {
-							if (
-								!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
-							)
-								return;
-							event.preventDefault();
-							const next =
-								event.key === "Home"
-									? "segment"
-									: event.key === "End"
-										? "translation"
-										: kind === "segment"
+			<div className="reader-record-tabs-row">
+				<div
+					className="reader-record-tabs"
+					role="tablist"
+					aria-label="记录类型"
+				>
+					{(["segment", "translation"] as const).map((kind) => (
+						<button
+							key={kind}
+							id={`${id}-${kind}`}
+							role="tab"
+							type="button"
+							aria-label={kind === "segment" ? "学习片段" : "翻译"}
+							aria-selected={tab === kind}
+							aria-controls={`${id}-${kind}-panel`}
+							onClick={() => changeTab(kind)}
+							onKeyDown={(event) => {
+								if (
+									!["ArrowLeft", "ArrowRight", "Home", "End"].includes(
+										event.key,
+									)
+								)
+									return;
+								event.preventDefault();
+								const next =
+									event.key === "Home"
+										? "segment"
+										: event.key === "End"
 											? "translation"
-											: "segment";
-							changeTab(next);
-							element.current
-								?.querySelector<HTMLElement>(`[id="${id}-${next}"]`)
-								?.focus();
-						}}
-					>
-						{kind === "segment" ? "学习片段" : "翻译"}
-						<span>
-							{kind === "segment" ? items.length : translations.length}
-						</span>
-					</button>
-				))}
+											: kind === "segment"
+												? "translation"
+												: "segment";
+								changeTab(next);
+								element.current
+									?.querySelector<HTMLElement>(`[id="${id}-${next}"]`)
+									?.focus();
+							}}
+						>
+							{kind === "segment" ? "学习片段" : "翻译"}
+							<span>
+								{kind === "segment" ? items.length : translations.length}
+							</span>
+						</button>
+					))}
+				</div>
+				<div
+					ref={setSegmentOpenSlot}
+					className="reader-record-segment-open-slot"
+					hidden={tab !== "segment"}
+				/>
 			</div>
 			<div ref={body} className="reader-record-body">
 				<div
@@ -367,6 +394,7 @@ export function ChapterRecords(props: Props) {
 					<StudyPreview
 						{...props}
 						embedded
+						actionSlots={{ back: segmentBackSlot, open: segmentOpenSlot }}
 						inactive={inactive || tab !== "segment"}
 						onEmphasize={(value) => onEmphasize(value, "segment")}
 					/>

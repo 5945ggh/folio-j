@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { analysisKeys, getAnalysis, listAnalyses } from "../analysis/api";
 import { Markdown } from "../analysis/Markdown";
 import { analysisPresentation } from "../analysis/presentation";
@@ -20,6 +21,7 @@ export type StudyPreviewProps = {
 	expanded: boolean;
 	inactive?: boolean;
 	embedded?: boolean;
+	actionSlots?: { back: HTMLElement | null; open: HTMLElement | null };
 	onExpand: () => void;
 	onCollapse: () => void;
 	onClose: () => void;
@@ -35,6 +37,7 @@ export function StudyPreview({
 	expanded,
 	inactive: panelInactive = false,
 	embedded = false,
+	actionSlots,
 	onExpand,
 	onCollapse,
 	onClose,
@@ -47,12 +50,13 @@ export function StudyPreview({
 	const content = useRef<HTMLDivElement>(null);
 	const analysisPreview = useRef<HTMLDivElement>(null);
 	const [previewClipped, setPreviewClipped] = useState(false);
-	const focusAfterSelection = useRef(false);
+	const nextFocus = useRef<"detail" | string | null>(null);
+	const listScrollTop = useRef(0);
 	const callbacks = useRef({ onClose, onEmphasize });
 	callbacks.current = { onClose, onEmphasize };
 	const headingId = useId();
 	const pickerId = useId();
-	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [selectedId, setSelectedId] = useState<string | null | undefined>();
 	const [expandedOriginalId, setExpandedOriginalId] = useState<string | null>(
 		null,
 	);
@@ -63,7 +67,8 @@ export function StudyPreview({
 	const automaticId =
 		!fixed && items.length === 1 ? items[0]?.segment_id : null;
 	const selected = items.find(
-		(item) => item.segment_id === (selectedId ?? automaticId),
+		(item) =>
+			item.segment_id === (selectedId === undefined ? automaticId : selectedId),
 	);
 	const segmentId = selected?.segment_id ?? "";
 	const [position, setPosition] = useState({
@@ -111,18 +116,31 @@ export function StudyPreview({
 		};
 	}, [inactive, anchor, expanded, fixed, embedded]);
 	useLayoutEffect(() => {
-		if (segmentId && content.current) {
-			content.current.scrollTop = 0;
-			const body = content.current.closest(".reader-record-body");
-			if (body) body.scrollTop = 0;
-		}
-		if (focusAfterSelection.current) {
-			focusAfterSelection.current = false;
-			element.current
-				?.querySelector<HTMLButtonElement>("button")
-				?.focus({ preventScroll: true });
-		}
+		if (!segmentId || !content.current) return;
+		content.current.scrollTop = 0;
+		const body = content.current.closest(".reader-record-body");
+		if (body) body.scrollTop = 0;
 	}, [segmentId]);
+	useLayoutEffect(() => {
+		const node = element.current;
+		const body = node?.closest(".reader-record-body");
+		const destination = nextFocus.current;
+		if (!destination || (destination === "detail" && !segmentId)) return;
+		const button =
+			destination === "detail"
+				? actionSlots?.back?.querySelector<HTMLButtonElement>("button")
+				: [
+						...(node?.querySelectorAll<HTMLButtonElement>(
+							"[data-segment-id]",
+						) ?? []),
+					].find((item) => item.dataset.segmentId === destination);
+		if (button) {
+			if (destination !== "detail" && body)
+				body.scrollTop = listScrollTop.current;
+			button.focus({ preventScroll: true });
+			nextFocus.current = null;
+		}
+	}, [segmentId, actionSlots?.back]);
 
 	const segment = useQuery({
 		queryKey: queries.segment(segmentId),
@@ -186,9 +204,13 @@ export function StudyPreview({
 			: null;
 	const translation = saved?.translation.trim();
 	const original = saved?.text ?? selected?.excerpt ?? "";
-	const canReturn = fixed || items.length > 1;
+	const canReturn = !!selected && selectedId != null;
 	const select = (id: string | null) => {
-		focusAfterSelection.current = true;
+		nextFocus.current = id ? "detail" : segmentId;
+		if (id) {
+			listScrollTop.current =
+				element.current?.closest(".reader-record-body")?.scrollTop ?? 0;
+		}
 		setSelectedId(id);
 		setAnalysisSelection(null);
 	};
@@ -251,17 +273,26 @@ export function StudyPreview({
 					</div>
 				</header>
 			)}
-			{selected && (
-				<div className="reader-study-preview-toolbar">
-					{canReturn && (
-						<button
-							className="reader-study-preview-back"
-							type="button"
-							onClick={() => select(null)}
-						>
-							← 学习片段列表
-						</button>
-					)}
+			{selected &&
+				!inactive &&
+				canReturn &&
+				actionSlots?.back &&
+				createPortal(
+					<button
+						className="reader-record-back reader-study-preview-back"
+						type="button"
+						aria-label="返回学习片段列表"
+						title="返回学习片段列表"
+						onClick={() => select(null)}
+					>
+						<span aria-hidden="true">←</span>
+					</button>,
+					actionSlots.back,
+				)}
+			{selected &&
+				!inactive &&
+				actionSlots?.open &&
+				createPortal(
 					<button
 						className="reader-study-preview-open"
 						type="button"
@@ -270,9 +301,9 @@ export function StudyPreview({
 						}
 					>
 						打开片段 <span aria-hidden="true">→</span>
-					</button>
-				</div>
-			)}
+					</button>,
+					actionSlots.open,
+				)}
 			<div
 				ref={content}
 				className={`reader-study-preview-content${!selected ? " reader-study-preview-list" : ""}`}
@@ -286,6 +317,7 @@ export function StudyPreview({
 								<button
 									type="button"
 									key={item.segment_id}
+									data-segment-id={item.segment_id}
 									onClick={() => select(item.segment_id)}
 									onMouseEnter={() => onEmphasize(item.segment_id)}
 									onMouseLeave={() => onEmphasize(null)}
