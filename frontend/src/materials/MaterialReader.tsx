@@ -45,6 +45,7 @@ import { targetText, translationTargetKey } from "../translation/state";
 import { TranslationPanel } from "../translation/TranslationPanel";
 import type { TranslationRemoved } from "../translation/TranslationRemoval";
 import {
+	type Chapter,
 	getChapter,
 	getMaterial,
 	getReadings,
@@ -118,7 +119,11 @@ import {
 } from "./reader-frames";
 import { ReaderImageCache } from "./reader-image-cache";
 import { ReaderNavigation } from "./reader-navigation";
-import { originFailure, originPosition } from "./reader-origin";
+import {
+	originFailure,
+	originPosition,
+	recordOriginPosition,
+} from "./reader-origin";
 import {
 	closeReaderPanel,
 	EMPTY_READER_PANELS,
@@ -156,6 +161,7 @@ import { StudySegmentPanel } from "./StudySegmentPanel";
 import { readerWheelScroll } from "./scroll";
 import {
 	getSegmentProvenance,
+	type MaterialProvenance,
 	type SegmentProvenance,
 	type StudyTarget,
 } from "./study-api";
@@ -466,7 +472,7 @@ function Reader({
 	const pendingVocabulary = useRef<VocabularyReaderTarget | null>(null);
 	const highlight = useRef<{
 		chapterId: string;
-		ranges: ReaderHighlightRange[];
+		ranges: readonly ReaderHighlightRange[];
 		kind: "study" | "search";
 	} | null>(
 		initialVocabulary
@@ -1142,7 +1148,7 @@ function Reader({
 						setStatus("已恢复到附近位置");
 						if (highlight.current)
 							navigationFailure = new Error(
-								"无法精确定位搜索命中，已保留附近正文。",
+								"无法精确定位原文，已保留附近正文。",
 							);
 					}
 					if (rect && (rect.width > 0 || rect.height > 0)) {
@@ -1400,20 +1406,26 @@ function Reader({
 					presentation.current.present(null, complete, capture);
 					return;
 				}
-				const { target, mark, part: targetPart } = destination;
-				highlight.current = mark
+				const { target, mark, part: targetPart, highlightRanges } = destination;
+				highlight.current = highlightRanges
 					? {
 							kind: "search",
 							chapterId: target.chapter_id,
-							ranges: [
-								{
-									resource_id: target.resource_id,
-									spine_index: targetPart.spine_index,
-									...mark,
-								},
-							],
+							ranges: highlightRanges,
 						}
-					: null;
+					: mark
+						? {
+								kind: "search",
+								chapterId: target.chapter_id,
+								ranges: [
+									{
+										resource_id: target.resource_id,
+										spine_index: targetPart.spine_index,
+										...mark,
+									},
+								],
+							}
+						: null;
 				if (
 					pendingOrigin.current?.chapter_id === target.chapter_id &&
 					pendingOrigin.current.material_provenance
@@ -1704,35 +1716,48 @@ function Reader({
 		});
 	}, [active, sessionToken, initialOrigin, initialVocabulary]);
 
-	const backToTranslationOrigin = (result: TranslationResult) => {
-		closeMarkHit();
-		const reference = result.material_provenance;
-		const range = reference.ranges[0];
-		const part = result.parts.find((item) => item.range_index === 0);
-		if (
-			!range ||
-			!part ||
-			result.material_deleted ||
-			reference.version_id !== book.version_id
-		) {
+	const locateRecordOrigin = (
+		reference: MaterialProvenance,
+		data: Chapter | undefined,
+		targetChapterId: string,
+	) => {
+		try {
+			if (
+				!data ||
+				data.id !== targetChapterId ||
+				data.material_id !== book.id ||
+				data.version_id !== book.version_id
+			)
+				throw new Error("原文版本或位置不可用");
+			const target = recordOriginPosition(reference, data, settings);
+			setSelectionError(null);
+			closeMarkHit();
+			setTranslationOpen(false);
+			void navigation.current.navigate({
+				type: "position",
+				target,
+				highlightRanges: reference.ranges,
+			});
+		} catch (failure) {
+			setSelectionError(
+				failure instanceof Error ? failure : new Error(String(failure)),
+			);
+		}
+	};
+	const backToTranslationOrigin = (
+		result: TranslationResult,
+		boundChapter?: Chapter,
+	) => {
+		const targetChapterId = boundChapter?.id ?? chapterId;
+		if (result.material_deleted || result.chapter_id !== targetChapterId) {
 			setSelectionError(new Error("原文版本或位置不可用"));
 			return;
 		}
-		setTranslationOpen(false);
-		void navigation.current.navigate({
-			type: "position",
-			target: {
-				version_id: reference.version_id,
-				chapter_id: result.chapter_id,
-				part_index: part.part_index,
-				resource_id: range.resource_id,
-				kind: "text",
-				offset: range.start,
-				at_chapter_end: false,
-				settings,
-			},
-			mark: { start: range.start, end: range.end },
-		});
+		locateRecordOrigin(
+			result.material_provenance,
+			boundChapter ?? chapter.data,
+			targetChapterId,
+		);
 	};
 	const renderToken = generation;
 	const handledCopyEdit = useRef(0);
@@ -2218,7 +2243,9 @@ function Reader({
 								container.current?.focus({ preventScroll: true }),
 							);
 						}}
-						onBackToOrigin={backToTranslationOrigin}
+						onBackToOrigin={(result) =>
+							backToTranslationOrigin(result, translationTarget.chapter)
+						}
 					/>
 				</div>
 			)}
@@ -2404,6 +2431,13 @@ function Reader({
 						translationSessions={translationSessions}
 						onBackToOrigin={backToTranslationOrigin}
 						onOpen={openStudySegment}
+						onLocateOriginal={(item) =>
+							locateRecordOrigin(
+								item.material_provenance,
+								chapter.data,
+								chapterId,
+							)
+						}
 						onClose={closeMarkHit}
 						expanded={panels.right === "study"}
 						inactive={

@@ -29,6 +29,7 @@ export type StudyPreviewProps = {
 	onCollapse: () => void;
 	onClose: () => void;
 	onOpen: (segmentId: string, analysisId?: string, revisionId?: string) => void;
+	onLocateOriginal?: (item: ChapterSegment) => void;
 	onEmphasize: (id: string | null) => void;
 };
 
@@ -47,6 +48,7 @@ export function StudyPreview({
 	onCollapse,
 	onClose,
 	onOpen,
+	onLocateOriginal,
 	onEmphasize,
 }: StudyPreviewProps) {
 	const activity = useViewActivity();
@@ -368,6 +370,15 @@ export function StudyPreview({
 							className={`reader-study-preview-original${expandedOriginalId === segmentId ? " original-expanded" : ""}`}
 						>
 							<p lang="ja">{original}</p>
+							{onLocateOriginal && (
+								<button
+									type="button"
+									className="reader-record-locate-original"
+									onClick={() => onLocateOriginal(selected)}
+								>
+									定位原文
+								</button>
+							)}
 							{!expanded && original.length > 70 && (
 								<button
 									type="button"

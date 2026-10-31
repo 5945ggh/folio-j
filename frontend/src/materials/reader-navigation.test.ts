@@ -242,6 +242,31 @@ test("present receives the exact loaded chapter and selected part across equal p
 	);
 });
 
+test("record navigation carries every highlight range and retains the reading return point", async () => {
+	const f = fixture();
+	const ranges = [
+		{ resource_id: "r-B", spine_index: 2, start: 30, end: 50 },
+		{ resource_id: "r-B", spine_index: 2, start: 50, end: 70 },
+	];
+	assert.equal(
+		await f.navigate({
+			type: "position",
+			target: position("B", 30),
+			highlightRanges: ranges,
+		}),
+		true,
+	);
+	assert.deepEqual(
+		f.presentations.at(-1)?.destination?.highlightRanges,
+		ranges,
+	);
+	assert.deepEqual(f.navigation.state.origin, position("A"));
+	f.complete();
+	assert.equal(await f.navigate({ type: "return" }), true);
+	f.complete();
+	assert.equal(f.navigation.state.origin, null);
+});
+
 test("loaded chapter and remembered target identities must match before present receives them", async () => {
 	for (const mismatch of ["chapter", "version", "remembered"] as const) {
 		const f = fixture();

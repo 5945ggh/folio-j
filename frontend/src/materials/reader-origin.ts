@@ -1,5 +1,37 @@
-import type { Position, Settings } from "./api.ts";
-import type { SegmentProvenance } from "./study-api.ts";
+import type { Chapter, Position, Settings } from "./api.ts";
+import { referenceParts } from "./reader-selection.ts";
+import type { MaterialProvenance, SegmentProvenance } from "./study-api.ts";
+
+/** Exact record navigation uses verified chapter coordinates, never reading-recovery guesses. */
+export function recordOriginPosition(
+	reference: MaterialProvenance,
+	chapter: Chapter,
+	settings: Settings,
+): Position {
+	if (
+		reference.contract_version !== "1" ||
+		reference.material_id !== chapter.material_id ||
+		reference.version_id !== chapter.version_id
+	)
+		throw new Error("原文材料或版本不匹配，无法精确定位。");
+	const mapped = referenceParts(chapter, reference.ranges);
+	const first = mapped.entries().next().value;
+	if (!first) throw new Error("出处没有可定位的原文。");
+	const [index, intervals] = first;
+	const part = chapter.parts[index];
+	const interval = intervals[0];
+	if (!part || !interval) throw new Error("出处缺少完整的定位范围。");
+	return {
+		version_id: reference.version_id,
+		chapter_id: chapter.id,
+		part_index: index,
+		resource_id: part.resource_id,
+		kind: "text",
+		offset: part.start + interval.start,
+		at_chapter_end: false,
+		settings,
+	};
+}
 
 export function originFailure(origin: SegmentProvenance): string | null {
 	switch (origin.status) {

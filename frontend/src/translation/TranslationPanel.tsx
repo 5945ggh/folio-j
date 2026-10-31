@@ -43,8 +43,8 @@ import {
 	translationVersionShortcut,
 } from "./state";
 import {
-	TranslationRemoval,
 	type TranslationRemoved,
+	useTranslationRemoval,
 } from "./TranslationRemoval";
 import "./translation.css";
 
@@ -61,6 +61,7 @@ function ResultConfiguration({ result }: { result: TranslationResult }) {
 			<p>后文：{result.context_after || "（空）"}</p>
 			<details className="translation-technical">
 				<summary>生成信息</summary>
+				<p>译文语言：{result.target_language}</p>
 				<p>
 					{result.scheme_name} · {new Date(result.created_at).toLocaleString()}
 				</p>
@@ -84,9 +85,13 @@ function ResultConfiguration({ result }: { result: TranslationResult }) {
 function TranslationOriginal({
 	text,
 	reference,
+	showSpeech = true,
+	onLocate,
 }: {
 	text: string;
 	reference: MaterialProvenance;
+	showSpeech?: boolean;
+	onLocate?: () => void;
 }) {
 	const [expanded, setExpanded] = useState(false);
 	const [clipped, setClipped] = useState(false);
@@ -106,15 +111,26 @@ function TranslationOriginal({
 			<blockquote ref={original} lang="ja">
 				{text}
 			</blockquote>
-			<SpeechControls
-				compact
-				iconOnly
-				target={{
-					id: translationTargetKey(reference),
-					text,
-					label: "译文对应原文",
-				}}
-			/>
+			{showSpeech && (
+				<SpeechControls
+					compact
+					iconOnly
+					target={{
+						id: translationTargetKey(reference),
+						text,
+						label: "译文对应原文",
+					}}
+				/>
+			)}
+			{onLocate && (
+				<button
+					type="button"
+					className="reader-record-locate-original"
+					onClick={onLocate}
+				>
+					定位原文
+				</button>
+			)}
 			{(clipped || expanded) && (
 				<button
 					type="button"
@@ -131,26 +147,35 @@ function TranslationOriginal({
 function ResultView({
 	result,
 	versionAction,
+	actions,
 	onOpenSegment,
 	onBackToOrigin,
 }: {
 	result: TranslationResult;
 	versionAction: ReactNode;
+	actions: ReactNode;
 	onOpenSegment?: (id: string) => void;
 	onBackToOrigin?: (result: TranslationResult) => void;
 }) {
 	return (
 		<>
 			<TranslationOriginal
+				key={result.id}
 				text={result.text}
 				reference={result.material_provenance}
+				showSpeech={false}
+				onLocate={
+					onBackToOrigin && !result.material_deleted
+						? () => onBackToOrigin(result)
+						: undefined
+				}
 			/>
 
 			<p className="translation-output">{result.translation}</p>
-			<div className="translation-result-meta">
-				<small>{result.target_language} · 已留存</small>
-				{versionAction}
-			</div>
+			{actions}
+			{versionAction && (
+				<div className="translation-result-meta">{versionAction}</div>
+			)}
 			{result.adopted_segment_ids.length > 0 && (
 				<SavedTranslationDestinations
 					ids={result.adopted_segment_ids}
@@ -158,17 +183,6 @@ function ResultView({
 					onOpenSegment={onOpenSegment}
 				/>
 			)}
-			<div className="translation-actions">
-				{onBackToOrigin && (
-					<button
-						type="button"
-						disabled={result.material_deleted}
-						onClick={() => onBackToOrigin(result)}
-					>
-						{result.material_deleted ? "原材料已删除" : "返回原处"}
-					</button>
-				)}
-			</div>
 		</>
 	);
 }
@@ -236,7 +250,7 @@ export function TranslationPanel({
 	translationSessions?: TranslationSessions;
 	onClose: () => void;
 	onOpenSegment?: (id: string) => void;
-	onBackToOrigin: (result: TranslationResult) => void;
+	onBackToOrigin?: (result: TranslationResult) => void;
 	onResultSelected?: (result: TranslationResult) => void;
 	onRemoved?: TranslationRemoved;
 }) {
@@ -564,6 +578,7 @@ export function TranslationPanel({
 		if (onRemoved) onRemoved(value, reference);
 		else onClose();
 	};
+	const removal = useTranslationRemoval({ session, onRemoved: removed });
 	const fill = () => session.edit({ kind: "refill" });
 	const setBudget = (value: typeof budget) =>
 		session.edit({ kind: "budget", value });
@@ -625,60 +640,91 @@ export function TranslationPanel({
 				!settings.data?.model_id ||
 				busy ||
 				(!!resolvedId && !readableResult)));
+	const translationAction = (withText = false) => (
+		<button
+			type="button"
+			className={
+				withText ? "translation-text-action" : "translation-icon-button"
+			}
+			aria-label={actionLabel}
+			title={
+				actionLabel === "重新翻译"
+					? "用当前语境与设置重新翻译，保留已有译文"
+					: actionLabel
+			}
+			disabled={actionDisabled}
+			onClick={start}
+		>
+			<TranslationIcon action="retry" />
+			{withText && actionLabel}
+		</button>
+	);
+	const stopAction = (withText = false) =>
+		activeTranslation(currentTask) && currentTask ? (
+			<button
+				type="button"
+				className={
+					withText ? "translation-text-action" : "translation-icon-button"
+				}
+				aria-label="停止翻译"
+				title="停止翻译"
+				disabled={stop.isPending || currentTask.status === "stopping"}
+				onClick={() => stop.mutate(currentTask.id)}
+			>
+				<TranslationIcon action="stop" />
+				{withText && "停止翻译"}
+			</button>
+		) : null;
+	const resultActions = displayedResult && (
+		<fieldset className="translation-result-actions" aria-label="译文操作">
+			<SpeechControls
+				compact
+				target={{
+					id: translationTargetKey(displayedResult.material_provenance),
+					text: displayedResult.text,
+					label: "译文对应原文",
+				}}
+			/>
+			{!uncertain && activeTranslation(currentTask)
+				? stopAction(true)
+				: translationAction(true)}
+			{removal.action}
+		</fieldset>
+	);
+	const showHeaderActions =
+		!displayedResult &&
+		(initialized || uncertain || !!history.data?.tasks.length || !!currentTask);
+	const showToolbar = !!progressLabel || showHeaderActions || !embedded;
 	const toolbar = (
 		<>
-			<span className="translation-progress" role="status">
-				{progressLabel && (
-					<>
-						<span className="translation-spinner" aria-hidden="true" />
-						{progressLabel}
-					</>
-				)}
-			</span>
-			<div className="translation-header-actions">
-				{(displayedResult || history.data?.tasks.length || currentTask) && (
-					<TranslationRemoval session={session} onRemoved={removed} />
-				)}
-				{(displayedResult || initialized || uncertain) && (
-					<button
-						type="button"
-						className="translation-icon-button"
-						aria-label={actionLabel}
-						title={
-							actionLabel === "重新翻译"
-								? "用当前语境与设置重新翻译，保留已有译文"
-								: actionLabel
-						}
-						disabled={actionDisabled}
-						onClick={start}
-					>
-						<TranslationIcon action="retry" />
-					</button>
-				)}
-				{activeTranslation(currentTask) && currentTask && (
-					<button
-						type="button"
-						className="translation-icon-button"
-						aria-label="停止翻译"
-						title="停止翻译"
-						disabled={stop.isPending || currentTask.status === "stopping"}
-						onClick={() => stop.mutate(currentTask.id)}
-					>
-						<TranslationIcon action="stop" />
-					</button>
-				)}
-				{!embedded && (
-					<button
-						type="button"
-						className="translation-icon-button"
-						aria-label="关闭翻译（任务继续）"
-						title="收起译文（任务继续）"
-						onClick={onClose}
-					>
-						<TranslationIcon action="close" />
-					</button>
-				)}
-			</div>
+			{progressLabel && (
+				<span className="translation-progress" role="status">
+					<span className="translation-spinner" aria-hidden="true" />
+					{progressLabel}
+				</span>
+			)}
+			{(showHeaderActions || !embedded) && (
+				<div className="translation-header-actions">
+					{!displayedResult &&
+						(!!history.data?.tasks.length || currentTask) &&
+						removal.action}
+					{!displayedResult &&
+						(initialized || uncertain) &&
+						translationAction()}
+					{!displayedResult && stopAction()}
+					{!embedded && (
+						<button
+							type="button"
+							className="translation-icon-button"
+							aria-label="关闭翻译（任务继续）"
+							title="收起译文（任务继续）"
+							onClick={onClose}
+						>
+							<TranslationIcon action="close" />
+						</button>
+					)}
+				</div>
+			)}
 		</>
 	);
 	return (
@@ -723,7 +769,7 @@ export function TranslationPanel({
 					{toolbar}
 				</header>
 			)}
-			{embedded && (
+			{embedded && showToolbar && (
 				<div className="translation-embedded-toolbar">{toolbar}</div>
 			)}
 			<div ref={content} className="translation-content">
@@ -748,9 +794,9 @@ export function TranslationPanel({
 				{displayedResult && (
 					<div className="translation-result-view" aria-busy={busy}>
 						<ResultView
-							key={displayedResult.id}
 							result={displayedResult}
 							versionAction={versionAction}
+							actions={resultActions}
 							onOpenSegment={onOpenSegment}
 							onBackToOrigin={onBackToOrigin}
 						/>
@@ -987,6 +1033,7 @@ export function TranslationPanel({
 						</>
 					)}
 			</div>
+			{removal.dialog}
 		</section>
 	);
 }

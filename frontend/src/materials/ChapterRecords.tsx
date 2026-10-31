@@ -419,6 +419,7 @@ export function ChapterRecords(props: Props) {
 					<StudyPreview
 						{...props}
 						embedded
+						onLocateOriginal={fixed ? props.onLocateOriginal : undefined}
 						relatedRecordCount={relatedRecordCount}
 						actionSlots={{ back: segmentBackSlot, open: segmentOpenSlot }}
 						inactive={inactive || tab !== "segment"}
@@ -444,7 +445,7 @@ export function ChapterRecords(props: Props) {
 							onResultSelected={props.onResultSelected}
 							onRemoved={props.onTranslationRemoved}
 							onOpenSegment={props.onOpen}
-							onBackToOrigin={props.onBackToOrigin}
+							onBackToOrigin={fixed ? props.onBackToOrigin : undefined}
 							onClose={onClose}
 						/>
 					) : (

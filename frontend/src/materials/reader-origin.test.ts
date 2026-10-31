@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { Chapter } from "./api.ts";
-import { originFailure, originPosition } from "./reader-origin.ts";
+import {
+	originFailure,
+	originPosition,
+	recordOriginPosition,
+} from "./reader-origin.ts";
 import type { ReaderHighlightRange } from "./reader-selection.ts";
 import { referenceParts } from "./reader-selection.ts";
 import type { SegmentProvenance } from "./study-api.ts";
@@ -39,6 +43,8 @@ for (const item of cases.chapter_cases) {
 	test(`fixed fixture ${item.id} maps every interval and starts at its exact first occurrence`, () => {
 		const chapter = {
 			id: "chapter",
+			material_id: "m",
+			version_id: "v",
 			resources: item.resources,
 			parts: item.parts,
 		} as Chapter;
@@ -83,6 +89,40 @@ for (const item of cases.chapter_cases) {
 		assert.equal(anchor.offset, item.navigation.offset);
 		assert.equal(anchor.at_chapter_end, false);
 		assert.equal(originFailure(origin), null);
+		const reference = origin.material_provenance;
+		assert.ok(reference);
+		assert.deepEqual(
+			recordOriginPosition(reference, chapter, settings),
+			anchor,
+		);
+		for (const changed of [
+			{ ...reference, material_id: "another-book" },
+			{ ...reference, version_id: "old-version" },
+			{
+				...reference,
+				ranges: reference.ranges.map((range, index) =>
+					index === reference.ranges.length - 1
+						? { ...range, exact: "失配した原文" }
+						: range,
+				),
+			},
+			{
+				...reference,
+				ranges: reference.ranges.map((range) => ({
+					...range,
+					text_sha256: "changed-snapshot",
+				})),
+			},
+			{
+				...reference,
+				ranges: reference.ranges.map((range) => ({
+					...range,
+					spine_index: 9999,
+				})),
+			},
+			{ ...reference, ranges: [] },
+		])
+			assert.throws(() => recordOriginPosition(changed, chapter, settings));
 		for (const status of [
 			"snapshot_mismatch",
 			"material_deleted",

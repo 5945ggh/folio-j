@@ -138,7 +138,7 @@ export async function navigationFeedback(h: BrowserHarness, preview = false) {
 		);
 		const previousHighlight =
 			doc()?.defaultView?.CSS.highlights.get("folio-search");
-		button("返回原处").click();
+		button("定位原文").click();
 		await h.until(
 			() =>
 				highlighted() &&

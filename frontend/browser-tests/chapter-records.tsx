@@ -8,10 +8,12 @@ import {
 	marginRecordFixture,
 	marginRecordTargets,
 } from "./margin-record-targets";
+import { fakeSpeech } from "./reader-speech-fixture";
 import {
 	translationRemoval,
 	translationRemovalFixture,
 } from "./translation-removal";
+import { checkTranslationResultActions } from "./translation-result-actions";
 
 type Schema = components["schemas"];
 const timestamp = "2026-10-23T00:00:00Z";
@@ -108,23 +110,10 @@ function OpenedSegmentRoute() {
 	return <output data-opened-segment={location.pathname + location.search} />;
 }
 
-/** Local silent implementation: browser regression and preview never speak. */
-function silentSpeech() {
-	const synthesis = new EventTarget();
-	Object.assign(synthesis, {
-		getVoices: () => [],
-		cancel: () => {},
-		speak: () => {},
-	});
-	Object.defineProperty(window, "speechSynthesis", {
-		configurable: true,
-		value: synthesis,
-	});
-}
-
 export async function chapterRecords(h: BrowserHarness, preview = false) {
 	const check: BrowserHarness["check"] = h.check;
 	const params = new URLSearchParams(location.search);
+	const previewPanel = params.get("panel")?.replace(/-speech-ended$/, "");
 	const inlineSuite = params.get("suite") === "inline-records";
 	const removalSuite = params.get("suite") === "translation-removal";
 	const marginSuite = params.get("suite") === "margin-record-targets";
@@ -221,7 +210,10 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			theme: params.get("theme") === "dark" ? "black" : "white",
 		}),
 	);
-	silentSpeech();
+	const speech = fakeSpeech();
+	speech.setVoicesAvailable(
+		preview && !!params.get("panel")?.endsWith("-speech-ended"),
+	);
 	const [{ MaterialReader }, { targetIdentity }] = await Promise.all([
 		import("../src/materials/MaterialReader"),
 		import("../src/translation/state"),
@@ -369,9 +361,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				level: 0,
 				part_count: performanceSuite ? 3 : 1,
 			},
-			...(inlineSuite
-				? [{ id: "chapter-two", title: "第二章", level: 0, part_count: 1 }]
-				: []),
+			{ id: "chapter-two", title: "第二章", level: 0, part_count: 1 },
 		],
 		reading_position: {
 			chapter_id: "chapter",
@@ -472,19 +462,13 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			});
 		if (path === "/api/materials/chapter-records/chapters/chapter")
 			return Response.json(inlineChapter);
-		if (
-			inlineSuite &&
-			path === "/api/materials/chapter-records/chapters/chapter-two"
-		)
+		if (path === "/api/materials/chapter-records/chapters/chapter-two")
 			return Response.json({
 				...inlineChapter,
 				id: "chapter-two",
 				title: "第二章",
 			});
-		if (
-			inlineSuite &&
-			/\/chapters\/chapter-two\/(segments|translations)$/.test(path)
-		)
+		if (/\/chapters\/chapter-two\/(segments|translations)$/.test(path))
 			return Response.json({
 				items: [],
 				next_cursor: null,
@@ -684,7 +668,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
 		);
 		containedPanel();
-		if (preview && params.get("panel") === "translation-removal") {
+		if (preview && previewPanel === "translation-removal") {
 			const target = results[1];
 			check(target, "Removal preview requires a saved target");
 			button(`删除此处翻译：${target.text}`).click();
@@ -695,9 +679,12 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		}
 		if (
 			preview &&
-			!["segment-chapter", "segment-contextual"].includes(
-				params.get("panel") ?? "",
-			)
+			![
+				"segment-chapter",
+				"segment-contextual",
+				"translation-chapter",
+				"translation-contextual",
+			].includes(previewPanel ?? "")
 		)
 			return "chapter records preview: real MaterialReader, paginated exact references, local API and silent speech";
 		const frame = h.container.querySelector<HTMLIFrameElement>(
@@ -782,6 +769,52 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 					end: last.start + range.endOffset,
 				};
 			});
+		const finishTranslationPreview = async () => {
+			if (!params.get("panel")?.endsWith("-speech-ended")) return;
+			button("朗读原文").click();
+			await h.until(
+				() => speech.utterances.length > 0,
+				"Preview must use the silent local speech adapter",
+			);
+			speech.start();
+			speech.end();
+			await h.until(
+				() =>
+					!![
+						...h.container.querySelectorAll(
+							".translation-result-actions button",
+						),
+					].find((node) => node.textContent?.trim() === "重播原文"),
+				"Completed preview speech must offer replay below the translation",
+			);
+		};
+		const locateOriginal = async () => {
+			const selected = results[0];
+			check(selected, "Location regression needs its exact saved source");
+			button("定位原文").click();
+			await h.until(
+				() =>
+					!h.container.querySelector(".reader-chapter-records") &&
+					intervals("folio-search").length > 0,
+				"Locating a chapter record must close its panel and highlight original source",
+			);
+			const highlighted = intervals("folio-search");
+			const ranges = selected.material_provenance.ranges;
+			check(
+				highlighted.every((interval) =>
+					ranges.some(
+						(range) =>
+							interval.start >= range.start && interval.end <= range.end,
+					),
+				) &&
+					highlighted.reduce(
+						(total, interval) => total + interval.end - interval.start,
+						0,
+					) ===
+						ranges.reduce((total, range) => total + range.end - range.start, 0),
+				"Chapter location must highlight exactly the saved offsets, including ruby base characters",
+			);
+		};
 		const solid = intervals("folio-study");
 		const dashed = intervals("folio-translation");
 		check(
@@ -1052,8 +1085,37 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			}
 		};
 		checkSegmentActions(true);
-		if (preview && params.get("panel") === "segment-chapter")
+		check(
+			button("定位原文").closest(".reader-study-preview-original"),
+			"Chapter segment location belongs beside its original quotation",
+		);
+		if (preview && previewPanel === "segment-chapter")
 			return "chapter segment details preview: title return, tabs-row open action, complete explanation";
+		if (!preview) {
+			await locateOriginal();
+			button("本章记录").click();
+			await h.until(
+				() => !!h.container.querySelector('[role="tab"]'),
+				"Chapter records must reopen after locating segment",
+			);
+			button("学习片段").click();
+			await h.until(
+				() =>
+					!!h.container.querySelector(
+						".reader-study-preview-candidates button",
+					),
+				"Located segment must remain in chapter list",
+			);
+			h.container
+				.querySelector<HTMLButtonElement>(
+					".reader-study-preview-candidates button",
+				)
+				?.click();
+			await h.until(
+				() => markdown()?.textContent?.includes("完整讲解终点。") === true,
+				"Located segment must reopen its saved explanation",
+			);
+		}
 		await h.until(
 			() =>
 				document.activeElement?.getAttribute("aria-label") ===
@@ -1165,7 +1227,11 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			"Contextual record must open the long explanation preview",
 		);
 		checkSegmentActions(false);
-		if (preview && params.get("panel") === "segment-contextual")
+		check(
+			!h.container.querySelector(".reader-record-locate-original"),
+			"Contextual segment must omit redundant source location",
+		);
+		if (preview && previewPanel === "segment-contextual")
 			return "contextual segment preview: direct details without return action, tabs-row open action";
 		const dragHeader = h.container.querySelector<HTMLElement>(
 			".reader-chapter-records > header",
@@ -1317,11 +1383,38 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			!h.container.querySelector(".translation-card.embedded > header"),
 			"Embedded translation details must share the record header without an extra toolbar",
 		);
-		const original = h.container.querySelector(".translation-original");
+		checkTranslationResultActions(h);
 		check(
-			original?.querySelector('[aria-label="朗读原文"][title="朗读原文"]'),
-			"Original source must host its accessible speech icon",
+			button("定位原文").closest(".translation-original"),
+			"Chapter translation location belongs beside its original quotation",
 		);
+		if (preview && previewPanel === "translation-chapter") {
+			await finishTranslationPreview();
+			return "chapter translation detail: completed result with shared actions and lightweight original location";
+		}
+		if (!preview) {
+			await locateOriginal();
+			button("本章记录").click();
+			await h.until(
+				() => !!h.container.querySelector('[role="tab"]'),
+				"Chapter records must reopen after locating translation",
+			);
+			button("翻译").click();
+			await h.until(
+				() => !!h.container.querySelector(".reader-record-translation"),
+				"Located translation must remain in its chapter list",
+			);
+			const row = h.container.querySelector<HTMLButtonElement>(
+				".reader-record-translation",
+			);
+			row?.focus();
+			row?.click();
+			await h.until(
+				() =>
+					document.activeElement?.getAttribute("aria-label") === "返回翻译列表",
+				"Reopening located translation restores detail-header focus",
+			);
+		}
 		document.activeElement?.dispatchEvent(
 			new KeyboardEvent("keydown", {
 				key: "Escape",
@@ -1419,6 +1512,15 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			!h.container.querySelector('[aria-label="返回翻译列表"]'),
 			"A single direct source translation must not offer a return to a list",
 		);
+		checkTranslationResultActions(h);
+		check(
+			!h.container.querySelector(".reader-record-locate-original"),
+			"Contextual translation must omit redundant source location",
+		);
+		if (preview && previewPanel === "translation-contextual") {
+			await finishTranslationPreview();
+			return "contextual translation detail: completed result with shared actions and no redundant origin return";
+		}
 		check(
 			document.activeElement === button("翻译"),
 			"End key on the segment tab must select and focus the translation tab",
@@ -1681,6 +1783,86 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			}
 		}
 		button("关闭阅读设置").click();
+		await selectSharedTarget();
+		const sourceCard = h.container.querySelector(
+			".translation-card:not(.embedded)",
+		);
+		button("下一章").click();
+		await h.until(
+			() =>
+				!!h.container.querySelector('.reader-viewport[aria-label="第二章"]'),
+			"An open standalone translation must allow moving to another chapter",
+		);
+		check(
+			sourceCard?.isConnected &&
+				sourceCard.querySelector(".translation-output")?.textContent ===
+					results[1]?.translation,
+			"Changing chapters must retain the exact standalone result and its original chapter snapshot",
+		);
+		button("定位原文", sourceCard ?? undefined).click();
+		await h.until(() => {
+			const current = h.container.querySelector<HTMLIFrameElement>(
+				"iframe.material-part",
+			)?.contentDocument;
+			return (
+				!!h.container.querySelector(
+					`.reader-viewport[aria-label="${chapter.title}"]`,
+				) && !!current?.defaultView?.CSS.highlights.has("folio-search")
+			);
+		}, "Locating a retained standalone result must return to its original chapter and highlight it");
+		const restoredDoc = h.container.querySelector<HTMLIFrameElement>(
+			"iframe.material-part",
+		)?.contentDocument;
+		check(
+			restoredDoc,
+			"Original chapter must be mounted after standalone location",
+		);
+		const restoredProjection = projectPart(restoredDoc, text, 0);
+		const located = [
+			...(restoredDoc.defaultView?.CSS.highlights.get("folio-search") ?? []),
+		];
+		const expected = results[1]?.material_provenance.ranges[0];
+		check(
+			expected && located.length > 0,
+			"Retained translation must carry an exact source range",
+		);
+		check(
+			located.every((range) => {
+				const start = restoredProjection.entries.find(
+					(entry) => entry.node === range.startContainer,
+				);
+				const end = restoredProjection.entries.find(
+					(entry) => entry.node === range.endContainer,
+				);
+				return (
+					start &&
+					end &&
+					start.start + range.startOffset >= expected.start &&
+					end.start + range.endOffset <= expected.end
+				);
+			}) &&
+				located.reduce((total, range) => total + range.toString().length, 0) ===
+					expected.end - expected.start,
+			"Standalone cross-chapter location must highlight the saved exact offsets rather than current chapter lookalike text",
+		);
+		const chainOrigin = h.container.querySelector<HTMLButtonElement>(
+			".reader-return-origin",
+		);
+		check(
+			chainOrigin &&
+				!chainOrigin.disabled &&
+				chainOrigin.getAttribute("aria-label")?.includes(chapter.title),
+			"Immediate cross-chapter lookup must retain the original jump-chain return point before sustained reading",
+		);
+		chainOrigin.click();
+		await h.until(
+			() =>
+				!h.container.querySelector(".reader-return-origin") &&
+				!!h.container.querySelector(
+					`.reader-viewport[aria-label="${chapter.title}"]`,
+				),
+			"Returning must consume the original chain point and leave its original chapter presented",
+		);
 		button("本章记录").click();
 		await h.until(
 			() => !!h.container.querySelector('[role="tab"][aria-label="学习片段"]'),

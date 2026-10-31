@@ -6,70 +6,11 @@ import { partDocument } from "../src/materials/reader-frames";
 import type { ScreenAnchor } from "../src/materials/reader-study";
 import type { StudyTarget } from "../src/materials/study-api";
 import type { BrowserHarness } from "./harness";
+import { fakeSpeech } from "./reader-speech-fixture";
+import { checkTranslationResultActions } from "./translation-result-actions";
 import "../src/materials/reader-r1.css";
 
 type Direction = "horizontal-tb" | "vertical-rl";
-
-/** Never calls the platform synthesizer, including in the interactive preview. */
-function fakeSpeech() {
-	const utterances: SpeechSynthesisUtterance[] = [];
-	let cancellations = 0;
-	const voices = [
-		{
-			voiceURI: "fixture-local",
-			name: "回归用日语声音",
-			lang: "ja-JP",
-			localService: true,
-		},
-		{
-			voiceURI: "fixture-second",
-			name: "另一日语声音",
-			lang: "ja-JP",
-			localService: true,
-		},
-	];
-	class Utterance extends EventTarget {
-		voice: SpeechSynthesisVoice | null = null;
-		lang = "";
-		rate = 1;
-		onstart: (() => void) | null = null;
-		onend: (() => void) | null = null;
-		onerror: ((event: { error: string }) => void) | null = null;
-		constructor(public text: string) {
-			super();
-		}
-	}
-	const synthesis = new EventTarget();
-	Object.assign(synthesis, {
-		getVoices: () => voices,
-		cancel: () => {
-			cancellations++;
-		},
-		speak: (utterance: SpeechSynthesisUtterance) => {
-			utterances.push(utterance);
-		},
-	});
-	Object.defineProperty(window, "speechSynthesis", {
-		configurable: true,
-		value: synthesis,
-	});
-	Object.defineProperty(window, "SpeechSynthesisUtterance", {
-		configurable: true,
-		value: Utterance,
-	});
-	const latest = () => utterances.at(-1);
-	return {
-		utterances,
-		get cancellations() {
-			return cancellations;
-		},
-		start: () =>
-			latest()?.onstart?.(new Event("start") as SpeechSynthesisEvent),
-		end: () => latest()?.onend?.(new Event("end") as SpeechSynthesisEvent),
-		error: () =>
-			latest()?.onerror?.({ error: "audio-busy" } as SpeechSynthesisErrorEvent),
-	};
-}
 
 const text = "夕暮れの道を、猫がゆっくりと歩いていた。";
 const translation = "暮色中的路上，一只猫正慢慢地走着。";
@@ -433,7 +374,7 @@ export async function readingAidsRegression(
 				),
 				"Translation details must not expose a competing save action",
 			);
-			const back = button(h, "返回原处", card);
+			const back = button(h, "定位原文", card);
 			back.scrollIntoView({ block: "end" });
 			await afterLayout();
 			const backBounds = back.getBoundingClientRect();
@@ -490,7 +431,8 @@ export async function readingAidsRegression(
 					`${direction}/${dark ? "dark" : "light"} translation`,
 				);
 				check(
-					card.querySelector(".translation-original")?.textContent === text,
+					card.querySelector(".translation-original blockquote")
+						?.textContent === text,
 					"Original comparison missing",
 				);
 				check(
@@ -510,7 +452,14 @@ export async function readingAidsRegression(
 					),
 					"Translation details must not expose a save action",
 				);
-				button(h, "返回原处", card);
+				const { actions } = checkTranslationResultActions(h, card);
+				button(h, "定位原文", card);
+				const actionsBounds = actions.getBoundingClientRect();
+				check(
+					actionsBounds.left >= card.getBoundingClientRect().left &&
+						actionsBounds.right <= card.getBoundingClientRect().right + 1,
+					"Result action row must fit the floating card",
+				);
 				const style = getComputedStyle(card);
 				check(
 					contrast(style.color, style.backgroundColor) >= 4.5,
@@ -566,6 +515,48 @@ export async function readingAidsRegression(
 			() => !!h.container.querySelector(".translation-output"),
 			"Speech fixture should load",
 		);
+		const initialActions = checkTranslationResultActions(h);
+		speech.setVoicesAvailable(false);
+		await h.until(
+			() =>
+				initialActions.speech.disabled &&
+				!!initialActions.actions.querySelector(".device-speech-message"),
+			"No local voice must visibly disable speech without hiding other result actions",
+		);
+		check(
+			initialActions.speech.textContent?.trim() === "朗读原文" &&
+				initialActions.actions.textContent?.includes("声音不可用") &&
+				!initialActions.regenerate.disabled &&
+				!initialActions.remove.disabled,
+			"Unavailable speech must preserve its label and independent translation/deletion actions",
+		);
+		await afterLayout();
+		const unavailableSpeech = initialActions.speech.getBoundingClientRect();
+		const unavailableTranslation =
+			initialActions.regenerate.getBoundingClientRect();
+		const unavailableDelete = initialActions.remove.getBoundingClientRect();
+		check(
+			Math.abs(
+				(unavailableSpeech.top +
+					unavailableSpeech.bottom -
+					unavailableTranslation.top -
+					unavailableTranslation.bottom) /
+					2,
+			) < 2 &&
+				Math.abs(
+					(unavailableDelete.top +
+						unavailableDelete.bottom -
+						unavailableTranslation.top -
+						unavailableTranslation.bottom) /
+						2,
+				) < 2,
+			"Unavailable voice explanation must not displace primary actions onto different rows",
+		);
+		speech.setVoicesAvailable(true);
+		await h.until(
+			() => !initialActions.speech.disabled,
+			"Available voices must restore speech",
+		);
 		button(h, "朗读原文").click();
 		await h.until(
 			() => speech.utterances.length > 0,
@@ -575,6 +566,12 @@ export async function readingAidsRegression(
 		await h.until(
 			() => h.container.textContent?.includes("正在朗读") ?? false,
 			"Start event must show active state",
+		);
+		const playingActions = checkTranslationResultActions(h);
+		check(
+			playingActions.speech.textContent?.trim() === "停止朗读" &&
+				playingActions.regenerate.textContent?.trim() === "重新翻译",
+			"Active speech and retranslation must retain different action labels",
 		);
 		const settingsTrigger = button(h, "声音与语速");
 		const beforeSettings = speech.cancellations;

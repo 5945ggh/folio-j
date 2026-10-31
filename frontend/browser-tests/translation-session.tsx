@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { components } from "../src/api/schema";
 import type { StudyTarget } from "../src/materials/study-api";
 import type { BrowserHarness } from "./harness";
+import { checkTranslationResultActions } from "./translation-result-actions";
 
 /** A hidden floating card stays mounted while chapter records opens another host. */
 export async function translationSessionRegression(h: BrowserHarness) {
@@ -420,6 +421,16 @@ async function translationHostSelectionRegression(
 				() => !!releaseSubmission,
 				"Retranslation must stay in flight while history remains selectable",
 			);
+			const pendingActions = checkTranslationResultActions(
+				h,
+				host("initiator"),
+			);
+			check(
+				pendingActions.regenerate.disabled &&
+					pendingActions.remove.disabled &&
+					pendingActions.regenerate.textContent?.trim() === "重新翻译",
+				"Submitting must retain its labelled result action while preventing duplicate submission and premature deletion",
+			);
 			check(
 				host("initiator").querySelector<HTMLTextAreaElement>("textarea")
 					?.disabled,
@@ -714,6 +725,13 @@ async function translationRecoveryViewRegression(
 		await h.until(
 			() => h.container.textContent?.includes("提交响应尚未核实") ?? false,
 			"Lost submission must expose verification",
+		);
+		const uncertainActions = checkTranslationResultActions(h);
+		check(
+			uncertainActions.regenerate.textContent?.trim() === "核实原提交" &&
+				!uncertainActions.regenerate.disabled &&
+				uncertainActions.remove.disabled,
+			"An uncertain submission must expose verification in the result actions and protect deletion until resolved",
 		);
 		const oldChoice = [
 			...h.container.querySelectorAll<HTMLButtonElement>(

@@ -1,4 +1,5 @@
 import type { Chapter, Position, Settings } from "./api.ts";
+import type { ReaderHighlightRange } from "./reader-selection.ts";
 import { JumpReadingSession } from "./return-origin.ts";
 
 type NavigationChapter = { id: string; title: string };
@@ -10,12 +11,14 @@ export type ReaderNavigationIntent =
 			type: "position";
 			target: Position;
 			mark?: { start: number; end: number };
+			highlightRanges?: readonly ReaderHighlightRange[];
 	  }
 	| { type: "return" };
 type NavigationDraft = {
 	target: Position;
 	beginning: boolean;
 	mark?: { start: number; end: number };
+	highlightRanges?: readonly ReaderHighlightRange[];
 };
 export type ReaderNavigationDestination = NavigationDraft & {
 	chapter: Chapter;
@@ -269,6 +272,9 @@ export class ReaderNavigation {
 						beginning: false,
 						...(intent.type === "position" && intent.mark
 							? { mark: intent.mark }
+							: {}),
+						...(intent.type === "position" && intent.highlightRanges
+							? { highlightRanges: intent.highlightRanges }
 							: {}),
 					}
 				: chapterDestination(

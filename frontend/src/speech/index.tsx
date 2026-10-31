@@ -370,7 +370,9 @@ export function SpeechControls({
 		<div className="device-speech" data-compact={compact || undefined}>
 			<button
 				type="button"
-				className={iconOnly ? "device-speech-icon" : undefined}
+				className={
+					iconOnly ? "device-speech-icon" : "device-speech-text-action"
+				}
 				aria-label={iconOnly ? label : undefined}
 				title={iconOnly ? label : undefined}
 				disabled={
@@ -385,11 +387,10 @@ export function SpeechControls({
 					else controller.play(target);
 				}}
 			>
-				{iconOnly ? (
-					<SpeechIcon action={action === "play" ? "volume" : action} />
-				) : (
-					label
-				)}
+				<SpeechIcon
+					action={action === "play" || action === "replay" ? "volume" : action}
+				/>
+				{!iconOnly && label}
 			</button>
 			{error && (
 				<div className="device-speech-message">

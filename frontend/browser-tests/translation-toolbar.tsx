@@ -4,6 +4,7 @@ import { flushSync } from "react-dom";
 import type { components } from "../src/api/schema";
 import type { StudyTarget } from "../src/materials/study-api";
 import type { BrowserHarness } from "./harness";
+import { checkTranslationResultActions } from "./translation-result-actions";
 
 export async function translationToolbarRegression(h: BrowserHarness) {
 	const { TranslationPanel } = await import(
@@ -290,6 +291,7 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 				!action("重新翻译")?.closest("details"),
 				"Retranslation must be outside configuration folds",
 			);
+			checkTranslationResultActions(h, host);
 			check(
 				!h.container.querySelector("details[open]"),
 				"Configuration stays collapsed initially",
@@ -360,9 +362,10 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 				"A hidden default host following the shared task must retain its old output",
 			);
 			check(
-				action("重新翻译")?.disabled,
-				"Active translation disables another submission",
+				!action("重新翻译") && action("停止翻译")?.textContent === "停止翻译",
+				"Active translation replaces retranslation with an explicitly labelled stop action",
 			);
+			checkTranslationResultActions(h, host);
 			check(
 				h.container.querySelector(".translation-spinner"),
 				"Active task shows a progress spinner",
@@ -407,6 +410,22 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 			check(
 				output() === latest.translation,
 				"Running retranslation retains the saved output",
+			);
+			const removal = action("删除此处翻译");
+			check(
+				removal && !removal.disabled,
+				"Retained output must allow deletion while the new result loads",
+			);
+			removal.click();
+			await h.until(
+				() => !!host.querySelector("dialog[open]"),
+				"Deletion confirmation must open against the retained output",
+			);
+			const confirmation = host.querySelector("dialog[open]");
+			check(
+				confirmation?.querySelector(".translation-removal-target")
+					?.textContent === "猫だ。",
+				"Pending confirmation must identify the exact source rather than a translation version",
 			);
 			updateTask("succeeded", generated.id);
 			await h.until(
@@ -465,6 +484,35 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 					output() === generated.translation &&
 					followerOutput() === generated.translation,
 				"New complete output replaces the retained result in both hosts",
+			);
+			check(
+				host.querySelector("dialog[open]") === confirmation &&
+					confirmation?.querySelector(".translation-removal-target")
+						?.textContent === "猫だ。",
+				"Arriving retranslation must preserve the same source deletion confirmation",
+			);
+			const confirm = [
+				...(confirmation?.querySelectorAll<HTMLButtonElement>("button") ?? []),
+			].find((button) => button.textContent === "确认删除翻译");
+			check(
+				confirm && !confirm.disabled,
+				"Preserved source confirmation must still allow its deletion command",
+			);
+			const cancel = confirmation?.querySelector<HTMLButtonElement>(
+				"[data-dialog-cancel]",
+			);
+			check(
+				cancel && !cancel.disabled,
+				"Preserved confirmation must remain cancellable",
+			);
+			cancel.click();
+			await h.until(
+				() => !host.querySelector("dialog[open]"),
+				"Cancelling preserved deletion must close it",
+			);
+			check(
+				output() === generated.translation,
+				"Cancelling deletion preserves the new complete output",
 			);
 			if (resumed) {
 				check(
