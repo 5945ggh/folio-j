@@ -1,0 +1,39 @@
+AGENTS.md
+  s_647501cafac3f7::t_01b79cf6286bc9 11,13-20,106-111
+justfile
+  s_647501cafac3f7::t_b0ebb4dfc99b98 79,83-85
+  s_647501cafac3f7::t_87fb4336ae56e3 86
+docs/DEVELOPMENT.md
+  s_647501cafac3f7::t_01b79cf6286bc9 33-34,46-52
+  s_647501cafac3f7::t_0face1530a812f 53
+docs/handovers/MAINTENANCE_OPTIMIZATION.md
+  s_647501cafac3f7::t_82118f8c513e3f 16,19-20
+  s_647501cafac3f7::t_89fd97e669284b 1-15,17-18,21-28
+  s_647501cafac3f7::t_4b9fe2ca2d7bd6 29-30
+backend/tests/test_document_links.py
+  s_647501cafac3f7::t_0db324233fd226 115-127
+  s_647501cafac3f7::t_b0ebb4dfc99b98 1-114
+docs/handovers/README.md
+  s_647501cafac3f7::t_89fd97e669284b 7
+docs/handovers/archived/LOCAL_EVIDENCE.md
+  s_647501cafac3f7::t_01b79cf6286bc9 17-18
+scripts/check_docs.py
+  s_647501cafac3f7::t_0db324233fd226 20
+  s_647501cafac3f7::t_b0ebb4dfc99b98 5,15-19,26-28,34-42,44-47,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "128bbca0a0b628d77a962cc4c68b2911694f7f9a",
+  "prompts": {},
+  "sessions": {
+    "s_647501cafac3f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19001-1a71-7073-bc4c-27f4af4d76bb",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
