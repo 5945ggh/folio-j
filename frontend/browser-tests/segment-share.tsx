@@ -115,6 +115,10 @@ async function segmentShareComponentRegression(h: BrowserHarness) {
 			!dialog.textContent?.includes("正在核对材料出处"),
 			"Share must not show a loading explanation",
 		);
+		// Sample both states after the dialog's entrance translation, with origin still pending.
+		await Promise.all(
+			dialog.getAnimations().map((animation) => animation.finished),
+		);
 		const pendingBounds = dialog.getBoundingClientRect();
 		const pendingPreview = content.getBoundingClientRect();
 		const actionsVisible = () => {
