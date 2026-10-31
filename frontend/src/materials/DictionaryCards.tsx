@@ -34,6 +34,27 @@ export type LookupLevel = {
 	pending: boolean;
 	message: string;
 };
+function definitionStyle(
+	style: DictionaryNode["style"],
+): CSSProperties | undefined {
+	if (!style) return undefined;
+	const properties = Object.fromEntries(
+		Object.entries(style).filter(([, value]) => value != null),
+	);
+	// The dictionary supplies the light-paper colors. Keep their hue legible on dark paper.
+	for (const [key, paper, percent] of [
+		["color", "--reader-fg", 48],
+		["backgroundColor", "--reader-bg", 24],
+		["borderColor", "--reader-fg", 52],
+	] as const) {
+		const color = style[key];
+		if (color)
+			properties[key] =
+				`light-dark(${color}, color-mix(in srgb, ${color} ${percent}%, var(${paper})))`;
+	}
+	return properties;
+}
+
 function entryContent(nodes: DictionaryNode[], path = "") {
 	return nodes.map((node, i) => {
 		const key = `${path}.${i}`;
@@ -44,6 +65,7 @@ function entryContent(nodes: DictionaryNode[], path = "") {
 				key={key}
 				lang={node.lang ?? undefined}
 				data-dict-role={node.role ?? undefined}
+				style={definitionStyle(node.style)}
 			>
 				{node.text}
 				{node.content && entryContent(node.content, key)}

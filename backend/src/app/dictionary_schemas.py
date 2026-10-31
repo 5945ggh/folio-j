@@ -7,12 +7,46 @@ from pydantic import BaseModel, Field, model_validator
 from app.schemas import StrictInput
 
 
+class DictionaryNodeStyle(BaseModel):
+    """Only sanitized presentation properties; no selectors, resources or positioning."""
+
+    fontSize: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    fontWeight: (
+        Literal["normal", "bold", "100", "200", "300", "400", "500", "600", "700", "800", "900"]
+        | None
+    ) = Field(default=None, exclude_if=lambda value: value is None)
+    color: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    backgroundColor: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    marginTop: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    marginBottom: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    marginLeft: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    marginRight: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    paddingTop: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    paddingBottom: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    paddingLeft: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    paddingRight: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    borderWidth: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    borderRadius: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    borderStyle: Literal["none", "solid", "dotted", "dashed", "double"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    borderColor: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    verticalAlign: (
+        Literal["baseline", "sub", "super", "text-top", "text-bottom", "middle", "top", "bottom"]
+        | None
+    ) = Field(default=None, exclude_if=lambda value: value is None)
+    textAlign: Literal["left", "right", "center", "start", "end", "justify"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+
 class DictionaryNode(BaseModel):
     tag: Literal["div", "p", "span", "ul", "ol", "li", "br", "ruby", "rt"] = "span"
     lang: Literal["ja", "zh"] | None = None
     text: str | None = None
     content: list["DictionaryNode"] = Field(default_factory=lambda: list[DictionaryNode]())
     role: Literal["head", "def1", "def2", "dfcn", "exam", "exjp", "excn"] | None = None
+    style: DictionaryNodeStyle | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class DictionaryStatus(BaseModel):

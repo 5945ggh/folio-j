@@ -25,8 +25,10 @@ import aiosqlite
 from fastapi import HTTPException
 
 from app.dictionary_schemas import DictionaryNode, DictionaryStatus
+from app.services.dictionary_styles import StyleContext, sanitize_style
 
 INDEX_VERSION = "2"
+TREE_VERSION = "1"
 MAX_UPLOAD_BYTES = 256 * 1024 * 1024
 MAX_UNPACKED_BYTES = 1024 * 1024 * 1024
 MAX_BANK_BYTES = 64 * 1024 * 1024
@@ -71,18 +73,23 @@ def _string(value: object, max_length: int = 4096) -> str:
     return unicodedata.normalize("NFC", value)
 
 
-def _nodes(value: object, depth: int = 0) -> list[DictionaryNode]:
+def _nodes(
+    value: object, depth: int = 0, context: StyleContext | None = None
+) -> list[DictionaryNode]:
+    context = context or StyleContext()
     if depth > 40:
         raise _invalid("词典正文层次超过限制")
     if isinstance(value, str):
         return [DictionaryNode(text=_string(value, 1_000_000))]
     if isinstance(value, list):
-        return [node for item in cast(list[object], value) for node in _nodes(item, depth + 1)]
+        return [
+            node for item in cast(list[object], value) for node in _nodes(item, depth + 1, context)
+        ]
     item = _object(value)
     if item.get("type") == "structured-content":
-        return _nodes(item.get("content", ""), depth + 1)
+        return _nodes(item.get("content", ""), depth + 1, context)
     if item.get("type") == "text":
-        return _nodes(item.get("text", ""), depth + 1)
+        return _nodes(item.get("text", ""), depth + 1, context)
     # Unsupported image/audio resources are never fetched or interpreted as HTML.
     if item.get("type") in {"image", "audio"}:
         return []
@@ -104,9 +111,14 @@ def _nodes(value: object, depth: int = 0) -> list[DictionaryNode]:
         lang = "zh"
     elif role == "exjp":
         lang = "ja"
+    style, child_context = sanitize_style(item.get("style"), context)
     return [
         DictionaryNode(
-            tag=safe_tag, lang=lang, role=role, content=_nodes(item.get("content", ""), depth + 1)
+            tag=safe_tag,
+            lang=lang,
+            role=role,
+            style=style,
+            content=_nodes(item.get("content", ""), depth + 1, child_context),
         )
     ]
 
@@ -249,8 +261,13 @@ def _decode_definitions(
         if len(raw) > MAX_DEFINITION_BYTES or size > budget or not decoder.eof:
             raise _invalid("词典正文索引无效，请重新导入")
         envelope = _object(json.loads(raw))
-        decoded[identity] = tuple(
-            DictionaryNode.model_validate(node) for node in _array(envelope["nodes"])
+        # v2 already retains the source. Older sanitized trees can acquire the new
+        # safe presentation without a database write or a full dictionary reimport.
+        # Fresh trees avoid a second sanitization pass; the snapshot caches both.
+        decoded[identity] = (
+            tuple(DictionaryNode.model_validate(node) for node in _array(envelope["nodes"]))
+            if envelope.get("tree_version") == TREE_VERSION
+            else tuple(_nodes(envelope["source"]))
         )
     return decoded, size
 
@@ -416,6 +433,7 @@ def _build(source: Path, target: Path) -> DictionaryStatus:
                     envelope = json.dumps(
                         {
                             "source": record[5],
+                            "tree_version": TREE_VERSION,
                             "nodes": [
                                 node.model_dump(exclude_none=True, exclude_defaults=True)
                                 for node in definitions

@@ -1177,6 +1177,16 @@
             ],
             "title": "Role"
           },
+          "style": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DictionaryNodeStyle"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "tag": {
             "default": "span",
             "enum": [
@@ -1206,6 +1216,249 @@
           }
         },
         "title": "DictionaryNode",
+        "type": "object"
+      },
+      "DictionaryNodeStyle": {
+        "description": "Only sanitized presentation properties; no selectors, resources or positioning.",
+        "properties": {
+          "backgroundColor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backgroundcolor"
+          },
+          "borderColor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bordercolor"
+          },
+          "borderRadius": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Borderradius"
+          },
+          "borderStyle": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "solid",
+                  "dotted",
+                  "dashed",
+                  "double"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Borderstyle"
+          },
+          "borderWidth": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Borderwidth"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "fontSize": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fontsize"
+          },
+          "fontWeight": {
+            "anyOf": [
+              {
+                "enum": [
+                  "normal",
+                  "bold",
+                  "100",
+                  "200",
+                  "300",
+                  "400",
+                  "500",
+                  "600",
+                  "700",
+                  "800",
+                  "900"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fontweight"
+          },
+          "marginBottom": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marginbottom"
+          },
+          "marginLeft": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marginleft"
+          },
+          "marginRight": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marginright"
+          },
+          "marginTop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margintop"
+          },
+          "paddingBottom": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paddingbottom"
+          },
+          "paddingLeft": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paddingleft"
+          },
+          "paddingRight": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paddingright"
+          },
+          "paddingTop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paddingtop"
+          },
+          "textAlign": {
+            "anyOf": [
+              {
+                "enum": [
+                  "left",
+                  "right",
+                  "center",
+                  "start",
+                  "end",
+                  "justify"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Textalign"
+          },
+          "verticalAlign": {
+            "anyOf": [
+              {
+                "enum": [
+                  "baseline",
+                  "sub",
+                  "super",
+                  "text-top",
+                  "text-bottom",
+                  "middle",
+                  "top",
+                  "bottom"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verticalalign"
+          }
+        },
+        "title": "DictionaryNodeStyle",
         "type": "object"
       },
       "DictionaryStatus": {

@@ -1755,6 +1755,7 @@ export interface components {
             lang?: ("ja" | "zh") | null;
             /** Role */
             role?: ("head" | "def1" | "def2" | "dfcn" | "exam" | "exjp" | "excn") | null;
+            style?: components["schemas"]["DictionaryNodeStyle"] | null;
             /**
              * Tag
              * @default span
@@ -1763,6 +1764,48 @@ export interface components {
             tag: "div" | "p" | "span" | "ul" | "ol" | "li" | "br" | "ruby" | "rt";
             /** Text */
             text?: string | null;
+        };
+        /**
+         * DictionaryNodeStyle
+         * @description Only sanitized presentation properties; no selectors, resources or positioning.
+         */
+        DictionaryNodeStyle: {
+            /** Backgroundcolor */
+            backgroundColor?: string | null;
+            /** Bordercolor */
+            borderColor?: string | null;
+            /** Borderradius */
+            borderRadius?: string | null;
+            /** Borderstyle */
+            borderStyle?: ("none" | "solid" | "dotted" | "dashed" | "double") | null;
+            /** Borderwidth */
+            borderWidth?: string | null;
+            /** Color */
+            color?: string | null;
+            /** Fontsize */
+            fontSize?: string | null;
+            /** Fontweight */
+            fontWeight?: ("normal" | "bold" | "100" | "200" | "300" | "400" | "500" | "600" | "700" | "800" | "900") | null;
+            /** Marginbottom */
+            marginBottom?: string | null;
+            /** Marginleft */
+            marginLeft?: string | null;
+            /** Marginright */
+            marginRight?: string | null;
+            /** Margintop */
+            marginTop?: string | null;
+            /** Paddingbottom */
+            paddingBottom?: string | null;
+            /** Paddingleft */
+            paddingLeft?: string | null;
+            /** Paddingright */
+            paddingRight?: string | null;
+            /** Paddingtop */
+            paddingTop?: string | null;
+            /** Textalign */
+            textAlign?: ("left" | "right" | "center" | "start" | "end" | "justify") | null;
+            /** Verticalalign */
+            verticalAlign?: ("baseline" | "sub" | "super" | "text-top" | "text-bottom" | "middle" | "top" | "bottom") | null;
         };
         /** DictionaryStatus */
         DictionaryStatus: {
