@@ -1,0 +1,25 @@
+backend/tests/test_backup.py
+  s_a21a9037f0eaeb::t_3fb3965b30f16c 7,45-49,498-584
+docs/UPGRADING.md
+  s_a21a9037f0eaeb::t_49b27007d3b532 53
+backend/src/app/backup.py
+  s_a21a9037f0eaeb::t_f2bbb73f05be86 22-23,52,132-137,141-145,149-150,152-154,187,411,417,475
+  s_a21a9037f0eaeb::t_10a3fdbea38879 146
+  s_a21a9037f0eaeb::t_49b27007d3b532 30,138-140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ebf9a60821be79a111c029c64c6d9bca3b7a99e",
+  "prompts": {},
+  "sessions": {
+    "s_a21a9037f0eaeb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1928d-b03c-74f3-bdd1-79735bd8da4e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
