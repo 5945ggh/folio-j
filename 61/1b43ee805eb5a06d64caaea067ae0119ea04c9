@@ -1,0 +1,47 @@
+docs/handovers/epub-reading/README.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 70
+docs/handovers/archived/WINDOWS_CI_ACCEPTANCE.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 1-55
+references/READING_FEATURE_NOTES.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 9
+scripts/release/README.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 7
+docs/handovers/WINDOWS_ACCEPTANCE.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 3,130
+docs/handovers/README.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 47,54
+docs/handovers/archived/epub-reading/DICTIONARY_PLAN.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 1-82
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 3,12-67
+docs/UPGRADING.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 9,13,49-50,52-56
+docs/USAGE.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 49
+README.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 29
+references/dictionary-context-ranking/REPORT.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 11
+docs/handovers/archived/reading-practice/READER_POPOVER_ACCEPTANCE.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 1-58
+docs/README.md
+  s_c88be66de67c07::t_e4d4e02ee3e3e4 15
+docs/DEVELOPMENT.md
+  s_c88be66de67c07::t_d767c5e7bbe062 166
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "611b43ee805eb5a06d64caaea067ae0119ea04c9",
+  "prompts": {},
+  "sessions": {
+    "s_c88be66de67c07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196b8-e5df-71d3-afe2-48ebdfe2d545",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
