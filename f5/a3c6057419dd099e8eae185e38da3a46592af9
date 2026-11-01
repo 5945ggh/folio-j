@@ -1,0 +1,25 @@
+frontend/src/materials/ReaderControls.tsx
+  s_8a158397fdafc8::t_25c0529abe758e 453-454,472-473
+frontend/src/materials/reader-settings.css
+  s_8a158397fdafc8::t_25c0529abe758e 113-146
+docs/INFORMATION_ARCHITECTURE.md
+  s_8a158397fdafc8::t_2e66e0b71420d1 142
+frontend/browser-tests/reader-settings.tsx
+  s_8a158397fdafc8::t_25c0529abe758e 456-458,460,468-471
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f5a3c6057419dd099e8eae185e38da3a46592af9",
+  "prompts": {},
+  "sessions": {
+    "s_8a158397fdafc8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196f6-7bca-7bd0-97f1-50eff4598f84",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
