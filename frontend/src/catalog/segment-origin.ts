@@ -19,28 +19,19 @@ export function segmentOriginParts(segment: OriginSegment): OriginPart[] {
 	switch (summary?.status) {
 		case "resolved": {
 			const chapter = summary.chapter_title?.trim() ?? "";
-			// Strip only the exact, separately supplied names: titles may contain separators.
-			let location = summary.display?.trim() ?? "";
-			for (const name of [title, chapter]) {
-				if (!name) continue;
-				if (location === name) location = "";
-				else if (location.startsWith(`${name} · `))
-					location = location.slice(name.length + 3);
-			}
 			parts = [];
+			if (summary.chapter_percent === undefined && summary.display) {
+				// An older response only has a formatted location. Keep it intact.
+				parts.push({ kind: "reference", text: summary.display });
+				break;
+			}
 			if (title) parts.push({ kind: "title", text: title });
 			if (chapter) parts.push({ kind: "chapter", text: chapter });
-			if (location) {
-				if (/^章内约 \d+%$/.test(location))
-					parts.push({ kind: "position", text: location });
-				else
-					parts = [
-						{
-							kind: "reference",
-							text: summary.display?.trim() || title || "材料出处",
-						},
-					];
-			}
+			if (summary.chapter_percent != null)
+				parts.push({
+					kind: "position",
+					text: `章内约 ${summary.chapter_percent}%`,
+				});
 			if (!parts.length) parts.push({ kind: "reference", text: "材料出处" });
 			break;
 		}

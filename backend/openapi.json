@@ -5742,6 +5742,19 @@
       },
       "SegmentProvenanceSummary": {
         "properties": {
+          "chapter_percent": {
+            "anyOf": [
+              {
+                "maximum": 99.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Percent"
+          },
           "chapter_title": {
             "anyOf": [
               {

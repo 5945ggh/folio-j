@@ -28,6 +28,7 @@ const material: typeof manual = {
 		display: "雪国 · 第一章 · 章内约 35%",
 		title: "雪国",
 		chapter_title: "第一章",
+		chapter_percent: 35,
 	},
 	source_ref: "",
 };
@@ -42,7 +43,8 @@ test("独立字段分组不切割名称内部的分隔符", () => {
 				status: "resolved",
 				title,
 				chapter_title: chapter,
-				display: `${title} · ${chapter} · 章内约 2%`,
+				chapter_percent: 2,
+				display: "兼容显示文案不参与分组",
 			},
 		}),
 		[
@@ -62,6 +64,7 @@ test("缺少章名时仍保留书名和整块位置", () => {
 				title: "雪国",
 				chapter_title: null,
 				display: "雪国 · 章内约 2%",
+				chapter_percent: 2,
 			},
 		}),
 		[
@@ -78,6 +81,7 @@ test("未知显示格式整体保留，失效状态不提取旧章名或位置",
 			provenance_summary: {
 				...material.provenance_summary,
 				display: "不同格式的可靠出处",
+				chapter_percent: undefined,
 			},
 		}),
 		[{ kind: "reference", text: "不同格式的可靠出处" }],

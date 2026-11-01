@@ -3411,6 +3411,8 @@ export interface components {
         };
         /** SegmentProvenanceSummary */
         SegmentProvenanceSummary: {
+            /** Chapter Percent */
+            chapter_percent?: number | null;
             /** Chapter Title */
             chapter_title?: string | null;
             /** Display */

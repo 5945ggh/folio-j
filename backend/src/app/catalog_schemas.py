@@ -68,6 +68,7 @@ class SegmentProvenanceSummary(BaseModel):
     display: str | None = None
     title: str | None = None
     chapter_title: str | None = None
+    chapter_percent: int | None = Field(default=None, ge=0, le=99)
     status: Literal[
         "resolved",
         "material_deleted",

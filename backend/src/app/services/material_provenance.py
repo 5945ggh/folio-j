@@ -577,61 +577,64 @@ async def select_existing(
 
 def chapter_location(
     book: CompiledBook, chapter_id: str, parts: list[ProvenancePart]
-) -> str | None:
-    """Derive chapter display from immutable part order, never reader layout or position."""
+) -> tuple[str | None, int | None]:
+    """Derive the chapter name and percentage from immutable part order."""
     chapter = next((item for item in book.chapters if item.id == chapter_id), None)
     if chapter is None:
-        return None
-    label = chapter.title if chapter.title.strip() else ""
+        return None, None
+    label = chapter.title if chapter.title.strip() else None
     if not parts:
-        return label
+        return label, None
     target = parts[0]
     pieces: list[str] = []
     start: int | None = None
     offset = 0
     for index, part in enumerate(chapter.parts):
         if not 0 <= part.spine_index < len(book.resources):
-            return label
+            return label, None
         resource = book.resources[part.spine_index]
         if (
             resource.id != part.resource_id
             or not 0 <= part.start <= part.end <= len(resource.text)
             or unicodedata.normalize("NFC", resource.text) != resource.text
         ):
-            return label
+            return label, None
         try:
             digest = hashlib.sha256(resource.text.encode()).hexdigest()
         except UnicodeError:
-            return label
+            return label, None
         if digest != resource.text_sha256:
-            return label
+            return label, None
         if index == target.part_index:
             if (
                 target.resource_id != part.resource_id
                 or target.spine_index != part.spine_index
                 or not part.start <= target.start < target.end <= part.end
             ):
-                return label
+                return label, None
             start = offset + target.start - part.start
         pieces.append(resource.text[part.start : part.end])
         offset += part.end - part.start
     raw = "".join(pieces)
     whole = unicodedata.normalize("NFC", raw)
     if start is None or not whole:
-        return label
+        return label, None
     prefix = unicodedata.normalize("NFC", raw[:start])
     rest = unicodedata.normalize("NFC", raw[start:])
     if prefix + rest != whole or not 0 <= len(prefix) < len(whole):
-        return label
-    percentage = f"章内约 {100 * len(prefix) // len(whole)}%"
-    return " · ".join(item for item in (label, percentage) if item)
+        return label, None
+    return label, 100 * len(prefix) // len(whole)
 
 
-def _prepared_location(prepared: PreparedReference) -> tuple[str | None, str | None]:
-    book = decode_epub(prepared.compiled_bundle)
-    chapter = next((item for item in book.chapters if item.id == prepared.chapter_id), None)
-    chapter_title = chapter.title if chapter is not None and chapter.title.strip() else None
-    return chapter_title, chapter_location(book, prepared.chapter_id, prepared.parts)
+def _origin_display(title: str | None, chapter: str | None, percent: int | None) -> str | None:
+    position = f"章内约 {percent}%" if percent is not None else None
+    return " · ".join(item for item in (title, chapter, position) if item) or None
+
+
+def _prepared_location(prepared: PreparedReference) -> tuple[str | None, int | None]:
+    return chapter_location(
+        decode_epub(prepared.compiled_bundle), prepared.chapter_id, prepared.parts
+    )
 
 
 def _display_title(
@@ -687,7 +690,7 @@ async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceRe
     source_id = segment.source_id
     try:
         prepared = await prepare_reference(session, source_id, reference)
-        chapter_title, location = await asyncio.to_thread(_prepared_location, prepared)
+        chapter_title, percent = await asyncio.to_thread(_prepared_location, prepared)
         # Re-read after off-thread work so ancestor/material deletion cannot expose stale success.
         await require_segment(session, segment_id)
         material = await recheck_reference(session, prepared)
@@ -718,7 +721,7 @@ async def resolve(session: AsyncSession, segment_id: str) -> SegmentProvenanceRe
             "chapter_id": prepared.chapter_id,
             "chapter_title": chapter_title,
             "parts": prepared.parts,
-            "display": " · ".join(item for item in (result.display, location) if item) or None,
+            "display": _origin_display(title, chapter_title, percent),
         }
     )
 
@@ -810,14 +813,13 @@ def _catalog_summary(
         return result.model_copy(update={"status": "snapshot_mismatch"})
     if text != origin.text:
         return result.model_copy(update={"status": "snapshot_mismatch"})
-    chapter = next((item for item in book.chapters if item.id == chapter_id), None)
-    chapter_title = chapter.title if chapter is not None and chapter.title.strip() else None
-    location = chapter_location(book, chapter_id, parts)
+    chapter_title, percent = chapter_location(book, chapter_id, parts)
     return result.model_copy(
         update={
             "status": "resolved",
             "chapter_title": chapter_title,
-            "display": " · ".join(item for item in (title, location) if item) or None,
+            "chapter_percent": percent,
+            "display": _origin_display(title, chapter_title, percent),
         }
     )
 
@@ -918,13 +920,12 @@ async def catalog_provenance_summaries(
         elif material.title != before.title:
             title = current_summary.title
             # Title is mutable metadata; the validated location remains reliable.
-            location = summary.display
-            if before.title.strip() and location and location.startswith(before.title):
-                location = location[len(before.title) :].removeprefix(" · ")
             summary = summary.model_copy(
                 update={
                     "title": title,
-                    "display": " · ".join(item for item in (title, location) if item) or None,
+                    "display": _origin_display(
+                        title, summary.chapter_title, summary.chapter_percent
+                    ),
                 }
             )
         result[segment.id] = summary

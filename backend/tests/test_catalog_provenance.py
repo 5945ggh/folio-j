@@ -54,6 +54,7 @@ async def test_catalog_provenance_batch_names_manual_fallback_and_counts(
             "display": "引用検証 · 同じ章 · 章内约 16%",
             "title": "引用検証",
             "chapter_title": "同じ章",
+            "chapter_percent": 16,
             "status": "resolved",
         }
         # Position uses the complete NFC chapter, including repeated spine occurrences.
@@ -64,6 +65,7 @@ async def test_catalog_provenance_batch_names_manual_fallback_and_counts(
                 "display": None,
                 "title": None,
                 "chapter_title": None,
+                "chapter_percent": None,
                 "status": "none",
             }
         assert items[manual_ids[0]]["source_ref"] == "手动书名"
@@ -88,6 +90,7 @@ async def test_catalog_provenance_batch_names_manual_fallback_and_counts(
                     "display": "改名书籍",
                     "title": "改名书籍",
                     "chapter_title": None,
+                    "chapter_percent": None,
                     "status": "material_deleted",
                 }
         counts = (await client.get("/api/catalog/sources")).json()["items"][0]
@@ -137,6 +140,7 @@ async def test_catalog_provenance_never_guesses_chapter(
             "display": title,
             "title": title,
             "chapter_title": None,
+            "chapter_percent": None,
             "status": status,
         }
 

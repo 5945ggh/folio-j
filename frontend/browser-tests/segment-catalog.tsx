@@ -319,6 +319,7 @@ export async function segmentCatalog(
 				source_ref: "手填页码 42",
 				provenance_summary: {
 					status: "resolved",
+					chapter_percent: 12,
 					title: longTitle,
 					chapter_title: longChapter,
 					display: `${longTitle} · ${longChapter} · ${position}`,
@@ -455,6 +456,7 @@ export async function segmentCatalog(
 			source_ref: "手填页码 42",
 			provenance_summary: {
 				status: "resolved",
+				chapter_percent: 12,
 				title: "確かな本",
 				chapter_title: "第三章",
 				display: "確かな本 · 第三章 · 章内约 12%",

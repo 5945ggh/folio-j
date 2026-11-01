@@ -691,20 +691,20 @@ async def test_persisted_snapshot_is_checked_before_matching_or_selecting(
 @pytest.mark.parametrize(
     ("texts", "spines", "target_part", "start", "expected"),
     [
-        (["0123456789"], [0], 0, 0, "章 · 章内约 0%"),
-        (["0123456789"], [0], 0, 3, "章 · 章内约 30%"),
-        (["0123456789"], [0], 0, 9, "章 · 章内约 90%"),
-        (["𠮷甲乙"], [0], 0, 1, "章 · 章内约 33%"),
-        (["甲" * 101], [0], 0, 100, "章 · 章内约 99%"),
-        (["0123456789"], [0, 0], 1, 3, "章 · 章内约 65%"),
-        (["前か", "\u3099𠮷後"], [0, 1], 1, 1, "章 · 章内约 50%"),
-        (["前か", "\u3099𠮷後"], [0, 1], 1, 0, "章"),
-        (["前", "か\u0315", "\u3099後"], [0, 1, 2], 2, 0, "章"),
-        ([""], [0], 0, 0, "章"),
+        (["0123456789"], [0], 0, 0, 0),
+        (["0123456789"], [0], 0, 3, 30),
+        (["0123456789"], [0], 0, 9, 90),
+        (["𠮷甲乙"], [0], 0, 1, 33),
+        (["甲" * 101], [0], 0, 100, 99),
+        (["0123456789"], [0, 0], 1, 3, 65),
+        (["前か", "\u3099𠮷後"], [0, 1], 1, 1, 50),
+        (["前か", "\u3099𠮷後"], [0, 1], 1, 0, None),
+        (["前", "か\u0315", "\u3099後"], [0, 1, 2], 2, 0, None),
+        ([""], [0], 0, 0, None),
     ],
 )
 def test_chapter_location_uses_whole_nfc_codepoints_and_occurrences(
-    texts: list[str], spines: list[int], target_part: int, start: int, expected: str
+    texts: list[str], spines: list[int], target_part: int, start: int, expected: int | None
 ) -> None:
     base = compiled_provenance(b"")
     resources = [
@@ -745,7 +745,7 @@ def test_chapter_location_uses_whole_nfc_codepoints_and_occurrences(
         )
     ]
     original = book.model_dump()
-    assert provenance_service.chapter_location(book, chapter.id, projections) == expected
+    assert provenance_service.chapter_location(book, chapter.id, projections) == ("章", expected)
     assert book.model_dump() == original
 
 
@@ -773,7 +773,7 @@ def test_chapter_location_uses_part_slices_and_only_first_projection_start() -> 
         )
         for index, (start, end) in enumerate([(3, 5), (5, 7)])
     ]
-    assert provenance_service.chapter_location(book, chapter.id, projected) == "同じ章 · 章内约 16%"
+    assert provenance_service.chapter_location(book, chapter.id, projected) == ("同じ章", 16)
 
 
 @pytest.mark.asyncio
