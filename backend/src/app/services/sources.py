@@ -358,6 +358,11 @@ async def _delete_source_committed(session: AsyncSession, source_id: str) -> lis
         from app.services.translations import revoke_tasks
 
         await revoke_tasks(session, source_id=source_id)
+        from app.services.material_cleanup import clear_material_assets
+
+        await clear_material_assets(
+            session, select(Material.id).where(Material.source_id == source_id), deleted
+        )
         source.deleted_at = deleted
         source.updated_at = deleted
         await session.execute(

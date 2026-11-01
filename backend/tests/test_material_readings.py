@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from support_api import api_client
 from support_epub import compiled
+from test_material_deletion import asset_snapshot, material_snapshot, seed_assets
 
 from app.nlp.contracts import TextResource
 from app.nlp.tokenization import GeneratedReadings
@@ -222,6 +223,7 @@ async def test_source_deletion_blocks_publication_after_generation(
             headers={"content-type": "application/epub+zip"},
         )
         material = imported.json()["material"]
+        seed_assets(database, material["id"])
         started, release = asyncio.Event(), asyncio.Event()
 
         async def delayed(resources: Sequence[TextResource]) -> GeneratedReadings:
@@ -243,17 +245,32 @@ async def test_source_deletion_blocks_publication_after_generation(
             )
         )
         pending = asyncio.create_task(request)
-        await asyncio.wait_for(started.wait(), timeout=5)
         try:
+            await asyncio.wait_for(started.wait(), timeout=5)
             deleted = await client.request(
                 "DELETE", f"/api/sources/{source}", json={"confirmation_title": "棚"}
             )
             assert deleted.status_code == 204
+            deleted_material = material_snapshot(database, material["id"])
+            deleted_assets = asset_snapshot(database, material["id"])
+            assert not any(deleted_assets.values())
         finally:
             release.set()
         assert (await pending).status_code == 404
+        assert material_snapshot(database, material["id"]) == deleted_material
+        assert asset_snapshot(database, material["id"]) == deleted_assets
+        assert (
+            await client.post(
+                f"/api/sources/{source}/materials",
+                content=b"book",
+                headers={"content-type": "application/epub+zip"},
+            )
+        ).status_code == 404
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT count(*) FROM materials").fetchone() == (1,)
         assert connection.execute(
             "SELECT count(*) FROM material_readings_generations"
-        ).fetchone() == (1,)
+        ).fetchone() == (0,)
+        assert connection.execute("SELECT count(*) FROM material_readings_current").fetchone() == (
+            0,
+        )

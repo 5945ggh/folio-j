@@ -52,7 +52,7 @@
 | 范围 | 计划、设计与验收证据 |
 | --- | --- |
 | Windows 源码运行 | [本机与七轮 CI 记录](archived/WINDOWS_CI_ACCEPTANCE.md)；未完成的实机检查继续使用[活动清单](WINDOWS_ACCEPTANCE.md) |
-| 数据库与存储 | [开发期基线](archived/DATABASE_BASELINE_ACCEPTANCE.md)、[迁移基线整理](archived/DATABASE_MIGRATION_ACCEPTANCE.md)、[EPUB 编译存储](archived/EPUB_STORAGE_ACCEPTANCE.md)、[材料独立删除](archived/MATERIAL_DELETION_ACCEPTANCE.md)、[导入书卡反馈](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md) |
+| 数据库与存储 | [开发期基线](archived/DATABASE_BASELINE_ACCEPTANCE.md)、[迁移基线整理](archived/DATABASE_MIGRATION_ACCEPTANCE.md)、[EPUB 编译存储](archived/EPUB_STORAGE_ACCEPTANCE.md)、[材料独立删除](archived/MATERIAL_DELETION_ACCEPTANCE.md)、[来源删除资源清理](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md)、[导入书卡反馈](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md) |
 | 主题与加载 | [Reader 主题](archived/READER_THEME_ACCEPTANCE.md)、[整站主题](archived/APPLICATION_THEME_ACCEPTANCE.md)、[图片查看器测量](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md)、[路由按需加载](archived/ROUTE_LOADING_ACCEPTANCE.md)、[后端读取测量](archived/READER_READ_PERFORMANCE_ACCEPTANCE.md) |
 | 状态与执行结构 | [编辑规则与讨论状态](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[事务与后台可靠性](archived/ARCHITECTURE_RELIABILITY_ACCEPTANCE.md)、[阅读恢复与来源导航](archived/READER_STATE_REFACTOR_ACCEPTANCE.md)、[阅读跳转](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)、[翻译会话](archived/TRANSLATION_SESSION_REFACTOR_ACCEPTANCE.md)、[方向切换修复](archived/READER_LAYOUT_SWITCH_ACCEPTANCE.md)、[呈现协调](archived/READER_PRESENTATION_REFACTOR_ACCEPTANCE.md) |
 | 测试与维护 | [CR 修复](archived/CR_FIXES_ACCEPTANCE.md)、[测试质量整改](archived/TEST_QUALITY_ACCEPTANCE.md)、[测试清理与入口回归](archived/TEST_CLEANUP_ACCEPTANCE.md)、[维护四批与学习闭环复验](archived/MAINTENANCE_OPTIMIZATION.md)、[阶段收尾与译文分页测量](archived/CLOSEOUT_ACCEPTANCE.md) |

@@ -1,6 +1,7 @@
 # 第一轮 MVP 实施基线
 
 > 状态核对：2026-11-01，代码基准 `829d0db`。本轮定位、任务诊断、目录出处与译文分页的验证见[阶段收尾记录](archived/CLOSEOUT_ACCEPTANCE.md)。各项工程、设备和使用验收仍以对应记录的版本及环境为准。
+> 来源删除清理补充：2026-11-01，基于 `f5a3c60` 的独立分支 `codex/source-delete-cleanup` 已实现；范围和验证见[来源删除清理验收](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md)。
 > 本文件汇总当前能力、实现缺口和验收入口。产品范围见 [PRD](../PRD.md)，领域含义见 [GLOSSARY](../GLOSSARY.md)，技术选型见 [TECH_STACK](../TECH_STACK.md)；具体实现由[架构](../ARCHITECTURE.md)维护。
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
@@ -40,9 +41,10 @@
 | EPUB 导入书卡反馈 | 提交立即关闭弹窗，当前标签页内以准备书卡承接导入；来源概览与书籍网格共享状态，成功提供入口且不抢导航，失败可重试或移除提示 | [验收与限制](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md#2026-10-26-提交前-cr-修复) |
 | 书籍管理 | 用户使用验收待进行。紧凑菜单与阅读状态二级入口、真实详情、书名与封面原子编辑／恢复、草稿／冲突保护及安全返回；公共默认外壳已统一并清理旧样式；移动仍禁用，不替换 EPUB；独立删除见下行 | [现行契约](../ARCHITECTURE.md#311-目录与材料使用状态)、[验收记录](archived/book-management/ACCEPTANCE.md) |
 | 材料独立删除 | 素材库与来源书卡删除材料并清空托管原书与派生阅读数据，保留材料身份、Source、片段、讲解、讨论及其他材料；完整访问门禁、幂等删除、目录计数与缓存隔离；重导创建新身份，移动与一并删除继续后置 | [产品规则](../PRD.md#421-本轮材料目录与阅读管理)、[验收记录](archived/MATERIAL_DELETION_ACCEPTANCE.md) |
+| 来源删除资源清理 | 来源删除与单本删除共用材料清理，在同一事务清空全部下属材料原书与派生数据，包括已软删材料遗留资源；学习内容仍按既有规则软删除，保留材料身份、历史出处与书签；失败整体回滚，不追溯清理此前已删除来源 | [产品规则](../PRD.md#f2-source-与片段)、[验收记录](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md) |
 | EPUB 编译包存储与编译器 | 完整资源 HTML 仅为编译临时态；最终资源保留正文、样式及定位，章节 HTML 与原图按 v2 图片池格式保存；无旧格式读取、回退或转换工具；有界编译及展开预算保留，原 EPUB 与历史备份保留 | [格式与不变式](../ARCHITECTURE.md#31-实体)、[开发库边界](../UPGRADING.md#epub-存储格式与开发库重建)、[验收与测量](archived/EPUB_STORAGE_ACCEPTANCE.md) |
 | 来源空间 S2 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；来源栏可调宽并保存偏好，片段／讲解列表搜索、排序与空态已打磨；工程验收完成，用户使用验收待进行 | [S2 工程验收](archived/sources-s2/ACCEPTANCE.md) |
-| EPUB 导入与恢复 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读，托管字节暂保留 | [切片 1](archived/epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](archived/epub-reading/SLICE_0_ACCEPTANCE.md) |
+| EPUB 导入与恢复 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读并清理托管原书与派生数据 | [切片 1](archived/epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](archived/epub-reading/SLICE_0_ACCEPTANCE.md)、[来源删除清理](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md) |
 | 阅读器 R1.1 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级 | [R1.1 工程验收](archived/reader-r1/ACCEPTANCE.md)、[交互优化](archived/reader-r1/INTERACTION_POLISH.md) |
 | 独立图片查看器 | 正文与图库共用查看器，按入口返回；居中图片与虚化背景、缩放拖动、复制图片、原图下载及在图库中查看当前出现项；真实触屏和系统剪贴板未验 | [验收与提交前修复](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27)、[交互契约](../INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[使用指南](../USAGE.md#目录搜索与书签) |
 | 图片加载与定位优化 | 正文图先显示，后台按出现身份定位；阅读会话有界复用元数据与图片字节 | [测量与验证](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md) |
