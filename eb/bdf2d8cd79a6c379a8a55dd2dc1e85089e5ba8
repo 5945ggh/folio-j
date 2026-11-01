@@ -1,0 +1,25 @@
+frontend/src/materials/ReaderCopySettings.tsx
+  s_8a158397fdafc8::t_d1f70ef0f03324 149,151
+frontend/src/materials/reader-settings.css
+  s_8a158397fdafc8::t_d1f70ef0f03324 38-55,57,161
+frontend/src/materials/ReaderControls.tsx
+  s_8a158397fdafc8::t_d1f70ef0f03324 190,192,260,262,283,285,319,321,380
+docs/INFORMATION_ARCHITECTURE.md
+  s_8a158397fdafc8::t_bff7b181a691dc 147,153-155,157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ebbdf2d8cd79a6c379a8a55dd2dc1e85089e5ba8",
+  "prompts": {},
+  "sessions": {
+    "s_8a158397fdafc8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196f6-7bca-7bd0-97f1-50eff4598f84",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
