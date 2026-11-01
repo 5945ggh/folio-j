@@ -11,18 +11,10 @@ export type Position = Omit<
 >;
 export type Settings = components["schemas"]["ReadingSettings"];
 export const materialKeys = {
-	list: (id: string) => ["materials", "source", id] as const,
 	book: (id: string) => ["materials", id] as const,
 	chapter: (id: string, chapter: string) =>
 		["materials", id, "chapter", chapter] as const,
 };
-export async function listMaterials(id: string) {
-	const { data, error, response } = await api.GET(
-		"/api/sources/{source_id}/materials",
-		{ params: { path: { source_id: id } } },
-	);
-	return requireData(data, error, response.status);
-}
 export async function importMaterial(id: string, file: File) {
 	const { data, error, response } = await api.POST(
 		"/api/sources/{source_id}/materials",

@@ -25,7 +25,6 @@ import { useViewActivity } from "../navigation/view-activity";
 import { InlineError } from "../Shared";
 import { SpeechControls } from "../speech";
 import { getSpeechController } from "../speech/browser";
-import { SavedTranslationDestinations } from "./AdoptTranslation";
 import {
 	getTranslationHistory,
 	getTranslationResult,
@@ -35,6 +34,7 @@ import {
 	translationSettingsKey,
 } from "./api";
 import { translationCardPosition } from "./placement";
+import { SavedTranslationDestinations } from "./SavedTranslationDestinations";
 import type { TranslationSession, TranslationSessions } from "./session";
 import { useTranslationSession, useTranslationSessions } from "./session-react";
 import {
@@ -182,7 +182,6 @@ function ResultView({
 			{result.adopted_segment_ids.length > 0 && (
 				<SavedTranslationDestinations
 					ids={result.adopted_segment_ids}
-					allowCreateNew={false}
 					onOpenSegment={onOpenSegment}
 				/>
 			)}

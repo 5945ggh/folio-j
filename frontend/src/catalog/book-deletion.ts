@@ -17,7 +17,6 @@ export async function refreshAfterBookDeletion(
 		["catalog"],
 		["sources"],
 		["source", sourceId],
-		["materials", "source", sourceId],
 		["source-entry"],
 		["source-delete-impact", sourceId],
 	];
@@ -29,11 +28,7 @@ export async function refreshAfterBookDeletion(
 	for (const queryKey of materialQueries) client.removeQueries({ queryKey });
 	// Inactive lists do not refetch on invalidation. Evict their stale cards before
 	// another catalog view subscribes and renders the cached deleted book.
-	for (const queryKey of [
-		["catalog", "books"],
-		["materials", "source", sourceId],
-	])
-		client.removeQueries({ queryKey, type: "inactive" });
+	client.removeQueries({ queryKey: ["catalog", "books"], type: "inactive" });
 	await Promise.all(
 		refreshedQueries.map((queryKey) => client.invalidateQueries({ queryKey })),
 	);

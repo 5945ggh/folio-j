@@ -321,19 +321,6 @@
 	cursor: default;
 	opacity: 0.45;
 }
-.settings-page .settings-savebar {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-	margin-top: 24px;
-	padding-top: 20px;
-	border-top: 1px solid var(--settings-line);
-	font-size: 12px;
-}
-.settings-page .settings-dirty {
-	color: var(--settings-blue);
-}
 .settings-page .settings-badge {
 	display: inline-block;
 	padding: 1px 5px;
@@ -519,12 +506,8 @@
 	.settings-page .settings-preset > .settings-actions {
 		margin-left: 23px;
 	}
-	.settings-page .settings-savebar,
 	.settings-page .settings-tools-footer {
 		flex-wrap: wrap;
-	}
-	.settings-page .settings-savebar > .settings-actions {
-		margin-left: auto;
 	}
 	.settings-page .settings-form-grid {
 		grid-template-columns: minmax(0, 1fr);

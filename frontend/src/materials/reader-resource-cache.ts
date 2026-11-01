@@ -149,7 +149,7 @@ export function readerResourceBytes(value: unknown): number {
 
 /** Reading payload families, including shared translation details, without unrelated app queries. */
 export function isReaderResourceQuery(key: QueryKey): boolean {
-	if (key[0] === "materials") return key[1] !== "source";
+	if (key[0] === "materials") return true;
 	return (
 		key[0] === "translation-result" ||
 		key[0] === "translation-task" ||

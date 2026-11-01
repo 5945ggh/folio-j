@@ -56,7 +56,7 @@ test("删除隔离迟到正文并清除该书所有缓存，保留其他材料�
 	client.clear();
 });
 
-test("删除刷新目录、来源计数、详情与旧材料列表", async () => {
+test("删除刷新目录、来源计数与详情", async () => {
 	const client = new QueryClient();
 	const keys = [
 		["catalog", "sources", {}],
@@ -74,10 +74,9 @@ test("删除刷新目录、来源计数、详情与旧材料列表", async () =>
 	client.clear();
 });
 
-test("重新订阅来源概览和旧材料列表时，等待刷新期间不会闪回已删书卡", async () => {
+test("重新订阅来源书籍目录时，等待刷新期间不会闪回已删书卡", async () => {
 	for (const queryKey of [
 		["catalog", "books", { source_id: "source-1", page_size: 3 }],
-		["materials", "source", "source-1"],
 	]) {
 		const client = new QueryClient();
 		client.setQueryData(queryKey, ["deleted", "retained"]);

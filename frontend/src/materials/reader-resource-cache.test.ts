@@ -82,12 +82,7 @@ test("reader query families include chapters, readings, translations, gallery, s
 		["materials", "book", "v", "position-bookmarks"],
 	])
 		assert.equal(isReaderResourceQuery(key), true);
-	for (const key of [
-		["catalog"],
-		["settings"],
-		["materials", "source", "id"],
-		["segments", "id"],
-	])
+	for (const key of [["catalog"], ["settings"], ["segments", "id"]])
 		assert.equal(isReaderResourceQuery(key), false);
 });
 

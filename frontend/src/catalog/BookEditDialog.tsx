@@ -140,9 +140,6 @@ function BookEditor({
 		});
 		void client.invalidateQueries({ queryKey: materialKeys.book(details.id) });
 		void client.invalidateQueries({
-			queryKey: materialKeys.list(details.source_id),
-		});
-		void client.invalidateQueries({
 			queryKey: queries.source(details.source_id),
 		});
 		return catalogRefresh;

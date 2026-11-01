@@ -212,16 +212,9 @@ export async function translationRegression(h: BrowserHarness) {
 			"Translation card should stay compact",
 		);
 		await translationDragRegression(h, card);
-		// Continue with the atomic adoption and lost-response fixture after disposing this panel.
 	} finally {
 		dispose();
 	}
-	const { AdoptTranslation, createAdoptionSession } = await import(
-		"../src/translation/AdoptTranslation"
-	);
-	const session = createAdoptionSession();
-	const requests: components["schemas"]["TranslationAdopt"][] = [];
-	let releaseAdoption: ((response: Response) => void) | undefined;
 	const fullResult: components["schemas"]["TranslationResultResponse"] = {
 		...result,
 		chapter_id: "chapter",
@@ -235,40 +228,6 @@ export async function translationRegression(h: BrowserHarness) {
 		reasoning_effort: null,
 		max_output_tokens: 4000,
 	};
-	mock(async (request) => {
-		const url = new URL(request.url);
-		if (url.pathname.endsWith("/material-provenance/matches"))
-			return Response.json({ segments: [], truncated: false });
-		if (url.pathname === "/api/translation-results/a/adopt") {
-			const body =
-				(await request.json()) as components["schemas"]["TranslationAdopt"];
-			requests.push(body);
-			if (requests.length === 1)
-				return new Promise((resolve) => {
-					releaseAdoption = resolve;
-				});
-			return Response.json({
-				id: "adopt",
-				result_id: "a",
-				segment: {
-					id: "saved",
-					source_id: "source",
-					text: result.text,
-					translation: body.translation,
-					revision: 1,
-				},
-			});
-		}
-		throw new Error(`Unexpected adoption request ${url.pathname}`);
-	});
-	let cleanup = await mount(
-		<AdoptTranslation
-			result={fullResult}
-			session={session}
-			onSaved={() => {}}
-			onClose={() => {}}
-		/>,
-	);
 	const click = (text: string) => {
 		const button = [...container.querySelectorAll("button")].find(
 			(node) =>
@@ -293,78 +252,6 @@ export async function translationRegression(h: BrowserHarness) {
 		button.scrollIntoView({ block: "nearest" });
 		button.click();
 	};
-	try {
-		await until(
-			() =>
-				[...container.querySelectorAll("button")].some(
-					(b) => b.textContent === "确认保存" && !b.disabled,
-				),
-			"Save form should load candidates",
-		);
-		const translation =
-			container.querySelector<HTMLTextAreaElement>("textarea");
-		check(translation, "Editable adoption copy exists");
-		inputValue(translation, "编辑后的采用副本。");
-		await new Promise((resolve) => setTimeout(resolve, 0));
-		click("确认保存");
-		await until(() => !!releaseAdoption, "Adoption request should be pending");
-		cleanup();
-		cleanup = await mount(
-			<AdoptTranslation
-				result={{ ...fullResult, adopted_segment_ids: ["server-associated"] }}
-				session={session}
-				onSaved={() => {}}
-				onClose={() => {}}
-			/>,
-		);
-		await until(
-			() =>
-				[...container.querySelectorAll("button")].some(
-					(button) => button.textContent === "保存中…" && button.disabled,
-				),
-			"Reopened session must share pending state",
-		);
-		check(
-			container.querySelector<HTMLTextAreaElement>("textarea")?.disabled,
-			"Pending adoption remount must keep editable copy locked",
-		);
-		releaseAdoption?.(Response.json({ detail: "响应未确认" }, { status: 500 }));
-		await until(
-			() => container.textContent?.includes("保存结果尚未核实") ?? false,
-			"Late unknown response must notify reopened session",
-		);
-		await until(
-			() =>
-				[...container.querySelectorAll("button")].some(
-					(b) => b.textContent === "核实保存" && !b.disabled,
-				),
-			"Reopened adoption keeps uncertain identity",
-		);
-		click("核实保存");
-		await until(
-			() => container.textContent?.includes("已保存学习片段。") ?? false,
-			"Retry should recover saved destination",
-		);
-		check(
-			requests.length === 2 &&
-				requests[0]?.request_id === requests[1]?.request_id,
-			"Lost-response retry changed request identity",
-		);
-		check(
-			requests[1]?.translation === "编辑后的采用副本。",
-			"Remount lost editable adoption copy",
-		);
-		check(
-			result.translation === "这是一只猫。",
-			"Adoption changed immutable result",
-		);
-		check(
-			container.textContent?.includes("另存为新片段"),
-			"Repeated save must first display destination and explicit separate-save action",
-		);
-	} finally {
-		cleanup();
-	}
 	let releaseHistory: ((response: Response) => void) | undefined;
 	let accepted: components["schemas"]["TranslationCreate"] | null = null;
 	let starts = 0;
@@ -442,7 +329,7 @@ export async function translationRegression(h: BrowserHarness) {
 			</>
 		);
 	}
-	cleanup = await mount(
+	let cleanup = await mount(
 		<StrictMode>
 			<AutoFixture />
 		</StrictMode>,
@@ -822,9 +709,20 @@ export async function translationRegression(h: BrowserHarness) {
 			await until(
 				() =>
 					[...container.querySelectorAll("button")].some(
-						(button) => button.textContent === "下一页" && !button.disabled,
+						(button) => button.textContent === "展开",
 					),
-				"Paged history should load",
+				"Translation history card should mount before expansion",
+			);
+			click("展开");
+			await until(
+				() =>
+					[...container.querySelectorAll("button")].some(
+						(button) =>
+							button.textContent === "下一页" &&
+							!button.disabled &&
+							button.getClientRects().length > 0,
+					),
+				"Expanded paged history should load",
 			);
 			await new Promise((resolve) => setTimeout(resolve, 80));
 			check(
@@ -1254,5 +1152,5 @@ export async function translationRegression(h: BrowserHarness) {
 	} finally {
 		cleanup();
 	}
-	return "translation: shared two-host context/edit/clear/budget and latest-input submission; independent result choices across delayed retranslation; late isolation/history/no-generation; responsive layout; horizontal/vertical native selection-card dragging and keyboard movement, narrow drag exclusion, selectable output, configuration resize bounds and header close; pending/lost adoption identity; automatic intent once under StrictMode/reopen and A→B→A with delayed history; pending/unknown translation UUID and frozen-input recovery without current settings/history; cached-history failure blocks generation; explicit retranslation uses new UUID; successful/failed/cancelled history paging and partial first page never generate; settings conflict comparison; exact-result destination recovery without POST or a separate segment creation entry";
+	return "translation: shared two-host context/edit/clear/budget and latest-input submission; independent result choices across delayed retranslation; late isolation/history/no-generation; responsive layout; horizontal/vertical native selection-card dragging and keyboard movement, narrow drag exclusion, selectable output, configuration resize bounds and header close; automatic intent once under StrictMode/reopen and A→B→A with delayed history; pending/unknown translation UUID and frozen-input recovery without current settings/history; cached-history failure blocks generation; explicit retranslation uses new UUID; successful/failed/cancelled history paging and partial first page never generate; settings conflict comparison; exact-result destination recovery without POST or a separate segment creation entry";
 }

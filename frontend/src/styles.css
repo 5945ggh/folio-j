@@ -2147,16 +2147,6 @@ a {
 	}
 }
 
-.material-upload {
-	position: relative;
-	cursor: pointer;
-}
-.material-upload input {
-	position: absolute;
-	opacity: 0;
-	width: 1px;
-	height: 1px;
-}
 .material-title {
 	margin: 12px 0 18px;
 	font-size: 1.7rem;

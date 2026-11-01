@@ -1,9 +1,7 @@
 """One-process supervisor for durable chat jobs."""
 
 import asyncio
-import json
 from functools import partial
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select, text
@@ -23,12 +21,6 @@ if TYPE_CHECKING:
 CALL_SECONDS = 180
 SCAN_SECONDS = 0.25
 ACTIVE = ("queued", "running", "stopping")
-
-
-def tool_definitions() -> list[dict[str, Any]]:
-    path = Path(__file__).resolve().parents[3] / "prompts" / "chat" / "tools_v5.json"
-    data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
-    return data["tools"]
 
 
 def _release(thread: ChatThread, job: Job) -> None:

@@ -56,7 +56,6 @@ test("弹窗观察器卸载后仍完成导入并刷新目录和来源，预处�
 	const keys = [
 		["catalog", "books", { page: 1 }],
 		["catalog", "books", { source_id: "source", page: 2 }],
-		["materials", "source", "source"],
 		["source", "source"],
 		["sources"],
 		["source-entry", "source"],

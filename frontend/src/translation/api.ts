@@ -16,7 +16,6 @@ export type TranslationSettings =
 export type TranslationSettingsInput =
 	components["schemas"]["TranslationSettingsUpdate"];
 export type TranslationInput = components["schemas"]["TranslationCreate"];
-export type AdoptionInput = components["schemas"]["TranslationAdopt"];
 export const translationSettingsKey = ["translation-settings"] as const;
 export async function getTranslationSettings() {
 	const { data, error, response } = await api.GET("/api/settings/translation");
@@ -96,13 +95,6 @@ export async function removeTranslationResult(id: string) {
 	const { data, error, response } = await api.DELETE(
 		"/api/translation-results/{result_id}",
 		{ params: { path: { result_id: id } } },
-	);
-	return requireData(data, error, response.status);
-}
-export async function adoptTranslation(id: string, body: AdoptionInput) {
-	const { data, error, response } = await api.POST(
-		"/api/translation-results/{result_id}/adopt",
-		{ params: { path: { result_id: id } }, body },
 	);
 	return requireData(data, error, response.status);
 }

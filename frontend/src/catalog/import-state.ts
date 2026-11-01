@@ -65,13 +65,9 @@ export function importOptions(
 				return;
 			}
 			void Promise.all(
-				[
-					["catalog"],
-					["materials", "source", sourceId],
-					["source", sourceId],
-					["sources"],
-					["source-entry"],
-				].map((queryKey) => client.invalidateQueries({ queryKey })),
+				[["catalog"], ["source", sourceId], ["sources"], ["source-entry"]].map(
+					(queryKey) => client.invalidateQueries({ queryKey }),
+				),
 			);
 		},
 	};
