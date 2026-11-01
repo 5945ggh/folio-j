@@ -25,9 +25,9 @@ class ContextCopySettingsUpdate(ContextCopyBudget):
 
 DEFAULT_CONTEXT_COPY = ContextCopySettingsResponse(
     include_source=True,
-    before_sentences=3,
-    after_sentences=0,
-    before_characters=200,
-    after_characters=200,
+    before_sentences=2,
+    after_sentences=2,
+    before_characters=100,
+    after_characters=100,
     revision=0,
 )

@@ -109,10 +109,8 @@ export function ReaderCopySettings({
 }) {
 	const fields = editor.fields;
 	const preview = fields ? parseCopyFields(fields) : null;
-	const setExpanded = (
-		key: "copy" | "copyLimits" | "copyPreview",
-		open: boolean,
-	) => onExpandedChange({ ...expanded, [key]: open });
+	const setExpanded = (key: "copy" | "copyPreview", open: boolean) =>
+		onExpandedChange({ ...expanded, [key]: open });
 	const field = (key: BudgetField, label: string) =>
 		fields && (
 			<BudgetInput
@@ -174,7 +172,13 @@ export function ReaderCopySettings({
 								<div className="reader-copy-budget-grid">
 									{field("before_sentences", "前文句数")}
 									{field("after_sentences", "后文句数")}
+									{field("before_characters", "前文字符上限")}
+									{field("after_characters", "后文字符上限")}
 								</div>
+								<p>
+									每侧同时受句数与字符上限约束；任一设为 0
+									时不附带该侧。选区原文始终完整保留。
+								</p>
 								<label className="reader-settings-toggle">
 									<span>附带出处</span>
 									<input
@@ -188,26 +192,6 @@ export function ReaderCopySettings({
 										}
 									/>
 								</label>
-								<details
-									className="reader-settings-disclosure reader-copy-advanced"
-									open={expanded.copyLimits}
-									onToggle={(event) => {
-										if (event.currentTarget.open !== expanded.copyLimits)
-											setExpanded("copyLimits", event.currentTarget.open);
-									}}
-								>
-									<summary>上下文字符上限</summary>
-									<div className="reader-settings-more">
-										<div className="reader-copy-budget-grid">
-											{field("before_characters", "前文字符上限")}
-											{field("after_characters", "后文字符上限")}
-										</div>
-										<p>
-											每侧同时受句数与字符上限约束；任一设为 0
-											时不附带该侧。选区原文始终完整保留。
-										</p>
-									</div>
-								</details>
 								<details
 									className="reader-settings-disclosure reader-copy-preview"
 									open={expanded.copyPreview}

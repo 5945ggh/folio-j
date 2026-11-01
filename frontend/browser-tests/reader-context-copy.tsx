@@ -17,7 +17,7 @@ const paragraphs = [
 const text = paragraphs.join("");
 const preferenceKey = "folio-reader-context-copy-v1";
 const defaultCopy =
-	"出处：《上下文の本》／第一章\n\n目标原文：\n猫が歩く。\n\n前文：\n第一句。第二句。第三句。";
+	"出处：《上下文の本》／第一章\n\n目标原文：\n猫が歩く。\n\n前文：\n第二句。第三句。\n\n后文：\n後ろ一。後ろ二。";
 const configuredCopy = "目标原文：\n猫が歩く。\n\n后文：\n後ろ一。";
 
 /** Real MaterialReader and native iframe selection, with a clipboard API substitute. */
@@ -454,7 +454,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		);
 		check(
 			copies.at(-1) === defaultCopy,
-			`Default copy must retain target and three preceding sentences, exclude ruby readings, and omit empty after side: ${JSON.stringify(copies.at(-1))}`,
+			`Default copy must retain target and two sentences on each side and exclude ruby readings: ${JSON.stringify(copies.at(-1))}`,
 		);
 		await h.until(
 			success,
@@ -481,10 +481,20 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		copyGroup.querySelector<HTMLElement>("summary")?.click();
 		await h.until(() => copyGroup.open, "Copy group must open");
 		check(
-			findInput("前文句数").value === "3" &&
-				findInput("后文句数").value === "0",
+			findInput("前文句数").value === "2" &&
+				findInput("后文句数").value === "2" &&
+				findInput("前文字符上限").value === "100" &&
+				findInput("后文字符上限").value === "100",
 			"Default copy budgets must be visible",
 		);
+		for (const label of ["前文字符上限", "后文字符上限"]) {
+			const input = findInput(label);
+			check(
+				input.closest("details") === copyGroup &&
+					input.getClientRects().length > 0,
+				"Character budgets must be visible beside sentence budgets without another disclosure",
+			);
+		}
 		const beforeInput = findInput("前文句数");
 		h.inputValue(beforeInput, "");
 		await h.until(
@@ -499,16 +509,6 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		check(
 			beforeInput.value === "" && settingsWrites.length === beforeInvalidSave,
 			"Invalid empty draft must remain editable and never save as zero",
-		);
-		const advanced = h.container.querySelector<HTMLDetailsElement>(
-			".reader-copy-advanced",
-		);
-		check(advanced, "Copy settings must expose advanced character budgets");
-		advanced.open = true;
-		check(
-			findInput("前文字符上限").value === "200" &&
-				findInput("后文字符上限").value === "200",
-			"Character defaults must match the copy contract",
 		);
 		for (const [label, value] of [
 			["前文句数", "0"],
@@ -582,8 +582,10 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		button("重置复制设置").click();
 		await h.until(
 			() =>
-				findInput("前文句数").value === "3" &&
-				findInput("后文句数").value === "0",
+				findInput("前文句数").value === "2" &&
+				findInput("后文句数").value === "2" &&
+				findInput("前文字符上限").value === "100" &&
+				findInput("后文字符上限").value === "100",
 			"Restore defaults must update draft",
 		);
 		check(

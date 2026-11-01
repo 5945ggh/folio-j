@@ -77,7 +77,7 @@ test("copy labels separate exact target, local context, and optional source", ()
 	assert.deepEqual(
 		buildContextCopy(book, selected, DEFAULT_CONTEXT_COPY, " 本 "),
 		{
-			text: "出处：《本》／第一章\n\n目标原文：\n 𠮷が\n学ぶ \n\n\n前文：\n前々。前。",
+			text: "出处：《本》／第一章\n\n目标原文：\n 𠮷が\n学ぶ \n\n\n前文：\n前々。前。\n\n后文：\n後。遠後。",
 			beforeTruncated: false,
 			afterTruncated: false,
 		},
@@ -86,7 +86,12 @@ test("copy labels separate exact target, local context, and optional source", ()
 		buildContextCopy(
 			book,
 			selected,
-			{ ...DEFAULT_CONTEXT_COPY, include_source: false, before_sentences: 0 },
+			{
+				...DEFAULT_CONTEXT_COPY,
+				include_source: false,
+				before_sentences: 0,
+				after_sentences: 0,
+			},
 			"本",
 		).text,
 		"目标原文：\n 𠮷が\n学ぶ \n",
@@ -101,7 +106,7 @@ test("copy labels separate exact target, local context, and optional source", ()
 			buildContextCopy(
 				{ ...book, title: chapterTitle ?? "" },
 				selected,
-				{ ...DEFAULT_CONTEXT_COPY, before_sentences: 0 },
+				{ ...DEFAULT_CONTEXT_COPY, before_sentences: 0, after_sentences: 0 },
 				title ?? "",
 			).text,
 			`${source ? `${source}\n\n` : ""}目标原文：\n 𠮷が\n学ぶ \n`,

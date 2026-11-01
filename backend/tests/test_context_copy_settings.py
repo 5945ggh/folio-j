@@ -14,10 +14,10 @@ from app.context_copy_schemas import ContextCopySettingsUpdate
 URL = "/api/settings/context-copy"
 DEFAULTS: dict[str, Any] = {
     "include_source": True,
-    "before_sentences": 3,
-    "after_sentences": 0,
-    "before_characters": 200,
-    "after_characters": 200,
+    "before_sentences": 2,
+    "after_sentences": 2,
+    "before_characters": 100,
+    "after_characters": 100,
     "revision": 0,
 }
 BUDGET_FIELDS = ("before_sentences", "after_sentences", "before_characters", "after_characters")

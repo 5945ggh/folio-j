@@ -217,7 +217,13 @@ test("restore defaults edits only the draft and invalid input never calls persis
 	editor.receive(latest);
 	editor.resetDefaults();
 	assert.equal(status().dirty, true);
-	assert.equal(status().fields?.before_sentences, "3");
+	assert.deepEqual(status().fields, {
+		before_sentences: "2",
+		after_sentences: "2",
+		before_characters: "100",
+		after_characters: "100",
+		include_source: true,
+	});
 	assert.equal(editor.getSnapshot().draft?.latest, latest);
 	editor.change({ ...copyFields(defaults), before_sentences: "" });
 	assert.equal(await editor.save(), false);

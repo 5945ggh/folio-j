@@ -6,10 +6,10 @@ import { prefillContext } from "./study-context.ts";
 export type { ContextCopyPreferences } from "../settings/context-copy-api.ts";
 
 export const DEFAULT_CONTEXT_COPY: ContextCopyPreferences = {
-	before_sentences: 3,
-	after_sentences: 0,
-	before_characters: 200,
-	after_characters: 200,
+	before_sentences: 2,
+	after_sentences: 2,
+	before_characters: 100,
+	after_characters: 100,
 	include_source: true,
 };
 

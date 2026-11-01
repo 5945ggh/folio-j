@@ -448,13 +448,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			),
 			"Cross-group reset must be removed",
 		);
-		for (const label of [
-			"更多排版",
-			"更多界面",
-			"带上下文复制",
-			"字符上限",
-			"格式示例",
-		])
+		for (const label of ["更多排版", "更多界面", "带上下文复制", "格式示例"])
 			await expand(label);
 		check(
 			panel.querySelectorAll('input[type="range"]').length === 5 &&
@@ -650,7 +644,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		);
 		button("重置复制设置").click();
 		await h.until(
-			() => field("前文句数").value === "3",
+			() => field("前文句数").value === "2",
 			"Copy reset changes draft only",
 		);
 		check(
@@ -791,7 +785,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			await open();
 		await expand("带上下文复制");
 		check(
-			field("前文句数").value === "3",
+			field("前文句数").value === "2",
 			"Discard-and-leave must clear draft",
 		);
 		await edit("8");

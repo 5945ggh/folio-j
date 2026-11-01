@@ -21,7 +21,6 @@ export type ReaderSettingsExpanded = {
 	interface: boolean;
 	interfaceHelp: boolean;
 	copy: boolean;
-	copyLimits: boolean;
 	copyPreview: boolean;
 };
 export const DEFAULT_READER_SETTINGS_EXPANDED: ReaderSettingsExpanded = {
@@ -30,7 +29,6 @@ export const DEFAULT_READER_SETTINGS_EXPANDED: ReaderSettingsExpanded = {
 	interface: false,
 	interfaceHelp: false,
 	copy: false,
-	copyLimits: false,
 	copyPreview: false,
 };
 

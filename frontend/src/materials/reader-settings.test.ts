@@ -59,7 +59,7 @@ test("reset objects do not expose shared mutable defaults", () => {
 test("copy summary reports the saved side as absent when either budget is zero", () => {
 	assert.equal(
 		contextCopySummary(DEFAULT_CONTEXT_COPY),
-		"前 3 句 · 不附后文 · 附出处",
+		"前 2 句 · 后 2 句 · 附出处",
 	);
 	assert.equal(
 		contextCopySummary({
@@ -96,7 +96,7 @@ test("vertical typography summary does not imply stored width is active", () => 
 });
 
 test("reading settings start with every secondary control and help folded", () => {
-	assert.equal(Object.values(DEFAULT_READER_SETTINGS_EXPANDED).length, 7);
+	assert.equal(Object.values(DEFAULT_READER_SETTINGS_EXPANDED).length, 6);
 	assert.equal(
 		Object.values(DEFAULT_READER_SETTINGS_EXPANDED).every(
 			(open) => open === false,
