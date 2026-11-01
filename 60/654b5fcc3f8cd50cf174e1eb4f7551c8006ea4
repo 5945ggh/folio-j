@@ -1,0 +1,47 @@
+backend/tests/test_backup.py
+  s_a21a9037f0eaeb::t_8f8afe6041c16c 407-418
+  s_a21a9037f0eaeb::t_760cdf754f19ee 365,375-406
+  s_a21a9037f0eaeb::t_d7f0da54f5f00c 1-17,20-46,48-107,109-263
+  s_a21a9037f0eaeb::t_926059b9b6488c 419-457
+  s_a21a9037f0eaeb::t_eb7425aca9aa09 47
+  s_a21a9037f0eaeb::t_267dc517f23f0b 264-338,341-342,348-350,361-362,364
+  s_a21a9037f0eaeb::t_e0b82f02195b51 339,458-492
+  s_a21a9037f0eaeb::t_6079a441f1013a 18-19,108,340,343-347,351-360,363,366-374
+docs/UPGRADING.md
+  s_a21a9037f0eaeb::t_e5f1a64c4a81a7 19-21,24,28,31,35,38,43,46,49,51,53,55,57,59,61
+  s_a21a9037f0eaeb::t_cce2362c2196db 3,27,29,41
+  s_a21a9037f0eaeb::t_b4e8b97b6c8db9 30
+backend/src/app/services/dictionary_store.py
+  s_a21a9037f0eaeb::t_f0d24db061c80d 301,337,737
+justfile
+  s_a21a9037f0eaeb::t_e5f1a64c4a81a7 74-81
+backend/src/app/backup.py
+  s_a21a9037f0eaeb::t_9c1a3af4efb7d5 17,25,137-139,142-152,219,344
+  s_a21a9037f0eaeb::t_f0d24db061c80d 309
+  s_a21a9037f0eaeb::t_af69c6cfbc7efb 71-74,140,223-225,330-342,471,474-475
+  s_a21a9037f0eaeb::t_eacde28cc3cabb 26,175,245,281-308,310-315,383-387,391
+  s_a21a9037f0eaeb::t_c7d548d1490e23 153-156,161-174,236-244
+  s_a21a9037f0eaeb::t_f23ba9a2bfea5c 157-160
+  s_a21a9037f0eaeb::t_1a69fbfe2e23e8 15,50-66,141,185,195,218,226,253-254,322,343,345-382,392-470,472-473,476-485,502
+  s_a21a9037f0eaeb::t_e6dea7a85beb6a 20,89-96
+  s_a21a9037f0eaeb::t_286e25f121417e 388-390
+  s_a21a9037f0eaeb::t_daf5e569f4c7a7 507-508
+  s_a21a9037f0eaeb::t_51cc8e6f11ab6e 179,252,255-280
+  s_a21a9037f0eaeb::t_511dc75570b46d 1-14,16,18-19,21-24,27-49,67-70,75-88,97-136,176-178,180-184,186-194,196-217,220-222,227-235,246-251,316-321,323-329,486-501,503-506,509-513
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "60654b5fcc3f8cd50cf174e1eb4f7551c8006ea4",
+  "prompts": {},
+  "sessions": {
+    "s_a21a9037f0eaeb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1928d-b03c-74f3-bdd1-79735bd8da4e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
