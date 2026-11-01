@@ -4,7 +4,7 @@ import asyncio
 import os
 import threading
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, closing
 from pathlib import Path
 from typing import Any
 
@@ -217,7 +217,7 @@ async def test_same_zip_repairs_damaged_index_without_losing_other_dictionary(
     elif damage == "corrupt":
         broken_path.write_bytes(b"damaged index")
     else:
-        with sqlite3.connect(broken_path) as connection:
+        with closing(sqlite3.connect(broken_path)) as connection, connection:
             connection.execute("UPDATE metadata SET dictionary_id = 'wrong-index'")
     with pytest.raises(HTTPException) as rejected:
         await store.select(first.dictionary_id)
