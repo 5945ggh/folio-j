@@ -1,0 +1,30 @@
+backend/tests/support_network.py
+  s_1bc7a8995756af::t_19501c06ecc7d5 12,20-22
+  s_1bc7a8995756af::t_53399df72c9384 3,49,51-55,57
+  s_1bc7a8995756af::t_1d026cfbc16e2a 19
+  s_1bc7a8995756af::t_7c42343a51543e 1-2,4-11,13-18,23-48,50,56,58-66
+backend/tests/test_backup.py
+  s_1bc7a8995756af::t_7a60ff2fcdce46 46-49,56-59
+backend/tests/conftest.py
+  s_1bc7a8995756af::t_7c42343a51543e 7,25
+backend/tests/test_network_guard.py
+  s_1bc7a8995756af::t_c780570d7441d8 1,4-7,24-39,41-42,46-50,57-66,69-89,120-121
+  s_1bc7a8995756af::t_7b305cfd63042a 3,43-45,51-56,67-68,92-108
+  s_1bc7a8995756af::t_7c42343a51543e 10-15,40,90-91,109-119,122-126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3e8180ee5001580a052911f91f590ae7bfdadf80",
+  "prompts": {},
+  "sessions": {
+    "s_1bc7a8995756af": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1960a-54b0-7a93-8dad-24c3bdffb7da",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
