@@ -442,16 +442,69 @@ export async function inlineRecords(
 				if (dismiss === "repeat") marker.click();
 				else if (dismiss === "background") tap(5, 5);
 				else {
-					const bounds = viewport.getBoundingClientRect();
+					const preview = card();
+					check(preview, "Internal wheel must start inside the opened preview");
+					const quoted = find<HTMLElement>("blockquote", preview);
+					const bounds = quoted.getBoundingClientRect();
+					const x = bounds.left + Math.min(4, bounds.width / 2);
+					const y = bounds.top + bounds.height / 2;
+					check(
+						preview.contains(document.elementFromPoint(x, y)),
+						"Internal wheel must actually hit the preview",
+					);
+					await nativeWheel([
+						{ type: "mouseWheel", x, y, deltaX: 0, deltaY: 120 },
+					]);
+					await frames();
+					check(
+						card() === preview,
+						"Wheel inside the preview must preserve it while inline output closes",
+					);
+					const sourceFrame = [
+						...h.container.querySelectorAll<HTMLIFrameElement>(
+							"iframe.material-part",
+						),
+					].find((frame) => frame.contentDocument === doc);
+					check(sourceFrame, "Wheel dismissal requires the live source iframe");
+					const outer = sourceFrame.getBoundingClientRect();
+					let point: { x: number; y: number } | undefined;
+					for (const source of doc.querySelectorAll<HTMLElement>(
+						"[data-locator-leaf]",
+					)) {
+						for (const rect of source.getClientRects()) {
+							const localX = rect.left + Math.min(4, rect.width / 2);
+							const localY = rect.top + rect.height / 2;
+							const x = outer.left + localX,
+								y = outer.top + localY;
+							// Floating records keep their own wheel scrolling. Hit-test an
+							// unobstructed original leaf instead of assuming the viewport center.
+							if (
+								document.elementFromPoint(x, y) === sourceFrame &&
+								source.contains(doc.elementFromPoint(localX, localY))
+							) {
+								point = { x, y };
+								break;
+							}
+						}
+						if (point) break;
+					}
+					check(
+						point,
+						"Wheel dismissal must target unobstructed original text outside the preview",
+					);
+					const scrollBefore = viewport.scrollTop;
 					await nativeWheel([
 						{
 							type: "mouseWheel",
-							x: bounds.left + bounds.width / 2,
-							y: bounds.top + Math.min(300, bounds.height / 2),
+							...point,
 							deltaX: 0,
 							deltaY: 120,
 						},
 					]);
+					await h.until(
+						() => viewport.scrollTop !== scrollBefore,
+						"Wheel dismissal during inline closing must actually scroll the source",
+					);
 				}
 				await settled(
 					null,

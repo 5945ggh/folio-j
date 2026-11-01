@@ -81,7 +81,8 @@ const chapter: Schema["MaterialChapterResponse"] = {
 			text,
 			text_sha256: hash,
 			href: "chapter.xhtml",
-			css: "p{margin:0 0 1.8em}",
+			// Keep the independent record anchors separated in both reading directions.
+			css: "p{margin:0;margin-block-end:1.8em}",
 			html_attributes: { lang: "ja" },
 			body_attributes: {},
 		},

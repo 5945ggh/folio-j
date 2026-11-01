@@ -5,12 +5,12 @@ import type { components } from "../src/api/schema";
 import { READER_UI_KEY } from "../src/materials/preferences";
 import { startAppTheme } from "../src/theme/browser";
 import { THEME_STORAGE_KEY, type ThemeMode } from "../src/theme/preference";
+import { background, color, luminance, over } from "./color-contrast";
 import type { BrowserHarness } from "./harness";
 import { materialSegment } from "./segment-materials";
 import { makeThread, provider, settings } from "./workbench";
 
 type Schema = components["schemas"];
-type Color = [number, number, number, number];
 const timestamp = materialSegment.created_at;
 const source = {
 	id: "source",
@@ -101,47 +101,6 @@ const chapter: Schema["MaterialChapterResponse"] = {
 		},
 	],
 };
-function color(value: string): Color {
-	const context = document
-		.createElement("canvas")
-		.getContext("2d", { willReadFrequently: true });
-	if (!context) throw new Error("Missing canvas color parser");
-	context.fillStyle = value;
-	context.fillRect(0, 0, 1, 1);
-	const data = context.getImageData(0, 0, 1, 1).data;
-	return [data[0] ?? 0, data[1] ?? 0, data[2] ?? 0, (data[3] ?? 0) / 255];
-}
-function over(front: Color, back: Color): Color {
-	const alpha = front[3] + back[3] * (1 - front[3]);
-	if (!alpha) return [0, 0, 0, 0];
-	return [0, 1, 2]
-		.map(
-			(i) =>
-				((front[i] ?? 0) * front[3] +
-					(back[i] ?? 0) * back[3] * (1 - front[3])) /
-				alpha,
-		)
-		.concat(alpha) as Color;
-}
-function background(node: Element | null): Color {
-	if (!node) return [255, 255, 255, 1];
-	return over(
-		color(getComputedStyle(node).backgroundColor),
-		background(node.parentElement),
-	);
-}
-function luminance(value: Color) {
-	const linear = value.slice(0, 3).map((n) => {
-		const v = n / 255;
-		return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-	});
-	return (
-		(linear[0] ?? 0) * 0.2126 +
-		(linear[1] ?? 0) * 0.7152 +
-		(linear[2] ?? 0) * 0.0722
-	);
-}
-
 /** Real App routes, offline data, real storage events and CDP media changes. */
 export async function appTheme(h: BrowserHarness, preview = false) {
 	const { App, appRoutes } = await import("../src/App");

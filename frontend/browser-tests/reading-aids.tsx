@@ -5,6 +5,7 @@ import { applyFramePresentation } from "../src/materials/presentation";
 import { partDocument } from "../src/materials/reader-frames";
 import type { ScreenAnchor } from "../src/materials/reader-study";
 import type { StudyTarget } from "../src/materials/study-api";
+import { background, color, computed, luminance, over } from "./color-contrast";
 import type { BrowserHarness } from "./harness";
 import { fakeSpeech } from "./reader-speech-fixture";
 import { checkTranslationResultActions } from "./translation-result-actions";
@@ -102,23 +103,10 @@ const afterLayout = () =>
 		requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
 	);
 
-function contrast(foreground: string, background: string) {
-	const luminance = (color: string) => {
-		const values =
-			color
-				.match(/[\d.]+/g)
-				?.slice(0, 3)
-				.map(Number) ?? [];
-		return values.reduce((sum, channel, index) => {
-			const value = channel / 255;
-			return (
-				sum +
-				(value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4) *
-					([0.2126, 0.7152, 0.0722][index] ?? 0)
-			);
-		}, 0);
-	};
-	const values = [luminance(foreground), luminance(background)].sort(
+function contrast(node: Element) {
+	const paper = background(node);
+	const foreground = over(color(computed(node).color), paper);
+	const values = [luminance(foreground), luminance(paper)].sort(
 		(a, b) => a - b,
 	);
 	return ((values[1] ?? 0) + 0.05) / ((values[0] ?? 0) + 0.05);
@@ -346,9 +334,10 @@ export async function readingAidsRegression(
 			const card = h.container.querySelector<HTMLElement>(".translation-card");
 			const bar = h.container.querySelector<HTMLElement>(".device-speech-bar");
 			const header = card?.querySelector("header");
+			const content = card?.querySelector<HTMLElement>(".translation-content");
 			check(
-				card && bar && header,
-				"Error state must retain translation, sticky header and speech bar",
+				card && bar && header && content,
+				"Error state must retain translation, header, scrollable content and speech bar",
 			);
 			contained(h, card, "Short-screen error translation");
 			contained(h, bar, "Short-screen error playback");
@@ -358,14 +347,14 @@ export async function readingAidsRegression(
 				bounds.bottom <= playback.top - 1,
 				"Short-screen translation overlaps error playback bar",
 			);
+			const headerBounds = header.getBoundingClientRect();
 			check(
-				getComputedStyle(header).position === "sticky" &&
-					header.getBoundingClientRect().height < bounds.height,
-				"Sticky header must leave visible room for the translation content",
+				headerBounds.height < bounds.height && content.clientHeight > 0,
+				"Header must leave visible room for the translation content",
 			);
 			check(
-				card.scrollHeight > card.clientHeight &&
-					getComputedStyle(card).overflowY === "auto",
+				content.scrollHeight > content.clientHeight &&
+					getComputedStyle(content).overflowY === "auto",
 				"Short-screen translation content must be scrollable",
 			);
 			check(
@@ -375,13 +364,24 @@ export async function readingAidsRegression(
 				"Translation details must not expose a competing save action",
 			);
 			const back = button(h, "定位原文", card);
-			back.scrollIntoView({ block: "end" });
+			content.scrollTop = content.scrollHeight;
+			await afterLayout();
+			check(
+				content.scrollTop > 0,
+				"The actual content area must scroll on a short screen",
+			);
+			content.scrollTop +=
+				back.getBoundingClientRect().top - content.getBoundingClientRect().top;
 			await afterLayout();
 			const backBounds = back.getBoundingClientRect();
 			check(
+				Math.abs(header.getBoundingClientRect().top - headerBounds.top) < 1,
+				"Scrolling content must retain the visible header position",
+			);
+			check(
 				backBounds.top >= header.getBoundingClientRect().bottom - 1 &&
 					backBounds.bottom <= card.getBoundingClientRect().bottom + 1,
-				"Scrolling must expose return-to-origin below the sticky header",
+				"Scrolling must expose return-to-origin below the visible header",
 			);
 			const hit = document.elementFromPoint(
 				backBounds.left + backBounds.width / 2,
@@ -409,8 +409,9 @@ export async function readingAidsRegression(
 		} finally {
 			disposeShort();
 		}
-		return `reading aids: ${innerWidth}×${innerHeight}; error card/bar do not overlap; sticky header leaves scrollable content and reachable return-to-origin; complete reason in sound popover`;
+		return `reading aids: ${innerWidth}×${innerHeight}; error card/bar do not overlap; visible header leaves scrollable content and reachable return-to-origin; complete reason in sound popover`;
 	}
+	let minimumTranslationContrast = Infinity;
 	for (const direction of ["horizontal-tb", "vertical-rl"] as const) {
 		for (const dark of [false, true]) {
 			const dispose = await h.mount(
@@ -460,10 +461,18 @@ export async function readingAidsRegression(
 						actionsBounds.right <= card.getBoundingClientRect().right + 1,
 					"Result action row must fit the floating card",
 				);
-				const style = getComputedStyle(card);
+				const output = card.querySelector<HTMLElement>(".translation-output");
+				check(output, "Missing translation text contrast sample");
+				const paper = card.closest(".reader-r1");
+				check(paper, "Missing Reader paper contrast sample");
+				const ratio = contrast(output);
+				minimumTranslationContrast = Math.min(
+					minimumTranslationContrast,
+					ratio,
+				);
 				check(
-					contrast(style.color, style.backgroundColor) >= 4.5,
-					"Translation text lacks readable contrast",
+					ratio >= 4.5,
+					`Translation text contrast ${ratio.toFixed(2)} < 4.5: foreground ${computed(output).color}; card ${computed(card).backgroundColor}; paper ${computed(paper).backgroundColor}; effective ${JSON.stringify(background(output))}`,
 				);
 				const frame = h.container.querySelector("iframe");
 				const mark = frame?.contentDocument?.querySelector("mark");
@@ -479,7 +488,7 @@ export async function readingAidsRegression(
 				);
 				check(
 					canvasStyle.backgroundColor === originalStyle.backgroundColor &&
-						contrast(originalStyle.color, originalStyle.backgroundColor) >= 4.5,
+						contrast(doc.body) >= 4.5,
 					"Reader iframe canvas and original text must share a readable theme",
 				);
 				const outer = frame.getBoundingClientRect(),
@@ -534,7 +543,14 @@ export async function readingAidsRegression(
 		const unavailableSpeech = initialActions.speech.getBoundingClientRect();
 		const unavailableTranslation =
 			initialActions.regenerate.getBoundingClientRect();
-		const unavailableDelete = initialActions.remove.getBoundingClientRect();
+		const more = initialActions.actions.querySelector<HTMLElement>(
+			".translation-more > summary",
+		);
+		check(
+			more && more.getClientRects().length > 0,
+			"Unavailable speech must retain the visible more-actions trigger",
+		);
+		const unavailableMore = more.getBoundingClientRect();
 		check(
 			Math.abs(
 				(unavailableSpeech.top +
@@ -544,8 +560,8 @@ export async function readingAidsRegression(
 					2,
 			) < 2 &&
 				Math.abs(
-					(unavailableDelete.top +
-						unavailableDelete.bottom -
+					(unavailableMore.top +
+						unavailableMore.bottom -
 						unavailableTranslation.top -
 						unavailableTranslation.bottom) /
 						2,
@@ -585,9 +601,8 @@ export async function readingAidsRegression(
 		);
 		check(popover, "Missing sound popover");
 		contained(h, popover, "Sound popover");
-		const popoverStyle = getComputedStyle(popover);
 		check(
-			contrast(popoverStyle.color, popoverStyle.backgroundColor) >= 4.5,
+			contrast(popover) >= 4.5,
 			"Dark sound popover text lacks readable contrast",
 		);
 		await h.until(
@@ -813,5 +828,5 @@ export async function readingAidsRegression(
 	} finally {
 		disposeMultiline();
 	}
-	return `reading aids: ${innerWidth}px; light/dark × horizontal/vertical fit and source visibility with real iframe presentation; collapsed secondary controls; fake start/stop/end/error; translation close preserves speech; replay snapshot and changed voice/rate; in-place settings Escape/focus; leaving reader clears target; short multiline original expands and collapses`;
+	return `reading aids: ${innerWidth}px; light/dark × horizontal/vertical fit and source visibility with real iframe presentation; collapsed secondary controls; fake start/stop/end/error; translation close preserves speech; replay snapshot and changed voice/rate; in-place settings Escape/focus; leaving reader clears target; short multiline original expands and collapses; minimum rendered translation contrast ${minimumTranslationContrast.toFixed(2)}:1`;
 }
