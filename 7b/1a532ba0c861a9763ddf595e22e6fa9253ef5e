@@ -1,0 +1,19 @@
+backend/tests/test_dictionary_library.py
+  s_4cc6664112550e::t_8d6acdc67e2a23 750-751,756,759-767,771-779
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7b1a532ba0c861a9763ddf595e22e6fa9253ef5e",
+  "prompts": {},
+  "sessions": {
+    "s_4cc6664112550e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19665-f7ce-7f60-a596-ca53572bf6a3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
