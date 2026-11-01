@@ -2,6 +2,8 @@
 
 安装与启动见[快速开始](../README.md#快速开始)。数据备份、数据迁移与版本升级见[升级与备份](UPGRADING.md)。
 
+**Windows 中文路径下的安装恢复。** 如果旧源码包的 `just setup` 在 Python 启动时报告 `init_import_site` 和 `UnicodeDecodeError`，请把修复后的源码包解压到新文件夹，再运行 `just setup`。如果在原目录更新了源码，请先关闭应用，在项目根目录用 PowerShell 执行 `Rename-Item -LiteralPath backend/.venv -NewName .venv-old`，再运行 `just setup` 重建 Python 环境。启动前核对安装命令显示的数据库位置。
+
 ## 整理来源与导入书籍
 
 「来源」是整理材料和学习片段的基本单位，可以是一套轻小说系列，也可以是任何你自定的专题。就目前而言，我们仅支持 EPUB 书籍形式的材料，后续会有更多形式的材料如漫画、视频等得到支持，不同类型的材料可以放在同一个「来源」中。
