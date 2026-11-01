@@ -6699,6 +6699,60 @@
         "title": "TranslationRemovalResponse",
         "type": "object"
       },
+      "TranslationResultRemovalResponse": {
+        "properties": {
+          "cancelled_task_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cancelled Task Ids",
+            "type": "array"
+          },
+          "identity_sha256": {
+            "title": "Identity Sha256",
+            "type": "string"
+          },
+          "remaining_result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TranslationResultResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "remaining_result_count": {
+            "minimum": 0.0,
+            "title": "Remaining Result Count",
+            "type": "integer"
+          },
+          "result_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Result Ids",
+            "type": "array"
+          },
+          "task_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Task Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "identity_sha256",
+          "task_ids",
+          "result_ids",
+          "cancelled_task_ids",
+          "remaining_result",
+          "remaining_result_count"
+        ],
+        "title": "TranslationResultRemovalResponse",
+        "type": "object"
+      },
       "TranslationResultResponse": {
         "properties": {
           "adopted_segment_ids": {
@@ -12572,6 +12626,43 @@
       }
     },
     "/api/translation-results/{result_id}": {
+      "delete": {
+        "operationId": "remove_translation_result_api_translation_results__result_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "result_id",
+            "required": true,
+            "schema": {
+              "title": "Result Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResultRemovalResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Translation Result"
+      },
       "get": {
         "operationId": "get_translation_result_api_translation_results__result_id__get",
         "parameters": [

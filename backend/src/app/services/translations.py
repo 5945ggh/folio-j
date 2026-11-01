@@ -48,6 +48,7 @@ from app.translation_schemas import (
     TranslationDeleteImpact,
     TranslationHistoryResponse,
     TranslationRemovalResponse,
+    TranslationResultRemovalResponse,
     TranslationResultResponse,
     TranslationSettingsResponse,
     TranslationSettingsUpdate,
@@ -388,6 +389,56 @@ async def stop(session: AsyncSession, task_id: str) -> TranslationTaskResponse:
                 run.status, run.finished_at = "cancelled", utc_now()
     await session.commit()
     return task_response(task)
+
+
+async def remove_reader_result(
+    session: AsyncSession, result_id: str
+) -> TranslationResultRemovalResponse:
+    """Hide one successful version without changing other tasks or adopted snapshots."""
+    await begin_write(session)
+    result = await session.get(TranslationResult, result_id)
+    if result is None:
+        raise HTTPException(404, "译文不存在")
+    task = await session.get(TranslationTask, result.task_id)
+    assert task is not None
+    material = await session.scalar(
+        select(Material)
+        .options(defer(Material.compiled_bundle))
+        .where(Material.id == task.material_id)
+    )
+    if material is None or material.deleted_at is not None:
+        raise HTTPException(404, "材料不存在")
+    await require_source(session, task.source_id)
+    if task.reader_deleted_at is None:
+        task.reader_deleted_at = utc_now()
+    await session.flush()
+    remaining = (
+        select(TranslationResult)
+        .join(TranslationTask, TranslationTask.id == TranslationResult.task_id)
+        .where(
+            TranslationTask.material_id == task.material_id,
+            TranslationTask.identity_sha256 == task.identity_sha256,
+            TranslationTask.reader_deleted_at.is_(None),
+            TranslationTask.status == "succeeded",
+            TranslationTask.result_id == TranslationResult.id,
+        )
+    )
+    count = await session.scalar(select(func.count()).select_from(remaining.subquery()))
+    latest = await session.scalar(
+        remaining.order_by(TranslationResult.created_at.desc(), TranslationResult.id.desc()).limit(
+            1
+        )
+    )
+    response = TranslationResultRemovalResponse(
+        identity_sha256=task.identity_sha256,
+        task_ids=[task.id],
+        result_ids=[result.id],
+        cancelled_task_ids=[],
+        remaining_result=await result_response(session, latest) if latest is not None else None,
+        remaining_result_count=count or 0,
+    )
+    await session.commit()
+    return response
 
 
 async def remove_reader_history(

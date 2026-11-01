@@ -145,3 +145,8 @@ class TranslationRemovalResponse(BaseModel):
     task_ids: list[str]
     result_ids: list[str]
     cancelled_task_ids: list[str]
+
+
+class TranslationResultRemovalResponse(TranslationRemovalResponse):
+    remaining_result: TranslationResultResponse | None
+    remaining_result_count: int = Field(ge=0)

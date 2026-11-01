@@ -639,3 +639,169 @@ test("a synchronous subscriber cannot bypass a submission reservation", async ()
 	]);
 	assert.equal(f.requests.length, 1);
 });
+
+test("single-result removal preserves another accepted task and forwards the exact result ID", async () => {
+	const f = fixture();
+	await f.session.open({ kind: "history" });
+	assert.equal(
+		(await f.session.execute({ kind: "translate" })).kind,
+		"accepted",
+	);
+	const acceptedTaskId = f.session.getSnapshot().acceptedTaskId;
+	assert.ok(acceptedTaskId);
+	const calls: (string | undefined)[] = [];
+	f.adapter.remove = async (reference, resultId) => {
+		assert.equal(translationTargetKey(reference), f.session.key);
+		calls.push(resultId);
+		return {
+			identity_sha256: "identity",
+			task_ids: resultId === "active-result" ? [acceptedTaskId] : ["old-task"],
+			result_ids: [resultId ?? ""],
+			cancelled_task_ids: [],
+			remaining_result: result(),
+			remaining_result_count: 1,
+		};
+	};
+	await f.session.remove("old-result");
+	assert.deepEqual(calls, ["old-result"]);
+	assert.equal(f.session.getSnapshot().acceptedTaskId, acceptedTaskId);
+	assert.equal(f.session.getSnapshot().phase, "idle");
+	await f.session.remove("active-result");
+	assert.equal(f.session.getSnapshot().acceptedTaskId, null);
+	f.unbind();
+});
+
+test("only the same removal command joins, including synchronous subscribers", async () => {
+	const f = fixture();
+	const receipt = deferred<Awaited<ReturnType<typeof f.session.remove>>>();
+	f.adapter.remove = () => receipt.promise;
+	let joined: Promise<Awaited<ReturnType<typeof f.session.remove>>> | undefined;
+	const unsubscribe = f.session.subscribe(() => {
+		if (f.session.getSnapshot().phase === "removing")
+			joined = f.session.remove("one");
+	});
+	const pending = f.session.remove("one");
+	assert.equal(joined, pending);
+	assert.equal(f.session.remove("one"), pending);
+	await assert.rejects(f.session.remove("two"), /正在删除其他译文/);
+	await assert.rejects(f.session.remove(), /正在删除其他译文/);
+	receipt.resolve({
+		identity_sha256: "identity",
+		task_ids: ["one-task"],
+		result_ids: ["one"],
+		cancelled_task_ids: [],
+		remaining_result: result(),
+		remaining_result_count: 1,
+	});
+	assert.deepEqual((await pending).result_ids, ["one"]);
+	unsubscribe();
+	f.unbind();
+});
+
+test("single-result deletion failure preserves history, accepted association and consumed intent", async () => {
+	const f = fixture();
+	await f.session.open({ kind: "history" });
+	f.session.edit({ kind: "context", before: "我的语境" });
+	assert.equal(
+		(await f.session.execute({ kind: "translate" })).kind,
+		"accepted",
+	);
+	const acceptedTaskId = f.session.getSnapshot().acceptedTaskId;
+	const previous = { results: [result()], tasks: [], next_offset: null };
+	f.histories.set(f.session.key, previous);
+	f.adapter.remove = async () => {
+		throw new Error("删除失败");
+	};
+	await assert.rejects(f.session.remove("result"), /删除失败/);
+	assert.equal(f.histories.get(f.session.key), previous);
+	assert.equal(f.session.getSnapshot().acceptedTaskId, acceptedTaskId);
+	assert.equal(f.session.getSnapshot().draft.before, "我的语境");
+	assert.equal(f.session.getSnapshot().phase, "idle");
+	assert.equal(
+		(await f.session.open({ kind: "selection" })).kind,
+		"not-executed",
+	);
+	assert.equal(f.requests.length, 1);
+	f.unbind();
+});
+
+test("removal facts reach every target subscriber as a stable frozen snapshot", async () => {
+	const f = fixture();
+	const shared = f.sessions.forTarget("source", target());
+	const unrelated = f.sessions.forTarget("source", target(1));
+	assert.equal(f.session.getSnapshot().removal, null);
+	const first: unknown[] = [];
+	const second: unknown[] = [];
+	const offFirst = f.session.subscribe(() =>
+		first.push(f.session.getSnapshot()),
+	);
+	const offSecond = shared.subscribe(() => second.push(shared.getSnapshot()));
+	const receipt = {
+		identity_sha256: "identity",
+		task_ids: ["old-task"],
+		result_ids: ["old-result"],
+		cancelled_task_ids: [],
+		remaining_result: result(),
+		remaining_result_count: 1,
+	};
+	f.adapter.remove = async () => receipt;
+	await f.session.remove("old-result");
+	assert.deepEqual(first, second);
+	const updated = shared.getSnapshot();
+	assert.equal(updated, f.session.getSnapshot());
+	assert.equal(updated, shared.getSnapshot());
+	assert.deepEqual(updated.removal, {
+		resultIds: ["old-result"],
+		remainingResultId: "result",
+	});
+	assert.equal(Object.isFrozen(updated.removal), true);
+	assert.equal(Object.isFrozen(updated.removal?.resultIds), true);
+	receipt.result_ids.push("caller-mutated");
+	assert.deepEqual(updated.removal?.resultIds, ["old-result"]);
+	shared.edit({ kind: "budget", value: updated.draft.budget });
+	assert.equal(shared.getSnapshot().removal, updated.removal);
+	assert.equal(unrelated.getSnapshot().removal, null);
+	offFirst();
+	offSecond();
+	f.unbind();
+});
+
+test("consecutive removals accumulate deduplicated tombstones and failure retains the last fact", async () => {
+	const f = fixture();
+	f.adapter.remove = async (_reference, resultId) => ({
+		identity_sha256: "identity",
+		task_ids: [`${resultId}-task`],
+		result_ids: [resultId ?? ""],
+		cancelled_task_ids: [],
+		remaining_result: { ...result(), id: resultId === "one" ? "two" : "three" },
+		remaining_result_count: 1,
+	});
+	await f.session.remove("one");
+	const first = f.session.getSnapshot().removal;
+	await f.session.remove("two");
+	assert.deepEqual(f.session.getSnapshot().removal, {
+		resultIds: ["one", "two"],
+		remainingResultId: "three",
+	});
+	assert.deepEqual(first, { resultIds: ["one"], remainingResultId: "two" });
+	await f.session.remove("one");
+	assert.deepEqual(f.session.getSnapshot().removal?.resultIds, ["one", "two"]);
+	f.adapter.remove = async () => ({
+		identity_sha256: "identity",
+		task_ids: ["three-task"],
+		result_ids: ["two", "three"],
+		cancelled_task_ids: [],
+	});
+	await f.session.remove();
+	const final = f.session.getSnapshot().removal;
+	assert.deepEqual(final, {
+		resultIds: ["one", "two", "three"],
+		remainingResultId: null,
+	});
+	f.adapter.remove = async () => {
+		throw new Error("删除失败");
+	};
+	await assert.rejects(f.session.remove("four"), /删除失败/);
+	assert.equal(f.session.getSnapshot().removal, final);
+	f.unbind();
+});

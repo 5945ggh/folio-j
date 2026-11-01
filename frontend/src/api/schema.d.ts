@@ -1351,7 +1351,8 @@ export interface paths {
         get: operations["get_translation_result_api_translation_results__result_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Remove Translation Result */
+        delete: operations["remove_translation_result_api_translation_results__result_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3783,6 +3784,20 @@ export interface components {
             cancelled_task_ids: string[];
             /** Identity Sha256 */
             identity_sha256: string;
+            /** Result Ids */
+            result_ids: string[];
+            /** Task Ids */
+            task_ids: string[];
+        };
+        /** TranslationResultRemovalResponse */
+        TranslationResultRemovalResponse: {
+            /** Cancelled Task Ids */
+            cancelled_task_ids: string[];
+            /** Identity Sha256 */
+            identity_sha256: string;
+            remaining_result: components["schemas"]["TranslationResultResponse"] | null;
+            /** Remaining Result Count */
+            remaining_result_count: number;
             /** Result Ids */
             result_ids: string[];
             /** Task Ids */
@@ -7439,6 +7454,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TranslationResultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_translation_result_api_translation_results__result_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                result_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationResultRemovalResponse"];
                 };
             };
             /** @description Validation Error */
