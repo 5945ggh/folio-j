@@ -16,7 +16,7 @@
 
 ## 固定数据
 
-[c2-context-cases.json](fixtures/c2-context-cases.json) 为纯逻辑验收输入，不由待测实现生成预期。`start`／`end` 是整章 NFC 码点半开区间，`before`／`after` 是精确字符串。句界样例另给完整句列表；测试须逐字比较，不仅比较长度。每次调用前后深度比较章节、预算与出处，锁定 exact、摘要、spine 和坐标不变；原分句固定数据沿用原空白，不随摘录整理改写。
+[c2-context-cases.json](../../../frontend/src/materials/fixtures/c2-context-cases.json) 为纯逻辑验收输入，不由待测实现生成预期。`start`／`end` 是整章 NFC 码点半开区间，`before`／`after` 是精确字符串。句界样例另给完整句列表；测试须逐字比较，不仅比较长度。每次调用前后深度比较章节、预算与出处，锁定 exact、摘要、spine 和坐标不变；原分句固定数据沿用原空白，不随摘录整理改写。
 
 | 样例 | 固定结果 |
 | --- | --- |

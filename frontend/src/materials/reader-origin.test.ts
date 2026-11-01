@@ -18,10 +18,7 @@ const settings = {
 };
 const cases = JSON.parse(
 	readFileSync(
-		new URL(
-			"../../../docs/handovers/text-study/fixtures/c2-context-cases.json",
-			import.meta.url,
-		),
+		new URL("./fixtures/c2-context-cases.json", import.meta.url),
 		"utf8",
 	),
 ) as {

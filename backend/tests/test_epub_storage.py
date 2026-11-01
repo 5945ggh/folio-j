@@ -117,7 +117,7 @@ def test_unversioned_json_is_rejected(compressed: bool) -> None:
 @pytest.mark.parametrize("fixture", ["reading", "vertical", "malicious"])
 def test_real_compiler_outputs_keep_their_exact_logical_snapshot(fixture: str) -> None:
     root = Path(__file__).resolve().parents[2]
-    path = root / "prototypes" / "epub-reading" / "fixtures" / f"synthetic-{fixture}.epub"
+    path = root / "backend" / "tests" / "fixtures" / "epub" / f"synthetic-{fixture}.epub"
     book = compile_epub_bytes(path.read_bytes())
     before = book.model_dump_json()
     assert epub_storage.decode(epub_storage.encode(book)).model_dump_json() == before
@@ -322,7 +322,7 @@ def test_arbitrary_unicode_and_marker_text_is_never_interpreted_as_a_reference(t
 def test_new_storage_has_only_chapter_html_and_rejects_old_version() -> None:
     root = Path(__file__).resolve().parents[2]
     book = compile_epub_bytes(
-        (root / "prototypes/epub-reading/fixtures/synthetic-reading.epub").read_bytes()
+        (root / "backend/tests/fixtures/epub/synthetic-reading.epub").read_bytes()
     )
     payload = epub_storage.encode(book)
     assert payload.startswith(b"FJEPUB\x02")

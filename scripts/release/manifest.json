@@ -1,0 +1,40 @@
+{
+  "files": [
+    ".python-version",
+    ".nvmrc",
+    "backend/.python-version",
+    "backend/pyproject.toml",
+    "backend/uv.lock",
+    "backend/alembic.ini",
+    "frontend/.npmrc",
+    "frontend/package.json",
+    "frontend/pnpm-lock.yaml",
+    "frontend/index.html",
+    "frontend/vite.config.ts",
+    "config/app.example.toml",
+    "scripts/run.py",
+    "docs/USAGE.md",
+    "docs/UPGRADING.md"
+  ],
+  "directories": [
+    "backend/src/app",
+    "backend/prompts",
+    "backend/alembic",
+    "frontend/src",
+    "frontend/public"
+  ],
+  "exclude": [
+    "*.test.ts",
+    "*.test.tsx",
+    "*/fixtures/*",
+    "*/__pycache__/*",
+    "*.pyc",
+    "*/.gitkeep"
+  ],
+  "templates": {
+    "scripts/release/README.md": "README.md",
+    "scripts/release/justfile": "justfile",
+    "scripts/release/tsconfig.json": "frontend/tsconfig.json",
+    "frontend/tsconfig.json": "frontend/tsconfig.base.json"
+  }
+}

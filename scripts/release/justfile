@@ -1,0 +1,34 @@
+set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+
+export UV_CACHE_DIR := justfile_directory() / ".cache/uv"
+
+default:
+    @just --list
+
+# 安装锁定依赖，并显示首次启动将使用的数据位置。
+setup:
+    uv sync --project backend --locked --no-dev
+    pnpm --dir frontend install --frozen-lockfile
+    @just data-path
+
+# 查看配置和数据库位置；不创建数据库。
+data-path:
+    @uv run --project backend --no-dev python -m app.config
+
+# 先迁移数据库，再从源码构建并启动。
+start: migrate build
+    uv run --project backend --no-dev python scripts/run.py start
+
+build:
+    pnpm --dir frontend build
+
+migrate:
+    uv run --directory backend --no-dev alembic upgrade head
+
+# 停止服务后，备份到尚不存在的新目录。
+backup $destination:
+    uv run --project backend --no-dev python -m app.backup create "$destination"
+
+# 恢复到尚不存在的新目录；不覆盖原数据。
+restore $source $destination:
+    uv run --project backend --no-dev python -m app.backup restore "$source" "$destination"

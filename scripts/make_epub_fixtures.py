@@ -1,4 +1,4 @@
-"""Generate deterministic, original synthetic EPUBs for the isolated reading spike."""
+"""Generate deterministic, original synthetic EPUBs for compiler and reader regression tests."""
 
 # XML fixtures intentionally keep individual source tags intact.
 from __future__ import annotations
@@ -79,7 +79,7 @@ def build_fixture(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--output", type=Path, default=ROOT / "prototypes/epub-reading/fixtures"
+        "--output", type=Path, default=ROOT / "backend/tests/fixtures/epub"
     )
     args = parser.parse_args()
     build_fixture(args.output / "synthetic-reading.epub")

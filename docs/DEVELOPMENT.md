@@ -62,7 +62,7 @@ just check-assets # 验证保留的实验和静态原型
 
 ## 真实学习闭环验收
 
-用实际浏览器、FastAPI 和临时 SQLite 库验证从 EPUB 保存片段、写入讲解、重启后找回讲解并返回原句的流程。样书 [synthetic-reading.epub](../prototypes/epub-reading/fixtures/synthetic-reading.epub) 随 Git 提供，书名为「日語定位合成樣書」。全程使用人工讲解，无需模型配置。
+用实际浏览器、FastAPI 和临时 SQLite 库验证从 EPUB 保存片段、写入讲解、重启后找回讲解并返回原句的流程。样书 [synthetic-reading.epub](../backend/tests/fixtures/epub/synthetic-reading.epub) 随 Git 提供，书名为「日語定位合成樣書」。全程使用人工讲解，无需模型配置。
 
 ### 启动临时实例
 
@@ -137,6 +137,19 @@ uv run --project backend python scripts/measure_reader_backend.py --reader-views
 `just build` 后运行 `node frontend/scripts/measure-loading.mjs`，在隔离 Chrome 中测量生产素材库与学习偏好页。脚本使用本机静态服务器与离线 API，每次新建浏览器上下文并禁用 HTTP 缓存，默认各跑五次；`LOADING_MEASUREMENT_RUNS` 可设为 1–20。输出实际 JS／CSS 响应体大小、逐文件 gzip 估值、首个内容绘制和目标表单／空库内容出现时间，不访问用户数据库或模型。
 
 可以传入两个已有构建目录：`node frontend/scripts/measure-loading.mjs /path/to/baseline-dist /path/to/current-dist`。脚本交替测量两份产物，不修改构建或源代码；应在相同依赖与运行环境下生成两份构建。比较口径、首次异步页面的等待代价及结果见[路由加载验收](handovers/archived/ROUTE_LOADING_ACCEPTANCE.md)。
+
+## 构建供试用的源码包
+
+在开发仓库中，从准备交付的提交生成供审阅的 ZIP。先创建输出目录，使用一个尚不存在的文件名。下面以当前已提交的 HEAD 为例。
+
+```sh
+mkdir -p dist
+python3 scripts/package_release.py --ref HEAD --version 0.1.0+candidate.1 --output dist/Folio-J-review.zip
+```
+
+正式打包时将 `--ref` 设为确切的发布 tag，省略 `--version` 即从 tag 取版本号。打包器读取该提交中的[文件清单](../scripts/release/manifest.json)、源码和用户文档，并生成记录提交号和版本名的 `RELEASE.json`。调整[发行包首页](../scripts/release/README.md)或用户指南后，先提交再重新生成。
+
+验收使用两份独立解压目录和临时数据。在第一份中按包内首页安装、导入原创合成 EPUB、保存书签和有精确出处的讲解，停止服务后用包内命令备份。在第二份中恢复到新位置，再打开讲解并定位到同一句。已有词典和凭据时同时核对，并验证拒绝覆盖已有目标。发布样本只使用合成数据，留作后续版本迁移恢复的输入。
 
 ## 仓库快照
 

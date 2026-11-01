@@ -636,7 +636,7 @@ def test_css_import_cycles_remote_and_unsupported_syntax_warn() -> None:
     ],
 )
 def test_public_fixture_reading_snapshot_is_unchanged(name: str, expected: str) -> None:
-    raw = (ROOT / "prototypes/epub-reading/fixtures" / f"{name}.epub").read_bytes()
+    raw = (ROOT / "backend/tests/fixtures/epub" / f"{name}.epub").read_bytes()
     snapshot = epub.compile_epub_bytes(raw).model_dump(exclude={"contract", "product_sha256"})
     # Frozen against v1 before implementation: all reading data survives removal of resource HTML.
     for resource in snapshot["resources"]:

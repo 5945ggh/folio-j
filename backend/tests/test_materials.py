@@ -20,9 +20,7 @@ from app.epub_schemas import CompiledBook
 from app.epub_storage import decode as decode_epub
 from app.services.epub import EpubError
 
-FIXTURE = (
-    Path(__file__).resolve().parents[2] / "prototypes/epub-reading/fixtures/synthetic-reading.epub"
-)
+FIXTURE = Path(__file__).resolve().parents[2] / "backend/tests/fixtures/epub/synthetic-reading.epub"
 
 
 @pytest.mark.asyncio

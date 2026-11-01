@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import cases from "../../../docs/handovers/text-study/fixtures/c2-context-cases.json" with {
-	type: "json",
-};
 import type { components } from "../api/schema";
 import type { Chapter } from "./api";
+import cases from "./fixtures/c2-context-cases.json" with { type: "json" };
 import {
 	type ContextBudget,
 	ContextPrefillError,

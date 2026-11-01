@@ -1,6 +1,6 @@
 # EPUB 切片 0 样书来源
 
-合成样书由本仓库原创测试文字构成，运行 `python3 scripts/make_epub_fixtures.py` 可逐字节重建。`synthetic-reading.epub` 包含两章节、ruby／rp、实体、块与 br 换行、重复句、跨节点浊点、𠮷与 ZWJ emoji、全角兼容字符与内嵌图片；vertical 变体加入作者竖排及绝对定位 CSS；malicious 变体加入脚本、iframe、事件属性、外部资源、路径逃逸图片与 hidden 内容；fixed 变体声明全书固定版，预期拒绝。
+合成 EPUB 的正本已迁至 [backend/tests/fixtures/epub](../../../backend/tests/fixtures/epub/README.md)，本目录保留切片 0 的来源记录。合成样书由本仓库原创测试文字构成，运行 `python3 scripts/make_epub_fixtures.py` 可逐字节重建。`synthetic-reading.epub` 包含两章节、ruby／rp、实体、块与 br 换行、重复句、跨节点浊点、𠮷与 ZWJ emoji、全角兼容字符与内嵌图片；vertical 变体加入作者竖排及绝对定位 CSS；malicious 变体加入脚本、iframe、事件属性、外部资源、路径逃逸图片与 hidden 内容；fixed 变体声明全书固定版，预期拒绝。
 
 浏览器用的三份静态 JSON 由上述合成书在切片 0 生成，保留当时的 `epub-spike-v1` 完整资源 HTML 契约。2026-10-25，生产编译器改为仅保存章节 HTML，旧实验导出 CLI 随之退役；静态 JSON 和定位实验继续保留，当前编译器不再为此实验导出旧格式。合成 EPUB 本身仍可通过上述 fixture 脚本重建，并可导入生产应用验证。
 
