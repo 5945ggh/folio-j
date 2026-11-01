@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from fastapi import HTTPException, Request
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
@@ -17,11 +17,6 @@ from app.ids import new_ulid
 from app.material_models import (
     ChapterReadingPosition,
     Material,
-    MaterialCover,
-    MaterialCustomCover,
-    MaterialReadingsCurrent,
-    MaterialReadingsGeneration,
-    MaterialUsage,
     ReadingPosition,
 )
 from app.material_schemas import (
@@ -40,6 +35,7 @@ from app.readings_schemas import MaterialReadingsPrepare
 from app.services import readings
 from app.services.epub import EpubError, compile_epub_bytes
 from app.services.epub_readings import text_resources
+from app.services.material_cleanup import clear_material_assets
 from app.services.position_progress import chapter_progress
 from app.services.reader_views import MaterialIdentity
 from app.services.sources import as_utc, begin_write, require_source, utc_now
@@ -320,34 +316,19 @@ async def delete_material(session: AsyncSession, material_id: str) -> None:
     """Keep a tombstone and remove this material's assets atomically."""
     try:
         await begin_write(session)
-        material = await session.scalar(
-            select(Material)
+        existing_id = await session.scalar(
+            select(Material.id)
             .join(Source, Material.source_id == Source.id)
             .where(Material.id == material_id, Source.deleted_at.is_(None))
-            .options(defer(Material.compiled_bundle))
         )
-        if material is None:
+        if existing_id is None:
             raise HTTPException(404, "材料不存在")
         from app.services.translations import revoke_tasks
 
         await revoke_tasks(session, material_id=material_id)
-        if material.deleted_at is None:
-            material.deleted_at = utc_now()
-        material.original_bytes = b""
-        material.compiled_bundle = b""
-        material.warnings = []
-        # Repeat cleanup for tombstones produced by versions that retained assets.
-        # Remove the current pointer before its immutable generations for FK safety.
-        for asset in (
-            ReadingPosition,
-            ChapterReadingPosition,
-            MaterialUsage,
-            MaterialCover,
-            MaterialCustomCover,
-            MaterialReadingsCurrent,
-            MaterialReadingsGeneration,
-        ):
-            await session.execute(delete(asset).where(asset.material_id == material_id))
+        await clear_material_assets(
+            session, select(Material.id).where(Material.id == material_id), utc_now()
+        )
         await session.commit()
     except BaseException:
         await session.rollback()

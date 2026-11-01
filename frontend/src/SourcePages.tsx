@@ -214,6 +214,7 @@ function SourceDelete({
 	deleted: () => void;
 }) {
 	const [previewFailure, setPreviewFailure] = useState(false);
+	const submitting = useRef(false);
 	const impact = useQuery({
 		queryKey: queries.impact(source.id),
 		queryFn: () => getDeleteImpact(source.id),
@@ -230,6 +231,7 @@ function SourceDelete({
 			if (
 				latest.data.material_count !== impact.data?.material_count ||
 				latest.data.segment_count !== impact.data?.segment_count ||
+				latest.data.analysis_count !== impact.data?.analysis_count ||
 				latest.data.thread_count !== impact.data?.thread_count ||
 				latest.data.message_count !== impact.data?.message_count ||
 				latest.data.active_job_count !== impact.data?.active_job_count
@@ -241,7 +243,13 @@ function SourceDelete({
 			if (error || !response.ok) throw errorMessage(error, response.status);
 		},
 		onSuccess: deleted,
+		onSettled: () => {
+			submitting.current = false;
+		},
 	});
+	function cancel() {
+		if (!submitting.current) close();
+	}
 	useEffect(() => {
 		if (previewFailure && impact.isSuccess) {
 			remove.reset();
@@ -249,7 +257,7 @@ function SourceDelete({
 		}
 	}, [impact.isSuccess, previewFailure, remove.reset]);
 	return (
-		<ConfirmDialog titleId="delete-title" onClose={close}>
+		<ConfirmDialog titleId="delete-title" onClose={cancel}>
 			<p className="eyebrow">删除确认</p>
 			<h2 id="delete-title">删除「{source.title}」？</h2>
 			{impact.isPending ? (
@@ -260,12 +268,15 @@ function SourceDelete({
 				<p>
 					这会一并删除该来源下的{" "}
 					<strong>{impact.data.segment_count} 个片段</strong>、
+					<strong>{impact.data.analysis_count} 份讲解（含全部修订）</strong>、
 					<strong>{impact.data.thread_count} 条讨论</strong>和{" "}
 					<strong>{impact.data.message_count} 条消息</strong>。
 					{impact.data.active_job_count > 0 &&
 						`其中 ${impact.data.active_job_count} 个进行中的任务会被中断。`}
 					该来源下的 {impact.data.material_count}{" "}
-					份阅读材料也将不可再打开，托管原书暂时保留。删除后无法从页面恢复；其他来源不受影响。
+					份阅读材料将清除应用保存的原书和派生阅读数据，无法再打开阅读，清理不可撤销。
+					你导入时选择的本地 EPUB
+					文件不会被删除。删除后无法从页面恢复；其他来源不受影响。
 				</p>
 			)}
 			<InlineError
@@ -278,7 +289,11 @@ function SourceDelete({
 					className="button danger"
 					type="button"
 					disabled={!impact.isSuccess || remove.isPending}
-					onClick={() => remove.mutate()}
+					onClick={() => {
+						if (submitting.current) return;
+						submitting.current = true;
+						remove.mutate();
+					}}
 				>
 					{remove.isPending ? "删除中…" : "确认删除"}
 				</button>
@@ -286,7 +301,7 @@ function SourceDelete({
 					className="button secondary"
 					type="button"
 					disabled={remove.isPending}
-					onClick={close}
+					onClick={cancel}
 				>
 					取消
 				</button>

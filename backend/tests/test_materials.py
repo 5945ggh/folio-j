@@ -110,9 +110,19 @@ async def test_material_identity_positions_delete_and_restart(
         assert (await client.get(url + "/chapters/c1")).status_code == 404
         assert (await client.get(f"/api/sources/{source}/materials")).status_code == 404
     with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT original_bytes,source_sha256 FROM materials WHERE id=?", (material["id"],)
-        ).fetchone() == (b"book", hashlib.sha256(b"book").hexdigest())
+        deleted = connection.execute(
+            "SELECT original_bytes,compiled_bundle,source_sha256,version_id,deleted_at "
+            "FROM materials WHERE id=?",
+            (material["id"],),
+        ).fetchone()
+        assert deleted is not None
+        assert deleted[:4] == (
+            b"",
+            b"",
+            hashlib.sha256(b"book").hexdigest(),
+            material["version_id"],
+        )
+        assert deleted[4] is not None
 
 
 @pytest.mark.asyncio
