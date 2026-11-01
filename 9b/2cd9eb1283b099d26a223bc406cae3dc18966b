@@ -1,0 +1,40 @@
+backend/tests/test_catalog_provenance.py
+  s_c88be66de67c07::t_c23284302ea854 57,68,93,143
+backend/tests/test_segment_provenance.py
+  s_c88be66de67c07::t_c23284302ea854 694-703,707,748,776
+backend/openapi.json
+  s_c88be66de67c07::t_c23284302ea854 5745-5757
+frontend/src/catalog/segment-origin.ts
+  s_c88be66de67c07::t_c23284302ea854 23-27,30
+  s_c88be66de67c07::t_fa91356cfe8883 31-34
+docs/ARCHITECTURE.md
+  s_c88be66de67c07::t_c23284302ea854 173
+backend/src/app/catalog_schemas.py
+  s_c88be66de67c07::t_c23284302ea854 71
+frontend/browser-tests/segment-catalog.tsx
+  s_c88be66de67c07::t_fa91356cfe8883 322
+  s_c88be66de67c07::t_c23284302ea854 459
+backend/src/app/services/material_provenance.py
+  s_c88be66de67c07::t_c23284302ea854 580,584-585,587,594,601,605,607,614,621,625-626,629-637,693,724,816,821-822,926-928
+  s_c88be66de67c07::t_4a26caf31b71ea 581
+frontend/src/catalog/segment-origin.test.ts
+  s_c88be66de67c07::t_c23284302ea854 31,46-47,67,84
+frontend/src/api/schema.d.ts
+  s_c88be66de67c07::t_c23284302ea854 3414-3415
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9b2cd9eb1283b099d26a223bc406cae3dc18966b",
+  "prompts": {},
+  "sessions": {
+    "s_c88be66de67c07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196b8-e5df-71d3-afe2-48ebdfe2d545",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
