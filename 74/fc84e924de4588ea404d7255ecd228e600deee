@@ -1,0 +1,104 @@
+docs/USAGE.md
+  s_a21a9037f0eaeb::t_1a04ce55e424d3 46,94
+  s_a21a9037f0eaeb::t_5bdf82953c5c8e 37,39,92
+  s_ae05c05c728667::t_7b59bb5ae2f947 5,121
+  h_c735ec7f46d14b 3,7,9-11,14,16,18-20,22,24,26-28,31,35-36,41,43,45,50,52,54-56,58,60-62,64,66,69,71,73,75-77,79,81,83-87,95-97,102,104,106,110,117-119,123,125-129,131
+  s_a21a9037f0eaeb::t_4e8327caa8d312 47
+docs/handovers/archived/SEGMENT_CATALOG_ACCEPTANCE.md
+  s_a21a9037f0eaeb::t_dc3c897e2378a5 3
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_a21a9037f0eaeb::t_dc3c897e2378a5 17,45
+scripts/release/README.md
+  s_ae05c05c728667::t_b881ec351e4700 9
+README.md
+  h_c735ec7f46d14b 13-17,19,23,25,29,31,33-35,37,39,42,45,49-51,54,59,65-66,70,72,76,80-83,85
+docs/README.md
+  s_ae05c05c728667::t_b881ec351e4700 13
+docs/handovers/archived/reading-practice/READER_SETTINGS_STRUCTURE.md
+  s_a21a9037f0eaeb::t_dc3c897e2378a5 227
+docs/handovers/archived/reading-practice/BOOKMARKS_ACCEPTANCE.md
+  s_a21a9037f0eaeb::t_dc3c897e2378a5 9
+docs/UPGRADING.md
+  s_a21a9037f0eaeb::t_ffce9719a3dfa1 5,7,9-11,13-14,32,36,39,48,50-51
+  h_c735ec7f46d14b 15,38,69
+  s_a21a9037f0eaeb::t_d37e3c4845c686 20,26
+  s_1a76cc91006422::t_e532c22574b491 56,62,64,66,68,82
+  s_77b456adad68f8::t_a372167bf0f4db 49
+  s_1a76cc91006422::t_fe4e1d54109278 44
+  s_a21a9037f0eaeb::t_1a04ce55e424d3 29,74
+  s_1a76cc91006422::t_60da8da8e5708b 3,18,34,41,59-60,72,76-81
+  s_1a76cc91006422::t_0e749b70244de6 53,58
+  s_a21a9037f0eaeb::t_e5f1a64c4a81a7 23
+  s_1a76cc91006422::t_160e91b0053b61 54-55
+  s_31ab8f4076efcf::t_337d17344f55a3 22,24
+  s_0a6c4ad3aaddf6::t_189a79ed218b0d 52,57
+  s_1a76cc91006422::t_6eda73b2455e2e 46
+  s_1a76cc91006422::t_cc9896cd1599af 61
+docs/handovers/archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md
+  s_a21a9037f0eaeb::t_dc3c897e2378a5 7
+references/READING_FEATURE_NOTES.md
+  s_a21a9037f0eaeb::t_dc3c897e2378a5 21
+docs/handovers/archived/text-study/READER_COPY_ACCEPTANCE.md
+  s_a21a9037f0eaeb::t_dc3c897e2378a5 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "74fc84e924de4588ea404d7255ecd228e600deee",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_0a6c4ad3aaddf6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1646d-adb2-76b1-b3bc-16b74d2ebc01",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_1a76cc91006422": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a194e7-b99d-7252-9880-ca9b55cd2b10",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_31ab8f4076efcf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18594-2605-76f0-9f5e-036a5ffb7b90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_77b456adad68f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18657-3d2a-7b03-b9af-5af7cd0b9e63",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_a21a9037f0eaeb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1928d-b03c-74f3-bdd1-79735bd8da4e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": null
+    },
+    "s_ae05c05c728667": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19518-975f-78a3-bd5a-8bffa42cd629",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
