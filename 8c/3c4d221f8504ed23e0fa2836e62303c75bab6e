@@ -1,0 +1,31 @@
+scripts/run.py
+  s_1bc7a8995756af::t_d81157f094d325 15,89-97,156,162,169
+docs/DEVELOPMENT.md
+  s_1bc7a8995756af::t_47ec75b34b35a6 67
+backend/tests/test_run_script.py
+  s_1bc7a8995756af::t_2f30aa71586023 96-105,107,112-122,125-130,132-133,137-138,140-171,173-175,177-178
+  s_1bc7a8995756af::t_a6f7263b879be2 106,108-111,131,134-136,139,172,176
+  s_1bc7a8995756af::t_d81157f094d325 123-124
+backend/tests/test_windows_reload.py
+  s_1bc7a8995756af::t_d81157f094d325 84-85,150,153-163,184-187
+.github/workflows/windows.yml
+  s_1bc7a8995756af::t_5fb425ffc19b6a 44-45
+docs/ARCHITECTURE.md
+  s_1bc7a8995756af::t_47ec75b34b35a6 78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8c3c4d221f8504ed23e0fa2836e62303c75bab6e",
+  "prompts": {},
+  "sessions": {
+    "s_1bc7a8995756af": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1960a-54b0-7a93-8dad-24c3bdffb7da",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
