@@ -163,7 +163,7 @@ mkdir -p dist
 python3 scripts/package_release.py --ref HEAD --version 0.1.0+candidate.1 --output dist/Folio-J-review.zip
 ```
 
-正式打包时将 `--ref` 设为确切的发布 tag，省略 `--version` 即从 tag 取版本号。打包器读取该提交中的[文件清单](../scripts/release/manifest.json)、源码和用户文档，并生成记录提交号和版本名的 `RELEASE.json`。调整[发行包首页](../scripts/release/README.md)或用户指南后，先提交再重新生成。
+正式打包时将 `--ref` 设为确切的发布 tag，省略 `--version` 即从 tag 取版本号。打包器读取该提交中的[文件清单](../scripts/release/manifest.json)、源码和用户文档，并生成记录提交号和版本名的 `RELEASE.json`。调整[发行包首页](../scripts/release/README.md)或用户指南后，先提交再重新生成。发布前在解压目录核对包内 Markdown 的相对路径和标题锚点；仓库的文档检查无法发现包中未分发的目标。
 
 验收使用两份独立解压目录和临时数据。在第一份中按包内首页安装、导入原创合成 EPUB、保存书签和有精确出处的讲解，停止服务后用包内命令备份。在第二份中恢复到新位置，再打开讲解并定位到同一句。已有词典和凭据时同时核对，并验证拒绝覆盖已有目标。发布样本只使用合成数据，留作后续版本迁移恢复的输入。
 

@@ -1,6 +1,6 @@
 # EPUB 阅读浮窗验收
 
-> 2026-11-01；实现基于 `main 74fc84e`，由 `8ab3b60`、`60a39a6` 交付，用户确认后合入本地 `main`。现行交互见[阅读与导航](../../INFORMATION_ARCHITECTURE.md#原处预览与记录浮窗)，视觉规则见[设计系统](../../DESIGN_SYSTEM.md#阅读器紧凑浮窗)。
+> 2026-11-01；实现基于 `main 74fc84e`，由 `8ab3b60`、`60a39a6` 交付，用户确认后合入本地 `main`。现行交互见[阅读与导航](../../../INFORMATION_ARCHITECTURE.md#原处预览与记录浮窗)，视觉规则见[设计系统](../../../DESIGN_SYSTEM.md#阅读器紧凑浮窗)。
 
 ## 交付范围
 
@@ -40,12 +40,12 @@
 
 截图保存在本地忽略目录，均在本轮逐张核对。这里的正文和记录由真实书页或离线夹具提供，未把设计草案的演示控件加入产品。
 
-- [单处翻译紧凑浮窗](../../../data/acceptance-evidence/2026-11-01/reader-popovers/translation-compact.jpg)
-- [词卡与共享不透明度设置](../../../data/acceptance-evidence/2026-11-01/reader-popovers/shared-opacity.jpg)
-- [重叠记录中的片段与讲解](../../../data/acceptance-evidence/2026-11-01/reader-popovers/overlap-segment.jpg)
-- [黑纸窄屏原文短卡](../../../data/acceptance-evidence/2026-11-01/reader-popovers/original-only-dark-narrow.jpg)
-- [黑纸窄屏展开侧栏](../../../data/acceptance-evidence/2026-11-01/reader-popovers/translation-expanded-dark-narrow.jpg)
-- [黑纸窄屏收起并保留旧译](../../../data/acceptance-evidence/2026-11-01/reader-popovers/translation-compact-dark-narrow.jpg)
+- [单处翻译紧凑浮窗](../../../../data/acceptance-evidence/2026-11-01/reader-popovers/translation-compact.jpg)
+- [词卡与共享不透明度设置](../../../../data/acceptance-evidence/2026-11-01/reader-popovers/shared-opacity.jpg)
+- [重叠记录中的片段与讲解](../../../../data/acceptance-evidence/2026-11-01/reader-popovers/overlap-segment.jpg)
+- [黑纸窄屏原文短卡](../../../../data/acceptance-evidence/2026-11-01/reader-popovers/original-only-dark-narrow.jpg)
+- [黑纸窄屏展开侧栏](../../../../data/acceptance-evidence/2026-11-01/reader-popovers/translation-expanded-dark-narrow.jpg)
+- [黑纸窄屏收起并保留旧译](../../../../data/acceptance-evidence/2026-11-01/reader-popovers/translation-compact-dark-narrow.jpg)
 
 ## 未验证项
 

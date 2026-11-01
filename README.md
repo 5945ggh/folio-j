@@ -26,7 +26,7 @@ Folio-J 是一个运行在本机的日语原版阅读与学习工具。读一本
 
 ## 快速开始
 
-Folio-J 目前从源码启动，供单人在本机浏览器中使用，支持导入普通可重排 EPUB。项目已在 macOS 上完成验收；Windows 11 x64 提供实验性支持，面向 PowerShell 和 Chrome／Edge，尚待 Windows CI 与实机验证。Linux 尚待完整验证。
+Folio-J 目前从源码启动，供单人在本机浏览器中使用，支持导入普通可重排 EPUB。项目已在 macOS 上完成验收；Windows 11 x64 提供实验性支持，面向 PowerShell 和 Chrome／Edge，已通过 Windows CI，Windows 11 实机待验。Linux 尚待完整验证。
 
 **环境要求**：**Python 3.11**、**Node.js 24**、`uv` 和 `pnpm 10`（推荐同时安装 `just` 以简化命令）。
 

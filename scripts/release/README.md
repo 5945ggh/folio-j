@@ -4,7 +4,7 @@ Folio-J 是在本机浏览器中使用的日语阅读与学习工具。导入日
 
 ## 快速开始
 
-准备 Python 3.11、Node.js 24、uv 和 pnpm 10。当前在 macOS 上验收；Windows 11 x64 提供实验性支持，面向 PowerShell 和 Chrome／Edge，尚待 Windows CI 与实机验证。Linux 尚待完整验证。将源码包解压到一个新文件夹，用终端进入该文件夹。
+准备 Python 3.11、Node.js 24、uv 和 pnpm 10。当前在 macOS 上验收；Windows 11 x64 提供实验性支持，面向 PowerShell 和 Chrome／Edge，已通过 Windows CI，Windows 11 实机待验。Linux 尚待完整验证。将源码包解压到一个新文件夹，用终端进入该文件夹。
 
 Windows 可使用系统自带的 Windows PowerShell 5.1 或 PowerShell 7，推荐 `just 1.58` 或更新版本。下面的安装、启动命令可直接在 PowerShell 中执行，无需 Bash。`~` 表示当前用户目录，例如 `C:/Users/你的用户名`。试用后可按 [Windows 实机测试清单](docs/handovers/WINDOWS_ACCEPTANCE.md)记录结果。
 

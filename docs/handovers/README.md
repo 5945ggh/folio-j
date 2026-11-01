@@ -9,7 +9,6 @@
 | 首个源码包的文档评审与发布前演练 | [候选包与恢复演练](BETA_SOURCE_CANDIDATE.md)，含本地候选标识、核验范围及正式发布前的步骤 |
 | Windows 实验性支持怎样验证 | [Windows 验收与实机清单](WINDOWS_ACCEPTANCE.md)，覆盖源码运行、数据保护、阅读体验及自动验证限制 |
 | 当前能力、实现差额与验证限制 | [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)，统一维护核对版本及验收入口 |
-| 即时查词怎样进入真实试读 | [阶段计划与试读记录](epub-reading/DICTIONARY_PLAN.md)，涵盖本机词典、EPUB 点击、词卡嵌套与返回 |
 | EPUB 学习衔接接下来做什么 | [阶段安排](epub-reading/README.md#下一阶段接力顺序)：材料对话、消息引用和从讨论形成讲解；[接手提示词](epub-reading/AGENT_PROMPT.md)引用本安排 |
 | 阅读实践还有哪些独立目标 | [实际阅读评测计划](reading-practice/PLAN.md)：扩展书内搜索、阅读设置迁移候选及数据保护 |
 | 翻译、设备朗读与后续 adapter 如何继续验证 | [阅读辅助后续安排](epub-reading/README.md#阅读辅助后续安排)：真实样句、设备声音、资源预算与接入条件 |
@@ -45,12 +44,14 @@
 | 阅读设置 | [结构调查与原型记录](archived/reading-practice/READER_SETTINGS_STRUCTURE.md)、[结构与会话保护验收](archived/reading-practice/READER_SETTINGS_ACCEPTANCE.md) |
 | 应用设置 | [自动保存、服务管理与验证记录整理验收](archived/settings-refresh/POLISH_ACCEPTANCE.md) |
 | 位置书签 | [首版与主分支集成](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md)、[附近提醒与详情改进](archived/reading-practice/BOOKMARK_REFINEMENT_ACCEPTANCE.md) |
+| 即时查词与记录浮窗 | [词典试读与管理](archived/epub-reading/DICTIONARY_PLAN.md)、[阅读浮窗验收](archived/reading-practice/READER_POPOVER_ACCEPTANCE.md) |
 | 翻译、配色与词汇 | [翻译动画、缓存与删除](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md)、[阅读器颜色 token](archived/reading-practice/READER_COLOR_TOKENS_ACCEPTANCE.md)、[材料词汇与统计更新](archived/reading-practice/VOCABULARY_ACCEPTANCE.md) |
 
 ### 工程、性能与可靠性
 
 | 范围 | 计划、设计与验收证据 |
 | --- | --- |
+| Windows 源码运行 | [本机与七轮 CI 记录](archived/WINDOWS_CI_ACCEPTANCE.md)；未完成的实机检查继续使用[活动清单](WINDOWS_ACCEPTANCE.md) |
 | 数据库与存储 | [开发期基线](archived/DATABASE_BASELINE_ACCEPTANCE.md)、[迁移基线整理](archived/DATABASE_MIGRATION_ACCEPTANCE.md)、[EPUB 编译存储](archived/EPUB_STORAGE_ACCEPTANCE.md)、[材料独立删除](archived/MATERIAL_DELETION_ACCEPTANCE.md)、[导入书卡反馈](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md) |
 | 主题与加载 | [Reader 主题](archived/READER_THEME_ACCEPTANCE.md)、[整站主题](archived/APPLICATION_THEME_ACCEPTANCE.md)、[图片查看器测量](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md)、[路由按需加载](archived/ROUTE_LOADING_ACCEPTANCE.md)、[后端读取测量](archived/READER_READ_PERFORMANCE_ACCEPTANCE.md) |
 | 状态与执行结构 | [编辑规则与讨论状态](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[事务与后台可靠性](archived/ARCHITECTURE_RELIABILITY_ACCEPTANCE.md)、[阅读恢复与来源导航](archived/READER_STATE_REFACTOR_ACCEPTANCE.md)、[阅读跳转](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)、[翻译会话](archived/TRANSLATION_SESSION_REFACTOR_ACCEPTANCE.md)、[方向切换修复](archived/READER_LAYOUT_SWITCH_ACCEPTANCE.md)、[呈现协调](archived/READER_PRESENTATION_REFACTOR_ACCEPTANCE.md) |
