@@ -1,0 +1,36 @@
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_38080a68432fcb::t_dfe7d323e1c456 16
+docs/handovers/README.md
+  s_38080a68432fcb::t_dfe7d323e1c456 9
+scripts/release/README.md
+  s_38080a68432fcb::t_b6feac5675b059 7,9-16,34-37,53
+  s_38080a68432fcb::t_63a0a73da69b97 54
+docs/handovers/BETA_SOURCE_CANDIDATE.md
+  s_38080a68432fcb::t_dfe7d323e1c456 17,19-23
+README.md
+  s_38080a68432fcb::t_7709e8d8beb121 15
+  h_c735ec7f46d14b 3,5,7-8,16-20,28,96-97
+  s_38080a68432fcb::t_b6feac5675b059 9,22,24,34,38-43,46,62-65,67,81,83
+  s_38080a68432fcb::t_f1b5f1945f9799 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2d6c8318e0101a4faec0b8b9bd302e996f62b60d",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_38080a68432fcb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19790-0f80-7a12-a48c-51085601c9f4",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
