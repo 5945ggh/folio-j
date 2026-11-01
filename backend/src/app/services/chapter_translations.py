@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
-from sqlalchemy import select
+from sqlalchemy import Select, case, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.epub_storage import decode as decode_epub
@@ -69,27 +69,52 @@ class Validated:
     position: Position
 
 
-async def candidates(session: AsyncSession, material_id: str) -> list[Candidate]:
-    rows = (
-        await session.execute(
-            select(
-                TranslationResult.id,
-                TranslationTask.source_id,
-                TranslationTask.identity_sha256,
-                TranslationTask.payload,
-                TranslationResult.translation,
-                TranslationResult.created_at,
-            )
-            .join(TranslationTask, TranslationTask.id == TranslationResult.task_id)
-            .where(
-                TranslationTask.material_id == material_id,
-                TranslationTask.status == "succeeded",
-                TranslationTask.reader_deleted_at.is_(None),
-                TranslationTask.result_id == TranslationResult.id,
-            )
+def _visible_results(material_id: str) -> Select[str, str, str, str, str, datetime]:
+    return (
+        select(
+            TranslationResult.id,
+            TranslationTask.source_id,
+            TranslationTask.identity_sha256,
+            TranslationTask.payload,
+            TranslationResult.translation,
+            TranslationResult.created_at,
         )
-    ).all()
-    return [Candidate(*row) for row in rows]
+        .join(TranslationTask, TranslationTask.id == TranslationResult.task_id)
+        .where(
+            TranslationTask.material_id == material_id,
+            TranslationTask.status == "succeeded",
+            TranslationTask.reader_deleted_at.is_(None),
+            TranslationTask.result_id == TranslationResult.id,
+        )
+    )
+
+
+async def _chapter_candidates(
+    session: AsyncSession, identity: MaterialIdentity, chapter_id: str
+) -> list[Candidate]:
+    # CASE protects each extraction independently of SQLite's WHERE evaluation order.
+    payload = case((func.json_valid(TranslationTask.payload), TranslationTask.payload), else_="{}")
+    query = _visible_results(identity.id).where(
+        TranslationTask.source_id == identity.source_id,
+        func.json_extract(payload, "$.chapter_id") == chapter_id,
+        func.json_extract(payload, "$.material_provenance.material_id") == identity.id,
+        func.json_extract(payload, "$.material_provenance.version_id") == identity.version_id,
+    )
+    return [Candidate(*row) for row in (await session.execute(query)).all()]
+
+
+async def _recheck_candidates(
+    session: AsyncSession, material_id: str, result_ids: list[str]
+) -> list[Candidate]:
+    # Read the original rows even if their attribution became malformed or moved
+    # to another chapter during validation. Visibility gates still apply.
+    query = _visible_results(material_id)
+    rows: list[Candidate] = []
+    for offset in range(0, len(result_ids), 500):
+        batch = result_ids[offset : offset + 500]
+        current = (await session.execute(query.where(TranslationResult.id.in_(batch)))).all()
+        rows.extend(Candidate(*row) for row in current)
+    return rows
 
 
 def decode_cursor(
@@ -193,15 +218,23 @@ async def list_chapter_translations(
         if identity.version_id != version_id:
             raise failure("stale_provenance", "材料版本不可用，请重新打开材料。", 409)
         position = decode_cursor(after, identity, chapter_id)
-        rows = await candidates(session, material_id)
+        rows = await _chapter_candidates(session, identity, chapter_id)
         await session.rollback()
         validated = await asyncio.to_thread(validate_candidates, identity, chapter_id, rows)
 
-        # Recheck after CPU work using a fresh read snapshot, as chapter Segment scans do.
+        # SQLite's legacy SELECT mode does not begin a real transaction on its own.
+        # Keep material identity and every visibility batch in one fresh read snapshot.
+        await session.execute(text("BEGIN"))
         current = MaterialIdentity.capture(await require_material(session, material_id))
         if current != identity:
             raise failure("stale_provenance", "材料正文身份已变化，请重新打开材料。", 409)
-        visible = {row.result_id: row for row in await candidates(session, material_id)}
+        visible = {
+            row.result_id: row
+            for row in await _recheck_candidates(
+                session, material_id, [row.result_id for row in rows]
+            )
+        }
+        await session.rollback()
         groups: dict[str, Validated] = {}
         counts: dict[str, int] = {}
         unavailable: set[str] = set()

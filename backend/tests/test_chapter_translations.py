@@ -13,6 +13,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
+from sqlalchemy import event
 from support_api import chat_client
 from test_segment_provenance import compiled_provenance, provenance, setup_material, span
 
@@ -243,6 +244,115 @@ async def test_scoped_unavailable_targets_do_not_replace_valid_history(
 
 
 @pytest.mark.asyncio
+async def test_validation_only_receives_current_chapter_attribution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
+    async with chat_client(tmp_path / "scoped.db") as (client, app):
+        source, material = await setup_material(client)
+        good = await seed_result(app, source, provenance(material), 1)
+        other = await seed_result(app, source, provenance(material, span("r3", 3, 0, 2)), 2)
+        invalid = await seed_result(app, source, provenance(material, span("r1", 0, 0, 2)), 3)
+        for ordinal in range(4, 10):
+            await seed_result(app, source, provenance(material), ordinal)
+        async with app.state.session_factory() as session:
+            for ordinal in range(3, 10):
+                task = await session.get(TranslationTask, f"T{ordinal:025d}")
+                assert task is not None
+                payload = json.loads(task.payload)
+                if ordinal == 3:
+                    payload["material_provenance"]["ranges"][0]["exact"] = "损坏"
+                elif ordinal == 4:
+                    payload["material_provenance"]["version_id"] = "old-version"
+                task.payload = (
+                    json.dumps(payload)
+                    if ordinal < 5
+                    else {5: "broken-json", 6: "null", 7: "[]", 8: '"scalar"', 9: "{"}[ordinal]
+                )
+            await session.commit()
+        validated: list[list[str]] = []
+        original = chapter_translations.validate_candidates
+
+        def observe(
+            identity: chapter_translations.MaterialIdentity,
+            chapter: str,
+            rows: list[chapter_translations.Candidate],
+        ) -> dict[str, tuple[chapter_translations.Validated | None, bool]]:
+            validated.append(sorted(row.result_id for row in rows))
+            return original(identity, chapter, rows)
+
+        monkeypatch.setattr(chapter_translations, "validate_candidates", observe)
+        current = await client.get(
+            endpoint(material), params={"version_id": material["version_id"]}
+        )
+        assert current.status_code == 200, current.text
+        assert [item["result_id"] for item in current.json()["items"]] == [good]
+        assert current.json()["unavailable_count"] == 1
+        another = await client.get(
+            endpoint(material, "c2"), params={"version_id": material["version_id"]}
+        )
+        assert another.status_code == 200, another.text
+        assert [item["result_id"] for item in another.json()["items"]] == [other]
+        assert another.json()["unavailable_count"] == 0
+        assert validated == [sorted([good, invalid]), [other]]
+
+
+@pytest.mark.asyncio
+async def test_recheck_batches_share_a_real_sqlite_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
+    database = tmp_path / "batch-snapshot.db"
+    async with chat_client(database) as (client, app):
+        source, material = await setup_material(client)
+        reference = provenance(material)
+        latest = ""
+        for ordinal in range(1, 502):
+            latest = await seed_result(app, source, reference, ordinal)
+        engine = app.state.session_factory.kw["bind"]
+        changed = False
+
+        def mutate_after_first_batch(
+            _connection: object,
+            _cursor: object,
+            statement: str,
+            _parameters: object,
+            _context: object,
+            _many: bool,
+        ) -> None:
+            nonlocal changed
+            if changed or "TRANSLATION_RESULTS.ID IN (" not in statement.upper():
+                return
+            changed = True
+            # A real second SQLite writer commits while the read snapshot remains open.
+            with sqlite3.connect(database) as connection:
+                connection.execute("UPDATE translation_results SET translation='并发修改'")
+                connection.commit()
+
+        event.listen(engine.sync_engine, "after_cursor_execute", mutate_after_first_batch)
+        try:
+            response = await client.get(
+                endpoint(material), params={"version_id": material["version_id"]}
+            )
+        finally:
+            event.remove(engine.sync_engine, "after_cursor_execute", mutate_after_first_batch)
+        assert response.status_code == 200, response.text
+        assert changed
+        page = response.json()
+        assert page["unavailable_count"] == 0
+        assert len(page["items"]) == 1
+        assert page["items"][0]["result_id"] == latest
+        assert page["items"][0]["result_count"] == 501
+        assert page["items"][0]["translation_excerpt"] == "译文501"
+        refreshed = await client.get(
+            endpoint(material), params={"version_id": material["version_id"]}
+        )
+        assert refreshed.status_code == 200, refreshed.text
+        assert refreshed.json()["items"][0]["translation_excerpt"] == "并发修改"
+        assert refreshed.json()["items"][0]["result_count"] == 501
+
+
+@pytest.mark.asyncio
 async def test_cursor_binding_input_bounds_and_ancestor_version_gates(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -348,7 +458,18 @@ async def test_persisted_metadata_cannot_misplace_a_successful_result(
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "mutation",
-    ["material", "source", "version", "bundle", "payload", "result", "status", "reader_removal"],
+    [
+        "material",
+        "source",
+        "version",
+        "bundle",
+        "payload",
+        "result",
+        "status",
+        "reader_removal",
+        "chapter",
+        "reference_version",
+    ],
 )
 async def test_final_gate_rechecks_visibility_and_immutable_values(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
@@ -405,6 +526,16 @@ async def test_final_gate_rechecks_visibility_and_immutable_values(
                             "UPDATE translation_tasks SET payload='changed' WHERE id=?",
                             (f"T{1:025d}",),
                         ),
+                        "chapter": (
+                            "UPDATE translation_tasks "
+                            "SET payload=json_set(payload, '$.chapter_id', 'c2') WHERE id=?",
+                            (f"T{1:025d}",),
+                        ),
+                        "reference_version": (
+                            "UPDATE translation_tasks SET payload=json_set("
+                            "payload, '$.material_provenance.version_id', 'old') WHERE id=?",
+                            (f"T{1:025d}",),
+                        ),
                         "result": (
                             "UPDATE translation_results SET translation='changed' WHERE id=?",
                             (f"{1:026d}",),
@@ -428,4 +559,6 @@ async def test_final_gate_rechecks_visibility_and_immutable_values(
         ), response.text
         if response.status_code == 200:
             assert response.json()["items"] == []
-            assert response.json()["unavailable_count"] == int(mutation in {"payload", "result"})
+            assert response.json()["unavailable_count"] == int(
+                mutation in {"payload", "result", "chapter", "reference_version"}
+            )

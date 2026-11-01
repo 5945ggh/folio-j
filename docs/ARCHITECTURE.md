@@ -541,7 +541,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 `translation/placement.ts` 按屏幕锚点、入口类型、横竖排、视口和播放条占用区域计算卡片位置；正文沿点击行列定位，页边使用按钮实际矩形与所在侧边决定展开方向，底部按钮位于导航预留区仍可向上展开。内容尺寸变化后重新定位，短屏使用实际剩余高度。Reader 在正文滚动或重排时清理屏幕锚点，保留固定翻译目标并让卡片停靠；原文折叠通过实际溢出检测决定是否显示展开入口。
 
-GET `/api/materials/{material_id}/chapters/{chapter_id}/translations` 按 version_id 读取本章成功译文，以规范出处 identity_sha256 归并、选择 created_at／id 最新有效结果并保留 result_count，按 chapter part 和范围坐标排序。游标绑定材料、版本、章节及最后位置，单页最多 100 项；unavailable_count 是本章不可定位目标总数，各页重复，前端取最大值。服务在读取后离开事务校验正文、parts、出处摘要和原文，再复查材料、Source 可见性及成功结果快照，不建立新表。当前每页校验材料全部成功历史，开销随历史增长。
+GET `/api/materials/{material_id}/chapters/{chapter_id}/translations` 按 version_id 读取本章成功译文，以规范出处 identity_sha256 归并、选择 created_at／id 最新有效结果并保留 result_count，按 chapter part 和范围坐标排序。游标绑定材料、版本、章节及最后位置，单页最多 100 项；unavailable_count 是本章不可定位目标总数，各页重复，前端取最大值。首次查询按材料版本和章节出处缩小候选，损坏 JSON 安全跳过；离开事务后逐项校验正文、parts、出处摘要和原文。复核在显式只读事务中检查材料身份及 Source 可见性，再按首次取得的结果 ID 分批读取成功结果，全部批次共用同一 SQLite 快照；捕获后释放事务，再归并排序。保留其间出处被改坏的失效计数，并隐藏已删除或状态变化的结果。每页重复校验本章成功历史，候选 SQL 仍扫描材料成功历史，不建立新表、JSON 索引或跨请求校验缓存。
 
 Reader 的章节翻译 query 完成全部分页后发布标记；阅读页独立观察翻译活动，卡片关闭或换选区不卸载任务观察。recent 中未再出现的已知活动任务按 task_id 单独查询到终态，新成功结果使章 query 失效；受理响应未确定时也只刷新状态查询。`ChapterRecords` 复用 `StudyPreview` 和嵌入式 `TranslationPanel`，选择译文时明确传入 result_id，回看不消费自动翻译意图。
 
