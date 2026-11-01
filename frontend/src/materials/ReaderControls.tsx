@@ -1,7 +1,12 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
 import type { Settings } from "./api";
 import { restoreReaderPanelFocus } from "./motion";
-import type { BookUiPreferences, ReaderUiPreferences } from "./preferences";
+import {
+	type BookUiPreferences,
+	DEFAULT_DICTIONARY_OPACITY,
+	MIN_DICTIONARY_OPACITY,
+	type ReaderUiPreferences,
+} from "./preferences";
 import { ReaderCopySettings } from "./ReaderCopySettings";
 import { ReaderSettingsReset } from "./ReaderSettingsReset";
 import {
@@ -378,7 +383,7 @@ export function ReaderSettings({
 						</span>
 						<ReaderSettingsReset
 							label="阅读界面"
-							description="恢复纸面、工具栏不透明度与记录显示。"
+							description="恢复纸面、工具栏与浮窗不透明度及记录显示。"
 							onReset={() => onResetGroup("interface")}
 						/>
 					</div>
@@ -418,6 +423,28 @@ export function ReaderSettings({
 								}
 							/>
 						</label>
+						<label className="reader-settings-slider">
+							浮窗背景不透明度
+							<output>
+								{ui.dictionaryOpacity ?? DEFAULT_DICTIONARY_OPACITY}%
+							</output>
+							<input
+								aria-label="浮窗背景不透明度"
+								aria-valuetext={`${ui.dictionaryOpacity ?? DEFAULT_DICTIONARY_OPACITY}%`}
+								aria-describedby="reader-popover-opacity-help"
+								type="range"
+								min={MIN_DICTIONARY_OPACITY}
+								max="100"
+								step="1"
+								value={ui.dictionaryOpacity ?? DEFAULT_DICTIONARY_OPACITY}
+								onChange={(event) =>
+									onUi({ ...ui, dictionaryOpacity: Number(event.target.value) })
+								}
+							/>
+						</label>
+						<p id="reader-popover-opacity-help">
+							词卡、学习片段、翻译与记录列表共用；展开阅读使用实底。
+						</p>
 						<label className="reader-settings-toggle">
 							<span>展示阅读记录下划线</span>
 							<input

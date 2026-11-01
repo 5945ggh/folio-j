@@ -33,7 +33,10 @@ export interface TranslationQueryAdapter {
 	submit(materialId: string, input: TranslationInput): Promise<TranslationTask>;
 	accept(task: TranslationTask): void;
 	stop(taskId: string): Promise<TranslationTask>;
-	remove(reference: MaterialProvenance): Promise<TranslationRemoval>;
+	remove(
+		reference: MaterialProvenance,
+		resultId?: string,
+	): Promise<TranslationRemoval>;
 	uuid(): string;
 }
 export type TranslationOutcome =
@@ -63,6 +66,10 @@ export type TranslationSnapshot = Readonly<{
 	}>;
 	phase: "idle" | "submitting" | "uncertain" | "removing";
 	acceptedTaskId: string | null;
+	removal: Readonly<{
+		resultIds: readonly string[];
+		remainingResultId: string | null;
+	}> | null;
 	error: Error | null;
 }>;
 export type TranslationEdit =
@@ -84,7 +91,7 @@ export interface TranslationSession {
 		kind: "translate" | "verify";
 	}): Promise<TranslationOutcome>;
 	stop(taskId: string): Promise<TranslationTask>;
-	remove(): Promise<TranslationRemoval>;
+	remove(resultId?: string): Promise<TranslationRemoval>;
 }
 export interface TranslationSessions {
 	bindOwner(): () => void;
@@ -105,6 +112,10 @@ function copyReference(reference: MaterialProvenance): MaterialProvenance {
 	}) as MaterialProvenance;
 }
 function snapshot(value: TranslationSnapshot): TranslationSnapshot {
+	if (value.removal) {
+		Object.freeze(value.removal.resultIds);
+		Object.freeze(value.removal);
+	}
 	return Object.freeze({
 		...value,
 		draft: Object.freeze({
@@ -130,6 +141,7 @@ export const emptyTranslationSnapshot: TranslationSnapshot = snapshot({
 	},
 	phase: "idle",
 	acceptedTaskId: null,
+	removal: null,
 	error: null,
 });
 
@@ -148,7 +160,10 @@ export function createTranslationSessions(
 		private preparation: { epoch: number; promise: Promise<void> } | null =
 			null;
 		private generation = 0;
-		private removal: Promise<TranslationRemoval> | null = null;
+		private removal: {
+			resultId: string | undefined;
+			promise: Promise<TranslationRemoval>;
+		} | null = null;
 		private freshEpoch = -1;
 		private initialization: Promise<void> | null = null;
 		private operation: {
@@ -484,8 +499,11 @@ export function createTranslationSessions(
 			adapter.accept(task);
 			return task;
 		};
-		remove = (): Promise<TranslationRemoval> => {
-			if (this.removal) return this.removal;
+		remove = (resultId?: string): Promise<TranslationRemoval> => {
+			if (this.removal)
+				return this.removal.resultId === resultId
+					? this.removal.promise
+					: Promise.reject(new Error("正在删除其他译文，请稍后重试。"));
 			if (!bound) return Promise.reject(new Error("请返回阅读器后重试删除。"));
 			if (this.operation?.posted || this.state.phase === "uncertain")
 				return Promise.reject(new Error("请先核实原提交，再删除此处翻译。"));
@@ -495,11 +513,30 @@ export function createTranslationSessions(
 			this.preparation = null;
 			this.operation = null;
 			this.frozen = null;
-			this.update({ phase: "removing", error: null });
 			const operation = Promise.resolve()
-				.then(() => adapter.remove(this.reference))
+				.then(() => adapter.remove(this.reference, resultId))
 				.then((removed) => {
-					this.update({ phase: "idle", acceptedTaskId: null, error: null });
+					this.update({
+						removal: {
+							resultIds: [
+								...new Set([
+									...(this.state.removal?.resultIds ?? []),
+									...removed.result_ids,
+								]),
+							],
+							remainingResultId:
+								"remaining_result" in removed
+									? (removed.remaining_result?.id ?? null)
+									: null,
+						},
+						phase: "idle",
+						acceptedTaskId:
+							this.state.acceptedTaskId &&
+							!removed.task_ids.includes(this.state.acceptedTaskId)
+								? this.state.acceptedTaskId
+								: null,
+						error: null,
+					});
 					return removed;
 				})
 				.catch((error) => {
@@ -507,9 +544,10 @@ export function createTranslationSessions(
 					throw error;
 				})
 				.finally(() => {
-					if (this.removal === operation) this.removal = null;
+					if (this.removal?.promise === operation) this.removal = null;
 				});
-			this.removal = operation;
+			this.removal = { resultId, promise: operation };
+			this.update({ phase: "removing", error: null });
 			return operation;
 		};
 	}

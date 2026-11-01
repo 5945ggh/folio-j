@@ -474,7 +474,7 @@ export async function translationRegression(h: BrowserHarness) {
 			"StrictMode/reopen repeated automatic generation",
 		);
 		check(
-			!container.textContent?.includes("此处历史翻译（本页 0）"),
+			!container.textContent?.includes("历史译文（本页 0）"),
 			"Empty history should not clutter card",
 		);
 	} finally {

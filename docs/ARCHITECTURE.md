@@ -513,7 +513,9 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 `DELETE /api/materials/{material_id}/translations/{identity_sha256}` 在同一写事务为该处全部已受理任务设置 `reader_deleted_at`，撤销活动 token，提交后取消进程内执行。历史及章节候选的读取、耗时校验后复核均排除移除任务；相同删除可重试，旧 request_id 不恢复记录，新 request_id 的明确翻译可重新生成。Result、Adoption 和 Run 保留，只有已采用到活跃片段的旧结果仍可读取，并返回 `reader_deleted`；新采用在准备和写事务复核时拒绝已移除结果，成功请求核实先返回原收据。译文详情、任务和历史读取只取材料元数据，不加载整书编译包。
 
-前端移除命令与生成命令共用目标会话门禁：删除期间阻止新操作并消费旧自动意图，已发出且未核实的 POST 必须先核实；未发送预检通过代次失效。成功后取消在途读取、清理该目标的历史和活动观察事实，移除本章标记及入口选择；已采用快照保留移除标识。尚未提交的片段草稿遇到确切移除事实时解除译文关联并保留文字，读取失败仅提供显式解除动作；冻结的原请求继续按原 UUID 核实。
+`DELETE /api/translation-results/{result_id}` 在同一写事务只为该成功结果所属任务设置 `reader_deleted_at`，不取消其他任务；沿用上述内容保留、采用门禁与幂等规则，无新增存储字段；该单版接口保留，当前阅读器详情与列表均使用整组清除。响应携带该版任务及结果 ID、同一确切出处的剩余成功版本数量与最新剩余结果。最新结果按结果创建时间及 ID 降序选取，与本章摘要一致，不受任务受理顺序影响。
+
+前端两种移除命令与生成命令共用目标会话门禁：删除期间阻止新操作并消费旧自动意图，已发出且未核实的 POST 必须先核实；未发送预检通过代次失效。确认框冻结打开时的结果身份，重译完成不改变待删除版本。成功后取消在途读取，清理已删任务及结果的观察事实并重取该目标历史分页；单版删除保留其他版本和活动任务，更新本章摘要与详情选择，最后一版才移除标记。共享会话保留本次阅读内的已删结果 ID 与回退结果 ID，使隐藏宿主同步清理旧选择和临时译文快照；正文与版本详情仍由 Query 维护。整组清除则移除该处全部历史、标记及入口选择；已采用快照保留移除标识。尚未提交的片段草稿遇到确切移除事实时解除译文关联并保留文字，读取失败仅提供显式解除动作；冻结的原请求继续按原 UUID 核实。
 
 `SegmentCreate.translation_result_id` 可用于带精确材料出处的新建；手动片段禁止传入该字段。服务验证成功结果、可见性及确切目标，在同一事务创建 Segment、原选区出处和 `TranslationAdoption` 收据，采用快照保存实际译文和片段语境，不复制翻译历史语境。请求体及 UUID 在首次提交时冻结，重试先核实原请求。此次复用既有 ORM 和表，无新迁移。
 
@@ -521,7 +523,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 旧 adopt 服务保留兼容，产品不再提供独立采用表单。该兼容请求仍原子新建 Segment／出处或更新已有字段并保存凭据。已有片段核验确切出处、原文摘要及 expected_revision；普通 Segment 编辑只提交相对打开时快照实际改动的字段，并携带 expected_revision；服务端对任何显式版本条件执行核验，译文及语境字段始终要求版本条件。未提交字段保留服务端当前值。关联与字段更新分开表达，片段结果列表按身份去重，采用凭据保留实际提交快照；重复核实先读取成功凭据，再执行新请求的版本检查。Source／Segment 可见性仍优先，材料删除后的成功核实不恢复材料。结果详情与历史返回去重的活跃 adopted_segment_ids，整页重开可恢复确切结果的成功去向；不按同文推测关联，不覆盖当前未完成采用会话。关联不会自动改写原译文，普通字段编辑不新增完整历史表。
 
-`GET/PUT /api/settings/translation` 维护一个有独立身份及 revision 的 LLM 翻译配置；`POST/GET /api/materials/{material_id}/translations` 受理与分页读取；任务有 GET 及 stop，结果有 GET 及 adopt，Segment 有 translation-results 只读入口。`GET /api/materials/{material_id}/delete-impact` 返回未保留结果、保留结果和活动任务数量。准确请求字段由 OpenAPI 和生成客户端维护。
+`GET/PUT /api/settings/translation` 维护一个有独立身份及 revision 的 LLM 翻译配置；`POST/GET /api/materials/{material_id}/translations` 受理与分页读取；任务有 GET 及 stop，结果有 GET、DELETE 及 adopt，Segment 有 translation-results 只读入口。`GET /api/materials/{material_id}/delete-impact` 返回未保留结果、保留结果和活动任务数量。准确请求字段由 OpenAPI 和生成客户端维护。
 
 运行配置 `TranslationLimits` 集中保存目标／语境预算、时限、队列上限与无模型输出配置时的 fallback，示例见 `config/app.example.toml`。这些是待实测候选，服务端校验实际输入，不静默裁剪；输出不完整不发布成功。模型配置的明确输出上限优先。Provider／模型删除的活动翻译检查在同一短写事务中执行，历史结果不依赖接入继续存活。
 

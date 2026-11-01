@@ -118,6 +118,12 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 	const removalSuite = params.get("suite") === "translation-removal";
 	const marginSuite = params.get("suite") === "margin-record-targets";
 	const marginFixture = marginSuite ? marginRecordFixture(chapter) : null;
+	const marginAnalyses = marginFixture
+		? previewAnalyses.map((analysis) => ({
+				...analysis,
+				segment_id: marginFixture.segments[0]?.segment_id ?? "",
+			}))
+		: [];
 	const performanceSuite = inlineSuite && params.has("performance");
 	const inlineParagraphs = removalSuite
 		? [...paragraphs, paragraphs[1] ?? ""]
@@ -514,12 +520,17 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			if (item)
 				return Response.json(
 					path.endsWith("/analyses")
-						? []
+						? item.segment_id === marginFixture.segments[0]?.segment_id
+							? marginAnalyses
+							: []
 						: {
 								id: item.segment_id,
 								source_id: "source",
 								text: item.excerpt,
-								translation: `片段 ${item.segment_id} 的保存译文。`,
+								translation:
+									item.segment_id === "margin-second"
+										? ""
+										: `片段 ${item.segment_id} 的保存译文。`,
 								transcription: "",
 								context_before: "",
 								context_after: "",
@@ -553,9 +564,9 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			});
 		if (path === "/api/segments/saved/analyses")
 			return Response.json(previewAnalyses);
-		const previewAnalysis = previewAnalyses.find(
-			(item) => path === `/api/analyses/${item.id}`,
-		);
+		const previewAnalysis = (
+			marginFixture ? marginAnalyses : previewAnalyses
+		).find((item) => path === `/api/analyses/${item.id}`);
 		if (previewAnalysis) return Response.json(previewAnalysis);
 		if (path === "/api/settings/translation")
 			return Response.json({
@@ -578,7 +589,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			const omitFromRecent = !identity && hideFromRecent;
 			return Response.json({
 				results: (marginSuite
-					? results
+					? [...results, historical]
 					: inlineSuite
 						? []
 						: [
@@ -671,7 +682,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		if (preview && previewPanel === "translation-removal") {
 			const target = results[1];
 			check(target, "Removal preview requires a saved target");
-			button(`删除此处翻译：${target.text}`).click();
+			button(`清除此处全部翻译：${target.text}`).click();
 			await h.until(
 				() => !!h.container.querySelector("dialog[open]"),
 				"Removal confirmation must open for preview",
@@ -948,11 +959,13 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		check(
 			summaryButtons.every(
 				(node, index) =>
-					node.children.length === 2 &&
-					node.textContent ===
-						`${summaries[index]?.excerpt}${summaries[index]?.translation_excerpt}`,
+					node.children.length === 3 &&
+					node.children[0]?.textContent === summaries[index]?.excerpt &&
+					node.children[1]?.textContent ===
+						summaries[index]?.translation_excerpt &&
+					node.querySelector("time")?.dateTime === summaries[index]?.created_at,
 			),
-			"Translation list rows must contain only original and latest translation",
+			"Translation list rows identify the exact original, latest translation and real saved time",
 		);
 		button("学习片段").click();
 		await h.until(
@@ -1045,22 +1058,12 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				panel && open && tabs && heading,
 				"Selected segment needs its host navigation actions",
 			);
-			const openBounds = open.getBoundingClientRect();
-			const tabsBounds = tabs.getBoundingClientRect();
-			const panelBounds = panel.getBoundingClientRect();
+			const footer = panel.querySelector(".reader-study-preview-footer");
 			check(
-				!tabs.contains(open) &&
-					Math.abs(
-						(openBounds.top +
-							openBounds.bottom -
-							tabsBounds.top -
-							tabsBounds.bottom) /
-							2,
-					) <= 3 &&
-					openBounds.left >= tabsBounds.right - 1 &&
-					openBounds.right > (panelBounds.left + panelBounds.right) / 2 &&
-					!panel.querySelector(".reader-study-preview-toolbar"),
-				"Open segment must share the tabs row at the far right outside tablist without a separate toolbar",
+				footer?.contains(open) &&
+					!tabs.contains(open) &&
+					!!footer.querySelector(".reader-study-preview-metadata"),
+				"Open segment must share the footer with saved metadata, separate from expansion and type tabs",
 			);
 			check(
 				Boolean(back) === canReturn,
@@ -1090,7 +1093,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			"Chapter segment location belongs beside its original quotation",
 		);
 		if (preview && previewPanel === "segment-chapter")
-			return "chapter segment details preview: title return, tabs-row open action, complete explanation";
+			return "chapter segment details preview: title return, footer open action, complete explanation";
 		if (!preview) {
 			await locateOriginal();
 			button("本章记录").click();
@@ -1194,6 +1197,48 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => !h.container.querySelector(".reader-chapter-records"),
 			"Chapter list must close before testing contextual preview expansion",
 		);
+		// Narrow horizontal reading uses the full width, leaving no physical margin
+		// entrance. Source taps there exercise inline translation in its own suite.
+		if (innerWidth > 600 || direction === "vertical-rl") {
+			await h.until(
+				() =>
+					!!h.container.querySelector(
+						'.reader-study-margin[aria-label="打开此处翻译"]',
+					),
+				"Reader with margin space must expose a pure translation entrance",
+			);
+			const pureTranslation = [
+				...h.container.querySelectorAll<HTMLButtonElement>(
+					'.reader-study-margin[aria-label="打开此处翻译"]',
+				),
+			].sort((a, b) =>
+				direction === "vertical-rl"
+					? b.getBoundingClientRect().left - a.getBoundingClientRect().left
+					: a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+			)[0];
+			check(
+				pureTranslation,
+				"Fixture needs the first pure translation margin entrance",
+			);
+			pureTranslation.click();
+			await h.until(
+				() =>
+					h.container.querySelector(".translation-output")?.textContent ===
+					results[1]?.translation,
+				"Pure translation margin must open its exact saved result without selecting an empty segment tab",
+			);
+			check(
+				h.container.querySelector(".reader-record-title strong")
+					?.textContent === "翻译" &&
+					!h.container.querySelector(".reader-record-tabs-row"),
+				"Single-type contextual record must use its type as title and omit the entire tab row",
+			);
+			button("关闭阅读记录").click();
+			await h.until(
+				() => !h.container.querySelector(".reader-chapter-records"),
+				"Single-type record must close before opening a mixed record",
+			);
+		}
 		const overlapLeaf = doc.querySelector('[data-locator-leaf="1"]');
 		check(
 			overlapLeaf?.firstChild,
@@ -1232,7 +1277,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			"Contextual segment must omit redundant source location",
 		);
 		if (preview && previewPanel === "segment-contextual")
-			return "contextual segment preview: direct details without return action, tabs-row open action";
+			return "contextual segment preview: direct details without return action, footer open action";
 		const dragHeader = h.container.querySelector<HTMLElement>(
 			".reader-chapter-records > header",
 		);
@@ -1435,7 +1480,11 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			"Reopening the focused row must restore detail-header focus",
 		);
 		const history = [...h.container.querySelectorAll("details")].find((node) =>
-			node.querySelector("summary")?.textContent?.includes("历史翻译"),
+			node.querySelector("summary")?.textContent?.includes("历史译文"),
+		);
+		check(
+			history && !history.hidden,
+			"Fixed chapter records must expose historical translation details",
 		);
 		if (history) history.open = true;
 		await h.until(
@@ -1525,6 +1574,83 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			document.activeElement === button("翻译"),
 			"End key on the segment tab must select and focus the translation tab",
 		);
+		const detailSection = (label: string) =>
+			[
+				...h.container.querySelectorAll<HTMLDetailsElement>(
+					".translation-card.embedded details",
+				),
+			].find((node) =>
+				node.querySelector("summary")?.textContent?.includes(label),
+			);
+		const contextDetails = detailSection("语境与设置");
+		const historyDetails = detailSection("历史译文");
+		check(
+			contextDetails?.hidden && historyDetails?.hidden,
+			"Compact contextual translation must keep context and history mounted but hidden",
+		);
+		checkTranslationResultActions(h);
+		button("展开").click();
+		await h.until(
+			() => !contextDetails.hidden && !historyDetails.hidden,
+			"Expanded contextual translation must expose context and history",
+		);
+		contextDetails.open = true;
+		historyDetails.open = true;
+		const contextualEditor = contextDetails.querySelector("textarea");
+		check(
+			contextualEditor,
+			"Expanded contextual translation needs its context editor",
+		);
+		h.inputValue(contextualEditor, "展开收起后保留的语境草稿");
+		const contextualHistory = [
+			...historyDetails.querySelectorAll<HTMLButtonElement>(
+				".translation-history-item",
+			),
+		].find((node) => node.textContent?.includes(historical.translation));
+		check(
+			contextualHistory,
+			"Expanded contextual history must include the older translation",
+		);
+		contextualHistory.click();
+		await h.until(
+			() =>
+				h.container.querySelector(".translation-output")?.textContent ===
+				historical.translation,
+			"Expanded contextual history must select the exact older translation",
+		);
+		button("收起").click();
+		await h.until(
+			() => contextDetails.hidden && historyDetails.hidden,
+			"Collapsing contextual translation must hide its detail sections again",
+		);
+		check(
+			contextualEditor.isConnected &&
+				contextualEditor.value === "展开收起后保留的语境草稿" &&
+				h.container.querySelector(".translation-output")?.textContent ===
+					historical.translation,
+			"Collapsing must preserve the mounted context draft and selected historical result",
+		);
+		button("学习片段").click();
+		await h.until(
+			() => markdown()?.textContent?.includes("完整讲解终点。") === true,
+			"Mixed record must retain its selected explanation when returning from translation",
+		);
+		button("翻译").click();
+		await h.until(
+			() =>
+				h.container.querySelector(".translation-output")?.textContent ===
+				historical.translation,
+			"Mixed record must retain its selected historical translation when switching tabs",
+		);
+		button("展开").click();
+		await h.until(
+			() =>
+				!contextDetails.hidden &&
+				contextDetails.querySelector("textarea") === contextualEditor &&
+				contextualEditor.value === "展开收起后保留的语境草稿",
+			"Re-expanding must restore the same editor and its unsaved draft",
+		);
+		button("收起").click();
 		h.container.querySelector(".translation-card.embedded")?.dispatchEvent(
 			new KeyboardEvent("keydown", {
 				key: "Escape",
@@ -1903,7 +2029,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				"/segments/saved?analysis=preview-short&revision=revision-short&chat=0",
 			"Open segment must navigate with the selected explanation and exact revision",
 		);
-		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: chapter header without expand/collapse, clean record rows, minute dates, title-row list return with restored row focus, tabs-row segment action outside tablist and hidden on translation/list, exact selected analysis/revision route, measured long/short clipping, full-height reading reaches ending, return preserves segment/analysis/tab/manual position, close icon, selection→chapter record→selection shares edited context with floating host kept mounted, two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
+		return `chapter records ${direction} ${params.get("theme") ?? "light"} ${innerWidth}px${detached ? " detached completion" : ""}${evicted ? " evicted from recent" : ""}: chapter header without expand/collapse, clean record rows, minute dates, title-row list return with restored row focus, footer segment action with exact revision and hidden on translation/list, exact selected analysis/revision route, measured long/short clipping, full-height reading reaches ending, return preserves segment/analysis/tab/manual position, close icon, selection→chapter record→selection shares edited context with floating host kept mounted, two-page completeness, source order, one identity row, exact latest/history, no generation, ruby projection, single-type title without tab row, compact details hidden, expanded history/context with draft and selected result retained, shared overlap tabs, disjoint solid/dashed marks, ${detached ? "background" : "immediate"} success refreshes source marks`;
 	} finally {
 		if (!preview) dispose();
 	}

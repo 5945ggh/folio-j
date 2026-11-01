@@ -297,7 +297,7 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 				"Configuration stays collapsed initially",
 			);
 			check(
-				embedded || h.container.querySelector("h2")?.textContent === "译文",
+				embedded || h.container.querySelector("h2")?.textContent === "翻译",
 				"Floating card uses the compact title",
 			);
 			check(
@@ -411,7 +411,10 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 				output() === latest.translation,
 				"Running retranslation retains the saved output",
 			);
-			const removal = action("删除此处翻译");
+			const more = host.querySelector<HTMLDetailsElement>(".translation-more");
+			check(more, "Saved translation needs its more-actions disclosure");
+			more.open = true;
+			const removal = action("清除此处全部翻译");
 			check(
 				removal && !removal.disabled,
 				"Retained output must allow deletion while the new result loads",
@@ -423,9 +426,11 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 			);
 			const confirmation = host.querySelector("dialog[open]");
 			check(
-				confirmation?.querySelector(".translation-removal-target")
-					?.textContent === "猫だ。",
-				"Pending confirmation must identify the exact source rather than a translation version",
+				confirmation?.querySelector("blockquote.translation-removal-target")
+					?.textContent === "猫だ。" &&
+					confirmation.querySelector("h2")?.textContent ===
+						"清除此处全部翻译？",
+				"Pending confirmation must identify the exact source and the retained version selected for removal",
 			);
 			updateTask("succeeded", generated.id);
 			await h.until(
@@ -487,16 +492,18 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 			);
 			check(
 				host.querySelector("dialog[open]") === confirmation &&
-					confirmation?.querySelector(".translation-removal-target")
-						?.textContent === "猫だ。",
-				"Arriving retranslation must preserve the same source deletion confirmation",
+					confirmation?.querySelector("blockquote.translation-removal-target")
+						?.textContent === "猫だ。" &&
+					confirmation.querySelector("h2")?.textContent ===
+						"清除此处全部翻译？",
+				"Arriving retranslation must keep the open confirmation bound to the originally selected version",
 			);
 			const confirm = [
 				...(confirmation?.querySelectorAll<HTMLButtonElement>("button") ?? []),
 			].find((button) => button.textContent === "确认删除翻译");
 			check(
 				confirm && !confirm.disabled,
-				"Preserved source confirmation must still allow its deletion command",
+				"Preserved version confirmation must still allow its deletion command",
 			);
 			const cancel = confirmation?.querySelector<HTMLButtonElement>(
 				"[data-dialog-cancel]",
@@ -504,6 +511,19 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 			check(
 				cancel && !cancel.disabled,
 				"Preserved confirmation must remain cancellable",
+			);
+			const closedBeforeEscape = closed;
+			const modalEscape = new KeyboardEvent("keydown", {
+				key: "Escape",
+				bubbles: true,
+				cancelable: true,
+			});
+			cancel.dispatchEvent(modalEscape);
+			check(
+				!modalEscape.defaultPrevented &&
+					closed === closedBeforeEscape &&
+					host.querySelector("dialog[open]") === confirmation,
+				"Modal Escape must remain available to native dialog cancellation without closing its translation host",
 			);
 			cancel.click();
 			await h.until(

@@ -11,6 +11,7 @@ import {
 	getTranslationHistory,
 	getTranslationSettings,
 	removeTranslation,
+	removeTranslationResult,
 	stopTranslation,
 	type TranslationTask,
 	translationSettingsKey,
@@ -148,10 +149,17 @@ export function translationQueryAdapter(
 			// Mutations are commands; their returned server facts are written by accept().
 			return stopTranslation(taskId);
 		},
-		async remove(reference) {
+		async remove(reference, resultId) {
 			const identity = await targetIdentity(reference);
-			await cancelTranslationReads(client, reference.material_id);
-			const removed = await removeTranslation(reference.material_id, identity);
+			await cancelTranslationReads(client, reference.material_id, {
+				identity_sha256: identity,
+				result_ids: resultId ? [resultId] : [],
+				task_ids: [],
+				cancelled_task_ids: [],
+			});
+			const removed = resultId
+				? await removeTranslationResult(resultId)
+				: await removeTranslation(reference.material_id, identity);
 			await applyTranslationRemoval(client, reference.material_id, removed);
 			return removed;
 		},

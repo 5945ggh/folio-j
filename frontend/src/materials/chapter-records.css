@@ -3,7 +3,7 @@
 	z-index: 48;
 	display: flex;
 	flex-direction: column;
-	width: min(370px, calc(100vw - 24px));
+	width: min(420px, calc(100vw - 24px));
 	max-height: calc(100dvh - 160px);
 	border: 1px solid var(--reader-line);
 	border-radius: 12px;
@@ -20,6 +20,7 @@
 .reader-r1 .reader-chapter-records.expanded {
 	width: min(460px, calc(100vw - 24px));
 }
+
 .reader-chapter-records > [data-reader-card-draggable="true"] {
 	cursor: grab;
 	touch-action: none;
@@ -37,47 +38,35 @@
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	padding: 3px 12px;
+	padding: 0 18px;
 	border-bottom: 1px solid var(--reader-line);
 	flex-shrink: 0;
 }
 .reader-record-tabs {
 	display: flex;
-	gap: 4px;
+	gap: 16px;
 }
+
 .reader-record-segment-back-slot:not([hidden]) {
 	display: contents;
-}
-.reader-record-segment-open-slot {
-	margin-left: auto;
-}
-.reader-r1 .reader-study-preview-open {
-	padding: 3px 0 3px 7px;
-	border: 0;
-	border-radius: 0;
-	background: transparent;
-	color: var(--reader-muted);
-	font-size: 12px;
-	font-weight: 500;
-	line-height: 1.5;
-	white-space: nowrap;
-}
-.reader-r1 .reader-study-preview-open:hover {
-	color: var(--reader-fg);
-	text-decoration: underline;
-	text-underline-offset: 3px;
 }
 .reader-r1 .reader-record-tabs button {
 	display: inline-flex;
 	align-items: center;
-	gap: 8px;
-	padding: 3px 7px;
+	gap: 5px;
+	padding: 9px 0 8px;
 	line-height: 1.5;
 	font-size: 12px;
+	border-radius: 0;
+	border-bottom: 2px solid transparent;
+	color: var(--reader-muted);
 }
 .reader-record-tabs button[aria-selected="true"] {
-	background: var(--reader-soft);
+	background: transparent;
+	border-bottom-color: var(--reader-accent);
+	color: var(--reader-fg);
 }
+
 .reader-record-tabs span {
 	color: var(--reader-muted);
 	font-size: 11px;
@@ -118,8 +107,9 @@
 	line-height: 1;
 }
 .reader-record-translations {
-	padding: 6px 12px;
+	padding: 6px 14px 10px;
 }
+
 .reader-record-translations > p {
 	color: var(--reader-muted);
 	margin: 4px 4px 12px;
@@ -149,9 +139,13 @@
 	overflow-wrap: anywhere;
 }
 .reader-record-translation span:first-child {
-	font-size: 12px;
-	color: var(--reader-muted);
+	color: var(--reader-fg);
+	font:
+		16px / 1.8 "Yu Mincho",
+		"Hiragino Mincho ProN",
+		serif;
 }
+
 @media (max-width: 600px) {
 	.reader-r1 .reader-chapter-records {
 		width: calc(100vw - 24px);
@@ -170,4 +164,9 @@
 
 .reader-record-translation-entry > .translation-remove {
 	flex: 0 0 auto;
+}
+
+.reader-record-translation time {
+	font-size: 11px;
+	color: var(--reader-muted);
 }

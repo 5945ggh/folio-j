@@ -4,8 +4,13 @@ import { requireData } from "../content";
 export type TranslationResult =
 	components["schemas"]["TranslationResultResponse"];
 export type TranslationTask = components["schemas"]["TranslationTaskResponse"];
-export type TranslationRemoval =
+export type TranslationTargetRemoval =
 	components["schemas"]["TranslationRemovalResponse"];
+export type TranslationResultRemoval =
+	components["schemas"]["TranslationResultRemovalResponse"];
+export type TranslationRemoval =
+	| TranslationTargetRemoval
+	| TranslationResultRemoval;
 export type TranslationSettings =
 	components["schemas"]["TranslationSettingsResponse"];
 export type TranslationSettingsInput =
@@ -84,6 +89,13 @@ export async function removeTranslation(materialId: string, identity: string) {
 				path: { material_id: materialId, identity_sha256: identity },
 			},
 		},
+	);
+	return requireData(data, error, response.status);
+}
+export async function removeTranslationResult(id: string) {
+	const { data, error, response } = await api.DELETE(
+		"/api/translation-results/{result_id}",
+		{ params: { path: { result_id: id } } },
 	);
 	return requireData(data, error, response.status);
 }

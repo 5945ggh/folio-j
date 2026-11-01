@@ -526,6 +526,7 @@ function Reader({
 		presented,
 		ui,
 		translationTarget,
+		translationOpen,
 		studyActive: translationOpen || studyTarget !== null,
 	});
 	latest.current = {
@@ -540,6 +541,7 @@ function Reader({
 		presented,
 		ui,
 		translationTarget,
+		translationOpen,
 		studyActive: translationOpen || studyTarget !== null,
 	};
 	const dismissReadingBackground = useCallback(
@@ -560,6 +562,12 @@ function Reader({
 	}, []);
 	const selectPanel = useCallback(
 		(next: ReaderPanelKind, toggle = false) => {
+			if (
+				latest.current.translationOpen &&
+				latest.current.panels.right === "study" &&
+				(next === "settings" || next === "gallery" || next === "info")
+			)
+				setTranslationOpen(false);
 			if (next === "settings" || next === "gallery") {
 				dictionary.current?.dismissMenu();
 				setRightToolInFront(true);
@@ -579,6 +587,12 @@ function Reader({
 	);
 	const closePanel = useCallback(
 		(side?: ReaderPanelSide, invalidate = true) => {
+			if (
+				(!side || side === "right") &&
+				latest.current.panels.right === "study" &&
+				latest.current.translationOpen
+			)
+				setTranslationOpen(false);
 			records.panelClosed(side);
 			jumpReading.current.pause();
 			if (invalidate) invalidateNavigation();
@@ -687,6 +701,15 @@ function Reader({
 					return true;
 				}
 				if (dictionary.current?.back() || records.escape()) return true;
+				if (
+					latest.current.translationOpen &&
+					(latest.current.panels.right !== "study" ||
+						latest.current.panels.activeSide !== "left")
+				) {
+					setTranslationOpen(false);
+					if (latest.current.panels.right === "study") closePanel("right");
+					return true;
+				}
 				if (latest.current.panels.activeSide) {
 					closePanel(latest.current.panels.activeSide);
 					return true;
@@ -855,6 +878,10 @@ function Reader({
 	const forgetTranslation = useCallback<TranslationRemoved>(
 		(removed, reference) => {
 			selectedTranslations.current.forget(removed.identity_sha256);
+			if ("remaining_result" in removed && removed.remaining_result) {
+				selectedTranslations.current.remember(removed.remaining_result);
+				return;
+			}
 			records.translationRemoved(removed.identity_sha256);
 			if (
 				latest.current.translationTarget &&
@@ -863,6 +890,11 @@ function Reader({
 			) {
 				setTranslationOpen(false);
 				setTranslationTarget(null);
+				setPanels((current) =>
+					current.right === "study"
+						? closeReaderPanel(current, "right")
+						: current,
+				);
 			}
 		},
 		[records],
@@ -1851,6 +1883,7 @@ function Reader({
 				{
 					"--reader-width": `${bookUi.width}px`,
 					"--reader-toolbar-opacity": `${ui.toolbarOpacity}%`,
+					"--reader-popover-opacity": `${ui.dictionaryOpacity ?? DEFAULT_DICTIONARY_OPACITY}%`,
 					"--reader-motion-duration": `${READER_EXIT_MS}ms`,
 				} as CSSProperties
 			}
@@ -2306,14 +2339,44 @@ function Reader({
 			/>
 			<SpeechPlaybackBar />
 			{translationTarget && (
-				<div hidden={!translationOpen}>
+				<div
+					hidden={
+						!translationOpen ||
+						(panels.right === "study" &&
+							compactPanels &&
+							panels.activeSide !== "right")
+					}
+				>
 					<TranslationPanel
 						key={translationTargetKey(translationTarget.reference)}
 						materialId={book.id}
 						onResultSelected={rememberTranslation}
 						onRemoved={forgetTranslation}
 						translationSessions={translationSessions}
-						visible={active && translationOpen}
+						visible={
+							active &&
+							translationOpen &&
+							!(
+								panels.right === "study" &&
+								compactPanels &&
+								panels.activeSide !== "right"
+							)
+						}
+						expanded={panels.right === "study"}
+						onExpand={() => {
+							jumpReading.current.pause();
+							invalidateNavigation();
+							navigation.current.dismissError();
+							setPanels((current) => selectReaderPanel(current, "study"));
+							controller.current?.show();
+						}}
+						onCollapse={() =>
+							setPanels((current) =>
+								current.right === "study"
+									? closeReaderPanel(current, "right")
+									: current,
+							)
+						}
 						anchor={translationAnchor}
 						direction={settings.writing_mode}
 						sourceId={book.source_id}
@@ -2322,6 +2385,11 @@ function Reader({
 						onOpenSegment={openStudySegment}
 						onClose={() => {
 							setTranslationOpen(false);
+							setPanels((current) =>
+								current.right === "study"
+									? closeReaderPanel(current, "right")
+									: current,
+							);
 							requestAnimationFrame(() =>
 								container.current?.focus({ preventScroll: true }),
 							);
@@ -2426,10 +2494,10 @@ function Reader({
 								.forTarget(book.source_id, target)
 								.open({ kind: "selection", newSelection: true });
 							setTranslationAnchor(selection.anchor);
-							setTranslationOpen(true);
 							records.clearToolbar();
 							closeMarkHit();
 							closePanel();
+							setTranslationOpen(true);
 							setSelectionError(null);
 							controller.current?.show();
 						} catch (failure) {

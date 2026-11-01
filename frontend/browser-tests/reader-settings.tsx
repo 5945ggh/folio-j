@@ -457,11 +457,11 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		])
 			await expand(label);
 		check(
-			panel.querySelectorAll('input[type="range"]').length === 4 &&
+			panel.querySelectorAll('input[type="range"]').length === 5 &&
 				panel.querySelectorAll('input[type="number"]').length === 4 &&
 				panel.querySelectorAll('input[type="checkbox"]').length === 3 &&
 				panel.querySelectorAll(".reader-options").length === 5,
-			"16 panel values must retain one editing entry: 4 sliders, 4 budgets, 3 toggles and 5 option groups",
+			"17 panel values must retain one editing entry: 5 sliders, 4 budgets, 3 toggles and 5 option groups",
 		);
 		for (const label of ["展示阅读记录下划线", "展示阅读记录页边入口"]) {
 			const control = find<HTMLInputElement>(
@@ -513,6 +513,29 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 				left: viewport().scrollLeft,
 			});
 		const beforeOpacity = geometry();
+		const popoverOpacity = find<HTMLInputElement>(
+			'input[aria-label="浮窗背景不透明度"]',
+		);
+		check(
+			popoverOpacity.value === "72" &&
+				popoverOpacity.min === "20" &&
+				popoverOpacity.max === "100",
+			"Shared popover opacity must default to 72% with a 20–100% range",
+		);
+		h.inputValue(popoverOpacity, "35");
+		await h.until(
+			() =>
+				JSON.parse(localStorage.getItem(uiKey) ?? "{}").dictionaryOpacity ===
+					35 &&
+				getComputedStyle(find<HTMLElement>("main.reader-r1"))
+					.getPropertyValue("--reader-popover-opacity")
+					.trim() === "35%",
+			"Shared popover opacity must apply immediately through the saved dictionary preference",
+		);
+		check(
+			opacity.value === "55" && geometry() === beforeOpacity,
+			"Popover opacity must preserve toolbar opacity and reading geometry",
+		);
 		const canvas = document.createElement("canvas").getContext("2d");
 		check(canvas, "Toolbar alpha check requires a canvas color parser");
 		for (const value of [0, 50, 100, 55]) {
@@ -606,7 +629,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		await h.until(
 			() =>
 				find<HTMLInputElement>('input[aria-label="工具栏背景不透明度"]')
-					.value === "80",
+					.value === "80" && popoverOpacity.value === "72",
 			"Interface reset must restore defaults",
 		);
 		check(
@@ -1017,7 +1040,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			() => route === "/settings/appearance",
 			"Retired Reader draft must not block unrelated settings",
 		);
-		return `reader settings: ${innerWidth}px/${vertical ? "vertical" : "horizontal"}/${dark ? "dark" : "light"}; real ReaderSessionHost + DataRouter; 16 panel controls and toolbar focus, collapsed focus, isolated resets/source position; panel/tool/chapter/scroll draft retention; PUSH/POP/Segment/book guard, continue/discard/save, failure/conflict, pending exactly-once; ${requests.length} mocked requests`;
+		return `reader settings: ${innerWidth}px/${vertical ? "vertical" : "horizontal"}/${dark ? "dark" : "light"}; real ReaderSessionHost + DataRouter; 17 panel controls and toolbar focus, shared popover opacity, collapsed focus, isolated resets/source position; panel/tool/chapter/scroll draft retention; PUSH/POP/Segment/book guard, continue/discard/save, failure/conflict, pending exactly-once; ${requests.length} mocked requests`;
 	} finally {
 		if (!preview) dispose();
 	}

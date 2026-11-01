@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import type { MaterialProvenance } from "../materials/study-api";
 import { ConfirmDialog, InlineError } from "../Shared";
-import type { TranslationRemoval as Removal } from "./api";
+import type { TranslationRemoval as Removal, TranslationResult } from "./api";
 import type { TranslationSession } from "./session";
 import { useTranslationSession } from "./session-react";
 import { targetText } from "./state";
@@ -15,21 +15,31 @@ export type TranslationRemoved = (
 /** Keep confirmation state at the host when the action moves between loading and result views. */
 export function useTranslationRemoval({
 	session,
+	result,
 	onRemoved,
-	label = "删除此处翻译",
+	restoreFocusId,
+	onOpenConfirmation,
+	withLabel = false,
+	label = result ? "删除这版译文" : "清除此处全部翻译",
 }: {
 	session: TranslationSession;
+	result?: TranslationResult;
 	onRemoved?: TranslationRemoved;
+	restoreFocusId?: string;
+	onOpenConfirmation?: () => void;
+	withLabel?: boolean;
 	label?: string;
 }) {
-	const [open, setOpen] = useState(false);
+	const [confirmation, setConfirmation] = useState<{
+		result?: TranslationResult;
+	} | null>(null);
 	const id = useId();
 	const triggerId = `${id}-trigger`;
 	const state = useTranslationSession(session);
 	const removal = useMutation({
-		mutationFn: () => session.remove(),
+		mutationFn: (resultId: string | undefined) => session.remove(resultId),
 		onSuccess: (removed) => {
-			setOpen(false);
+			setConfirmation(null);
 			onRemoved?.(removed, session.reference);
 		},
 	});
@@ -40,13 +50,18 @@ export function useTranslationRemoval({
 		<button
 			id={triggerId}
 			type="button"
-			className="translation-icon-button translation-remove"
+			className={
+				withLabel
+					? "translation-menu-item translation-remove"
+					: "translation-icon-button translation-remove"
+			}
 			aria-label={label}
-			title={unresolved ? "请先核实原提交，再删除此处翻译" : label}
+			title={unresolved ? "请先核实原提交，再删除翻译" : label}
 			disabled={pending || unresolved}
 			onClick={() => {
 				removal.reset();
-				setOpen(true);
+				setConfirmation({ result });
+				onOpenConfirmation?.();
 			}}
 		>
 			<svg
@@ -62,22 +77,32 @@ export function useTranslationRemoval({
 			>
 				<path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7" />
 			</svg>
+			{withLabel && <span>{label}</span>}
 		</button>
 	);
-	const dialog = open && (
+	const dialog = confirmation && (
 		<ConfirmDialog
 			titleId={id}
-			restoreFocusId={triggerId}
+			restoreFocusId={restoreFocusId ?? triggerId}
 			onClose={() => {
-				if (!pending) setOpen(false);
+				if (!pending) setConfirmation(null);
 			}}
 		>
-			<h2 id={id}>删除此处翻译？</h2>
+			<h2 id={id}>
+				{confirmation.result ? "删除这版译文？" : "清除此处全部翻译？"}
+			</h2>
 			<blockquote className="translation-removal-target" lang="ja">
 				{targetText(session.reference)}
 			</blockquote>
+			{confirmation.result && (
+				<p className="translation-removal-target">
+					{confirmation.result.translation}
+				</p>
+			)}
 			<p>
-				将删除此处全部阅读译文历史和正文翻译划线，并停止进行中的重译。
+				{confirmation.result
+					? "将仅删除这版阅读译文，保留其他版本和进行中的重译；没有剩余版本时移除翻译划线。"
+					: "将清除此处全部阅读译文历史和正文翻译划线，并停止进行中的重译。"}
 				已另存的学习片段及关联译文快照保留。
 			</p>
 			<InlineError error={removal.error} />
@@ -86,7 +111,7 @@ export function useTranslationRemoval({
 					type="button"
 					data-dialog-cancel
 					disabled={pending}
-					onClick={() => setOpen(false)}
+					onClick={() => setConfirmation(null)}
 				>
 					取消
 				</button>
@@ -94,7 +119,7 @@ export function useTranslationRemoval({
 					type="button"
 					className="danger"
 					disabled={pending}
-					onClick={() => removal.mutate()}
+					onClick={() => removal.mutate(confirmation.result?.id)}
 				>
 					{pending ? "正在删除…" : "确认删除翻译"}
 				</button>
@@ -104,7 +129,7 @@ export function useTranslationRemoval({
 	return { action, dialog };
 }
 
-/** The same target command is available in the card and the chapter list. */
+/** Chapter-list action for clearing every reading translation at one exact target. */
 export function TranslationRemoval(props: {
 	session: TranslationSession;
 	onRemoved?: TranslationRemoved;

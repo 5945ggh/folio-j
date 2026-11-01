@@ -5,7 +5,6 @@ import type {
 	TranslationResult,
 	TranslationTask,
 } from "./api.ts";
-import type { TranslationHistory } from "./session.ts";
 
 type CachedQuery = {
 	queryKey: readonly unknown[];
@@ -33,7 +32,41 @@ function belongsToMaterial(query: CachedQuery, materialId: string): boolean {
 	);
 }
 
-/** A removed target must not be republished by a read already in flight. */
+function affectedHistory(
+	query: CachedQuery,
+	materialId: string,
+	removed: TranslationRemoval,
+): boolean {
+	const [kind, id, identity] = query.queryKey;
+	return (
+		kind === "translations" &&
+		id === materialId &&
+		(identity === undefined || identity === removed.identity_sha256)
+	);
+}
+
+function affectedRead(
+	query: CachedQuery,
+	materialId: string,
+	removed: TranslationRemoval,
+): boolean {
+	const [kind, id] = query.queryKey;
+	return (
+		affectedHistory(query, materialId, removed) ||
+		((kind === "material-translation-activity" ||
+			kind === "material-chapter-translations") &&
+			id === materialId) ||
+		(kind === "translation-result" &&
+			(removed.result_ids.includes(String(id)) ||
+				("remaining_result" in removed &&
+					removed.remaining_result?.id === id))) ||
+		(kind === "translation-task" && removed.task_ids.includes(String(id))) ||
+		// A pending Segment list may not yet reveal the affected result IDs.
+		kind === "segment-translations"
+	);
+}
+
+/** A removed result must not be republished by a read already in flight. */
 export async function cancelTranslationReads(
 	client: QueryClient,
 	materialId: string,
@@ -41,11 +74,9 @@ export async function cancelTranslationReads(
 ): Promise<void> {
 	await client.cancelQueries({
 		predicate: (query) =>
-			belongsToMaterial(query, materialId) ||
-			(query.queryKey[0] === "translation-result" &&
-				removed?.result_ids.includes(String(query.queryKey[1])) === true) ||
-			(query.queryKey[0] === "translation-task" &&
-				removed?.task_ids.includes(String(query.queryKey[1])) === true),
+			removed
+				? affectedRead(query, materialId, removed)
+				: belongsToMaterial(query, materialId),
 	});
 }
 
@@ -58,15 +89,8 @@ export async function applyTranslationRemoval(
 	await cancelTranslationReads(client, materialId, removed);
 	const taskIds = new Set(removed.task_ids);
 	const resultIds = new Set(removed.result_ids);
-	client.setQueriesData<TranslationHistory>(
-		{ queryKey: ["translations", materialId] },
-		(history) =>
-			history && {
-				...history,
-				tasks: history.tasks.filter((task) => !taskIds.has(task.id)),
-				results: history.results.filter((result) => !resultIds.has(result.id)),
-			},
-	);
+	const remaining =
+		"remaining_result" in removed ? removed.remaining_result : null;
 	client.setQueryData<Activity>(
 		["material-translation-activity", materialId],
 		(activity) =>
@@ -82,9 +106,22 @@ export async function applyTranslationRemoval(
 				...data,
 				pages: data.pages.map((page) => ({
 					...page,
-					items: page.items.filter(
-						(item) => item.identity_sha256 !== removed.identity_sha256,
-					),
+					items: page.items.flatMap((item) => {
+						if (item.identity_sha256 !== removed.identity_sha256) return [item];
+						if (!remaining || !("remaining_result_count" in removed)) return [];
+						return [
+							{
+								...item,
+								result_id: remaining.id,
+								translation_excerpt: [...remaining.translation]
+									.slice(0, 160)
+									.join(""),
+								result_count: removed.remaining_result_count,
+								target_language: remaining.target_language,
+								created_at: remaining.created_at,
+							},
+						];
+					}),
 				})),
 			},
 	);
@@ -93,6 +130,8 @@ export async function applyTranslationRemoval(
 			["translation-result", id],
 			(result) => result && { ...result, reader_deleted: true },
 		);
+	if (remaining)
+		client.setQueryData(["translation-result", remaining.id], remaining);
 	for (const id of taskIds)
 		client.removeQueries({ queryKey: ["translation-task", id], exact: true });
 	client.setQueriesData<TranslationResult[]>(
@@ -102,8 +141,14 @@ export async function applyTranslationRemoval(
 				resultIds.has(result.id) ? { ...result, reader_deleted: true } : result,
 			),
 	);
-	void client.invalidateQueries({
-		predicate: (query) => belongsToMaterial(query, materialId),
+	// Deletion shifts every offset. Clearing all affected pages also prevents a
+	// filtered, incomplete head page from masquerading as complete empty history.
+	void client.resetQueries({
+		predicate: (query) => affectedHistory(query, materialId, removed),
 	});
-	void client.invalidateQueries({ queryKey: ["segment-translations"] });
+	void client.invalidateQueries({
+		predicate: (query) =>
+			query.queryKey[0] !== "translations" &&
+			affectedRead(query, materialId, removed),
+	});
 }

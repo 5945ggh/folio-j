@@ -84,22 +84,46 @@ export async function translationDragRegression(
 		".translation-content > details",
 	);
 	check(config, "Translation configuration fold exists");
+	check(
+		config.hidden,
+		"Compact translation hides configuration until expanded",
+	);
+	const expand = [...card.querySelectorAll<HTMLButtonElement>("button")].find(
+		(node) => node.textContent === "展开",
+	);
+	check(
+		expand,
+		"Compact translation has an independent reading expansion action",
+	);
+	expand.click();
+	await h.until(
+		() =>
+			card.classList.contains("expanded") &&
+			!config.hidden &&
+			header.dataset.readerCardDraggable === "false",
+		"Expanded translation exposes configuration in a non-draggable reading sidebar",
+	);
 	config.querySelector("summary")?.click();
+	check(
+		config.open && card.getBoundingClientRect().bottom <= innerHeight - 76 + 1,
+		"Expanded configuration remains inside the reading sidebar above controls",
+	);
+	const collapse = [...card.querySelectorAll<HTMLButtonElement>("button")].find(
+		(node) => node.textContent === "收起",
+	);
+	check(collapse, "Expanded translation can return to its compact position");
+	collapse.click();
 	await h.until(() => {
-		const resized = card.getBoundingClientRect();
+		const after = card.getBoundingClientRect();
 		return (
-			resized.height > beforeResize.height + 10 &&
-			resized.bottom <= innerHeight - 76 + 1
+			!card.classList.contains("expanded") &&
+			config.hidden &&
+			(innerWidth <= 600 ||
+				(Math.abs(after.left - beforeResize.left) < 1 &&
+					Math.abs(after.top - beforeResize.top) < 1))
 		);
-	}, "Expanding configuration should resize card within reader controls");
-	check(
-		Math.abs(card.getBoundingClientRect().left - beforeResize.left) < 1,
-		"Content resize must retain horizontal manual position",
-	);
-	check(
-		card.getBoundingClientRect().bottom <= innerHeight - 76 + 1,
-		"Resized translation must remain above reader controls",
-	);
+	}, "Collapsing preserves the manual translation position and hides secondary details");
+
 	const output = card.querySelector(".translation-output");
 	check(output, "Translation output exists");
 	const range = document.createRange();
