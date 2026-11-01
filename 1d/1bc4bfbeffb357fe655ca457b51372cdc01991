@@ -1,0 +1,40 @@
+frontend/browser-tests/translation.tsx
+  s_c88be66de67c07::t_8276cec02d7309 716-723,725
+  s_c88be66de67c07::t_581d40a2f21629 712-715
+  s_c88be66de67c07::t_80cd6473db41f6 1155
+  s_c88be66de67c07::t_6887e9eb22ffbd 332
+frontend/src/catalog/book-deletion.ts
+  s_c88be66de67c07::t_80cd6473db41f6 31
+frontend/src/materials/reader-resource-cache.ts
+  s_c88be66de67c07::t_6887e9eb22ffbd 152
+frontend/src/materials/reader-resource-cache.test.ts
+  s_c88be66de67c07::t_80cd6473db41f6 85
+frontend/src/catalog/book-deletion.test.ts
+  s_c88be66de67c07::t_80cd6473db41f6 59
+  s_c88be66de67c07::t_6887e9eb22ffbd 77
+docs/ARCHITECTURE.md
+  s_c88be66de67c07::t_eb45f56b3335c3 540
+  s_c88be66de67c07::t_6887e9eb22ffbd 528
+frontend/src/translation/TranslationPanel.tsx
+  s_c88be66de67c07::t_80cd6473db41f6 37
+frontend/src/catalog/import-state.ts
+  s_c88be66de67c07::t_80cd6473db41f6 68-70
+frontend/src/translation/SavedTranslationDestinations.tsx
+  s_c88be66de67c07::t_6887e9eb22ffbd 1-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1d1bc4bfbeffb357fe655ca457b51372cdc01991",
+  "prompts": {},
+  "sessions": {
+    "s_c88be66de67c07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196b8-e5df-71d3-afe2-48ebdfe2d545",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
