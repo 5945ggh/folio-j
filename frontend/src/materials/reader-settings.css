@@ -35,7 +35,26 @@
 	line-height: 1.4;
 	white-space: nowrap;
 }
+.reader-settings .reader-settings-scope[data-tooltip] {
+	position: static;
+	cursor: help;
+}
+.reader-settings .reader-settings-scope[data-tooltip]::after {
+	top: calc(100% + 6px);
+	bottom: auto;
+	left: 0;
+	z-index: 2;
+	width: max-content;
+	max-width: min(280px, 100%);
+	box-sizing: border-box;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	text-align: left;
+	transform: none;
+	transition: none;
+}
 .reader-settings-field-label {
+	position: relative;
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
@@ -139,6 +158,7 @@
 	padding-top: 4px;
 }
 .reader-settings-heading {
+	position: relative;
 	display: flex;
 	align-items: center;
 	gap: 8px;

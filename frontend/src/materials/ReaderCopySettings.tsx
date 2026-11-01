@@ -146,9 +146,9 @@ export function ReaderCopySettings({
 						</span>
 						<span
 							className="reader-settings-scope"
-							title="保存后用于所有书籍；连接同一资料库的浏览器共用这份设置。"
+							data-tooltip="保存后用于资料库中的所有书籍；连接同一资料库的浏览器共用。"
 						>
-							所有书籍
+							所有书籍 · 资料库
 						</span>
 					</span>
 					<span className="reader-settings-summary">

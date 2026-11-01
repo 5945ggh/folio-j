@@ -187,9 +187,9 @@ export function ReaderSettings({
 						<h3 id="reader-typography-title">排版</h3>
 						<span
 							className="reader-settings-scope"
-							title="字号、行距和文字方向仅对这本书生效，随阅读位置保存。"
+							data-tooltip="字号、行距和文字方向随本书阅读位置保存到资料库；连接同一资料库的浏览器共用。"
 						>
-							这本书
+							本书 · 资料库
 						</span>
 						<ReaderSettingsReset
 							label="排版"
@@ -257,9 +257,9 @@ export function ReaderSettings({
 								字体
 								<span
 									className="reader-settings-scope"
-									title="字体仅对这本书的当前版本生效，保存在当前浏览器中。"
+									data-tooltip="字体仅对本书当前版本生效，保存在此浏览器中。"
 								>
-									仅此浏览器
+									此浏览器
 								</span>
 							</span>
 							<fieldset className="reader-options" aria-label="字体">
@@ -280,9 +280,9 @@ export function ReaderSettings({
 								正文宽度
 								<span
 									className="reader-settings-scope"
-									title="正文宽度仅对这本书的当前版本生效，保存在当前浏览器中。"
+									data-tooltip="正文宽度仅对本书当前版本生效，保存在此浏览器中。"
 								>
-									仅此浏览器
+									此浏览器
 								</span>
 							</span>
 							<output>
@@ -316,9 +316,9 @@ export function ReaderSettings({
 						<h3 id="reader-ruby-title">注音</h3>
 						<span
 							className="reader-settings-scope"
-							title="仅对这本书的当前版本生效，保存在当前浏览器中。"
+							data-tooltip="注音显示与范围仅对本书当前版本生效，保存在此浏览器中。"
 						>
-							这本书 · 此浏览器
+							本书 · 此浏览器
 						</span>
 						<ReaderSettingsReset
 							label="注音"
@@ -377,7 +377,7 @@ export function ReaderSettings({
 						<h3 id="reader-interface-title">阅读界面</h3>
 						<span
 							className="reader-settings-scope"
-							title="对当前浏览器中的所有书籍生效，不影响其他浏览器。"
+							data-tooltip="对所有书籍生效，保存在此浏览器中；其他浏览器需另行设置。"
 						>
 							所有书籍 · 此浏览器
 						</span>
