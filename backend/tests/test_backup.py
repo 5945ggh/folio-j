@@ -42,22 +42,21 @@ def backup_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Cli:
     guard.mkdir()
     marker = tmp_path / "network-attempt"
     (guard / "sitecustomize.py").write_text(
-        "import socket\n"
         "from pathlib import Path\n"
-        "def deny(*args, **kwargs):\n"
-        f"    Path({str(marker)!r}).write_text('forbidden')\n"
-        "    raise RuntimeError('Network access is forbidden in backup tests')\n"
-        "socket.socket.connect = deny\n"
-        "socket.socket.connect_ex = deny\n"
-        "socket.create_connection = deny\n"
-        "socket.getaddrinfo = deny\n"
+        "from support_network import install_network_guard\n"
+        "def record_network_attempt():\n"
+        f"    Path({str(marker)!r}).write_text('forbidden', encoding='utf-8')\n"
+        "install_network_guard(on_denied=record_network_attempt)\n"
         "import os\n"
         "if installation := os.environ.get('FOLIO_TEST_INSTALLATION'):\n"
         "    import app.config\n"
         "    app.config.REPO_ROOT = Path(installation)\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("PYTHONPATH", os.pathsep.join((str(guard), str(ROOT / "backend/src"))))
+    monkeypatch.setenv(
+        "PYTHONPATH",
+        os.pathsep.join((str(guard), str(ROOT / "backend/src"), str(ROOT / "backend/tests"))),
+    )
 
     def run(*arguments: str | Path) -> subprocess.CompletedProcess[str]:
         result = subprocess.run(
