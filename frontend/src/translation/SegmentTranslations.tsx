@@ -3,29 +3,29 @@ import { InlineError } from "../Shared";
 import { getSegmentTranslations } from "./api";
 import "./translation.css";
 
-export function SegmentTranslations({
-	segmentId,
+export function SegmentCurrentTranslation({
 	translation,
 }: {
-	segmentId: string;
 	translation: string;
 }) {
+	if (!translation.trim()) return null;
+	return (
+		<section className="segment-translation-area" aria-label="当前译文">
+			<h3>当前译文</h3>
+			<p className="segment-current-translation">{translation}</p>
+		</section>
+	);
+}
+
+export function SegmentTranslations({ segmentId }: { segmentId: string }) {
 	const results = useQuery({
 		queryKey: ["segment-translations", segmentId],
 		queryFn: () => getSegmentTranslations(segmentId),
 		retry: false,
 	});
-	const hasCurrent = !!translation.trim();
-	if (!hasCurrent && results.isSuccess && results.data.length === 0)
-		return null;
+	if (results.isSuccess && results.data.length === 0) return null;
 	return (
-		<section className="segment-translation-area" aria-label="译文与翻译记录">
-			{hasCurrent && (
-				<>
-					<h3>当前译文</h3>
-					<p className="segment-current-translation">{translation}</p>
-				</>
-			)}
+		<section className="segment-translation-area" aria-label="关联翻译记录">
 			<InlineError error={results.error} />
 			{results.isPending && <p role="status">正在读取翻译记录…</p>}
 			{results.isError && (

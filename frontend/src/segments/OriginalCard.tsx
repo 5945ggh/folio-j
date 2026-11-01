@@ -4,7 +4,10 @@ import type { Segment } from "../content";
 import { SegmentMaterialOrigin } from "../materials/SegmentMaterialOrigin";
 import { ConfirmDialog, dateLabel } from "../Shared";
 import { SpeechControls } from "../speech";
-import { SegmentTranslations } from "../translation/SegmentTranslations";
+import {
+	SegmentCurrentTranslation,
+	SegmentTranslations,
+} from "../translation/SegmentTranslations";
 import { SegmentShare, type ShareSourceQuery } from "./SegmentShare";
 import "./material-fields.css";
 import "./original-card.css";
@@ -85,10 +88,7 @@ export function OriginalCard({
 						</section>
 					)}
 				</div>
-				<SegmentTranslations
-					segmentId={segment.id}
-					translation={segment.translation}
-				/>
+				<SegmentCurrentTranslation translation={segment.translation} />
 				<div className="segment-original-actions">
 					<button
 						id="segment-original-trigger"
@@ -155,6 +155,7 @@ export function OriginalCard({
 									<Field label="听写" value={segment.transcription} lang="ja" />
 								</section>
 							)}
+							<SegmentTranslations segmentId={segment.id} />
 							{(segment.material_provenance ||
 								segment.source_ref.trim() ||
 								segment.note.trim()) && (

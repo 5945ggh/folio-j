@@ -542,14 +542,9 @@ async function segmentContentAggregation(
 			</div>,
 		);
 		try {
-			await until(
-				() => translationReads > 0,
-				`${scenario.name}: card must read associated translations`,
-			);
-			await until(
-				() =>
-					!container.querySelector(".segment-translation-area [role='status']"),
-				`${scenario.name}: translation read must settle`,
+			check(
+				translationReads === 0,
+				`${scenario.name}: main card must not request associated translations`,
 			);
 			if (preview) return;
 			const card = container.querySelector<HTMLElement>(
@@ -622,56 +617,15 @@ async function segmentContentAggregation(
 					"Current translation must stay plain text",
 				);
 			}
-			let records = card.querySelector<HTMLDetailsElement>(
-				".segment-translations",
-			);
-			if (failReads) {
-				check(
-					Boolean(translation) === Boolean(scenario.translation.trim()),
-					"History read failure must preserve the current translation state",
-				);
-				const retry = [...card.querySelectorAll("button")].find(
-					(node) => node.textContent?.trim() === "重试读取",
-				);
-				check(retry, "History read failure must offer retry");
-				if (records) records.open = true;
-				failReads = false;
-				retry.click();
-				await until(
-					() =>
-						translationReads === 2 &&
-						card.textContent?.includes(history.scheme_name) === true,
-					"History read retry must recover associated results",
-				);
-				records = card.querySelector<HTMLDetailsElement>(
-					".segment-translations",
-				);
-			}
 			check(
-				Boolean(records) === scenario.records,
-				`${scenario.name}: associated history visibility must match saved records`,
+				!card.querySelector(".segment-translations"),
+				"Main card must not display associated translation records",
 			);
-			if (!scenario.translation.trim() && !scenario.records)
+			if (!scenario.translation.trim())
 				check(
 					!card.querySelector(".segment-translation-area"),
-					"Both empty current/history values must hide the entire translation area",
+					"Empty current translation must not leave a blank area in the card",
 				);
-			if (records) {
-				records.open = true;
-				const item = records.querySelector<HTMLDetailsElement>("details");
-				check(item, "Associated historical result must remain expandable");
-				item.open = true;
-				check(
-					item.textContent?.includes(history.translation),
-					"Opening history lost saved translation",
-				);
-				check(
-					!item.querySelector("button") &&
-						(translation?.querySelector("p") ?? translation)?.textContent ===
-							(scenario.translation.trim() ? scenario.translation : undefined),
-					"Reading historical result must preserve the current manual translation",
-				);
-			}
 			const speak = card.querySelector<HTMLButtonElement>(
 				".device-speech-icon[aria-label='朗读原文']",
 			);
@@ -704,6 +658,57 @@ async function segmentContentAggregation(
 				".segment-material-body",
 			);
 			check(body, "Complete materials body must exist");
+			await until(
+				() =>
+					translationReads > 0 &&
+					!body.querySelector(".segment-translation-area [role='status']"),
+				`${scenario.name}: complete materials must read associated translations on demand`,
+			);
+			let records = body.querySelector<HTMLDetailsElement>(
+				".segment-translations",
+			);
+			if (failReads) {
+				check(
+					Boolean(translation) === Boolean(scenario.translation.trim()),
+					"History read failure must preserve the current translation state",
+				);
+				const retry = [...body.querySelectorAll("button")].find(
+					(node) => node.textContent?.trim() === "重试读取",
+				);
+				check(retry, "History read failure must offer retry");
+				if (records) records.open = true;
+				failReads = false;
+				retry.click();
+				await until(
+					() =>
+						translationReads === 2 &&
+						body.textContent?.includes(history.scheme_name) === true,
+					"History read retry must recover associated results",
+				);
+				records = body.querySelector<HTMLDetailsElement>(
+					".segment-translations",
+				);
+			}
+			check(
+				Boolean(records) === scenario.records,
+				`${scenario.name}: associated history visibility must match saved records`,
+			);
+			if (records) {
+				records.open = true;
+				const item = records.querySelector<HTMLDetailsElement>("details");
+				check(item, "Associated historical result must remain expandable");
+				item.open = true;
+				check(
+					item.textContent?.includes(history.translation),
+					"Opening history lost saved translation",
+				);
+				check(
+					!item.querySelector("button") &&
+						(translation?.querySelector("p") ?? translation)?.textContent ===
+							(scenario.translation.trim() ? scenario.translation : undefined),
+					"Reading historical result must preserve the current manual translation",
+				);
+			}
 			check(
 				body?.textContent?.includes(segment.text) &&
 					body.textContent.includes(segment.note),

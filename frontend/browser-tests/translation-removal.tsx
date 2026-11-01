@@ -487,11 +487,14 @@ export async function translationRemoval(
 		"Saved Analysis remains available in study preview",
 	);
 	reader.releaseReader();
-	const { SegmentTranslations } = await import(
+	const { SegmentCurrentTranslation, SegmentTranslations } = await import(
 		"../src/translation/SegmentTranslations"
 	);
 	const disposeSegment = await h.mount(
-		<SegmentTranslations segmentId="saved" translation="保存的片段译文。" />,
+		<>
+			<SegmentCurrentTranslation translation="保存的片段译文。" />
+			<SegmentTranslations segmentId="saved" />
+		</>,
 	);
 	try {
 		await h.until(
