@@ -4,9 +4,16 @@ Folio-J 是在本机浏览器中使用的日语阅读与学习工具。导入日
 
 ## 快速开始
 
-准备 Python 3.11、Node.js 24、uv 和 pnpm 10。当前在 macOS 上验收；Windows 11 x64 提供实验性支持，面向 PowerShell 和 Chrome／Edge，已通过 Windows CI，Windows 11 实机待验。Linux 尚待完整验证。将源码包解压到一个新文件夹，用终端进入该文件夹。
+本包需要安装依赖并从源码启动。已在 macOS 上验证；Windows 11 x64 提供实验性支持，Linux 尚未完成验证。
 
-Windows 可使用系统自带的 Windows PowerShell 5.1 或 PowerShell 7，推荐 `just 1.58` 或更新版本。下面的安装、启动命令可直接在 PowerShell 中执行，无需 Bash。`~` 表示当前用户目录，例如 `C:/Users/你的用户名`。试用后可按 [Windows 实机测试清单](docs/handovers/WINDOWS_ACCEPTANCE.md)记录结果。
+**环境要求**：Python 3.11、Node.js 24、uv 和 pnpm 10，推荐同时安装 `just` 以简化命令。将源码包解压到一个新文件夹，用终端进入该文件夹。
+
+<details>
+<summary>Windows 使用说明</summary>
+
+使用 Windows PowerShell 5.1 或 PowerShell 7，以及 Chrome／Edge 浏览器；推荐 `just 1.58` 或更新版本。下面的命令可直接在 PowerShell 中执行，无需 Bash。`~` 表示当前用户目录，例如 `C:/Users/你的用户名`。验证范围见 [Windows 实机测试清单](docs/handovers/WINDOWS_ACCEPTANCE.md)。
+
+</details>
 
 **首次安装**默认把书籍和学习记录保存在主目录下的 `~/Folio-J-Data/app.db`。如需换到其他位置，在第一次启动前编辑用户配置。[选择数据位置](docs/USAGE.md#自定义数据位置与端口)
 
@@ -24,7 +31,10 @@ just setup
 just start
 ```
 
-没有安装 `just` 时，可以直接执行以下命令。
+<details>
+<summary>未安装 just 时的等价命令</summary>
+
+先安装依赖并查看数据路径。
 
 ```sh
 uv sync --project backend --locked --no-dev
@@ -39,6 +49,8 @@ uv run --directory backend --no-dev alembic upgrade head
 pnpm --dir frontend build
 uv run --project backend --no-dev python scripts/run.py start
 ```
+
+</details>
 
 打开终端显示的地址，默认是 [http://127.0.0.1:8010](http://127.0.0.1:8010)。从「素材库」新建来源，导入一本可重排 EPUB。想试用讲解时，在书中选一句话，保存为学习片段，打开片段并选择手写讲解。在终端按 Ctrl-C 停止服务。
 
