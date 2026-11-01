@@ -1,0 +1,74 @@
+backend/tests/test_source_deletion.py
+  s_81dff6a75b494d::t_53154f201b0b16 88-184,187-200,205-218,220-223,232-233,236-241,251-252,260-261,263-265,285-297,308-310,313-319,323-331,345-357
+  s_81dff6a75b494d::t_9c0518d7c993a2 185-186,224-231,234-235,250,253-259,266-284,311-312,320-322,332-339,343-344
+  s_81dff6a75b494d::t_680c8cd24f68d8 201-204
+  s_81dff6a75b494d::t_dddaf68e1669c4 242-249,262
+  s_81dff6a75b494d::t_cb5cd2a9b9e60a 219
+  s_81dff6a75b494d::t_5ec3a1189bea04 4,6,9-10,13,15-16,21,27,33-51
+  s_81dff6a75b494d::t_27470cf75116d6 298-307,340-342
+  s_81dff6a75b494d::t_67430a0ed1ced8 52-53
+backend/src/app/services/materials.py
+  s_81dff6a75b494d::t_53fe0c4b721480 9,38,319-320,324,329-331
+docs/PRD.md
+  s_81dff6a75b494d::t_d6a39f53cfffb0 485,498
+docs/handovers/archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md
+  s_81dff6a75b494d::t_971e43ceb40c1d 1-14,20
+  s_81dff6a75b494d::t_5df9a7f626a0d6 15-19
+  s_81dff6a75b494d::t_9f573b264672a5 21
+docs/ARCHITECTURE.md
+  s_81dff6a75b494d::t_d6a39f53cfffb0 68,134,136-138
+docs/USAGE.md
+  s_81dff6a75b494d::t_d6a39f53cfffb0 14
+docs/GLOSSARY.md
+  s_81dff6a75b494d::t_29f39b4c8f9af0 40
+frontend/browser-tests/main.tsx
+  s_81dff6a75b494d::t_8baa187d7b062c 42,432
+frontend/scripts/test-browser.mjs
+  s_81dff6a75b494d::t_8baa187d7b062c 102-103
+docs/INFORMATION_ARCHITECTURE.md
+  s_81dff6a75b494d::t_32c2f26733dda6 62
+  s_81dff6a75b494d::t_d6a39f53cfffb0 63
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_81dff6a75b494d::t_5df9a7f626a0d6 4
+  s_81dff6a75b494d::t_8b3158e254a105 44,47
+backend/tests/test_materials.py
+  s_81dff6a75b494d::t_f7a1b5d7e45e80 115-116,119-124
+  s_81dff6a75b494d::t_ef110dd90dabb4 113-114,117-118,125
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_81dff6a75b494d::t_32c2f26733dda6 19
+frontend/src/SourcePages.tsx
+  s_81dff6a75b494d::t_53fe0c4b721480 277
+  s_81dff6a75b494d::t_97ce009bcc4c6d 278-279
+  s_81dff6a75b494d::t_32c2f26733dda6 217,234,246-248,250-252,260,271,292-296,304
+backend/tests/test_material_readings.py
+  s_81dff6a75b494d::t_f7a1b5d7e45e80 274-276
+  s_81dff6a75b494d::t_f9c6d2a35f9a48 11,226,249,254-256,260-268,273
+docs/handovers/README.md
+  s_81dff6a75b494d::t_f673a819e73d68 55
+backend/src/app/services/material_cleanup.py
+  s_81dff6a75b494d::t_32c2f26733dda6 21
+  s_81dff6a75b494d::t_53fe0c4b721480 1-20,22-44
+backend/src/app/services/sources.py
+  s_81dff6a75b494d::t_53fe0c4b721480 361-365
+frontend/browser-tests/source-deletion.tsx
+  s_81dff6a75b494d::t_8baa187d7b062c 1-132,157,167,173-187,189-192,194-309
+  s_81dff6a75b494d::t_953de07ce61743 133,140,148-156,188,193
+  s_81dff6a75b494d::t_ae2b1cb601beb1 134-139,141-147,159-166,168-172
+  s_81dff6a75b494d::t_7921651d972e99 158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cec129784c2f435b7a99ca5a33daeb8426159257",
+  "prompts": {},
+  "sessions": {
+    "s_81dff6a75b494d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19739-808c-7303-abdc-f4af1c686e8e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
