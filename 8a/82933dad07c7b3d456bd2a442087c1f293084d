@@ -1,0 +1,46 @@
+frontend/src/materials/reader-navigation.test.ts
+  s_c88be66de67c07::t_03c23326ad5a94 270-298
+frontend/browser-tests/reader-context-copy-fixture.ts
+  s_c88be66de67c07::t_d1fb64afda8d45 28
+frontend/scripts/test-browser.mjs
+  s_c88be66de67c07::t_c6734aa7e9c93b 61-62
+frontend/browser-tests/segment-navigation.tsx
+  s_c88be66de67c07::t_382a03d33c2c4b 47,51-52
+  s_c88be66de67c07::t_552c77b6557559 48-50,53,57-59,192
+  s_c88be66de67c07::t_61d8b51eb99b95 6-9,17,69-73,92,124,219-222,245-248
+  s_c88be66de67c07::t_1a6c0f70acb914 54-56,154-158,191,262-267
+  s_c88be66de67c07::t_30f5f59e880d5f 169-172,253-255,260
+  s_c88be66de67c07::t_c6734aa7e9c93b 1-5,10-16,18-22,24-39,42-44,46,60-68,74-83,87-91,93-97,99-119,123,125,127-129,138-144,146-151,153,159-160,162-164,166-168,173-180,182-186,189,193-196,198,200-211,213-218,223-224,226-233,235-241,243,249-252,256-257,259,261,268-270,272-273,275-277,279-282,284-288,290-294,296-304,306-312
+  s_c88be66de67c07::t_dd9b2b48fbd0fa 23,40-41,45,84-86,98,120-122,126,130-137,145,152,161,165,181,187-188,190,197,199,212,225,234,242,244,258,271,274,278,283,289,295,305
+frontend/browser-tests/main.tsx
+  s_c88be66de67c07::t_c6734aa7e9c93b 39,436
+frontend/src/materials/MaterialReader.tsx
+  s_c88be66de67c07::t_46e980d220ae71 1499
+  s_c88be66de67c07::t_15b63ca75ff84f 501,508-511,1170,1274,1467,1756,1764
+frontend/src/materials/reader-frames.test.ts
+  s_c88be66de67c07::t_39dedf2fd0f733 288,350-357,390-391,396-398,400,405,412-414
+frontend/browser-tests/reader-session.tsx
+  s_c88be66de67c07::t_61d8b51eb99b95 13-16,19-24,27-28,171-177,204,217
+  s_c88be66de67c07::t_c6734aa7e9c93b 25-26
+frontend/src/materials/reader-frames.ts
+  s_c88be66de67c07::t_46e980d220ae71 344
+  s_c88be66de67c07::t_540e83262a99ea 342,345
+frontend/browser-tests/reader-session-fixture.ts
+  s_c88be66de67c07::t_a24f704d2144b1 1-257
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8a82933dad07c7b3d456bd2a442087c1f293084d",
+  "prompts": {},
+  "sessions": {
+    "s_c88be66de67c07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196b8-e5df-71d3-afe2-48ebdfe2d545",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
