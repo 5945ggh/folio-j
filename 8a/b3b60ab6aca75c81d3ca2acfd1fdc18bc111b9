@@ -1,0 +1,62 @@
+backend/src/app/services/translations.py
+  s_66ea02a504d91d::t_137f913b4dd275 423,428-430
+  s_66ea02a504d91d::t_676ca44897972c 51,394-422,424-427,431-441
+  s_66ea02a504d91d::t_b27eafcbc9f032 442-443
+backend/tests/test_translation_removal.py
+  s_66ea02a504d91d::t_137f913b4dd275 121-163
+  s_66ea02a504d91d::t_26c6a8955d6927 328,330,369-373,490,492,544-548
+  s_66ea02a504d91d::t_dbabd51c3c8707 45-89,91-95,97-120,164-251
+  s_66ea02a504d91d::t_827634d5ad5768 90,96
+frontend/src/translation/removal-cache.ts
+  s_66ea02a504d91d::t_fd3373eef3cea7 35-69,77-79,92-93,109,112-124,133-134,144-148,150-152
+  s_66ea02a504d91d::t_aed86098a2843c 110-111
+frontend/src/translation/session-react.ts
+  s_66ea02a504d91d::t_3372820019d1dc 154-159
+  s_66ea02a504d91d::t_e25870a5fe326c 14,152,160-162
+frontend/src/translation/removal-cache.test.ts
+  s_66ea02a504d91d::t_e71fbbff144d5a 5-10,115,234,239-281,285-289,291-297,304-306,326-329,334,345,365-366,381-394,405,417-427,447-448,464-469,473-476,483-489,511-514,519-522,532-533,539-541,550,557-564
+  s_66ea02a504d91d::t_aed86098a2843c 235-238,282-284,298-303,307-325,330-333,335-344,346-356,358-364,367-380,395-404,406-416,428-446,449-463,470-472,477-482,490-510,515-518,523-531,534-538,542-549,551-556
+  s_66ea02a504d91d::t_70e25f7f752486 290,357
+frontend/src/api/schema.d.ts
+  s_66ea02a504d91d::t_1383c847307f2b 1354-1355,3792-3805,7466-7489,7492-7495
+  s_66ea02a504d91d::t_97472e0a557f86 7490-7491,7496
+docs/ARCHITECTURE.md
+  s_66ea02a504d91d::t_bae3f0cc1b8108 516
+  s_66ea02a504d91d::t_a04eeb6c5f006f 518
+  s_66ea02a504d91d::t_5407ceb743b932 526
+  s_66ea02a504d91d::t_5ba425a19a1b81 517
+frontend/src/translation/api.ts
+  s_66ea02a504d91d::t_e25870a5fe326c 7,9-13,95-98
+  s_66ea02a504d91d::t_f5273d99dedf1e 99-101
+frontend/src/translation/session.ts
+  s_66ea02a504d91d::t_e25870a5fe326c 36-39,94,163-166,502-506,517,519,532-539,547,549
+  s_66ea02a504d91d::t_4e1de778f82c9e 69-72,115-118,144,520-531,550
+frontend/src/translation/session.test.ts
+  s_66ea02a504d91d::t_17e0e016a9091e 642-645,650-704,709-719,724-726
+  s_66ea02a504d91d::t_aed86098a2843c 646-649,705-708,720-723
+  s_66ea02a504d91d::t_4e1de778f82c9e 727-807
+backend/openapi.json
+  s_66ea02a504d91d::t_1383c847307f2b 6702-6755,12629-12665
+backend/src/app/api/translations.py
+  s_66ea02a504d91d::t_676ca44897972c 19,98-102
+  s_66ea02a504d91d::t_43c417f9a3aa93 103-104
+backend/src/app/translation_schemas.py
+  s_66ea02a504d91d::t_137f913b4dd275 152
+  s_66ea02a504d91d::t_676ca44897972c 148-151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8ab3b60ab6aca75c81d3ca2acfd1fdc18bc111b9",
+  "prompts": {},
+  "sessions": {
+    "s_66ea02a504d91d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19628-5aff-7380-99f1-01c0ebf380e7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
