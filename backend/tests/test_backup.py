@@ -4,6 +4,7 @@ import fcntl
 import hashlib
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -41,7 +42,11 @@ def backup_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Cli:
         "socket.socket.connect = deny\n"
         "socket.socket.connect_ex = deny\n"
         "socket.create_connection = deny\n"
-        "socket.getaddrinfo = deny\n",
+        "socket.getaddrinfo = deny\n"
+        "import os\n"
+        "if installation := os.environ.get('FOLIO_TEST_INSTALLATION'):\n"
+        "    import app.config\n"
+        "    app.config.REPO_ROOT = Path(installation)\n",
         encoding="utf-8",
     )
     monkeypatch.setenv("PYTHONPATH", os.pathsep.join((str(guard), str(ROOT / "backend/src"))))
@@ -490,3 +495,90 @@ async def test_cli_does_not_revive_committed_dictionary_deletion_with_retained_c
     restored_store = DictionaryStore(restored / "app.db.dictionary.sqlite3")
     assert await restored_store.library() == expected_library
     assert not (await restored_store.status()).ready
+
+
+def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(
+    tmp_path: Path, database: Path, backup_cli: Cli, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    baseline = "0004_translation_reader_removal"
+    successor = "0005_test_backup_upgrade"
+    installation = tmp_path / "new-installation"
+    migrations = installation / "backend/alembic"
+    shutil.copytree(
+        ROOT / "backend/alembic", migrations, ignore=shutil.ignore_patterns("__pycache__")
+    )
+    (migrations / "versions/0005_test_backup_upgrade.py").write_text(
+        "from alembic import op\n"
+        "import sqlalchemy as sa\n"
+        f"revision = {successor!r}\n"
+        f"down_revision = {baseline!r}\n"
+        "branch_labels = None\ndepends_on = None\n"
+        "def upgrade():\n"
+        "    op.add_column('sources', sa.Column('upgrade_note', sa.Text(), "
+        "nullable=False, server_default='new-default'))\n"
+        "def downgrade():\n"
+        "    op.drop_column('sources', 'upgrade_note')\n",
+        encoding="utf-8",
+    )
+    (installation / "RELEASE.json").write_text(
+        json.dumps({"version": "0.2.0-test", "commit": None}), encoding="utf-8"
+    )
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO sources (id,title,description,note,created_at,updated_at) "
+            "VALUES ('preserved','前向升级𠮷','说明','备注','2026-01-01','2026-01-01')"
+        )
+    before = _rows(database)
+    old_backup = tmp_path / "old-backup"
+    _success(backup_cli("create", old_backup))
+    old_manifest = json.loads((old_backup / "manifest.json").read_text())
+    assert old_manifest["format_version"] == 1
+    assert old_manifest["database"]["revision"] == baseline
+
+    # The subprocess imports the same backup code with the simulated installation's chain.
+    monkeypatch.setenv("FOLIO_TEST_INSTALLATION", str(installation))
+    old_restored = tmp_path / "old-restored-by-new"
+    _success(backup_cli("restore", old_backup, old_restored))
+    restored_database = old_restored / "app.db"
+    assert _rows(restored_database) == before  # Restore itself never silently migrates.
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(restored_database))
+    config = Config()
+    config.set_main_option("script_location", str(migrations))
+    command.upgrade(config, "head")  # The normal application's separate upgrade path.
+    upgraded = _rows(restored_database)
+    assert upgraded.pop("alembic_version") == [(successor,)]
+    assert upgraded.pop("sources") == [(*before["sources"][0], "new-default")]
+    assert upgraded == {
+        table: rows for table, rows in before.items() if table not in ("sources", "alembic_version")
+    }
+
+    new_backup = tmp_path / "new-backup"
+    _success(backup_cli("create", new_backup))
+    manifest = json.loads((new_backup / "manifest.json").read_text())
+    assert manifest["format_version"] == old_manifest["format_version"] == 1
+    assert manifest["database"]["revision"] == successor
+    assert manifest["application"]["version"] == "0.2.0-test"
+    new_restored = tmp_path / "new-restored"
+    _success(backup_cli("restore", new_backup, new_restored))
+    assert _rows(new_restored / "app.db") == _rows(restored_database)
+
+    # Both revisions are supported by the new chain, but their pairing must still match.
+    for package, wrong_revision in ((old_backup, successor), (new_backup, baseline)):
+        mismatch = tmp_path / f"mismatch-{wrong_revision}"
+        shutil.copytree(package, mismatch)
+        path = mismatch / "manifest.json"
+        mismatched = json.loads(path.read_text())
+        mismatched["database"]["revision"] = wrong_revision
+        path.write_text(json.dumps(mismatched), encoding="utf-8")
+        target = tmp_path / f"rejected-{wrong_revision}"
+        _failure(backup_cli("restore", mismatch, target))
+        assert not target.exists()
+
+    monkeypatch.delenv("FOLIO_TEST_INSTALLATION")
+    rejected = tmp_path / "new-backup-rejected-by-old"
+    _failure(backup_cli("restore", new_backup, rejected))
+    assert not rejected.exists()
+    rejected_backup = tmp_path / "new-database-rejected-by-old"
+    _failure(backup_cli("create", rejected_backup))
+    assert not rejected_backup.exists()
+    assert _rows(database) == before

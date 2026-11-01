@@ -19,13 +19,15 @@ from contextlib import closing, contextmanager
 from pathlib import Path, PurePosixPath
 from typing import Literal, NoReturn
 
+from alembic.script import ScriptDirectory
+from alembic.util.exc import CommandError
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.config import REPO_ROOT, load_settings
 from app.epub_storage import decode
 from app.services.dictionary_store import DictionaryStore
 
-REVISION = "0004_translation_reader_removal"
+FIRST_SUPPORTED_REVISION = "0004_translation_reader_removal"
 COMPONENTS = {
     "credentials": ("credentials", ".secrets"),
     "dictionary_index": ("dictionary.sqlite3", ".dictionary.sqlite3"),
@@ -47,7 +49,7 @@ class ApplicationVersion(StrictModel):
 
 
 class DatabaseVersion(StrictModel):
-    revision: Literal["0004_translation_reader_removal"]
+    revision: str = Field(min_length=1)
     epub_contract: Literal["epub-reading-v2"]
     epub_storage_version: Literal[2]
 
@@ -127,13 +129,29 @@ def _check_sqlite(connection: sqlite3.Connection) -> None:
         raise BackupError("数据库外键检查失败")
 
 
-def _check_database(path: Path, credentials: Path) -> None:
+def _supported_revisions() -> set[str]:
+    """Support the first release baseline and its installed migration descendants."""
+    try:
+        scripts = ScriptDirectory(str(REPO_ROOT / "backend" / "alembic"))
+        return {
+            revision.revision
+            for revision in scripts.iterate_revisions(
+                "heads", FIRST_SUPPORTED_REVISION, inclusive=True
+            )
+        }
+    except CommandError as exc:
+        raise BackupError("无法读取程序的数据库迁移链") from exc
+
+
+def _check_database(path: Path, credentials: Path, expected_revision: str | None = None) -> str:
     with closing(_connect(path)) as connection:
         _check_sqlite(connection)
-        if connection.execute("SELECT version_num FROM alembic_version").fetchall() != [
-            (REVISION,)
-        ]:
+        versions = connection.execute("SELECT version_num FROM alembic_version").fetchall()
+        if len(versions) != 1 or versions[0][0] not in _supported_revisions():
             raise BackupError("不支持此数据库迁移版本，请使用匹配的程序版本")
+        revision = str(versions[0][0])
+        if expected_revision is not None and revision != expected_revision:
+            raise BackupError("数据库实际迁移版本与 manifest 声明不一致")
         for contract, payload, product_sha256, original, source_sha256 in connection.execute(
             "SELECT contract_version, compiled_bundle, product_sha256, original_bytes, "
             "source_sha256 FROM materials "
@@ -166,6 +184,7 @@ def _check_database(path: Path, credentials: Path) -> None:
                     raise BackupError("数据库含不安全凭据引用")
                 if not (credentials / reference).is_file():
                     raise BackupError("数据库引用的模型凭据缺失")
+        return revision
 
 
 def _check_dictionaries(index: Path, library: Path) -> None:
@@ -389,13 +408,13 @@ def create_backup(destination: Path, database_path: Path | None = None) -> Path:
             companions["dictionary_index"], companions["dictionary_library"], staging
         )
         components = {key: (staging / name).exists() for key, (name, _) in COMPONENTS.items()}
-        _check_database(target, staging / "credentials")
+        revision = _check_database(target, staging / "credentials")
         _check_dictionaries(staging / "dictionary.sqlite3", staging / "dictionary.sqlite3.library")
         files, directories = _tree(staging)
         manifest = Manifest(
             format_version=1,
             database=DatabaseVersion(
-                revision=REVISION, epub_contract="epub-reading-v2", epub_storage_version=2
+                revision=revision, epub_contract="epub-reading-v2", epub_storage_version=2
             ),
             directories=sorted(directories),
             application=_application_version(),
@@ -453,7 +472,7 @@ def _validate_package(backup: Path) -> Manifest:
                 raise BackupError("备份组件缺少声明的目录")
     if directories != allowed_directories:
         raise BackupError("备份存在未声明或多余目录")
-    _check_database(backup / "app.db", backup / "credentials")
+    _check_database(backup / "app.db", backup / "credentials", manifest.database.revision)
     _check_dictionaries(backup / "dictionary.sqlite3", backup / "dictionary.sqlite3.library")
     return manifest
 

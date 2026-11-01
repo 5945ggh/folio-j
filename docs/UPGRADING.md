@@ -50,7 +50,7 @@ FOLIO_J_DATABASE_PATH="$HOME/folio-restored-01/app.db" just start
 
 ## 当前迁移基线
 
-原生备份格式为 v1，首个支持的数据库版本是 `0004_translation_reader_removal`，书籍采用 `FJEPUB` v2。应用版本、备份格式和数据库迁移版本分别记录。更新应用前先用手头的版本备份。在新版目录运行 `just data-path`，确认指向原库或有意恢复的副本，再执行 `just start`。启动会先运行正常的增量迁移。
+原生备份格式为 v1，首个支持的数据库版本是 `0004_translation_reader_removal`，书籍采用 `FJEPUB` v2。应用版本、备份格式和数据库迁移版本分别记录。恢复支持从此基线起、当前程序迁移链已包含的数据版本。恢复旧包会先写出备份时的数据库，再由正常启动执行升级。较旧程序遇到未知的新版数据库会拒绝恢复。更新应用前先用手头的版本备份。在新版目录运行 `just data-path`，确认指向原库或有意恢复的副本，再执行 `just start`。启动会先运行正常的增量迁移。
 
 ## EPUB 存储格式与开发库重建
 
