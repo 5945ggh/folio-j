@@ -542,6 +542,15 @@ async function segmentContentAggregation(
 			</div>,
 		);
 		try {
+			await until(
+				() =>
+					!!container.querySelector(".segment-original-card") &&
+					!!container.querySelector("#segment-original-trigger"),
+				`${scenario.name}: original card must mount`,
+			);
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			);
 			check(
 				translationReads === 0,
 				`${scenario.name}: main card must not request associated translations`,

@@ -669,6 +669,10 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			() => !details("带上下文复制").open,
 			"Copy group must collapse",
 		);
+		// Native toggle reaches React after the synchronous open-property change.
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+		);
 		check(
 			find('[data-reader-settings-group="copy"]').textContent?.includes(
 				"未保存",
@@ -704,6 +708,10 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		);
 		body.scrollTop = Math.min(250, body.scrollHeight - body.clientHeight);
 		const panelScroll = body.scrollTop;
+		// Deliver the native scroll event before reduced motion unmounts the panel.
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+		);
 		button("关闭阅读设置").click();
 		await h.until(
 			() =>
