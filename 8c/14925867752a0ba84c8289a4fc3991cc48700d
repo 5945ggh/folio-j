@@ -1,0 +1,27 @@
+frontend/browser-tests/translation-removal.tsx
+  s_8a158397fdafc8::t_a3acbfff4805d9 490,494-497
+frontend/src/segments/OriginalCard.tsx
+  s_8a158397fdafc8::t_a3acbfff4805d9 7-10,91,158
+frontend/browser-tests/segment-materials.tsx
+  s_8a158397fdafc8::t_32894e0b8129be 545-547,620-667,675,685,688
+frontend/src/translation/SegmentTranslations.tsx
+  s_8a158397fdafc8::t_a3acbfff4805d9 6,11-20,26,28
+docs/INFORMATION_ARCHITECTURE.md
+  s_8a158397fdafc8::t_8c767a54c73cb2 234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8c14925867752a0ba84c8289a4fc3991cc48700d",
+  "prompts": {},
+  "sessions": {
+    "s_8a158397fdafc8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196f6-7bca-7bd0-97f1-50eff4598f84",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
