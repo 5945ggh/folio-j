@@ -3,6 +3,7 @@ export const READER_PALETTE_PROPERTIES = [
 	"--reader-bg",
 	"--reader-fg",
 	"--reader-selection-bg",
+	"--reader-location-highlight",
 	"--reader-study",
 	"--reader-translation",
 ] as const;

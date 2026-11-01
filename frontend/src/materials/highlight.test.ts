@@ -322,10 +322,17 @@ test("navigation fade changes only search paint, preserves fading opacity on ref
 	h.marks.set("folio-study", marker);
 	h.marks.set("folio-translation", marker);
 	setSearchHighlightOpacity(h.doc, 0.5);
-	assert.match(h.style.textContent, /background:rgb\(233 203 105 \/ 0.5\)/);
+	assert.match(
+		h.style.textContent,
+		/background:color-mix\(in srgb,var\(--reader-location-highlight\) 50%,transparent\)/,
+	);
 	assert.match(h.style.textContent, /#171717 50%,#282828/);
 	highlightRange(h.doc, p, 0, 2);
-	assert.match(h.style.textContent, /\/ 0.5\)/, "reflow does not brighten");
+	assert.match(
+		h.style.textContent,
+		/ 50%,transparent\)/,
+		"reflow does not brighten",
+	);
 	setSearchHighlightOpacity(h.doc, 0);
 	assert.match(h.style.textContent, /#171717 0%,#282828/);
 	assert.ok(
@@ -336,7 +343,11 @@ test("navigation fade changes only search paint, preserves fading opacity on ref
 	assert.equal(h.marks.get("folio-translation"), marker);
 	clearSearchHighlights(h.doc);
 	highlightRange(h.doc, p, 0, 2);
-	assert.match(h.style.textContent, /\/ 1\)/, "a new target starts bright");
+	assert.match(
+		h.style.textContent,
+		/ 100%,transparent\)/,
+		"a new target starts bright",
+	);
 	assert.equal(p.raw, "原文");
 });
 

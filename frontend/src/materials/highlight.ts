@@ -11,7 +11,7 @@ export function setSearchHighlightOpacity(doc: Document, value: number): void {
 	searchOpacity.set(doc, opacity);
 	const style = doc.getElementById("folio-search-style");
 	if (style)
-		style.textContent = `::highlight(folio-search){background:rgb(233 203 105 / ${opacity});color:color-mix(in srgb,#171717 ${opacity * 100}%,${searchForeground.get(doc) ?? "#282828"});}`;
+		style.textContent = `::highlight(folio-search){background:color-mix(in srgb,var(--reader-location-highlight) ${opacity * 100}%,transparent);color:color-mix(in srgb,#171717 ${opacity * 100}%,${searchForeground.get(doc) ?? "#282828"});}`;
 }
 
 /** Theme presentation can change without reprojecting the active source range. */

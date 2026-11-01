@@ -57,9 +57,6 @@
 	> [data-reader-card-drag-handle] {
 	cursor: grabbing;
 }
-.translation-card > [data-reader-card-draggable="true"]:focus-visible {
-	outline-offset: -3px;
-}
 .translation-header-actions {
 	justify-content: end;
 	min-width: 0;

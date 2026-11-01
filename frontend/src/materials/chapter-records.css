@@ -30,10 +30,6 @@
 	> [data-reader-card-drag-handle] {
 	cursor: grabbing;
 }
-.reader-chapter-records > [data-reader-card-draggable="true"]:focus-visible {
-	outline: 2px solid var(--reader-fg);
-	outline-offset: -3px;
-}
 .reader-record-tabs-row {
 	display: flex;
 	align-items: center;

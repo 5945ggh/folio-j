@@ -597,12 +597,12 @@ test("reader reflows retain the current navigation fade and clearing restores a 
 	const ranges = [{ resource_id: "r", spine_index: 0, start: 0, end: 2 }];
 	frames.highlight(context.chapter, ranges);
 	frames.setSearchHighlightOpacity(0.5);
-	assert.match(style.textContent, /\/ 0.5\)/);
+	assert.match(style.textContent, / 50%,transparent\)/);
 	frames.highlight(context.chapter, ranges);
-	assert.match(style.textContent, /\/ 0.5\)/);
+	assert.match(style.textContent, / 50%,transparent\)/);
 	assert.ok(marks.has("folio-search"));
 	frames.clearSearchHighlights();
 	assert.equal(marks.has("folio-search"), false);
 	frames.highlight(context.chapter, ranges);
-	assert.match(style.textContent, /\/ 1\)/);
+	assert.match(style.textContent, / 100%,transparent\)/);
 });

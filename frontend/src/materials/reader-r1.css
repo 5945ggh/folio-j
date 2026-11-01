@@ -32,6 +32,7 @@
 	--reader-tool-focus: light-dark(#5682b8, #9ec1ff);
 	--reader-mark-focus: light-dark(#ae4a51, #ff9993);
 	--reader-search-match: light-dark(#d4ac4a, #e2bd64);
+	--reader-location-highlight: #ffed99;
 	--reader-focus: light-dark(#6d8dd0, #9ec1ff);
 	--reader-accent: light-dark(#5c7bb8, #9ec1ff);
 	--reader-toolbar-opacity: 80%;
