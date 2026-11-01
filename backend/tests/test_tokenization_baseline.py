@@ -12,7 +12,7 @@ FIXTURE = Path(__file__).parent / "fixtures/tokenization-v1.json"
 
 
 def test_generation_keeps_pre_b1_configuration_payload_digest_and_count() -> None:
-    expected = json.loads(FIXTURE.read_text())
+    expected = json.loads(FIXTURE.read_text(encoding="utf-8"))
     inputs = [TextResource(**resource) for resource in expected["input_resources"]]
     asset = generate(inputs)
     assert asset.configuration == expected["configuration"]

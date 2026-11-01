@@ -62,10 +62,11 @@ def backup_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Cli:
         result = subprocess.run(
             [sys.executable, "-m", "app.backup", *(str(item) for item in arguments)],
             cwd=ROOT,
-            env=os.environ.copy(),
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             timeout=30,
             check=False,
         )
@@ -160,7 +161,7 @@ async def test_cli_roundtrip_preserves_epub_bookmark_dictionary_credentials_and_
 
     backup = tmp_path / "backup"
     _success(backup_cli("create", backup))
-    manifest = json.loads((backup / "manifest.json").read_text())
+    manifest = json.loads((backup / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["format_version"] == 1
     assert manifest["components"] == {
         "credentials": True,
@@ -172,7 +173,7 @@ async def test_cli_roundtrip_preserves_epub_bookmark_dictionary_credentials_and_
         raw = (backup / name).read_bytes()
         assert len(raw) == expected["size"]
         assert hashlib.sha256(raw).hexdigest() == expected["sha256"]
-    assert "fictional-chat-secret" not in (backup / "manifest.json").read_text()
+    assert "fictional-chat-secret" not in (backup / "manifest.json").read_text(encoding="utf-8")
     assert _rows(database) == before
 
     restored_directory = tmp_path / "restored"
@@ -199,7 +200,7 @@ def test_cli_database_only_backup_has_optional_components_absent(
 ) -> None:
     backup = tmp_path / "backup"
     _success(backup_cli("create", backup))
-    manifest = json.loads((backup / "manifest.json").read_text())
+    manifest = json.loads((backup / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["components"] == dict.fromkeys(
         ("credentials", "dictionary_index", "dictionary_library"), False
     )
@@ -222,7 +223,7 @@ def test_cli_rejects_incomplete_corrupt_or_unsupported_backup_without_publishing
     elif damage == "corrupt":
         (backup / "app.db").write_bytes(b"damaged database")
     else:
-        manifest = json.loads(manifest_path.read_text())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         manifest["format_version"] = 999
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     target = tmp_path / "restored"
@@ -260,13 +261,17 @@ async def test_cli_refuses_backup_while_application_holds_worker_lock(
     _success(backup_cli("create", target))
 
 
+@pytest.mark.parametrize("inherited_encoding", ["utf-8", "cp1252"])
 def test_cli_missing_source_does_not_silently_create_database(
-    tmp_path: Path, backup_cli: Cli, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, backup_cli: Cli, monkeypatch: pytest.MonkeyPatch, inherited_encoding: str
 ) -> None:
     missing = tmp_path / "missing.db"
     monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(missing))
     target = tmp_path / "backup"
-    _failure(backup_cli("create", target))
+    monkeypatch.setenv("PYTHONIOENCODING", inherited_encoding)
+    result = backup_cli("create", target)
+    _failure(result)
+    assert "源数据库不存在或不安全" in result.stderr
     assert not missing.exists()
     assert not target.exists()
 
@@ -321,7 +326,7 @@ def test_cli_validates_content_beyond_checksums_and_rejects_links(
     backup = tmp_path / "backup"
     _success(backup_cli("create", backup))
     manifest_path = backup / "manifest.json"
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     payload = backup / "app.db"
     if damage == "invalid_sqlite":
         payload.write_bytes(b"matching digest does not make this a database")
@@ -392,7 +397,7 @@ def test_cli_requires_explicit_manifest_versions(
     backup = tmp_path / "backup"
     _success(backup_cli("create", backup))
     manifest_path = backup / "manifest.json"
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if field in ("format_version", "database"):
         del manifest[field]
     else:
@@ -534,7 +539,7 @@ def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(
     before = _rows(database)
     old_backup = tmp_path / "old-backup"
     _success(backup_cli("create", old_backup))
-    old_manifest = json.loads((old_backup / "manifest.json").read_text())
+    old_manifest = json.loads((old_backup / "manifest.json").read_text(encoding="utf-8"))
     assert old_manifest["format_version"] == 1
     assert old_manifest["database"]["revision"] == baseline
 
@@ -557,7 +562,7 @@ def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(
 
     new_backup = tmp_path / "new-backup"
     _success(backup_cli("create", new_backup))
-    manifest = json.loads((new_backup / "manifest.json").read_text())
+    manifest = json.loads((new_backup / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["format_version"] == old_manifest["format_version"] == 1
     assert manifest["database"]["revision"] == successor
     assert manifest["application"]["version"] == "0.2.0-test"
@@ -570,7 +575,7 @@ def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(
         mismatch = tmp_path / f"mismatch-{wrong_revision}"
         shutil.copytree(package, mismatch)
         path = mismatch / "manifest.json"
-        mismatched = json.loads(path.read_text())
+        mismatched = json.loads(path.read_text(encoding="utf-8"))
         mismatched["database"]["revision"] = wrong_revision
         path.write_text(json.dumps(mismatched), encoding="utf-8")
         target = tmp_path / f"rejected-{wrong_revision}"
