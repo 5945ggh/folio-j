@@ -137,7 +137,7 @@ export async function marginRecordTargets(
 			button("学习片段").querySelector("span")?.textContent ===
 				String(segments.length) &&
 				button("翻译").querySelector("span")?.textContent ===
-					String(translations.length),
+					`${translations.length} 处`,
 			"Every margin entry must retain the entire transitive record group in both tabs",
 		);
 	};
@@ -260,6 +260,42 @@ export async function marginRecordTargets(
 	);
 	firstTranslation.click();
 	await translationDetail(0);
+	if (
+		preview &&
+		new URLSearchParams(location.search).get("panel") === "segment-original"
+	) {
+		secondSegment.click();
+		await segmentDetail(1);
+		await h.until(
+			() =>
+				h.container.querySelector(".reader-study-preview-hint")?.textContent ===
+				"已保存原文",
+			"Original-only segment must finish loading without an empty translation or explanation area",
+		);
+		return "original-only segment preview: short card, saved original and no empty sections";
+	}
+	if (
+		preview &&
+		new URLSearchParams(location.search).get("panel") === "segment-overlap"
+	) {
+		mixedGroup.click();
+		await list("segment");
+		const item = segmentRows().find(
+			(row) => row.dataset.segmentId === segments[0]?.segment_id,
+		);
+		check(item, "Overlap preview needs its multi-explanation segment");
+		item.click();
+		await h.until(
+			() =>
+				h.container.querySelector(".reader-study-preview-original p")
+					?.textContent === segments[0]?.excerpt &&
+				!!h.container.querySelector(
+					".reader-study-preview-analysis-heading select",
+				),
+			"Multi-explanation segment must expose its exact original and current title picker",
+		);
+		return "overlap record preview: numeric group, multi-explanation segment and exact translation histories";
+	}
 	if (preview)
 		return "margin record target preview: real pure translation icon, exact saved result, return to complete mixed associated group";
 	button("返回此处记录").click();

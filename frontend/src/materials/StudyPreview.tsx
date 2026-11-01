@@ -14,6 +14,7 @@ import type { ChapterSegment } from "./study-api";
 import { studyPreviewPosition } from "./study-overlays";
 import { previewAnalyses, previewDocument } from "./study-preview";
 import "./study-preview.css";
+import "./reader-popover.css";
 
 export type StudyPreviewProps = {
 	anchor: ScreenAnchor;
@@ -23,7 +24,7 @@ export type StudyPreviewProps = {
 	expanded: boolean;
 	inactive?: boolean;
 	embedded?: boolean;
-	actionSlots?: { back: HTMLElement | null; open: HTMLElement | null };
+	actionSlots?: { back: HTMLElement | null };
 	marginEntry?: MarginRecordEntry;
 	relatedRecordCount?: number;
 	onExpand: () => void;
@@ -257,7 +258,7 @@ export function StudyPreview({
 		// biome-ignore lint/a11y/useAriaPropsSupportedByRole: both dialog and the named embedded region support labels.
 		<div
 			ref={element}
-			className={`reader-study-preview${embedded ? " embedded" : ""}${expanded ? " expanded" : ""}${fixed ? " fixed" : ""}${translation ? " has-translation" : ""}`}
+			className={`reader-study-preview reader-popover${embedded ? " embedded" : ""}${expanded ? " expanded" : ""}${fixed ? " fixed" : ""}${translation ? " has-translation" : ""}`}
 			style={expanded || fixed || embedded ? undefined : position}
 			role={embedded ? "region" : "dialog"}
 			aria-label={embedded ? "学习片段" : undefined}
@@ -312,21 +313,6 @@ export function StudyPreview({
 						<span aria-hidden="true">←</span>
 					</button>,
 					actionSlots.back,
-				)}
-			{selected &&
-				!inactive &&
-				actionSlots?.open &&
-				createPortal(
-					<button
-						className="reader-study-preview-open"
-						type="button"
-						onClick={() =>
-							onOpen(segmentId, analysis?.id, analysis?.current_revision_id)
-						}
-					>
-						打开片段 <span aria-hidden="true">→</span>
-					</button>,
-					actionSlots.open,
 				)}
 			<div
 				ref={content}
@@ -402,7 +388,6 @@ export function StudyPreview({
 								className="reader-study-preview-translation"
 								aria-label="译文"
 							>
-								<h3>译文</h3>
 								<p>{translation}</p>
 							</section>
 						)}
@@ -431,7 +416,15 @@ export function StudyPreview({
 								aria-label="已保存讲解"
 							>
 								<div className="reader-study-preview-analysis-heading">
-									<h3>{fixed || expanded ? "讲解" : "讲解预览"}</h3>
+									<h3
+										className={
+											analysisItems.length === 1 && !analyses.hasNextPage
+												? "reader-study-preview-sr"
+												: undefined
+										}
+									>
+										{fixed || expanded ? "讲解" : "讲解预览"}
+									</h3>
 									{analysisItems.length > 1 || analyses.hasNextPage ? (
 										<>
 											<label
@@ -478,9 +471,6 @@ export function StudyPreview({
 										className="reader-study-preview-markdown"
 										data-clipped={previewClipped || undefined}
 									>
-										{presentation.title && (
-											<Markdown text={presentation.title.markdown} />
-										)}
 										{presentation.blocks.map((block, index) => (
 											<Markdown key={block.id ?? index} text={block.raw} />
 										))}
@@ -538,6 +528,17 @@ export function StudyPreview({
 							)}
 						</dl>
 					</details>
+					{!inactive && (
+						<button
+							className="reader-study-preview-open"
+							type="button"
+							onClick={() =>
+								onOpen(segmentId, analysis?.id, analysis?.current_revision_id)
+							}
+						>
+							打开片段 <span aria-hidden="true">→</span>
+						</button>
+					)}
 				</footer>
 			)}
 		</div>

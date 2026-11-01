@@ -3,6 +3,7 @@ import type { Settings } from "./api.ts";
 import {
 	type BookUiPreferences,
 	DEFAULT_BOOK_UI,
+	DEFAULT_DICTIONARY_OPACITY,
 	DEFAULT_READER_UI,
 	type ReaderUiPreferences,
 } from "./preferences.ts";
@@ -61,6 +62,7 @@ export function restoreReaderSettingsGroup(
 				ui: {
 					theme: DEFAULT_READER_UI.theme,
 					toolbarOpacity: DEFAULT_READER_UI.toolbarOpacity,
+					dictionaryOpacity: DEFAULT_DICTIONARY_OPACITY,
 					marks: { ...DEFAULT_READER_UI.marks },
 				},
 			};

@@ -68,7 +68,7 @@ export function ChapterRecords(props: Props) {
 		onClose,
 		onEmphasize,
 	} = props;
-	const [tab, setTab] = useState<"segment" | "translation">(
+	const [preferredTab, setPreferredTab] = useState<"segment" | "translation">(
 		marginEntry
 			? marginEntry.kind === "list"
 				? marginEntry.tab
@@ -77,10 +77,13 @@ export function ChapterRecords(props: Props) {
 				? "translation"
 				: "segment",
 	);
+	const showTabs = fixed || (items.length > 0 && translations.length > 0);
+	const tab = showTabs
+		? preferredTab
+		: items.length > 0
+			? "segment"
+			: "translation";
 	const [segmentBackSlot, setSegmentBackSlot] = useState<HTMLDivElement | null>(
-		null,
-	);
-	const [segmentOpenSlot, setSegmentOpenSlot] = useState<HTMLDivElement | null>(
 		null,
 	);
 	const [selectedId, setSelectedId] = useState<string | null | undefined>();
@@ -276,7 +279,7 @@ export function ChapterRecords(props: Props) {
 		return () => callbacks.current.onEmphasize(null, "translation");
 	}, [tab, inactive, selected?.identity_sha256]);
 	const changeTab = (next: "segment" | "translation") => {
-		setTab(next);
+		setPreferredTab(next);
 		if (body.current) body.current.scrollTop = 0;
 	};
 	useLayoutEffect(() => {
@@ -285,7 +288,7 @@ export function ChapterRecords(props: Props) {
 	return (
 		<div
 			ref={element}
-			className={`reader-chapter-records${expanded ? " expanded" : ""}`}
+			className={`reader-chapter-records reader-popover${expanded ? " expanded" : ""}`}
 			style={{
 				...position,
 				height: expanded ? position?.maxHeight : undefined,
@@ -300,6 +303,13 @@ export function ChapterRecords(props: Props) {
 			aria-hidden={inactive || undefined}
 			inert={inactive || undefined}
 			onKeyDown={(event) => {
+				if (
+					event.key === "Escape" &&
+					(event.target as Element).closest("dialog")
+				) {
+					event.stopPropagation();
+					return;
+				}
 				if (
 					event.key === "Escape" &&
 					!event.defaultPrevented &&
@@ -341,7 +351,22 @@ export function ChapterRecords(props: Props) {
 							<span aria-hidden="true">←</span>
 						</button>
 					)}
-					<strong id={`${id}-title`}>{fixed ? "本章记录" : "此处记录"}</strong>
+					<span className="reader-popover-seal" aria-hidden="true">
+						{fixed || relatedRecordCount > 1
+							? "記"
+							: tab === "translation"
+								? "译"
+								: "文"}
+					</span>
+					<strong id={`${id}-title`}>
+						{fixed
+							? "本章记录"
+							: relatedRecordCount > 1
+								? "此处记录"
+								: tab === "segment"
+									? "学习片段"
+									: "翻译"}
+					</strong>
 				</div>
 				<div className="reader-study-preview-actions">
 					{!fixed && (
@@ -358,62 +383,62 @@ export function ChapterRecords(props: Props) {
 					</button>
 				</div>
 			</header>
-			<div className="reader-record-tabs-row">
-				<div
-					className="reader-record-tabs"
-					role="tablist"
-					aria-label="记录类型"
-				>
-					{(["segment", "translation"] as const).map((kind) => (
-						<button
-							key={kind}
-							id={`${id}-${kind}`}
-							role="tab"
-							type="button"
-							aria-label={kind === "segment" ? "学习片段" : "翻译"}
-							aria-selected={tab === kind}
-							aria-controls={`${id}-${kind}-panel`}
-							onClick={() => changeTab(kind)}
-							onKeyDown={(event) => {
-								if (
-									!["ArrowLeft", "ArrowRight", "Home", "End"].includes(
-										event.key,
+			{showTabs && (
+				<div className="reader-record-tabs-row">
+					<div
+						className="reader-record-tabs"
+						role="tablist"
+						aria-label="记录类型"
+					>
+						{(["segment", "translation"] as const).map((kind) => (
+							<button
+								key={kind}
+								id={`${id}-${kind}`}
+								role="tab"
+								type="button"
+								aria-label={kind === "segment" ? "学习片段" : "翻译"}
+								aria-selected={tab === kind}
+								aria-controls={`${id}-${kind}-panel`}
+								onClick={() => changeTab(kind)}
+								onKeyDown={(event) => {
+									if (
+										!["ArrowLeft", "ArrowRight", "Home", "End"].includes(
+											event.key,
+										)
 									)
-								)
-									return;
-								event.preventDefault();
-								const next =
-									event.key === "Home"
-										? "segment"
-										: event.key === "End"
-											? "translation"
-											: kind === "segment"
+										return;
+									event.preventDefault();
+									const next =
+										event.key === "Home"
+											? "segment"
+											: event.key === "End"
 												? "translation"
-												: "segment";
-								changeTab(next);
-								element.current
-									?.querySelector<HTMLElement>(`[id="${id}-${next}"]`)
-									?.focus();
-							}}
-						>
-							{kind === "segment" ? "学习片段" : "翻译"}
-							<span>
-								{kind === "segment" ? items.length : translations.length}
-							</span>
-						</button>
-					))}
+												: kind === "segment"
+													? "translation"
+													: "segment";
+									changeTab(next);
+									element.current
+										?.querySelector<HTMLElement>(`[id="${id}-${next}"]`)
+										?.focus();
+								}}
+							>
+								{kind === "segment" ? "学习片段" : "翻译"}
+								<span>
+									{kind === "segment"
+										? items.length
+										: `${translations.length} 处`}
+								</span>
+							</button>
+						))}
+					</div>
 				</div>
-				<div
-					ref={setSegmentOpenSlot}
-					className="reader-record-segment-open-slot"
-					hidden={tab !== "segment"}
-				/>
-			</div>
+			)}
 			<div ref={body} className="reader-record-body">
+				{/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: both tabpanel and the named single-type region support labels. */}
 				<div
 					id={`${id}-segment-panel`}
-					role="tabpanel"
-					aria-labelledby={`${id}-segment`}
+					role={showTabs ? "tabpanel" : "region"}
+					aria-labelledby={showTabs ? `${id}-segment` : `${id}-title`}
 					hidden={tab !== "segment"}
 				>
 					<StudyPreview
@@ -421,21 +446,23 @@ export function ChapterRecords(props: Props) {
 						embedded
 						onLocateOriginal={fixed ? props.onLocateOriginal : undefined}
 						relatedRecordCount={relatedRecordCount}
-						actionSlots={{ back: segmentBackSlot, open: segmentOpenSlot }}
+						actionSlots={{ back: segmentBackSlot }}
 						inactive={inactive || tab !== "segment"}
 						onEmphasize={(value) => onEmphasize(value, "segment")}
 					/>
 				</div>
+				{/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: both tabpanel and the named single-type region support labels. */}
 				<div
 					id={`${id}-translation-panel`}
-					role="tabpanel"
-					aria-labelledby={`${id}-translation`}
+					role={showTabs ? "tabpanel" : "region"}
+					aria-labelledby={showTabs ? `${id}-translation` : `${id}-title`}
 					hidden={tab !== "translation"}
 				>
 					{selected ? (
 						<TranslationPanel
 							key={selected.identity_sha256}
 							embedded
+							showDetails={fixed || expanded}
 							initialResultId={selected.result_id}
 							materialId={chapter.material_id}
 							sourceId={props.sourceId}
@@ -491,6 +518,15 @@ export function ChapterRecords(props: Props) {
 									>
 										<span lang="ja">{item.excerpt}</span>
 										<span>{item.translation_excerpt}</span>
+										<time dateTime={item.created_at}>
+											{new Date(item.created_at).toLocaleString(undefined, {
+												year: "numeric",
+												month: "2-digit",
+												day: "2-digit",
+												hour: "2-digit",
+												minute: "2-digit",
+											})}
+										</time>
 									</button>
 									<TranslationRemoval
 										session={props.translationSessions.forTarget(
@@ -501,7 +537,7 @@ export function ChapterRecords(props: Props) {
 											},
 										)}
 										onRemoved={props.onTranslationRemoved}
-										label={`删除此处翻译：${item.excerpt}`}
+										label={`清除此处全部翻译：${item.excerpt}`}
 									/>
 								</div>
 							))}

@@ -21,6 +21,7 @@ import type { DictionaryMode } from "./ReaderDictionary";
 import type { ReaderCardPosition } from "./reader-card-drag";
 import type { ScreenAnchor, StudyMarkHit } from "./reader-study";
 import { useReaderCardDrag } from "./use-reader-card-drag";
+import "./reader-popover.css";
 
 export type LookupOrigin = {
 	input: DictionaryRequest;
@@ -377,7 +378,7 @@ function WordCard({
 		Array.from(level.origin.input.text)[level.origin.input.position ?? 0] ?? "";
 	return (
 		<article
-			className="dict-card"
+			className="dict-card reader-popover"
 			ref={card}
 			tabIndex={-1}
 			onKeyDown={turnPage}

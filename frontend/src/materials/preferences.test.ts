@@ -3,14 +3,51 @@ import test from "node:test";
 import {
 	bookUiKey,
 	DEFAULT_BOOK_UI,
+	DEFAULT_DICTIONARY_OPACITY,
 	DEFAULT_READER_UI,
 	normalizeBookUi,
 	normalizeReaderUi,
+	READER_UI_KEY,
 	readBookUiPreferences,
 	readReaderUiPreferences,
 	resolveReaderTheme,
 	writeReaderUiPreferences,
 } from "./preferences.ts";
+
+test("shared floating surfaces retain saved dictionary opacity and validate its supported range", () => {
+	const values = new Map([
+		[
+			READER_UI_KEY,
+			JSON.stringify({ dictionaryOpacity: 35, toolbarOpacity: 60 }),
+		],
+	]);
+	const store = {
+		getItem: (key: string) => values.get(key) ?? null,
+		setItem: (key: string, value: string) => {
+			values.set(key, value);
+		},
+	};
+	assert.equal(readReaderUiPreferences(store).dictionaryOpacity, 35);
+	for (const value of [20, 72, 100]) {
+		writeReaderUiPreferences(
+			{ ...readReaderUiPreferences(store), dictionaryOpacity: value },
+			store,
+		);
+		assert.equal(
+			readReaderUiPreferences(store).dictionaryOpacity ??
+				DEFAULT_DICTIONARY_OPACITY,
+			value,
+		);
+		assert.equal(readReaderUiPreferences(store).toolbarOpacity, 60);
+	}
+	for (const value of [19, 101, Number.NaN, "20"]) {
+		assert.equal(
+			normalizeReaderUi({ dictionaryOpacity: value }).dictionaryOpacity ??
+				DEFAULT_DICTIONARY_OPACITY,
+			72,
+		);
+	}
+});
 
 test("UI preferences validate enums and bounded values without adding API settings", () => {
 	assert.deepEqual(normalizeReaderUi({ theme: "soft", focus: false }), {

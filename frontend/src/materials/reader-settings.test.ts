@@ -26,6 +26,7 @@ test("each reset only returns fields owned by its group", () => {
 		ui: {
 			theme: DEFAULT_READER_UI.theme,
 			toolbarOpacity: DEFAULT_READER_UI.toolbarOpacity,
+			dictionaryOpacity: 72,
 			marks: DEFAULT_READER_UI.marks,
 		},
 	});

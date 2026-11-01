@@ -3,6 +3,7 @@ import {
 	type ReactNode,
 	useCallback,
 	useEffect,
+	useId,
 	useLayoutEffect,
 	useRef,
 	useState,
@@ -18,6 +19,7 @@ import {
 import { useReaderSessionRefresh } from "../materials/reader-session-query";
 import type { ScreenAnchor } from "../materials/reader-study";
 import type { MaterialProvenance, StudyTarget } from "../materials/study-api";
+import { studySidebarPosition } from "../materials/study-overlays";
 import { useReaderCardDrag } from "../materials/use-reader-card-drag";
 import { useViewActivity } from "../navigation/view-activity";
 import { InlineError } from "../Shared";
@@ -47,6 +49,7 @@ import {
 	useTranslationRemoval,
 } from "./TranslationRemoval";
 import "./translation.css";
+import "../materials/reader-popover.css";
 
 type ResultSnapshot = {
 	session: TranslationSession;
@@ -230,6 +233,10 @@ export function TranslationPanel({
 	anchor = null,
 	direction = "horizontal-tb",
 	embedded = false,
+	showDetails = true,
+	expanded: controlledExpanded,
+	onExpand,
+	onCollapse,
 	initialResultId,
 	translationSessions,
 	onClose,
@@ -246,6 +253,10 @@ export function TranslationPanel({
 	anchor?: ScreenAnchor | null;
 	direction?: "horizontal-tb" | "vertical-rl";
 	embedded?: boolean;
+	showDetails?: boolean;
+	expanded?: boolean;
+	onExpand?: () => void;
+	onCollapse?: () => void;
 	initialResultId?: string;
 	translationSessions?: TranslationSessions;
 	onClose: () => void;
@@ -257,6 +268,9 @@ export function TranslationPanel({
 	const { active, activation } = useViewActivity();
 	const element = useRef<HTMLElement>(null);
 	const content = useRef<HTMLDivElement>(null);
+	const [localExpanded, setLocalExpanded] = useState(false);
+	const expanded = controlledExpanded ?? localExpanded;
+	const detailsVisible = embedded ? showDetails : expanded;
 	const speech = getSpeechController();
 	const speechState = useSyncExternalStore(
 		speech.subscribe,
@@ -274,7 +288,7 @@ export function TranslationPanel({
 		height: number;
 	} | null>(null);
 	const [wide, setWide] = useState(() => innerWidth > 600);
-	const draggable = active && wide && visible && !embedded;
+	const draggable = active && wide && visible && !embedded && !expanded;
 	const { dragging, handlers: dragHandlers } = useReaderCardDrag(
 		element,
 		draggable,
@@ -305,6 +319,10 @@ export function TranslationPanel({
 				: 76;
 			const viewport = { width: innerWidth, height: innerHeight };
 			const size = { width: node.offsetWidth, height: node.scrollHeight + 2 };
+			if (expanded) {
+				setPosition(studySidebarPosition(viewport, size.width, bottomInset));
+				return;
+			}
 			const available = translationCardPosition(
 				null,
 				viewport,
@@ -354,7 +372,7 @@ export function TranslationPanel({
 			observer.disconnect();
 			window.removeEventListener("resize", measure);
 		};
-	}, [anchor, direction, visible, speechState, embedded]);
+	}, [anchor, direction, visible, speechState, embedded, expanded]);
 	useLayoutEffect(() => {
 		manual.current = manualPosition;
 		measurePosition.current?.();
@@ -515,6 +533,7 @@ export function TranslationPanel({
 		resultRefreshed &&
 		result.isSuccess &&
 		!result.data.reader_deleted &&
+		!state.removal?.resultIds.includes(result.data.id) &&
 		result.data.id === resolvedId
 			? result.data
 			: undefined;
@@ -541,9 +560,52 @@ export function TranslationPanel({
 			? retainedResult.result
 			: undefined;
 	// Only this activation's validated output may bridge a pending or failed retranslation read.
-	const displayedResult = result.data?.reader_deleted
+	const resultCandidate = result.data?.reader_deleted
 		? undefined
 		: (readableResult ?? retained ?? followedResult);
+	const displayedResult =
+		resultCandidate && !state.removal?.resultIds.includes(resultCandidate.id)
+			? resultCandidate
+			: undefined;
+	useLayoutEffect(() => {
+		const removed = state.removal;
+		if (!removed) return;
+		const includes = (id: string | null | undefined) =>
+			!!id && removed.resultIds.includes(id);
+		if (
+			includes(retainedResult?.result.id) ||
+			includes(lastLoadedResult.current?.result.id)
+		) {
+			const fallback = removed.remainingResultId
+				? client.getQueryData<TranslationResult>([
+						"translation-result",
+						removed.remainingResultId,
+					])
+				: undefined;
+			setRetainedResult(
+				fallback && !fallback.reader_deleted && !includes(fallback.id)
+					? { session, activation, result: fallback }
+					: undefined,
+			);
+		}
+		if (includes(lastLoadedResult.current?.result.id))
+			lastLoadedResult.current = null;
+		if (includes(versionReturnId)) setVersionReturnId(null);
+		if (includes(resolvedId)) {
+			choiceGeneration.current++;
+			setResultId(removed.remainingResultId);
+			setTaskId(null);
+			setOffset(0);
+		}
+	}, [
+		state.removal,
+		retainedResult,
+		versionReturnId,
+		resolvedId,
+		client,
+		session,
+		activation,
+	]);
 	useEffect(() => {
 		if (visible && readableResult) onResultSelected?.(readableResult);
 	}, [visible, readableResult, onResultSelected]);
@@ -568,17 +630,64 @@ export function TranslationPanel({
 	const removing = state.phase === "removing";
 	const busy = activeTranslation(currentTask) || pending || removing;
 	const removed: TranslationRemoved = (value, reference) => {
-		choiceGeneration.current++;
-		lastLoadedResult.current = null;
-		setRetainedResult(undefined);
-		setVersionReturnId(null);
-		setResultId(null);
-		setTaskId(null);
+		const remaining =
+			"remaining_result" in value ? value.remaining_result : null;
 		setOffset(0);
 		if (onRemoved) onRemoved(value, reference);
-		else onClose();
+		else if (!remaining) onClose();
 	};
-	const removal = useTranslationRemoval({ session, onRemoved: removed });
+	const moreId = useId();
+	const more = useRef<HTMLDetailsElement>(null);
+	useEffect(() => {
+		if (!visible && more.current) more.current.open = false;
+		const dismiss = (event: PointerEvent) => {
+			if (more.current && !more.current.contains(event.target as Node))
+				more.current.open = false;
+		};
+		window.addEventListener("pointerdown", dismiss);
+		return () => window.removeEventListener("pointerdown", dismiss);
+	}, [visible]);
+	const removal = useTranslationRemoval({
+		session,
+		onRemoved: removed,
+		restoreFocusId: moreId,
+		withLabel: true,
+		onOpenConfirmation: () => {
+			if (more.current) {
+				more.current.open = false;
+				more.current.querySelector("summary")?.focus();
+			}
+		},
+	});
+	const moreActions = (
+		<details
+			ref={more}
+			className="translation-more"
+			onKeyDown={(event) => {
+				if (event.key === "Escape" && more.current?.open) {
+					event.preventDefault();
+					event.stopPropagation();
+					more.current.open = false;
+					more.current.querySelector("summary")?.focus();
+				}
+			}}
+		>
+			<summary id={moreId} aria-label="更多翻译操作" title="更多翻译操作">
+				<svg
+					width="18"
+					height="18"
+					viewBox="0 0 24 24"
+					fill="currentColor"
+					aria-hidden="true"
+				>
+					<circle cx="5" cy="12" r="1.5" />
+					<circle cx="12" cy="12" r="1.5" />
+					<circle cx="19" cy="12" r="1.5" />
+				</svg>
+			</summary>
+			<div className="translation-more-actions">{removal.action}</div>
+		</details>
+	);
 	const fill = () => session.edit({ kind: "refill" });
 	const setBudget = (value: typeof budget) =>
 		session.edit({ kind: "budget", value });
@@ -688,7 +797,7 @@ export function TranslationPanel({
 			{!uncertain && activeTranslation(currentTask)
 				? stopAction(true)
 				: translationAction(true)}
-			{removal.action}
+			{moreActions}
 		</fieldset>
 	);
 	const showHeaderActions =
@@ -707,11 +816,28 @@ export function TranslationPanel({
 				<div className="translation-header-actions">
 					{!displayedResult &&
 						(!!history.data?.tasks.length || currentTask) &&
-						removal.action}
+						moreActions}
 					{!displayedResult &&
 						(initialized || uncertain) &&
 						translationAction()}
 					{!displayedResult && stopAction()}
+					{!embedded && (
+						<button
+							type="button"
+							aria-expanded={expanded}
+							onClick={() => {
+								if (expanded) {
+									onCollapse?.();
+									setLocalExpanded(false);
+								} else {
+									onExpand?.();
+									setLocalExpanded(true);
+								}
+							}}
+						>
+							{expanded ? "收起" : "展开"}
+						</button>
+					)}
 					{!embedded && (
 						<button
 							type="button"
@@ -730,15 +856,27 @@ export function TranslationPanel({
 	return (
 		<section
 			ref={element}
-			className={`translation-card${embedded ? " embedded" : ""}`}
-			style={embedded ? undefined : position}
+			className={`translation-card reader-popover${embedded ? " embedded" : ""}${!embedded && expanded ? " expanded" : ""}`}
+			style={
+				embedded
+					? undefined
+					: { ...position, height: expanded ? position?.maxHeight : undefined }
+			}
 			role={embedded ? "region" : "dialog"}
 			aria-label={embedded ? "译文" : undefined}
 			aria-labelledby={embedded ? undefined : "translation-heading"}
 			data-reader-tool=""
+			data-reader-panel-side={!embedded && expanded ? "right" : undefined}
 			data-reader-card-manual={manualPosition ? "true" : undefined}
 			data-reader-card-dragging={dragging ? "true" : undefined}
 			onKeyDown={(event) => {
+				if (
+					event.key === "Escape" &&
+					(event.target as Element).closest("dialog")
+				) {
+					event.stopPropagation();
+					return;
+				}
 				if (
 					!embedded &&
 					event.key === "Escape" &&
@@ -763,9 +901,14 @@ export function TranslationPanel({
 					}
 					{...dragHandlers}
 				>
-					<h2 id="translation-heading" ref={heading} tabIndex={-1}>
-						译文
-					</h2>
+					<div className="reader-popover-title">
+						<span className="reader-popover-seal" aria-hidden="true">
+							译
+						</span>
+						<h2 id="translation-heading" ref={heading} tabIndex={-1}>
+							翻译
+						</h2>
+					</div>
 					{toolbar}
 				</header>
 			)}
@@ -836,7 +979,7 @@ export function TranslationPanel({
 					/>
 				)}
 				{!displayedResult && versionAction}
-				<details>
+				<details hidden={!detailsVisible}>
 					<summary>语境与设置</summary>
 					{displayedResult && (
 						<>
@@ -961,9 +1104,9 @@ export function TranslationPanel({
 						history.data.tasks.length > 0 ||
 						offset > 0) && (
 						<>
-							<details>
+							<details hidden={!detailsVisible}>
 								<summary>
-									此处历史翻译（本页 {history.data.results.length}）
+									历史译文（本页 {history.data.results.length}）
 								</summary>
 								{history.data.results.map((item) => (
 									<button
@@ -984,7 +1127,9 @@ export function TranslationPanel({
 										<span>{item.translation}</span>
 									</button>
 								))}
-								{!history.data.tasks.length && <p>还没有翻译记录。</p>}
+								{!history.data.tasks.length && !history.data.results.length && (
+									<p>还没有翻译记录。</p>
+								)}
 								{history.data.tasks
 									.filter((item) => !item.result_id)
 									.map((item) => (
@@ -1003,31 +1148,33 @@ export function TranslationPanel({
 									))}
 							</details>
 							{(offset > 0 || history.data.next_offset !== null) && (
-								<div className="translation-actions">
-									<button
-										type="button"
-										disabled={offset === 0}
-										onClick={() => {
-											browse();
-											setOffset(Math.max(0, offset - 15));
-											setResultId(null);
-											setTaskId(null);
-										}}
-									>
-										上一页
-									</button>
-									<button
-										type="button"
-										disabled={history.data.next_offset === null}
-										onClick={() => {
-											browse();
-											setOffset(history.data?.next_offset ?? 0);
-											setResultId(null);
-											setTaskId(null);
-										}}
-									>
-										下一页
-									</button>
+								<div hidden={!detailsVisible}>
+									<div className="translation-actions">
+										<button
+											type="button"
+											disabled={offset === 0}
+											onClick={() => {
+												browse();
+												setOffset(Math.max(0, offset - 15));
+												setResultId(null);
+												setTaskId(null);
+											}}
+										>
+											上一页
+										</button>
+										<button
+											type="button"
+											disabled={history.data.next_offset === null}
+											onClick={() => {
+												browse();
+												setOffset(history.data?.next_offset ?? 0);
+												setResultId(null);
+												setTaskId(null);
+											}}
+										>
+											下一页
+										</button>
+									</div>
 								</div>
 							)}
 						</>

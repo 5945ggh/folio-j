@@ -384,11 +384,11 @@ export function ReaderDictionary({
 											))}
 										</fieldset>
 										<label className="dict-opacity">
-											<span>词卡背景不透明度</span>
+											<span>浮窗背景不透明度</span>
 											<output>{opacity}%</output>
 											<input
 												type="range"
-												aria-label="词卡背景不透明度"
+												aria-label="浮窗背景不透明度"
 												min={MIN_DICTIONARY_OPACITY}
 												max="100"
 												step="1"
@@ -398,6 +398,9 @@ export function ReaderDictionary({
 												}
 											/>
 										</label>
+										<p>
+											词卡、学习片段、翻译与记录列表共用，与阅读界面设置同步。
+										</p>
 									</>
 								) : (
 									<p>在设置中导入并选择词典，即可点读正文和词卡。</p>

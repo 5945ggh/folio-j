@@ -4,6 +4,7 @@ export type ReaderRuby = "show" | "on-demand" | "hide";
 export const DEFAULT_DICTIONARY_OPACITY = 72;
 export const MIN_DICTIONARY_OPACITY = 20;
 export type ReaderUiPreferences = {
+	/** Shared compact-popover opacity; preserve this stored field for existing readers. */
 	dictionaryOpacity?: number;
 	dictionaryMode?: "off" | "click" | "hover";
 	theme: ReaderTheme;

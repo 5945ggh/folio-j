@@ -28,7 +28,7 @@ export function checkTranslationResultActions(
 		'[aria-label="重新翻译"], [aria-label="停止翻译"], [aria-label="核实原提交"]',
 	);
 	const remove = actions.querySelector<HTMLButtonElement>(
-		'[aria-label="删除此处翻译"]',
+		'[aria-label="清除此处全部翻译"]',
 	);
 	check(
 		speech && regenerate && remove,
@@ -38,8 +38,9 @@ export function checkTranslationResultActions(
 		speech.textContent?.trim() &&
 			regenerate.textContent?.trim() ===
 				regenerate.getAttribute("aria-label") &&
-			!remove.textContent?.trim(),
-		"Speech and translation have visible labels; deletion stays a compact icon",
+			remove.textContent?.trim() === "清除此处全部翻译" &&
+			!!remove.closest(".translation-more"),
+		"Speech and translation have visible labels; target clearing is labelled inside the more-actions disclosure",
 	);
 	check(
 		speech.querySelector("svg") &&

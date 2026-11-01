@@ -608,7 +608,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			"Settings must read installed dictionary",
 		);
 		const opacity = h.container.querySelector<HTMLInputElement>(
-			'input[type="range"][aria-label="词卡背景不透明度"]',
+			'input[type="range"][aria-label="浮窗背景不透明度"]',
 		);
 		check(opacity, "Dictionary settings must expose background opacity slider");
 		check(
@@ -627,7 +627,7 @@ export async function readerDictionary(h: BrowserHarness) {
 		await h.until(
 			() =>
 				h.container.querySelector<HTMLInputElement>(
-					'input[aria-label="词卡背景不透明度"]',
+					'input[aria-label="浮窗背景不透明度"]',
 				)?.value === "20",
 			"Opacity must survive reopening dictionary settings",
 		);
@@ -774,7 +774,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			"Open word card must allow opacity preview settings",
 		);
 		const previewOpacity = h.container.querySelector<HTMLInputElement>(
-			'input[aria-label="词卡背景不透明度"]',
+			'input[aria-label="浮窗背景不透明度"]',
 		);
 		check(previewOpacity, "Open word card settings must retain opacity slider");
 		h.inputValue(previewOpacity, "84");
@@ -1609,7 +1609,7 @@ export async function readerDictionary(h: BrowserHarness) {
 		await h.until(
 			() =>
 				h.container.querySelector<HTMLInputElement>(
-					'input[aria-label="词卡背景不透明度"]',
+					'input[aria-label="浮窗背景不透明度"]',
 				)?.value === "20",
 			"Dictionary opacity must persist across Reader remounts",
 		);

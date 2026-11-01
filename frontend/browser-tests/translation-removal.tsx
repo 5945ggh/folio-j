@@ -26,8 +26,18 @@ export function translationRemovalFixture(
 			target.identity_sha256 !== repeated.identity_sha256,
 		"Repeated source must retain a distinct exact identity",
 	);
+	const other = results[2];
+	check(other, "Removal fixture requires a version-removal target");
+	const versionHistory = {
+		...other,
+		id: "result-other-history",
+		task_id: "task-other-history",
+		translation: "远方天空的旧版完整译文。",
+		created_at: "2026-10-22T00:00:00Z",
+	};
 	const history = [
 		...results,
+		versionHistory,
 		historical,
 		{
 			...target,
@@ -46,8 +56,13 @@ export function translationRemovalFixture(
 		target_language: repeated.target_language,
 		created_at: repeated.created_at,
 	});
+	for (const summary of summaries)
+		summary.result_count = history.filter(
+			(item) => item.identity_sha256 === summary.identity_sha256,
+		).length;
 	const removed = new Set<string>();
 	const deletions: string[] = [];
+	const isRemoved = (item: Result) => removed.has(item.identity_sha256);
 	let failNext = true;
 	let heldId: string | undefined;
 	let held = false;
@@ -101,7 +116,7 @@ export function translationRemovalFixture(
 				const identity = url.searchParams.get("identity_sha256");
 				const visible = history.filter(
 					(item) =>
-						!removed.has(item.identity_sha256) &&
+						!isRemoved(item) &&
 						(!identity || item.identity_sha256 === identity),
 				);
 				return Response.json({
@@ -132,7 +147,7 @@ export function translationRemovalFixture(
 						.filter((item) => item.adopted_segment_ids.includes("saved"))
 						.map((item) => ({
 							...item,
-							reader_deleted: removed.has(item.identity_sha256),
+							reader_deleted: isRemoved(item),
 						})),
 				);
 			const result = history.find(
@@ -141,7 +156,7 @@ export function translationRemovalFixture(
 			if (result && request.method === "GET") {
 				const snapshot = {
 					...result,
-					reader_deleted: removed.has(result.identity_sha256),
+					reader_deleted: isRemoved(result),
 				};
 				if (heldId === result.id) {
 					heldId = undefined;
@@ -152,8 +167,7 @@ export function translationRemovalFixture(
 					// Intentionally ignore AbortSignal and return the pre-delete response.
 					return Response.json(snapshot);
 				}
-				return removed.has(result.identity_sha256) &&
-					!result.adopted_segment_ids.length
+				return isRemoved(result) && !result.adopted_segment_ids.length
 					? Response.json({ detail: "翻译不存在" }, { status: 404 })
 					: Response.json(snapshot);
 			}
@@ -266,8 +280,8 @@ export async function translationRemoval(
 		);
 		back?.click();
 		await h.until(
-			() => !!listEntry(other.identity_sha256),
-			"Remaining chapter translations must be available",
+			() => !!listEntry(repeated.identity_sha256),
+			"The same text at an unrelated exact source must remain available",
 		);
 	};
 	button("关闭阅读记录").click();
@@ -304,7 +318,7 @@ export async function translationRemoval(
 			entry?.parentElement,
 			"Target row must remain available before deletion",
 		);
-		button(`删除此处翻译：${target.text}`, entry.parentElement).click();
+		button(`清除此处全部翻译：${target.text}`, entry.parentElement).click();
 	};
 	removeFromList();
 	await h.until(
@@ -312,7 +326,8 @@ export async function translationRemoval(
 		"List trash opens a native confirmation dialog",
 	);
 	check(
-		modal()?.textContent?.includes("已另存的学习片段及关联译文快照保留"),
+		modal()?.querySelector("h2")?.textContent === "清除此处全部翻译？" &&
+			modal()?.textContent?.includes("已另存的学习片段及关联译文快照保留"),
 		"Confirmation states exact deletion and retention scope",
 	);
 	button("取消", modal() ?? undefined).click();
@@ -367,7 +382,7 @@ export async function translationRemoval(
 	const adoptedEntry = listEntry(first.identity_sha256);
 	check(
 		adoptedEntry,
-		"Adopted target must still be available for title deletion",
+		"Adopted target must still be available for chapter-list clearing",
 	);
 	adoptedEntry.click();
 	await h.until(
@@ -375,18 +390,25 @@ export async function translationRemoval(
 		"Adopted detail GET must remain in flight before deletion",
 	);
 	await h.until(
-		() => !!h.container.querySelector('button[aria-label="删除此处翻译"]'),
-		"Detail history must expose title removal control while output is pending",
+		() => !!h.container.querySelector('button[aria-label="返回翻译列表"]'),
+		"Pending adopted detail must retain its chapter list return control",
 	);
-	button("删除此处翻译").click();
+	button("返回翻译列表").click();
+	await openList();
+	const adoptedRow = listEntry(first.identity_sha256);
+	check(
+		adoptedRow?.parentElement,
+		"Adopted target must remain listed while its detail is pending",
+	);
+	button(`清除此处全部翻译：${first.text}`, adoptedRow.parentElement).click();
 	await h.until(
-		() => !!modal(),
-		"Detail title trash opens the same confirmation",
+		() => modal()?.querySelector("h2")?.textContent === "清除此处全部翻译？",
+		"Chapter list removal must confirm clearing the complete target",
 	);
 	button("确认删除翻译", modal() ?? undefined).click();
 	await h.until(
 		() => !modal() && fixture.removed.has(first.identity_sha256),
-		"Title deletion completes while stale detail remains pending",
+		"List deletion completes while stale adopted detail remains pending",
 	);
 	fixture.releaseDetail();
 	await frames();
@@ -398,12 +420,55 @@ export async function translationRemoval(
 	check(
 		Number(fixture.deletions.length) === 3 &&
 			fixture.deletions[2] === first.identity_sha256,
-		"Title deletion submits exactly one request for the adopted target",
+		"List clearing submits exactly one request for the adopted target",
 	);
 	await h.until(
 		() => marked("folio-study", first) && !marked("folio-translation", target),
 		"Removing translation must preserve saved study underline",
 	);
+	const remainingRow = listEntry(other.identity_sha256);
+	check(remainingRow, "Other multi-version target must remain listed");
+	remainingRow.click();
+	await h.until(
+		() =>
+			h.container.querySelector(".translation-output")?.textContent ===
+			other.translation,
+		"Saved translation opens before clearing from the more menu",
+	);
+	const more =
+		h.container.querySelector<HTMLDetailsElement>(".translation-more");
+	check(more, "Translation details expose a more menu");
+	more.open = true;
+	button("清除此处全部翻译").click();
+	await h.until(
+		() => modal()?.querySelector("h2")?.textContent === "清除此处全部翻译？",
+		"Detail removal confirms all versions at the exact target",
+	);
+	button("取消", modal() ?? undefined).click();
+	await h.until(
+		() => !modal() && document.activeElement === more.querySelector("summary"),
+		"Cancel returns focus to the persistent more trigger",
+	);
+	more.open = true;
+	button("清除此处全部翻译").click();
+	await h.until(
+		() => !!modal(),
+		"Reopening the more-menu confirmation must finish before submitting",
+	);
+	button("确认删除翻译", modal() ?? undefined).click();
+	await h.until(
+		() =>
+			!modal() &&
+			fixture.removed.has(other.identity_sha256) &&
+			!marked("folio-translation", other),
+		"More-menu clearing removes the whole multi-version target and its underline",
+	);
+	await openList();
+	check(
+		!listEntry(other.identity_sha256),
+		"Cleared target must be absent from the chapter list",
+	);
+
 	button("学习片段").click();
 	await h.until(
 		() =>
@@ -463,12 +528,12 @@ export async function translationRemoval(
 		"Fresh reader must not resurrect deleted histories, source mark or inline output",
 	);
 	check(
-		listEntry(other.identity_sha256) && listEntry(repeated.identity_sha256),
-		"Fresh reader preserves independent and same-text other-location translations",
+		!listEntry(other.identity_sha256) && listEntry(repeated.identity_sha256),
+		"Fresh reader preserves the same-text other-location translation and keeps version-deleted target absent",
 	);
 	reader.releaseReader();
 	await studyDraftRemoval(h, other, reader.chapter);
-	return `translation removal ${vertical ? "vertical" : "horizontal"} ${innerWidth}px: source tap, cancel, failed DELETE retry, all histories/mark/inline cleanup, exact identity, late detail rejection, same-text location isolation, adopted title deletion, Segment/Analysis retention and fresh mount`;
+	return `translation removal ${vertical ? "vertical" : "horizontal"} ${innerWidth}px: source tap, cancel, failed DELETE retry, all histories/mark/inline cleanup, exact identity, late detail rejection, same-text location isolation, adopted list clearing, more-menu whole-target clearing and cancel focus, Segment/Analysis retention and fresh mount`;
 }
 
 /** Actual draft panel keeps edited text and fences uncertain saves after source removal. */
