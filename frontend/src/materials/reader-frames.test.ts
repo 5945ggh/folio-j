@@ -285,7 +285,7 @@ test("current frame resources become ready once and frame replacement releases t
 	}
 });
 
-test("strict study validation requires every current part and snapshot without depending on painting support", () => {
+test("navigation highlights validate every current part and snapshot before painting", () => {
 	const original = Object.getOwnPropertyDescriptor(
 		globalThis,
 		"getComputedStyle",
@@ -347,6 +347,14 @@ test("strict study validation requires every current part and snapshot without d
 		};
 		const h1 = documentFixture("甲乙"),
 			h2 = documentFixture("丙丁");
+		const highlights = [new Map<string, unknown>(), new Map<string, unknown>()];
+		for (const [index, fixture] of [h1, h2].entries())
+			Object.assign(fixture.doc, {
+				defaultView: {
+					Highlight: class {},
+					CSS: { highlights: highlights[index] },
+				},
+			});
 		const element1 = {
 			ownerDocument: h1.outerDocument,
 			contentDocument: h1.doc,
@@ -379,26 +387,31 @@ test("strict study validation requires every current part and snapshot without d
 				text_sha256: "a".repeat(64),
 			},
 		];
-		assert.throws(() => frames.validateStudyTarget(chapter, ranges), /完整/);
+		assert.throws(() => frames.highlight(chapter, ranges), /完整/);
+		assert.equal(highlights[0]?.has("folio-search"), false);
 		const [firstRange, secondRange] = ranges;
 		assert.ok(firstRange && secondRange);
 		frames.register(1, element2);
 		frames.load(1, element2, 0, context);
-		assert.doesNotThrow(() => frames.validateStudyTarget(chapter, ranges));
+		assert.doesNotThrow(() => frames.highlight(chapter, ranges));
+		for (const painted of highlights) assert.ok(painted.has("folio-search"));
+		frames.clearSearchHighlights();
 		assert.throws(
-			() => frames.validateStudyTarget({ ...chapter, id: "other" }, ranges),
+			() => frames.highlight({ ...chapter, id: "other" }, ranges),
 			/完整/,
 		);
 		assert.throws(
 			() =>
-				frames.validateStudyTarget(chapter, [
+				frames.highlight(chapter, [
 					{ ...firstRange, exact: "錯" },
 					secondRange,
 				]),
 			/快照/,
 		);
 		h2.textNode.data = "損壊";
-		assert.throws(() => frames.validateStudyTarget(chapter, ranges), /投影/);
+		assert.throws(() => frames.highlight(chapter, ranges), /投影/);
+		for (const painted of highlights)
+			assert.equal(painted.has("folio-search"), false);
 		frames.clear();
 		h1.fonts();
 		h2.fonts();

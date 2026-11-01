@@ -58,6 +58,8 @@ const scenarios = selectBrowserScenarios(
 		[390, 900, "?suite=route-motion"],
 		[1280, 900, "?suite=route-motion&reduced-motion"],
 		[1280, 900, "?suite=reader-session"],
+		[1280, 900, "?suite=segment-navigation"],
+		[1280, 900, "?suite=segment-navigation&direction=vertical-rl"],
 		[1280, 900, "?suite=reader-layout-switch"],
 		[390, 900, "?suite=reader-layout-switch"],
 		[1280, 900, "?suite=reader-layout-switch&direction=vertical-rl"],

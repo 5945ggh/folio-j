@@ -36,6 +36,7 @@ import { routeLoading } from "./route-loading";
 import { routeMotion } from "./route-motion";
 import { segmentCatalog } from "./segment-catalog";
 import { segmentMaterials } from "./segment-materials";
+import { segmentNavigation } from "./segment-navigation";
 import { segmentShareRegression } from "./segment-share";
 import { settingsModels } from "./settings-models";
 import { themeRegression } from "./theme";
@@ -432,6 +433,7 @@ try {
 		["segment-catalog", segmentCatalog],
 		["record-saving", recordSaving],
 		["navigation-feedback", navigationFeedback],
+		["segment-navigation", segmentNavigation],
 		["route-motion", routeMotion],
 		["route-loading", routeLoading],
 	]).get(suite ?? "");

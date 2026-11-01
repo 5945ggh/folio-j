@@ -10,7 +10,6 @@ import { isReaderFrameTarget, registerReaderFrameTargets } from "./focus.ts";
 import {
 	clearSearchHighlights,
 	prepareHighlights,
-	projectedBaseRanges,
 	refreshSearchHighlightForeground,
 	setSearchHighlightOpacity,
 } from "./highlight.ts";
@@ -266,19 +265,6 @@ export class ReaderFrames {
 		);
 		return frame.projection;
 	}
-	validateStudyTarget(
-		chapter: Chapter,
-		ranges: readonly ReaderHighlightRange[],
-	): void {
-		const parts = referenceParts(chapter, ranges);
-		for (const [index, intervals] of parts) {
-			const projection = this.freshProjection(index, chapter),
-				frame = this.frames.get(index);
-			if (!frame) throw new Error("原文尚未完整显示，目标已保留。");
-			for (const { start, end } of intervals)
-				projectedBaseRanges(frame.doc, projection, start, end);
-		}
-	}
 	private searchHighlightOpacity = 1;
 	private readonly frames = new Map<number, ReaderFrame>();
 	private readonly elements = new Map<number, HTMLIFrameElement>();
@@ -353,19 +339,10 @@ export class ReaderFrames {
 		const targets = referenceParts(chapter, ranges);
 		const paint: (() => void)[] = [];
 		for (const [index, intervals] of targets) {
+			const projection = this.freshProjection(index, chapter);
 			const frame = this.frames.get(index);
-			const part = chapter.parts[index];
-			const resource = chapter.resources.find(
-				(item) => item.id === part?.resource_id,
-			);
-			if (!frame || !part || !resource || !this.validity.get(index)?.())
-				throw new Error("原文尚未完整显示，已保留定位目标，请重试。");
-			frame.projection = projectPart(
-				frame.doc,
-				Array.from(resource.text).slice(part.start, part.end).join(""),
-				part.leaf_start,
-			);
-			paint.push(prepareHighlights(frame.doc, frame.projection, intervals));
+			if (!frame) throw new Error("原文尚未完整显示，已保留定位目标，请重试。");
+			paint.push(prepareHighlights(frame.doc, projection, intervals));
 		}
 		for (const commit of paint) commit();
 		this.setSearchHighlightOpacity(this.searchHighlightOpacity);

@@ -267,6 +267,35 @@ test("record navigation carries every highlight range and retains the reading re
 	assert.equal(f.navigation.state.origin, null);
 });
 
+test("superseded and cancelled same-chapter targets cannot lend ranges to later navigation", async () => {
+	for (const cancel of [false, true]) {
+		const f = fixture();
+		const load = deferred<Chapter>();
+		f.setLoader(() => load.promise);
+		const old = f.navigation.navigate({
+			type: "position",
+			target: position("B", 10),
+			highlightRanges: [
+				{ resource_id: "r-B", spine_index: 2, start: 10, end: 20 },
+			],
+		});
+		if (cancel) f.navigation.invalidate();
+		const current = f.navigation.navigate({
+			type: "position",
+			target: position("B", 70),
+			mark: { start: 70, end: 75 },
+		});
+		load.resolve(chapter("B"));
+		assert.equal(await old, false);
+		assert.equal(await current, true);
+		const destination = f.presentations.at(-1)?.destination;
+		assert.equal(destination?.target.offset, 70);
+		assert.deepEqual(destination?.mark, { start: 70, end: 75 });
+		assert.equal(destination?.highlightRanges, undefined);
+		assert.equal(f.presentations.length, 2);
+	}
+});
+
 test("loaded chapter and remembered target identities must match before present receives them", async () => {
 	for (const mismatch of ["chapter", "version", "remembered"] as const) {
 		const f = fixture();

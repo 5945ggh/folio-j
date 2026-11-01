@@ -478,22 +478,17 @@ function Reader({
 	const registerViewerEscape = useCallback((close: (() => void) | null) => {
 		viewerEscape.current = close;
 	}, []);
-	const pendingOrigin = useRef<SegmentProvenance | null>(null);
-	const pendingVocabulary = useRef<VocabularyReaderTarget | null>(null);
 	const highlight = useRef<{
 		chapterId: string;
 		ranges: readonly ReaderHighlightRange[];
-		kind: "study" | "search";
 	} | null>(
 		initialVocabulary
 			? {
-					kind: "search",
 					chapterId: initialVocabulary.chapter_id,
 					ranges: [initialVocabulary],
 				}
 			: initialOrigin?.material_provenance && initialOrigin.chapter_id
 				? {
-						kind: "study",
 						chapterId: initialOrigin.chapter_id,
 						ranges: initialOrigin.material_provenance.ranges,
 					}
@@ -503,17 +498,17 @@ function Reader({
 	if (!navigationHighlight.current) {
 		navigationHighlight.current = new NavigationHighlightLifetime(
 			() => {
-				if (highlight.current?.kind === "search") highlight.current = null;
+				highlight.current = null;
 				frames.current.clearSearchHighlights();
 			},
 			undefined,
 			{ opacity: (value) => frames.current.setSearchHighlightOpacity(value) },
 		);
 	}
-	useEffect(() => () => navigationHighlight.current?.dispose(), []);
-	useEffect(() => {
-		if (initialVocabulary) navigationHighlight.current?.replace();
-	}, [initialVocabulary]);
+	useLayoutEffect(() => {
+		if (highlight.current) navigationHighlight.current?.replace();
+		return () => navigationHighlight.current?.dispose();
+	}, []);
 	const latest = useRef({
 		panels,
 		panelAboveCards,
@@ -1172,9 +1167,7 @@ function Reader({
 			if (!activeRef.current || !root || !data) return false;
 			if (highlight.current?.chapterId === chapterId) {
 				try {
-					if (highlight.current.kind === "study")
-						frames.current.validateStudyTarget(data, highlight.current.ranges);
-					else frames.current.highlight(data, highlight.current.ranges);
+					frames.current.highlight(data, highlight.current.ranges);
 					setOriginError(null);
 				} catch (failure) {
 					setOriginError(
@@ -1278,7 +1271,7 @@ function Reader({
 				error: navigationFailure,
 				afterRestore: () => {
 					setPresented(true);
-					if (located && highlight.current?.kind === "search")
+					if (located && highlight.current)
 						navigationHighlight.current?.presented();
 					frames.current.refreshStudyGeometry();
 					if (!inlineMutation.current) observe();
@@ -1470,8 +1463,8 @@ function Reader({
 				return Number.isFinite(offset) && Math.abs(offset) <= 1;
 			},
 			loadChapter: (id) => {
-				if (chapter.data?.id === id) return Promise.resolve(chapter.data);
 				navigationHighlight.current?.clear(true);
+				if (chapter.data?.id === id) return Promise.resolve(chapter.data);
 				return client.fetchQuery({
 					queryKey: materialKeys.chapter(book.id, id),
 					queryFn: () => getChapter(book.id, id),
@@ -1488,13 +1481,11 @@ function Reader({
 				const { target, mark, part: targetPart, highlightRanges } = destination;
 				highlight.current = highlightRanges
 					? {
-							kind: "search",
 							chapterId: target.chapter_id,
 							ranges: highlightRanges,
 						}
 					: mark
 						? {
-								kind: "search",
 								chapterId: target.chapter_id,
 								ranges: [
 									{
@@ -1505,27 +1496,7 @@ function Reader({
 								],
 							}
 						: null;
-				if (
-					pendingOrigin.current?.chapter_id === target.chapter_id &&
-					pendingOrigin.current.material_provenance
-				) {
-					highlight.current = {
-						kind: "study",
-						chapterId: target.chapter_id,
-						ranges: pendingOrigin.current.material_provenance.ranges,
-					};
-					pendingOrigin.current = null;
-				}
-				if (pendingVocabulary.current?.chapter_id === target.chapter_id) {
-					highlight.current = {
-						kind: "search",
-						chapterId: target.chapter_id,
-						ranges: [pendingVocabulary.current],
-					};
-					pendingVocabulary.current = null;
-				}
-				if (highlight.current?.kind === "search")
-					navigationHighlight.current?.replace();
+				if (highlight.current) navigationHighlight.current?.replace();
 				else navigationHighlight.current?.clear(true);
 				setOriginError(null);
 				const previousChapter = presentation.current.state.chapterId;
@@ -1776,22 +1747,21 @@ function Reader({
 		if (!active || previousSession.current === sessionToken) return;
 		previousSession.current = sessionToken;
 		if (initialVocabulary) {
-			pendingVocabulary.current = initialVocabulary;
 			void navigation.current.navigate({
 				type: "position",
 				target: vocabularyReaderPosition(
 					initialVocabulary,
 					latest.current.settings,
 				),
-				mark: { start: initialVocabulary.start, end: initialVocabulary.end },
+				highlightRanges: [initialVocabulary],
 			});
 			return;
 		}
 		if (!initialOrigin) return;
-		pendingOrigin.current = initialOrigin;
 		void navigation.current.navigate({
 			type: "position",
 			target: originPosition(initialOrigin, latest.current.settings),
+			highlightRanges: initialOrigin.material_provenance?.ranges,
 		});
 	}, [active, sessionToken, initialOrigin, initialVocabulary]);
 

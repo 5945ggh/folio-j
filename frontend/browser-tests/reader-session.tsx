@@ -10,122 +10,22 @@ import {
 } from "react-router";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
+import {
+	readerSessionFixture,
+	readerSessionFixtureData,
+} from "./reader-session-fixture";
 
 type Schema = components["schemas"];
-const timestamp = "2026-10-24T00:00:00Z";
-const hash = "a".repeat(64);
-const materialId = "reader-session";
-const versionId = "v1";
-const chapterId = "long-chapter";
-const paragraphs = Array.from(
-	{ length: 400 },
-	(_, index) =>
-		`春の風。第${String(index).padStart(3, "0")}段落。静かな庭を通り抜ける。`,
-);
-const text = paragraphs.join("");
-const startAt = (index: number) => paragraphs.slice(0, index).join("").length;
-const targetParagraph = 350;
-const targetStart = startAt(targetParagraph);
-const targetText = paragraphs[targetParagraph] ?? "";
-const reference: Schema["MaterialProvenance"] = {
-	contract_version: "1",
-	material_id: materialId,
-	version_id: versionId,
-	ranges: [
-		{
-			resource_id: "r",
-			spine_index: 0,
-			start: targetStart,
-			end: targetStart + targetText.length,
-			exact: targetText,
-			text_sha256: hash,
-			prefix: "",
-			suffix: "",
-		},
-	],
-};
-const chapter: Schema["MaterialChapterResponse"] = {
-	id: chapterId,
-	material_id: materialId,
-	version_id: versionId,
-	title: "400段の長い章",
-	level: 0,
-	resources: [
-		{
-			id: "r",
-			text,
-			text_sha256: hash,
-			href: "chapter.xhtml",
-			css: "p{margin:0 0 1.8em}",
-			html_attributes: { lang: "ja" },
-			body_attributes: {},
-		},
-	],
-	parts: [0, 140, 280].map((first, index) => {
-		const end = index === 2 ? 400 : first + 140;
-		return {
-			resource_id: "r",
-			spine_index: 0,
-			start: startAt(first),
-			end: startAt(end),
-			leaf_start: first,
-			leaf_end: end,
-			html: paragraphs
-				.slice(first, end)
-				.map(
-					(value, local) =>
-						`<p><span data-locator-leaf="${first + local}">${value}</span></p>`,
-				)
-				.join(""),
-		};
-	}),
-};
-const book: Schema["MaterialResponse"] = {
-	id: materialId,
-	source_id: "source",
-	title: "阅读会话测量",
-	version_id: versionId,
-	contract_version: "1",
-	product_sha256: hash,
-	source_sha256: hash,
-	created_at: timestamp,
-	warnings: [],
-	chapters: [{ id: chapterId, title: chapter.title, level: 0, part_count: 3 }],
-	reading_position: {
-		chapter_id: chapterId,
-		resource_id: "r",
-		version_id: versionId,
-		part_index: 0,
-		kind: "text",
-		offset: 0,
-		at_chapter_end: false,
-		progress: 0,
-		revision: 0,
-		updated_at: timestamp,
-		settings: { font_size: 22, line_height: 2, writing_mode: "horizontal-tb" },
-	},
-};
-const readings: Schema["MaterialReadingsResponse"] = {
-	material_id: materialId,
-	version_id: versionId,
-	generation_id: "generation",
-	resources: [
-		{
-			resource_id: "r",
-			text_sha256: hash,
-			tokens: paragraphs.map((_, index) => ({
-				start: startAt(index),
-				end: startAt(index) + 1,
-				surface: "春",
-				reading: "ハル",
-				dictionary_form: "春",
-				normalized_form: "春",
-				is_oov: false,
-				pos: ["名詞"],
-			})),
-		},
-	],
-};
+
+const {
+	timestamp,
+	materialId,
+	versionId,
+	chapterId,
+	paragraphs,
+	targetParagraph,
+	book,
+} = readerSessionFixture;
 type RequestTiming = {
 	method: string;
 	path: string;
@@ -268,7 +168,13 @@ export async function readerSession(
 				return Response.json({ detail: "材料不存在" }, { status: 404 });
 			}
 		}
-		let data: unknown;
+		let data = readerSessionFixtureData(path, {
+			realApp,
+			invalidProvenance,
+			addedStudyRecord,
+		});
+		if (path.endsWith("/opened")) opened++;
+		if (path.endsWith("/usage")) usageReads++;
 		if (path === `/api/materials/${materialId}` && request.method === "GET")
 			data = {
 				...book,
@@ -285,56 +191,6 @@ export async function readerSession(
 							}
 						: null),
 			} satisfies Schema["MaterialResponse"];
-		else if (path === "/api/sources/source")
-			data = {
-				id: "source",
-				title: "Source",
-				description: "",
-				note: "",
-				segment_count: 1,
-				created_at: timestamp,
-				updated_at: timestamp,
-			} satisfies Schema["SourceResponse"];
-		else if (realApp && path === "/api/segments/saved")
-			data = {
-				id: "saved",
-				source_id: "source",
-				text: targetText,
-				text_sha256: hash,
-				context_before: "",
-				context_after: "",
-				translation: "",
-				transcription: "",
-				source_ref: "",
-				note: "",
-				revision: 1,
-				text_locked_at: timestamp,
-				created_at: timestamp,
-				updated_at: timestamp,
-				material_provenance: reference,
-			} satisfies Schema["SegmentResponse"];
-		else if (realApp && path === "/api/segments/saved/analyses") data = [];
-		else if (realApp && path === "/api/segments/saved/translation-results")
-			data = [];
-		else if (path.endsWith("/material-provenance"))
-			data = {
-				segment_id: "saved",
-				status: invalidProvenance ? "snapshot_mismatch" : "resolved",
-				assembly_rule: "concat-nfc-v1",
-				material_provenance: reference,
-				chapter_id: chapterId,
-				chapter_title: chapter.title,
-				parts: [
-					{
-						range_index: 0,
-						part_index: 2,
-						resource_id: "r",
-						spine_index: 0,
-						start: targetStart,
-						end: targetStart + targetText.length,
-					},
-				],
-			} satisfies Schema["SegmentProvenanceResponse"];
 		else if (path.endsWith("/search"))
 			data = {
 				material_id: materialId,
@@ -345,62 +201,7 @@ export async function readerSession(
 				offset: 0,
 				limit: 50,
 			} satisfies Schema["MaterialSearchResponse"];
-		else if (path.endsWith("/readings/prepare"))
-			data = {
-				material_id: materialId,
-				version_id: versionId,
-				generation_id: "generation",
-				token_count: 400,
-			} satisfies Schema["MaterialReadingsSummary"];
-		else if (path.endsWith("/readings")) data = readings;
-		else if (path === `/api/materials/${materialId}/chapters/${chapterId}`)
-			data = chapter;
-		else if (path.endsWith("/segments"))
-			data = {
-				items: [
-					...(addedStudyRecord
-						? [
-								{
-									segment_id: "new-saved",
-									excerpt: paragraphs[20] ?? "",
-									created_at: timestamp,
-									material_provenance: {
-										...reference,
-										ranges: reference.ranges.map((range) => ({
-											...range,
-											start: startAt(20),
-											end: startAt(21),
-											exact: paragraphs[20] ?? "",
-										})),
-									},
-								},
-							]
-						: []),
-					{
-						segment_id: "saved",
-						excerpt: targetText,
-						material_provenance: reference,
-						created_at: timestamp,
-					},
-				],
-				next_cursor: null,
-				unavailable_count: 0,
-			} satisfies Schema["MaterialChapterSegmentsResponse"];
-		else if (path.endsWith(`/chapters/${chapterId}/translations`))
-			data = { items: [], next_cursor: null, unavailable_count: 0 };
-		else if (path.endsWith("/translations"))
-			data = { results: [], tasks: [], next_offset: null };
-		else if (path.endsWith("/usage") || path.endsWith("/opened")) {
-			if (path.endsWith("/opened")) opened++;
-			if (path.endsWith("/usage")) usageReads++;
-			data = {
-				material_id: materialId,
-				status: "in_progress",
-				revision: 1,
-				last_opened_at: timestamp,
-				updated_at: timestamp,
-			} satisfies Schema["MaterialUsageResponse"];
-		} else if (path.endsWith("/reading-position") && request.method === "PUT") {
+		else if (path.endsWith("/reading-position") && request.method === "PUT") {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			saved++;
 			data = {
@@ -413,7 +214,7 @@ export async function readerSession(
 				requestedMaterialId ?? materialId,
 				data as Schema["ReadingPositionResponse"],
 			);
-		} else
+		} else if (data === undefined)
 			throw new Error(
 				`Unmocked reader session request ${request.method} ${path}`,
 			);

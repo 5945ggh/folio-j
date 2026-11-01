@@ -25,6 +25,7 @@ const readerSuites = new Set([
 	"margin-record-targets",
 	"inline-records",
 	"navigation-feedback",
+	"segment-navigation",
 	"route-loading",
 ]);
 
