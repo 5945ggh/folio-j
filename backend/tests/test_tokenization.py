@@ -10,7 +10,11 @@ from app.nlp.contracts import TextResource
 from app.nlp.tokenization import chunks, generate
 
 
-@pytest.mark.parametrize("text", ["", "\n。！？", "𠮷Ａ㍿ｅ́\n日本語。次！", "日本語" * 20000])
+@pytest.mark.parametrize(
+    "text",
+    ["", "\n。！？", "𠮷Ａ㍿ｅ́\n日本語。次！", "日本語" * 20000],
+    ids=["empty", "punctuation", "unicode", "long-input"],
+)
 def test_sentence_chunks_reconstruct_and_bound_utf8(text: str) -> None:
     values = chunks(text)
     assert "".join(value for _, value in values) == text
