@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import os
+import shutil
 import signal
 import subprocess
 import sys
 import time
+from collections.abc import Callable
+from importlib import import_module
 from pathlib import Path
 from types import FrameType
-from typing import NoReturn
+from typing import NoReturn, cast
 
 from app.config import load_settings
 
@@ -20,20 +23,30 @@ def request_stop(_signum: int, _frame: FrameType | None) -> NoReturn:
     raise KeyboardInterrupt
 
 
-def stop_processes(processes: list[subprocess.Popen[bytes]]) -> None:
+def stop_processes(
+    processes: list[subprocess.Popen[bytes]],
+    *,
+    application: subprocess.Popen[bytes] | None = None,
+) -> None:
     """Stop only child process groups created by this launcher."""
     for process in processes:
-        if process.poll() is None:
-            if os.name == "posix":
-                try:
-                    os.killpg(process.pid, signal.SIGTERM)
-                except ProcessLookupError:
-                    pass
-            else:
+        if os.name == "posix":
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        elif process.poll() is None:
+            try:
+                process.send_signal(signal.CTRL_BREAK_EVENT)
+            except OSError:
                 process.terminate()
     for process in processes:
         try:
-            process.wait(timeout=5)
+            # The application holds its database lock until lifespan cleanup ends.
+            # It may need longer than the frontend's bounded shutdown grace period.
+            process.wait(
+                timeout=None if os.name == "nt" and process is application else 5
+            )
         except subprocess.TimeoutExpired:
             if os.name == "posix":
                 try:
@@ -45,6 +58,32 @@ def stop_processes(processes: list[subprocess.Popen[bytes]]) -> None:
             process.wait()
 
 
+def spawn_process(
+    command: list[str], environment: dict[str, str] | None = None
+) -> subprocess.Popen[bytes]:
+    return subprocess.Popen(
+        command,
+        cwd=ROOT,
+        env=environment,
+        start_new_session=os.name == "posix",
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
+    )
+
+
+def frontend_command() -> list[str]:
+    """Call Vite through Node directly, without invoking a Windows .cmd shim."""
+    node = shutil.which("node")
+    if node is None:
+        raise FileNotFoundError("缺少 Node.js，请先安装并加入 PATH。")
+    return [
+        node,
+        str(ROOT / "frontend/node_modules/vite/bin/vite.js"),
+        str(ROOT / "frontend"),
+        "--host",
+        "127.0.0.1",
+    ]
+
+
 def main() -> int:
     if len(sys.argv) != 2 or sys.argv[1] not in {"dev", "start"}:
         print("Usage: run.py dev|start", file=sys.stderr)
@@ -52,6 +91,13 @@ def main() -> int:
 
     settings = load_settings()
     signal.signal(signal.SIGTERM, request_stop)
+    if os.name == "nt":
+        contain_process_tree = cast(
+            Callable[[], None], import_module("windows_process").contain_process_tree
+        )
+
+        signal.signal(signal.SIGBREAK, request_stop)
+        contain_process_tree()
     mode = sys.argv[1]
     if mode == "start" and not (ROOT / "frontend/dist/index.html").is_file():
         print(
@@ -87,23 +133,21 @@ def main() -> int:
         str(settings.server.port),
     ]
     if mode == "dev":
-        command.extend(["--reload", "--reload-dir", str(ROOT / "backend/src")])
+        if os.name == "nt":
+            command = [sys.executable, str(ROOT / "scripts/windows_reload.py")]
+        else:
+            command.extend(["--reload", "--reload-dir", str(ROOT / "backend/src")])
 
     processes: list[subprocess.Popen[bytes]] = []
+    application: subprocess.Popen[bytes] | None = None
     try:
-        processes.append(subprocess.Popen(command, cwd=ROOT, start_new_session=True))
+        application = spawn_process(command)
+        processes.append(application)
         if mode == "dev":
             environment = os.environ.copy()
             environment["FOLIO_API_TARGET"] = api_url
             environment["FOLIO_DEV_PORT"] = str(settings.server.dev_port)
-            processes.append(
-                subprocess.Popen(
-                    ["pnpm", "--dir", "frontend", "dev"],
-                    cwd=ROOT,
-                    env=environment,
-                    start_new_session=True,
-                )
-            )
+            processes.append(spawn_process(frontend_command(), environment))
         while True:
             for process in processes:
                 result = process.poll()
@@ -112,8 +156,16 @@ def main() -> int:
             time.sleep(0.2)
     except KeyboardInterrupt:
         return 0
+    except OSError as error:
+        print(f"无法启动：{error}", file=sys.stderr)
+        return 1
     finally:
-        stop_processes(processes)
+        # A second Ctrl-C must not interrupt cleanup and leave child services alive.
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        if os.name == "nt":
+            signal.signal(signal.SIGBREAK, signal.SIG_IGN)
+        stop_processes(processes, application=application)
 
 
 if __name__ == "__main__":

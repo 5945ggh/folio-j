@@ -1,13 +1,14 @@
 import { spawn } from "node:child_process";
-import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "vite";
+import { findChromium } from "./chromium.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
 const { selectBrowserScenarios, browserScreenshotName } = await import(
-	path.join(frontend, "scripts/browser-test-plan.mjs")
+	pathToFileURL(path.join(frontend, "scripts/browser-test-plan.mjs")).href
 );
 const scenarios = selectBrowserScenarios(
 	[
@@ -162,14 +163,7 @@ const scenarios = selectBrowserScenarios(
 	],
 	process.env,
 );
-const chrome =
-	process.env.CHROME_BIN ??
-	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-await access(chrome).catch(() => {
-	throw new Error(
-		`Chrome unavailable at ${chrome}; set CHROME_BIN to a Chrome executable`,
-	);
-});
+const chrome = await findChromium();
 const profile = await mkdtemp(path.join(tmpdir(), "folio-j-browser-tests-"));
 let server;
 try {

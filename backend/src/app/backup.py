@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import fcntl
 import hashlib
 import importlib.metadata
 import os
@@ -15,8 +14,8 @@ import sys
 import tempfile
 import tomllib
 from collections.abc import Generator
-from contextlib import closing, contextmanager
-from pathlib import Path, PurePosixPath
+from contextlib import ExitStack, closing, contextmanager
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Literal, NoReturn
 
 from alembic.script import ScriptDirectory
@@ -25,6 +24,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.config import REPO_ROOT, load_settings
 from app.epub_storage import decode
+from app.platform_io import (
+    FileLockError,
+    exclusive_file_lock,
+    fsync_directory,
+    is_link_or_reparse,
+    publish_directory,
+)
 from app.services.dictionary_store import DictionaryStore
 
 FIRST_SUPPORTED_REVISION = "0004_translation_reader_removal"
@@ -70,8 +76,8 @@ class Manifest(StrictModel):
 
 def _safe_path(path: Path) -> Path:
     path = path.expanduser().absolute()
-    if path.is_symlink():
-        raise BackupError(f"不接受符号链接路径：{path}")
+    if is_link_or_reparse(path):
+        raise BackupError(f"不接受符号链接或 reparse point 路径：{path}")
     # macOS exposes /tmp and /var through trusted system links.
     return path.parent.resolve() / path.name
 
@@ -83,6 +89,11 @@ def _relative(name: str) -> Path:
         or parsed.is_absolute()
         or any(p in (".", "..") for p in name.split("/"))
         or "\\" in name
+        or ":" in name
+        or any(
+            PureWindowsPath(part).is_reserved() or part.endswith((".", " "))
+            for part in parsed.parts
+        )
     ):
         raise BackupError("备份含不安全相对路径")
     return Path(*parsed.parts)
@@ -99,6 +110,8 @@ def _tree(root: Path) -> tuple[set[str], set[str]]:
         for name in (*dirs, *names):
             item = Path(current) / name
             mode = item.lstat().st_mode
+            if is_link_or_reparse(item):
+                raise BackupError(f"不接受链接或 reparse point：{item}")
             relative = item.relative_to(root).as_posix()
             if stat.S_ISDIR(mode):
                 directories.add(relative)
@@ -237,22 +250,16 @@ def _application_version() -> ApplicationVersion:
 @contextmanager
 def _offline(database: Path) -> Generator[None, None, None]:
     lock = _safe_path(Path(str(database) + ".worker.lock"))
-    descriptor = os.open(lock, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
-    try:
-        info = os.fstat(descriptor)
-        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-            raise BackupError("后台进程锁不是安全的普通文件")
+    with ExitStack() as resources:
         try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError as exc:
-            raise BackupError("请停止使用此数据库的全部服务后再备份") from exc
+            resources.enter_context(exclusive_file_lock(lock))
+        except FileLockError as exc:
+            raise BackupError("请停止使用此数据库的全部服务，并确认进程锁为安全普通文件") from exc
         yield
-    finally:
-        os.close(descriptor)
 
 
 def _copy(source: Path, target: Path) -> None:
-    if source.is_symlink():
+    if is_link_or_reparse(source):
         raise BackupError("不接受符号链接文件")
     if source.is_dir():
         files, directories = _tree(source)
@@ -269,7 +276,7 @@ def _copy(source: Path, target: Path) -> None:
 
 
 def _snapshot(source: Path, target: Path) -> None:
-    if source.is_symlink() or not source.is_file() or source.stat().st_nlink != 1:
+    if is_link_or_reparse(source) or not source.is_file() or source.stat().st_nlink != 1:
         raise BackupError("SQLite 来源不是安全普通文件")
     with closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as original:
         with closing(sqlite3.connect(target)) as snapshot:
@@ -349,39 +356,41 @@ def _new_destination(destination: Path, sources: list[Path]) -> None:
 def _sync_tree(directory: Path) -> None:
     files, directories = _tree(directory)
     for name in files:
-        with (directory / name).open("rb") as stream:
+        # Windows FlushFileBuffers requires a write-capable handle. These are
+        # our private staged copies, never the user's source files.
+        with (directory / name).open("r+b") as stream:
             os.fsync(stream.fileno())
     for path in [*(directory / name for name in directories), directory, directory.parent]:
-        descriptor = os.open(path, os.O_RDONLY)
-        try:
-            os.fsync(descriptor)
-        finally:
-            os.close(descriptor)
+        fsync_directory(path)
 
 
 @contextmanager
 def _publish(destination: Path) -> Generator[Path, None, None]:
-    """Publish only a fully flushed directory; a killed writer leaves no usable target."""
+    """Publish a complete staged tree; failed publication retains no partial target."""
     with tempfile.TemporaryDirectory(
         prefix=".folio-j-backup-", dir=destination.parent
     ) as temporary:
         staging = Path(temporary)
         yield staging
         _sync_tree(staging)
-        # mkdir is the exclusive claim: rename must never replace another user's target.
-        destination.mkdir(mode=0o700)
+        identity = staging.stat()
         published = False
         try:
-            os.rename(staging, destination)
+            publish_directory(staging, destination)
             published = True
-            descriptor = os.open(destination.parent, os.O_RDONLY)
-            try:
-                os.fsync(descriptor)
-            finally:
-                os.close(descriptor)
-        finally:
-            if not published:
-                destination.rmdir()
+            fsync_directory(destination.parent)
+        except BaseException:
+            # A separate writer may have moved our published tree and claimed
+            # the same name while the parent flush failed. Never clean up that
+            # replacement (including a symlink or junction) as if it were ours.
+            if (
+                published
+                and not is_link_or_reparse(destination)
+                and destination.exists()
+                and os.path.samestat(identity, destination.lstat())
+            ):
+                shutil.rmtree(destination)
+            raise
 
 
 def create_backup(destination: Path, database_path: Path | None = None) -> Path:

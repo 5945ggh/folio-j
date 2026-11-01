@@ -13,8 +13,11 @@
     "frontend/vite.config.ts",
     "config/app.example.toml",
     "scripts/run.py",
+    "scripts/windows_process.py",
+    "scripts/windows_reload.py",
     "docs/USAGE.md",
-    "docs/UPGRADING.md"
+    "docs/UPGRADING.md",
+    "docs/handovers/WINDOWS_ACCEPTANCE.md"
   ],
   "directories": [
     "backend/src/app",

@@ -1,11 +1,13 @@
 """Exercise documentation path checks in repositories without local evidence."""
 
+import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from support_paths import symlink_or_skip
 
 
 @pytest.fixture
@@ -30,6 +32,8 @@ def run_check(repository: Path, *args: str) -> subprocess.CompletedProcess[str]:
         [sys.executable, str(repository / "scripts" / "check_docs.py"), *args],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
         check=False,
     )
 
@@ -46,7 +50,7 @@ def test_strict_requires_private_evidence(repository: Path) -> None:
     result = run_check(repository, "--private-evidence")
     assert result.returncode == 1
     assert "私有证据已检查 1 个、未核验 0 个" in result.stdout
-    assert "docs/guide.md: ../data/acceptance-evidence/screenshot.png" in result.stdout
+    assert f"{Path('docs/guide.md')}: ../data/acceptance-evidence/screenshot.png" in result.stdout
 
     evidence = repository / "data" / "acceptance-evidence" / "screenshot.png"
     evidence.parent.mkdir(parents=True)
@@ -75,7 +79,7 @@ def test_public_missing_links_fail_in_both_modes(
     path.write_text("[broken](missing.md)", encoding="utf-8")
     result = run_check(repository, *args)
     assert result.returncode == 1
-    assert f"{document}: missing.md" in result.stdout
+    assert f"{Path(document)}: missing.md" in result.stdout
 
 
 @pytest.mark.parametrize(
@@ -96,7 +100,7 @@ def test_normalized_paths_outside_private_evidence_are_public(
     assert result.returncode == 1
     assert "2 个公共本地链接" in result.stdout
     assert "未核验 0 个" in result.stdout
-    assert f"docs/guide.md: {target}" in result.stdout
+    assert f"{Path('docs/guide.md')}: {target}" in result.stdout
 
 
 def test_encoded_private_path_is_classified_after_normalization(repository: Path) -> None:
@@ -117,7 +121,7 @@ def test_encoded_private_path_is_classified_after_normalization(repository: Path
 def test_symlink_outside_private_directory_is_public(repository: Path) -> None:
     evidence = repository / "data" / "acceptance-evidence"
     evidence.mkdir(parents=True)
-    (evidence / "outside").symlink_to(repository / "docs", target_is_directory=True)
+    symlink_or_skip(evidence / "outside", repository / "docs", target_is_directory=True)
     (repository / "docs" / "guide.md").write_text(
         "[broken](../data/acceptance-evidence/outside/missing.png)", encoding="utf-8"
     )

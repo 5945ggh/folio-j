@@ -20,7 +20,6 @@ import importlib
 import json
 import platform
 import random
-import resource
 import statistics
 import struct
 import sys
@@ -565,9 +564,11 @@ async def benchmark(args: argparse.Namespace) -> dict[str, object]:
         ),
         "runtime_close_definition": "outside request latency/tracemalloc; RSS remains lifetime high-water",
         "decoder_time_definition": "sum of per-call wall times; concurrent calls may overlap",
-        "rss_high_water_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        * (1 if sys.platform == "darwin" else 1024),
-        "rss_definition": "process lifetime high-water including construction and all earlier cases",
+        "rss_high_water_bytes": rss_high_water_bytes(),
+        "rss_definition": (
+            "process lifetime high-water including construction and all earlier cases; "
+            "unavailable on Windows"
+        ),
         "fixtures": results,
     }
 
@@ -589,17 +590,27 @@ def resident_bytes(runtime: ReaderViews | None) -> int | None:
     return value if isinstance(value, int) else None
 
 
-async def close_runtime(runtime: ReaderViews | None) -> dict[str, int | float] | None:
+def rss_high_water_bytes() -> int | None:
+    if sys.platform == "win32":
+        return None
+    else:
+        import resource
+
+        return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * (
+            1 if sys.platform == "darwin" else 1024
+        )
+
+
+async def close_runtime(
+    runtime: ReaderViews | None,
+) -> dict[str, int | float | None] | None:
     if runtime is None:
         return None
     started = time.perf_counter()
     await runtime.close()
     return {
         "elapsed_ms": (time.perf_counter() - started) * 1000,
-        "rss_lifetime_high_water_bytes_after": resource.getrusage(
-            resource.RUSAGE_SELF
-        ).ru_maxrss
-        * (1 if sys.platform == "darwin" else 1024),
+        "rss_lifetime_high_water_bytes_after": rss_high_water_bytes(),
     }
 
 

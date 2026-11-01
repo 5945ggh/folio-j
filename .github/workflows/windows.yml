@@ -1,0 +1,61 @@
+name: Windows experimental
+
+on:
+  pull_request:
+  push:
+    branches: [main, "codex/windows-*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PYTHONIOENCODING: utf-8
+      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+      - uses: extractions/setup-just@v4
+        with:
+          just-version: 1.58.0
+      - name: Install locked dependencies using native PowerShell recipes
+        run: just setup
+      - name: Static checks
+        run: just lint
+      - name: Offline backend and frontend tests
+        run: just test
+      - name: Production build
+        run: just build
+      - name: Chrome component smoke
+        env:
+          BROWSER_TEST_SUITE: app-theme
+        run: just test-browser
+      - name: Edge component smoke
+        env:
+          BROWSER_TEST_SUITE: native-select
+        run: |
+          $env:CHROME_BIN = Join-Path ${env:ProgramFiles(x86)} 'Microsoft/Edge/Application/msedge.exe'
+          just test-browser
+      - name: Package committed source
+        run: uv run --project backend python scripts/package_release.py --ref HEAD --version windows-smoke --output "$env:RUNNER_TEMP/source.zip"
+      - name: Source ZIP migration, launch, interrupt, backup and restore
+        run: uv run --project backend python scripts/smoke_source.py "$env:RUNNER_TEMP/source.zip"

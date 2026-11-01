@@ -1,10 +1,8 @@
 """ASGI entry point and optional built frontend hosting."""
 
 import asyncio
-import fcntl
-import os
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -23,6 +21,7 @@ from app.config import REPO_ROOT, load_settings
 from app.db import create_engine
 from app.jobs.runtime import recover_chat_jobs, start_chat_worker
 from app.jobs.supervision import BackgroundWorker, workers
+from app.platform_io import FileLockError, exclusive_file_lock
 from app.services import translations
 from app.services.analyses import AnalysisWriteError
 from app.services.chat import ChatError
@@ -40,35 +39,46 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         ).resolve()
         path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         lock_path = path.with_name(path.name + ".worker.lock")
-        lock_fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
-        try:
-            fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError as exc:
-            os.close(lock_fd)
-            raise RuntimeError(f"数据库已有后台执行进程：{path}") from exc
-        engine = create_engine(path)
-        application.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
-        reader_views = ReaderViews(application.state.session_factory)
-        application.state.reader_views = reader_views
-        statistics_runtime = StatisticsRuntime()
-        application.state.statistics_runtime = statistics_runtime
-        application.state.database_path = path
-        application.state.dictionary_store = DictionaryStore(
-            path.with_name(path.name + ".dictionary.sqlite3")
-        )
-        application.state.verification_semaphore = asyncio.Semaphore(2)
-        application.state.chat_dispatch_lock = asyncio.Lock()
-        application.state.translation_semaphore = asyncio.Semaphore(1)
-        background = workers(application)
-        for name, executor in background.items():
-            executor.activate(
-                enabled=(
-                    application.state.verification_worker_enabled
-                    if name == "verification"
-                    else application.state.chat_worker_enabled
-                )
+        async with AsyncExitStack() as resources:
+            try:
+                resources.enter_context(exclusive_file_lock(lock_path))
+            except FileLockError as exc:
+                raise RuntimeError(f"数据库已有后台执行进程或进程锁不可用：{path}") from exc
+            engine = create_engine(path)
+            resources.push_async_callback(engine.dispose)
+            application.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
+            reader_views = ReaderViews(application.state.session_factory)
+            application.state.reader_views = reader_views
+            statistics_runtime = StatisticsRuntime()
+            application.state.statistics_runtime = statistics_runtime
+            resources.push_async_callback(statistics_runtime.close)
+            resources.push_async_callback(reader_views.close)
+            application.state.database_path = path
+            application.state.dictionary_store = DictionaryStore(
+                path.with_name(path.name + ".dictionary.sqlite3")
             )
-        try:
+            application.state.verification_semaphore = asyncio.Semaphore(2)
+            application.state.chat_dispatch_lock = asyncio.Lock()
+            application.state.translation_semaphore = asyncio.Semaphore(1)
+            background = workers(application)
+
+            async def close_background() -> None:
+                results = await asyncio.gather(
+                    *(executor.close() for executor in background.values()), return_exceptions=True
+                )
+                for result in results:
+                    if isinstance(result, BaseException):
+                        raise result
+
+            resources.push_async_callback(close_background)
+            for name, executor in background.items():
+                executor.activate(
+                    enabled=(
+                        application.state.verification_worker_enabled
+                        if name == "verification"
+                        else application.state.chat_worker_enabled
+                    )
+                )
             async with application.state.session_factory() as session:
                 await recover_chat_jobs(session)
                 await interrupt_unfinished(session)
@@ -77,17 +87,6 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
                 start_chat_worker(application)
                 translations.start_worker(application)
             yield
-        finally:
-            await asyncio.gather(*(executor.close() for executor in background.values()))
-            try:
-                try:
-                    await reader_views.close()
-                finally:
-                    await statistics_runtime.close()
-            finally:
-                await engine.dispose()
-                fcntl.flock(lock_fd, fcntl.LOCK_UN)
-                os.close(lock_fd)
 
     application = FastAPI(
         title="Folio-J API",
