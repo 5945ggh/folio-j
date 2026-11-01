@@ -1,0 +1,199 @@
+backend/tests/test_package_release.py
+  s_d8d4f4224b97d2::t_d283426ba4c2d4 13,33,58,143
+backend/tests/test_backup.py
+  s_d8d4f4224b97d2::t_310c6e462ce05c 18,338,606-608,614,660-664
+  s_d8d4f4224b97d2::t_fdc5e51170144a 25,28-30
+  s_d8d4f4224b97d2::t_31aa9ea7dd28f1 669-692
+  s_d8d4f4224b97d2::t_4f33e7bcacedd5 23,252-253,257-260
+  s_d8d4f4224b97d2::t_9cb64e02f86ae5 589-605,609-613,615-659,665-668
+  s_d8d4f4224b97d2::t_e6cfc6c36f569e 26-27
+  s_d8d4f4224b97d2::t_017a36ba524f6d 24
+backend/src/app/platform_io.py
+  s_d8d4f4224b97d2::t_b5ff8da48f1cc8 1-4,6-7,9-10,12-48,50-54,59,61,64-99
+  s_d8d4f4224b97d2::t_fdc5e51170144a 57-58
+  s_d8d4f4224b97d2::t_e6cfc6c36f569e 5,49
+  s_d8d4f4224b97d2::t_310c6e462ce05c 8,11,55-56
+  s_d8d4f4224b97d2::t_49ce65518a4d23 60,62-63
+backend/tests/test_settings_api.py
+  s_d8d4f4224b97d2::t_d283426ba4c2d4 5,136-138,141-142
+backend/src/app/main.py
+  s_d8d4f4224b97d2::t_5ef35591e31e4c 5,24,42-58,60-65,72-81
+  s_d8d4f4224b97d2::t_e6cfc6c36f569e 66-71
+backend/tests/test_dictionary_library.py
+  s_d8d4f4224b97d2::t_a83fcfed8e4904 387,389,391-392,399-410,424-425
+  s_d8d4f4224b97d2::t_7d0d6b37293e78 4,372-373,377,386,388,390,393-398,411-423,426-473,476,478-479,487-502,504-506,520
+  s_1bc7a8995756af::t_1e157c0165fbd6 512
+  s_d8d4f4224b97d2::t_c1ed8a493ad16a 521-525,527-531
+  s_1bc7a8995756af::t_a47a243ae538a8 517
+  s_1bc7a8995756af::t_11fef5bf32f82f 474-475,477,480-486,503,507-511,513-516,526
+  s_05da2b5c93c555::t_4bb04f7ada8668 518-519
+docs/USAGE.md
+  s_d8d4f4224b97d2::t_b9bd755c35fc9b 97,118,132-140
+  s_d8d4f4224b97d2::t_16740d44243066 141
+frontend/scripts/test-browser.mjs
+  s_d8d4f4224b97d2::t_083d8bd9ae948f 2,5,7,11,166
+docs/UPGRADING.md
+  s_d8d4f4224b97d2::t_b9bd755c35fc9b 32-40,50-51,73
+frontend/scripts/measure-loading.mjs
+  s_d8d4f4224b97d2::t_083d8bd9ae948f 8,18
+docs/handovers/WINDOWS_ACCEPTANCE.md
+  s_d8d4f4224b97d2::t_4dff6287255c27 108,135-136
+  s_d8d4f4224b97d2::t_74fcd8217c8f86 7-21,164
+  s_d8d4f4224b97d2::t_1f376c25329e97 1-6,41-107,109-134,137-163,165-169
+  s_1bc7a8995756af::t_71ba1a15b29fb9 22-40
+scripts/windows_process.py
+  s_d8d4f4224b97d2::t_28ab85e9dc3d3d 1-5,7-24,36-56
+  s_d8d4f4224b97d2::t_a8924d7c7dc602 25-35
+  s_d8d4f4224b97d2::t_29627be87f3d40 6,57-91
+backend/tests/conftest.py
+  s_d8d4f4224b97d2::t_dc55f61070d3d8 1,16,18,20
+  s_d8d4f4224b97d2::t_d283426ba4c2d4 10,17,19,21
+  s_d8d4f4224b97d2::t_a02d6972517fbb 11
+README.md
+  s_d8d4f4224b97d2::t_b9bd755c35fc9b 29,33
+  s_d8d4f4224b97d2::t_0576b1eb05b2b5 34
+backend/tests/test_config.py
+  s_d8d4f4224b97d2::t_d283426ba4c2d4 1,6,19,85,87,94,163,177-181
+  s_d8d4f4224b97d2::t_d0187e1ce08b2c 89-91
+  s_d8d4f4224b97d2::t_dc55f61070d3d8 20,57,60
+docs/TECH_STACK.md
+  s_d8d4f4224b97d2::t_3b8be0d07efb05 92-93
+scripts/windows_reload.py
+  s_1bc7a8995756af::t_89b68ec59341f2 10,26-27,33,35,76
+  s_1bc7a8995756af::t_f7520799a14efb 1-9,11,13-25,28-32,34,36-75,77-81
+  s_1bc7a8995756af::t_395e47659af22a 12
+scripts/release/justfile
+  s_d8d4f4224b97d2::t_ae8f70d3179add 4-7,34-35,38-39
+  s_d8d4f4224b97d2::t_b587b7b1e86d02 8
+  s_d8d4f4224b97d2::t_4b0ae4111dd75c 2
+docs/ARCHITECTURE.md
+  s_1bc7a8995756af::t_f1c49187ad97a1 78-79
+  s_d8d4f4224b97d2::t_12eb536f949f04 237
+  s_d8d4f4224b97d2::t_3b8be0d07efb05 76-77
+docs/README.md
+  s_d8d4f4224b97d2::t_3b8be0d07efb05 9
+docs/handovers/README.md
+  s_d8d4f4224b97d2::t_3b8be0d07efb05 10
+scripts/release/manifest.json
+  s_d8d4f4224b97d2::t_28ab85e9dc3d3d 16
+  s_d8d4f4224b97d2::t_b9bd755c35fc9b 19-20
+  s_d8d4f4224b97d2::t_ed043eff7d0e98 17
+backend/tests/test_platform_io.py
+  s_d8d4f4224b97d2::t_9cb64e02f86ae5 1-7,9-77,83-98
+  s_d8d4f4224b97d2::t_7fb843c3ff84e7 115
+  s_d8d4f4224b97d2::t_310c6e462ce05c 79-82
+  s_d8d4f4224b97d2::t_fb8c90b3ea14e2 8,99-114,116-121
+  s_d8d4f4224b97d2::t_fdc5e51170144a 78
+.github/workflows/windows.yml
+  s_d8d4f4224b97d2::t_29627be87f3d40 14
+  s_d8d4f4224b97d2::t_bb3fdeeea27a86 1-13,15-19,21-61
+  s_d8d4f4224b97d2::t_b587b7b1e86d02 20
+scripts/run.py
+  s_1bc7a8995756af::t_bce5c5a2696ff7 47-49
+  s_d8d4f4224b97d2::t_28ab85e9dc3d3d 6,61-77,85-86,94,98,100,159-161,163-165
+  s_d8d4f4224b97d2::t_a8924d7c7dc602 39-41,150
+  s_1bc7a8995756af::t_f7520799a14efb 26-30,45-46,136-139,142,144-145,168
+  s_d8d4f4224b97d2::t_f79d69330e0e51 11-12,15,95-97
+  s_d8d4f4224b97d2::t_1d1efd79b0fab8 166-167
+  s_d8d4f4224b97d2::t_083d8bd9ae948f 78-84
+  s_d8d4f4224b97d2::t_2396c5a36086b5 99
+  s_d8d4f4224b97d2::t_361189fe6a7f15 33-38
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_1bc7a8995756af::t_71ba1a15b29fb9 14
+scripts/release/README.md
+  s_d8d4f4224b97d2::t_b9bd755c35fc9b 7-9
+docs/DEVELOPMENT.md
+  s_1bc7a8995756af::t_f1c49187ad97a1 78
+  s_d8d4f4224b97d2::t_6e6cf170d9cf25 13-14,65-75
+  s_1bc7a8995756af::t_71ba1a15b29fb9 77
+  s_1bc7a8995756af::t_51447212cda21b 76
+frontend/scripts/chromium.test.mjs
+  s_d8d4f4224b97d2::t_bb3fdeeea27a86 1-21
+backend/tests/support_paths.py
+  s_d8d4f4224b97d2::t_d283426ba4c2d4 1-14,19-20
+  s_d8d4f4224b97d2::t_d0187e1ce08b2c 15-18
+scripts/measure_reader_backend.py
+  s_d8d4f4224b97d2::t_4bd278dd773c49 604-606
+  s_d8d4f4224b97d2::t_984b6b7da91b2e 567-571,593-601,613
+  s_d8d4f4224b97d2::t_f8a814b5aa3e95 602-603
+backend/src/app/jobs/runtime.py
+  s_d8d4f4224b97d2::t_d7aba3b2c1f6ab 30
+frontend/scripts/chromium.mjs
+  s_d8d4f4224b97d2::t_083d8bd9ae948f 1-13,19-32,36
+  s_d8d4f4224b97d2::t_d08bc101f7fe2a 14-18,33-35
+backend/tests/test_windows_reload.py
+  s_1bc7a8995756af::t_1abf8664acec27 10,141-143,180-182,201-203
+  s_1bc7a8995756af::t_bce5c5a2696ff7 21,103
+  s_1bc7a8995756af::t_76e1bf7a2d65b9 26,28,30,33,69-82,84-99,145-147,188,214,224
+  s_1bc7a8995756af::t_519019cb0eff44 1-9,11-20,22-25,27,29,31-32,34-68,83,100-102,104-140,144,148-179,183-187,189-200,204-213,215-223,225-229
+backend/src/app/backup.py
+  s_d8d4f4224b97d2::t_5ef35591e31e4c 17-18,27-33,79-80,92-96,113-114,253,255-257,262,279,364,379,381-382,392-393
+  s_d8d4f4224b97d2::t_017a36ba524f6d 369
+  s_d8d4f4224b97d2::t_49ce65518a4d23 376,383-391
+  s_d8d4f4224b97d2::t_310c6e462ce05c 359-361
+justfile
+  s_d8d4f4224b97d2::t_4b0ae4111dd75c 2
+  s_d8d4f4224b97d2::t_ae8f70d3179add 4-8,82,86
+  s_d8d4f4224b97d2::t_b587b7b1e86d02 9
+backend/tests/test_document_links.py
+  s_d8d4f4224b97d2::t_d283426ba4c2d4 3,10,35-36,53,82,103,124
+backend/tests/test_run_script.py
+  s_d8d4f4224b97d2::t_bb3fdeeea27a86 1-9,11,13-25,31-41,46-47,94-100,106-112,115-124,126,141-142
+  s_d8d4f4224b97d2::t_1d1efd79b0fab8 10,113-114,125,127-129,131-140,143-151
+  s_1bc7a8995756af::t_519019cb0eff44 12,48-65,72-75,77-80,82-93
+  s_1bc7a8995756af::t_1abf8664acec27 66-71,76,81
+  s_d8d4f4224b97d2::t_6ae05137e78835 130
+  s_d8d4f4224b97d2::t_172f69cd1be4b9 26-30,42-45,101-105
+backend/tests/test_main_lifespan.py
+  s_d8d4f4224b97d2::t_fb8c90b3ea14e2 10,56-79
+  s_d8d4f4224b97d2::t_ff1a8a1e748f46 11
+  s_d8d4f4224b97d2::t_9cb64e02f86ae5 1-9,12-55
+backend/src/app/services/context.py
+  s_d8d4f4224b97d2::t_d7aba3b2c1f6ab 232
+scripts/smoke_source.py
+  s_d8d4f4224b97d2::t_b26d9fbd8b49da 33
+  s_d8d4f4224b97d2::t_a8924d7c7dc602 46-48,110-112,144-146,151-155
+  s_d8d4f4224b97d2::t_eaaf48b4a74d8f 16,118,134,140-143
+  s_d8d4f4224b97d2::t_b587b7b1e86d02 104
+  s_d8d4f4224b97d2::t_bb622e9d6679e6 127-133,135-139
+  s_d8d4f4224b97d2::t_39ba9dc00c98cf 27-31
+  s_d8d4f4224b97d2::t_361189fe6a7f15 1-15,17-26,32,34-45,49-103,105-109,113-117,119-126,147-150,156-165
+backend/src/app/services/dictionary_store.py
+  s_d8d4f4224b97d2::t_c1ed8a493ad16a 442
+  s_1bc7a8995756af::t_7ef4aca3380c0e 448-453
+  s_d8d4f4224b97d2::t_d7aba3b2c1f6ab 35,288,296,415-431,434-441,443-447,454-456,458-464,524,701,774-783,806-807
+  s_d8d4f4224b97d2::t_7d0d6b37293e78 457,665
+  s_d8d4f4224b97d2::t_945b9ee42e49a2 465-474
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61b22affd6c3e54e8957e2caa206c9f94cbbc587",
+  "prompts": {},
+  "sessions": {
+    "s_05da2b5c93c555": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19611-6f6f-7b91-a099-0a3abac7efa9",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_1bc7a8995756af": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1960a-54b0-7a93-8dad-24c3bdffb7da",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_d8d4f4224b97d2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a195ac-80dd-7fb0-9bfe-7ba6db6ec7c8",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
