@@ -1,0 +1,23 @@
+backend/tests/test_backup.py
+  s_1bc7a8995756af::t_b72a354bcf5909 65,69,164,176,203,226,264,266,271-274,329,400,542,565,578
+backend/tests/test_chat_prompt_scope.py
+  s_1bc7a8995756af::t_5e7c642aca5d52 29,55
+backend/tests/test_tokenization_baseline.py
+  s_1bc7a8995756af::t_b72a354bcf5909 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aadb226edd19aac834951f16f89d034764d79058",
+  "prompts": {},
+  "sessions": {
+    "s_1bc7a8995756af": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1960a-54b0-7a93-8dad-24c3bdffb7da",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
