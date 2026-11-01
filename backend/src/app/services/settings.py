@@ -11,7 +11,6 @@ from urllib.parse import quote
 
 from fastapi import HTTPException
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
-from openai import APIConnectionError, APIStatusError, APITimeoutError
 from sqlalchemy import func, insert, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.chat_models import ChatThread, Job
 from app.ids import new_ulid
 from app.jobs.supervision import worker
+from app.llm.errors import describe_call_failure
 from app.models import Segment, Source
 from app.settings_models import Defaults, Profile, Provider, ProviderModel, Run, Style
 from app.settings_schemas import (
@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 
 PROMPTS = Path(__file__).resolve().parents[3] / "prompts"
 
+VERIFICATION_SECONDS = 60
 VERIFICATION_VERSION = "v1"
 DEFAULT_STYLE_ID = "00000000000000000000000001"
 
@@ -309,19 +310,6 @@ def redact_credential(value: str | None, key: str | None) -> str | None:
         if variant:
             value = value.replace(variant, "[已隐藏凭据]")
     return value
-
-
-def safe_verification_error(error: Exception) -> str:
-    """Preserve a useful error category without persisting SDK exception payloads."""
-    if isinstance(error, (TimeoutError, APITimeoutError)):
-        return "模型验证超时（60 秒）"
-    if isinstance(error, APIConnectionError):
-        return "模型服务连接失败"
-    if isinstance(error, APIStatusError):
-        return f"模型服务返回 HTTP {error.status_code}"
-    if isinstance(error, ValueError):
-        return "模型未返回完整的可见文本"
-    return "模型验证失败，请检查地址、凭据和模型参数"
 
 
 def verification_summary(run: Run | None) -> VerificationSummary | None:
@@ -877,7 +865,7 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
         try:
             key = read_credential(application.state.database_path, reference)
             result = await asyncio.wait_for(
-                adapters.generate_text(snapshot, key, progress), timeout=60
+                adapters.generate_text(snapshot, key, progress), timeout=VERIFICATION_SECONDS
             )
             raw_response = redact_credential(result.raw_response, key)
             usage = result.usage
@@ -918,7 +906,7 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
                     return
                 row.status, row.error, row.finished_at = (
                     "failed",
-                    safe_verification_error(error),
+                    describe_call_failure(error, "模型验证", VERIFICATION_SECONDS).message,
                     now(),
                 )
                 row.raw_response = raw_response

@@ -15,6 +15,7 @@ from app.config import REPO_ROOT, load_settings
 from app.ids import new_ulid
 from app.jobs.supervision import worker
 from app.llm.adapters import CallSnapshot, generate_text
+from app.llm.errors import describe_call_failure
 from app.material_models import Material
 from app.models import Segment, SegmentMaterialProvenance
 from app.provenance_schemas import ASSEMBLY_RULE, MaterialProvenance
@@ -24,7 +25,7 @@ from app.services.material_provenance import (
     prepare_reference,
     recheck_reference,
 )
-from app.services.settings import read_credential, redact_credential, safe_verification_error
+from app.services.settings import read_credential, redact_credential
 from app.services.sources import (
     begin_write,
     lock_segment_text,
@@ -717,7 +718,7 @@ async def _execute(application: FastAPI, task_id: str) -> None:
             interrupted = True
             error = "进程停止，未自动重新调用"
         except Exception as exc:
-            error = safe_verification_error(exc)
+            error = describe_call_failure(exc, "阅读翻译", payload["timeout_seconds"]).message
         async with application.state.session_factory() as session:
             await begin_write(session)
             task = await session.get(TranslationTask, task_id)

@@ -7,9 +7,11 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+import httpx2 as model_httpx
 import pytest
 from chat_tool_fixture import install_text_turn
 from httpx import AsyncClient
+from openai import APITimeoutError
 from support_api import accept, chat_client, seed_chat
 
 from app.jobs import agent, runtime
@@ -362,7 +364,9 @@ async def test_stop_cannot_commit_between_dispatch_check_and_sdk_entry(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("failure", ["provider_error", "timeout", "progress_limit", "result_limit"])
+@pytest.mark.parametrize(
+    "failure", ["provider_error", "timeout", "sdk_timeout", "progress_limit", "result_limit"]
+)
 async def test_reply_failure_preserves_durable_partial_without_success_or_history(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
@@ -382,6 +386,8 @@ async def test_reply_failure_preserves_durable_partial_without_success_or_histor
             raise ConnectionError("synthetic connection failure")
         if failure == "timeout":
             raise TimeoutError()
+        if failure == "sdk_timeout":
+            raise APITimeoutError(model_httpx.Request("POST", "https://offline.invalid/"))
         if failure == "progress_limit":
             await progress("超" * (agent.OUTPUT_CHAR_LIMIT + 1))
         return adapters.GenerateResult("超" * (agent.OUTPUT_CHAR_LIMIT + 1), True, None, "{}")
@@ -393,6 +399,8 @@ async def test_reply_failure_preserves_durable_partial_without_success_or_histor
         await runtime.execute_job(app, job["id"])
         failed = (await client.get(f"/api/jobs/{job['id']}")).json()
         expected_code = "output_limit" if failure.endswith("limit") else failure
+        if failure == "sdk_timeout":
+            expected_code = "timeout"
         assert failed["status"] == "failed"
         assert failed["error_code"] == expected_code
         assert failed["artifacts"] == []
@@ -400,6 +408,8 @@ async def test_reply_failure_preserves_durable_partial_without_success_or_histor
         assert failed["assistant_message"]["content"] == partial
         run = (await client.get(f"/api/runs/{failed['run_id']}")).json()
         assert run["status"] == "failed"
+        if expected_code == "timeout":
+            assert run["error"] == failed["error"] == "模型调用超时（本次等待上限 180 秒）"
         assert run["output_text"] == partial
         analyses = await client.get(f"/api/segments/{seed['segment']['id']}/analyses")
         assert analyses.json() == []

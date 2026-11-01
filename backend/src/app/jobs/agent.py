@@ -15,8 +15,9 @@ from app.analysis_schemas import SectionOperation
 from app.chat_models import ChatMessage, ChatThread, Job
 from app.ids import new_ulid
 from app.llm import adapters
+from app.llm.errors import describe_call_failure
 from app.services import analyses
-from app.services.settings import now, redact_credential, safe_verification_error
+from app.services.settings import now, redact_credential
 from app.settings_models import Run
 
 if TYPE_CHECKING:
@@ -708,6 +709,7 @@ async def execute_agent_job(
         if needs_run and not await _next_run(app, job_id, token, messages):
             return
         needs_run = False
+        call_seconds = min(CALL_SECONDS, remaining)
         try:
             began = asyncio.get_running_loop().time()
             turn = await _invoke(
@@ -718,20 +720,10 @@ async def execute_agent_job(
                 key,
                 messages,
                 tools,
-                call_seconds=min(CALL_SECONDS, remaining),
+                call_seconds=call_seconds,
             )
             elapsed = asyncio.get_running_loop().time() - began
         except asyncio.CancelledError:
-            return
-        except TimeoutError:
-            await _terminate(
-                app,
-                job_id,
-                token,
-                error_code="timeout",
-                error="模型调用超时（180 秒）",
-                messages=messages,
-            )
             return
         except ContextLimitError:
             await _terminate(
@@ -754,12 +746,13 @@ async def execute_agent_job(
             )
             return
         except Exception as exc:
+            failure = describe_call_failure(exc, "模型调用", call_seconds)
             await _terminate(
                 app,
                 job_id,
                 token,
-                error_code="provider_error",
-                error=safe_verification_error(exc),
+                error_code=failure.code,
+                error=failure.message,
                 messages=messages,
             )
             return
@@ -905,13 +898,13 @@ async def execute_agent_job(
                 return
             except (ValueError, KeyError, TypeError, HTTPException) as exc:
                 output = {"error": str(exc)}
-            except Exception as exc:
+            except Exception:
                 await _terminate(
                     app,
                     job_id,
                     token,
                     error_code="tool_error",
-                    error=safe_verification_error(exc),
+                    error="工具执行失败，请查看本轮任务记录",
                     messages=messages,
                 )
                 return

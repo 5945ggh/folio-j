@@ -15,6 +15,7 @@ from support_api import chat_client, seed_chat
 from test_segment_provenance import compiled_provenance, provenance, setup_material
 from test_settings_adapters import completed_response, install_transport
 
+from app.config import Settings, TranslationLimits
 from app.llm.adapters import CallSnapshot, GenerateResult
 from app.services import translations
 from app.settings_models import Run
@@ -401,6 +402,33 @@ async def test_translation_redacts_returned_output_before_storage(
                 assert result is not None and result.translation == stored.output_text
             else:
                 assert result is None and done["result_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_timeout_records_translation_and_accepted_budget(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
+    settings = Settings(translation=TranslationLimits(timeout_seconds=12.5))
+    monkeypatch.setattr(translations, "load_settings", lambda: settings)
+
+    async def fail(*_args: Any) -> GenerateResult:
+        raise TimeoutError("private exception payload")
+
+    monkeypatch.setattr(translations, "generate_text", fail)
+    async with chat_client(tmp_path / "timeout.db") as (client, app):
+        source, material, _ = await setup(client)
+        accepted = await client.post(
+            f"/api/materials/{material['id']}/translations", json=request(source, material)
+        )
+        assert accepted.status_code == 200
+        task_id = accepted.json()["id"]
+        settings.translation.timeout_seconds = 99
+        await translations.execute(app, task_id)
+        task = (await client.get(f"/api/translation-tasks/{task_id}")).json()
+        run = (await client.get(f"/api/runs/{task['run_id']}")).json()
+        assert run["status"] == task["status"] == "failed"
+        assert run["error"] == task["error"] == "阅读翻译超时（本次等待上限 12.5 秒）"
 
 
 @pytest.mark.asyncio
