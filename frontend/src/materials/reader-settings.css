@@ -110,6 +110,40 @@
 	margin: 0;
 	accent-color: var(--reader-accent);
 }
+.reader-settings-toggle input[role="switch"] {
+	appearance: none;
+	width: 36px;
+	height: 22px;
+	padding: 2px;
+	border: 1px solid var(--reader-muted);
+	border-radius: 999px;
+	background: var(--reader-soft);
+	cursor: pointer;
+}
+.reader-settings-toggle input[role="switch"]::before {
+	content: "";
+	display: block;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background: var(--reader-muted);
+}
+.reader-settings-toggle input[role="switch"]:checked {
+	border-color: var(--reader-accent);
+	background: var(--reader-accent);
+}
+.reader-settings-toggle input[role="switch"]:checked::before {
+	transform: translateX(14px);
+	background: var(--reader-bg);
+}
+@media (forced-colors: active) {
+	.reader-settings-toggle input[role="switch"]::before {
+		background: ButtonText;
+	}
+	.reader-settings-toggle input[role="switch"]:checked::before {
+		background: Highlight;
+	}
+}
 .reader-settings .reader-settings-disclosure {
 	margin-top: 12px;
 }

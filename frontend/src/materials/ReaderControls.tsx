@@ -450,6 +450,8 @@ export function ReaderSettings({
 							<input
 								type="checkbox"
 								aria-label="展示阅读记录下划线"
+								role="switch"
+								aria-checked={ui.marks.studySegmentUnderlines}
 								checked={ui.marks.studySegmentUnderlines}
 								onChange={(e) =>
 									onUi({
@@ -467,6 +469,8 @@ export function ReaderSettings({
 							<input
 								type="checkbox"
 								aria-label="展示阅读记录页边入口"
+								role="switch"
+								aria-checked={ui.marks.studySegmentMargins}
 								checked={ui.marks.studySegmentMargins}
 								onChange={(e) =>
 									onUi({

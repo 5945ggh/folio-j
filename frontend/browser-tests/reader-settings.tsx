@@ -453,9 +453,11 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		check(
 			panel.querySelectorAll('input[type="range"]').length === 5 &&
 				panel.querySelectorAll('input[type="number"]').length === 4 &&
-				panel.querySelectorAll('input[type="checkbox"]').length === 3 &&
+				panel.querySelectorAll('input[role="switch"]').length === 2 &&
+				panel.querySelectorAll('input[type="checkbox"]:not([role="switch"])')
+					.length === 1 &&
 				panel.querySelectorAll(".reader-options").length === 5,
-			"17 panel values must retain one editing entry: 5 sliders, 4 budgets, 3 toggles and 5 option groups",
+			"17 panel values must retain one editing entry: 5 sliders, 4 budgets, 2 switches, 1 checkbox and 5 option groups",
 		);
 		for (const label of ["展示阅读记录下划线", "展示阅读记录页边入口"]) {
 			const control = find<HTMLInputElement>(
@@ -463,8 +465,10 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 				panel,
 			);
 			check(
-				control.closest("label")?.textContent?.trim() === label,
-				`${label} must share its visible and accessible name`,
+				control.closest("label")?.textContent?.trim() === label &&
+					control.getAttribute("role") === "switch" &&
+					control.getAttribute("aria-checked") === String(control.checked),
+				`${label} must expose its switch state and share its visible and accessible name`,
 			);
 		}
 		for (const control of panel.querySelectorAll<HTMLElement>(
