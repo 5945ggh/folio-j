@@ -8,6 +8,7 @@ import {
 import type { ScreenAnchor } from "./reader-study";
 import { studyOverlayPosition } from "./study-overlays";
 import "./study-overlays.css";
+import "./reader-popover.css";
 
 function ToolIcon({ name }: { name: "translate" | "speak" | "save" | "copy" }) {
 	const path = {

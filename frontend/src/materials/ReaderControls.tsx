@@ -443,7 +443,7 @@ export function ReaderSettings({
 							/>
 						</label>
 						<p id="reader-popover-opacity-help">
-							词卡、学习片段、翻译与记录列表共用；展开阅读使用实底。
+							选区工具栏、词卡、学习片段、翻译与记录列表共用；展开阅读使用实底。
 						</p>
 						<label className="reader-settings-toggle">
 							<span>展示阅读记录下划线</span>

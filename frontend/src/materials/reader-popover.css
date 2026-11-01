@@ -2,14 +2,18 @@
 .reader-r1 .reader-popover:not(.embedded) {
 	border: 1px solid color-mix(in srgb, var(--reader-fg) 15%, var(--reader-bg));
 	border-radius: 13px;
+	box-shadow:
+		0 7px 26px var(--reader-shadow),
+		0 1px 3px var(--reader-shadow);
+}
+
+.reader-r1 .reader-popover:not(.embedded),
+.reader-r1 .reader-study-tool.toolbar {
 	background: color-mix(
 		in srgb,
 		var(--reader-bg) var(--reader-popover-opacity, var(--dict-opacity, 72%)),
 		transparent
 	);
-	box-shadow:
-		0 7px 26px var(--reader-shadow),
-		0 1px 3px var(--reader-shadow);
 	-webkit-backdrop-filter: blur(9px);
 	backdrop-filter: blur(9px);
 }
