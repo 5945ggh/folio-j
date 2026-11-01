@@ -26,7 +26,7 @@ def accepted_input(database: Path, job_id: str) -> dict[str, Any]:
 
 
 def declared_template_version(path: Path) -> str:
-    match = re.search(r"\bversion:\s*([\w.-]+)", path.read_text().splitlines()[0])
+    match = re.search(r"\bversion:\s*([\w.-]+)", path.read_text(encoding="utf-8").splitlines()[0])
     assert match is not None, path
     return match.group(1)
 
@@ -52,7 +52,7 @@ async def test_accepted_template_versions_and_generation_tool_contract(
     system_name = next(name for name in loaded if name.startswith("system_"))
     system_version = declared_template_version(context.PROMPTS / system_name)
     tools_name = snapshot["prompt_version"].split("+")[1]
-    tool_contract = json.loads((context.PROMPTS / f"{tools_name}.json").read_text())
+    tool_contract = json.loads((context.PROMPTS / f"{tools_name}.json").read_text(encoding="utf-8"))
     assert (
         snapshot["prompt_version"]
         == f"{system_version}+tools_{tool_contract['version']}+context_v1+user_v4"

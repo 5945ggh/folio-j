@@ -10,6 +10,7 @@ from typing import Any
 from zipfile import ZipFile
 
 import pytest
+from support_paths import symlink_or_skip
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location(
@@ -29,7 +30,7 @@ def git(repository: Path, *args: str) -> str:
 def write(repository: Path, name: str, content: str) -> None:
     path = repository / name
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)
+    path.write_text(content, encoding="utf-8", newline="\n")
 
 
 def commit(repository: Path) -> str:
@@ -54,6 +55,7 @@ def repository(tmp_path: Path) -> Path:
     repo = tmp_path / "repository"
     repo.mkdir()
     git(repo, "init", "-q")
+    git(repo, "config", "core.autocrlf", "false")
     write(
         repo,
         "scripts/release/manifest.json",
@@ -138,7 +140,7 @@ def test_missing_and_unsafe_manifest_entries_leave_no_archive(
 
 
 def test_symlink_is_rejected_instead_of_followed(repository: Path, tmp_path: Path) -> None:
-    (repository / "frontend/src/secret.ts").symlink_to("../../data/app.db")
+    symlink_or_skip(repository / "frontend/src/secret.ts", "../../data/app.db")
     commit(repository)
     output = tmp_path / "source.zip"
     with pytest.raises(ValueError, match="符号链接"):

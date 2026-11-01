@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 import sqlite3
 import stat
 from collections.abc import AsyncGenerator, Awaitable, Callable
@@ -132,10 +133,13 @@ async def test_provider_credentials_are_stripped_private_and_never_returned(tmp_
         assert secret not in json.dumps(provider)
         provider_id = provider["id"]
         secret_dir = tmp_path / "folio.db.secrets"
-        assert stat.S_IMODE(secret_dir.stat().st_mode) == 0o700
+        assert secret_dir.is_dir()
+        if os.name != "nt":
+            assert stat.S_IMODE(secret_dir.stat().st_mode) == 0o700
         secret_files = list(secret_dir.iterdir())
         assert len(secret_files) == 1
-        assert stat.S_IMODE(secret_files[0].stat().st_mode) == 0o600
+        if os.name != "nt":
+            assert stat.S_IMODE(secret_files[0].stat().st_mode) == 0o600
         assert secret_files[0].read_text() == secret
         assert secret not in database.read_bytes().decode("utf-8", errors="ignore")
 

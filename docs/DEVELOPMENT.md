@@ -10,6 +10,8 @@
 
 Python 默认版本同时固定在根目录的 [.python-version](../.python-version) 和 [backend/.python-version](../backend/.python-version)，确保 `uv --project backend` 及后端目录内的命令使用同一版本。Python 包最低支持 3.11，Node 版本见 [.nvmrc](../.nvmrc)。依赖分别锁定在 [backend/uv.lock](../backend/uv.lock) 和 [frontend/pnpm-lock.yaml](../frontend/pnpm-lock.yaml)。
 
+Windows 实验性支持以 Windows 11 x64、PowerShell 5.1／7 和 Chrome／Edge 为目标，推荐 `just 1.58` 或更新版本。`just setup/dev/start/lint/test/build/gen-api/migrate/backup/restore` 可使用原生命令入口；`snapshot` 的可选脚本仍要求 POSIX shell。本文其余行内环境变量赋值、`mktemp` 等示例使用 POSIX shell；PowerShell 的配置写法见[应用配置](USAGE.md#配置优先级与高级选项)，完整实机步骤见 [Windows 测试清单](handovers/WINDOWS_ACCEPTANCE.md)。
+
 首次执行迁移或启动前，先确认数据库位置：新安装默认使用 `~/Folio-J-Data/app.db`，需要自定义时先按[应用配置](USAGE.md#应用配置)编辑 `~/Folio-J-Data/app.toml`。未显式配置路径且程序目录已有 `data/app.db` 时，继续使用该旧库；已有数据先按[升级与备份](UPGRADING.md)备份。开发时可用 `FOLIO_J_DATABASE_PATH` 指向独立测试库，避免修改日常数据。
 
 在仓库根目录运行：
@@ -59,6 +61,20 @@ just check-assets # 验证保留的实验和静态原型
 `BROWSER_TEST_SUITE=reader-layout-switch just test-browser` 运行该组的所有窗口与方向组合。`BROWSER_TEST_QUERY='?direction=vertical-rl&suite=reader-session' just test-browser` 按完整查询选择场景，参数顺序和空值标记的写法不影响匹配。两个筛选同时设置时取交集；没有匹配场景会在启动 Chrome 前失败。完成后输出实际通过场数。
 
 每次运行使用独立的 Chrome profile 与 Vite 缓存。设置 `BROWSER_TEST_SCREENSHOT_DIR=/绝对路径` 保存场景截图，文件名包含窗口宽高和完整查询身份，避免方向、主题或其他标记不同的场景相互覆盖。历史 `BROWSER_TEST_BASELINE` 仅用于[阅读会话性能测量](#阅读会话性能测量)。
+
+## Windows 自动验证
+
+[Windows workflow](../.github/workflows/windows.yml) 在 `windows-2025` runner 上安装锁定依赖，先执行静态检查与进程生命周期定向回归，再执行完整后端与前端测试、生产构建、Chrome／Edge 定向组件回归，并打包当前提交后运行源码 ZIP 冒烟脚本。工作流可从 Actions 手动触发，也随 PR、`main` 和 `codex/windows-*` 分支推送运行。配置存在不表示远端执行已通过，结果见 [Windows 验收记录](handovers/WINDOWS_ACCEPTANCE.md)。
+
+源码包冒烟使用独立中文与空格目录、临时 HOME／USERPROFILE 和新数据库，验证迁移、真实服务启动与停止、离线备份、拒绝覆盖已有目标、恢复后重启，不调用模型。已安装 `uv`、`pnpm`、`just` 时可在本机复现：
+
+```sh
+uv run --project backend python scripts/smoke_source.py /绝对路径/Folio-J-review.zip
+```
+
+浏览器工具自动寻找本机 Chrome／Edge，也可设置 `CHROME_BIN`。后端性能测量脚本在 Windows 上将不具备的 RSS 峰值返回为 `null`；历史性能基准与设备阅读体验仍需分别验证。
+
+`just test` 包含 Windows 开发模式的热重载与退出回归，通过临时 ASGI 应用的关闭屏障核对清理顺序；Windows 控制台事件及 Job Object 检查须在 Windows 原生执行。Windows 正常停止会等待后端清理完成，第二次 Ctrl-C 不截断清理。若后端清理卡住，可在任务管理器结束本次启动器，由 Job Object 清理其子进程，再检查端口并重启。
 
 ## 真实学习闭环验收
 

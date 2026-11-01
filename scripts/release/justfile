@@ -1,6 +1,11 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command"]
 
-export UV_CACHE_DIR := justfile_directory() / ".cache/uv"
+backup_directory := if os_family() == "windows" { '"$env:directory"' } else { '"$directory"' }
+restore_source := if os_family() == "windows" { '"$env:backup_dir"' } else { '"$backup_dir"' }
+restore_destination := if os_family() == "windows" { '"$env:destination"' } else { '"$destination"' }
+
+export UV_CACHE_DIR := env("UV_CACHE_DIR", justfile_directory() / ".cache/uv")
 
 default:
     @just --list
@@ -26,9 +31,9 @@ migrate:
     uv run --directory backend --no-dev alembic upgrade head
 
 # 停止服务后，备份到尚不存在的新目录。
-backup $destination:
-    uv run --project backend --no-dev python -m app.backup create "$destination"
+backup $directory:
+    uv run --project backend --no-dev python -m app.backup create {{backup_directory}}
 
 # 恢复到尚不存在的新目录；不覆盖原数据。
-restore $source $destination:
-    uv run --project backend --no-dev python -m app.backup restore "$source" "$destination"
+restore $backup_dir $destination:
+    uv run --project backend --no-dev python -m app.backup restore {{restore_source}} {{restore_destination}}

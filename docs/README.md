@@ -6,6 +6,7 @@
 |---|---|---|
 | 如何阅读、设置模型和保存讲解 | [使用指南](USAGE.md) | 日常操作、模型调用与费用、应用配置 |
 | 如何准备开发环境、执行检查和生成快照 | [开发指南](DEVELOPMENT.md) | 依赖版本、开发命令、API 生成与快照工具 |
+| 如何试用 Windows 并记录实机结果 | [Windows 验收清单](handovers/WINDOWS_ACCEPTANCE.md) | Windows 11 x64、PowerShell、Chrome／Edge 的实验性范围、操作与待验项目 |
 | 怎样验证重启后能找回讲解并返回原句 | [真实学习闭环验收](DEVELOPMENT.md#真实学习闭环验收) | 仓库合成 EPUB、临时数据库和浏览器操作步骤 |
 | 如何保留数据、升级和恢复旧库 | [升级与备份](UPGRADING.md) | 数据与凭据备份、迁移入口、旧开发库处理边界 |
 | 为什么做、长期怎样演进 | [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) | 动机、取舍与待验证设想；方向不自动成为实施要求 |

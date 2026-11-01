@@ -229,7 +229,7 @@ async def make_input_snapshot(
         )
     messages.append({"role": "user", "content": user})
     snapshot["messages"] = messages
-    snapshot["tools"] = json.loads((PROMPTS / "tools_v5.json").read_text())["tools"]
+    snapshot["tools"] = json.loads((PROMPTS / "tools_v5.json").read_text(encoding="utf-8"))["tools"]
     snapshot["prompt_version"] = (
         PROMPT_VERSION
         + ("+artifact_v1" if recovered_artifacts else "")

@@ -26,9 +26,11 @@ Folio-J 是一个运行在本机的日语原版阅读与学习工具。读一本
 
 ## 快速开始
 
-Folio-J 目前从源码启动，供单人在本机浏览器中使用，支持导入普通可重排 EPUB。项目已在 macOS 上完成验收（Linux 尚待完整验证，原生 Windows 暂不支持）。
+Folio-J 目前从源码启动，供单人在本机浏览器中使用，支持导入普通可重排 EPUB。项目已在 macOS 上完成验收；Windows 11 x64 提供实验性支持，面向 PowerShell 和 Chrome／Edge，尚待 Windows CI 与实机验证。Linux 尚待完整验证。
 
 **环境要求**：**Python 3.11**、**Node.js 24**、`uv` 和 `pnpm 10`（推荐同时安装 `just` 以简化命令）。
+
+Windows 可使用系统自带的 Windows PowerShell 5.1 或 PowerShell 7，推荐 `just 1.58` 或更新版本。下方安装、启动命令可直接在 PowerShell 中执行，无需安装 Bash；主目录 `~` 对应当前用户目录，例如 `C:/Users/你的用户名`。后续验证见 [Windows 实机测试清单](docs/handovers/WINDOWS_ACCEPTANCE.md)。
 
 **关于数据位置**：
 - **全新安装**：默认将数据库保存在 `~/Folio-J-Data/app.db`，日后更新或移动程序文件夹都不会影响这份数据。如需自定义数据库位置或端口，请在首次启动前参考[应用配置](docs/USAGE.md#应用配置)修改 `~/Folio-J-Data/app.toml`。

@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
   "aiosqlite",
   "alembic",
+  "editables~=0.3",
   "fastapi",
   "jinja2>=3.1.6",
   "markdown-it-py>=4.2.0",
@@ -33,6 +34,8 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/app"]
+# Keep the editable .pth ASCII so Python 3.11 can start under Windows code pages.
+dev-mode-exact = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

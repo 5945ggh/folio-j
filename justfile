@@ -1,6 +1,12 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command"]
 
-export UV_CACHE_DIR := justfile_directory() / ".cache/uv"
+# Only fixed shell expressions are interpolated; paths stay in exported parameters.
+backup_directory := if os_family() == "windows" { '"$env:directory"' } else { '"$directory"' }
+restore_source := if os_family() == "windows" { '"$env:backup_dir"' } else { '"$backup_dir"' }
+restore_destination := if os_family() == "windows" { '"$env:destination"' } else { '"$destination"' }
+
+export UV_CACHE_DIR := env("UV_CACHE_DIR", justfile_directory() / ".cache/uv")
 
 # 列出可用命令。
 default:
@@ -73,11 +79,11 @@ gen-api:
 
 # 停止服务后，将当前学习库和配套文件备份到新目录。
 backup $directory:
-    uv run --project backend python -m app.backup create "$directory"
+    uv run --project backend python -m app.backup create {{backup_directory}}
 
 # 校验原生备份并恢复到全新的目录。
 restore $backup_dir $destination:
-    uv run --project backend python -m app.backup restore "$backup_dir" "$destination"
+    uv run --project backend python -m app.backup restore {{restore_source}} {{restore_destination}}
 
 # 从空库建立当前 schema，或执行已记录迁移；不自动清空数据库。
 migrate:

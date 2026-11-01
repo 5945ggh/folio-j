@@ -32,6 +32,7 @@ from app.dictionary_schemas import (
     DictionaryNode,
     DictionaryStatus,
 )
+from app.platform_io import fsync_directory
 from app.services.dictionary_styles import StyleContext, sanitize_style
 
 INDEX_VERSION = "2"
@@ -284,7 +285,7 @@ class DictionaryStore:
 
     The original single index remains in place and is exposed without reimport.
     Catalog commits only reference complete files. Healthy indexes are never replaced.
-    Open SQLite connections retain their exact dictionary after deletion unlinks the index.
+    Open readers retain their exact dictionary; busy files are reclaimed after readers close.
     """
 
     def __init__(self, path: Path) -> None:
@@ -292,6 +293,7 @@ class DictionaryStore:
         self.library_path = path.with_name(path.name + ".library")
         self.catalog_path = self.library_path / "catalog.sqlite3"
         self._import_lock = asyncio.Lock()
+        self._deferred_deletions: set[Path] = set()
 
     @asynccontextmanager
     async def _file_snapshot(self, path: Path) -> AsyncGenerator[DictionarySnapshot]:
@@ -410,24 +412,66 @@ class DictionaryStore:
     async def snapshot(self) -> AsyncGenerator[DictionarySnapshot]:
         # Hold the tiny catalog read transaction only until the index connection
         # is open. Deletion takes an exclusive catalog lock before moving files.
-        async with AsyncExitStack() as stack:
-            async with self._catalog_view() as (library, paths):
-                path = (
-                    paths.get(library.active_dictionary_id)
-                    if library.active_dictionary_id
-                    else None
-                )
-                snapshot = (
-                    await stack.enter_async_context(self._file_snapshot(path))
-                    if path is not None
+        try:
+            async with AsyncExitStack() as stack:
+                async with self._catalog_view() as (library, paths):
+                    path = (
+                        paths.get(library.active_dictionary_id)
+                        if library.active_dictionary_id
+                        else None
+                    )
+                    snapshot = (
+                        await stack.enter_async_context(self._file_snapshot(path))
+                        if path is not None
+                        else DictionarySnapshot(None)
+                    )
+                    status = await snapshot.status()
+                yield (
+                    snapshot
+                    if status.dictionary_id == library.active_dictionary_id
                     else DictionarySnapshot(None)
                 )
-                status = await snapshot.status()
-            yield (
-                snapshot
-                if status.dictionary_id == library.active_dictionary_id
-                else DictionarySnapshot(None)
-            )
+        finally:
+            if self._deferred_deletions:
+                await self._cleanup_deferred_indexes()
+
+    async def _reap_unreferenced_indexes(self, connection: aiosqlite.Connection) -> None:
+        """Run under the catalog write lock so reimport cannot race file cleanup."""
+        _, paths = await self._read_catalog(connection)
+        referenced = set(paths.values())
+        candidates = set(self._deferred_deletions)
+        candidates.update(
+            path
+            for path in self.library_path.glob("*.sqlite3")
+            if re.fullmatch(r"[0-9a-f]{64}\.sqlite3", path.name)
+        )
+        if self.path not in referenced:
+            # A restart loses the in-memory queue for a busy legacy deletion.
+            # Only recognize healthy old indexes; unknown damaged files stay intact.
+            legacy = await self._legacy_status()
+            if legacy.ready and legacy.dictionary_id:
+                candidates.add(self.path)
+        for path in candidates - referenced:
+            try:
+                await asyncio.to_thread(path.unlink, missing_ok=True)
+            except OSError:
+                # Windows readers (or another local program) still hold the file.
+                self._deferred_deletions.add(path)
+            else:
+                self._deferred_deletions.discard(path)
+        self._deferred_deletions.difference_update(referenced)
+
+    async def _cleanup_deferred_indexes(self) -> None:
+        try:
+            async with aiosqlite.connect(self.catalog_path) as connection:
+                await connection.execute("PRAGMA busy_timeout = 30000")
+                await connection.execute("BEGIN EXCLUSIVE")
+                await self._reap_unreferenced_indexes(connection)
+                await connection.commit()
+        except (aiosqlite.Error, OSError):
+            # Reclamation must not turn a committed deletion or completed lookup
+            # into an apparent failure. A later reader/mutation retries it.
+            pass
 
     async def status(self) -> DictionaryStatus:
         async with self.snapshot() as snapshot:
@@ -477,6 +521,7 @@ class DictionaryStore:
                     "INSERT INTO active VALUES (1, ?)", (legacy.dictionary_id,)
                 )
                 count = 1
+            await self._reap_unreferenced_indexes(connection)
             already_installed = False
             if installed is not None and installed.dictionary_id:
                 async with connection.execute(
@@ -617,7 +662,7 @@ class DictionaryStore:
         target = Path(raw_path)
         try:
             result = _build(source, target)
-            with target.open("rb") as completed:
+            with target.open("r+b") as completed:
                 os.fsync(completed.fileno())
             return result, target
         except (
@@ -653,11 +698,7 @@ class DictionaryStore:
                 pass
             if not healthy:
                 os.replace(target, published)
-        directory_fd = os.open(self.library_path, os.O_RDONLY)
-        try:
-            os.fsync(directory_fd)
-        finally:
-            os.close(directory_fd)
+        fsync_directory(self.library_path)
 
     async def delete(
         self, dictionary_id: str, replacement_dictionary_id: str | None = None
@@ -730,9 +771,16 @@ class DictionaryStore:
                     cleanup.update(await asyncio.to_thread(self._retained_paths, path))
                     retained = self._deleting_path(path)
                     if await asyncio.to_thread(path.exists):
-                        await asyncio.to_thread(os.replace, path, retained)
-                        staged.append((path, retained))
-                        cleanup.add(retained)
+                        try:
+                            await asyncio.to_thread(os.replace, path, retained)
+                        except PermissionError:
+                            # Windows cannot rename an open SQLite file. The
+                            # committed catalog hides it; close/mutation retries
+                            # cleanup while holding the catalog write lock.
+                            self._deferred_deletions.add(path)
+                        else:
+                            staged.append((path, retained))
+                            cleanup.add(retained)
                     else:
                         recovered = await asyncio.to_thread(self.readable_index_path, path)
                         if recovered != path:
@@ -755,6 +803,8 @@ class DictionaryStore:
                 # The committed library is authoritative. A later deletion of this
                 # identity retries cleanup; no learning data is involved.
                 pass
+        if self._deferred_deletions:
+            await self._cleanup_deferred_indexes()
         return library
 
 

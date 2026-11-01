@@ -29,6 +29,15 @@ just backup "$HOME/folio-backup-01"
 FOLIO_J_DATABASE_PATH="/Volumes/Study/Folio-J/app.db" just backup "$HOME/folio-backup-01"
 ```
 
+PowerShell 中先设置环境变量，再调用相同的命令。备份结束后删除该变量；下例路径请替换成实际源库。
+
+```powershell
+$env:FOLIO_J_DATABASE_PATH = "D:/学习资料/app.db"
+just data-path
+just backup "$HOME/folio-backup-01"
+Remove-Item Env:FOLIO_J_DATABASE_PATH
+```
+
 这条命令会在你的主目录下创建 `folio-backup-01` 文件夹并存入备份。**每次备份都需要指定一个新的文件夹名称。** 如果想直接备份到移动硬盘，请先接好硬盘，再将上述路径替换为移动硬盘下的新文件夹路径。
 
 <a id="数据与凭据"></a>
@@ -37,6 +46,8 @@ FOLIO_J_DATABASE_PATH="/Volumes/Study/Folio-J/app.db" just backup "$HOME/folio-b
 
 * **包含**：所有书籍、阅读进度、书签、学习片段、讲解、讨论、已保存的译文，以及已安装的词典。**若配置过模型服务，备份中还可能包含未加密的 API 密钥**，请妥善保存在私人目录，切勿直接分享给他人。
 * **不包含**：应用配置文件 `~/Folio-J-Data/app.toml`（需另行保存），以及阅读配色、朗读发音人等保存在浏览器本地的偏好设置。
+
+Windows 使用所在目录继承的访问权限，不额外设置 ACL。请把含凭据的学习库和备份放在自己的用户目录内。备份仍会刷写文件内容，但 Windows 未提供与 POSIX 目录刷盘等价的保证；断电后的目录元数据耐久性尚未验证。
 
 <a id="旧开发数据库与备份"></a> <a id="epub-存储格式与开发库重建"></a>
 
@@ -59,6 +70,7 @@ FOLIO_J_DATABASE_PATH="/Volumes/Study/Folio-J/app.db" just backup "$HOME/folio-b
    [database]
    path = "~/folio-restored-01/app.db"
    ```
+   Windows 也可填写 `C:/Users/你的用户名/folio-restored-01/app.db`。使用反斜杠时应改用 TOML 单引号，具体见[自定义数据位置](USAGE.md#自定义数据位置与端口)。
 4. **确认并启动**：运行 `just data-path`。显示的路径与第 2 步恢复成功时的路径一致后，运行 `just start` 打开恢复后的书架。
 
 ### 升级失败时如何退回旧版

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
+import { findChromium } from "./chromium.mjs";
 
 // Compare built applications, alternating builds in fresh browser contexts.
 // The static server matches uncompressed local hosting; API data stays offline.
@@ -14,10 +15,7 @@ if (!directories.length) directories.push(path.join(frontend, "dist"));
 const runs = Number(process.env.LOADING_MEASUREMENT_RUNS ?? 5);
 if (!Number.isInteger(runs) || runs < 1 || runs > 20)
 	throw new Error("LOADING_MEASUREMENT_RUNS must be 1..20");
-const chrome =
-	process.env.CHROME_BIN ??
-	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-await access(chrome);
+const chrome = await findChromium();
 const profile = await mkdtemp(path.join(tmpdir(), "folio-j-loading-"));
 const settings = {
 	profile: {

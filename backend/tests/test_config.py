@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
+from support_paths import symlink_or_skip
 
 from app import config as app_config
 from app.config import load_settings
@@ -14,6 +16,8 @@ def isolated_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     home.mkdir()
     repo.mkdir()
     monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    assert Path.home() == home
     monkeypatch.setattr(app_config, "REPO_ROOT", repo)
     monkeypatch.delenv("FOLIO_J_DATABASE_PATH", raising=False)
 
@@ -50,9 +54,10 @@ def test_new_version_directory_reuses_persistent_config_and_database(
 
 def test_program_config_overrides_individual_user_fields() -> None:
     database = Path.home() / "library" / "learning.db"
+    database_literal = json.dumps(str(database), ensure_ascii=False)
     write_config(
         Path.home() / "Folio-J-Data" / "app.toml",
-        f'[server]\nport = 8021\ndev_port = 5199\n[database]\npath = "{database}"\n'
+        f"[server]\nport = 8021\ndev_port = 5199\n[database]\npath = {database_literal}\n"
         "[translation]\nmax_pending = 7\ntimeout_seconds = 50\n",
     )
     write_config(
@@ -77,13 +82,16 @@ def test_explicit_config_path_selects_program_layer(tmp_path: Path) -> None:
     assert settings.server.dev_port == 5199
 
 
-@pytest.mark.parametrize("database_path", ["/chosen/learning.db", "relative/learning.db"])
+@pytest.mark.parametrize("absolute", [True, False])
 def test_database_path_environment_override(
-    database_path: str, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, absolute: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    database_path = (
+        tmp_path / "chosen" / "learning.db" if absolute else Path("relative/learning.db")
+    )
     write_config(Path.home() / "Folio-J-Data" / "app.toml", '[database]\npath = "~/user.db"\n')
     write_config(app_config.REPO_ROOT / "config" / "app.toml", '[database]\npath = "program.db"\n')
-    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", database_path)
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database_path))
     settings = load_settings()
     expected = Path(database_path)
     if not expected.is_absolute():
@@ -152,7 +160,7 @@ def test_legacy_companion_without_database_rejected(suffix: str) -> None:
 def test_dangling_legacy_database_link_rejected(tmp_path: Path) -> None:
     legacy = app_config.REPO_ROOT / "data" / "app.db"
     legacy.parent.mkdir()
-    legacy.symlink_to(tmp_path / "missing.db")
+    symlink_or_skip(legacy, tmp_path / "missing.db")
     with pytest.raises(ValueError):
         load_settings()
 
@@ -166,7 +174,11 @@ def test_missing_selected_database_with_companion_rejected(
         database = Path.home() / "restored.db"
         monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
     database.parent.mkdir(parents=True, exist_ok=True)
-    Path(str(database) + ".secrets").symlink_to(database.parent / "missing-secrets")
+    symlink_or_skip(
+        Path(str(database) + ".secrets"),
+        database.parent / "missing-secrets",
+        target_is_directory=True,
+    )
     with pytest.raises(ValueError):
         load_settings()
     assert not database.exists()

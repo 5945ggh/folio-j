@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,9 @@ from app.db import create_engine
 async def test_sqlite_handles_special_filename_and_enables_connection_pragmas(
     tmp_path: Path,
 ) -> None:
-    database_path = tmp_path / "app ?# test.db"
+    # Windows forbids '?'; '#' and '%' still exercise SQLAlchemy URL escaping.
+    filename = "app # % test.db" if os.name == "nt" else "app ?# % test.db"
+    database_path = tmp_path / filename
     engine = create_engine(database_path)
     try:
         async with engine.connect() as connection:

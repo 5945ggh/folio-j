@@ -1,6 +1,5 @@
 """Real offline backup CLI preserves learning identities and rejects unsafe inputs."""
 
-import fcntl
 import hashlib
 import json
 import os
@@ -16,10 +15,19 @@ from uuid import uuid4
 import pytest
 from alembic.config import Config
 from support_api import accept, chat_client, seed_chat
+from support_paths import symlink_or_skip
 from test_dictionary_store import archive, chunks, record, seed_legacy
 from test_epub_compiler import publication
 
 from alembic import command
+from app import backup as backup_module
+from app.backup import (
+    BackupError,
+    _publish,  # pyright: ignore[reportPrivateUsage]
+    _relative,  # pyright: ignore[reportPrivateUsage]
+    create_backup,
+    restore_backup,
+)
 from app.services.dictionary_store import DictionaryStore
 from app.services.settings import read_credential
 
@@ -34,31 +42,31 @@ def backup_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Cli:
     guard.mkdir()
     marker = tmp_path / "network-attempt"
     (guard / "sitecustomize.py").write_text(
-        "import socket\n"
         "from pathlib import Path\n"
-        "def deny(*args, **kwargs):\n"
-        f"    Path({str(marker)!r}).write_text('forbidden')\n"
-        "    raise RuntimeError('Network access is forbidden in backup tests')\n"
-        "socket.socket.connect = deny\n"
-        "socket.socket.connect_ex = deny\n"
-        "socket.create_connection = deny\n"
-        "socket.getaddrinfo = deny\n"
+        "from support_network import install_network_guard\n"
+        "def record_network_attempt():\n"
+        f"    Path({str(marker)!r}).write_text('forbidden', encoding='utf-8')\n"
+        "install_network_guard(on_denied=record_network_attempt)\n"
         "import os\n"
         "if installation := os.environ.get('FOLIO_TEST_INSTALLATION'):\n"
         "    import app.config\n"
         "    app.config.REPO_ROOT = Path(installation)\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("PYTHONPATH", os.pathsep.join((str(guard), str(ROOT / "backend/src"))))
+    monkeypatch.setenv(
+        "PYTHONPATH",
+        os.pathsep.join((str(guard), str(ROOT / "backend/src"), str(ROOT / "backend/tests"))),
+    )
 
     def run(*arguments: str | Path) -> subprocess.CompletedProcess[str]:
         result = subprocess.run(
             [sys.executable, "-m", "app.backup", *(str(item) for item in arguments)],
             cwd=ROOT,
-            env=os.environ.copy(),
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             timeout=30,
             check=False,
         )
@@ -153,7 +161,7 @@ async def test_cli_roundtrip_preserves_epub_bookmark_dictionary_credentials_and_
 
     backup = tmp_path / "backup"
     _success(backup_cli("create", backup))
-    manifest = json.loads((backup / "manifest.json").read_text())
+    manifest = json.loads((backup / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["format_version"] == 1
     assert manifest["components"] == {
         "credentials": True,
@@ -165,7 +173,7 @@ async def test_cli_roundtrip_preserves_epub_bookmark_dictionary_credentials_and_
         raw = (backup / name).read_bytes()
         assert len(raw) == expected["size"]
         assert hashlib.sha256(raw).hexdigest() == expected["sha256"]
-    assert "fictional-chat-secret" not in (backup / "manifest.json").read_text()
+    assert "fictional-chat-secret" not in (backup / "manifest.json").read_text(encoding="utf-8")
     assert _rows(database) == before
 
     restored_directory = tmp_path / "restored"
@@ -192,7 +200,7 @@ def test_cli_database_only_backup_has_optional_components_absent(
 ) -> None:
     backup = tmp_path / "backup"
     _success(backup_cli("create", backup))
-    manifest = json.loads((backup / "manifest.json").read_text())
+    manifest = json.loads((backup / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["components"] == dict.fromkeys(
         ("credentials", "dictionary_index", "dictionary_library"), False
     )
@@ -215,7 +223,7 @@ def test_cli_rejects_incomplete_corrupt_or_unsupported_backup_without_publishing
     elif damage == "corrupt":
         (backup / "app.db").write_bytes(b"damaged database")
     else:
-        manifest = json.loads(manifest_path.read_text())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         manifest["format_version"] = 999
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     target = tmp_path / "restored"
@@ -241,29 +249,29 @@ def test_cli_refuses_existing_target_including_empty_directory(
     assert {entry.name: entry.read_bytes() for entry in target.iterdir()} == before
 
 
-def test_cli_refuses_backup_while_application_holds_worker_lock(
+@pytest.mark.asyncio
+async def test_cli_refuses_backup_while_application_holds_worker_lock(
     tmp_path: Path, database: Path, backup_cli: Cli
 ) -> None:
-    lock = database.with_name(database.name + ".worker.lock")
     target = tmp_path / "backup"
-    with lock.open("a+b") as stream:
-        fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        try:
-            result = backup_cli("create", target)
-            _failure(result)
-            assert not target.exists()
-        finally:
-            fcntl.flock(stream, fcntl.LOCK_UN)
+    async with chat_client(database):
+        result = backup_cli("create", target)
+        _failure(result)
+        assert not target.exists()
     _success(backup_cli("create", target))
 
 
+@pytest.mark.parametrize("inherited_encoding", ["utf-8", "cp1252"])
 def test_cli_missing_source_does_not_silently_create_database(
-    tmp_path: Path, backup_cli: Cli, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, backup_cli: Cli, monkeypatch: pytest.MonkeyPatch, inherited_encoding: str
 ) -> None:
     missing = tmp_path / "missing.db"
     monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(missing))
     target = tmp_path / "backup"
-    _failure(backup_cli("create", target))
+    monkeypatch.setenv("PYTHONIOENCODING", inherited_encoding)
+    result = backup_cli("create", target)
+    _failure(result)
+    assert "源数据库不存在或不安全" in result.stderr
     assert not missing.exists()
     assert not target.exists()
 
@@ -318,7 +326,7 @@ def test_cli_validates_content_beyond_checksums_and_rejects_links(
     backup = tmp_path / "backup"
     _success(backup_cli("create", backup))
     manifest_path = backup / "manifest.json"
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     payload = backup / "app.db"
     if damage == "invalid_sqlite":
         payload.write_bytes(b"matching digest does not make this a database")
@@ -331,7 +339,7 @@ def test_cli_validates_content_beyond_checksums_and_rejects_links(
         outside = tmp_path / "outside.db"
         outside.write_bytes(payload.read_bytes())
         payload.unlink()
-        payload.symlink_to(outside)
+        symlink_or_skip(payload, outside)
     raw = payload.read_bytes()
     manifest["files"]["app.db"] = {"size": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
@@ -389,7 +397,7 @@ def test_cli_requires_explicit_manifest_versions(
     backup = tmp_path / "backup"
     _success(backup_cli("create", backup))
     manifest_path = backup / "manifest.json"
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if field in ("format_version", "database"):
         del manifest[field]
     else:
@@ -531,7 +539,7 @@ def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(
     before = _rows(database)
     old_backup = tmp_path / "old-backup"
     _success(backup_cli("create", old_backup))
-    old_manifest = json.loads((old_backup / "manifest.json").read_text())
+    old_manifest = json.loads((old_backup / "manifest.json").read_text(encoding="utf-8"))
     assert old_manifest["format_version"] == 1
     assert old_manifest["database"]["revision"] == baseline
 
@@ -554,7 +562,7 @@ def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(
 
     new_backup = tmp_path / "new-backup"
     _success(backup_cli("create", new_backup))
-    manifest = json.loads((new_backup / "manifest.json").read_text())
+    manifest = json.loads((new_backup / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["format_version"] == old_manifest["format_version"] == 1
     assert manifest["database"]["revision"] == successor
     assert manifest["application"]["version"] == "0.2.0-test"
@@ -567,7 +575,7 @@ def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(
         mismatch = tmp_path / f"mismatch-{wrong_revision}"
         shutil.copytree(package, mismatch)
         path = mismatch / "manifest.json"
-        mismatched = json.loads(path.read_text())
+        mismatched = json.loads(path.read_text(encoding="utf-8"))
         mismatched["database"]["revision"] = wrong_revision
         path.write_text(json.dumps(mismatched), encoding="utf-8")
         target = tmp_path / f"rejected-{wrong_revision}"
@@ -582,3 +590,107 @@ def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(
     _failure(backup_cli("create", rejected_backup))
     assert not rejected_backup.exists()
     assert _rows(database) == before
+
+
+@pytest.mark.parametrize("name", ["C:outside.db", "credentials/key:secret", "CON", "key. "])
+def test_package_paths_reject_windows_aliases_and_streams(name: str) -> None:
+    with pytest.raises(BackupError, match="不安全相对路径"):
+        _relative(name)
+
+
+@pytest.mark.parametrize("failure", ["copy", "flush_tree", "rename", "flush_parent"])
+def test_failed_publication_leaves_no_target_or_staging_tree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    destination = tmp_path / "backup"
+
+    def fail(_path: Path, _destination: Path | None = None) -> None:
+        raise OSError("injected publication failure")
+
+    def skip_flush(_path: Path) -> None:
+        pass
+
+    if failure == "flush_tree":
+        monkeypatch.setattr(backup_module, "_sync_tree", fail)
+    elif failure == "rename":
+        monkeypatch.setattr(backup_module, "publish_directory", fail)
+    elif failure == "flush_parent":
+        monkeypatch.setattr(backup_module, "_sync_tree", skip_flush)
+        monkeypatch.setattr(backup_module, "fsync_directory", fail)
+    with pytest.raises(OSError, match="injected publication failure"):
+        with _publish(destination) as staging:
+            (staging / "app.db").write_bytes(b"staged data")
+            if failure == "copy":
+                fail(staging)
+    assert not destination.exists()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_publication_preserves_destination_created_after_initial_check(tmp_path: Path) -> None:
+    destination = tmp_path / "backup"
+    with pytest.raises(FileExistsError):
+        with _publish(destination) as staging:
+            (staging / "app.db").write_bytes(b"staged data")
+            destination.mkdir()
+            (destination / "keep").write_bytes(b"other writer")
+    assert (destination / "keep").read_bytes() == b"other writer"
+    assert not (destination / "app.db").exists()
+
+
+def test_backup_restore_publication_does_not_precreate_windows_destination(
+    tmp_path: Path, database: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app import platform_io
+
+    def windows_publish(staging: Path, destination: Path) -> None:
+        assert not destination.exists()
+        with monkeypatch.context() as platform_patch:
+            platform_patch.setattr(platform_io, "_WINDOWS", True)
+            platform_io.publish_directory(staging, destination)
+
+    monkeypatch.setattr(backup_module, "publish_directory", windows_publish)
+    package = create_backup(tmp_path / "package", database)
+    restored = restore_backup(package, tmp_path / "restored")
+    assert _rows(restored) == _rows(database)
+
+
+def test_restore_rejects_windows_reparse_directory(
+    tmp_path: Path, database: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = create_backup(tmp_path / "package", database)
+    junction = package / "credentials"
+    junction.mkdir()
+    original = backup_module.is_link_or_reparse
+
+    def is_reparse(path: Path) -> bool:
+        return path == junction or original(path)
+
+    monkeypatch.setattr(backup_module, "is_link_or_reparse", is_reparse)
+    destination = tmp_path / "restored"
+    with pytest.raises(BackupError, match="reparse point"):
+        restore_backup(package, destination)
+    assert not destination.exists()
+
+
+def test_failed_parent_flush_preserves_a_replacement_destination(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    destination = tmp_path / "backup"
+    moved = tmp_path / "moved-published-backup"
+
+    def skip_flush(_path: Path) -> None:
+        pass
+
+    def replace_then_fail(_path: Path) -> None:
+        destination.rename(moved)
+        destination.mkdir()
+        (destination / "keep").write_bytes(b"other writer")
+        raise OSError("injected parent flush failure")
+
+    monkeypatch.setattr(backup_module, "_sync_tree", skip_flush)
+    monkeypatch.setattr(backup_module, "fsync_directory", replace_then_fail)
+    with pytest.raises(OSError, match="injected parent flush failure"):
+        with _publish(destination) as staging:
+            (staging / "app.db").write_bytes(b"complete staged data")
+    assert (destination / "keep").read_bytes() == b"other writer"
+    assert (moved / "app.db").read_bytes() == b"complete staged data"

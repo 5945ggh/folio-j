@@ -1,9 +1,10 @@
 """Library installation, explicit activation and retained single-index compatibility."""
 
 import asyncio
+import os
 import threading
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, closing
 from pathlib import Path
 from typing import Any
 
@@ -216,7 +217,7 @@ async def test_same_zip_repairs_damaged_index_without_losing_other_dictionary(
     elif damage == "corrupt":
         broken_path.write_bytes(b"damaged index")
     else:
-        with sqlite3.connect(broken_path) as connection:
+        with closing(sqlite3.connect(broken_path)) as connection, connection:
             connection.execute("UPDATE metadata SET dictionary_id = 'wrong-index'")
     with pytest.raises(HTTPException) as rejected:
         await store.select(first.dictionary_id)
@@ -368,16 +369,164 @@ async def test_delete_legacy_does_not_revive_after_restart_and_allows_reimport(
     async with store.snapshot() as retained:
         deleted = await store.delete(original.dictionary_id or "")
         assert deleted.active_dictionary_id is None
-        assert not store.path.exists()
+        if os.name != "nt":
+            assert not store.path.exists()
         assert [entry.term for entry in await retained.find_terms(["雨"])] == ["雨"]
         assert (await retained.load_definitions(await retained.find_terms(["雨"])))[0].definitions
     restarted = DictionaryStore(store.path)
+    assert not store.path.exists()
     assert not (await restarted.library()).dictionaries
     assert not (await restarted.status()).ready
     imported = await restarted.import_library_stream(chunks(raw))
     assert imported.already_installed is False
     assert imported.library.active_dictionary_id == original.dictionary_id
     assert [entry.term for entry in await restarted.find_terms(["雨"])] == ["雨"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("reimport,cleanup_failure", [(False, False), (True, False), (False, True)])
+async def test_busy_index_deletion_retains_reader_and_preserves_reimport(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reimport: bool, cleanup_failure: bool
+) -> None:
+    import aiosqlite
+
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    raw = archive([record("雨")])
+    first = await store.import_library_stream(chunks(raw))
+    path = store.library_path / (first.dictionary_id + ".sqlite3")
+    replace, unlink = dictionary_store.os.replace, Path.unlink
+    reader_open = True
+    commit = aiosqlite.Connection.commit
+    deletion_committed = False
+
+    async def fail_cleanup_commit(connection: aiosqlite.Connection) -> None:
+        nonlocal deletion_committed
+        async with connection.execute("SELECT count(*) FROM dictionaries") as cursor:
+            row = await cursor.fetchone()
+        if row == (0,):
+            if deletion_committed:
+                raise aiosqlite.OperationalError("injected cleanup failure")
+            deletion_committed = True
+        await commit(connection)
+
+    def busy_replace(source: Path, target: Path) -> None:
+        if source == path and reader_open:
+            raise PermissionError("open SQLite file cannot be renamed on Windows")
+        replace(source, target)
+
+    def busy_unlink(target: Path, missing_ok: bool = False) -> None:
+        if target == path and reader_open:
+            raise PermissionError("open SQLite file cannot be removed on Windows")
+        unlink(target, missing_ok=missing_ok)
+
+    monkeypatch.setattr(dictionary_store.os, "replace", busy_replace)
+    monkeypatch.setattr(Path, "unlink", busy_unlink)
+    if cleanup_failure:
+        monkeypatch.setattr(aiosqlite.Connection, "commit", fail_cleanup_commit)
+    async with store.snapshot() as retained:
+        assert not (await store.delete(first.dictionary_id)).dictionaries
+        assert path.exists()
+        assert not (await DictionaryStore(store.path).status()).ready
+        assert [entry.term for entry in await retained.find_terms(["雨"])] == ["雨"]
+        if reimport:
+            # Another installer can reuse the immutable file while the old reader
+            # finishes. Its newly committed catalog reference must protect it.
+            await DictionaryStore(store.path).import_library_stream(chunks(raw))
+        reader_open = False
+    assert path.exists() == reimport
+    assert (await store.status()).ready == reimport
+
+
+@pytest.mark.asyncio
+async def test_busy_index_failed_commit_preserves_catalog_and_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import aiosqlite
+
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    first = await store.import_library_stream(chunks(archive([record("雨")])))
+    path = store.library_path / (first.dictionary_id + ".sqlite3")
+    replace = dictionary_store.os.replace
+    commit = aiosqlite.Connection.commit
+
+    def busy_replace(source: Path, target: Path) -> None:
+        if source == path:
+            raise PermissionError("open SQLite file")
+        replace(source, target)
+
+    async def failed_commit(connection: aiosqlite.Connection) -> None:
+        async with connection.execute("SELECT count(*) FROM dictionaries") as cursor:
+            row = await cursor.fetchone()
+        if row == (0,):
+            raise OSError("injected commit failure")
+        await commit(connection)
+
+    monkeypatch.setattr(dictionary_store.os, "replace", busy_replace)
+    monkeypatch.setattr(aiosqlite.Connection, "commit", failed_commit)
+    with pytest.raises(OSError, match="commit failure"):
+        await store.delete(first.dictionary_id)
+    assert await store.library() == first.library
+    assert path.exists()
+    assert [entry.term for entry in await store.find_terms(["雨"])] == ["雨"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("legacy", [False, True])
+@pytest.mark.parametrize("mutation", ["select", "import"])
+async def test_restart_reclaims_busy_deletion_orphan_on_next_mutation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, legacy: bool, mutation: str
+) -> None:
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    first_raw = archive([record("雨")], title="第一部")
+    if legacy:
+        first_id = (await asyncio.to_thread(seed_legacy, store, first_raw)).dictionary_id or ""
+        path = store.path
+    else:
+        first_id = (await store.import_library_stream(chunks(first_raw))).dictionary_id
+        path = store.library_path / (first_id + ".sqlite3")
+    second = await store.import_library_stream(chunks(archive([record("猫")], title="第二部")))
+    replace, unlink = dictionary_store.os.replace, Path.unlink
+
+    def busy_replace(source: Path, target: Path) -> None:
+        if source == path:
+            raise PermissionError("open SQLite file")
+        replace(source, target)
+
+    def busy_unlink(target: Path, missing_ok: bool = False) -> None:
+        if target == path:
+            raise PermissionError("open SQLite file")
+        unlink(target, missing_ok=missing_ok)
+
+    with monkeypatch.context() as busy:
+        busy.setattr(dictionary_store.os, "replace", busy_replace)
+        busy.setattr(Path, "unlink", busy_unlink)
+        await store.delete(first_id, second.dictionary_id)
+    assert path.exists()
+    restarted = DictionaryStore(store.path)
+    assert (await restarted.status()).dictionary_id == second.dictionary_id
+    if mutation == "select":
+        await restarted.select(second.dictionary_id)
+    else:
+        reimported = await restarted.import_library_stream(chunks(first_raw))
+        assert not reimported.already_installed
+        assert path.exists() == (not legacy)
+        await restarted.select(first_id)
+        assert [entry.term for entry in await restarted.find_terms(["雨"])] == ["雨"]
+        # Reimport publishes a directory index even when the orphan was legacy.
+        assert (restarted.library_path / (first_id + ".sqlite3")).exists()
+    assert path.exists() == (mutation == "import" and not legacy)
+
+
+@pytest.mark.asyncio
+async def test_library_mutation_preserves_unrecognized_damaged_legacy_file(tmp_path: Path) -> None:
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    original = b"unrecognized legacy dictionary"
+    store.path.write_bytes(original)
+    installed = await store.import_library_stream(chunks(archive([record("雨")])))
+    store = DictionaryStore(store.path)
+    await store.select(installed.dictionary_id)
+    await store.delete(installed.dictionary_id)
+    assert store.path.read_bytes() == original
 
 
 @pytest.mark.asyncio
@@ -598,42 +747,33 @@ async def test_old_cleanup_cannot_remove_concurrent_delete_rollback_file(
 async def test_opening_snapshot_and_delete_are_coordinated_without_holding_reader_lock(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    import sqlite3
+
     store = DictionaryStore(tmp_path / "app.sqlite3")
     first = await store.import_library_stream(chunks(archive([record("雨")])))
     index = store.library_path / (first.dictionary_id + ".sqlite3")
-    entered, release, opened, finish = (asyncio.Event() for _ in range(4))
     original_snapshot = store._file_snapshot  # pyright: ignore[reportPrivateUsage]
+    lock_checked = False
 
     @asynccontextmanager
-    async def paused_open(path: Path) -> AsyncGenerator[DictionarySnapshot]:
-        if path == index:
-            entered.set()
-            await release.wait()
+    async def open_with_lock_check(path: Path) -> AsyncGenerator[DictionarySnapshot]:
+        nonlocal lock_checked
+        assert path == index
+        # Check from a separate connection before the reader opens the index.
+        with closing(sqlite3.connect(store.catalog_path, timeout=0)) as writer:
+            with pytest.raises(sqlite3.OperationalError) as error:
+                writer.execute("BEGIN EXCLUSIVE")
+            assert error.value.sqlite_errorcode == sqlite3.SQLITE_BUSY
+        lock_checked = True
         async with original_snapshot(path) as snapshot:
             yield snapshot
 
-    async def read_snapshot() -> list[str]:
-        async with store.snapshot() as snapshot:
-            opened.set()
-            await finish.wait()
-            return [entry.term for entry in await snapshot.find_terms(["雨"])]
-
-    monkeypatch.setattr(store, "_file_snapshot", paused_open)
-    reader = asyncio.create_task(read_snapshot())
-    delete: asyncio.Task[Any] | None = None
-    try:
-        await asyncio.wait_for(entered.wait(), timeout=1)
-        delete = asyncio.create_task(DictionaryStore(store.path).delete(first.dictionary_id))
-        await asyncio.sleep(0.05)
-        assert not delete.done()
-        release.set()
-        await asyncio.wait_for(opened.wait(), timeout=1)
-        assert not (await asyncio.wait_for(delete, timeout=1)).dictionaries
-        finish.set()
-        assert await reader == ["雨"]
-    finally:
-        release.set()
-        finish.set()
-        await reader
-        if delete is not None:
-            await delete
+    monkeypatch.setattr(store, "_file_snapshot", open_with_lock_check)
+    async with store.snapshot() as snapshot:
+        assert lock_checked
+        other = DictionaryStore(store.path)
+        # Bound a stuck deletion while keeping the snapshot open through the lookup.
+        async with asyncio.timeout(10):
+            library = await other.delete(first.dictionary_id)
+        assert not library.dictionaries
+        assert [entry.term for entry in await snapshot.find_terms(["雨"])] == ["雨"]
