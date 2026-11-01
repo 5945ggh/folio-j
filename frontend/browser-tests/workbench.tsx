@@ -546,9 +546,13 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 			"Permission patch lost expected revision",
 		);
 		await openSetting("选择模型", "模型设置");
-		find<HTMLInputElement>(".chat-stream-choice input").click();
+		find<HTMLInputElement>('.chat-stream-choice input[role="switch"]').click();
 		await until(
-			() => !find<HTMLInputElement>(".chat-stream-choice input").checked,
+			() =>
+				!find<HTMLInputElement>(".chat-stream-choice input").checked &&
+				find<HTMLInputElement>(".chat-stream-choice input").getAttribute(
+					"aria-checked",
+				) === "false",
 			"Stream choice must update",
 		);
 		await closeSetting("选择模型", "模型设置");
@@ -613,7 +617,7 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 			);
 			check(
 				button("选择模型").textContent?.includes("second-model") &&
-					button("设置审核模式").textContent?.includes("Full access"),
+					button("设置审核模式").textContent?.includes("完全访问"),
 				"Independent buttons must expose current model and permission",
 			);
 			const reference = find<HTMLDetailsElement>(".chat-reference");

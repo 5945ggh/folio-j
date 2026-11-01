@@ -873,13 +873,16 @@ function ThreadPanel({
 								) && <p className="chat-choice-empty">暂无可用模型</p>}
 							</fieldset>
 							<label className="chat-stream-choice">
+								<span>流式生成</span>
 								<input
+									className="chat-stream-switch"
 									type="checkbox"
+									role="switch"
+									aria-checked={stream}
 									checked={stream}
 									disabled={busy}
 									onChange={(event) => setStream(event.target.checked)}
-								/>{" "}
-								后台流式生成
+								/>
 							</label>
 						</ComposerSetting>
 						<ComposerSetting
@@ -888,7 +891,7 @@ function ThreadPanel({
 							value={
 								thread.data.permission_mode === "review"
 									? "审核模式"
-									: "Full access"
+									: "完全访问"
 							}
 						>
 							<fieldset className="chat-choice-list" aria-label="可选审核模式">
@@ -918,7 +921,7 @@ function ThreadPanel({
 											}}
 										/>
 										<span className="chat-choice-name">
-											{mode === "review" ? "审核模式" : "Full access"}
+											{mode === "review" ? "审核模式" : "完全访问"}
 										</span>
 										<span className="chat-choice-check" aria-hidden="true">
 											{thread.data.permission_mode === mode ? "✓" : ""}

@@ -1730,10 +1730,43 @@ a {
 .chat-setting-popover .chat-stream-choice {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: 8px;
 	margin-top: 10px;
 	padding: 10px 4px 0;
 	border-top: 1px solid light-dark(#e9eaed, var(--color-border-subtle));
+}
+.chat-setting-popover .chat-stream-switch {
+	appearance: none;
+	flex: none;
+	width: 36px;
+	height: 22px;
+	margin: 0;
+	padding: 2px;
+	border: 1px solid var(--color-text-muted);
+	border-radius: 999px;
+	background: var(--color-surface-muted);
+	cursor: pointer;
+}
+.chat-stream-switch::before {
+	content: "";
+	display: block;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background: var(--color-text-muted);
+}
+.chat-stream-switch:checked {
+	border-color: var(--accent-solid);
+	background: var(--accent-solid);
+}
+.chat-stream-switch:checked::before {
+	transform: translateX(14px);
+	background: var(--color-text-on-accent);
+}
+.chat-stream-switch:disabled {
+	opacity: 0.55;
+	cursor: default;
 }
 .chat-setting-popover:has(.chat-choice-list) {
 	padding: 5px;
@@ -1970,7 +2003,19 @@ a {
 	font-size: 13px;
 }
 .chat-composer #chat-question:focus-visible {
-	outline-offset: 2px;
+	outline: none;
+}
+@media (forced-colors: active) {
+	.chat-composer #chat-question:focus-visible {
+		outline: 2px solid Highlight;
+		outline-offset: 2px;
+	}
+	.chat-stream-switch::before {
+		background: ButtonText;
+	}
+	.chat-stream-switch:checked::before {
+		background: Highlight;
+	}
 }
 .chat-composer .actions {
 	margin-top: 2px;
