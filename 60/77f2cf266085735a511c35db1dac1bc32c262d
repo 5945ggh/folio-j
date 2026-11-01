@@ -1,0 +1,26 @@
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_c88be66de67c07::t_d86d8dfcbab191 3
+docs/handovers/README.md
+  s_c88be66de67c07::t_d86d8dfcbab191 58
+docs/handovers/archived/CLOSEOUT_ACCEPTANCE.md
+  s_c88be66de67c07::t_173143b61ec5c5 15,17-21
+  s_c88be66de67c07::t_f4502a31bfa40e 3
+  s_c88be66de67c07::t_0848019f3f15a3 26-37
+  s_c88be66de67c07::t_d86d8dfcbab191 1-2,4-14,16,22-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6077f2cf266085735a511c35db1dac1bc32c262d",
+  "prompts": {},
+  "sessions": {
+    "s_c88be66de67c07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196b8-e5df-71d3-afe2-48ebdfe2d545",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
