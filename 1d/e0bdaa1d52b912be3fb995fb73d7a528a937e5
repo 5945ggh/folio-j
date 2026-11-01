@@ -1,0 +1,35 @@
+frontend/src/materials/reader-frames.test.ts
+  s_8a158397fdafc8::t_1fceb0d5c69ffe 600,602,607
+frontend/src/materials/reader-popover.css
+  s_8a158397fdafc8::t_2b45f4a9e0dc7c 23-26,33,38-86
+  s_8a158397fdafc8::t_fc9c4b41ebaae7 87
+frontend/src/materials/highlight.ts
+  s_8a158397fdafc8::t_2b45f4a9e0dc7c 14
+frontend/src/materials/highlight.test.ts
+  s_8a158397fdafc8::t_2b45f4a9e0dc7c 325-328,331
+  s_8a158397fdafc8::t_0e0ec26e53b7f3 332-335,346-350
+frontend/src/materials/reader-palette.ts
+  s_8a158397fdafc8::t_2b45f4a9e0dc7c 6
+frontend/src/materials/reader-r1.css
+  s_8a158397fdafc8::t_2b45f4a9e0dc7c 35
+docs/DESIGN_SYSTEM.md
+  s_8a158397fdafc8::t_2b45f4a9e0dc7c 50,65
+docs/INFORMATION_ARCHITECTURE.md
+  s_8a158397fdafc8::t_0a176575b4ab31 293
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1de0bdaa1d52b912be3fb995fb73d7a528a937e5",
+  "prompts": {},
+  "sessions": {
+    "s_8a158397fdafc8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196f6-7bca-7bd0-97f1-50eff4598f84",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
