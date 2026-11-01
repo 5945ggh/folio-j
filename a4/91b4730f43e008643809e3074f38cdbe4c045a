@@ -1,0 +1,57 @@
+frontend/scripts/test-browser.mjs
+  s_81dff6a75b494d::t_c0a661783a4105 102-103
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_81dff6a75b494d::t_c0a661783a4105 19
+backend/src/app/services/material_cleanup.py
+  s_81dff6a75b494d::t_c0a661783a4105 1-44
+backend/src/app/services/sources.py
+  s_81dff6a75b494d::t_c0a661783a4105 361-365
+docs/GLOSSARY.md
+  s_81dff6a75b494d::t_c0a661783a4105 40
+docs/USAGE.md
+  s_81dff6a75b494d::t_c0a661783a4105 14
+frontend/browser-tests/source-deletion.tsx
+  s_81dff6a75b494d::t_c0a661783a4105 1-309
+backend/tests/test_source_deletion.py
+  s_81dff6a75b494d::t_c0a661783a4105 4,6,9-10,13,15-16,21,27,33-53,88-357
+docs/ARCHITECTURE.md
+  s_81dff6a75b494d::t_c0a661783a4105 68,134,136-138
+docs/INFORMATION_ARCHITECTURE.md
+  s_81dff6a75b494d::t_c0a661783a4105 62-63
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_81dff6a75b494d::t_fb45c50032973c 4
+  s_81dff6a75b494d::t_c0a661783a4105 44,47
+backend/tests/test_materials.py
+  s_81dff6a75b494d::t_c0a661783a4105 113-125
+backend/src/app/services/materials.py
+  s_81dff6a75b494d::t_c0a661783a4105 9,38,319-320,324,329-331
+frontend/browser-tests/main.tsx
+  s_81dff6a75b494d::t_c0a661783a4105 42,432
+docs/handovers/archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md
+  s_81dff6a75b494d::t_c0a661783a4105 1-21
+  s_81dff6a75b494d::t_04cb9f15deb032 22-24
+docs/PRD.md
+  s_81dff6a75b494d::t_c0a661783a4105 485,498
+docs/handovers/README.md
+  s_81dff6a75b494d::t_c0a661783a4105 55
+frontend/src/SourcePages.tsx
+  s_81dff6a75b494d::t_c0a661783a4105 217,234,246-248,250-252,260,271,277-279,292-296,304
+backend/tests/test_material_readings.py
+  s_81dff6a75b494d::t_c0a661783a4105 11,226,249,254-256,260-268,273-276
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a491b4730f43e008643809e3074f38cdbe4c045a",
+  "prompts": {},
+  "sessions": {
+    "s_81dff6a75b494d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19739-808c-7303-abdc-f4af1c686e8e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
