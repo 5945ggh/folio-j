@@ -1,8 +1,10 @@
 # Windows 实验性支持验收
 
-本清单供 Windows 11 x64、PowerShell、Chrome 与 Edge 实机验收使用。Windows CI 与实机验收目前均未运行；完成下表并记录版本后，再判断具体环境是否可用。测试按本机单用户使用，文件沿用所在目录的继承权限，不设置 Windows ACL，也不提供系统用户之间的隔离保证。
+本清单供 Windows 11 x64、PowerShell、Chrome 与 Edge 实机验收使用。功能分支 `386a683` 已通过第七轮 Windows CI，包括中文路径源码包安装、启停与备份恢复。尚未合入 `main`，Windows 11 实机清单待验。测试按本机单用户使用，文件沿用所在目录的继承权限，不设置 Windows ACL，也不提供系统用户之间的隔离保证。
 
 操作说明见[使用指南](../USAGE.md)，备份结构及升级步骤见[升级与备份](../UPGRADING.md)。本清单只使用独立测试资料和数据目录。核心项目无需模型、密钥或真实网络模型调用。
+
+以下两节保留提交前的本机验证记录；后续提交及远端执行结果见 [Windows CI](#2026-11-01-windows-ci)。
 
 ## 2026-11-01 本机自动验证
 
@@ -37,6 +39,24 @@
 | 独立复核 | P2 的进程控制与回归未发现新的阻断；Windows 原生控制台及 Job Object 仍待执行 |
 
 P2、P3 的代码问题已修复，本机回归通过。合入 `main` 前仍应取得包含上述回归的 Windows CI 通过结果；Windows 实机清单继续保留待验状态。
+
+## 2026-11-01 Windows CI
+
+已提交的适配与 CR 修复从 `61b22af` 开始在 `windows-2025` runner 上执行；修复过程如下。该 runner 的结果用于验证 Windows 原生路径，Windows 11 实机操作与设备体验仍按下方清单验收。
+
+| 执行与代码 | 结果、原因与后续修复 |
+| --- | --- |
+| [第一轮](https://github.com/5945ggh/folio-j/actions/runs/41286905744)，`61b22af` | Git `autocrlf` 将源码转为 CRLF，Biome 报告 418 个格式错误。`127a5e1` 添加 `.gitattributes` 固定 LF；隔离检出核对 529 个源码文件保持 LF，EPUB 字节不变 |
+| [第二轮](https://github.com/5945ggh/folio-j/actions/runs/41287135499)，`127a5e1` | 静态检查通过；测试网络保护误挡 CPython 3.11 的 Windows `socketpair` 内部握手，出现 758 个 setup error 和 12 个迁移测试失败，另发现 CLI 父进程按 cp1252 解码及日文 fixture 读取编码问题。`3e8180e` 按调用方、socket 与端点精确允许内部握手，继续拒绝其他线程及直接连接；`aadb226` 统一 UTF-8 并补充回归 |
+| [第三轮](https://github.com/5945ggh/folio-j/actions/runs/41288043014)，`aadb226` | 后端 1279 通过、2 失败、2 error、2 跳过，耗时 646.16 秒。失败来自 Windows 非法 `?` 文件名及损坏词典测试未关闭连接；error 来自长文本参数 ID 使 `PYTEST_CURRENT_TEST` 超过 32767 字符。`9272c92` 关闭夹具连接，`5963a91` 按平台使用合法特殊文件名，`ef06077` 缩短参数 ID，保留实际 60000 字输入，并添加 CI 跳过原因与慢测试输出 |
+| [第四轮](https://github.com/5945ggh/folio-j/actions/runs/41289269118)，`ef060771bdb6c6117c597bd248a1f425ba964d3c` | 后端 1281 通过、1 失败、2 跳过，耗时 758.54 秒。唯一失败为热重载清理期间立即重复发送 SIGINT／SIGBREAK 的场景，reloader 提前退出；夹具文件名、连接关闭、长参数 ID、编码、禁网与迁移回归均通过。跳过项为未分发的私有只读样书及 POSIX 进程组测试；前端、生产构建、浏览器及源码 ZIP 步骤未继续执行 |
+| [第五轮](https://github.com/5945ggh/folio-j/actions/runs/41290912177)，`8c3c4d221f8504ed23e0fa2836e62303c75bab6e` | 静态检查通过；生命周期前置回归 20 通过、1 项 POSIX 测试跳过。完整后端 1291 通过、1 失败、2 跳过，耗时 685.95 秒；唯一失败为 `test_opening_snapshot_and_delete_are_coordinated_without_holding_reader_lock`，测试等待删除超过一秒，清理时再次等待已取消的任务，最终抛出 `asyncio.exceptions.CancelledError`。跳过项仍为私有只读样书与 POSIX 进程组。前端、构建、浏览器及源码 ZIP 步骤未执行。后续改用独立连接探测目录锁，并在删除后验证旧快照可读 |
+| [第六轮](https://github.com/5945ggh/folio-j/actions/runs/41292931378)，`7b1a532` | 词典并发回归、完整测试、生产构建及 Chrome／Edge 冒烟通过。源码 ZIP 在中文路径执行 `just setup` 时，Python 3.11 按 cp1252 读取含 UTF-8 源码路径的可编辑安装 `.pth`，启动失败 |
+| [第七轮](https://github.com/5945ggh/folio-j/actions/runs/41295576476)，`386a683` | 全流程通过。后端 1292 通过、2 跳过，前端 810 通过。中文路径解压后安装、迁移、启停、备份恢复、拒绝覆盖及恢复后重启通过。后端另记录一项线程警告：aiosqlite 工作线程向已关闭的事件循环回传结果，来源待定位 |
+
+第三轮的原生平台锁 6 项、Job Object 2 项及新增生命周期 4 项均已通过。第四轮前的本机 `just lint`、`just test` 通过，后端 1282 通过、2 跳过，前端 810 通过；Windows 目标 Pyright 通过，之后仅修改夹具连接、名称及参数 ID。
+
+第四轮失败后的修复让 `run.main` 每次调用各自保存停止标记，SIGINT／SIGTERM／SIGBREAK handler 只记录停止请求，并在整个清理过程中保持同一 handler。独立复现表明，旧实现安装忽略 handler 前仍可能由 Python 待处理信号再次抛出异常；第四轮日志未捕获异常栈，因此该原因是复现支持的判断。旧实现的 5 组确定性回归失败，新增回归共 10 组，覆盖混合信号、清理重入、自然退出后的信号及多次调用状态重置；原生立即重复信号的清理屏障检查继续保留，并增强子进程日志。定向验证 19 通过、2 跳过。修复已随 `8c3c4d2` 提交，本机最终 `just lint`、`just test` 通过，后端 1292 通过、2 跳过，前端 810 通过；Windows 目标全项目 Pyright 与文档检查通过。该确切提交的源码包在 macOS 上完成独立解压、构建、迁移、启动退出、备份恢复、拒覆盖及恢复库重启，结果通过。CI 已增加生命周期前置检查，以便在完整测试前暴露同类问题。上述修复未改变生产 schema、依赖或 TBD。
 
 ## 核心必须
 
