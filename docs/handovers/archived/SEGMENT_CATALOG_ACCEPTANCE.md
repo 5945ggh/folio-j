@@ -1,6 +1,6 @@
 # 片段目录出处与删除验收
 
-日期：2026-10-30。基于 `main e8dc0bb` 完成片段目录出处与删除调整，提交整合状态见[实施基线](../MVP_IMPLEMENTATION_BASELINE.md)。现行规则见[来源空间](../../INFORMATION_ARCHITECTURE.md#素材库与来源空间)、[架构](../../ARCHITECTURE.md#311-目录与材料使用状态)及[使用指南](../../USAGE.md#阅读与保存片段)。
+日期：2026-10-30。基于 `main e8dc0bb` 完成片段目录出处与删除调整，提交整合状态见[实施基线](../MVP_IMPLEMENTATION_BASELINE.md)。现行规则见[来源空间](../../INFORMATION_ARCHITECTURE.md#素材库与来源空间)、[架构](../../ARCHITECTURE.md#311-目录与材料使用状态)及[使用指南](../../USAGE.md#保存与回看片段)。
 
 ## 交付范围
 

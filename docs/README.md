@@ -10,7 +10,7 @@
 | 如何保留数据、升级和恢复旧库 | [升级与备份](UPGRADING.md) | 数据与凭据备份、迁移入口、旧开发库处理边界 |
 | 为什么做、长期怎样演进 | [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) | 动机、取舍与待验证设想；方向不自动成为实施要求 |
 | 文本处理与学习资料如何解耦 | [文本分析与统计契约](ARCHITECTURE.md#314-文本分析与统计契约)、[文本与资料历史计划](handovers/archived/text-study/PLAN.md) | 现行契约由架构与 PRD 维护；历史计划保留切片依赖、实施依据与验收入口，当前交付状态见实施基线 |
-| 怎样按词性、词频、词形或读音查看一本书的词汇并返回原文 | [材料词汇页](INFORMATION_ARCHITECTURE.md#材料词汇页)、[使用指南](USAGE.md#查看统计与材料词汇) | 页面、筛选与返回规则由阅读与导航维护，频次与身份口径见 PRD／架构，验证范围见[本轮验收](handovers/archived/reading-practice/VOCABULARY_ACCEPTANCE.md) |
+| 怎样按词性、词频、词形或读音查看一本书的词汇并返回原文 | [材料词汇页](INFORMATION_ARCHITECTURE.md#材料词汇页)、[使用指南](USAGE.md#词汇统计与检索) | 页面、筛选与返回规则由阅读与导航维护，频次与身份口径见 PRD／架构，验证范围见[本轮验收](handovers/archived/reading-practice/VOCABULARY_ACCEPTANCE.md) |
 | 如何导入词典并在 EPUB 和词卡里查词 | [使用步骤](USAGE.md#即时查词) | 原文与词卡操作见使用指南，范围与验收见[阶段计划与试读记录](handovers/epub-reading/DICTIONARY_PLAN.md) |
 | EPUB 阅读与学习衔接如何继续推进 | [EPUB 原生阅读阶段](handovers/epub-reading/README.md) | 切片顺序、准备条件，以及注音、选区学习、材料对话和讲解形成的边界 |
 | 实际阅读中的搜索与设置需求怎样继续推进 | [实际阅读评测计划](handovers/reading-practice/PLAN.md) | 扩展书内搜索的准备条件、设置迁移候选与数据保护；已完成能力见实施基线 |

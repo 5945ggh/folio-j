@@ -14,7 +14,7 @@
 | 首个源码候选包与数据恢复 | 本地待审包已完成独立解压、安装和恢复演练 | 原生 v1 备份保留主库、凭据和词典，恢复到新目录；支持的旧数据走正常迁移。源码包按指定提交生成，正式发布待文档审阅 | [候选包演练](BETA_SOURCE_CANDIDATE.md)、[升级与备份](../UPGRADING.md) |
 | EPUB 即时查词 | 首轮试读；词典管理补全已合入本地 main，工程与独立审查通过 | 设置可并存多部 format 3 词条词典、选用其中一本，兼容旧明镜索引；可删除安装项，当前项须明确替代，最后一本删除后恢复留白空状态。支持正文及卡内查词、按原文范围分页、桌面多层展开与窄屏错层、卡内 Shift 悬浮、拖动卡头和焦点词卡翻页、原处记录及返回；真实词典用隔离库验证，实体触屏待试读 | [阶段计划与试读记录](epub-reading/DICTIONARY_PLAN.md)、[操作步骤](../USAGE.md#即时查词) |
 | 维护优化与学习闭环复验 | 四批已提交，工程、完整浏览器及实际闭环按批验证通过 | 公共检查与私有证据分开核验，局部清理、阅读记录呈现状态及测试支持归属已收口；干净检出使用合成 EPUB、临时库和人工讲解，重启后找回同一修订并返回正确原句，未使用日常数据或真实模型 | [分批验证与闭环复验](archived/MAINTENANCE_OPTIMIZATION.md)、[复验步骤](../DEVELOPMENT.md#真实学习闭环验收) |
-| 片段讲解入口与回复反馈 | 已合入本地 main（`2b51ea6`） | 可复制完整提示词到外部 AI、从片段直达所属来源；普通问答和快捷生成讲解共享活动与耗时。未实测真实模型的响应节奏 | [使用步骤](../USAGE.md#片段讨论与讲解)、[页面契约](../INFORMATION_ARCHITECTURE.md#讲解浏览人工保存与按需讨论)、[浏览器回归](../../frontend/browser-tests/workbench-render.tsx) |
+| 片段讲解入口与回复反馈 | 已合入本地 main（`2b51ea6`） | 可复制完整提示词到外部 AI、从片段直达所属来源；普通问答和快捷生成讲解共享活动与耗时。未实测真实模型的响应节奏 | [使用步骤](../USAGE.md#ai-讨论与编写讲解)、[页面契约](../INFORMATION_ARCHITECTURE.md#讲解浏览人工保存与按需讨论)、[浏览器回归](../../frontend/browser-tests/workbench-render.tsx) |
 | 片段目录出处与删除 | 已合入本地 main，工程、定向浏览器及独立审查通过 | 概览／列表统一具体出处与时间，列表和详情共用删除确认及完整影响复核；讲解删除文字使用危险操作色；无数据库迁移 | [本轮验收](archived/SEGMENT_CATALOG_ACCEPTANCE.md) |
 | 阅读器配色 token 收拢 | 已合入本地 main，工程与定向浏览器检查通过 | 保存提示保留紧凑布局并复用蓝色；工具、浮层、书签及图片查看器按语义归并原值，译文焦点和朗读滑块跟随 Reader 作用域；多套配色入口尚未实现 | [本轮验收](archived/reading-practice/READER_COLOR_TOKENS_ACCEPTANCE.md)、[颜色约定](../DESIGN_SYSTEM.md#阅读器的强调色与标记) |
 | 阅读翻译动画、共享缓存与删除 | 已合入本地 main，工程、浏览器与现用库核验通过 | 展开复用锚点并统一零态启动；Query 与图片共用 64 MiB／512 项估算保留预算，活跃工作集单列；按确切出处删除已有阅读历史和标记，停止重译，保留片段、讲解与关联快照；新增 0004 增量迁移 | [本轮验收](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md)、[PRD 4.8](../PRD.md#48-阅读翻译与设备朗读) |
@@ -42,7 +42,7 @@
 | 来源空间 S2 | 已提交 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；来源栏可调宽并保存偏好，片段／讲解列表搜索、排序与空态已打磨；工程验收完成，用户使用验收待进行 | [S2 工程验收](archived/sources-s2/ACCEPTANCE.md) |
 | EPUB 导入与恢复 | 已提交 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读，托管字节暂保留 | [切片 1](archived/epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](archived/epub-reading/SLICE_0_ACCEPTANCE.md) |
 | 阅读器 R1.1 | 已提交 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级 | [R1.1 工程验收](archived/reader-r1/ACCEPTANCE.md)、[交互优化](archived/reader-r1/INTERACTION_POLISH.md) |
-| 独立图片查看器 | 已提交，工程、完整离线浏览器回归与独立复审通过 | 正文与图库共用查看器，按入口返回；居中图片与虚化背景、缩放拖动、复制图片、原图下载及在图库中查看当前出现项；真实触屏和系统剪贴板未验 | [验收与提交前修复](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27)、[交互契约](../INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[使用指南](../USAGE.md#查看正文图片与插图库) |
+| 独立图片查看器 | 已提交，工程、完整离线浏览器回归与独立复审通过 | 正文与图库共用查看器，按入口返回；居中图片与虚化背景、缩放拖动、复制图片、原图下载及在图库中查看当前出现项；真实触屏和系统剪贴板未验 | [验收与提交前修复](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27)、[交互契约](../INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[使用指南](../USAGE.md#目录搜索与书签) |
 | 图片加载与定位优化 | 已提交，缓存竞争修复、完整离线浏览器回归与独立复审通过 | 正文图先显示，后台按出现身份定位；阅读会话有界复用元数据与图片字节 | [测量与验证](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md) |
 | 阅读会话复用 | 已提交，工程、完整浏览器及后续定向回归通过 | 同标签页片段往返复用最近一本书的正文与 iframe，返回重新核验并刷新学习状态；暂离十分钟或离开适用范围释放，仍按片段精确出处定位；测量未显示离线可读时间稳定下降 | [测量与验收](archived/text-study/READER_SESSION_ACCEPTANCE.md)、[宿主调整](archived/text-study/READER_SESSION_ACCEPTANCE.md#2026-10-25-阅读会话宿主局部调整) |
 | 阅读页进入效果 | 已提交，工程、完整浏览器及实际页面检查通过；动画手感待用户试用 | 保留书卡按压，真实正文轻淡入、标题轻位移，加载提示延迟显示；不改变会话租期与恢复核验 | [试用记录](archived/text-study/READER_SESSION_ACCEPTANCE.md#2026-10-25-阅读页进入动画试用) |
