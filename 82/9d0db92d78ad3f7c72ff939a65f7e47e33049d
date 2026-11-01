@@ -1,0 +1,29 @@
+frontend/browser-tests/chapter-records.tsx
+  s_c88be66de67c07::t_d7b97d88331370 84-85
+frontend/browser-tests/inline-records.tsx
+  s_c88be66de67c07::t_e115f73939f6dc 445-495,499,504-507
+frontend/browser-tests/app-theme.tsx
+  s_c88be66de67c07::t_aa3646a8c569c5 8
+frontend/browser-tests/color-contrast.ts
+  s_c88be66de67c07::t_a24302e43d8ea4 1-53
+frontend/browser-tests/reading-aids.tsx
+  s_c88be66de67c07::t_4f766098653dc3 8,106-109,337,339-340,350,352-353,356-357,367-374,377-380,384,412,414,464-472,474-475,491,546-553,563-564,605,831
+frontend/browser-tests/theme.tsx
+  s_c88be66de67c07::t_a75bef81f02116 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "829d0db92d78ad3f7c72ff939a65f7e47e33049d",
+  "prompts": {},
+  "sessions": {
+    "s_c88be66de67c07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196b8-e5df-71d3-afe2-48ebdfe2d545",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
