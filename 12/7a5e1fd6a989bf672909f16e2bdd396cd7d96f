@@ -1,0 +1,19 @@
+.gitattributes
+  s_1bc7a8995756af::t_1828f3107895bf 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "127a5e1fd6a989bf672909f16e2bdd396cd7d96f",
+  "prompts": {},
+  "sessions": {
+    "s_1bc7a8995756af": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1960a-54b0-7a93-8dad-24c3bdffb7da",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
