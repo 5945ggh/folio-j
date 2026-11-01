@@ -1,0 +1,25 @@
+frontend/src/styles.css
+  s_8a158397fdafc8::t_0b05b5f533c12e 1733,1739-1770,2006-2018
+frontend/src/chat/Workbench.tsx
+  s_8a158397fdafc8::t_0b05b5f533c12e 876,878,880-881,885,894,924
+frontend/browser-tests/workbench.tsx
+  s_8a158397fdafc8::t_0b05b5f533c12e 549,551-555,620
+docs/INFORMATION_ARCHITECTURE.md
+  s_8a158397fdafc8::t_103bc000dad8ef 242
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6aee530c5c730fa676b58e75833d0a96f5c1f760",
+  "prompts": {},
+  "sessions": {
+    "s_8a158397fdafc8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196f6-7bca-7bd0-97f1-50eff4598f84",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
