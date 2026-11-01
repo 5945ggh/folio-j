@@ -1,0 +1,115 @@
+frontend/browser-tests/translation-removal.tsx
+  s_66ea02a504d91d::t_04255fa7471140 29-37,40,59-62,65,119,150,159,170,283-284,321,329-330,385,393-401,403,405-406,411,423,429-471,531-532,536
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_66ea02a504d91d::t_1ec45ea64104f9 20,63
+frontend/src/materials/ChapterRecords.tsx
+  s_66ea02a504d91d::t_04255fa7471140 71,80-85,282,291,306-312,354-369,386-407,409-414,416-433,435,437,440-441,449,454,457-458,465,521-529,540
+frontend/browser-tests/translation-drag.tsx
+  s_66ea02a504d91d::t_04255fa7471140 88-96,98-106,108-109,111-126
+frontend/src/materials/ReaderControls.tsx
+  s_66ea02a504d91d::t_04255fa7471140 4-9,386,426-447
+backend/src/app/api/translations.py
+  s_66ea02a504d91d::t_04255fa7471140 19,98-102
+  s_66ea02a504d91d::t_0857ac3bcee5c1 103-104
+frontend/browser-tests/translation-result-actions.ts
+  s_66ea02a504d91d::t_04255fa7471140 31,41-43
+frontend/src/translation/removal-cache.test.ts
+  s_66ea02a504d91d::t_04255fa7471140 5-10,115,234-564
+docs/GLOSSARY.md
+  s_66ea02a504d91d::t_04255fa7471140 75
+backend/openapi.json
+  s_66ea02a504d91d::t_04255fa7471140 6702-6755,12629-12665
+docs/handovers/reading-practice/READER_POPOVER_ACCEPTANCE.md
+  s_66ea02a504d91d::t_04255fa7471140 1-2,4-51
+  s_66ea02a504d91d::t_1ec45ea64104f9 3,52-58
+frontend/src/materials/reader-settings.ts
+  s_66ea02a504d91d::t_04255fa7471140 6,65
+frontend/src/api/schema.d.ts
+  s_66ea02a504d91d::t_04255fa7471140 1354-1355,3792-3805,7466-7489,7492-7495
+  s_66ea02a504d91d::t_3e1688f8d75be3 7490-7491,7496
+frontend/src/translation/session-react.ts
+  s_66ea02a504d91d::t_04255fa7471140 14,152,154-162
+frontend/src/translation/translation.css
+  s_66ea02a504d91d::t_04255fa7471140 2-3,9,11,25,35-36,39-41,43,114-119,149-152,234,246-249,285-338,474-477
+frontend/browser-tests/translation-toolbar.tsx
+  s_66ea02a504d91d::t_04255fa7471140 300,414-417,429-433,495-499,506,515-526
+  s_66ea02a504d91d::t_243e7cd7394460 527
+docs/DESIGN_SYSTEM.md
+  s_66ea02a504d91d::t_04255fa7471140 62-67
+frontend/src/translation/removal-cache.ts
+  s_66ea02a504d91d::t_04255fa7471140 35-69,77-79,92-93,109-124,133-134,144-148,150-152
+frontend/browser-tests/reader-settings.tsx
+  s_66ea02a504d91d::t_04255fa7471140 460,464,516-538,632,1043
+frontend/src/translation/session.test.ts
+  s_66ea02a504d91d::t_04255fa7471140 642-807
+frontend/src/translation/TranslationPanel.tsx
+  s_66ea02a504d91d::t_04255fa7471140 6,22,52,236-239,256-259,271-273,291,322-325,375,536,563,566-608,633-634,637,639-690,800,819,824-840,859-864,869,873-879,904-911,982,1107,1109,1130-1132,1151-1177
+backend/tests/test_translation_removal.py
+  s_66ea02a504d91d::t_04255fa7471140 45-251,328,330,369-373,490,492,544-548
+frontend/src/materials/preferences.test.ts
+  s_66ea02a504d91d::t_04255fa7471140 6,10,17-50
+  s_66ea02a504d91d::t_03b9bf4a310d01 51
+frontend/src/materials/reader-settings.test.ts
+  s_66ea02a504d91d::t_04255fa7471140 29
+frontend/browser-tests/translation.tsx
+  s_66ea02a504d91d::t_04255fa7471140 477
+frontend/src/materials/reader-popover.css
+  s_66ea02a504d91d::t_04255fa7471140 1-63
+frontend/src/materials/StudyPreview.tsx
+  s_66ea02a504d91d::t_04255fa7471140 17,27,261,419-427,531-541
+docs/PRD.md
+  s_66ea02a504d91d::t_04255fa7471140 253
+frontend/src/translation/api.ts
+  s_66ea02a504d91d::t_04255fa7471140 7,9-13,95-98
+  s_66ea02a504d91d::t_6e3fd02f470298 99-101
+frontend/browser-tests/margin-record-targets.tsx
+  s_66ea02a504d91d::t_04255fa7471140 140,263-298
+frontend/src/materials/preferences.ts
+  s_66ea02a504d91d::t_04255fa7471140 7
+backend/src/app/services/translations.py
+  s_66ea02a504d91d::t_04255fa7471140 51,394-441
+  s_66ea02a504d91d::t_08850941fe2f36 442-443
+docs/INFORMATION_ARCHITECTURE.md
+  s_66ea02a504d91d::t_04255fa7471140 136,142,145,156,293,303,305,339-341,347,351
+frontend/src/materials/MaterialReader.tsx
+  s_66ea02a504d91d::t_04255fa7471140 529,544,565-570,590-595,704-712,881-884,893-897,1886,2342-2349,2356-2379,2388-2392,2500
+docs/USAGE.md
+  s_66ea02a504d91d::t_04255fa7471140 55-58,63
+frontend/src/materials/ReaderDictionary.tsx
+  s_66ea02a504d91d::t_04255fa7471140 387,391,401-403
+frontend/src/materials/study-preview.css
+  s_66ea02a504d91d::t_04255fa7471140 37-38,40,42,74,76,136,138,140,151-154,156,180-183,191-195,197,204-205,209-212,215-216,219,222-223,228-229,233,236,245,247,252-253,256,322,324,345-349,351,390,415-439
+frontend/src/translation/session.ts
+  s_66ea02a504d91d::t_04255fa7471140 36-39,69-72,94,115-118,144,163-166,502-506,517,519-539,547,549-550
+frontend/src/materials/chapter-records.css
+  s_66ea02a504d91d::t_04255fa7471140 6,23,41,47,49,56-57,60-62,65-67,69,110,112,142-146,148,168-171
+  s_66ea02a504d91d::t_b3903cf96d1d65 172
+frontend/src/materials/DictionaryCards.tsx
+  s_66ea02a504d91d::t_04255fa7471140 24,381
+frontend/browser-tests/reader-dictionary.tsx
+  s_66ea02a504d91d::t_04255fa7471140 611,630,777,1612
+frontend/browser-tests/chapter-records.tsx
+  s_66ea02a504d91d::t_04255fa7471140 121-126,523-525,530-533,567-569,592,685,962-966,968,1061,1063-1066,1096,1200-1241,1280,1483-1487,1577-1653,2032
+docs/ARCHITECTURE.md
+  s_66ea02a504d91d::t_04255fa7471140 516-518,526
+backend/src/app/translation_schemas.py
+  s_66ea02a504d91d::t_04255fa7471140 148-152
+frontend/src/translation/TranslationRemoval.tsx
+  s_66ea02a504d91d::t_04255fa7471140 5,18,20-23,26,28-30,33-35,40,42,53-57,59,63-64,80,83,86,88,91-93,97-101,103-105,114,122,132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dfd67c392a482c790b68839f9a74f8574b1ef337",
+  "prompts": {},
+  "sessions": {
+    "s_66ea02a504d91d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19628-5aff-7380-99f1-01c0ebf380e7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
