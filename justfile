@@ -71,6 +71,14 @@ gen-api:
     uv run --project backend python -m app.export_openapi
     pnpm --dir frontend gen-api
 
+# 停止服务后，将当前学习库和配套文件备份到新目录。
+backup $directory:
+    uv run --project backend python -m app.backup create "$directory"
+
+# 校验原生备份并恢复到全新的目录。
+restore $backup_dir $destination:
+    uv run --project backend python -m app.backup restore "$backup_dir" "$destination"
+
 # 从空库建立当前 schema，或执行已记录迁移；不自动清空数据库。
 migrate:
     uv run --directory backend alembic upgrade head

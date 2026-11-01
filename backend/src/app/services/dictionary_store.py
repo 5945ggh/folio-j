@@ -298,7 +298,7 @@ class DictionaryStore:
         try:
             # A process interrupted between staging a deletion and catalog commit
             # leaves the old generation readable until its next mutation.
-            candidate = await asyncio.to_thread(self._readable_path, path)
+            candidate = await asyncio.to_thread(self.readable_index_path, path)
             resolved = await asyncio.to_thread(candidate.resolve)
             connection = await aiosqlite.connect(resolved.as_uri() + "?mode=ro", uri=True)
         except aiosqlite.OperationalError:
@@ -334,7 +334,7 @@ class DictionaryStore:
         )
 
     @staticmethod
-    def _readable_path(path: Path) -> Path:
+    def readable_index_path(path: Path) -> Path:
         if path.exists():
             return path
         return next(path.parent.glob(path.name + ".deleting-*"), path)
@@ -734,7 +734,7 @@ class DictionaryStore:
                         staged.append((path, retained))
                         cleanup.add(retained)
                     else:
-                        recovered = await asyncio.to_thread(self._readable_path, path)
+                        recovered = await asyncio.to_thread(self.readable_index_path, path)
                         if recovered != path:
                             staged.append((path, recovered))
                 library, _ = await self._read_catalog(connection)
