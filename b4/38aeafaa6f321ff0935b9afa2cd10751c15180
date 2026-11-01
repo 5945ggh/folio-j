@@ -1,0 +1,22 @@
+frontend/browser-tests/segment-materials.tsx
+  s_337f999b532ce5::t_d21329576b63d0 545-553
+frontend/browser-tests/reader-settings.tsx
+  s_337f999b532ce5::t_558af904afffa9 711-714
+  s_337f999b532ce5::t_5a43e45a4c9df7 672-675
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b438aeafaa6f321ff0935b9afa2cd10751c15180",
+  "prompts": {},
+  "sessions": {
+    "s_337f999b532ce5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19762-8344-7ac0-9cda-32f76ee7a5dc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
