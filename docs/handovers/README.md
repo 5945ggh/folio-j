@@ -6,6 +6,7 @@
 
 | 要确认的问题 | 入口与职责 |
 | --- | --- |
+| 首个源码包的文档评审与发布前演练 | [候选包与恢复演练](BETA_SOURCE_CANDIDATE.md)，含本地候选标识、核验范围及正式发布前的步骤 |
 | 当前能力、实现差额与验证限制 | [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)，统一维护核对版本及验收入口 |
 | 即时查词怎样进入真实试读 | [阶段计划与试读记录](epub-reading/DICTIONARY_PLAN.md)，涵盖本机词典、EPUB 点击、词卡嵌套与返回 |
 | EPUB 学习衔接接下来做什么 | [阶段安排](epub-reading/README.md#下一阶段接力顺序)：材料对话、消息引用和从讨论形成讲解；[接手提示词](epub-reading/AGENT_PROMPT.md)引用本安排 |
