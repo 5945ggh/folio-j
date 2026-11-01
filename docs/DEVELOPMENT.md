@@ -64,7 +64,7 @@ just check-assets # 验证保留的实验和静态原型
 
 ## Windows 自动验证
 
-[Windows workflow](../.github/workflows/windows.yml) 在 `windows-2025` runner 上安装锁定依赖，执行静态检查、后端与前端测试、生产构建、Chrome／Edge 定向组件回归，并打包当前提交后运行源码 ZIP 冒烟脚本。工作流可从 Actions 手动触发，也随 PR、`main` 和 `codex/windows-*` 分支推送运行。配置存在不表示远端执行已通过，结果见 [Windows 验收记录](handovers/WINDOWS_ACCEPTANCE.md)。
+[Windows workflow](../.github/workflows/windows.yml) 在 `windows-2025` runner 上安装锁定依赖，先执行静态检查与进程生命周期定向回归，再执行完整后端与前端测试、生产构建、Chrome／Edge 定向组件回归，并打包当前提交后运行源码 ZIP 冒烟脚本。工作流可从 Actions 手动触发，也随 PR、`main` 和 `codex/windows-*` 分支推送运行。配置存在不表示远端执行已通过，结果见 [Windows 验收记录](handovers/WINDOWS_ACCEPTANCE.md)。
 
 源码包冒烟使用独立中文与空格目录、临时 HOME／USERPROFILE 和新数据库，验证迁移、真实服务启动与停止、离线备份、拒绝覆盖已有目标、恢复后重启，不调用模型。已安装 `uv`、`pnpm`、`just` 时可在本机复现：
 

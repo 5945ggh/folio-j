@@ -75,7 +75,7 @@ Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在�
 
 本机应用与离线备份通过 `platform_io` 共用数据库旁的内核排他锁，POSIX 使用 `flock`，Windows 使用 `msvcrt` 字节范围锁；锁文件保留，句柄关闭或进程退出即释放。应用初始化、后台任务与资源关闭全部完成后才释放锁。备份先校验并刷写暂存文件，再以平台对应的目录重命名发布；目标必须是新目录。Windows 保留文件内容刷盘，目录元数据没有与 POSIX `fsync` 等价的保证；本机单用户权限由用户目录继承，不额外设置 ACL。操作与验证限制见[升级与备份](UPGRADING.md)及 [Windows 验收](handovers/WINDOWS_ACCEPTANCE.md)。
 
-Windows 开发模式由 `scripts/windows_reload.py` 用共享进程事件请求 Uvicorn worker 停止，热重载与正常退出均等待旧 worker 完成 ASGI 资源清理。启动器正常关闭时等待后端完成，前端保留有限等待；异常结束启动器时，由 Job Object 清理剩余进程。共享事件只控制当前 worker 的停止，不持久化应用状态。
+Windows 开发模式由 `scripts/windows_reload.py` 用共享进程事件请求 Uvicorn worker 停止，热重载与正常退出均等待旧 worker 完成 ASGI 资源清理。启动器的信号处理器只记录本次停止请求，由监控循环进入关闭流程；连续请求不会抛出异常打断清理。正常关闭时等待后端完成，前端保留有限等待；异常结束启动器时，由 Job Object 清理剩余进程。停止标记与共享事件只控制当前启动器及 worker，不持久化应用状态。
 
 Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profile／Defaults 为单例整数主键，全书阅读位置、使用状态与封面以 `material_id` 为主键，各章位置以 `material_id` + `chapter_id` 为主键。下表概述已实现实体及 Occurrence 的未来草图，字段以 ORM 和生成 DTO 为准。模型位于 `models.py`、`settings_models.py`、`chat_models.py`、`analysis_models.py` 、`material_models.py` 与 `segment_context_models.py`。
 

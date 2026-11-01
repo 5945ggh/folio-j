@@ -12,15 +12,11 @@ from collections.abc import Callable
 from importlib import import_module
 from pathlib import Path
 from types import FrameType
-from typing import NoReturn, cast
+from typing import cast
 
 from app.config import load_settings
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def request_stop(_signum: int, _frame: FrameType | None) -> NoReturn:
-    raise KeyboardInterrupt
 
 
 def stop_processes(
@@ -90,6 +86,15 @@ def main() -> int:
         return 2
 
     settings = load_settings()
+    stop_requested = False
+
+    def request_stop(_signum: int, _frame: FrameType | None) -> None:
+        # Several pending signals may run at the same Python checkpoint. Raising
+        # here would let a later signal interrupt the first one's cleanup.
+        nonlocal stop_requested
+        stop_requested = True
+
+    signal.signal(signal.SIGINT, request_stop)
     signal.signal(signal.SIGTERM, request_stop)
     if os.name == "nt":
         contain_process_tree = cast(
@@ -148,23 +153,20 @@ def main() -> int:
             environment["FOLIO_API_TARGET"] = api_url
             environment["FOLIO_DEV_PORT"] = str(settings.server.dev_port)
             processes.append(spawn_process(frontend_command(), environment))
-        while True:
+        while not stop_requested:
             for process in processes:
                 result = process.poll()
                 if result is not None:
                     return result
             time.sleep(0.2)
+        return 0
     except KeyboardInterrupt:
         return 0
     except OSError as error:
         print(f"无法启动：{error}", file=sys.stderr)
         return 1
     finally:
-        # A second Ctrl-C must not interrupt cleanup and leave child services alive.
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-        signal.signal(signal.SIGTERM, signal.SIG_IGN)
-        if os.name == "nt":
-            signal.signal(signal.SIGBREAK, signal.SIG_IGN)
+        # Keep the same non-raising handlers active throughout ASGI cleanup.
         stop_processes(processes, application=application)
 
 

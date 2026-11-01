@@ -93,6 +93,89 @@ def test_main_selects_reload_adapter_and_waits_for_its_application(
         assert "--reload" in commands[0]
 
 
+@pytest.mark.parametrize(
+    ("platform", "signals"),
+    [
+        ("posix", (2, 15)),
+        ("posix", (15, 2)),
+        ("nt", (2, 15, 21)),
+        ("nt", (15, 21, 2)),
+        ("nt", (21, 2, 15)),
+    ],
+)
+@pytest.mark.parametrize("first_request_during_cleanup", [False, True])
+def test_stop_burst_only_requests_shutdown_and_does_not_interrupt_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+    platform: str,
+    signals: tuple[int, ...],
+    first_request_during_cleanup: bool,
+) -> None:
+    handlers: dict[int, object] = {2: signal.default_int_handler}
+    polls = 0
+    cleanups = 0
+
+    def register(signum: int, handler: object) -> None:
+        handlers[signum] = handler
+
+    def dispatch_burst() -> None:
+        for signum in (*signals, *signals):
+            handler = handlers[signum]
+            if handler == 1:  # SIG_IGN is also safe; it cannot raise during cleanup.
+                continue
+            assert callable(handler), "Stop requests must remain safe during cleanup"
+            try:
+                handler(signum, None)
+            except KeyboardInterrupt:
+                pytest.fail("A stop handler raised instead of recording the shutdown request")
+
+    def poll() -> int | None:
+        nonlocal polls
+        polls += 1
+        if first_request_during_cleanup:
+            # Natural child exit enters finally before any stop signal arrives.
+            return 0
+        # Dispatch a whole pending batch before the monitoring loop can unwind.
+        dispatch_burst()
+        return None
+
+    def stop(_processes: object, *, application: object) -> None:
+        nonlocal cleanups
+        cleanups += 1
+        assert application is process
+        # Reenter while cleanup is active, without a delay or an IGNORE barrier.
+        dispatch_burst()
+
+    def no_sleep(_seconds: float) -> None:
+        pass
+
+    def spawn(_command: object, _environment: object = None) -> object:
+        return process
+
+    def windows_support(_name: str) -> SimpleNamespace:
+        return SimpleNamespace(contain_process_tree=lambda: None)
+
+    process = SimpleNamespace(poll=poll)
+    monkeypatch.setattr(launcher, "os", SimpleNamespace(name=platform, environ=os.environ))
+    monkeypatch.setattr(
+        launcher,
+        "signal",
+        SimpleNamespace(SIGINT=2, SIGTERM=15, SIGBREAK=21, SIG_IGN=1, signal=register),
+    )
+    monkeypatch.setattr(launcher, "import_module", windows_support)
+    monkeypatch.setattr(launcher.sys, "argv", ["run.py", "dev"])
+    monkeypatch.setattr(launcher, "spawn_process", spawn)
+    monkeypatch.setattr(launcher, "frontend_command", lambda: ["node", "vite.js"])
+    monkeypatch.setattr(launcher, "stop_processes", stop)
+    monkeypatch.setattr(launcher.time, "sleep", no_sleep)
+    assert launcher.main() == 0
+    assert cleanups == 1
+    assert polls == (1 if first_request_during_cleanup else 2)
+    # A fresh main invocation must get its own unrequested shutdown state.
+    assert launcher.main() == 0
+    assert cleanups == 2
+    assert polls == (2 if first_request_during_cleanup else 4)
+
+
 @pytest.mark.skipif(os.name != "posix", reason="POSIX process groups")
 def test_cleanup_signals_group_even_after_its_leader_exits(
     monkeypatch: pytest.MonkeyPatch,

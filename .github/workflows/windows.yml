@@ -41,6 +41,8 @@ jobs:
         run: just setup
       - name: Static checks
         run: just lint
+      - name: Windows launch, reload and repeated-stop regressions
+        run: uv run --project backend pytest backend/tests/test_run_script.py backend/tests/test_windows_reload.py -q -ra
       - name: Offline backend and frontend tests
         env:
           PYTEST_ADDOPTS: "-ra --durations=10"

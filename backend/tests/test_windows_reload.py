@@ -81,7 +81,8 @@ def main():
         signal.raise_signal(signal.SIGINT)
         while not (STATE / "repeat_stop").exists():
             time.sleep(0.01)
-        # Exercise the real run.main finally handlers while it waits for ASGI.
+        # Keep the repeat immediate when both command files are already present.
+        # This also exercises pending batches before main enters its finally.
         signal.raise_signal(signal.SIGINT)
         if os.name == "nt":
             signal.raise_signal(signal.SIGBREAK)
@@ -146,13 +147,20 @@ def shutdown_fixture(
         FIXTURE.format(scripts=str(ROOT / "scripts"), state=str(tmp_path)), encoding="utf-8"
     )
     processes: list[subprocess.Popen[bytes]] = []
+    output_log = tmp_path / "launcher.log"
 
     def launch(mode: str) -> subprocess.Popen[bytes]:
-        process = subprocess.Popen(
-            [sys.executable, str(script), mode],
-            cwd=tmp_path,
-            creationflags=subprocess.CREATE_NEW_CONSOLE if os.name == "nt" else 0,
-        )
+        environment = os.environ.copy()
+        environment["PYTHONIOENCODING"] = "utf-8"
+        with output_log.open("ab") as output:
+            process = subprocess.Popen(
+                [sys.executable, str(script), mode],
+                cwd=tmp_path,
+                env=environment,
+                stdout=output,
+                stderr=subprocess.STDOUT,
+                creationflags=subprocess.CREATE_NEW_CONSOLE if os.name == "nt" else 0,
+            )
         processes.append(process)
         return process
 
@@ -173,6 +181,10 @@ def shutdown_fixture(
                     pass
             process.kill()
         process.wait(timeout=5)
+    if output_log.exists():
+        # Pytest shows captured teardown output on failures, including Windows
+        # console processes whose original output was unavailable to the runner.
+        print(output_log.read_text(encoding="utf-8", errors="replace"))
 
 
 @pytest.mark.parametrize("mode", ["start", "reload"])
