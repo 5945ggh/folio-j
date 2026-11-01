@@ -1,0 +1,27 @@
+backend/tests/test_chapter_translations.py
+  s_c88be66de67c07::t_19b5471d827a4f 247-297,353-354,461-472,529,532-534,537-538,562-564
+  s_c88be66de67c07::t_66201a10043852 16,246,298-352
+  s_c88be66de67c07::t_1579e9235ef920 530-531,535-536
+backend/src/app/services/chapter_translations.py
+  s_c88be66de67c07::t_66201a10043852 10,225-227,231-237
+  s_c88be66de67c07::t_ae12674eceaf7b 72
+  s_c88be66de67c07::t_a4e8e4f187ad4a 73-87,89-117,221
+docs/ARCHITECTURE.md
+  s_c88be66de67c07::t_afa4ce88e94c9f 544
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ec32c389b436f673ee854d99386156cae7694897",
+  "prompts": {},
+  "sessions": {
+    "s_c88be66de67c07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a196b8-e5df-71d3-afe2-48ebdfe2d545",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
