@@ -747,42 +747,33 @@ async def test_old_cleanup_cannot_remove_concurrent_delete_rollback_file(
 async def test_opening_snapshot_and_delete_are_coordinated_without_holding_reader_lock(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    import sqlite3
+
     store = DictionaryStore(tmp_path / "app.sqlite3")
     first = await store.import_library_stream(chunks(archive([record("雨")])))
     index = store.library_path / (first.dictionary_id + ".sqlite3")
-    entered, release, opened, finish = (asyncio.Event() for _ in range(4))
     original_snapshot = store._file_snapshot  # pyright: ignore[reportPrivateUsage]
+    lock_checked = False
 
     @asynccontextmanager
-    async def paused_open(path: Path) -> AsyncGenerator[DictionarySnapshot]:
-        if path == index:
-            entered.set()
-            await release.wait()
+    async def open_with_lock_check(path: Path) -> AsyncGenerator[DictionarySnapshot]:
+        nonlocal lock_checked
+        assert path == index
+        # Check from a separate connection before the reader opens the index.
+        with closing(sqlite3.connect(store.catalog_path, timeout=0)) as writer:
+            with pytest.raises(sqlite3.OperationalError) as error:
+                writer.execute("BEGIN EXCLUSIVE")
+            assert error.value.sqlite_errorcode == sqlite3.SQLITE_BUSY
+        lock_checked = True
         async with original_snapshot(path) as snapshot:
             yield snapshot
 
-    async def read_snapshot() -> list[str]:
-        async with store.snapshot() as snapshot:
-            opened.set()
-            await finish.wait()
-            return [entry.term for entry in await snapshot.find_terms(["雨"])]
-
-    monkeypatch.setattr(store, "_file_snapshot", paused_open)
-    reader = asyncio.create_task(read_snapshot())
-    delete: asyncio.Task[Any] | None = None
-    try:
-        await asyncio.wait_for(entered.wait(), timeout=1)
-        delete = asyncio.create_task(DictionaryStore(store.path).delete(first.dictionary_id))
-        await asyncio.sleep(0.05)
-        assert not delete.done()
-        release.set()
-        await asyncio.wait_for(opened.wait(), timeout=1)
-        assert not (await asyncio.wait_for(delete, timeout=1)).dictionaries
-        finish.set()
-        assert await reader == ["雨"]
-    finally:
-        release.set()
-        finish.set()
-        await reader
-        if delete is not None:
-            await delete
+    monkeypatch.setattr(store, "_file_snapshot", open_with_lock_check)
+    async with store.snapshot() as snapshot:
+        assert lock_checked
+        other = DictionaryStore(store.path)
+        # Bound a stuck deletion while keeping the snapshot open through the lookup.
+        async with asyncio.timeout(10):
+            library = await other.delete(first.dictionary_id)
+        assert not library.dictionaries
+        assert [entry.term for entry in await snapshot.find_terms(["雨"])] == ["雨"]
