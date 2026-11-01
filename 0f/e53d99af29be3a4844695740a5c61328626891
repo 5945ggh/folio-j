@@ -1,0 +1,62 @@
+backend/tests/test_epub_storage.py
+  s_a21a9037f0eaeb::t_5052dda7001876 120,325
+scripts/make_epub_fixtures.py
+  s_a21a9037f0eaeb::t_5052dda7001876 1,82
+docs/TECH_STACK.md
+  s_a21a9037f0eaeb::t_3748ef99741d52 88,90
+docs/handovers/text-study/C2_EXACT_CASES.md
+  s_a21a9037f0eaeb::t_5052dda7001876 19
+scripts/release/README.md
+  s_a21a9037f0eaeb::t_fd0ba0ef7214f6 28,30,36,38
+  s_a21a9037f0eaeb::t_e5f1a64c4a81a7 1-27,29,31-35,37,39-43
+docs/DEVELOPMENT.md
+  s_a21a9037f0eaeb::t_fd0ba0ef7214f6 141-152
+  s_a21a9037f0eaeb::t_5052dda7001876 65
+  s_a21a9037f0eaeb::t_5f58904fa66b47 153
+backend/tests/fixtures/epub/README.md
+  s_a21a9037f0eaeb::t_5052dda7001876 1-7
+scripts/package_release.py
+  s_a21a9037f0eaeb::t_44892174f56c28 38-174
+  s_a21a9037f0eaeb::t_a9561f6678e601 1-37,175-181
+backend/tests/test_package_release.py
+  s_a21a9037f0eaeb::t_66a0ad6d537abf 1-146,151,160,162-163
+  s_a21a9037f0eaeb::t_ccc3bfc6fc86ba 147-150,152-159,161,164
+docs/USAGE.md
+  s_a21a9037f0eaeb::t_e5f1a64c4a81a7 131,167,177,202,206
+prototypes/epub-reading/fixtures/README.md
+  s_a21a9037f0eaeb::t_5052dda7001876 3
+frontend/src/materials/fixtures/c2-context-cases.json
+  s_a21a9037f0eaeb::t_462e135127b6ac 1-881
+backend/tests/test_epub_compiler.py
+  s_a21a9037f0eaeb::t_5052dda7001876 639
+backend/tests/test_materials.py
+  s_a21a9037f0eaeb::t_7425ad4e3dcb43 23
+docs/handovers/archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md
+  s_a21a9037f0eaeb::t_057df1c78eb881 11
+frontend/src/materials/reader-origin.test.ts
+  s_a21a9037f0eaeb::t_75b36847f22b83 21
+frontend/src/materials/study-context.test.ts
+  s_a21a9037f0eaeb::t_b86dca9518f6c4 5
+scripts/release/justfile
+  s_a21a9037f0eaeb::t_0b9d40f515962d 1-34
+scripts/release/manifest.json
+  s_a21a9037f0eaeb::t_3e865ead9046eb 1-40
+scripts/release/tsconfig.json
+  s_a21a9037f0eaeb::t_f9f585705b0254 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0fe53d99af29be3a4844695740a5c61328626891",
+  "prompts": {},
+  "sessions": {
+    "s_a21a9037f0eaeb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1928d-b03c-74f3-bdd1-79735bd8da4e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
