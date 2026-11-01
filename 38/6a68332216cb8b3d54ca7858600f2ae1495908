@@ -1,0 +1,23 @@
+backend/pyproject.toml
+  s_4cc6664112550e::t_6fbd69f72211b6 13,37-38
+docs/USAGE.md
+  s_4cc6664112550e::t_f1c6618513b96d 5-6
+backend/uv.lock
+  s_4cc6664112550e::t_79097915260418 90-98,122,148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "386a68332216cb8b3d54ca7858600f2ae1495908",
+  "prompts": {},
+  "sessions": {
+    "s_4cc6664112550e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19665-f7ce-7f60-a596-ca53572bf6a3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
