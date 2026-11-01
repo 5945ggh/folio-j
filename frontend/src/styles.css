@@ -1755,6 +1755,7 @@ a {
 	height: 16px;
 	border-radius: 50%;
 	background: var(--color-text-muted);
+	transform: translateX(0);
 }
 .chat-stream-switch:checked {
 	border-color: var(--accent-solid);
@@ -1767,6 +1768,18 @@ a {
 .chat-stream-switch:disabled {
 	opacity: 0.55;
 	cursor: default;
+}
+@media (prefers-reduced-motion: no-preference) {
+	.chat-setting-popover .chat-stream-switch {
+		transition:
+			background-color 180ms ease,
+			border-color 180ms ease;
+	}
+	.chat-stream-switch::before {
+		transition:
+			transform 180ms ease,
+			background-color 180ms ease;
+	}
 }
 .chat-setting-popover:has(.chat-choice-list) {
 	padding: 5px;

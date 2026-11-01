@@ -127,6 +127,7 @@
 	height: 16px;
 	border-radius: 50%;
 	background: var(--reader-muted);
+	transform: translateX(0);
 }
 .reader-settings-toggle input[role="switch"]:checked {
 	border-color: var(--reader-accent);
@@ -135,6 +136,18 @@
 .reader-settings-toggle input[role="switch"]:checked::before {
 	transform: translateX(14px);
 	background: var(--reader-bg);
+}
+@media (prefers-reduced-motion: no-preference) {
+	.reader-settings-toggle input[role="switch"] {
+		transition:
+			background-color 180ms ease,
+			border-color 180ms ease;
+	}
+	.reader-settings-toggle input[role="switch"]::before {
+		transition:
+			transform 180ms ease,
+			background-color 180ms ease;
+	}
 }
 @media (forced-colors: active) {
 	.reader-settings-toggle input[role="switch"]::before {

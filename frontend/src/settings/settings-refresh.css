@@ -547,6 +547,7 @@
 	height: 16px;
 	border-radius: 50%;
 	background: var(--settings-muted);
+	transform: translateX(0);
 }
 .settings-page .learning-context-switch:checked {
 	border-color: var(--settings-primary);
@@ -559,6 +560,18 @@
 .settings-page .learning-context-switch:focus-visible {
 	outline: 2px solid var(--color-focus);
 	outline-offset: 3px;
+}
+@media (prefers-reduced-motion: no-preference) {
+	.settings-page .learning-context-switch {
+		transition:
+			background-color 180ms ease,
+			border-color 180ms ease;
+	}
+	.settings-page .learning-context-switch::before {
+		transition:
+			transform 180ms ease,
+			background-color 180ms ease;
+	}
 }
 .settings-page .learning-range-heading {
 	margin: 24px 0 10px;
