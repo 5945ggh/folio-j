@@ -1,8 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-11-01，代码基准 `829d0db`。本轮定位、任务诊断、目录出处与译文分页的验证见[阶段收尾记录](archived/CLOSEOUT_ACCEPTANCE.md)。各项工程、设备和使用验收仍以对应记录的版本及环境为准。
-> 来源删除清理补充：2026-11-01，实现提交 `cec1297` 已与前端调整 `b438aea` 集成；范围和验证见[来源删除清理验收](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md)。
-> 即时查词补充：2026-11-02，基于 `ccfbd2a8` 的工作区新增活用拆分并修复长接续布局；范围与验证见[活用拆分验收](archived/reading-practice/DICTIONARY_INFLECTION_ACCEPTANCE.md)。
+> 状态核对：2026-11-02，已提交代码基准 `main 131e4bc3`，包含来源删除资源清理及即时查词活用拆分与布局修复。本次核对提交归属与文档，未重跑行为验收；各项工程、设备和使用验收仍以对应记录的版本及环境为准。
 > 本文件汇总当前能力、实现缺口和验收入口。产品范围见 [PRD](../PRD.md)，领域含义见 [GLOSSARY](../GLOSSARY.md)，技术选型见 [TECH_STACK](../TECH_STACK.md)；具体实现由[架构](../ARCHITECTURE.md)维护。
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
@@ -75,41 +73,7 @@
 
 **实现占位：** Analysis 删除影响响应的 `occurrence_count` 默认为 `0`，服务尚未查询条目引用。字段与实现见[响应模型](../../backend/src/app/analysis_schemas.py)和[讲解服务](../../backend/src/app/services/analyses.py)。
 
-### 阶段验收记录
-
-下表提供原始证据入口。各记录维护当时的代码与环境、检查结果、浏览器观察和未验证项。
-
-| 日期与阶段 | 验收记录 |
-| --- | --- |
-| 2026-10-03 架构重构 | [架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md) |
-| 2026-10-04 前端调整 | [前端调整](archived/frontend-refresh/ACCEPTANCE.md) |
-| 2026-10-05 素材库 A.1 | [素材库 A.1](archived/library-a1/ACCEPTANCE.md) |
-| 2026-10-05 来源空间 S2 | [S2 工程验收](archived/sources-s2/ACCEPTANCE.md) |
-| 2026-10-05 阅读器 R1.1 | [R1.1 工程验收](archived/reader-r1/ACCEPTANCE.md) |
-| 2026-10-06 阅读交互优化与提交隔离检查 | [交互优化](archived/reader-r1/INTERACTION_POLISH.md) |
-| 2026-10-07 来源空间 S2 提交前复核 | [审计与复测](archived/sources-s2/ACCEPTANCE.md#2026-10-07-提交前复核) |
-| 2026-10-10 阅读恢复、注音偏好与来源导航重构 | [工程、浏览器与用户复测](archived/READER_STATE_REFACTOR_ACCEPTANCE.md) |
-| 2026-10-11 章节位置记忆 | [工程与浏览器验收](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md) |
-| 2026-10-13 章节位置记忆提交前复核 | [独立审查与章首边界复测](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-13-提交前复核) |
-| 2026-10-15 设置顶部分类 | [工程、独立审查与浏览器验收](archived/settings-refresh/ACCEPTANCE.md) |
-| 2026-10-17 阅读滚动与相邻切章 | [提交前复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
-| 2026-10-19 书籍管理 | [工程、审查与浏览器验收](archived/book-management/ACCEPTANCE.md) |
-| 2026-10-20 独立讲解回看与人工保存 | [A1 独立回看](archived/text-study/A1_ACCEPTANCE.md)、[A2 人工资料与增量保护](archived/text-study/A2_ACCEPTANCE.md) |
-| 2026-10-20 开发期迁移基线整理 | [建库、业务回归与测试库数据保留验收](archived/DATABASE_BASELINE_ACCEPTANCE.md) |
-| 2026-10-22 阅读体验调整 | [自动语境、只读出处与正文外片段入口](archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md) |
-| 2026-10-22 保存表单优化 | [语境预览、主题、清空与显式摘录](archived/text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
-| 2026-10-23 阅读器原处预览 | [紧凑浮卡、展开侧栏和原生选择](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md) |
-| 2026-10-23 阅读翻译与设备朗读 | [阅读辅助联合验收](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-23提交前审查修复与联合验收)、[翻译卡片与朗读控制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-23-翻译卡片与朗读控制交互调整) |
-| 2026-10-24 原处预览与阅读记录调整 | [段尾译文与浮窗](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md#段尾译文与可拖动记录浮窗2026-10-24)、[译文开合复核](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md#译文开合提交前复核2026-10-24)、[页边与定位](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md#页边点击入口定位与翻译卡片2026-10-24)、[记录列表与预览](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md#记录列表与学习片段预览调整2026-10-24) |
-| 2026-10-24 翻译记录与保存入口调整 | [本章记录](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#2026-10-24-本章记录与正文翻译标记)、[分批提交记录](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#记录与保存调整分批提交2026-10-24)、[手动试用调整](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#手动试用调整与注音调查2026-10-24) |
-| 2026-10-24 片段对话与讲解操作 | [发送快捷键](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#对话发送快捷键2026-10-24)、[重命名与图标联合验收](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#三项交互提交前联合验收2026-10-24) |
-| 2026-10-24 注音与竖排标记修复 | [自动注音词首假名](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#自动注音词首假名修复2026-10-24)、[竖排旁线](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#竖排正文标记修复2026-10-24) |
-
-EPUB 编译、聊天执行及历史渲染的后续修复见[CR 修复验收](archived/CR_FIXES_ACCEPTANCE.md)；阅读会话和导入反馈的证据已列在能力表中。
-
-测试质量整改已完成并提交：凭据脱敏与落库回归、真实后台调度、编译产物校验，以及独立浏览器组件回归；工程检查与独立复审通过，证据及验证缺口见[测试质量验收](archived/TEST_QUALITY_ACCEPTANCE.md)。
-
-测试数量、包体积与提交隔离检查范围在原记录中维护；离线、真实模型与扩展验证各自对应其方法和观察。
+历史计划、原始验收与提交前复核按主题从[交接索引](README.md#archived)查找；各记录维护当时的代码、环境、检查结果、浏览器观察和未验证项。
 
 当前界面约定见[阅读与导航](../INFORMATION_ARCHITECTURE.md)，执行机制与迁移链见[架构](../ARCHITECTURE.md)，旧库及旧备份的处理边界见 [升级与备份指南](../UPGRADING.md#旧开发数据库与备份)。阶段记录中的旧迁移编号、回填和数据保留结论继续作为历史事实保留。
 
