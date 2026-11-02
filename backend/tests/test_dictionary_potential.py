@@ -1,10 +1,13 @@
 """Potential-form recall preserves lexical evidence and exact source ranges."""
 
+from typing import cast
+
 import pytest
 from test_dictionary_lookup import MemoryStore, entry, query, token
 
 from app.dictionary_schemas import DictionaryLookupRequest, DictionaryTokenHint
-from app.services.dictionary_lookup import MAX_WORD_LENGTH
+from app.services.dictionary_lookup import MAX_WORD_LENGTH, lookup
+from app.services.dictionary_store import DictionaryStore
 
 
 def potential_token(text: str, start: int, end: int, lemma: str) -> DictionaryTokenHint:
@@ -114,6 +117,13 @@ async def test_original_ichidan_lemma_keeps_priority_over_potential_godan_candid
             store,
             DictionaryLookupRequest(text=text, position=position, tokens=potential_chain(text)),
         ) == [("込める", 0, len(text)), ("込む", 0, len(text))]
+    result = await lookup(
+        cast(DictionaryStore, store),
+        DictionaryLookupRequest(text=text, position=0, tokens=potential_chain(text)),
+    )
+    assert [p.surface for p in result.matches[0].inflection] == ["込め", "て", "い", "ない"]
+    # A lexical potential derivation is not one of the six conjugation forms.
+    assert result.matches[1].inflection == []
 
 
 @pytest.mark.asyncio

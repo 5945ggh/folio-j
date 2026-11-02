@@ -8,7 +8,8 @@ import {
 	useState,
 } from "react";
 import { DictionaryDefinitions } from "./DictionaryDefinitions";
-import type { DictionaryRequest } from "./dictionary-api";
+import type { DictionaryMatch, DictionaryRequest } from "./dictionary-api";
+import { dictionaryInflection } from "./dictionary-inflection";
 import {
 	compactDictionaryLayout,
 	compactDictionaryWidth,
@@ -81,6 +82,15 @@ function ReturnIcon() {
 			<path d="m7.5 4.5-4 4 4 4M4 8.5h8a4 4 0 0 1 0 8h-1.5" />
 		</svg>
 	);
+}
+
+function Inflection({ entry }: { entry: DictionaryMatch }) {
+	const description = dictionaryInflection(entry);
+	return description ? (
+		<p className="dict-inflection" lang="zh">
+			{description}
+		</p>
+	) : null;
 }
 
 export function DictionaryCards({
@@ -474,6 +484,7 @@ function WordCard({
 								)}
 							</h3>
 						)}
+						<Inflection entry={entry} />
 						<DictionaryDefinitions
 							nodes={entry.definitions}
 							mode={mode}

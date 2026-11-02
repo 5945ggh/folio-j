@@ -2,7 +2,7 @@
 
 from typing import Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas import StrictInput
 
@@ -120,6 +120,23 @@ class DictionaryLookupRequest(StrictInput):
         return self
 
 
+DictionaryInflectionForm = Literal[
+    "irrealis", "continuative", "terminal", "attributive", "conditional", "imperative"
+]
+DictionarySoundChange = Literal["イ音便", "撥音便", "促音便", "ウ音便"]
+
+
+class DictionaryInflectionPart(BaseModel):
+    """One actual source component, with only directly observed morphological evidence."""
+
+    model_config = ConfigDict(frozen=True)
+
+    surface: str
+    dictionary_form: str
+    form: DictionaryInflectionForm | None = None
+    sound_change: DictionarySoundChange | None = None
+
+
 class DictionaryMatch(BaseModel):
     id: str
     dictionary_id: str
@@ -129,6 +146,9 @@ class DictionaryMatch(BaseModel):
     end: int
     surface: str
     definitions: list[DictionaryNode]
+    inflection: list[DictionaryInflectionPart] = Field(
+        default_factory=lambda: list[DictionaryInflectionPart]()
+    )
 
 
 class DictionaryLookupResponse(BaseModel):

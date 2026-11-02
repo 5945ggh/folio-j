@@ -1006,6 +1006,61 @@
         "title": "DefaultsResponse",
         "type": "object"
       },
+      "DictionaryInflectionPart": {
+        "description": "One actual source component, with only directly observed morphological evidence.",
+        "properties": {
+          "dictionary_form": {
+            "title": "Dictionary Form",
+            "type": "string"
+          },
+          "form": {
+            "anyOf": [
+              {
+                "enum": [
+                  "irrealis",
+                  "continuative",
+                  "terminal",
+                  "attributive",
+                  "conditional",
+                  "imperative"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Form"
+          },
+          "sound_change": {
+            "anyOf": [
+              {
+                "enum": [
+                  "イ音便",
+                  "撥音便",
+                  "促音便",
+                  "ウ音便"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sound Change"
+          },
+          "surface": {
+            "title": "Surface",
+            "type": "string"
+          }
+        },
+        "required": [
+          "surface",
+          "dictionary_form"
+        ],
+        "title": "DictionaryInflectionPart",
+        "type": "object"
+      },
       "DictionaryLibrary": {
         "properties": {
           "active_dictionary_id": {
@@ -1193,6 +1248,13 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "inflection": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryInflectionPart"
+            },
+            "title": "Inflection",
+            "type": "array"
           },
           "reading": {
             "title": "Reading",

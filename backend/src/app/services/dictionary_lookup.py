@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from sudachipy import dictionary
 
 from app.dictionary_schemas import (
+    DictionaryInflectionPart,
     DictionaryLookupRequest,
     DictionaryLookupResponse,
     DictionaryMatch,
@@ -22,6 +23,7 @@ from app.dictionary_schemas import (
 from app.nlp.contracts import MaterialReadingToken
 from app.nlp.tokenization import Analyzer, tokenize_chunk
 from app.services.dictionary_deinflection import godan_potential_base
+from app.services.dictionary_inflection import inflection_parts
 
 if TYPE_CHECKING:
     from app.services.dictionary_store import DictionaryEntry, DictionaryStore
@@ -46,6 +48,7 @@ class _Candidate:
     pos: tuple[str, ...] = ()
     term_only: bool = False
     required_rule: str = ""
+    inflection: tuple[DictionaryInflectionPart, ...] = ()
 
 
 def _key(value: str) -> str:
@@ -212,9 +215,11 @@ def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
         }
         # Token-boundary compounds complement literal character spans. The last lexical
         # token supplies its lemma; auxiliary suffixes retain their actual source extent.
-        ends = [token.end]
+        ends = [(token.end, index + 1)]
         previous = token.end
-        for following in tokens[index + 1 : index + MAX_TOKEN_COMPOUND]:
+        for stop, following in enumerate(
+            tokens[index + 1 : index + MAX_TOKEN_COMPOUND], start=index + 2
+        ):
             auxiliary = (
                 following.pos[0] == "助動詞"
                 or (
@@ -236,7 +241,7 @@ def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
             )
             if following.start != previous or not auxiliary:
                 break
-            ends.append(following.end)
+            ends.append((following.end, stop))
             previous = following.end
         for first in tokens[max(0, index - MAX_TOKEN_COMPOUND + 1) : index + 1]:
             start = first.start
@@ -245,10 +250,13 @@ def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
             if token.end - start > MAX_WORD_LENGTH:
                 continue
             prefix = text[start : token.start]
-            for end in ends:
+            for end, stop in ends:
                 if end - start > MAX_WORD_LENGTH:
                     break
                 restored = end != token.end
+                parts = inflection_parts(
+                    text, prefix, tokens[index:stop], tokens[stop] if stop < len(tokens) else None
+                )
                 for form in (
                     token.surface if not restored else "",
                     token.dictionary_form,
@@ -267,6 +275,7 @@ def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
                             prefix + token.dictionary_form,
                             tuple(token.pos),
                             restored or form != token.surface,
+                            inflection=parts if form != token.surface or restored else (),
                         )
                     )
                 for base in potential_bases:
@@ -294,6 +303,8 @@ def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
             c.pos,
             c.term_only,
             c.required_rule,
+            -len(c.inflection),
+            tuple(part.model_dump_json() for part in c.inflection),
         ),
     )
 
@@ -360,12 +371,39 @@ def _best_matches(
         ]
         if not options:
             continue
-        candidate = min(options, key=lambda c: _rank(entry, c))
+        # Metadata breaks otherwise identical candidate ties, without changing card ranking.
+        candidate = min(options, key=lambda c: (_rank(entry, c), -len(c.inflection)))
         group = _group(entry)
         old = best.get(group)
         if old is None or _rank(entry, candidate) < _rank(*old):
             best[group] = (entry, candidate)
     return sorted(best.values(), key=lambda pair: _rank(*pair))[:MAX_CARDS]
+
+
+def _matched_inflection(
+    entry: DictionaryEntry, candidate: _Candidate
+) -> list[DictionaryInflectionPart]:
+    if not candidate.inflection:
+        return []
+    if _key(candidate.key) == _key(candidate.lemma):
+        return list(candidate.inflection)
+    # Normalization also includes lexical derivations. Transfer source morphology
+    # only between observed dictionary forms with equal readings and conjugation types.
+    source = _analyze(candidate.lemma)
+    target = _analyze(entry.term)
+    if (
+        source
+        and target
+        and len(candidate.pos) == 6
+        and all(not token.is_oov for token in (*source, *target))
+        and _key("".join(token.reading for token in source))
+        == _key("".join(token.reading for token in target))
+        and (source[-1].pos[0], source[-1].pos[4])
+        == (target[-1].pos[0], target[-1].pos[4])
+        == (candidate.pos[0], candidate.pos[4])
+    ):
+        return list(candidate.inflection)
+    return []
 
 
 def _assemble(
@@ -402,6 +440,7 @@ def _assemble(
                 end=candidate.end,
                 surface=request.text[candidate.start : candidate.end],
                 definitions=definitions,
+                inflection=_matched_inflection(entry, candidate),
             )
         )
     return DictionaryLookupResponse(matches=matches)

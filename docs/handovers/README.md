@@ -44,7 +44,7 @@
 | 阅读设置 | [结构调查与原型记录](archived/reading-practice/READER_SETTINGS_STRUCTURE.md)、[结构与会话保护验收](archived/reading-practice/READER_SETTINGS_ACCEPTANCE.md) |
 | 应用设置 | [自动保存、服务管理与验证记录整理验收](archived/settings-refresh/POLISH_ACCEPTANCE.md) |
 | 位置书签 | [首版与主分支集成](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md)、[附近提醒与详情改进](archived/reading-practice/BOOKMARK_REFINEMENT_ACCEPTANCE.md) |
-| 即时查词与记录浮窗 | [词典试读与管理](archived/epub-reading/DICTIONARY_PLAN.md)、[阅读浮窗验收](archived/reading-practice/READER_POPOVER_ACCEPTANCE.md) |
+| 即时查词与记录浮窗 | [词典试读与管理](archived/epub-reading/DICTIONARY_PLAN.md)、[活用拆分与布局验收](archived/reading-practice/DICTIONARY_INFLECTION_ACCEPTANCE.md)、[阅读浮窗验收](archived/reading-practice/READER_POPOVER_ACCEPTANCE.md) |
 | 翻译、配色与词汇 | [翻译动画、缓存与删除](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md)、[阅读器颜色 token](archived/reading-practice/READER_COLOR_TOKENS_ACCEPTANCE.md)、[材料词汇与统计更新](archived/reading-practice/VOCABULARY_ACCEPTANCE.md) |
 
 ### 工程、性能与可靠性

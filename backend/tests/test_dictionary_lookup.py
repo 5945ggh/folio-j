@@ -133,6 +133,176 @@ async def test_no_token_inflections_cover_actual_surface(text: str, term: str) -
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "text,term,expected",
+    [
+        (
+            "空いていない",
+            "空く",
+            [
+                ("空い", "空く", "continuative", "イ音便"),
+                ("て", "て", None, None),
+                ("い", "いる", "irrealis", None),
+                ("ない", "ない", None, None),
+            ],
+        ),
+        (
+            "食べられなかった",
+            "食べる",
+            [
+                ("食べ", "食べる", "irrealis", None),
+                ("られ", "られる", "irrealis", None),
+                ("なかっ", "ない", "continuative", "促音便"),
+                ("た", "た", None, None),
+            ],
+        ),
+        (
+            "読んでいる",
+            "読む",
+            [
+                ("読ん", "読む", "continuative", "撥音便"),
+                ("で", "で", None, None),
+                ("いる", "いる", None, None),
+            ],
+        ),
+        (
+            "高くなかった",
+            "高い",
+            [
+                ("高く", "高い", "continuative", None),
+                ("なかっ", "ない", "continuative", "促音便"),
+                ("た", "た", None, None),
+            ],
+        ),
+        (
+            "食べさせられた",
+            "食べる",
+            [
+                ("食べ", "食べる", "irrealis", None),
+                ("させ", "させる", "irrealis", None),
+                ("られ", "られる", "continuative", None),
+                ("た", "た", None, None),
+            ],
+        ),
+    ],
+)
+async def test_actual_inflection_components_follow_every_click_and_selection(
+    text: str, term: str, expected: list[tuple[str, str, str | None, str | None]]
+) -> None:
+    store = cast(DictionaryStore, MemoryStore([entry(term)]))
+    requests = [DictionaryLookupRequest(text=text, position=i) for i in range(len(text))]
+    requests.append(DictionaryLookupRequest(text=text))
+    for request in requests:
+        result = await lookup(store, request)
+        match = result.matches[0]
+        assert (match.term, match.surface) == (term, text)
+        assert "".join(part.surface for part in match.inflection) == text
+        assert [
+            (p.surface, p.dictionary_form, p.form, p.sound_change) for p in match.inflection
+        ] == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "text,term", [("食べる", "食べる"), ("猫", "猫"), ("読もう", "読む"), ("読みゃ", "読む")]
+)
+async def test_plain_and_unmapped_forms_do_not_gain_invented_six_form_labels(
+    text: str, term: str
+) -> None:
+    result = await lookup(
+        cast(DictionaryStore, MemoryStore([entry(term)])),
+        DictionaryLookupRequest(text=text, position=0),
+    )
+    assert result.matches[0].inflection == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("食べさせる", "irrealis"),
+        ("食べまい", "irrealis"),
+        ("食べず", "irrealis"),
+        ("食べざる", "irrealis"),
+        ("食べました", "continuative"),
+    ],
+)
+async def test_short_selection_uses_observed_following_auxiliary(text: str, expected: str) -> None:
+    result = await lookup(
+        cast(DictionaryStore, MemoryStore([entry("食べる")])),
+        DictionaryLookupRequest(text=text, selection_start=0, selection_end=2),
+    )
+    assert result.matches[0].inflection[0].form == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "suffix,expected", [("", None), ("。", "terminal"), ("部屋", "attributive")]
+)
+async def test_terminal_attributive_labels_need_right_context(
+    suffix: str, expected: str | None
+) -> None:
+    result = await lookup(
+        cast(DictionaryStore, MemoryStore([entry("空く")])),
+        DictionaryLookupRequest(text="空いていない" + suffix, position=0),
+    )
+    assert result.matches[0].inflection[-1].form == expected
+
+
+@pytest.mark.asyncio
+async def test_literal_and_sequence_siblings_cannot_supply_another_hits_inflection() -> None:
+    store = MemoryStore(
+        [
+            entry("食べる", id=1, sequence=8),
+            entry("別名", id=2, sequence=8, definition="別の释义"),
+            entry("食べました", id=3),
+        ]
+    )
+    result = await lookup(
+        cast(DictionaryStore, store), DictionaryLookupRequest(text="食べました", position=3)
+    )
+    restored = next(m for m in result.matches if m.term == "食べる")
+    literal = next(m for m in result.matches if m.term == "食べました")
+    assert [p.surface for p in restored.inflection] == ["食べ", "まし", "た"]
+    assert literal.inflection == []
+    assert [n.text for n in restored.definitions] == ["释义", "別の释义"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "text,term",
+    [
+        ("わかっている", "分かる"),
+        ("のんでいる", "飲む"),
+        ("きている", "来る"),
+        ("よかった", "良い"),
+        ("できなかった", "出来る"),
+    ],
+)
+async def test_normalized_spellings_keep_verified_source_morphology(text: str, term: str) -> None:
+    result = await lookup(
+        cast(DictionaryStore, MemoryStore([entry(term)])),
+        DictionaryLookupRequest(text=text, position=0),
+    )
+    match = result.matches[0]
+    assert match.term == term
+    assert match.inflection
+    expected = "irrealis" if text == "できなかった" else "continuative"
+    assert match.inflection[0].form == expected
+    assert "".join(part.surface for part in match.inflection) == text
+
+
+@pytest.mark.asyncio
+async def test_normalized_potential_derivation_cannot_masquerade_as_six_form_inflection() -> None:
+    result = await lookup(
+        cast(DictionaryStore, MemoryStore([entry("書く", rules="v5")])),
+        DictionaryLookupRequest(text="書けない", position=0),
+    )
+    assert result.matches[0].term == "書く"
+    assert result.matches[0].inflection == []
+
+
+@pytest.mark.asyncio
 async def test_explicit_selection_neither_expands_nor_shrinks() -> None:
     text = "日本語を食べました。"
     store = MemoryStore([entry("日本語"), entry("語", id=2), entry("食べる", id=3)])
@@ -293,9 +463,12 @@ async def test_inflected_stem_homophone_cannot_borrow_auxiliary_range(
         ]
     )
     for position in range(len(text)):
-        matches = await query(store, DictionaryLookupRequest(text=text, position=position))
+        request = DictionaryLookupRequest(text=text, position=position)
+        matches = await query(store, request)
         assert matches[0] == (lemma, 0, len(text))
         assert all(term != homophone or end <= len(stem_reading) for term, _, end in matches)
+        result = await lookup(cast(DictionaryStore, store), request)
+        assert all(not match.inflection for match in result.matches if match.term == homophone)
 
 
 @pytest.mark.asyncio
@@ -384,6 +557,10 @@ async def test_complete_aligned_hints_avoid_retokenization(monkeypatch: pytest.M
     assert await query(MemoryStore([entry("食べる")]), complete_inflection_request()) == [
         ("食べる", 0, 5),
     ]
+    result = await lookup(
+        cast(DictionaryStore, MemoryStore([entry("食べる")])), complete_inflection_request()
+    )
+    assert [p.form for p in result.matches[0].inflection] == ["continuative", "continuative", None]
 
 
 @pytest.mark.asyncio

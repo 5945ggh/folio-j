@@ -182,6 +182,14 @@
 	flex: none;
 	gap: 1px;
 }
+.dict-inflection {
+	margin: 0 17px 7px;
+	font:
+		400 11px / 1.6 system-ui,
+		sans-serif;
+	color: var(--reader-muted);
+	overflow-wrap: anywhere;
+}
 .dict-card .dict-actions button {
 	display: inline-grid;
 	place-items: center;

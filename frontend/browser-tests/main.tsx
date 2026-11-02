@@ -14,6 +14,7 @@ import { overviewImportRegression } from "./catalog-overview";
 import { reusedImportRegression } from "./catalog-reuse";
 import { catalogToolbarRegression } from "./catalog-toolbar";
 import { chapterRecords } from "./chapter-records";
+import { dictionaryInflectionLayout } from "./dictionary-inflection-layout";
 import { dictionarySettings } from "./dictionary-settings";
 import { explanationRegression } from "./explanation";
 import { materialImport } from "./material-import";
@@ -426,6 +427,7 @@ try {
 		["reader-layout-switch", readerLayoutSwitch],
 		["reader-context-copy", readerContextCopy],
 		["reader-dictionary", readerDictionary],
+		["dictionary-inflection-layout", dictionaryInflectionLayout],
 		["reader-settings", readerSettings],
 		["reader-image-performance", readerImages],
 		["catalog-overview", overviewImportRegression],

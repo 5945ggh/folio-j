@@ -80,6 +80,7 @@ const scenarios = selectBrowserScenarios(
 		[320, 900, "?suite=reader-settings"],
 		[320, 900, "?suite=reader-settings&direction=vertical-rl"],
 		[1280, 900, "?suite=reader-dictionary"],
+		[1280, 900, "?suite=dictionary-inflection-layout"],
 		[900, 900, "?suite=reader-dictionary"],
 		[740, 900, "?suite=reader-dictionary"],
 		[390, 900, "?suite=reader-dictionary"],
@@ -372,6 +373,27 @@ export default function ObservedMarkdown(props) {
 				}
 				if (
 					message.method === "Runtime.bindingCalled" &&
+					message.params.name === "__dispatchBrowserResize"
+				) {
+					const { id, width, height } = JSON.parse(message.params.payload);
+					void (async () => {
+						await command(
+							"Emulation.setDeviceMetricsOverride",
+							{ width, height, deviceScaleFactor: 1, mobile: false },
+							message.sessionId,
+						);
+						await command(
+							"Runtime.evaluate",
+							{
+								expression: `new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))).then(() => window.__resizeResolvers.get(${id})())`,
+								awaitPromise: true,
+							},
+							message.sessionId,
+						);
+					})();
+				}
+				if (
+					message.method === "Runtime.bindingCalled" &&
 					message.params.name === "__dispatchBrowserTheme"
 				) {
 					const { id, mode } = JSON.parse(message.params.payload);
@@ -445,6 +467,18 @@ export default function ObservedMarkdown(props) {
 				"Page.addScriptToEvaluateOnNewDocument",
 				{
 					source: `window.__pointerResolvers = new Map(); window.browserPointer = (events) => new Promise((resolve) => { const id = window.__pointerResolvers.size + 1; window.__pointerResolvers.set(id, resolve); window.__dispatchBrowserPointer(JSON.stringify({id,events})); });`,
+				},
+				sessionId,
+			);
+			await command(
+				"Runtime.addBinding",
+				{ name: "__dispatchBrowserResize" },
+				sessionId,
+			);
+			await command(
+				"Page.addScriptToEvaluateOnNewDocument",
+				{
+					source: `window.__resizeResolvers = new Map(); window.browserResize = (width, height) => new Promise((resolve) => { const id = window.__resizeResolvers.size + 1; window.__resizeResolvers.set(id, resolve); window.__dispatchBrowserResize(JSON.stringify({id,width,height})); });`,
 				},
 				sessionId,
 			);

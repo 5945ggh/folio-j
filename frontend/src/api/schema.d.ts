@@ -1779,6 +1779,20 @@ export interface components {
             /** Style Id */
             style_id: string | null;
         };
+        /**
+         * DictionaryInflectionPart
+         * @description One actual source component, with only directly observed morphological evidence.
+         */
+        DictionaryInflectionPart: {
+            /** Dictionary Form */
+            dictionary_form: string;
+            /** Form */
+            form?: ("irrealis" | "continuative" | "terminal" | "attributive" | "conditional" | "imperative") | null;
+            /** Sound Change */
+            sound_change?: ("イ音便" | "撥音便" | "促音便" | "ウ音便") | null;
+            /** Surface */
+            surface: string;
+        };
         /** DictionaryLibrary */
         DictionaryLibrary: {
             /** Active Dictionary Id */
@@ -1835,6 +1849,8 @@ export interface components {
             end: number;
             /** Id */
             id: string;
+            /** Inflection */
+            inflection?: components["schemas"]["DictionaryInflectionPart"][];
             /** Reading */
             reading: string;
             /** Start */
