@@ -1,0 +1,23 @@
+docs/handovers/README.md
+  s_e86e4d48377d85::t_bd8363345680bc 29-30,32,34-36
+docs/DEVELOPMENT.md
+  s_e86e4d48377d85::t_92646e51fbb723 176-181
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e86e4d48377d85::t_92646e51fbb723 3,76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "702ef8d517312450a744afe85ec4a0a438637a34",
+  "prompts": {},
+  "sessions": {
+    "s_e86e4d48377d85": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19c2c-592c-7f50-b3be-11a9fc2b2bd0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
