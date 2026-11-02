@@ -441,21 +441,11 @@ function WordCard({
 							</button>
 						</div>
 					)}
-					{depth > 0 && (
-						<button
-							type="button"
-							aria-label="返回上层词卡"
-							title="返回上层词卡"
-							onClick={() => backTo(depth - 1)}
-						>
-							<ReturnIcon />
-						</button>
-					)}
 					<button
 						type="button"
-						aria-label="关闭查词"
-						title="关闭查词"
-						onClick={close}
+						aria-label="关闭当前词卡"
+						title="关闭当前词卡"
+						onClick={() => (depth > 0 ? backTo(depth - 1) : close())}
 					>
 						×
 					</button>

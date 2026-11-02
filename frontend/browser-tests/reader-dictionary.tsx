@@ -899,17 +899,24 @@ export async function readerDictionary(h: BrowserHarness) {
 					"Deep desktop lookup must retain the earliest visible card and its DOM identity",
 				);
 			}
-			for (let depth = 3; depth >= 2; depth--) {
-				const active = h.container.querySelector<HTMLElement>(
-					`.dict-card[data-depth="${depth}"]`,
-				);
-				check(active, "Deep card must support returning one level");
-				button("返回上层词卡", active).click();
-				await h.until(
-					() => h.container.querySelectorAll(".dict-card").length === depth,
-					"Back must unwind one desktop level",
-				);
-			}
+			const middle = h.container.querySelector<HTMLElement>(
+				'.dict-card[data-depth="2"]',
+			);
+			const deepest = h.container.querySelector('.dict-card[data-depth="3"]');
+			check(middle && deepest, "Middle card must have a descendant to close");
+			check(
+				middle.querySelectorAll(".dict-actions > button").length === 1,
+				"Each card must expose only one close action beside its pager",
+			);
+			button("关闭当前词卡", middle).click();
+			await h.until(
+				() => h.container.querySelectorAll(".dict-card").length === 2,
+				"Closing a middle card must dismiss that card and all descendants",
+			);
+			check(
+				!middle.isConnected && !deepest.isConnected,
+				"Closing a middle card must remove its entire branch",
+			);
 			check(
 				h.container.querySelector('.dict-card[data-depth="1"]') === child,
 				"Returning from deep lookup must preserve the second card DOM",
@@ -1039,7 +1046,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			root.isConnected && restoredChild.isConnected,
 			"Toggling the gallery must preserve both dictionary cards",
 		);
-		button("返回上层词卡", restoredChild).click();
+		button("关闭当前词卡", restoredChild).click();
 		await h.until(
 			() => h.container.querySelectorAll(".dict-card").length === 1,
 			"Back must restore parent card",
@@ -1048,6 +1055,51 @@ export async function readerDictionary(h: BrowserHarness) {
 			h.container.querySelector('.dict-card[aria-label="词卡 · 猫"]') === root,
 			"Back must preserve parent DOM identity",
 		);
+		if (window.innerWidth >= 740) {
+			button("下一个候选", root).click();
+			await h.until(
+				() => root.getAttribute("aria-label") === "词卡 · 猫が",
+				"Parent must reach the second candidate",
+			);
+			button("下一个候选", root).click();
+			await h.until(
+				() => root.getAttribute("aria-label") === "词卡 · 猫が歩く",
+				"Parent preservation regression needs a noninitial long candidate",
+			);
+			const parentProse = root.querySelector('[data-dict-role="def2"]');
+			const parentScroll = root.querySelector<HTMLElement>(".dict-scroll");
+			check(parentProse && parentScroll, "Parent must retain Japanese content");
+			await glyphClick(parentProse, 1);
+			await h.until(
+				() => h.container.querySelectorAll(".dict-card").length === 2,
+				"Noninitial candidate must support nested lookup",
+			);
+			parentScroll.scrollTop = 80;
+			const savedScroll = parentScroll.scrollTop;
+			check(
+				savedScroll > 0,
+				"Parent preservation regression needs scrolled text",
+			);
+			const active = h.container.querySelector<HTMLElement>(
+				'.dict-card[data-depth="1"]',
+			);
+			check(active, "Child must provide its own close action");
+			button("关闭当前词卡", active).click();
+			await h.until(
+				() => h.container.querySelectorAll(".dict-card").length === 1,
+				"Closing a child must retain its parent",
+			);
+			await settle();
+			check(
+				h.container.querySelector('.dict-card[data-depth="0"]') === root &&
+					root.getAttribute("aria-label") === "词卡 · 猫が歩く" &&
+					/3\s*\/\s*3/.test(
+						root.querySelector(".dict-pager")?.textContent ?? "",
+					) &&
+					parentScroll.scrollTop === savedScroll,
+				"Closing a child must preserve parent DOM, candidate page and scroll position",
+			);
+		}
 		if (window.innerWidth === 390) {
 			button("下一个候选", root).click();
 			await h.until(
@@ -1098,7 +1150,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			checkCardInViewport(root);
 			checkCardInViewport(bottomChild);
 		}
-		button("关闭查词", root).click();
+		button("关闭当前词卡", root).click();
 		await h.until(
 			() => !h.container.querySelector(".dict-deck"),
 			"Close must dismiss all cards",
@@ -1142,7 +1194,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			"Near-bottom lookup must place the card above the clicked original",
 		);
 		await checkPager(above);
-		button("关闭查词", above).click();
+		button("关闭当前词卡", above).click();
 		viewport.scrollTop = 0;
 		await settle();
 		// There are no margin entrances: dictionary mode must still retain access to this exact saved mark.
@@ -1315,7 +1367,7 @@ export async function readerDictionary(h: BrowserHarness) {
 				() => h.container.querySelectorAll(".dict-card").length === 2,
 				"Ordinary Japanese prose click must still open a child after releasing Shift",
 			);
-			button("关闭查词").click();
+			button("关闭当前词卡").click();
 		}
 
 		const countBeforeOrdinaryClick = requests.length;
@@ -1351,7 +1403,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			() => !!deferred.release && !!h.container.querySelector(".dict-deck"),
 			"Pending lookup must expose a closable card",
 		);
-		button("关闭查词").click();
+		button("关闭当前词卡").click();
 		check(deferred.release, "Pending mock response must have a release");
 		deferred.release();
 		await new Promise((resolve) => setTimeout(resolve, 150));
@@ -1425,7 +1477,7 @@ export async function readerDictionary(h: BrowserHarness) {
 				h.container.querySelectorAll(".dict-card").length === 2,
 				"Closing the image viewer must preserve the resolved dictionary stack",
 			);
-			button("关闭查词").click();
+			button("关闭当前词卡").click();
 		}
 		if (innerWidth === 1280) {
 			hold = false;
