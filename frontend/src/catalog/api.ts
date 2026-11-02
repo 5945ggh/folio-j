@@ -52,13 +52,6 @@ export async function catalogAnalyses(id: string, query: AnalysisQuery) {
 	);
 	return requireData(data, error, response.status);
 }
-export async function catalogUsage(id: string) {
-	const { data, error, response } = await api.GET(
-		"/api/materials/{material_id}/usage",
-		{ params: { path: { material_id: id } } },
-	);
-	return requireData(data, error, response.status);
-}
 export async function updateUsage(
 	id: string,
 	status: Usage["status"],

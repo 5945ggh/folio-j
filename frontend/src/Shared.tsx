@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router";
-import { RequestError } from "./content";
 import { handleDialogCancel } from "./dialog-events";
 
 function displayError(error: Error): string {
@@ -192,33 +191,6 @@ export function Shell({
 				</ConfirmDialog>
 			)}
 		</div>
-	);
-}
-export function PageError({
-	error,
-	retry,
-}: {
-	error: Error;
-	retry?: () => void;
-}) {
-	const missing = error instanceof RequestError && error.status === 404;
-	return (
-		<Shell>
-			<div className="state-card" role="alert">
-				<h1>{missing ? "找不到这条记录" : "暂时无法加载"}</h1>
-				<p>{displayError(error)}</p>
-				<div className="actions">
-					<Link className="button secondary" to="/sources">
-						返回来源目录
-					</Link>
-					{retry && !missing && (
-						<button className="button primary" type="button" onClick={retry}>
-							重试
-						</button>
-					)}
-				</div>
-			</div>
-		</Shell>
 	);
 }
 export function Loading() {

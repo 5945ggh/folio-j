@@ -104,16 +104,6 @@ export function prepareHighlights(
 	};
 }
 
-/** Existing single-range search callers use the same complete projection path. */
-export function highlightRange(
-	doc: Document,
-	projection: Projection,
-	start: number,
-	end: number,
-): void {
-	prepareHighlights(doc, projection, [{ start, end }])();
-}
-
 /** Navigation feedback ends independently of persistent study and translation marks. */
 export function clearSearchHighlights(
 	doc: Document,

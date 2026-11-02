@@ -67,13 +67,6 @@ export async function getSource(id: string) {
 	});
 	return requireData(data, error, response.status);
 }
-export async function listSegments(id: string) {
-	const { data, error, response } = await api.GET(
-		"/api/sources/{source_id}/segments",
-		{ params: { path: { source_id: id } } },
-	);
-	return requireData(data, error, response.status);
-}
 export async function getSegment(id: string) {
 	const { data, error, response } = await api.GET(
 		"/api/segments/{segment_id}",

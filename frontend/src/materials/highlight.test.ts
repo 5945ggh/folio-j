@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Projection } from "./dom.ts";
-import { clearSearchHighlights, highlightRange } from "./highlight.ts";
+import { clearSearchHighlights, prepareHighlights } from "./highlight.ts";
 
 function harness(supported = true) {
 	class TestRange {
@@ -66,7 +66,7 @@ function projection(chunks: string[]): Projection {
 test("Unicode search offsets highlight exact repeated occurrence across existing leaves", () => {
 	const p = projection(["𠮷あ", "いう𠮷", "あいう"]);
 	const h = harness();
-	highlightRange(h.doc, p, 4, 8);
+	prepareHighlights(h.doc, p, [{ start: 4, end: 8 }])();
 	assert.deepEqual(h.paintedRanges(), [
 		{ start: [p.entries[1]?.node, 2], end: [p.entries[2]?.node, 3] },
 	]);
@@ -80,7 +80,7 @@ test("Unicode search offsets highlight exact repeated occurrence across existing
 test("NFC range boundaries project decomposed source text without changing original nodes", () => {
 	const p = projection(["か", "\u3099く", "せい"]);
 	const h = harness();
-	highlightRange(h.doc, p, 0, 2);
+	prepareHighlights(h.doc, p, [{ start: 0, end: 2 }])();
 	assert.deepEqual(h.paintedRanges(), [
 		{ start: [p.entries[0]?.node, 0], end: [p.entries[1]?.node, 2] },
 	]);
@@ -88,7 +88,7 @@ test("NFC range boundaries project decomposed source text without changing origi
 });
 test("clearing navigation feedback is idempotent and preserves all persistent record marks", () => {
 	const h = harness();
-	highlightRange(h.doc, projection(["原文"]), 0, 2);
+	prepareHighlights(h.doc, projection(["原文"]), [{ start: 0, end: 2 }])();
 	const persistent = [
 		"folio-study",
 		"folio-study-active",
@@ -115,18 +115,23 @@ test("clearing navigation feedback is idempotent and preserves all persistent re
 test("missing mapping and unsupported highlights report honest errors without painting guessed text", () => {
 	const p = projection(["原文"]);
 	const h = harness(false);
-	assert.throws(() => highlightRange(h.doc, p, 0, 1), /已定位到原文.*不支持/);
+	assert.throws(
+		() => prepareHighlights(h.doc, p, [{ start: 0, end: 1 }]),
+		/已定位到原文.*不支持/,
+	);
 	assert.equal(h.marks.size, 0);
 	const missing = harness();
 	assert.throws(
-		() => highlightRange(missing.doc, { raw: "原文", entries: [] }, 0, 1),
+		() =>
+			prepareHighlights(missing.doc, { raw: "原文", entries: [] }, [
+				{ start: 0, end: 1 },
+			]),
 		/无法映射/,
 	);
 	assert.equal(missing.marks.size, 0);
 });
 
-test("repainting separate intervals in one document retains all intervals", async () => {
-	const { prepareHighlights } = await import("./highlight.ts");
+test("repainting separate intervals in one document retains all intervals", () => {
 	const p = projection(["甲乙丙丁"]);
 	const h = harness();
 	const paint = prepareHighlights(h.doc, p, [
@@ -161,7 +166,7 @@ test("translation ranges register independently and clearing records preserves s
 	);
 	const h = harness();
 	const range = h.doc.createRange();
-	highlightRange(h.doc, projection(["原文"]), 0, 2);
+	prepareHighlights(h.doc, projection(["原文"]), [{ start: 0, end: 2 }])();
 	prepareStudyUnderlines(h.doc, [], [], "white", [range], [range])();
 	assert.deepEqual(h.marks.get("folio-translation")?.ranges, [range]);
 	assert.deepEqual(h.marks.get("folio-translation-active")?.ranges, [range]);
@@ -316,7 +321,7 @@ test("navigation fade changes only search paint, preserves fading opacity on ref
 	const { setSearchHighlightOpacity } = await import("./highlight.ts");
 	const h = harness();
 	const p = projection(["原文"]);
-	highlightRange(h.doc, p, 0, 2);
+	prepareHighlights(h.doc, p, [{ start: 0, end: 2 }])();
 	const marker = h.marks.get("folio-search");
 	assert.ok(marker);
 	h.marks.set("folio-study", marker);
@@ -327,7 +332,7 @@ test("navigation fade changes only search paint, preserves fading opacity on ref
 		/background:color-mix\(in srgb,var\(--reader-location-highlight\) 50%,transparent\)/,
 	);
 	assert.match(h.style.textContent, /#171717 50%,#282828/);
-	highlightRange(h.doc, p, 0, 2);
+	prepareHighlights(h.doc, p, [{ start: 0, end: 2 }])();
 	assert.match(
 		h.style.textContent,
 		/ 50%,transparent\)/,
@@ -342,7 +347,7 @@ test("navigation fade changes only search paint, preserves fading opacity on ref
 	assert.equal(h.marks.get("folio-study"), marker);
 	assert.equal(h.marks.get("folio-translation"), marker);
 	clearSearchHighlights(h.doc);
-	highlightRange(h.doc, p, 0, 2);
+	prepareHighlights(h.doc, p, [{ start: 0, end: 2 }])();
 	assert.match(
 		h.style.textContent,
 		/ 100%,transparent\)/,
@@ -361,7 +366,7 @@ test("fade captures source foreground and tracks presentation-only theme switche
 		getComputedStyle: () => ({ color: foreground }),
 	});
 	const p = projection(["原文"]);
-	highlightRange(h.doc, p, 0, 2);
+	prepareHighlights(h.doc, p, [{ start: 0, end: 2 }])();
 	setSearchHighlightOpacity(h.doc, 0.5);
 	assert.match(h.style.textContent, /#171717 50%,rgb\(229, 229, 229\)/);
 	const marker = h.marks.get("folio-search");
@@ -374,7 +379,7 @@ test("fade captures source foreground and tracks presentation-only theme switche
 		"theme changes do not reproject the target",
 	);
 	foreground = "rgb(229, 229, 229)";
-	highlightRange(h.doc, p, 0, 2);
+	prepareHighlights(h.doc, p, [{ start: 0, end: 2 }])();
 	assert.match(h.style.textContent, /#171717 50%,rgb\(229, 229, 229\)/);
 	assert.doesNotMatch(h.style.textContent, /currentColor/);
 });

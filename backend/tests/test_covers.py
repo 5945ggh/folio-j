@@ -9,7 +9,7 @@ import pytest
 from support_api import api_client
 from support_epub import compiled
 
-from app.services.covers import extract_cover
+from app.services.covers import inspect_cover
 
 PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
@@ -49,7 +49,7 @@ def cover_book(
 
 @pytest.mark.parametrize("epub2", [False, True])
 def test_declared_cover(epub2: bool) -> None:
-    assert extract_cover(cover_book(epub2=epub2)) == (PNG, "image/png")
+    assert inspect_cover(cover_book(epub2=epub2)).cover == (PNG, "image/png")
 
 
 @pytest.mark.parametrize(
@@ -65,7 +65,7 @@ def test_declared_cover(epub2: bool) -> None:
     ],
 )
 def test_cover_fallback(kwargs: dict[str, object]) -> None:
-    assert extract_cover(cover_book(**kwargs)) is None  # type: ignore[arg-type]
+    assert inspect_cover(cover_book(**kwargs)).cover is None  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -162,7 +162,7 @@ def test_corrupt_crc_animation_and_large_dimensions_fall_back() -> None:
             b'<rootfile full-path="&x;"/></container>'
         }
     )
-    assert extract_cover(entity) is None
+    assert inspect_cover(entity).cover is None
 
 
 def jpeg_fixture() -> bytes:
@@ -200,17 +200,15 @@ def fallback_book(*, declared: str = "", first: bytes = PNG) -> bytes:
 
 
 def test_spine_image_precedes_manifest_order() -> None:
-    assert extract_cover(fallback_book()) == (PNG, "image/png")
+    assert inspect_cover(fallback_book()).cover == (PNG, "image/png")
 
 
 def test_bad_declaration_and_bad_first_image_continue() -> None:
     declaration = (
         '<item id="bad" href="missing.png" media-type="image/png" properties="cover-image"/>'
     )
-    assert extract_cover(fallback_book(declared=declaration)) == (PNG, "image/png")
-    assert extract_cover(fallback_book(first=b"broken")) == (jpeg_fixture(), "image/jpeg")
-    from app.services.covers import inspect_cover
-
+    assert inspect_cover(fallback_book(declared=declaration)).cover == (PNG, "image/png")
+    assert inspect_cover(fallback_book(first=b"broken")).cover == (jpeg_fixture(), "image/jpeg")
     assert inspect_cover(fallback_book(first=b"broken")).reason == "spine; skipped=invalid_raster"
 
 
@@ -267,8 +265,6 @@ async def test_old_cache_rebuilds_without_touching_book(
 
 
 def test_no_images_and_candidate_limits_have_diagnostics() -> None:
-    from app.services.covers import inspect_cover
-
     no_images = cover_book(extra={"book/package.opf": b"<package><manifest/><spine/></package>"})
     assert inspect_cover(no_images).reason == "no_images"
     result = inspect_cover(fallback_book(first=PNG + b"x" * (4 * 1024 * 1024)))
@@ -310,4 +306,4 @@ def test_malformed_jpeg_declaration_falls_back_to_good_spine_image(bad: bytes) -
     with zipfile.ZipFile(output, "w") as archive:
         for name, value in files.items():
             archive.writestr(name, value)
-    assert extract_cover(output.getvalue()) == (PNG, "image/png")
+    assert inspect_cover(output.getvalue()).cover == (PNG, "image/png")

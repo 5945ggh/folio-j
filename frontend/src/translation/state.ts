@@ -25,23 +25,6 @@ export function targetText(reference: MaterialProvenance): string {
 		.normalize("NFC");
 }
 
-/** A lost response may only retry its frozen request; editing creates a new identity. */
-export class TranslationSubmission<T> {
-	private pending: { key: string; request: T } | null = null;
-	prepare(key: string, create: () => T): T {
-		if (this.pending && this.pending.key !== key)
-			throw new Error("上次提交尚未核实，请先重试原请求。");
-		this.pending ??= { key, request: create() };
-		return this.pending.request;
-	}
-	get current(): T | undefined {
-		return this.pending?.request;
-	}
-	clear() {
-		this.pending = null;
-	}
-}
-
 export type TranslationBudget = {
 	before_sentences: number;
 	before_characters: number;

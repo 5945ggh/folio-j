@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-	TranslationSubmission,
 	targetText,
 	translationTargetKey,
 	translationVersionShortcut,
@@ -79,15 +78,4 @@ test("snapshot concatenates base text before NFC", () => {
 		}),
 		"が",
 	);
-});
-test("uncertain submission keeps the original request and rejects changed draft", () => {
-	const submission = new TranslationSubmission<{ id: string }>();
-	const request = submission.prepare("a", () => ({ id: "first" }));
-	assert.equal(
-		submission.prepare("a", () => ({ id: "second" })),
-		request,
-	);
-	assert.throws(() => submission.prepare("b", () => ({ id: "third" })));
-	submission.clear();
-	assert.equal(submission.prepare("b", () => ({ id: "third" })).id, "third");
 });

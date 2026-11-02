@@ -305,10 +305,6 @@ def inspect_cover(raw: bytes) -> CoverExtraction:
         return CoverExtraction(None, "invalid_package")
 
 
-def extract_cover(raw: bytes) -> tuple[bytes, str] | None:
-    return inspect_cover(raw).cover
-
-
 async def get_cover(session: AsyncSession, material_id: str) -> tuple[bytes, str]:
     await require_material(session, material_id, with_bundle=False)
     custom = await custom_cover_content(session, material_id)
