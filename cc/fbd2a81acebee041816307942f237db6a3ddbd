@@ -1,0 +1,27 @@
+docs/USAGE.md
+  s_403e9585b66036::t_0c51a1691b79d4 41
+frontend/browser-tests/reader-dictionary.tsx
+  s_403e9585b66036::t_0c51a1691b79d4 1049,1153,1197,1370,1406,1480
+  s_403e9585b66036::t_d5d2503b4a5500 1079-1082,1096-1098
+  s_403e9585b66036::t_963d928cca49d6 902-919,1058-1078,1083-1095,1099-1102
+frontend/src/materials/DictionaryCards.tsx
+  s_403e9585b66036::t_144aef421bab8a 446-448
+docs/INFORMATION_ARCHITECTURE.md
+  s_403e9585b66036::t_0c51a1691b79d4 295
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ccfbd2a81acebee041816307942f237db6a3ddbd",
+  "prompts": {},
+  "sessions": {
+    "s_403e9585b66036": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19a94-b6b7-73a0-8afd-85fbb6bdaead",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
