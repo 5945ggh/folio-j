@@ -186,8 +186,6 @@ async def rename_analysis(
         await begin_write(session)
         analysis = await _active_analysis(session, analysis_id)
         if analysis.title != data.title:
-            if unicodedata.normalize("NFC", analysis.title) != data.expected_title:
-                raise HTTPException(status_code=409, detail="讲解标题已变化，请重新读取后重命名")
             analysis.title = data.title
             analysis.updated_at = _now()
             await session.flush()

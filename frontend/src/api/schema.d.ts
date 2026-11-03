@@ -1529,8 +1529,6 @@ export interface components {
         };
         /** AnalysisRename */
         AnalysisRename: {
-            /** Expected Title */
-            expected_title: string;
             /** Title */
             title: string;
         };

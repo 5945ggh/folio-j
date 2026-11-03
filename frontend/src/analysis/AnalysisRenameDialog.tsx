@@ -1,13 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
-import { RequestError } from "../content";
 import { ConfirmDialog, InlineError } from "../Shared";
 import {
 	type AnalysisDetail,
 	type AnalysisItem,
 	type AnalysisRename,
 	analysisKeys,
-	getAnalysis,
 	renameAnalysis,
 } from "./api";
 import { titleError } from "./editor";
@@ -24,8 +22,6 @@ export function AnalysisRenameDialog({
 	const input = useRef<HTMLInputElement>(null);
 	const submitting = useRef(false);
 	const [draft, setDraft] = useState(analysis.title);
-	const [expectedTitle, setExpectedTitle] = useState(analysis.title);
-	const [reloaded, setReloaded] = useState(false);
 	const title = draft.normalize("NFC").trim();
 	const invalid = !title ? "名称不能为空白。" : titleError(draft);
 	useEffect(() => {
@@ -59,18 +55,7 @@ export function AnalysisRenameDialog({
 			submitting.current = false;
 		},
 	});
-	const reload = useMutation({
-		mutationFn: () => getAnalysis(analysis.id),
-		onSuccess: (result) => {
-			setExpectedTitle(result.title);
-			setReloaded(true);
-			save.reset();
-			refreshNames(result);
-		},
-	});
-	const conflict =
-		save.error instanceof RequestError && save.error.status === 409;
-	const locked = save.isPending || reload.isPending;
+	const locked = save.isPending;
 	function dismiss() {
 		if (!submitting.current && !locked) onClose();
 	}
@@ -84,9 +69,9 @@ export function AnalysisRenameDialog({
 			<form
 				onSubmit={(event) => {
 					event.preventDefault();
-					if (submitting.current || locked || invalid || conflict) return;
+					if (submitting.current || locked || invalid) return;
 					submitting.current = true;
-					save.mutate({ title, expected_title: expectedTitle });
+					save.mutate({ title });
 				}}
 			>
 				<label className="field">
@@ -106,30 +91,12 @@ export function AnalysisRenameDialog({
 						{invalid}
 					</p>
 				)}
-				{conflict && (
-					<p role="alert">
-						名称已被其他操作修改，草稿已保留。请读取最新名称，核对后再保存。
-					</p>
-				)}
-				{reloaded && <p>当前名称：{expectedTitle}</p>}
-				<InlineError
-					error={conflict ? reload.error : (save.error ?? reload.error)}
-				/>
+				<InlineError error={save.error} />
 				<div className="actions">
-					{conflict && (
-						<button
-							type="button"
-							className="button secondary"
-							disabled={locked}
-							onClick={() => reload.mutate()}
-						>
-							{reload.isPending ? "读取中…" : "读取最新名称"}
-						</button>
-					)}
 					<button
 						type="submit"
 						className="button primary"
-						disabled={locked || Boolean(invalid) || conflict}
+						disabled={locked || Boolean(invalid)}
 					>
 						{save.isPending ? "保存中…" : "保存名称"}
 					</button>

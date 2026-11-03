@@ -67,9 +67,8 @@ class AnalysisRename(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str = Field(min_length=1, max_length=200)
-    expected_title: str
 
-    @field_validator("title", "expected_title", mode="before")
+    @field_validator("title", mode="before")
     @classmethod
     def normalize_title(cls, value: object) -> object:
         if isinstance(value, str):

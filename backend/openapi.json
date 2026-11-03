@@ -268,10 +268,6 @@
       "AnalysisRename": {
         "additionalProperties": false,
         "properties": {
-          "expected_title": {
-            "title": "Expected Title",
-            "type": "string"
-          },
           "title": {
             "maxLength": 200,
             "minLength": 1,
@@ -280,8 +276,7 @@
           }
         },
         "required": [
-          "title",
-          "expected_title"
+          "title"
         ],
         "title": "AnalysisRename",
         "type": "object"

@@ -53,11 +53,10 @@ export async function analysisRename(h: BrowserHarness) {
 	const check: BrowserHarness["check"] = h.check;
 	const preview = new URLSearchParams(location.search).has("preview");
 	let title = originalTitle;
-	let mode: "success" | "conflict" | "error" | "accepted-error" | "pending" =
-		"success";
+	let mode: "success" | "error" | "accepted-error" | "pending" = "success";
 	let release: (() => void) | undefined;
 	let queryClient: QueryClient | undefined;
-	const writes: { title: string; expected_title: string }[] = [];
+	const writes: { title: string }[] = [];
 	const metadata = () => ({
 		id: current.id,
 		segment_id: current.segment_id,
@@ -90,27 +89,14 @@ export async function analysisRename(h: BrowserHarness) {
 		) {
 			const body = (await request.json()) as {
 				title: string;
-				expected_title: string;
 			};
 			writes.push(body);
 			check(
-				Object.keys(body).sort().join() === "expected_title,title",
-				"Rename must send only metadata and concurrency baseline",
+				Object.keys(body).join() === "title",
+				"Rename must send only the requested title",
 			);
-			if (mode === "conflict") {
-				title = "另一页面保存的名称";
-				return Response.json(
-					{ detail: "名称已被其他页面修改" },
-					{ status: 409 },
-				);
-			}
 			if (mode === "error")
 				return Response.json({ detail: "暂时保存失败" }, { status: 500 });
-			if (body.expected_title !== title && body.title !== title)
-				return Response.json(
-					{ detail: "名称已被其他页面修改" },
-					{ status: 409 },
-				);
 			title = body.title;
 			if (mode === "accepted-error")
 				return Response.json({ detail: "响应中断，请重试" }, { status: 500 });
@@ -310,9 +296,8 @@ export async function analysisRename(h: BrowserHarness) {
 		findButton("保存名称").click();
 		await saved("ガの講解");
 		check(
-			writes.at(-1)?.title === "ガの講解" &&
-				writes.at(-1)?.expected_title === originalTitle,
-			"Save must trim, NFC-normalize, and include the opening baseline",
+			writes.at(-1)?.title === "ガの講解",
+			"Save must trim and NFC-normalize the requested title",
 		);
 		check(
 			container.querySelector(".analysis-section h1")?.textContent ===
@@ -320,33 +305,13 @@ export async function analysisRename(h: BrowserHarness) {
 			"Renaming must retain the old source heading in the body",
 		);
 		await open();
-		mode = "conflict";
-		await edit("保留的冲突草稿");
+		await edit("本次明确保存的名称");
+		title = "另一操作保存的名称";
 		findButton("保存名称").click();
-		await until(
-			() => !!dialog()?.querySelector('[role="alert"]'),
-			"Conflict must be visible",
-		);
+		await saved("本次明确保存的名称");
 		check(
-			field().value === "保留的冲突草稿",
-			"Conflict must preserve the draft",
-		);
-		const beforeReload = writes.length;
-		mode = "success";
-		findButton("读取最新名称").click();
-		await until(
-			() => !!dialog()?.textContent?.includes("另一页面保存的名称"),
-			"Reload must show the latest server name",
-		);
-		check(
-			field().value === "保留的冲突草稿" && writes.length === beforeReload,
-			"Reload must preserve draft and require explicit save",
-		);
-		findButton("保存名称").click();
-		await saved("保留的冲突草稿");
-		check(
-			writes.at(-1)?.expected_title === "另一页面保存的名称",
-			"Explicit conflict retry must use the refreshed baseline",
+			writes.at(-1)?.title === "本次明确保存的名称",
+			"An opened draft must save directly after another operation changes the name",
 		);
 		for (const failure of ["error", "accepted-error"] as const) {
 			await open();
@@ -420,7 +385,7 @@ export async function analysisRename(h: BrowserHarness) {
 				container.querySelector(".analysis-list strong")?.textContent === title,
 			"Returning to the list must show the renamed title",
 		);
-		return `analysis rename: ${writes.length} metadata writes; cancel/validation/NFC/conflict/reload/retry/pending/history/cache/list/menu verified at ${innerWidth}px`;
+		return `analysis rename: ${writes.length} metadata writes; cancel/validation/NFC/ordered-save/retry/pending/history/cache/list/menu verified at ${innerWidth}px`;
 	} finally {
 		if (!preview) dispose();
 	}
