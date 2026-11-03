@@ -1,0 +1,25 @@
+docs/handovers/archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md
+  s_34ecb9ae6f6c5f::t_7adfbf154be054 1-34,36-57
+  s_34ecb9ae6f6c5f::t_000529c710071d 35
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_34ecb9ae6f6c5f::t_7adfbf154be054 3,14-15,25-26
+  s_34ecb9ae6f6c5f::t_000529c710071d 21
+docs/handovers/reading-practice/PLAN.md
+  s_34ecb9ae6f6c5f::t_7adfbf154be054 19,21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "517e875d97e605828f531424b9b2a409d79e6223",
+  "prompts": {},
+  "sessions": {
+    "s_34ecb9ae6f6c5f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a0fc-9ae0-7a02-a05d-59ec5122426d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
