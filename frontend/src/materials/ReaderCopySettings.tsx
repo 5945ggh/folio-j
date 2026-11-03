@@ -69,10 +69,12 @@ function BudgetInput({
 	label,
 	value,
 	onChange,
+	onBlur,
 }: {
 	label: string;
 	value: string;
 	onChange: (value: string) => void;
+	onBlur: () => void;
 }) {
 	const hintId = useId();
 	const valid = /^\d+$/.test(value) && Number(value) <= 100000;
@@ -91,6 +93,7 @@ function BudgetInput({
 					aria-invalid={!valid || undefined}
 					aria-describedby={!valid ? hintId : undefined}
 					onChange={(event) => onChange(event.target.value)}
+					onBlur={onBlur}
 				/>
 			</label>
 			{!valid && <small id={hintId}>请输入 0–100000 的整数。</small>}
@@ -117,6 +120,9 @@ export function ReaderCopySettings({
 				label={label}
 				value={fields[key]}
 				onChange={(value) => editor.change({ ...fields, [key]: value })}
+				onBlur={() => {
+					if (editor.dirty || editor.pending) void editor.save();
+				}}
 			/>
 		);
 	return (
@@ -127,8 +133,8 @@ export function ReaderCopySettings({
 		>
 			<ReaderSettingsReset
 				label="复制设置"
-				description="恢复复制默认值，只修改草稿，保存后生效。"
-				disabled={editor.pending || !fields}
+				description="恢复复制默认值并自动保存。"
+				disabled={!fields}
 				onReset={() => editor.resetDefaults()}
 			/>
 			<details
@@ -159,7 +165,7 @@ export function ReaderCopySettings({
 				</summary>
 				<div className="reader-settings-more">
 					<p>
-						保存后用于所有书籍，连接同一资料库的浏览器共用。关闭面板会保留未保存的修改。
+						有效设置自动保存，连接同一资料库的浏览器共用。复制使用最后成功保存的配置。
 					</p>
 					{fields && (
 						<form
@@ -168,7 +174,7 @@ export function ReaderCopySettings({
 								void editor.save();
 							}}
 						>
-							<fieldset disabled={editor.pending}>
+							<fieldset>
 								<div className="reader-copy-budget-grid">
 									{field("before_sentences", "前文句数")}
 									{field("after_sentences", "后文句数")}
@@ -185,10 +191,13 @@ export function ReaderCopySettings({
 										type="checkbox"
 										checked={fields.include_source}
 										onChange={(event) =>
-											editor.change({
-												...fields,
-												include_source: event.target.checked,
-											})
+											editor.change(
+												{
+													...fields,
+													include_source: event.target.checked,
+												},
+												true,
+											)
 										}
 									/>
 								</label>
@@ -202,7 +211,7 @@ export function ReaderCopySettings({
 								>
 									<summary>格式示例</summary>
 									<div className="reader-settings-more">
-										<p>固定样例 · 使用当前草稿</p>
+										<p>固定样例 · 使用当前输入</p>
 										{preview ? (
 											<pre>
 												{
@@ -219,24 +228,6 @@ export function ReaderCopySettings({
 										)}
 									</div>
 								</details>
-								<div className="reader-copy-actions">
-									<button
-										className="reader-copy-save"
-										type="submit"
-										disabled={
-											!editor.dirty || !editor.valid || editor.needsReload
-										}
-									>
-										{editor.saving ? "正在保存…" : "保存复制设置"}
-									</button>
-									<button
-										type="button"
-										disabled={!editor.dirty}
-										onClick={() => editor.discard()}
-									>
-										放弃修改
-									</button>
-								</div>
 							</fieldset>
 						</form>
 					)}
@@ -250,12 +241,12 @@ export function ReaderCopySettings({
 				)}
 				{editor.pending ? (
 					<p className="reader-settings-status" role="status">
-						{editor.saving ? "正在保存复制设置…" : "正在读取复制设置…"}
+						正在保存复制设置…
 					</p>
 				) : (
 					editor.dirty && (
 						<p className="reader-settings-status" role="status">
-							有未保存修改
+							编辑结束后自动保存
 						</p>
 					)
 				)}
@@ -274,26 +265,14 @@ export function ReaderCopySettings({
 						</button>
 					</div>
 				)}
-				{editor.needsReload && (
-					<div className="reader-settings-error" role="alert">
-						<p>复制设置已在其他页面更新，修改已保留。重新读取后再保存。</p>
-						<div className="reader-copy-actions">
-							<button
-								type="button"
-								disabled={editor.pending}
-								onClick={() => void editor.reload(true)}
-							>
-								重新读取并保留修改
-							</button>
-							<button
-								type="button"
-								disabled={editor.pending}
-								onClick={() => void editor.reload(false)}
-							>
-								重新读取并使用服务器设置
-							</button>
-						</div>
-					</div>
+				{editor.noticeError && (
+					<button
+						type="button"
+						disabled={editor.pending || !editor.valid}
+						onClick={() => void editor.save()}
+					>
+						重试保存复制设置
+					</button>
 				)}
 				{editor.notice && (
 					<p

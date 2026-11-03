@@ -740,11 +740,6 @@
             "title": "Before Sentences",
             "type": "integer"
           },
-          "expected_revision": {
-            "minimum": 0.0,
-            "title": "Expected Revision",
-            "type": "integer"
-          },
           "include_source": {
             "title": "Include Source",
             "type": "boolean"
@@ -755,8 +750,7 @@
           "before_sentences",
           "after_sentences",
           "before_characters",
-          "after_characters",
-          "expected_revision"
+          "after_characters"
         ],
         "title": "ContextCopySettingsUpdate",
         "type": "object"

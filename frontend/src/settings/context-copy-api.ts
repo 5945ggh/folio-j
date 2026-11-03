@@ -1,6 +1,6 @@
 import { api } from "../api/client";
 import type { components } from "../api/schema";
-import { RequestError, requireData } from "../content";
+import { requireData } from "../content";
 
 export type ContextCopySettings =
 	components["schemas"]["ContextCopySettingsResponse"];
@@ -25,7 +25,5 @@ export async function saveContextCopySettings(body: ContextCopySettingsUpdate) {
 			body,
 		},
 	);
-	if (response.status === 409)
-		throw new RequestError("复制设置已在其他页面更新。", 409);
 	return requireData(data, error, response.status);
 }

@@ -90,8 +90,6 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		status = 200;
 	let saveGate: Promise<void> | undefined,
 		releaseSave: (() => void) | undefined;
-	let materialGate: Promise<void> | undefined,
-		releaseMaterial: (() => void) | undefined;
 	const saves: Schema["ContextCopySettingsUpdate"][] = [],
 		requests: string[] = [];
 	const positions = new Map<string, Schema["ReadingPositionResponse"]>();
@@ -131,11 +129,10 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 					);
 				}
 				check(
-					update.expected_revision === stored.revision,
-					"Copy save must use current CAS revision",
+					!("expected_revision" in update),
+					"Copy save must not carry CAS metadata",
 				);
-				const { expected_revision, ...values } = update;
-				stored = { ...values, revision: expected_revision + 1 };
+				stored = { ...update, revision: stored.revision + 1 };
 				return Response.json(stored);
 			}
 		}
@@ -163,7 +160,6 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		const match = path.match(/^\/api\/materials\/([^/]+)(.*)$/),
 			id = match?.[1] ?? materialId,
 			suffix = match?.[2];
-		if (suffix === "") await materialGate;
 		if (suffix === "")
 			return Response.json({
 				id,
@@ -346,24 +342,18 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			"Copy draft must update",
 		);
 	};
-	const dirtyDialog = () =>
-		[
-			...h.container.querySelectorAll(
-				'dialog,[role="dialog"],[role="alertdialog"]',
-			),
-		].find((node) => node.textContent?.includes("保存后离开"));
-	let blockAttempt = 0;
-	const blocked = async (destination: string | number) => {
-		await go(destination);
-		await h.until(
-			() => !!dirtyDialog(),
-			`Leaving active Reader must offer three draft choices: attempt=${++blockAttempt}; target=${destination}; current=${route}`,
+	const blurBudget = async () => {
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => resolve()),
 		);
-		check(
-			route.startsWith(`/materials/${materialId}`),
-			"Navigation must remain blocked before a choice",
-		);
+		const input = field("前文句数");
+		input.focus();
+		input.blur();
 	};
+	const noCopyLeaveDialog = () =>
+		![...h.container.querySelectorAll("dialog,[role='dialog']")].some((node) =>
+			node.textContent?.includes("保存后离开"),
+		);
 	try {
 		await h.until(
 			() =>
@@ -648,46 +638,36 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		);
 		button("重置复制设置").click();
 		await h.until(
-			() => field("前文句数").value === "2",
-			"Copy reset changes draft only",
+			() => field("前文句数").value === "2" && stored.before_sentences === 2,
+			"Copy reset must automatically persist the default group",
 		);
-		check(
-			saves.length === 0 && stored.revision === 0,
-			"Copy reset must not submit",
-		);
+		const beforeInvalid = saves.length;
 		await edit("");
+		await blurBudget();
+		await new Promise((resolve) => setTimeout(resolve, 0));
 		check(
-			find<HTMLButtonElement>(
-				'button[type="submit"]',
-				find(".reader-copy-settings"),
-			).disabled,
-			"Invalid raw numeric draft must disable saving",
+			field("前文句数").getAttribute("aria-invalid") === "true" &&
+				saves.length === beforeInvalid,
+			"Empty numeric input must remain invalid without saving zero",
 		);
-		await edit("7");
 		find<HTMLElement>(":scope > summary", details("带上下文复制")).click();
 		await h.until(
 			() => !details("带上下文复制").open,
 			"Copy group must collapse",
 		);
-		// Native toggle reaches React after the synchronous open-property change.
-		await new Promise<void>((resolve) =>
-			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-		);
 		check(
-			find('[data-reader-settings-group="copy"]').textContent?.includes(
-				"未保存",
-			),
-			"Collapsed copy must expose unsaved status",
+			find('[data-reader-settings-group="copy"]').textContent?.includes("整数"),
+			"Collapsed copy group must retain invalid input feedback",
 		);
 		button("关闭阅读设置").click();
 		await h.until(
 			() =>
 				!h.container.querySelector('[role="dialog"][aria-label="阅读设置"]'),
-			"Settings must close",
+			"Settings must close without a draft confirmation",
 		);
 		check(
-			h.container.textContent?.includes("未保存"),
-			"Closed settings must retain a toolbar draft reminder",
+			noCopyLeaveDialog(),
+			"Closing copy settings must not open leave protection",
 		);
 		button("书籍信息").click();
 		await h.until(
@@ -698,17 +678,22 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		check(
 			!details("带上下文复制").open &&
 				details("更多排版").open &&
-				field("前文句数").value === "7",
-			"Closing and replacing tools must retain draft and expansion",
+				field("前文句数").value === "",
+			"Replacing tools must retain same-reader raw input and disclosure state",
 		);
 		await expand("带上下文复制");
+		await edit("7");
+		await blurBudget();
+		await h.until(
+			() => stored.before_sentences === 7,
+			"Numeric blur must save the whole valid group",
+		);
 		const body = find<HTMLElement>(
 			".reader-panel-body",
 			find('[aria-label="阅读设置"][role="dialog"]'),
 		);
 		body.scrollTop = Math.min(250, body.scrollHeight - body.clientHeight);
 		const panelScroll = body.scrollTop;
-		// Deliver the native scroll event before reduced motion unmounts the panel.
 		await new Promise<void>((resolve) =>
 			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
 		);
@@ -735,73 +720,48 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		);
 		check(
 			field("前文句数").value === "7" && details("带上下文复制").open,
-			"Chapter switch must retain copy session",
+			"Chapter switch must retain copy inputs",
 		);
-		materialGate = new Promise<void>((resolve) => {
-			releaseMaterial = resolve;
-		});
+		await edit("");
 		await go(`/materials/${materialId}/?entry=settings-test`);
 		await h.until(
-			() => route.endsWith("/?entry=settings-test"),
-			"Same-reader query/trailing slash must navigate",
-		);
-		check(
-			!dirtyDialog() && field("前文句数").value === "7",
-			"Equivalent reader route must preserve draft without guard",
-		);
-		await h.until(
-			() => !!h.container.querySelector(".reader-opening"),
-			"Controlled same-book query validation must be pending",
-		);
-		await blocked("/segments/saved/");
-		check(
-			dirtyDialog()?.getClientRects().length,
-			"Leave protection must remain visible during Reader revalidation",
-		);
-		button("继续编辑").click();
-		await h.until(() => !dirtyDialog(), "Continue must cancel navigation");
-		check(field("前文句数").value === "7", "Continue must retain draft");
-		check(
-			releaseMaterial,
-			"Controlled material validation must have a release",
-		);
-		releaseMaterial();
-		materialGate = undefined;
-		await h.until(
 			() =>
-				!h.container.querySelector(".reader-opening") &&
-				!!frame().getClientRects().length,
-			"Continuing must finish same-book validation without losing Reader state",
+				route.endsWith("/?entry=settings-test") &&
+				!h.container.querySelector(".reader-opening"),
+			"Same-reader query must validate without copy protection",
 		);
-		await blocked("/segments/saved/");
-		button("放弃并离开").click();
+		check(
+			noCopyLeaveDialog(),
+			"Same-reader validation must not expose copy draft choices",
+		);
+		await go("/segments/saved/");
 		await h.until(
 			() => !!h.container.querySelector("[data-segment-page]"),
-			"Discard must enter Segment",
+			"Invalid copy input must not block entering Segment",
+		);
+		check(
+			noCopyLeaveDialog(),
+			"Entering Segment must not ask to save or discard copy inputs",
 		);
 		const retainedFrame = frame();
 		check(
 			retainedFrame.getClientRects().length === 0,
 			"Segment must pause retained Reader",
 		);
-		await go(`/materials/${materialId}`);
+		await go(-1);
 		await h.until(
 			() => !!frame().getClientRects().length,
-			"Return must resume Reader",
+			"History POP must resume Reader without copy protection",
 		);
 		check(
 			frame() === retainedFrame,
-			"Discarded draft must preserve retained reading surface",
+			"Copy route changes must preserve retained reading surface",
 		);
 		if (!h.container.querySelector('[role="dialog"][aria-label="阅读设置"]'))
 			await open();
 		await expand("带上下文复制");
-		check(
-			field("前文句数").value === "2",
-			"Discard-and-leave must clear draft",
-		);
-		await edit("8");
-		// Both real editors participate in the same route attempt, in an explicit order.
+		await edit("");
+		// The independent Segment draft must still guard navigation.
 		await new Promise((resolve) => setTimeout(resolve, 150));
 		const selectionDoc = frame().contentDocument,
 			nativeSelection = selectionDoc?.getSelection();
@@ -840,147 +800,29 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		await go("/materials");
 		await h.until(
 			() => !!studyDialog(),
-			"Study draft must be confirmed before copy draft",
+			"Segment draft must still guard leaving Reader",
 		);
-		check(!dirtyDialog(), "Only the study confirmation may show first");
+		check(noCopyLeaveDialog(), "Only the Segment draft may guard navigation");
 		button("继续编辑", studyDialog()).click();
-		await h.until(
-			() => !studyDialog(),
-			"Cancelling study leave must keep the Reader",
-		);
+		await h.until(() => !studyDialog(), "Continuing must retain Segment draft");
 		check(
 			route.startsWith(`/materials/${materialId}`) &&
-				studyText.value === "保留する訳文" &&
-				field("前文句数").value === "8",
-			`Cancelling first participant must retain both drafts: route=${route}, study=${studyText.value}, copy=${field("前文句数").value}`,
+				studyText.value === "保留する訳文",
+			"Cancelling Segment leave must retain its text and route",
 		);
 		await go("/materials");
 		await h.until(
 			() => !!studyDialog(),
-			"A second leave must still ask about study draft",
+			"Second leave must still protect Segment draft",
 		);
 		button("放弃草稿", studyDialog()).click();
 		await h.until(
-			() => !!dirtyDialog(),
-			"After study confirmation, copy draft must still guard the same navigation",
-		);
-		button("继续编辑", dirtyDialog()).click();
-		await h.until(
-			() => !dirtyDialog(),
-			"Cancelling copy participant must cancel the route attempt",
-		);
-		check(
-			route.startsWith(`/materials/${materialId}`) &&
-				field("前文句数").value === "8",
-			"Cancelling second participant must retain copy draft and current Reader",
-		);
-		status = 503;
-		await blocked("/materials");
-		button("保存后离开").click();
-		await h.until(
-			() => !!h.container.textContent?.includes("保存失败"),
-			"Failed navigation save must report failure",
-		);
-		check(
-			route.startsWith(`/materials/${materialId}`) &&
-				field("前文句数").value === "8",
-			"Failed navigation save must retain Reader and draft",
-		);
-		if (dirtyDialog()) button("继续编辑").click();
-		status = 409;
-		stored = { ...stored, revision: stored.revision + 1 };
-		button("保存复制设置").click();
-		await h.until(
-			() => !!h.container.textContent?.includes("复制设置已在其他页面更新"),
-			"Conflict must expose recovery",
-		);
-		check(field("前文句数").value === "8", "Conflict must preserve draft");
-		button("重新读取并保留修改").click();
-		await h.until(
-			() =>
-				!find<HTMLButtonElement>(
-					'button[type="submit"]',
-					find(".reader-copy-settings"),
-				).disabled,
-			"Conflict refresh must allow saving",
-		);
-		check(
-			field("前文句数").value === "8",
-			"Revision refresh must retain draft",
-		);
-		// A save already in flight must also leave the current page intact on failure.
-		status = 503;
-		saveGate = new Promise<void>((resolve) => {
-			releaseSave = resolve;
-		});
-		const beforePendingFailure = saves.length;
-		button("保存复制设置").click();
-		await h.until(
-			() => saves.length === beforePendingFailure + 1,
-			"Pending failure must capture one submitted request",
-		);
-		await go("/materials");
-		await h.until(
-			() => !!dirtyDialog(),
-			"Pending failure navigation must wait",
-		);
-		check(releaseSave, "Pending failure must have a controlled response");
-		releaseSave();
-		saveGate = undefined;
-		await h.until(
-			() => !!h.container.textContent?.includes("保存失败"),
-			"Pending save failure must surface without leaving",
-		);
-		check(
-			route.startsWith(`/materials/${materialId}`) &&
-				field("前文句数").value === "8" &&
-				saves.length === beforePendingFailure + 1,
-			"Failed pending save must keep page/draft and avoid a second request",
-		);
-		button("继续编辑").click();
-		await h.until(
-			() => !dirtyDialog(),
-			"Pending failure must allow editing again",
-		);
-		find<HTMLElement>(":scope > summary", details("带上下文复制")).click();
-		check(
-			find('[data-reader-settings-group="copy"]').textContent?.includes(
-				"保存失败",
-			),
-			"Save error must remain discoverable when copy group is collapsed",
-		);
-		await expand("带上下文复制");
-		saveGate = new Promise<void>((resolve) => {
-			releaseSave = resolve;
-		});
-		const beforePending = saves.length;
-		button("保存复制设置").click();
-		await h.until(
-			() => saves.length === beforePending + 1,
-			"Fixture must capture pending request",
-		);
-		await go("/materials");
-		await new Promise<void>((resolve) =>
-			requestAnimationFrame(() => resolve()),
-		);
-		check(
-			route.startsWith(`/materials/${materialId}`),
-			"Pending save must delay route commit",
-		);
-		await h.until(
-			() => !!dirtyDialog(),
-			"Pending save must expose its waiting navigation dialog",
-		);
-		check(releaseSave, "Fixture must release pending response");
-		releaseSave();
-		saveGate = undefined;
-		await h.until(
 			() => route === "/materials",
-			"Successful pending request must finish queued navigation",
+			"Discarding Segment draft must leave directly without copy confirmation",
 		);
 		check(
-			saves.length === beforePending + 1 && stored.before_sentences === 8,
-			"Navigation must await same pending request without resubmission",
+			noCopyLeaveDialog(),
+			"Copy inputs must not add a second leave participant",
 		);
 		await go(`/materials/${materialId}`);
 		await h.until(
@@ -988,33 +830,156 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 				!!h.container
 					.querySelector<HTMLIFrameElement>("iframe.material-part")
 					?.contentDocument?.querySelector("[data-locator-leaf]"),
-			"Reader must reopen after save",
+			"Reader must reopen for automatic saves",
 		);
 		await open();
 		await expand("带上下文复制");
-		await edit("9");
-		await blocked(-1);
-		button("继续编辑").click();
+		saveGate = new Promise<void>((resolve) => {
+			releaseSave = resolve;
+		});
+		const beforePending = saves.length;
+		await edit("8");
+		await blurBudget();
 		await h.until(
-			() => !dirtyDialog(),
-			"History back cancellation must retain Reader",
-		);
-		await blocked("/materials/other");
-		button("保存后离开").click();
-		await h.until(
-			() => route === "/materials/other",
-			"Save-and-leave must switch books",
+			() => saves.length === beforePending + 1,
+			"Automatic blur save must enter controlled request",
 		);
 		check(
-			Number(stored.before_sentences) === 9,
-			"Save-and-leave must commit group",
+			!field("前文句数").disabled,
+			"Saving must leave numeric inputs editable",
 		);
+		await edit("9");
+		check(releaseSave, "Pending save must have a controlled completion");
+		releaseSave();
+		saveGate = undefined;
+		await h.until(
+			() =>
+				stored.before_sentences === 8 &&
+				!h.container.textContent?.includes("正在保存复制设置"),
+			"First save must finish without submitting unblurred newer input",
+		);
+		check(
+			field("前文句数").value === "9" && saves.length === beforePending + 1,
+			"Old save receipt must not erase newer typed input or save it before blur",
+		);
+		await blurBudget();
+		await h.until(
+			() => stored.before_sentences === 9,
+			"New numeric input must save on its own blur",
+		);
+		// Returning to the old baseline while B is pending is still a newer input intent.
+		const oldBaseline = String(stored.before_sentences);
+		saveGate = new Promise<void>((resolve) => {
+			releaseSave = resolve;
+		});
+		const beforeBaselineReturn = saves.length;
+		await edit("13");
+		await blurBudget();
+		await h.until(
+			() => saves.length === beforeBaselineReturn + 1,
+			"Baseline-return test must capture submitted B",
+		);
+		await edit(oldBaseline);
+		check(
+			releaseSave,
+			"Baseline-return request must have a controlled completion",
+		);
+		releaseSave();
+		saveGate = undefined;
+		await h.until(
+			() =>
+				stored.before_sentences === 13 &&
+				!h.container.textContent?.includes("正在保存复制设置"),
+			"B must finish while the newer A input remains unsubmitted",
+		);
+		check(
+			field("前文句数").value === oldBaseline &&
+				saves.length === beforeBaselineReturn + 1,
+			"B's receipt and query refresh must preserve unblurred input returned to the old baseline A",
+		);
+		await blurBudget();
+		await h.until(
+			() =>
+				stored.before_sentences === Number(oldBaseline) &&
+				saves.length === beforeBaselineReturn + 2,
+			"A must persist only when its newer input is blurred",
+		);
+		status = 503;
+		await edit("10");
+		await blurBudget();
+		await h.until(
+			() => !!h.container.textContent?.includes("保存失败"),
+			"Automatic save failure must remain visible",
+		);
+		check(
+			field("前文句数").value === "10",
+			"Failure must preserve editable input",
+		);
+		find<HTMLElement>(":scope > summary", details("带上下文复制")).click();
+		check(
+			find('[data-reader-settings-group="copy"]').textContent?.includes(
+				"保存失败",
+			),
+			"Collapsed group must keep save failure discoverable",
+		);
+		await expand("带上下文复制");
+		button("重试保存复制设置").click();
+		await h.until(
+			() => stored.before_sentences === 10,
+			"Retry must save retained current inputs",
+		);
+		// A submitted write belongs to the window queue and must survive its Reader leaving.
+		saveGate = new Promise<void>((resolve) => {
+			releaseSave = resolve;
+		});
+		const beforeLeaving = saves.length;
+		await edit("11");
+		await blurBudget();
+		await h.until(
+			() => saves.length === beforeLeaving + 1,
+			"Leaving test must capture a pending PUT",
+		);
+		await go("/materials");
+		await h.until(
+			() => route === "/materials",
+			"Pending copy save must not delay navigation",
+		);
+		check(noCopyLeaveDialog(), "Pending copy save must not open leave choices");
+		await go("/materials/other");
 		await h.until(
 			() =>
 				!!h.container
 					.querySelector<HTMLIFrameElement>("iframe.material-part")
 					?.contentDocument?.querySelector("[data-locator-leaf]"),
-			"Other book must load",
+			"Other book must open while original save is pending",
+		);
+		await open();
+		await expand("带上下文复制");
+		await edit("12");
+		await blurBudget();
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => resolve()),
+		);
+		check(
+			saves.length === beforeLeaving + 1,
+			"Another Reader must share the window's serial save queue",
+		);
+		check(releaseSave, "Departed Reader request must still be releasable");
+		releaseSave();
+		saveGate = undefined;
+		await h.until(
+			() =>
+				stored.before_sentences === 12 && saves.length === beforeLeaving + 2,
+			"Departed PUT must finish before the next Reader's queued save",
+		);
+		check(
+			saves[beforeLeaving]?.before_sentences === 11 &&
+				saves[beforeLeaving + 1]?.before_sentences === 12,
+			"Window queue must persist writes in submission order",
+		);
+		check(
+			field("前文句数").value === "12",
+			"Late prior Reader receipt must not overwrite current Reader input",
 		);
 		if (!vertical) {
 			await h.until(
@@ -1046,7 +1011,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			() => route === "/settings/appearance",
 			"Retired Reader draft must not block unrelated settings",
 		);
-		return `reader settings: ${innerWidth}px/${vertical ? "vertical" : "horizontal"}/${dark ? "dark" : "light"}; real ReaderSessionHost + DataRouter; 17 panel controls and toolbar focus, shared popover opacity, collapsed focus, isolated resets/source position; panel/tool/chapter/scroll draft retention; PUSH/POP/Segment/book guard, continue/discard/save, failure/conflict, pending exactly-once; ${requests.length} mocked requests`;
+		return `reader settings: ${innerWidth}px/${vertical ? "vertical" : "horizontal"}/${dark ? "dark" : "light"}; real ReaderSessionHost + DataRouter; 17 panel controls and toolbar focus, shared popover opacity, collapsed focus, isolated resets/source position; panel/tool/chapter/scroll input retention; blur/reset autosave, invalid inputs, editable pending receipts, Segment-only guard, unblocked routes and shared serial PUTs surviving departure; ${requests.length} mocked requests`;
 	} finally {
 		if (!preview) dispose();
 	}

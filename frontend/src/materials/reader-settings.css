@@ -244,24 +244,6 @@
 .reader-settings .reader-settings-error > p {
 	margin: 8px 0;
 }
-.reader-copy-leave-actions {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 20px;
-}
-.reader-copy-leave .reader-copy-leave-actions > button {
-	border-color: var(--reader-line);
-}
-.reader-copy-leave-actions > button.primary {
-	background: var(--reader-fg);
-	color: var(--reader-bg);
-	border-color: var(--reader-fg);
-}
-.reader-copy-leave-actions > button.primary:hover {
-	background: var(--reader-action-solid-hover);
-}
 .reader-r1 .reader-settings-trigger {
 	position: relative;
 }
@@ -283,9 +265,6 @@
 	}
 	.reader-settings .reader-field {
 		gap: 8px;
-	}
-	.reader-copy-leave .reader-copy-leave-actions > button {
-		flex: 1 1 auto;
 	}
 }
 

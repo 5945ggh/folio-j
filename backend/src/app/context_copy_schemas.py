@@ -20,7 +20,7 @@ class ContextCopySettingsResponse(ContextCopyBudget):
 
 
 class ContextCopySettingsUpdate(ContextCopyBudget):
-    expected_revision: int = Field(ge=0, strict=True)
+    pass
 
 
 DEFAULT_CONTEXT_COPY = ContextCopySettingsResponse(

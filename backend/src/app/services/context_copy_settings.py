@@ -1,6 +1,5 @@
-"""Read defaults and serialize compare-and-swap writes for this settings group."""
+"""Read defaults and serialize complete settings writes in transaction order."""
 
-from fastapi import HTTPException
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,15 +28,7 @@ async def save_settings(
         await session.execute(text("BEGIN IMMEDIATE"))
         row = await session.get(ContextCopyPreferences, 1)
         current = response(row)
-        if data.expected_revision != current.revision:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "settings_conflict",
-                    "message": "带上下文复制设置已更新，请读取最新配置后重试。",
-                },
-            )
-        values = data.model_dump(exclude={"expected_revision"})
+        values = data.model_dump()
         if row is None:
             row = ContextCopyPreferences(id=1, revision=current.revision + 1, **values)
             session.add(row)

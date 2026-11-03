@@ -1710,8 +1710,6 @@ export interface components {
             before_characters: number;
             /** Before Sentences */
             before_sentences: number;
-            /** Expected Revision */
-            expected_revision: number;
             /** Include Source */
             include_source: boolean;
         };

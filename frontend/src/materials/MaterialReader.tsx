@@ -107,7 +107,6 @@ import {
 import { ReaderBookmarkNotice, useReaderBookmarks } from "./ReaderBookmarks";
 import { ContextCopyFeedback, useReaderContextCopy } from "./ReaderContextCopy";
 import { ReaderIcon, ReaderPanel, ReaderSettings } from "./ReaderControls";
-import { ReaderCopyLeaveGuard } from "./ReaderCopyLeaveGuard";
 import { type DictionaryControl, ReaderDictionary } from "./ReaderDictionary";
 import { ReaderLeaveProvider } from "./ReaderLeaveProvider";
 import {
@@ -206,7 +205,6 @@ function Reader({
 	discard,
 	positionWriter,
 	copyEditor,
-	copyEditRequest,
 	onThemeChange,
 }: {
 	book: Material;
@@ -215,7 +213,6 @@ function Reader({
 	discard: { current: boolean };
 	positionWriter: ReaderPositionWriter;
 	copyEditor: ReaderCopyEditor;
-	copyEditRequest: number;
 	onThemeChange: (theme: "white" | "black") => void;
 	initialOrigin: SegmentProvenance | null;
 	initialVocabulary: VocabularyReaderTarget | null;
@@ -416,7 +413,9 @@ function Reader({
 	const settingsScrollTop = useRef(0);
 	const copyEditorStatus = copyEditor.pending
 		? "处理中"
-		: copyEditor.needsReload || copyEditor.noticeError || copySettings.isError
+		: copyEditor.noticeError ||
+				copySettings.isError ||
+				(!!copyEditor.fields && !copyEditor.valid)
 			? "待处理"
 			: copyEditor.dirty
 				? "未保存"
@@ -1809,14 +1808,6 @@ function Reader({
 		);
 	};
 	const renderToken = generation;
-	const handledCopyEdit = useRef(0);
-	useEffect(() => {
-		if (!active || copyEditRequest === handledCopyEdit.current) return;
-		handledCopyEdit.current = copyEditRequest;
-		setSettingsExpanded((previous) => ({ ...previous, copy: true }));
-		selectPanel("settings");
-		controller.current?.show();
-	}, [active, copyEditRequest, selectPanel]);
 	const activateReaderTool = (target: Element) => {
 		if (target.closest(".dict-deck, .dict-config, .dict-trigger")) {
 			setRightToolInFront(false);
@@ -2836,7 +2827,6 @@ function Reader({
 function MaterialOpening({ id, location }: { id: string; location: Location }) {
 	const host = useViewActivity();
 	const copyEditor = useReaderCopyEditor(host.active);
-	const [copyEditRequest, setCopyEditRequest] = useState(0);
 	const [dialogHost, setDialogHost] = useState<HTMLDivElement | null>(null);
 	const [dialogTheme, setDialogTheme] = useState(() =>
 		resolveReaderTheme(
@@ -3030,11 +3020,6 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 				data-theme={dialogTheme}
 				ref={setDialogHost}
 			/>
-			<ReaderCopyLeaveGuard
-				editor={copyEditor}
-				materialId={id}
-				onContinueEditing={() => setCopyEditRequest((value) => value + 1)}
-			/>
 			{session && (
 				<ViewActivityProvider
 					value={{ active: ready, activation: session.activation }}
@@ -3047,7 +3032,6 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 						<Reader
 							key={`${readerSessionIdentity({ materialId: id, versionId: session.book.version_id, generationId: session.summary.generation_id })}:${session.serial}`}
 							copyEditor={copyEditor}
-							copyEditRequest={copyEditRequest}
 							onThemeChange={setDialogTheme}
 							book={session.book}
 							returnTo={back}

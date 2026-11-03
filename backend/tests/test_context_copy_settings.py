@@ -25,7 +25,7 @@ BUDGET_FIELDS = ("before_sentences", "after_sentences", "before_characters", "af
 
 def update(**changes: Any) -> dict[str, Any]:
     values = {key: value for key, value in DEFAULTS.items() if key != "revision"}
-    return {**values, "expected_revision": 0, **changes}
+    return {**values, **changes}
 
 
 def old_content(database: Path) -> dict[str, list[tuple[Any, ...]]]:
@@ -64,14 +64,18 @@ async def test_default_roundtrip_restart_and_independent_save(tmp_path: Path) ->
         )
         saved = await client.put(URL, json=payload)
         assert saved.status_code == 200, saved.text
-        expected = {key: value for key, value in payload.items() if key != "expected_revision"}
+        expected = payload
         assert saved.json() == {**expected, "revision": 1}
         assert old_content(database) == before
         assert (await client.get("/api/settings")).json() == general
         assert (await client.get(f"/api/segments/{segment.json()['id']}")).json()[
             "context_before"
         ] == "保存された前文"
-        assert (await client.put(URL, json=payload)).status_code == 409
+        repeated = await client.put(URL, json=payload)
+        assert repeated.status_code == 200, repeated.text
+        assert repeated.json() == {**expected, "revision": 2}
+        assert old_content(database) == before
+        saved = repeated
         assert (await client.get(URL)).json() == saved.json()
         changed_general = await client.patch(
             "/api/settings", json={"profile": {**general["profile"], "level_note": "別の設定"}}
@@ -80,9 +84,9 @@ async def test_default_roundtrip_restart_and_independent_save(tmp_path: Path) ->
         assert (await client.get(URL)).json() == saved.json()
     async with api_client(database) as client:
         assert (await client.get(URL)).json() == saved.json()
-        second = await client.put(URL, json=update(expected_revision=1))
+        second = await client.put(URL, json=update())
         assert second.status_code == 200, second.text
-        assert second.json() == {**DEFAULTS, "revision": 2}
+        assert second.json() == {**DEFAULTS, "revision": 3}
 
 
 @pytest.mark.parametrize("field", BUDGET_FIELDS)
@@ -99,10 +103,8 @@ def test_budgets_are_bounded_strict_nonnegative_integers(field: str, value: Any)
         {"include_source": "true"},
         {"include_source": 1},
         {"include_source": None},
-        {"expected_revision": -1},
-        {"expected_revision": True},
-        {"expected_revision": "0"},
-        {"expected_revision": 0.5},
+        {"expected_revision": 0},
+        {"revision": 1},
         {"extra": "ignored"},
     ],
 )
@@ -118,17 +120,18 @@ async def test_invalid_api_updates_preserve_saved_settings_and_revision(tmp_path
         payload = update(include_source=False, before_sentences=7, after_characters=91)
         saved = await client.put(URL, json=payload)
         assert saved.status_code == 200, saved.text
-        expected = {key: value for key, value in payload.items() if key != "expected_revision"}
+        expected = payload
         assert saved.json() == {**expected, "revision": 1}
         for field, value in (
             ("include_source", "false"),
             ("before_sentences", True),
             ("before_sentences", -1),
             ("before_sentences", 100001),
-            ("expected_revision", "1"),
+            ("expected_revision", 1),
+            ("revision", 2),
             ("extra", "ignored"),
         ):
-            invalid = {**payload, "expected_revision": 1, field: value}
+            invalid = {**payload, field: value}
             result = await client.put(URL, json=invalid)
             assert result.status_code == 422, result.text
             assert (await client.get(URL)).json() == saved.json()
@@ -138,21 +141,26 @@ async def test_invalid_api_updates_preserve_saved_settings_and_revision(tmp_path
 async def test_put_requires_complete_group_and_serializes_first_write(tmp_path: Path) -> None:
     database = tmp_path / "concurrent.db"
     async with api_client(database) as client:
-        assert (
-            await client.put(URL, json={"include_source": False, "expected_revision": 0})
-        ).status_code == 422
+        assert (await client.put(URL, json={"include_source": False})).status_code == 422
         first, second = await asyncio.gather(
-            client.put(URL, json=update(before_sentences=1)),
-            client.put(URL, json=update(before_sentences=2)),
+            client.put(
+                URL, json=update(before_sentences=1, after_sentences=11, include_source=False)
+            ),
+            client.put(URL, json=update(before_sentences=2, after_sentences=22)),
         )
-        assert sorted((first.status_code, second.status_code)) == [200, 409]
-        winner = first if first.status_code == 200 else second
-        loser = second if second.status_code == 409 else first
-        assert loser.json()["detail"]["code"] == "settings_conflict"
-        assert (await client.get(URL)).json() == winner.json()
-        retry = await client.put(URL, json=update(before_sentences=9, expected_revision=1))
-        assert retry.status_code == 200, retry.text
-        assert retry.json()["before_sentences"] == 9 and retry.json()["revision"] == 2
+        assert first.status_code == second.status_code == 200
+        assert sorted((first.json()["revision"], second.json()["revision"])) == [1, 2]
+        later = max((first.json(), second.json()), key=lambda value: value["revision"])
+        assert (await client.get(URL)).json() == later
+        assert (
+            first.json()["before_sentences"],
+            first.json()["after_sentences"],
+            first.json()["include_source"],
+        ) == (1, 11, False)
+        assert (second.json()["before_sentences"], second.json()["after_sentences"]) == (2, 22)
+        saved = await client.put(URL, json=update(before_sentences=9))
+        assert saved.status_code == 200, saved.text
+        assert saved.json()["before_sentences"] == 9 and saved.json()["revision"] == 3
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT count(*) FROM context_copy_settings").fetchone() == (1,)
         for table in ("runs", "chat_threads", "chat_jobs"):
@@ -168,13 +176,13 @@ async def test_existing_revision_writes_serialize_and_other_context_settings_sta
         segment_defaults = (await client.get("/api/settings/segment-context")).json()
         assert (await client.put(URL, json=update())).status_code == 200
         first, second = await asyncio.gather(
-            client.put(URL, json=update(before_characters=123, expected_revision=1)),
-            client.put(URL, json=update(before_characters=456, expected_revision=1)),
+            client.put(URL, json=update(before_characters=123)),
+            client.put(URL, json=update(before_characters=456)),
         )
-        assert sorted((first.status_code, second.status_code)) == [200, 409]
-        winner = first if first.status_code == 200 else second
-        assert winner.json()["revision"] == 2
-        assert (await client.get(URL)).json() == winner.json()
+        assert first.status_code == second.status_code == 200
+        assert sorted((first.json()["revision"], second.json()["revision"])) == [2, 3]
+        later = max((first.json(), second.json()), key=lambda value: value["revision"])
+        assert (await client.get(URL)).json() == later
         assert (await client.get("/api/settings/segment-context")).json() == segment_defaults
 
 

@@ -77,34 +77,6 @@
 	margin: 0;
 	background: var(--reader-soft);
 }
-.reader-copy-actions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	margin-block: 16px 0;
-}
-.reader-copy-actions button {
-	border: 1px solid var(--reader-line);
-	border-radius: 6px;
-	padding: 8px 10px;
-	color: var(--reader-fg);
-	background: var(--reader-bg);
-	font: inherit;
-	font-size: 12px;
-	cursor: pointer;
-}
-.reader-copy-actions .reader-copy-save {
-	background: var(--reader-fg);
-	color: var(--reader-bg);
-	border-color: var(--reader-fg);
-}
-.reader-copy-actions .reader-copy-save:hover:not(:disabled) {
-	background: var(--reader-action-solid-hover);
-}
-.reader-copy-actions button:disabled {
-	opacity: 0.5;
-	cursor: default;
-}
 .reader-copy-settings-feedback:empty {
 	display: none;
 }

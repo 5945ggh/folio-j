@@ -122,11 +122,10 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 				return Response.json({ detail: "Settings save rejected" }, { status });
 			}
 			check(
-				update.expected_revision === stored.revision,
-				"Save must use the latest read database revision",
+				!("expected_revision" in update),
+				"Copy settings must not submit a revision condition",
 			);
-			const { expected_revision, ...preferences } = update;
-			stored = { ...preferences, revision: expected_revision + 1 };
+			stored = { ...update, revision: stored.revision + 1 };
 			return Response.json(stored);
 		}
 		if (request.method !== "GET") {
@@ -495,104 +494,100 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 				"Character budgets must be visible beside sentence budgets without another disclosure",
 			);
 		}
+		const blur = async (input: HTMLInputElement) => {
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => resolve()),
+			);
+			input.focus();
+			input.blur();
+		};
 		const beforeInput = findInput("前文句数");
 		h.inputValue(beforeInput, "");
 		await h.until(
 			() => beforeInput.getAttribute("aria-invalid") === "true",
-			"Empty numeric draft must be visibly invalid",
+			"Empty numeric input must be visibly invalid",
 		);
-		const beforeInvalidSave = settingsWrites.length;
-		beforeInput.dispatchEvent(
-			new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
-		);
-		await new Promise((resolve) => setTimeout(resolve, 0));
-		check(
-			beforeInput.value === "" && settingsWrites.length === beforeInvalidSave,
-			"Invalid empty draft must remain editable and never save as zero",
-		);
-		for (const [label, value] of [
-			["前文句数", "0"],
-			["后文句数", "1"],
-		]) {
-			check(label && value, "Budget fixture must have label and value");
-			h.inputValue(findInput(label), value);
-			await new Promise((resolve) => setTimeout(resolve, 0));
-		}
+		await blur(beforeInput);
 		findInput("附带出处").click();
 		await h.until(
 			() => !findInput("附带出处").checked,
-			"Source draft must update",
+			"Toggle must remain editable while a numeric field is invalid",
+		);
+		h.inputValue(findInput("后文句数"), "1");
+		await blur(findInput("后文句数"));
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		check(
+			beforeInput.value === "" && settingsWrites.length === 0,
+			"Invalid whole group must not save zero or merge older valid numbers",
+		);
+		h.inputValue(beforeInput, "0");
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		check(settingsWrites.length === 0, "Numeric typing must wait for blur");
+		nextSaveStatus = 500;
+		await blur(beforeInput);
+		await h.until(
+			() => !!h.container.textContent?.includes("保存失败，修改已保留"),
+			"Failed automatic save must retain inputs and expose retry",
 		);
 		check(
-			settingsWrites.length === 0,
-			"Editing preferences must not auto-save",
+			findInput("前文句数").value === "0" &&
+				findInput("后文句数").value === "1" &&
+				!findInput("附带出处").checked &&
+				stored.revision === 0,
+			"Failed save must retain the complete edited group without changing persistence",
 		);
 		await select();
 		button("带上下文复制").click();
 		check(
 			copies.at(-1) === defaultCopy,
-			"Unsaved drafts must not change copying",
+			"Copying must still use saved settings after failure",
 		);
-		nextSaveStatus = 500;
-		button("保存复制设置").click();
-		await h.until(
-			() => !!h.container.textContent?.includes("保存失败，修改已保留"),
-			"Failed save must report retained draft",
-		);
-		check(
-			findInput("前文句数").value === "0" &&
-				findInput("后文句数").value === "1" &&
-				!findInput("附带出处").checked,
-			"Failed save must retain all draft fields",
-		);
-		check(stored.revision === 0, "Failed save must not change database state");
-		stored = { ...defaultContextCopySettings, revision: 1 };
-		nextSaveStatus = 409;
-		button("保存复制设置").click();
-		await h.until(
-			() => !!h.container.textContent?.includes("复制设置已在其他页面更新"),
-			"Conflict must explain the need to read again",
-		);
-		check(findInput("后文句数").value === "1", "Conflict must retain draft");
-		button("重新读取并保留修改").click();
+		button("重试保存复制设置").click();
 		await h.until(
 			() =>
-				readCount >= 2 &&
-				!h.container.textContent?.includes("重新读取后再保存"),
-			"Conflict recovery must refresh revision without discarding draft",
-		);
-		check(
-			findInput("前文句数").value === "0" &&
-				findInput("后文句数").value === "1",
-			"Reload must retain chosen draft",
-		);
-		button("保存复制设置").click();
-		await h.until(
-			() =>
-				stored.revision === 2 &&
-				!!h.container.textContent?.includes("复制设置已保存"),
-			"Explicit save must commit all preferences using refreshed revision",
-		);
-		check(
-			stored.before_sentences === 0 &&
+				stored.before_sentences === 0 &&
 				stored.after_sentences === 1 &&
 				!stored.include_source,
-			"Database must store the complete configured preference set",
+			"Retry must persist the complete current group without revision reloading",
+		);
+		await h.until(
+			() => !!h.container.textContent?.includes("复制设置已自动保存"),
+			"Successful automatic save must be visible",
+		);
+		check(
+			!h.container.textContent?.includes("重新读取并保留修改") &&
+				![...h.container.querySelectorAll("button")].some(
+					(node) => node.textContent?.trim() === "保存复制设置",
+				),
+			"Copy settings must have no explicit save or conflict reload flow",
 		);
 		button("重置复制设置").click();
 		await h.until(
 			() =>
-				findInput("前文句数").value === "2" &&
-				findInput("后文句数").value === "2" &&
+				stored.before_sentences === 2 &&
+				stored.after_sentences === 2 &&
+				stored.include_source &&
 				findInput("前文字符上限").value === "100" &&
 				findInput("后文字符上限").value === "100",
-			"Restore defaults must update draft",
+			"Reset must immediately persist defaults",
 		);
-		check(
-			stored.before_sentences === 0 &&
-				stored.revision === 2 &&
-				Number(settingsWrites.length) === 3,
-			"Restore defaults must wait for explicit save",
+		// Reapply a nondefault saved group for the clipboard/remount assertions below.
+		h.inputValue(findInput("前文句数"), "0");
+		await blur(findInput("前文句数"));
+		await h.until(
+			() => stored.before_sentences === 0,
+			"Before budget must save on blur",
+		);
+		h.inputValue(findInput("后文句数"), "1");
+		await blur(findInput("后文句数"));
+		await h.until(
+			() => stored.after_sentences === 1,
+			"After budget must save on blur",
+		);
+		findInput("附带出处").click();
+		await h.until(
+			() => !stored.include_source,
+			"Valid toggle must save immediately",
 		);
 		check(
 			localStorage.getItem(preferenceKey) === legacyPreferences,
@@ -715,7 +710,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			),
 			"Copy must only permit normal reader lifecycle writes",
 		);
-		return `context copy: ${direction}/${window.innerWidth}px; real MaterialReader + native iframe selection; defaults/ruby/ordinary copy, database save/remount, ignored legacy storage, delayed/failed reads, failed/conflicting saves with retained drafts, defaults draft, denied/manual clipboard, stale selection/unmount callbacks, toolbar bounds; clipboard API substitute (not system clipboard); lifecycle writes ${writes.length}`;
+		return `context copy: ${direction}/${window.innerWidth}px; real MaterialReader + native iframe selection; defaults/ruby/ordinary copy, database save/remount, ignored legacy storage, delayed/failed reads, automatic blur/toggle/reset saves, invalid whole groups, failed saves with retained inputs and retry, denied/manual clipboard, stale selection/unmount callbacks, toolbar bounds; clipboard API substitute (not system clipboard); lifecycle writes ${writes.length}`;
 	} finally {
 		if (!preview) dispose?.();
 		if (clipboardDescriptor)

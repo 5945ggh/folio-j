@@ -85,7 +85,7 @@ Source、Segment、Material、Analysis 等独立记录使用 ULID 身份；Profi
 | 讲解预设（`Style`） | `name`、`body_md` | 命名预设，默认选择由 `Defaults.style_id` 维护 |
 | `Defaults` | 三种用途的模型 ID、`style_id`、`permission_mode` | 新操作与新线程采用的默认设置 |
 | `SegmentContextSettings` | enabled、两侧句数／字符上限、revision | 独立单例，版本条件保存；读取缺省不写库 |
-| `ContextCopySettings` | include_source、两侧句数／字符上限、revision | 独立复制偏好单例，版本条件保存；读取缺省不写库 |
+| `ContextCopySettings` | include_source、两侧句数／字符上限、revision | 独立复制偏好单例，完整配置后写生效；revision 用于缓存排序，读取缺省不写库 |
 | `SegmentMaterialProvenance` | segment_id、material_id、version_id、范围 payload、请求身份及请求依据 | 一对一精确出处与创建凭据，材料删除后保留 |
 | `Source` | `title`、`note`、来源描述 | 用户声明的来源范围；未来可容纳不同形式的输入，不等于文件或 Collection |
 | `Segment` | `source_id`、`text`、译文、语境、备注、听写、`source_ref`、`text_locked_at` | 学习目标原文入库做 NFC；`source_ref` 为自由文本出处，精确材料出处经独立关系保存；片段分词数据待后续接入 |
