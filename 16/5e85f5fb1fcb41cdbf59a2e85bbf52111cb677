@@ -1,0 +1,79 @@
+docs/USAGE.md
+  s_0729549b8cb9f2::t_e2c1118bdfc695 39-40,63
+  s_0729549b8cb9f2::t_44077178e5d6f2 41-42
+frontend/src/materials/dictionary.css
+  s_0729549b8cb9f2::t_5d01278628dc83 273,277-278,283-284,289-296
+  s_0729549b8cb9f2::t_5d5cec1d043dff 24-26,259-262,264-269
+  s_0729549b8cb9f2::t_51791c43b3638b 263,270-271,275-276,279-282,285,287,297-316
+frontend/src/materials/MaterialReader.tsx
+  s_0729549b8cb9f2::t_87eb5197e007b0 2270-2273
+  s_0729549b8cb9f2::t_5d5cec1d043dff 2264-2269
+frontend/src/materials/DictionaryCards.tsx
+  s_0729549b8cb9f2::t_e7a59562d0e748 28-31
+docs/INFORMATION_ARCHITECTURE.md
+  s_0729549b8cb9f2::t_e2c1118bdfc695 138,295,297
+  s_0729549b8cb9f2::t_44077178e5d6f2 296
+docs/handovers/reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md
+  s_0729549b8cb9f2::t_2106471b946734 19-22,24-26,29
+  s_0729549b8cb9f2::t_680ab82ef21a89 23,27-28
+  s_0729549b8cb9f2::t_b9a7efd899fe5c 3
+  s_0729549b8cb9f2::t_b91f9970ce5c19 1-2,4-18,30-42
+  s_0729549b8cb9f2::t_9ac57020adcdc3 49-52
+  s_0729549b8cb9f2::t_a53989db1054e3 43-48
+backend/tests/test_dictionary_lookup.py
+  s_0729549b8cb9f2::t_c7afdaa28e478e 740
+  s_0729549b8cb9f2::t_2e9a5a8b20281c 586-628,639-737,739,741-744,746,748-769,774-780
+  s_0729549b8cb9f2::t_66510e07a4cde7 738,745,747
+  s_0729549b8cb9f2::t_efb14b3b821334 781-789
+  s_0729549b8cb9f2::t_bb8c19b5c49e4d 391-394,406-407,629-638,770-773
+frontend/src/materials/preferences.ts
+  s_0729549b8cb9f2::t_5d5cec1d043dff 10-11,87-92
+frontend/src/materials/ReaderDictionary.tsx
+  s_0729549b8cb9f2::t_b0388657f33937 406,432,436,464
+  s_0729549b8cb9f2::t_bf542cd26b436a 407-418,422-423,433,437-450,454-455,465
+  s_0729549b8cb9f2::t_5d5cec1d043dff 7,52-55,69-72,87,89,112,117-121,189-195,225,232-233,405,419-421,424-431,451-453,456-463,468-469
+  s_0729549b8cb9f2::t_87eb5197e007b0 224,434-435,466-467
+  s_0729549b8cb9f2::t_eded5662b2159c 88,113-116
+docs/ARCHITECTURE.md
+  s_0729549b8cb9f2::t_44077178e5d6f2 239-240
+frontend/src/materials/preferences.test.ts
+  s_0729549b8cb9f2::t_e61352c2b63fea 233-237,241-242,247-249,267-268,273-276
+  s_0729549b8cb9f2::t_87eb5197e007b0 238-240,243-246,250-266,269-272
+frontend/scripts/test-browser.mjs
+  s_0729549b8cb9f2::t_e61352c2b63fea 84-85
+  s_0729549b8cb9f2::t_92a0fc76625cf0 83
+frontend/src/api/schema.d.ts
+  s_0729549b8cb9f2::t_998ed7ad050b7e 1824-1833
+frontend/browser-tests/reader-dictionary.tsx
+  s_0729549b8cb9f2::t_9a2c25e6cd4394 409,649,813,847,851
+  s_0729549b8cb9f2::t_92a0fc76625cf0 13-14,643,656-664,1641-1656,1658-1671,1913
+  s_0729549b8cb9f2::t_e61352c2b63fea 618,626-627,644-646,651,665,1535-1537,1542,1547-1548,1565-1566,1577-1581,1591,1615-1618,1623,1629-1631,1672,1677,1682,1687-1688
+  s_0729549b8cb9f2::t_c29e854797e3ae 632-642,648,666-668,815-830,833,839,842,1869-1878
+  s_0729549b8cb9f2::t_87eb5197e007b0 186-190,619-625,629-630,647,650,652-655,687-690,862-865,1538-1541,1543-1546,1549-1564,1567-1576,1582-1590,1592-1614,1619-1622,1624-1628,1632-1640,1657,1673-1676,1678-1681,1683-1686
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_0729549b8cb9f2::t_b9a7efd899fe5c 3,16
+docs/PRD.md
+  s_0729549b8cb9f2::t_44077178e5d6f2 194-195
+backend/openapi.json
+  s_0729549b8cb9f2::t_998ed7ad050b7e 1145-1154
+backend/src/app/services/dictionary_lookup.py
+  s_0729549b8cb9f2::t_4360964eeb25f8 161,331-333,335-337,339,344,356,379-381,384,386,467-469
+backend/src/app/dictionary_schemas.py
+  s_0729549b8cb9f2::t_4360964eeb25f8 97-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "165e85f5fb1fcb41cdbf59a2e85bbf52111cb677",
+  "prompts": {},
+  "sessions": {
+    "s_0729549b8cb9f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a0de-7823-7920-b293-ec148b433204",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
