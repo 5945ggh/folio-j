@@ -57,9 +57,7 @@ function affectedRead(
 			kind === "material-chapter-translations") &&
 			id === materialId) ||
 		(kind === "translation-result" &&
-			(removed.result_ids.includes(String(id)) ||
-				("remaining_result" in removed &&
-					removed.remaining_result?.id === id))) ||
+			removed.result_ids.includes(String(id))) ||
 		(kind === "translation-task" && removed.task_ids.includes(String(id))) ||
 		// A pending Segment list may not yet reveal the affected result IDs.
 		kind === "segment-translations"
@@ -89,8 +87,6 @@ export async function applyTranslationRemoval(
 	await cancelTranslationReads(client, materialId, removed);
 	const taskIds = new Set(removed.task_ids);
 	const resultIds = new Set(removed.result_ids);
-	const remaining =
-		"remaining_result" in removed ? removed.remaining_result : null;
 	client.setQueryData<Activity>(
 		["material-translation-activity", materialId],
 		(activity) =>
@@ -106,22 +102,9 @@ export async function applyTranslationRemoval(
 				...data,
 				pages: data.pages.map((page) => ({
 					...page,
-					items: page.items.flatMap((item) => {
-						if (item.identity_sha256 !== removed.identity_sha256) return [item];
-						if (!remaining || !("remaining_result_count" in removed)) return [];
-						return [
-							{
-								...item,
-								result_id: remaining.id,
-								translation_excerpt: [...remaining.translation]
-									.slice(0, 160)
-									.join(""),
-								result_count: removed.remaining_result_count,
-								target_language: remaining.target_language,
-								created_at: remaining.created_at,
-							},
-						];
-					}),
+					items: page.items.filter(
+						(item) => item.identity_sha256 !== removed.identity_sha256,
+					),
 				})),
 			},
 	);
@@ -130,8 +113,6 @@ export async function applyTranslationRemoval(
 			["translation-result", id],
 			(result) => result && { ...result, reader_deleted: true },
 		);
-	if (remaining)
-		client.setQueryData(["translation-result", remaining.id], remaining);
 	for (const id of taskIds)
 		client.removeQueries({ queryKey: ["translation-task", id], exact: true });
 	client.setQueriesData<TranslationResult[]>(

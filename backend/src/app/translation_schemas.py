@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from app.provenance_schemas import MaterialProvenance, ProvenancePart
-from app.schemas import SegmentResponse, StrictInput
+from app.schemas import StrictInput
 
 
 class TranslationSettingsUpdate(StrictInput):
@@ -116,23 +116,6 @@ class MaterialChapterTranslations(BaseModel):
     unavailable_count: int
 
 
-class TranslationAdopt(StrictInput):
-    request_id: UUID
-    segment_id: str | None = None
-    expected_revision: int | None = Field(default=None, ge=1)
-    text_sha256: str | None = None
-    translation: str = Field(default_factory=str, max_length=100000)
-    context_before: str = Field(default_factory=str, max_length=100000)
-    context_after: str = Field(default_factory=str, max_length=100000)
-    note: str = Field(default="", max_length=100000)
-
-
-class TranslationAdoptionResponse(BaseModel):
-    id: str
-    result_id: str
-    segment: SegmentResponse
-
-
 class TranslationDeleteImpact(BaseModel):
     material_id: str
     hidden_result_count: int
@@ -145,8 +128,3 @@ class TranslationRemovalResponse(BaseModel):
     task_ids: list[str]
     result_ids: list[str]
     cancelled_task_ids: list[str]
-
-
-class TranslationResultRemovalResponse(TranslationRemovalResponse):
-    remaining_result: TranslationResultResponse | None
-    remaining_result_count: int = Field(ge=0)

@@ -12,7 +12,7 @@ from support_api import chat_client
 from support_api import offline_chat_discovery as offline_chat_discovery
 from test_manual_analyses import create_payload
 from test_segment_provenance import compiled_provenance, provenance, span
-from test_translations import request, setup
+from test_translations import request, segment_request, setup
 
 from app.llm.adapters import GenerateResult
 from app.provenance_schemas import MaterialProvenance
@@ -40,213 +40,6 @@ def counts(database: Path) -> dict[str, int]:
                 "analyses",
             )
         }
-
-
-@pytest.mark.asyncio
-async def test_single_removal_preserves_other_versions_and_reports_latest_remaining(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
-
-    async def fake(*_args: Any) -> GenerateResult:
-        return GenerateResult("译文", True, None, None)
-
-    monkeypatch.setattr(translations, "generate_text", fake)
-    database = tmp_path / "single-version.db"
-    async with chat_client(database) as (client, app):
-        source, material, _ = await setup(client)
-        path = f"/api/materials/{material['id']}/translations"
-        body = request(source, material) | {
-            "text": "前",
-            "material_provenance": provenance(material, span("r1", 0, 0, 1)),
-        }
-        other = body | {
-            "material_provenance": provenance(material, span("r1", 2, 0, 1)),
-        }
-        tasks: list[dict[str, Any]] = []
-        for candidate in (body, body, body, other):
-            accepted = await client.post(path, json=candidate | {"request_id": str(uuid4())})
-            assert accepted.status_code == 200, accepted.text
-            await translations.execute(app, accepted.json()["id"])
-            tasks.append(
-                (await client.get(f"/api/translation-tasks/{accepted.json()['id']}")).json()
-            )
-        before = counts(database)
-        # Deleting an older version keeps the newest; deleting newest falls back to first.
-        for index, remaining_index, remaining_count in ((1, 2, 2), (2, 0, 1), (0, None, 0)):
-            target = tasks[index]
-            endpoint = f"/api/translation-results/{target['result_id']}"
-            removed = await client.delete(endpoint)
-            assert removed.status_code == 200, removed.text
-            response = removed.json()
-            assert response["identity_sha256"] == removal_path(material, body).rsplit("/", 1)[1]
-            assert response["task_ids"] == [target["id"]]
-            assert response["result_ids"] == [target["result_id"]]
-            assert response["cancelled_task_ids"] == []
-            assert response["remaining_result_count"] == remaining_count
-            if remaining_index is None:
-                assert response["remaining_result"] is None
-            else:
-                assert (
-                    response["remaining_result"]
-                    == (
-                        await client.get(
-                            f"/api/translation-results/{tasks[remaining_index]['result_id']}"
-                        )
-                    ).json()
-                )
-            assert (await client.delete(endpoint)).json() == response
-            assert counts(database) == before
-            assert (await client.get(endpoint)).status_code == 404
-            history = (await client.get(path)).json()
-            assert target["id"] not in [item["id"] for item in history["tasks"]]
-            chapter = (
-                await client.get(
-                    f"/api/materials/{material['id']}/chapters/c1/translations",
-                    params={"version_id": material["version_id"]},
-                )
-            ).json()
-            by_identity = {item["identity_sha256"]: item for item in chapter["items"]}
-            item = by_identity.get(response["identity_sha256"])
-            if remaining_count:
-                assert item is not None and item["result_count"] == remaining_count
-                assert item["result_id"] == response["remaining_result"]["id"]
-            else:
-                assert item is None
-            assert any(item["result_id"] == tasks[3]["result_id"] for item in chapter["items"])
-        assert (await client.delete("/api/translation-results/unknown")).status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_single_removal_fallback_matches_chapter_result_completion_order(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
-
-    async def fake(*_args: Any) -> GenerateResult:
-        return GenerateResult("译文", True, None, None)
-
-    monkeypatch.setattr(translations, "generate_text", fake)
-    async with chat_client(tmp_path / "completion-order.db") as (client, app):
-        source, material, _ = await setup(client)
-        path = f"/api/materials/{material['id']}/translations"
-        body = request(source, material)
-        tasks: list[dict[str, Any]] = []
-        for _ in range(3):
-            accepted = await client.post(path, json=body | {"request_id": str(uuid4())})
-            assert accepted.status_code == 200, accepted.text
-            tasks.append(accepted.json())
-        # The first accepted task completes after the second accepted task.
-        for index in (1, 0, 2):
-            await translations.execute(app, tasks[index]["id"])
-            tasks[index] = (await client.get(f"/api/translation-tasks/{tasks[index]['id']}")).json()
-        chapter_path = f"/api/materials/{material['id']}/chapters/c1/translations"
-        params = {"version_id": material["version_id"]}
-        before = (await client.get(chapter_path, params=params)).json()
-        assert before["items"][0]["result_id"] == tasks[2]["result_id"]
-        removed = await client.delete(f"/api/translation-results/{tasks[2]['result_id']}")
-        assert removed.status_code == 200, removed.text
-        remaining = removed.json()
-        assert remaining["remaining_result_count"] == 2
-        assert remaining["remaining_result"]["id"] == tasks[0]["result_id"]
-        refreshed = (await client.get(chapter_path, params=params)).json()
-        assert refreshed["items"][0]["result_id"] == remaining["remaining_result"]["id"]
-        assert refreshed["items"][0]["result_count"] == remaining["remaining_result_count"]
-        # The existing history remains ordered by task acceptance time.
-        history = (await client.get(path)).json()
-        assert [item["task_id"] for item in history["results"]] == [
-            tasks[1]["id"],
-            tasks[0]["id"],
-        ]
-
-
-@pytest.mark.asyncio
-async def test_single_removal_does_not_cancel_other_retranslations(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
-    entered, release = asyncio.Event(), asyncio.Event()
-    calls = 0
-
-    async def fake(*_args: Any) -> GenerateResult:
-        nonlocal calls
-        calls += 1
-        if calls == 2:
-            entered.set()
-            await release.wait()
-        return GenerateResult(f"译文{calls}", True, None, None)
-
-    monkeypatch.setattr(translations, "generate_text", fake)
-    async with chat_client(tmp_path / "single-running.db") as (client, app):
-        source, material, _ = await setup(client)
-        body = request(source, material)
-        path = f"/api/materials/{material['id']}/translations"
-        first = (await client.post(path, json=body)).json()
-        await translations.execute(app, first["id"])
-        done = (await client.get(f"/api/translation-tasks/{first['id']}")).json()
-        running = (await client.post(path, json=body | {"request_id": str(uuid4())})).json()
-        queued = (await client.post(path, json=body | {"request_id": str(uuid4())})).json()
-        execution = asyncio.create_task(translations.execute(app, running["id"]))
-        try:
-            await asyncio.wait_for(entered.wait(), 2)
-            removed = await client.delete(f"/api/translation-results/{done['result_id']}")
-            assert removed.status_code == 200, removed.text
-            assert removed.json()["remaining_result"] is None
-            assert removed.json()["remaining_result_count"] == 0
-            assert removed.json()["cancelled_task_ids"] == []
-            for task, expected in ((running, "running"), (queued, "queued")):
-                current = await client.get(f"/api/translation-tasks/{task['id']}")
-                assert current.status_code == 200, current.text
-                assert current.json()["status"] == expected
-        finally:
-            release.set()
-            await execution
-        await translations.execute(app, queued["id"])
-        history = (await client.get(path)).json()
-        assert {item["task_id"] for item in history["results"]} == {running["id"], queued["id"]}
-        assert calls == 3
-        assert (await client.post(path, json=body)).status_code == 404
-        # A replay of the deletion reports new remaining results without resurrecting the old one.
-        replay = (await client.delete(f"/api/translation-results/{done['result_id']}")).json()
-        assert replay["remaining_result_count"] == 2
-        assert replay["remaining_result"]["task_id"] == queued["id"]
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("deleted_parent", ["source", "material"])
-async def test_single_removal_requires_live_source_and_material_even_for_retained_result(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, deleted_parent: str
-) -> None:
-    monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
-
-    async def fake(*_args: Any) -> GenerateResult:
-        return GenerateResult("保留译文", True, None, None)
-
-    monkeypatch.setattr(translations, "generate_text", fake)
-    async with chat_client(tmp_path / "single-gate.db") as (client, app):
-        source, material, _ = await setup(client)
-        task = (
-            await client.post(
-                f"/api/materials/{material['id']}/translations", json=request(source, material)
-            )
-        ).json()
-        await translations.execute(app, task["id"])
-        done = (await client.get(f"/api/translation-tasks/{task['id']}")).json()
-        endpoint = f"/api/translation-results/{done['result_id']}"
-        retained = await client.post(f"{endpoint}/adopt", json={"request_id": str(uuid4())})
-        assert retained.status_code == 200, retained.text
-        parent_path = (
-            f"/api/sources/{source}"
-            if deleted_parent == "source"
-            else f"/api/materials/{material['id']}"
-        )
-        assert (await client.delete(parent_path)).status_code == 204
-        assert (await client.delete(endpoint)).status_code == 404
-        async with app.state.session_factory() as session:
-            stored = await session.get(TranslationTask, task["id"])
-            assert stored is not None and stored.reader_deleted_at is None
-        if deleted_parent == "material":
-            assert (await client.get(endpoint)).status_code == 200
 
 
 @pytest.mark.asyncio
@@ -325,9 +118,8 @@ async def test_removal_hides_all_versions_only_at_exact_target_and_allows_explic
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("removal_scope", ["target", "result"])
 async def test_removed_adopted_snapshot_and_run_survive_but_new_adoptions_are_rejected(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, removal_scope: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
 
@@ -361,16 +153,8 @@ async def test_removed_adopted_snapshot_and_run_survive_but_new_adoptions_are_re
         )
         assert analysis_saved.status_code == 200, analysis_saved.text
         analysis = analysis_saved.json()
-        adopt_path = f"/api/translation-results/{result_id}/adopt"
-        link = {"request_id": str(uuid4()), "segment_id": segment["id"]}
-        receipt = await client.post(adopt_path, json=link)
-        assert receipt.status_code == 200, receipt.text
         before = counts(database)
-        removed = await client.delete(
-            removal_path(material, body)
-            if removal_scope == "target"
-            else f"/api/translation-results/{result_id}"
-        )
+        removed = await client.delete(removal_path(material, body))
         assert removed.status_code == 200, removed.text
         assert counts(database) == before
         assert (await client.get(f"/api/segments/{segment['id']}")).json() == segment
@@ -408,13 +192,8 @@ async def test_removed_adopted_snapshot_and_run_survive_but_new_adoptions_are_re
             "materials.compiled_bundle" in statement for statement in statements
         )
         assert (await client.post(segment_path, json=save)).json()["id"] == segment["id"]
-        assert (await client.post(adopt_path, json=link)).json() == receipt.json()
         assert (
             await client.post(segment_path, json=save | {"request_id": str(uuid4())})
-        ).status_code == 404
-        assert (await client.post(adopt_path, json={"request_id": str(uuid4())})).status_code == 404
-        assert (
-            await client.post(adopt_path, json=link | {"request_id": str(uuid4())})
         ).status_code == 404
         assert (
             await client.post(f"/api/materials/{material['id']}/translations", json=body)
@@ -486,10 +265,8 @@ async def test_removal_revokes_running_and_queued_tasks_before_late_output(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("entry", ["selection", "adopt"])
-@pytest.mark.parametrize("removal_scope", ["target", "result"])
 async def test_removal_during_new_adoption_validation_rejects_stale_write(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, entry: str, removal_scope: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
 
@@ -508,12 +285,12 @@ async def test_removal_during_new_adoption_validation_rejects_stale_write(
         done = (await client.get(f"/api/translation-tasks/{task['id']}")).json()
         result_id = done["result_id"]
         existing = await client.post(
-            f"/api/translation-results/{result_id}/adopt", json={"request_id": str(uuid4())}
+            f"/api/sources/{source}/segments", json=segment_request(material, result_id)
         )
-        assert existing.status_code == 200, existing.text
+        assert existing.status_code == 201, existing.text
         before = counts(database)
         entered, release = asyncio.Event(), asyncio.Event()
-        module = material_provenance if entry == "selection" else translations
+        module = material_provenance
         original = module.prepare_reference
         calls = 0
 
@@ -521,31 +298,18 @@ async def test_removal_during_new_adoption_validation_rejects_stale_write(
             nonlocal calls
             prepared = await original(*args, **kwargs)
             calls += 1
-            if calls == (2 if entry == "selection" else 1):
+            if calls == 2:
                 entered.set()
                 await release.wait()
             return prepared
 
         monkeypatch.setattr(module, "prepare_reference", delayed)
-        path = (
-            f"/api/sources/{source}/segments"
-            if entry == "selection"
-            else f"/api/translation-results/{result_id}/adopt"
-        )
-        payload: dict[str, Any] = {"request_id": str(uuid4())}
-        if entry == "selection":
-            payload |= {
-                "material_provenance": provenance(material),
-                "translation_result_id": result_id,
-            }
+        path = f"/api/sources/{source}/segments"
+        payload = segment_request(material, result_id)
         pending = asyncio.create_task(client.post(path, json=payload))
         try:
             await asyncio.wait_for(entered.wait(), 2)
-            removed = await client.delete(
-                removal_path(material, body)
-                if removal_scope == "target"
-                else f"/api/translation-results/{result_id}"
-            )
+            removed = await client.delete(removal_path(material, body))
             assert removed.status_code == 200, removed.text
         finally:
             release.set()

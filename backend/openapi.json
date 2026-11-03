@@ -6537,98 +6537,6 @@
         "title": "ThreadResponse",
         "type": "object"
       },
-      "TranslationAdopt": {
-        "additionalProperties": false,
-        "properties": {
-          "context_after": {
-            "maxLength": 100000,
-            "title": "Context After",
-            "type": "string"
-          },
-          "context_before": {
-            "maxLength": 100000,
-            "title": "Context Before",
-            "type": "string"
-          },
-          "expected_revision": {
-            "anyOf": [
-              {
-                "minimum": 1.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Expected Revision"
-          },
-          "note": {
-            "default": "",
-            "maxLength": 100000,
-            "title": "Note",
-            "type": "string"
-          },
-          "request_id": {
-            "format": "uuid",
-            "title": "Request Id",
-            "type": "string"
-          },
-          "segment_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Segment Id"
-          },
-          "text_sha256": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Text Sha256"
-          },
-          "translation": {
-            "maxLength": 100000,
-            "title": "Translation",
-            "type": "string"
-          }
-        },
-        "required": [
-          "request_id"
-        ],
-        "title": "TranslationAdopt",
-        "type": "object"
-      },
-      "TranslationAdoptionResponse": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "result_id": {
-            "title": "Result Id",
-            "type": "string"
-          },
-          "segment": {
-            "$ref": "#/components/schemas/SegmentResponse"
-          }
-        },
-        "required": [
-          "id",
-          "result_id",
-          "segment"
-        ],
-        "title": "TranslationAdoptionResponse",
-        "type": "object"
-      },
       "TranslationCreate": {
         "additionalProperties": false,
         "properties": {
@@ -6771,60 +6679,6 @@
           "cancelled_task_ids"
         ],
         "title": "TranslationRemovalResponse",
-        "type": "object"
-      },
-      "TranslationResultRemovalResponse": {
-        "properties": {
-          "cancelled_task_ids": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Cancelled Task Ids",
-            "type": "array"
-          },
-          "identity_sha256": {
-            "title": "Identity Sha256",
-            "type": "string"
-          },
-          "remaining_result": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TranslationResultResponse"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "remaining_result_count": {
-            "minimum": 0.0,
-            "title": "Remaining Result Count",
-            "type": "integer"
-          },
-          "result_ids": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Result Ids",
-            "type": "array"
-          },
-          "task_ids": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Task Ids",
-            "type": "array"
-          }
-        },
-        "required": [
-          "identity_sha256",
-          "task_ids",
-          "result_ids",
-          "cancelled_task_ids",
-          "remaining_result",
-          "remaining_result_count"
-        ],
-        "title": "TranslationResultRemovalResponse",
         "type": "object"
       },
       "TranslationResultResponse": {
@@ -12700,43 +12554,6 @@
       }
     },
     "/api/translation-results/{result_id}": {
-      "delete": {
-        "operationId": "remove_translation_result_api_translation_results__result_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "result_id",
-            "required": true,
-            "schema": {
-              "title": "Result Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TranslationResultRemovalResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Remove Translation Result"
-      },
       "get": {
         "operationId": "get_translation_result_api_translation_results__result_id__get",
         "parameters": [
@@ -12773,55 +12590,6 @@
           }
         },
         "summary": "Get Translation Result"
-      }
-    },
-    "/api/translation-results/{result_id}/adopt": {
-      "post": {
-        "operationId": "adopt_translation_api_translation_results__result_id__adopt_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "result_id",
-            "required": true,
-            "schema": {
-              "title": "Result Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TranslationAdopt"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TranslationAdoptionResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Adopt Translation"
       }
     },
     "/api/translation-tasks/{task_id}": {

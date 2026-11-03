@@ -33,10 +33,7 @@ export interface TranslationQueryAdapter {
 	submit(materialId: string, input: TranslationInput): Promise<TranslationTask>;
 	accept(task: TranslationTask): void;
 	stop(taskId: string): Promise<TranslationTask>;
-	remove(
-		reference: MaterialProvenance,
-		resultId?: string,
-	): Promise<TranslationRemoval>;
+	remove(reference: MaterialProvenance): Promise<TranslationRemoval>;
 	uuid(): string;
 }
 export type TranslationOutcome =
@@ -68,7 +65,6 @@ export type TranslationSnapshot = Readonly<{
 	acceptedTaskId: string | null;
 	removal: Readonly<{
 		resultIds: readonly string[];
-		remainingResultId: string | null;
 	}> | null;
 	error: Error | null;
 }>;
@@ -91,7 +87,7 @@ export interface TranslationSession {
 		kind: "translate" | "verify";
 	}): Promise<TranslationOutcome>;
 	stop(taskId: string): Promise<TranslationTask>;
-	remove(resultId?: string): Promise<TranslationRemoval>;
+	remove(): Promise<TranslationRemoval>;
 }
 export interface TranslationSessions {
 	bindOwner(): () => void;
@@ -160,10 +156,7 @@ export function createTranslationSessions(
 		private preparation: { epoch: number; promise: Promise<void> } | null =
 			null;
 		private generation = 0;
-		private removal: {
-			resultId: string | undefined;
-			promise: Promise<TranslationRemoval>;
-		} | null = null;
+		private removal: Promise<TranslationRemoval> | null = null;
 		private freshEpoch = -1;
 		private initialization: Promise<void> | null = null;
 		private operation: {
@@ -499,11 +492,8 @@ export function createTranslationSessions(
 			adapter.accept(task);
 			return task;
 		};
-		remove = (resultId?: string): Promise<TranslationRemoval> => {
-			if (this.removal)
-				return this.removal.resultId === resultId
-					? this.removal.promise
-					: Promise.reject(new Error("正在删除其他译文，请稍后重试。"));
+		remove = (): Promise<TranslationRemoval> => {
+			if (this.removal) return this.removal;
 			if (!bound) return Promise.reject(new Error("请返回阅读器后重试删除。"));
 			if (this.operation?.posted || this.state.phase === "uncertain")
 				return Promise.reject(new Error("请先核实原提交，再删除此处翻译。"));
@@ -514,7 +504,7 @@ export function createTranslationSessions(
 			this.operation = null;
 			this.frozen = null;
 			const operation = Promise.resolve()
-				.then(() => adapter.remove(this.reference, resultId))
+				.then(() => adapter.remove(this.reference))
 				.then((removed) => {
 					this.update({
 						removal: {
@@ -524,10 +514,6 @@ export function createTranslationSessions(
 									...removed.result_ids,
 								]),
 							],
-							remainingResultId:
-								"remaining_result" in removed
-									? (removed.remaining_result?.id ?? null)
-									: null,
 						},
 						phase: "idle",
 						acceptedTaskId:
@@ -544,9 +530,9 @@ export function createTranslationSessions(
 					throw error;
 				})
 				.finally(() => {
-					if (this.removal?.promise === operation) this.removal = null;
+					if (this.removal === operation) this.removal = null;
 				});
-			this.removal = { resultId, promise: operation };
+			this.removal = operation;
 			this.update({ phase: "removing", error: null });
 			return operation;
 		};

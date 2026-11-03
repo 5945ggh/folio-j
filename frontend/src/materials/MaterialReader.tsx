@@ -872,10 +872,6 @@ function Reader({
 	const forgetTranslation = useCallback<TranslationRemoved>(
 		(removed, reference) => {
 			selectedTranslations.current.forget(removed.identity_sha256);
-			if ("remaining_result" in removed && removed.remaining_result) {
-				selectedTranslations.current.remember(removed.remaining_result);
-				return;
-			}
 			records.translationRemoved(removed.identity_sha256);
 			if (
 				latest.current.translationTarget &&

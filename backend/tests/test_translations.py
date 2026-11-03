@@ -43,6 +43,30 @@ def request(source_id: str, material: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def segment_request(material: dict[str, Any], result_id: str, **fields: Any) -> dict[str, Any]:
+    return (
+        dict(
+            request_id=str(uuid4()),
+            material_provenance=provenance(material),
+            translation_result_id=result_id,
+        )
+        | fields
+    )
+
+
+def test_legacy_translation_write_routes_are_not_registered() -> None:
+    from app.main import create_app
+
+    contract = create_app().openapi()
+    result = contract["paths"]["/api/translation-results/{result_id}"]
+    assert "get" in result and "delete" not in result
+    assert "/api/translation-results/{result_id}/adopt" not in contract["paths"]
+    assert (
+        "delete" in contract["paths"]["/api/materials/{material_id}/translations/{identity_sha256}"]
+    )
+    assert "post" in contract["paths"]["/api/sources/{source_id}/segments"]
+
+
 def test_translation_prompt_keeps_selection_separate_from_reference_context() -> None:
     text = (
         "机の前に座っているだけになっていて、"
@@ -129,7 +153,7 @@ async def test_translation_sends_and_records_scoped_messages(
 
 
 @pytest.mark.asyncio
-async def test_success_replay_adoption_cas_and_deleted_material(
+async def test_success_replay_selection_save_and_deleted_material(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
@@ -160,15 +184,21 @@ async def test_success_replay_adoption_cas_and_deleted_material(
         result_id = done["result_id"]
         result = (await client.get(f"/api/translation-results/{result_id}")).json()
         assert result["translation"] == "翻译"
+        assert (await client.delete(f"/api/translation-results/{result_id}")).status_code == 404
+        assert (
+            await client.post(
+                f"/api/translation-results/{result_id}/adopt", json={"request_id": str(uuid4())}
+            )
+        ).status_code == 404
+        assert (await client.get(f"/api/translation-results/{result_id}")).json() == result
         assert (await client.get(f"/api/runs/{done['run_id']}")).json()["purpose"] == "translation"
-        save = dict(request_id=str(uuid4()), translation="改写")
-        adopted = await client.post(f"/api/translation-results/{result_id}/adopt", json=save)
-        assert adopted.status_code == 200, adopted.text
-        segment = adopted.json()["segment"]
+        segment_path = f"/api/sources/{source}/segments"
+        save = segment_request(material, result_id, translation="改写")
+        saved = await client.post(segment_path, json=save)
+        assert saved.status_code == 201, saved.text
+        segment = saved.json()
         assert segment["translation"] == "改写"
-        assert (await client.post(f"/api/translation-results/{result_id}/adopt", json=save)).json()[
-            "segment"
-        ]["id"] == segment["id"]
+        assert (await client.post(segment_path, json=save)).json()["id"] == segment["id"]
         assert (
             await client.patch(f"/api/segments/{segment['id']}", json={"translation": "覆盖"})
         ).status_code == 409
@@ -177,32 +207,13 @@ async def test_success_replay_adoption_cas_and_deleted_material(
             json={"translation": "编辑", "expected_revision": segment["revision"]},
         )
         assert edit.status_code == 200, edit.text
-        stale = dict(
-            request_id=str(uuid4()),
-            segment_id=segment["id"],
-            expected_revision=segment["revision"],
-            text_sha256=segment["text_sha256"],
-            translation="覆盖",
-        )
-        assert (
-            await client.post(f"/api/translation-results/{result_id}/adopt", json=stale)
-        ).status_code == 409
-        linked = dict(request_id=str(uuid4()), segment_id=segment["id"])
-        link = await client.post(f"/api/translation-results/{result_id}/adopt", json=linked)
-        assert link.status_code == 200, link.text
-        assert link.json()["segment"]["translation"] == "编辑"
-        assert link.json()["segment"]["revision"] == edit.json()["revision"]
         assert (await client.delete(f"/api/materials/{material['id']}")).status_code == 204
         assert (await client.get(f"/api/translation-results/{result_id}")).json()[
             "material_deleted"
         ]
+        assert (await client.post(segment_path, json=save)).status_code == 201
         assert (
-            await client.post(f"/api/translation-results/{result_id}/adopt", json=save)
-        ).status_code == 200
-        assert (
-            await client.post(
-                f"/api/translation-results/{result_id}/adopt", json={"request_id": str(uuid4())}
-            )
+            await client.post(segment_path, json=save | {"request_id": str(uuid4())})
         ).status_code == 404
         assert (
             len((await client.get(f"/api/segments/{segment['id']}/translation-results")).json())
@@ -483,11 +494,11 @@ async def test_bounded_queue_settings_and_frozen_config(
         result_id = (await client.get(f"/api/translation-tasks/{tasks[0]['id']}")).json()[
             "result_id"
         ]
-        endpoint = f"/api/translation-results/{result_id}/adopt"
-        save = {"request_id": str(uuid4())}
+        endpoint = f"/api/sources/{source}/segments"
+        save = segment_request(material, result_id)
         saved = await asyncio.gather(*[client.post(endpoint, json=save) for _ in range(3)])
-        assert all(item.status_code == 200 for item in saved), [item.text for item in saved]
-        assert len({item.json()["segment"]["id"] for item in saved}) == 1
+        assert all(item.status_code == 201 for item in saved), [item.text for item in saved]
+        assert len({item.json()["id"] for item in saved}) == 1
         impact = (await client.get(f"/api/materials/{material['id']}/delete-impact")).json()
         assert impact == dict(
             material_id=material["id"],
@@ -496,9 +507,7 @@ async def test_bounded_queue_settings_and_frozen_config(
             active_task_count=2,
         )
         assert (await client.delete(f"/api/materials/{material['id']}")).status_code == 204
-        assert (
-            await client.delete(f"/api/segments/{saved[0].json()['segment']['id']}")
-        ).status_code == 204
+        assert (await client.delete(f"/api/segments/{saved[0].json()['id']}")).status_code == 204
         assert (await client.get(f"/api/translation-results/{result_id}")).status_code == 404
 
 
@@ -555,21 +564,16 @@ async def test_template_version_is_frozen_on_acceptance(
             stored_run = await session.get(Run, done["run_id"])
             assert stored_run is not None
             assert captured[0].messages == stored_run.messages == payload.get("messages")
-        saved = (
-            await client.post(
-                f"/api/translation-results/{result['id']}/adopt",
-                json={"request_id": str(uuid4())},
-            )
-        ).json()["segment"]
-        for _ in range(2):
-            linked = await client.post(
-                f"/api/translation-results/{result['id']}/adopt",
-                json={"request_id": str(uuid4()), "segment_id": saved["id"]},
-            )
-            assert linked.status_code == 200, linked.text
-            assert linked.json()["segment"]["revision"] == saved["revision"]
+        saved = await client.post(
+            f"/api/sources/{source}/segments",
+            json=segment_request(material, result["id"]),
+        )
+        assert saved.status_code == 201, saved.text
         assert (
-            len((await client.get(f"/api/segments/{saved['id']}/translation-results")).json()) == 1
+            len(
+                (await client.get(f"/api/segments/{saved.json()['id']}/translation-results")).json()
+            )
+            == 1
         )
 
 
@@ -597,14 +601,25 @@ async def test_result_restores_only_active_same_source_adoption_destinations(
         assert (await client.get(result_path)).json()["adopted_segment_ids"] == []
         saved: list[str] = []
         for _ in range(2):
-            adoption = await client.post(result_path + "/adopt", json={"request_id": str(uuid4())})
-            assert adoption.status_code == 200, adoption.text
-            saved.append(adoption.json()["segment"]["id"])
-        await client.post(
-            result_path + "/adopt", json={"request_id": str(uuid4()), "segment_id": saved[0]}
-        )
+            created = await client.post(
+                f"/api/sources/{source}/segments",
+                json=segment_request(material, task["result_id"]),
+            )
+            assert created.status_code == 201, created.text
+            saved.append(created.json()["id"])
         # Even malformed historical cross-source links must never leak a destination.
         async with app.state.session_factory() as session:
+            session.add(
+                TranslationAdoption(
+                    id=new_ulid(),
+                    request_id=str(uuid4()),
+                    request_payload="{}",
+                    adopted_payload="{}",
+                    result_id=task["result_id"],
+                    segment_id=saved[0],
+                    created_at=utc_now(),
+                )
+            )
             session.add(
                 TranslationAdoption(
                     id=new_ulid(),

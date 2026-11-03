@@ -10,13 +10,10 @@ from app.services import translations as service
 from app.services.chapter_translations import list_chapter_translations
 from app.translation_schemas import (
     MaterialChapterTranslations,
-    TranslationAdopt,
-    TranslationAdoptionResponse,
     TranslationCreate,
     TranslationDeleteImpact,
     TranslationHistoryResponse,
     TranslationRemovalResponse,
-    TranslationResultRemovalResponse,
     TranslationResultResponse,
     TranslationSettingsResponse,
     TranslationSettingsUpdate,
@@ -93,20 +90,6 @@ async def stop_translation(
 @router.get("/translation-results/{result_id}", response_model=TranslationResultResponse)
 async def get_translation_result(result_id: str, session: Session) -> TranslationResultResponse:
     return await service.get_result(session, result_id)
-
-
-@router.delete("/translation-results/{result_id}", response_model=TranslationResultRemovalResponse)
-async def remove_translation_result(
-    result_id: str, session: Session
-) -> TranslationResultRemovalResponse:
-    return await service.remove_reader_result(session, result_id)
-
-
-@router.post("/translation-results/{result_id}/adopt", response_model=TranslationAdoptionResponse)
-async def adopt_translation(
-    result_id: str, data: TranslationAdopt, session: Session
-) -> TranslationAdoptionResponse:
-    return await service.adopt(session, result_id, data)
 
 
 @router.get(

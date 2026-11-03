@@ -575,36 +575,18 @@ export function TranslationPanel({
 			includes(retainedResult?.result.id) ||
 			includes(lastLoadedResult.current?.result.id)
 		) {
-			const fallback = removed.remainingResultId
-				? client.getQueryData<TranslationResult>([
-						"translation-result",
-						removed.remainingResultId,
-					])
-				: undefined;
-			setRetainedResult(
-				fallback && !fallback.reader_deleted && !includes(fallback.id)
-					? { session, activation, result: fallback }
-					: undefined,
-			);
+			setRetainedResult(undefined);
 		}
 		if (includes(lastLoadedResult.current?.result.id))
 			lastLoadedResult.current = null;
 		if (includes(versionReturnId)) setVersionReturnId(null);
 		if (includes(resolvedId)) {
 			choiceGeneration.current++;
-			setResultId(removed.remainingResultId);
+			setResultId(null);
 			setTaskId(null);
 			setOffset(0);
 		}
-	}, [
-		state.removal,
-		retainedResult,
-		versionReturnId,
-		resolvedId,
-		client,
-		session,
-		activation,
-	]);
+	}, [state.removal, retainedResult, versionReturnId, resolvedId]);
 	useEffect(() => {
 		if (visible && readableResult) onResultSelected?.(readableResult);
 	}, [visible, readableResult, onResultSelected]);
@@ -629,11 +611,9 @@ export function TranslationPanel({
 	const removing = state.phase === "removing";
 	const busy = activeTranslation(currentTask) || pending || removing;
 	const removed: TranslationRemoved = (value, reference) => {
-		const remaining =
-			"remaining_result" in value ? value.remaining_result : null;
 		setOffset(0);
 		if (onRemoved) onRemoved(value, reference);
-		else if (!remaining) onClose();
+		else onClose();
 	};
 	const moreId = useId();
 	const more = useRef<HTMLDetailsElement>(null);

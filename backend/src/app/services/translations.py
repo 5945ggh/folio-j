@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-import unicodedata
 from functools import partial
 from typing import Any, cast
 
@@ -17,10 +16,8 @@ from app.jobs.supervision import worker
 from app.llm.adapters import CallSnapshot, generate_text
 from app.llm.errors import describe_call_failure
 from app.material_models import Material
-from app.models import Segment, SegmentMaterialProvenance
-from app.provenance_schemas import ASSEMBLY_RULE, MaterialProvenance
+from app.models import Segment
 from app.services.material_provenance import (
-    identity_payload,
     identity_sha256,
     prepare_reference,
     recheck_reference,
@@ -28,11 +25,8 @@ from app.services.material_provenance import (
 from app.services.settings import read_credential, redact_credential
 from app.services.sources import (
     begin_write,
-    lock_segment_text,
     require_segment,
     require_source,
-    segment_response,
-    segment_text_sha256,
     utc_now,
 )
 from app.settings_models import Provider, ProviderModel, Run
@@ -43,13 +37,10 @@ from app.translation_models import (
     TranslationTask,
 )
 from app.translation_schemas import (
-    TranslationAdopt,
-    TranslationAdoptionResponse,
     TranslationCreate,
     TranslationDeleteImpact,
     TranslationHistoryResponse,
     TranslationRemovalResponse,
-    TranslationResultRemovalResponse,
     TranslationResultResponse,
     TranslationSettingsResponse,
     TranslationSettingsUpdate,
@@ -392,56 +383,6 @@ async def stop(session: AsyncSession, task_id: str) -> TranslationTaskResponse:
     return task_response(task)
 
 
-async def remove_reader_result(
-    session: AsyncSession, result_id: str
-) -> TranslationResultRemovalResponse:
-    """Hide one successful version without changing other tasks or adopted snapshots."""
-    await begin_write(session)
-    result = await session.get(TranslationResult, result_id)
-    if result is None:
-        raise HTTPException(404, "译文不存在")
-    task = await session.get(TranslationTask, result.task_id)
-    assert task is not None
-    material = await session.scalar(
-        select(Material)
-        .options(defer(Material.compiled_bundle))
-        .where(Material.id == task.material_id)
-    )
-    if material is None or material.deleted_at is not None:
-        raise HTTPException(404, "材料不存在")
-    await require_source(session, task.source_id)
-    if task.reader_deleted_at is None:
-        task.reader_deleted_at = utc_now()
-    await session.flush()
-    remaining = (
-        select(TranslationResult)
-        .join(TranslationTask, TranslationTask.id == TranslationResult.task_id)
-        .where(
-            TranslationTask.material_id == task.material_id,
-            TranslationTask.identity_sha256 == task.identity_sha256,
-            TranslationTask.reader_deleted_at.is_(None),
-            TranslationTask.status == "succeeded",
-            TranslationTask.result_id == TranslationResult.id,
-        )
-    )
-    count = await session.scalar(select(func.count()).select_from(remaining.subquery()))
-    latest = await session.scalar(
-        remaining.order_by(TranslationResult.created_at.desc(), TranslationResult.id.desc()).limit(
-            1
-        )
-    )
-    response = TranslationResultRemovalResponse(
-        identity_sha256=task.identity_sha256,
-        task_ids=[task.id],
-        result_ids=[result.id],
-        cancelled_task_ids=[],
-        remaining_result=await result_response(session, latest) if latest is not None else None,
-        remaining_result_count=count or 0,
-    )
-    await session.commit()
-    return response
-
-
 async def remove_reader_history(
     session: AsyncSession, material_id: str, identity: str
 ) -> TranslationRemovalResponse:
@@ -480,129 +421,6 @@ async def remove_reader_history(
         task_ids=[task.id for task in tasks],
         result_ids=[task.result_id for task in tasks if task.result_id is not None],
         cancelled_task_ids=[task.id for task in tasks if task.status == "cancelled"],
-    )
-    await session.commit()
-    return response
-
-
-async def adopt(
-    session: AsyncSession, result_id: str, data: TranslationAdopt
-) -> TranslationAdoptionResponse:
-    request_payload = encode(
-        dict(result_id=result_id, **data.model_dump(mode="json", exclude_unset=True))
-    )
-    # Replay is resolved before validating mutable material assets or revision.
-    old = await session.scalar(
-        select(TranslationAdoption).where(TranslationAdoption.request_id == str(data.request_id))
-    )
-    if old:
-        await get_result(session, old.result_id)
-        segment = await require_segment(session, old.segment_id)
-        if old.request_payload != request_payload:
-            raise conflict("相同采用请求不能提交不同内容")
-        return TranslationAdoptionResponse(
-            id=old.id, result_id=old.result_id, segment=segment_response(segment)
-        )
-    result = await get_result(session, result_id)
-    if result.reader_deleted:
-        raise HTTPException(404, "翻译记录已从阅读器移除，不能建立新采用关系")
-    await session.rollback()
-    prepared = await prepare_reference(session, result.source_id, result.material_provenance)
-    await begin_write(session)
-    old = await session.scalar(
-        select(TranslationAdoption).where(TranslationAdoption.request_id == str(data.request_id))
-    )
-    if old:
-        await session.rollback()
-        return await adopt(session, result_id, data)
-    await recheck_reference(session, prepared)
-    result = await get_result(session, result_id)
-    if prepared.text != result.text:
-        raise conflict("译文目标与材料不一致")
-    if result.material_deleted or result.reader_deleted:
-        raise HTTPException(404, "材料或翻译记录已删除，不能建立新采用关系")
-    fields = {
-        key: unicodedata.normalize("NFC", value)
-        for key, value in data.model_dump(
-            include={"translation", "context_before", "context_after"}, exclude_unset=True
-        ).items()
-    }
-    if data.segment_id:
-        segment = await require_segment(session, data.segment_id)
-        origin = segment.material_provenance
-        if (
-            segment.source_id != result.source_id
-            or segment.text != result.text
-            or origin is None
-            or identity_payload(MaterialProvenance.model_validate_json(origin.payload))
-            != identity_payload(result.material_provenance)
-        ):
-            raise conflict("片段与译文出处不一致")
-        if fields:
-            if (
-                data.expected_revision != segment.revision
-                or data.text_sha256 != segment_text_sha256(segment.text)
-            ):
-                raise conflict("片段已改变，请核对当前内容")
-            if any(getattr(segment, key) != value for key, value in fields.items()):
-                for key, value in fields.items():
-                    setattr(segment, key, value)
-                segment.revision += 1
-                segment.updated_at = utc_now()
-    else:
-        now = utc_now()
-        segment = Segment(
-            id=new_ulid(),
-            source_id=result.source_id,
-            text=result.text,
-            translation=fields.get("translation", result.translation),
-            context_before=fields.get("context_before", result.context_before),
-            context_after=fields.get("context_after", result.context_after),
-            note=data.note,
-            transcription="",
-            source_ref="",
-            revision=1,
-            created_at=now,
-            updated_at=now,
-        )
-        lock_segment_text(segment, now)
-        segment.material_provenance = SegmentMaterialProvenance(
-            source_id=result.source_id,
-            material_id=result.material_id,
-            version_id=result.material_provenance.version_id,
-            payload=result.material_provenance.model_dump_json(),
-            identity_sha256=result.identity_sha256,
-            request_id=str(data.request_id),
-            request_payload=request_payload,
-            assembly_rule=ASSEMBLY_RULE,
-            created_at=now,
-        )
-        session.add(segment)
-    receipt = TranslationAdoption(
-        id=new_ulid(),
-        request_id=str(data.request_id),
-        request_payload=request_payload,
-        result_id=result_id,
-        segment_id=segment.id,
-        created_at=utc_now(),
-        adopted_payload=encode(
-            dict(
-                action="create" if data.segment_id is None else "update" if fields else "link",
-                fields=fields
-                if data.segment_id
-                else dict(
-                    translation=segment.translation,
-                    context_before=segment.context_before,
-                    context_after=segment.context_after,
-                ),
-                text_sha256=segment_text_sha256(segment.text),
-            )
-        ),
-    )
-    session.add(receipt)
-    await session.flush()
-    response = TranslationAdoptionResponse(
-        id=receipt.id, result_id=result_id, segment=segment_response(segment)
     )
     await session.commit()
     return response

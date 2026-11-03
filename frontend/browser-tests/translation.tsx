@@ -1079,21 +1079,7 @@ export async function translationRegression(h: BrowserHarness) {
 			return Response.json(restoredResult);
 		if (url.pathname.endsWith("/material-provenance/matches"))
 			return Response.json({ segments: [], truncated: false });
-		if (url.pathname === "/api/translation-results/a/adopt") {
-			restoredPosts++;
-			const body = await request.json();
-			return Response.json({
-				id: "new-adoption",
-				result_id: "a",
-				segment: {
-					id: "separate",
-					source_id: "source",
-					text: result.text,
-					translation: body.translation,
-					revision: 1,
-				},
-			});
-		}
+		if (request.method === "POST") restoredPosts++;
 		throw new Error(
 			`Unexpected restored-destination request ${request.method} ${url.pathname}`,
 		);

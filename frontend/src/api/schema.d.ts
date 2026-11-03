@@ -1351,24 +1351,6 @@ export interface paths {
         get: operations["get_translation_result_api_translation_results__result_id__get"];
         put?: never;
         post?: never;
-        /** Remove Translation Result */
-        delete: operations["remove_translation_result_api_translation_results__result_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/translation-results/{result_id}/adopt": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Adopt Translation */
-        post: operations["adopt_translation_api_translation_results__result_id__adopt_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3726,39 +3708,6 @@ export interface components {
              */
             updated_at: string;
         };
-        /** TranslationAdopt */
-        TranslationAdopt: {
-            /** Context After */
-            context_after?: string;
-            /** Context Before */
-            context_before?: string;
-            /** Expected Revision */
-            expected_revision?: number | null;
-            /**
-             * Note
-             * @default
-             */
-            note: string;
-            /**
-             * Request Id
-             * Format: uuid
-             */
-            request_id: string;
-            /** Segment Id */
-            segment_id?: string | null;
-            /** Text Sha256 */
-            text_sha256?: string | null;
-            /** Translation */
-            translation?: string;
-        };
-        /** TranslationAdoptionResponse */
-        TranslationAdoptionResponse: {
-            /** Id */
-            id: string;
-            /** Result Id */
-            result_id: string;
-            segment: components["schemas"]["SegmentResponse"];
-        };
         /** TranslationCreate */
         TranslationCreate: {
             /**
@@ -3808,20 +3757,6 @@ export interface components {
             cancelled_task_ids: string[];
             /** Identity Sha256 */
             identity_sha256: string;
-            /** Result Ids */
-            result_ids: string[];
-            /** Task Ids */
-            task_ids: string[];
-        };
-        /** TranslationResultRemovalResponse */
-        TranslationResultRemovalResponse: {
-            /** Cancelled Task Ids */
-            cancelled_task_ids: string[];
-            /** Identity Sha256 */
-            identity_sha256: string;
-            remaining_result: components["schemas"]["TranslationResultResponse"] | null;
-            /** Remaining Result Count */
-            remaining_result_count: number;
             /** Result Ids */
             result_ids: string[];
             /** Task Ids */
@@ -7478,72 +7413,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TranslationResultResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    remove_translation_result_api_translation_results__result_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                result_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TranslationResultRemovalResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    adopt_translation_api_translation_results__result_id__adopt_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                result_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TranslationAdopt"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TranslationAdoptionResponse"];
                 };
             };
             /** @description Validation Error */
