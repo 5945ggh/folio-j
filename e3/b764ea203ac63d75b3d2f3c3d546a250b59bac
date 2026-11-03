@@ -1,0 +1,33 @@
+docs/INFORMATION_ARCHITECTURE.md
+  s_34ecb9ae6f6c5f::t_1b4c0cf1b1d1bc 60,62,68,145,147,151,163,165,167,201
+docs/ARCHITECTURE.md
+  s_34ecb9ae6f6c5f::t_08fc6a77a97721 177,536,546
+  s_34ecb9ae6f6c5f::t_1b4c0cf1b1d1bc 373,526,528,534
+  s_34ecb9ae6f6c5f::t_7fa6459a7f5c7b 560,562
+docs/USAGE.md
+  s_34ecb9ae6f6c5f::t_7fa6459a7f5c7b 14,83
+docs/GLOSSARY.md
+  s_34ecb9ae6f6c5f::t_08fc6a77a97721 73
+docs/PRD.md
+  s_34ecb9ae6f6c5f::t_1b4c0cf1b1d1bc 63,252,269,271,340,346,481-482,499,517
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_34ecb9ae6f6c5f::t_7fa6459a7f5c7b 10-11
+docs/handovers/reading-practice/PLAN.md
+  s_34ecb9ae6f6c5f::t_7fa6459a7f5c7b 17-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e3b764ea203ac63d75b3d2f3c3d546a250b59bac",
+  "prompts": {},
+  "sessions": {
+    "s_34ecb9ae6f6c5f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a0fc-9ae0-7a02-a05d-59ec5122426d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
