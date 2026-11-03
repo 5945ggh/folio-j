@@ -7,6 +7,8 @@
 
 2026-10-29 至 10-30 的复制、阅读设置及书签整合，见[复制数据库升级](archived/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md#现用库升级与主分支集成)与[书签集成记录](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md#2026-10-30-原目录集成)；现用库后续升级至 `0004_translation_reader_removal` 的数据与凭据核对见[翻译修复验收](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md#现用库与原目录交付)。浏览器检查的执行范围及未重跑项保留在原记录，后续安排见[实际阅读评测计划](reading-practice/PLAN.md)。
 
+2026-11-03 已确认[防御流程减负](reading-practice/PLAN.md#防御流程减负2026-11-03)的产品取舍：规范已调整，实现与分批验证尚在进行；下表相关旧能力说明仍记录调整前交付。
+
 ## 1. 当前实现、差额与验收依据
 
 | 能力 | 当前能力与边界 | 验收依据 |
