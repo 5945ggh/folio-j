@@ -1,0 +1,23 @@
+frontend/browser-tests/source-edit-delete.tsx
+  s_38172931c4c5f1::t_0f7d2d496d5936 1-5,270-272
+  s_38172931c4c5f1::t_f4fdb4b16d5033 246
+  s_38172931c4c5f1::t_2c16cd2c81c6f8 27,58-60,62-70,85-96,102-103,110-114,122-123,228-245,247-259,268-269,273-274
+frontend/src/catalog/SourceEditDialog.tsx
+  s_38172931c4c5f1::t_5e402091ce92ed 44-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dde100d911afb300ad21483db11bf61fec01543e",
+  "prompts": {},
+  "sessions": {
+    "s_38172931c4c5f1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a17b-0081-7690-8968-5f163918c700",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
