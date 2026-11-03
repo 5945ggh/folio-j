@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-11-02，已提交代码基准 `main 131e4bc3`，包含来源删除资源清理及即时查词活用拆分与布局修复。本次核对提交归属与文档，未重跑行为验收；各项工程、设备和使用验收仍以对应记录的版本及环境为准。
+> 状态核对：2026-11-03。即时查词辅助选项与设置精简已完成，改动起点为 `main 9d860895`，验证范围见[查词选项验收](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)。其余工程、设备和使用验收仍以对应记录的版本及环境为准。
 > 本文件汇总当前能力、实现缺口和验收入口。产品范围见 [PRD](../PRD.md)，领域含义见 [GLOSSARY](../GLOSSARY.md)，技术选型见 [TECH_STACK](../TECH_STACK.md)；具体实现由[架构](../ARCHITECTURE.md)维护。
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
@@ -13,7 +13,7 @@
 | --- | --- | --- |
 | Windows 实验性支持 | Windows CI 已通过。原生 PowerShell 源码启动、共享进程锁、备份恢复、词典占用文件回收与测试隔离；开发模式重载／退出等待后端清理，旧单索引可跨重启回收。继承用户目录权限，不新增 ACL；Windows 11 实机待验 | [Windows 验收与清单](WINDOWS_ACCEPTANCE.md)、[Windows CI](archived/WINDOWS_CI_ACCEPTANCE.md#2026-11-01-windows-ci)、[开发指南](../DEVELOPMENT.md#windows-自动验证) |
 | 首个公开 beta 与数据恢复 | 文档已审阅，首个公开测试版定为 `v0.1.0-beta.1`，从标签重新生成源码包；实际包验证结果与附件见发布记录。原生 v1 备份保留主库、凭据和词典，恢复到新目录；支持的旧数据走正常迁移 | [发行约定与历史演练](BETA_SOURCE_CANDIDATE.md)、[发布记录](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.1)、[升级与备份](../UPGRADING.md) |
-| EPUB 即时查词 | 设置可并存多部 format 3 词条词典、选用其中一本，兼容旧明镜索引；可删除安装项，当前项须明确替代，最后一本删除后恢复留白空状态。支持正文及卡内查词、按原文范围分页、桌面多层展开与窄屏错层、卡内 Shift 悬浮、拖动卡头和焦点词卡翻页、原处记录及返回。词头可显示基于真实命中的六形、音便与实际接续拆分；说明与释义一起滚动，合成浏览器回归覆盖长接续、拖动缩窗及窄屏父卡。真实词典既有兼容性用隔离库验证，新增说明的真实词典试读及实体触屏待验 | [首轮试读记录](archived/epub-reading/DICTIONARY_PLAN.md)、[活用拆分与布局验收](archived/reading-practice/DICTIONARY_INFLECTION_ACCEPTANCE.md)、[操作步骤](../USAGE.md#即时查词) |
+| EPUB 即时查词 | 设置可并存多部 format 3 词条词典、选用其中一本，兼容旧明镜索引；可删除安装项，当前项须明确替代，最后一本删除后恢复留白空状态。支持正文及卡内查词、按原文范围分页、桌面多层展开与窄屏错层、卡内 Shift 悬浮、拖动卡头和焦点词卡翻页、原处记录及返回。词头可显示基于真实命中的六形、音便与实际接续拆分；说明与释义一起滚动，合成浏览器回归覆盖长接续、拖动缩窗及窄屏父卡。提供“自动扩展查词”和“辅助排序”，默认开启、独立保存，基本词形还原始终保留。真实词典既有兼容性用隔离库验证，新增说明的真实词典试读及实体触屏待验 | [首轮试读记录](archived/epub-reading/DICTIONARY_PLAN.md)、[活用拆分与布局验收](archived/reading-practice/DICTIONARY_INFLECTION_ACCEPTANCE.md)、[查词选项验收](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)、[操作步骤](../USAGE.md#即时查词) |
 | 维护优化与学习闭环复验 | 公共检查与私有证据分开核验，局部清理、阅读记录呈现状态及测试支持归属已收口；干净检出使用合成 EPUB、临时库和人工讲解，重启后找回同一修订并返回正确原句，未使用日常数据或真实模型 | [分批验证与闭环复验](archived/MAINTENANCE_OPTIMIZATION.md)、[复验步骤](../DEVELOPMENT.md#真实学习闭环验收) |
 | 片段讲解入口与回复反馈 | 可复制完整提示词到外部 AI、从片段直达所属来源；普通问答和快捷生成讲解共享活动与耗时。未实测真实模型的响应节奏 | [使用步骤](../USAGE.md#ai-讨论与编写讲解)、[页面契约](../INFORMATION_ARCHITECTURE.md#讲解浏览人工保存与按需讨论)、[浏览器回归](../../frontend/browser-tests/workbench-render.tsx) |
 | 片段目录出处与删除 | 概览／列表统一具体出处与时间，列表和详情共用删除确认及完整影响复核；讲解删除文字使用危险操作色；无数据库迁移 | [本轮验收](archived/SEGMENT_CATALOG_ACCEPTANCE.md) |

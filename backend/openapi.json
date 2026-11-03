@@ -1142,6 +1142,16 @@
       "DictionaryLookupRequest": {
         "additionalProperties": false,
         "properties": {
+          "assisted_ranking": {
+            "default": true,
+            "title": "Assisted Ranking",
+            "type": "boolean"
+          },
+          "auto_expand": {
+            "default": true,
+            "title": "Auto Expand",
+            "type": "boolean"
+          },
           "expected_dictionary_id": {
             "anyOf": [
               {

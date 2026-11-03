@@ -230,3 +230,47 @@ test("legacy hidden preference upgrades both controls without revealing hidden m
 		{ studySegmentUnderlines: false, studySegmentMargins: true },
 	);
 });
+
+test("dictionary lookup options default on for legacy or invalid values and preserve explicit false across books", () => {
+	const values = new Map<string, string>();
+	const store = {
+		getItem: (key: string) => values.get(key) ?? null,
+		setItem: (key: string, value: string) => {
+			values.set(key, value);
+		},
+	};
+	for (const value of [undefined, null, "false", 0, true]) {
+		const ui = normalizeReaderUi({
+			dictionaryAutoExpand: value,
+			dictionaryAssistedRanking: value,
+		});
+		assert.equal(ui.dictionaryAutoExpand ?? true, true);
+		assert.equal(ui.dictionaryAssistedRanking ?? true, true);
+	}
+	for (const [dictionaryAutoExpand, dictionaryAssistedRanking] of [
+		[false, true],
+		[true, false],
+		[false, false],
+		[true, true],
+	]) {
+		assert.equal(
+			writeReaderUiPreferences(
+				{
+					...DEFAULT_READER_UI,
+					dictionaryAutoExpand,
+					dictionaryAssistedRanking,
+				},
+				store,
+			),
+			true,
+		);
+		const restored = readReaderUiPreferences(store);
+		assert.equal(restored.dictionaryAutoExpand ?? true, dictionaryAutoExpand);
+		assert.equal(
+			restored.dictionaryAssistedRanking ?? true,
+			dictionaryAssistedRanking,
+		);
+		assert.deepEqual(readBookUiPreferences("a", "v1", store), DEFAULT_BOOK_UI);
+		assert.deepEqual(readBookUiPreferences("b", "v2", store), DEFAULT_BOOK_UI);
+	}
+});

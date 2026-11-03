@@ -21,6 +21,9 @@
 	z-index: 50;
 	width: min(320px, calc(100vw - 24px));
 	padding: 18px;
+	max-height: calc(100dvh - 90px - env(safe-area-inset-bottom, 0px));
+	overflow-y: auto;
+	overscroll-behavior: contain;
 	font:
 		13px / 1.6 system-ui,
 		sans-serif;
@@ -253,23 +256,64 @@
 	font: 12px / 1.4 system-ui;
 	color: var(--reader-muted);
 }
-.dict-opacity {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	gap: 6px;
+.dict-lookup-options {
+	margin: 15px 0;
+}
+.dict-lookup-toggle {
+	position: relative;
+	display: flex;
 	align-items: center;
-	margin: 15px 0 9px;
-	font: 12px / 1.5 system-ui;
+	justify-content: space-between;
+	gap: 12px;
+	min-height: 32px;
 }
-.dict-opacity output {
+.dict-lookup-name {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+.reader-r1 .dict-option-help {
+	position: static;
+	display: inline-grid;
+	place-items: center;
+	flex: none;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
 	color: var(--reader-muted);
-	font-variant-numeric: tabular-nums;
+	cursor: help;
 }
-.dict-opacity input {
-	grid-column: 1 / -1;
-	width: 100%;
-	margin: 0;
-	accent-color: var(--reader-accent);
+.dict-option-help > span {
+	display: grid;
+	place-items: center;
+	width: 12px;
+	height: 12px;
+	border: 1px solid currentColor;
+	border-radius: 50%;
+	font: 9px / 1 system-ui;
+}
+.reader-r1 .dict-option-help::after {
+	left: 0;
+	bottom: calc(100% + 6px);
+	transform: none;
+	width: max-content;
+	max-width: 100%;
+	box-sizing: border-box;
+	white-space: normal;
+	text-align: left;
+	z-index: 1;
+}
+.reader-r1 .dict-option-help:focus::after {
+	opacity: 1;
+	visibility: visible;
+	transition-delay: 0ms;
+}
+.dict-lookup-options > p:not(.sr-only) {
+	font-size: 11px;
+	margin: 3px 0 10px;
 }
 .dict-message {
 	margin: 4px 17px 18px;

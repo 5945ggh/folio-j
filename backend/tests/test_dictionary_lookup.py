@@ -388,7 +388,10 @@ async def test_lemma_and_pos_are_soft_ties_not_filters() -> None:
 
 
 @pytest.mark.asyncio
-async def test_sequence_uses_best_hit_and_keeps_ordered_distinct_sibling_definitions() -> None:
+@pytest.mark.parametrize("assisted_ranking", [False, True])
+async def test_sequence_uses_best_hit_and_keeps_ordered_distinct_sibling_definitions(
+    assisted_ranking: bool,
+) -> None:
     store = MemoryStore(
         [
             entry("短", id=1, sequence=7, definition="第一释义"),
@@ -400,7 +403,8 @@ async def test_sequence_uses_best_hit_and_keeps_ordered_distinct_sibling_definit
         ]
     )
     result = await lookup(
-        cast(DictionaryStore, store), DictionaryLookupRequest(text="長い表記", position=2)
+        cast(DictionaryStore, store),
+        DictionaryLookupRequest(text="長い表記", position=2, assisted_ranking=assisted_ranking),
     )
     assert len(result.matches) == 4
     merged = result.matches[0]
@@ -579,3 +583,207 @@ async def test_gap_in_complete_hints_retokenizes_without_losing_inflection(
     request.tokens.pop(1)
     assert await query(MemoryStore([entry("食べる")]), request) == [("食べる", 0, 5)]
     assert calls == [request.text]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("auto_expand", [False, True])
+@pytest.mark.parametrize("assisted_ranking", [False, True])
+@pytest.mark.parametrize("position", [2, 4, 5])
+async def test_lookup_options_limit_click_start_before_ranking(
+    auto_expand: bool, assisted_ranking: bool, position: int
+) -> None:
+    text = "彼は国際連合大学で学ぶ。"
+    store = MemoryStore([entry("国際連合大学"), entry("連合", id=2), entry("大学", id=3)])
+    request = DictionaryLookupRequest(
+        text=text,
+        position=position,
+        auto_expand=auto_expand,
+        assisted_ranking=assisted_ranking,
+        tokens=[token(text, 2, 4), token(text, 4, 6), token(text, 6, 8)],
+    )
+    expected = [("国際連合大学", 2, 8)]
+    if position >= 4:
+        expected.append(("連合", 4, 6))
+    if not auto_expand:
+        expected = [match for match in expected if match[1] == position]
+    assert await query(store, request) == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("auto_expand", [False, True])
+@pytest.mark.parametrize("assisted_ranking", [False, True])
+async def test_lookup_options_leave_explicit_selection_exact(
+    auto_expand: bool, assisted_ranking: bool
+) -> None:
+    store = MemoryStore([entry("日本語"), entry("語", id=2)])
+    assert await query(
+        store,
+        DictionaryLookupRequest(
+            text="日本語",
+            selection_start=2,
+            selection_end=3,
+            auto_expand=auto_expand,
+            assisted_ranking=assisted_ranking,
+        ),
+    ) == [("語", 2, 3)]
+    assert await query(
+        MemoryStore([entry("食べる")]),
+        DictionaryLookupRequest(
+            text="日本語を食べました。",
+            selection_start=4,
+            selection_end=9,
+            auto_expand=auto_expand,
+            assisted_ranking=assisted_ranking,
+        ),
+    ) == [("食べる", 4, 9)]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("assisted_ranking", [False, True])
+async def test_no_expansion_filters_before_sequence_representative_and_card_limit(
+    assisted_ranking: bool,
+) -> None:
+    store = MemoryStore(
+        [entry("日本語", id=i, definition="長い释义") for i in range(1, 45)]
+        + [
+            entry("日本語", id=45, sequence=7, definition="第一释义"),
+            entry("語", id=46, sequence=7, definition="第二释义"),
+            entry("別名", id=47, sequence=7, definition="第一释义"),
+        ]
+    )
+    result = await lookup(
+        cast(DictionaryStore, store),
+        DictionaryLookupRequest(
+            text="日本語", position=2, auto_expand=False, assisted_ranking=assisted_ranking
+        ),
+    )
+    assert [(m.term, m.start, m.end) for m in result.matches] == [("語", 2, 3)]
+    assert [node.text for node in result.matches[0].definitions] == ["第一释义", "第二释义"]
+    assert "日本語" not in store.query_keys
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("auto_expand", [False, True])
+@pytest.mark.parametrize("assisted_ranking", [False, True])
+async def test_reading_ranking_option_preserves_longest_first_and_all_homophones(
+    auto_expand: bool, assisted_ranking: bool
+) -> None:
+    text = "人気者"
+    result = await lookup(
+        cast(
+            DictionaryStore,
+            MemoryStore(
+                [
+                    entry("人気", id=1, reading="ひとけ"),
+                    entry("人気", id=2, reading="にんき"),
+                    entry("人気者", id=3),
+                ]
+            ),
+        ),
+        DictionaryLookupRequest(
+            text=text,
+            position=0,
+            auto_expand=auto_expand,
+            assisted_ranking=assisted_ranking,
+            tokens=[token(text, 0, 2, reading="ニンキ")],
+        ),
+    )
+    readings = ["にんき", "ひとけ"] if assisted_ranking else ["ひとけ", "にんき"]
+    assert [(m.term, m.reading) for m in result.matches] == [
+        ("人気者", ""),
+        *(("人気", reading) for reading in readings),
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("assisted_ranking", [False, True])
+async def test_ranking_option_controls_lemma_and_pos_without_filtering_recall(
+    assisted_ranking: bool,
+) -> None:
+    text = "みる"
+    result = await lookup(
+        cast(
+            DictionaryStore,
+            MemoryStore(
+                [
+                    entry("観る", id=1, reading="みる", rules="v1"),
+                    entry("見る", id=2, reading="みる", rules="v5"),
+                    entry("見る", id=3, reading="みる", rules="v1"),
+                ]
+            ),
+        ),
+        DictionaryLookupRequest(
+            text=text,
+            position=0,
+            assisted_ranking=assisted_ranking,
+            tokens=[
+                token(
+                    text,
+                    0,
+                    2,
+                    lemma="見る",
+                    reading="ミル",
+                    pos=["動詞", "一般", "*", "*", "上一段-マ行", "終止形-一般"],
+                )
+            ],
+        ),
+    )
+    expected = [3, 2, 1] if assisted_ranking else [1, 2, 3]
+    assert [m.id for m in result.matches] == [f"test-v1:entry:{id}" for id in expected]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("assisted_ranking", [False, True])
+async def test_same_entry_candidate_uses_selected_ranking_mode(assisted_ranking: bool) -> None:
+    text = "かなか"
+    assert await query(
+        MemoryStore([entry("かな", reading="なか")]),
+        DictionaryLookupRequest(
+            text=text,
+            position=1,
+            assisted_ranking=assisted_ranking,
+            tokens=[token(text, 1, 3, lemma="かな", reading="ナカ")],
+        ),
+    ) == [("かな", 1, 3) if assisted_ranking else ("かな", 0, 2)]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("auto_expand", [False, True])
+@pytest.mark.parametrize("assisted_ranking", [False, True])
+@pytest.mark.parametrize("with_tokens", [False, True])
+async def test_all_options_keep_deinflection_and_explanations(
+    auto_expand: bool, assisted_ranking: bool, with_tokens: bool
+) -> None:
+    request = complete_inflection_request().model_copy(
+        update={
+            "position": 0,
+            "auto_expand": auto_expand,
+            "assisted_ranking": assisted_ranking,
+        }
+    )
+    if not with_tokens:
+        request.tokens = []
+    result = await lookup(cast(DictionaryStore, MemoryStore([entry("食べる")])), request)
+    assert [(m.term, m.start, m.end) for m in result.matches] == [("食べる", 0, 5)]
+    assert [p.surface for p in result.matches[0].inflection] == ["食べ", "まし", "た"]
+    assert [p.form for p in result.matches[0].inflection] == ["continuative", "continuative", None]
+    request.position = 1
+    assert await query(MemoryStore([entry("食べる")]), request) == (
+        [("食べる", 0, 5)] if auto_expand else []
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("position,expected", [(2, [("カタカナ", 2, 6)]), (4, [])])
+async def test_no_expansion_keeps_original_unicode_codepoint_start(
+    position: int, expected: list[tuple[str, int, int]]
+) -> None:
+    assert (
+        await query(
+            MemoryStore([entry("カタカナ")]),
+            DictionaryLookupRequest(
+                text="𠮷はｶﾀｶﾅを読む", position=position, auto_expand=False, assisted_ranking=False
+            ),
+        )
+        == expected
+    )

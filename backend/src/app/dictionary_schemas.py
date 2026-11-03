@@ -94,6 +94,8 @@ class DictionaryTokenHint(StrictInput):
 
 class DictionaryLookupRequest(StrictInput):
     expected_dictionary_id: str | None = Field(default=None, min_length=1, max_length=64)
+    auto_expand: bool = True
+    assisted_ranking: bool = True
     text: str = Field(min_length=1, max_length=8192)
     position: int | None = Field(default=None, ge=0)
     selection_start: int | None = Field(default=None, ge=0)

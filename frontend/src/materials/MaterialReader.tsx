@@ -2261,8 +2261,16 @@ function Reader({
 						onReady={setDictionaryReady}
 						portal={shell.current}
 						opacity={ui.dictionaryOpacity ?? DEFAULT_DICTIONARY_OPACITY}
-						onOpacity={(dictionaryOpacity) =>
-							setUiPreference({ ...latest.current.ui, dictionaryOpacity })
+						autoExpand={ui.dictionaryAutoExpand ?? true}
+						onAutoExpand={(dictionaryAutoExpand) =>
+							setUiPreference({ ...latest.current.ui, dictionaryAutoExpand })
+						}
+						assistedRanking={ui.dictionaryAssistedRanking ?? true}
+						onAssistedRanking={(dictionaryAssistedRanking) =>
+							setUiPreference({
+								...latest.current.ui,
+								dictionaryAssistedRanking,
+							})
 						}
 						mode={ui.dictionaryMode ?? "off"}
 						onMode={(mode) =>

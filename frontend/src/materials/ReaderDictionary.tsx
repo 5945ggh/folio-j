@@ -4,6 +4,7 @@ import {
 	useCallback,
 	useEffect,
 	useImperativeHandle,
+	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
@@ -24,7 +25,6 @@ import {
 	subscribeDictionaryLibrary,
 } from "./dictionary-api";
 import { dictionaryPages } from "./dictionary-pages";
-import { MIN_DICTIONARY_OPACITY } from "./preferences";
 import type {
 	ReaderLookupHit,
 	StudyMarkHit,
@@ -49,10 +49,13 @@ export function ReaderDictionary({
 	portal,
 	mode,
 	onMode,
+	autoExpand,
+	onAutoExpand,
+	assistedRanking,
+	onAssistedRanking,
 	onRecord,
 	onReady,
 	opacity,
-	onOpacity,
 	restoreFocus,
 	manageState,
 	onManage,
@@ -63,10 +66,13 @@ export function ReaderDictionary({
 	portal: HTMLElement | null;
 	mode: DictionaryMode;
 	onMode: (mode: DictionaryMode) => void;
+	autoExpand: boolean;
+	onAutoExpand: (value: boolean) => void;
+	assistedRanking: boolean;
+	onAssistedRanking: (value: boolean) => void;
 	onRecord: (hit: StudyMarkHit) => void;
 	onReady: (ready: boolean) => void;
 	opacity: number;
-	onOpacity: (value: number) => void;
 	restoreFocus: () => void;
 	manageState: ReturnDestination["state"];
 	onManage: () => void;
@@ -78,6 +84,9 @@ export function ReaderDictionary({
 	const [notice, setNotice] = useState("");
 	const current = useRef(levels);
 	const ticket = useRef(0);
+	const options = useRef({ autoExpand, assistedRanking });
+	const appliedOptions = useRef({ autoExpand, assistedRanking });
+	options.current = { autoExpand, assistedRanking };
 	const trigger = useRef<HTMLButtonElement>(null);
 	const status = useQuery({
 		queryKey: dictionaryKey,
@@ -100,6 +109,16 @@ export function ReaderDictionary({
 		publish([]);
 		return true;
 	}, [publish]);
+	useLayoutEffect(() => {
+		if (
+			appliedOptions.current.autoExpand !== autoExpand ||
+			appliedOptions.current.assistedRanking !== assistedRanking
+		) {
+			// Option changes invalidate every level, including in-flight nested requests.
+			appliedOptions.current = { autoExpand, assistedRanking };
+			clearCards();
+		}
+	}, [autoExpand, assistedRanking, clearCards]);
 	const selection = status.data?.dictionary_id;
 	useEffect(() => {
 		// A visible card and its nested lookup stack belong to one dictionary.
@@ -167,6 +186,13 @@ export function ReaderDictionary({
 			setMenu(true);
 			return;
 		}
+		const snapshot = { autoExpand, assistedRanking };
+		const input = {
+			...origin.input,
+			expected_dictionary_id: selected.dictionary_id,
+			auto_expand: snapshot.autoExpand,
+			assisted_ranking: snapshot.assistedRanking,
+		};
 		const id = ++ticket.current;
 		setCardDictionary(selected);
 		setNotice("");
@@ -195,23 +221,16 @@ export function ReaderDictionary({
 		let message = "";
 		try {
 			const result = await client.fetchQuery({
-				queryKey: [
-					"dictionary",
-					"lookup",
-					selected.dictionary_id,
-					origin.input,
-				],
-				queryFn: ({ signal }) =>
-					lookupDictionary(
-						{ ...origin.input, expected_dictionary_id: selected.dictionary_id },
-						signal,
-					),
+				queryKey: ["dictionary", "lookup", selected.dictionary_id, input],
+				queryFn: ({ signal }) => lookupDictionary(input, signal),
 				staleTime: 60_000,
 				gcTime: 90_000,
 				retry: false,
 			});
 			if (
 				ticket.current !== id ||
+				options.current.autoExpand !== snapshot.autoExpand ||
+				options.current.assistedRanking !== snapshot.assistedRanking ||
 				client.getQueryData<DictionaryStatus>(dictionaryKey)?.dictionary_id !==
 					selected.dictionary_id
 			)
@@ -383,24 +402,71 @@ export function ReaderDictionary({
 												</button>
 											))}
 										</fieldset>
-										<label className="dict-opacity">
-											<span>浮窗背景不透明度</span>
-											<output>{opacity}%</output>
-											<input
-												type="range"
-												aria-label="浮窗背景不透明度"
-												min={MIN_DICTIONARY_OPACITY}
-												max="100"
-												step="1"
-												value={opacity}
-												onChange={(event) =>
-													onOpacity(Number(event.target.value))
-												}
-											/>
-										</label>
-										<p>
-											选区工具栏、词卡、学习片段、翻译与记录列表共用，与阅读界面设置同步。
-										</p>
+										<div className="dict-lookup-options">
+											<div className="reader-settings-toggle dict-lookup-toggle">
+												<div className="dict-lookup-name">
+													<label htmlFor="dict-auto-expand">自动扩展查词</label>
+													<button
+														type="button"
+														className="dict-option-help"
+														aria-label="自动扩展查词说明"
+														aria-describedby="dict-expand-help"
+														data-tooltip="点在词语中间时，也会向前查找完整词语。"
+													>
+														<span aria-hidden="true">?</span>
+													</button>
+												</div>
+												<input
+													type="checkbox"
+													role="switch"
+													id="dict-auto-expand"
+													aria-label="自动扩展查词"
+													aria-describedby="dict-expand-help"
+													aria-checked={autoExpand}
+													checked={autoExpand}
+													onChange={(event) => {
+														clearCards();
+														onAutoExpand(event.target.checked);
+													}}
+												/>
+											</div>
+											<p id="dict-expand-help" className="sr-only">
+												点在词语中间时，也会向前查找完整词语。
+											</p>
+											<div className="reader-settings-toggle dict-lookup-toggle">
+												<div className="dict-lookup-name">
+													<label htmlFor="dict-assisted-ranking">
+														辅助排序
+													</label>
+													<button
+														type="button"
+														className="dict-option-help"
+														aria-label="辅助排序说明"
+														aria-describedby="dict-ranking-help"
+														data-tooltip="结合词形、读音和词性调整结果顺序。"
+													>
+														<span aria-hidden="true">?</span>
+													</button>
+												</div>
+												<input
+													type="checkbox"
+													role="switch"
+													id="dict-assisted-ranking"
+													aria-label="辅助排序"
+													aria-describedby="dict-ranking-help"
+													aria-checked={assistedRanking}
+													checked={assistedRanking}
+													onChange={(event) => {
+														clearCards();
+														onAssistedRanking(event.target.checked);
+													}}
+												/>
+											</div>
+											<p id="dict-ranking-help" className="sr-only">
+												结合词形、读音和词性调整结果顺序。
+											</p>
+											<p>基本词形还原始终开启。</p>
+										</div>
 									</>
 								) : (
 									<p>在设置中导入并选择词典，即可点读正文和词卡。</p>

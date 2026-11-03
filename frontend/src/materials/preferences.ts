@@ -7,6 +7,8 @@ export type ReaderUiPreferences = {
 	/** Shared compact-popover opacity; preserve this stored field for existing readers. */
 	dictionaryOpacity?: number;
 	dictionaryMode?: "off" | "click" | "hover";
+	dictionaryAutoExpand?: boolean;
+	dictionaryAssistedRanking?: boolean;
 	theme: ReaderTheme;
 	focus: boolean;
 	toolbarOpacity: number;
@@ -81,6 +83,12 @@ export function normalizeReaderUi(
 			: {}),
 		...(value.dictionaryMode === "click" || value.dictionaryMode === "hover"
 			? { dictionaryMode: value.dictionaryMode }
+			: {}),
+		...(value.dictionaryAutoExpand === false
+			? { dictionaryAutoExpand: false }
+			: {}),
+		...(value.dictionaryAssistedRanking === false
+			? { dictionaryAssistedRanking: false }
 			: {}),
 		marks: {
 			studySegmentUnderlines:

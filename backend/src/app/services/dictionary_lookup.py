@@ -158,7 +158,7 @@ def _covers(request: DictionaryLookupRequest, start: int, end: int) -> bool:
     if request.selection_start is not None:
         return (start, end) == (request.selection_start, request.selection_end)
     assert request.position is not None
-    return start <= request.position < end
+    return start <= request.position < end and (request.auto_expand or start == request.position)
 
 
 def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
@@ -328,16 +328,20 @@ def _pos_score(entry: DictionaryEntry, candidate: _Candidate) -> int:
     return 0
 
 
-def _rank(entry: DictionaryEntry, candidate: _Candidate) -> tuple[int, int, int, int, int]:
+def _rank(
+    entry: DictionaryEntry, candidate: _Candidate, assisted_ranking: bool = True
+) -> tuple[int, int, int, int, int]:
     reading = bool(
-        candidate.reading and _key(entry.reading or entry.term) == _key(candidate.reading)
+        assisted_ranking
+        and candidate.reading
+        and _key(entry.reading or entry.term) == _key(candidate.reading)
     )
-    lemma = bool(candidate.lemma and _key(entry.term) == _key(candidate.lemma))
+    lemma = bool(assisted_ranking and candidate.lemma and _key(entry.term) == _key(candidate.lemma))
     return (
         -(candidate.end - candidate.start),
         -int(lemma),
         -int(reading),
-        -_pos_score(entry, candidate),
+        -_pos_score(entry, candidate) if assisted_ranking else 0,
         entry.order,
     )
 
@@ -349,7 +353,7 @@ def _group(entry: DictionaryEntry) -> tuple[str, str, int]:
 
 
 def _best_matches(
-    entries: list[DictionaryEntry], candidates: list[_Candidate]
+    entries: list[DictionaryEntry], candidates: list[_Candidate], assisted_ranking: bool = True
 ) -> list[tuple[DictionaryEntry, _Candidate]]:
     by_key: dict[str, list[_Candidate]] = {}
     for candidate in candidates:
@@ -372,12 +376,14 @@ def _best_matches(
         if not options:
             continue
         # Metadata breaks otherwise identical candidate ties, without changing card ranking.
-        candidate = min(options, key=lambda c: (_rank(entry, c), -len(c.inflection)))
+        candidate = min(
+            options, key=lambda c: (_rank(entry, c, assisted_ranking), -len(c.inflection))
+        )
         group = _group(entry)
         old = best.get(group)
-        if old is None or _rank(entry, candidate) < _rank(*old):
+        if old is None or _rank(entry, candidate, assisted_ranking) < _rank(*old, assisted_ranking):
             best[group] = (entry, candidate)
-    return sorted(best.values(), key=lambda pair: _rank(*pair))[:MAX_CARDS]
+    return sorted(best.values(), key=lambda pair: _rank(*pair, assisted_ranking))[:MAX_CARDS]
 
 
 def _matched_inflection(
@@ -458,7 +464,9 @@ async def lookup(
         candidates = await asyncio.to_thread(_candidates, request)
         keys = sorted({c.key for c in candidates})
         entries = await snapshot.find_terms(keys)
-        ordered = await asyncio.to_thread(_best_matches, entries, candidates)
+        ordered = await asyncio.to_thread(
+            _best_matches, entries, candidates, request.assisted_ranking
+        )
         sequences = [
             (entry.dictionary_id, entry.sequence)
             for entry, _ in ordered

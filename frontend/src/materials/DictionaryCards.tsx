@@ -25,7 +25,10 @@ import { useReaderCardDrag } from "./use-reader-card-drag";
 import "./reader-popover.css";
 
 export type LookupOrigin = {
-	input: DictionaryRequest;
+	input: Omit<
+		DictionaryRequest,
+		"auto_expand" | "assisted_ranking" | "expected_dictionary_id"
+	>;
 	anchor: ScreenAnchor;
 	parentBoxes?: ScreenAnchor[];
 	record?: StudyMarkHit | null;

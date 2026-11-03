@@ -1821,6 +1821,16 @@ export interface components {
         };
         /** DictionaryLookupRequest */
         DictionaryLookupRequest: {
+            /**
+             * Assisted Ranking
+             * @default true
+             */
+            assisted_ranking: boolean;
+            /**
+             * Auto Expand
+             * @default true
+             */
+            auto_expand: boolean;
             /** Expected Dictionary Id */
             expected_dictionary_id?: string | null;
             /** Position */

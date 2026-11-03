@@ -10,6 +10,8 @@ const stamp = "2026-10-31T00:00:00Z";
 
 /** Exercise the actual Reader, iframe glyph projection and nested dictionary cards without a network. */
 export async function readerDictionary(h: BrowserHarness) {
+	const params = new URLSearchParams(location.search);
+	const optionsScene = params.get("scene") === "options";
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
 	const { SettingsPage } = await import("../src/settings/SettingsPage");
 	const { updateDictionaryLibrary } = await import(
@@ -180,6 +182,11 @@ export async function readerDictionary(h: BrowserHarness) {
 					typeof input.expected_dictionary_id === "string" &&
 					input.expected_dictionary_id === activeDictionaryId,
 				"Every lookup must freeze the active dictionary identity",
+			);
+			check(
+				typeof input.auto_expand === "boolean" &&
+					typeof input.assisted_ranking === "boolean",
+				"Every body, selection and nested lookup must freeze both lookup options",
 			);
 			requests.push(input);
 			if (hold)
@@ -399,6 +406,7 @@ export async function readerDictionary(h: BrowserHarness) {
 		"folio-reader-ui-v1",
 		JSON.stringify({
 			focus: false,
+			dictionaryOpacity: 20,
 			marks: { studySegmentUnderlines: true, studySegmentMargins: false },
 		}),
 	);
@@ -607,29 +615,57 @@ export async function readerDictionary(h: BrowserHarness) {
 			() => !!h.container.querySelector(".dict-installed"),
 			"Settings must read installed dictionary",
 		);
-		const opacity = h.container.querySelector<HTMLInputElement>(
-			'input[type="range"][aria-label="浮窗背景不透明度"]',
-		);
-		check(opacity, "Dictionary settings must expose background opacity slider");
+		const option = (label: string) => {
+			const control = h.container.querySelector<HTMLInputElement>(
+				`.dict-config input[aria-label="${label}"]`,
+			);
+			check(
+				control && control.getAttribute("role") === "switch",
+				`Missing accessible ${label} switch`,
+			);
+			return control;
+		};
 		check(
-			Number(opacity.value) === 72 &&
-				Number(opacity.min) === 20 &&
-				Number(opacity.max) === 100,
-			"Opacity slider must expose the supported default and range",
+			option("自动扩展查词").checked && option("辅助排序").checked,
+			"Old browser preferences must default both lookup options on",
 		);
-		h.inputValue(opacity, "20");
-		button("关闭查词设置").click();
-		await h.until(
-			() => !h.container.querySelector(".dict-config"),
-			"Dictionary settings must close before reopening",
-		);
-		button("即时查词").click();
-		await h.until(
-			() =>
-				h.container.querySelector<HTMLInputElement>(
-					'input[aria-label="浮窗背景不透明度"]',
-				)?.value === "20",
-			"Opacity must survive reopening dictionary settings",
+		for (const label of ["自动扩展查词", "辅助排序"]) {
+			const help = button(`${label}说明`);
+			const description = document.getElementById(
+				help.getAttribute("aria-describedby") ?? "",
+			);
+			check(
+				description?.classList.contains("sr-only") &&
+					help.dataset.tooltip === description.textContent?.trim(),
+				"Option descriptions must be available through help markers rather than visible paragraphs",
+			);
+		}
+		if (optionsScene) {
+			const menu = h.container.querySelector<HTMLElement>(".dict-config");
+			check(menu, "Options preview needs an open menu");
+			const box = menu.getBoundingClientRect();
+			check(
+				box.top >= 0 && box.bottom <= innerHeight,
+				"The compact settings menu must stay within the viewport",
+			);
+			option("自动扩展查词").click();
+			await h.until(
+				() => !option("自动扩展查词").checked,
+				"Short menu switch must remain usable",
+			);
+			const manage = menu.querySelector<HTMLAnchorElement>("a.dict-import");
+			check(manage, "Menu must retain dictionary management");
+			manage.scrollIntoView({ block: "nearest" });
+			check(
+				manage.getBoundingClientRect().bottom <= box.bottom,
+				"Scrolling must reach the last menu action",
+			);
+			menu.scrollTop = 0;
+			return "dictionary options: viewport scroll and accessible independent switches";
+		}
+		check(
+			!h.container.querySelector('.dict-config input[type="range"]'),
+			"Dictionary settings must leave shared opacity in reading settings",
 		);
 		button("点击查词").click();
 		const frame = h.container.querySelector<HTMLIFrameElement>(
@@ -648,7 +684,10 @@ export async function readerDictionary(h: BrowserHarness) {
 			"Body click must open root card",
 		);
 		check(
-			requests[0]?.position === 0 && requests[0]?.text.startsWith("猫が歩く。"),
+			requests[0]?.position === 0 &&
+				requests[0]?.text.startsWith("猫が歩く。") &&
+				requests[0]?.auto_expand === true &&
+				requests[0]?.assisted_ranking === true,
 			"Actual iframe coordinates must reach dictionary input",
 		);
 		check(
@@ -771,34 +810,45 @@ export async function readerDictionary(h: BrowserHarness) {
 		button("即时查词").click();
 		await h.until(
 			() => !!h.container.querySelector(".dict-config"),
-			"Open word card must allow opacity preview settings",
+			"Open word card must allow dictionary settings",
 		);
-		const previewOpacity = h.container.querySelector<HTMLInputElement>(
-			'input[aria-label="浮窗背景不透明度"]',
-		);
-		check(previewOpacity, "Open word card settings must retain opacity slider");
-		h.inputValue(previewOpacity, "84");
+		const syncOpacity = (value: number) => {
+			const stored = JSON.parse(
+				localStorage.getItem("folio-reader-ui-v1") ?? "{}",
+			);
+			localStorage.setItem(
+				"folio-reader-ui-v1",
+				JSON.stringify({ ...stored, dictionaryOpacity: value }),
+			);
+			window.dispatchEvent(
+				new StorageEvent("storage", {
+					key: "folio-reader-ui-v1",
+					storageArea: localStorage,
+				}),
+			);
+		};
+		syncOpacity(84);
 		await h.until(
 			() => getComputedStyle(root).backgroundColor !== originalBackground,
-			"Opacity slider must update the existing card background immediately",
+			"Shared opacity changes must update existing cards immediately",
 		);
 		check(
 			getComputedStyle(root).opacity === "1",
 			"Background opacity must preserve opaque dictionary text",
 		);
-		h.inputValue(previewOpacity, "20");
+		syncOpacity(20);
 		await h.until(
 			() => getComputedStyle(root).backgroundColor === originalBackground,
-			"Opacity preview must restore the chosen preference",
+			"Shared opacity must restore the chosen preference",
 		);
 		button("关闭查词设置").click();
 		await h.until(
 			() => !h.container.querySelector(".dict-config"),
-			"Preview settings must close",
+			"Dictionary settings must close",
 		);
 		check(
 			h.container.querySelector('.dict-card[data-depth="0"]') === root,
-			"Closing opacity settings must retain the opened word card",
+			"Closing dictionary settings must retain the opened word card",
 		);
 		const prose = root.querySelector<HTMLElement>('[data-dict-role="def2"]');
 		check(prose, "Japanese definition must render");
@@ -809,7 +859,10 @@ export async function readerDictionary(h: BrowserHarness) {
 			"Japanese definition click must open child card",
 		);
 		check(
-			requests[1]?.text === "散歩をする動物。" && requests[1]?.position === 1,
+			requests[1]?.text === "散歩をする動物。" &&
+				requests[1]?.position === 1 &&
+				requests[1]?.auto_expand === true &&
+				requests[1]?.assisted_ranking === true,
 			"Nested click must use Japanese definition and middle glyph offset",
 		);
 		const child = h.container.querySelector<HTMLElement>(
@@ -1483,6 +1536,160 @@ export async function readerDictionary(h: BrowserHarness) {
 			hold = false;
 			await glyphClick(nextLeaf, 3, frame);
 			await h.until(
+				() => !!h.container.querySelector(".dict-definitions"),
+				"Options regression needs a resolved root",
+			);
+			button("即时查词").click();
+			await h.until(
+				() => !!h.container.querySelector(".dict-config"),
+				"Options must open above a live card",
+			);
+			const beforeOptionChange = requests.length;
+			option("自动扩展查词").click();
+			await h.until(
+				() => !h.container.querySelector(".dict-deck"),
+				"Changing an option must clear the whole deck",
+			);
+			check(
+				!option("自动扩展查词").checked &&
+					option("辅助排序").checked &&
+					requests.length === beforeOptionChange,
+				"Independent option change must retain menu, avoid automatic lookup and preserve the other option",
+			);
+			check(
+				!(
+					frame.contentWindow as (Window & { CSS: typeof CSS }) | null
+				)?.CSS.highlights.has("folio-dictionary"),
+				"Changing lookup options must clear the original highlight",
+			);
+			button("关闭查词设置").click();
+			await glyphClick(nextLeaf, 3, frame);
+			await h.until(
+				() => !!h.container.querySelector(".dict-definitions"),
+				"New options must resolve another lookup",
+			);
+			check(
+				requests.length === beforeOptionChange + 1 &&
+					requests.at(-1)?.auto_expand === false &&
+					requests.at(-1)?.assisted_ranking === true,
+				"New option combinations must bypass the old cache and freeze their request fields",
+			);
+			const prose = h.container.querySelector('[data-dict-role="def2"]');
+			check(prose, "Options regression needs nested Japanese prose");
+			hold = true;
+			const previousRelease = deferred.release;
+			await glyphClick(prose, 2);
+			await h.until(
+				() => !!deferred.release && deferred.release !== previousRelease,
+				"Nested lookup must remain pending before cross-tab option changes",
+			);
+			check(
+				requests.at(-1)?.auto_expand === false &&
+					requests.at(-1)?.assisted_ranking === true,
+				"Nested lookup must inherit the active options",
+			);
+			button("即时查词").click();
+			await h.until(
+				() => !!h.container.querySelector(".dict-config"),
+				"Pending lookups must leave the option menu usable",
+			);
+			const stored = JSON.parse(
+				localStorage.getItem("folio-reader-ui-v1") ?? "{}",
+			);
+			localStorage.setItem(
+				"folio-reader-ui-v1",
+				JSON.stringify({ ...stored, dictionaryAssistedRanking: false }),
+			);
+			window.dispatchEvent(
+				new StorageEvent("storage", {
+					key: "folio-reader-ui-v1",
+					storageArea: localStorage,
+				}),
+			);
+			await h.until(
+				() =>
+					!h.container.querySelector(".dict-deck") &&
+					!option("辅助排序").checked,
+				"Cross-tab preferences must clear the stack and synchronize switches",
+			);
+			check(deferred.release, "Nested lookup must have a delayed response");
+			const beforeResponse = lookupResponses;
+			deferred.release();
+			hold = false;
+			await h.until(
+				() => lookupResponses === beforeResponse + 1,
+				"Old option request must finish",
+			);
+			await settle();
+			check(
+				!h.container.querySelector(".dict-deck") &&
+					!!h.container.querySelector(".dict-config"),
+				"A late result must not restore cards or close the settings menu",
+			);
+			button("关闭查词设置").click();
+			const beforeBothFalse = requests.length;
+			await glyphClick(nextLeaf, 3, frame);
+			await h.until(
+				() => !!h.container.querySelector(".dict-definitions"),
+				"Both-disabled lookup must resolve",
+			);
+			check(
+				requests.length === beforeBothFalse + 1 &&
+					requests.at(-1)?.auto_expand === false &&
+					requests.at(-1)?.assisted_ranking === false,
+				"Assisted ranking must independently partition the lookup cache",
+			);
+			const selectionProse = h.container.querySelector(
+				'[data-dict-role="def2"]',
+			);
+			check(selectionProse, "Selection lookup needs Japanese prose");
+			const selectedRange = document.createRange();
+			selectedRange.selectNodeContents(selectionProse);
+			document.getSelection()?.removeAllRanges();
+			document.getSelection()?.addRange(selectedRange);
+			document.dispatchEvent(new Event("selectionchange"));
+			await h.until(
+				() =>
+					!![...h.container.querySelectorAll(".dict-foot button")].find(
+						(item) => item.textContent === "查选中文字",
+					),
+				"Native Japanese selection must expose lookup",
+			);
+			button("查选中文字").click();
+			await h.until(
+				() => h.container.querySelectorAll(".dict-card").length === 2,
+				"Selected Japanese text must open a nested card",
+			);
+			check(
+				requests.at(-1)?.selection_start === 0 &&
+					requests.at(-1)?.selection_end ===
+						Array.from(selectionProse.textContent ?? "").length &&
+					requests.at(-1)?.auto_expand === false &&
+					requests.at(-1)?.assisted_ranking === false,
+				"Explicit selection must carry the same option snapshot",
+			);
+			document.getSelection()?.removeAllRanges();
+			button("即时查词").click();
+			await h.until(
+				() => !!h.container.querySelector(".dict-config"),
+				"Restore defaults menu",
+			);
+			option("自动扩展查词").click();
+			await h.until(
+				() => option("自动扩展查词").checked,
+				"Restore expansion independently",
+			);
+			option("辅助排序").click();
+			await h.until(
+				() => option("辅助排序").checked,
+				"Restore ranking independently",
+			);
+			button("关闭查词设置").click();
+		}
+		if (innerWidth === 1280) {
+			hold = false;
+			await glyphClick(nextLeaf, 3, frame);
+			await h.until(
 				() =>
 					h.container
 						.querySelector(".dict-card")
@@ -1659,11 +1866,16 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		button("即时查词").click();
 		await h.until(
-			() =>
-				h.container.querySelector<HTMLInputElement>(
-					'input[aria-label="浮窗背景不透明度"]',
-				)?.value === "20",
-			"Dictionary opacity must persist across Reader remounts",
+			() => !!h.container.querySelector(".dict-installed"),
+			"Dictionary settings must reopen after Reader remount",
+		);
+		check(
+			getComputedStyle(
+				h.container.querySelector("main.reader-r1") as HTMLElement,
+			)
+				.getPropertyValue("--reader-popover-opacity")
+				.trim() === "20%",
+			"Shared opacity must persist across Reader remounts",
 		);
 		const manage = [
 			...h.container.querySelectorAll<HTMLAnchorElement>(".dict-config a"),
@@ -1698,6 +1910,6 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		return `dictionary: real body→Japanese child→${window.innerWidth >= 740 ? "four desktop levels" : "compact stack"}→back→close; settings/gallery coexistence and active-layer Escape; saved mark + Shift click retain records; late response ignored`;
 	} finally {
-		dispose();
+		if (!(optionsScene && params.has("capture"))) dispose();
 	}
 }
