@@ -48,9 +48,10 @@ export function AnalysisPanel({
 	children?: ReactNode;
 }) {
 	const client = useQueryClient();
-	const [deleting, setDeleting] = useState(false);
+	const [deleting, setDeleting] = useState<AnalysisDetail | null>(null);
 	const [renaming, setRenaming] = useState<AnalysisDetail | null>(null);
 	const selectedRef = useRef(selectedId);
+	const submittingDelete = useRef(false);
 	useEffect(() => {
 		selectedRef.current = selectedId;
 		setRenaming((current) => (current?.id === selectedId ? current : null));
@@ -78,33 +79,29 @@ export function AnalysisPanel({
 	);
 	const presentation = document ? analysisPresentation(document) : null;
 	const impact = useQuery({
-		queryKey: analysisKeys.impact(effectiveId ?? ""),
-		queryFn: () => getAnalysisImpact(effectiveId ?? ""),
-		enabled: deleting && Boolean(document),
+		queryKey: analysisKeys.impact(deleting?.id ?? ""),
+		queryFn: () => getAnalysisImpact(deleting?.id ?? ""),
+		enabled: Boolean(deleting),
 		staleTime: 0,
 	});
 	const remove = useMutation({
 		mutationFn: async () => {
-			if (!document) throw new Error("请先打开当前片段的讲解。");
-			const fresh = await impact.refetch();
-			if (fresh.isError || !fresh.data)
-				throw fresh.error ?? new Error("无法核对删除影响，请重试。");
-			if (
-				fresh.data.revision_count !== impact.data?.revision_count ||
-				fresh.data.section_count !== impact.data?.section_count ||
-				fresh.data.occurrence_count !== impact.data?.occurrence_count
-			)
-				throw new Error("删除影响刚刚变化，请核对后再确认。");
-			await deleteAnalysis(document.id);
-			return document.id;
+			if (!deleting) throw new Error("请先打开当前片段的讲解。");
+			if (!impact.data || impact.data.analysis_id !== deleting.id)
+				throw new Error("无法核对目标讲解，请重新读取删除影响。");
+			await deleteAnalysis(deleting.id);
+			return deleting.id;
 		},
 		onSuccess: (deletedId) => {
-			setDeleting(false);
+			setDeleting(null);
 			client.removeQueries({ queryKey: ["analysis", deletedId] });
 			client.removeQueries({ queryKey: analysisKeys.impact(deletedId) });
 			if (selectedRef.current === deletedId) onSelect(null, null);
 			void client.invalidateQueries({ queryKey: analysisKeys.list(segmentId) });
 			void client.invalidateQueries({ queryKey: ["catalog"] });
+		},
+		onSettled: () => {
+			submittingDelete.current = false;
 		},
 	});
 	const backToList = (
@@ -115,7 +112,7 @@ export function AnalysisPanel({
 			aria-label="返回讲解列表"
 			title="返回讲解列表"
 			onClick={() => {
-				setDeleting(false);
+				setDeleting(null);
 				onSelect(null, null);
 			}}
 		>
@@ -263,7 +260,7 @@ export function AnalysisPanel({
 							onRename={() => setRenaming(document)}
 							onDelete={() => {
 								remove.reset();
-								setDeleting(true);
+								setDeleting(document);
 							}}
 						/>
 					</header>
@@ -319,10 +316,12 @@ export function AnalysisPanel({
 					onClose={() => setRenaming(null)}
 				/>
 			)}
-			{deleting && document && (
+			{deleting && (
 				<ConfirmDialog
 					titleId="delete-analysis-title"
-					onClose={() => setDeleting(false)}
+					onClose={() => {
+						if (!submittingDelete.current) setDeleting(null);
+					}}
 				>
 					<p className="eyebrow">删除确认</p>
 					<h2 id="delete-analysis-title">删除这份讲解？</h2>
@@ -353,7 +352,11 @@ export function AnalysisPanel({
 							type="button"
 							className="button danger"
 							disabled={!impact.isSuccess || remove.isPending}
-							onClick={() => remove.mutate()}
+							onClick={() => {
+								if (submittingDelete.current) return;
+								submittingDelete.current = true;
+								remove.mutate();
+							}}
 						>
 							{remove.isPending ? "删除中…" : "确认删除"}
 						</button>
@@ -361,7 +364,9 @@ export function AnalysisPanel({
 							type="button"
 							className="button secondary"
 							disabled={remove.isPending}
-							onClick={() => setDeleting(false)}
+							onClick={() => {
+								if (!submittingDelete.current) setDeleting(null);
+							}}
 						>
 							取消
 						</button>

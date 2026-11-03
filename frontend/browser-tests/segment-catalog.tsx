@@ -60,6 +60,7 @@ export async function segmentCatalog(
 	let items: CatalogSegment[] = [];
 	let analysisCount = 2;
 	let impactFailure = false;
+	let impactReads = 0;
 	let deleteMode: "success" | "failure" | "pending" = "success";
 	let releaseDelete: (() => void) | undefined;
 	const deletes: string[] = [];
@@ -125,6 +126,7 @@ export async function segmentCatalog(
 			const id = match[1] ?? "";
 			const suffix = match[2];
 			if (request.method === "GET" && suffix === "/delete-impact") {
+				impactReads++;
 				if (impactFailure)
 					return Response.json(
 						{ detail: "影响范围暂时不可读" },
@@ -569,20 +571,16 @@ export async function segmentCatalog(
 		action("重试读取影响范围", requiredDialog()).click();
 		await loadedImpact();
 		analysisCount = 3;
-		action("确认删除", requiredDialog()).click();
-		await until(
-			() => !!dialog()?.textContent?.includes("删除范围刚刚变化"),
-			"Changed analysis count must require a second confirmation",
-		);
-		check(
-			deletes.length === 0 && dialog()?.textContent?.includes("3 份讲解"),
-			"Changed analysis count must refresh scope without DELETE",
-		);
+		const beforeDeleteImpact = impactReads;
 		deleteMode = "failure";
 		action("确认删除", requiredDialog()).click();
 		await until(
 			() => !!dialog()?.textContent?.includes("删除暂时失败，请重试"),
 			"Delete failure must preserve confirmation for retry",
+		);
+		check(
+			impactReads === beforeDeleteImpact,
+			"Confirmation deletes directly without rereading changed counts",
 		);
 		check(
 			!!row("material") && Number(deletes.length) === 1,
@@ -740,5 +738,5 @@ export async function segmentCatalog(
 		dispose();
 	}
 	const longResult = await longMetadata(false);
-	return `segment catalog: shared origin/date, menu/focus, impact retry/count conflict, failure/pending retry, list/count/analysis/overview refresh, source isolation, detail deletion and pagination/empty state at ${innerWidth}px (${deletes.length} mocked DELETE requests; ${reads.length} local reads); ${longResult}`;
+	return `segment catalog: shared origin/date, menu/focus, impact retry/direct deletion, failure/pending retry, list/count/analysis/overview refresh, source isolation, detail deletion and pagination/empty state at ${innerWidth}px (${deletes.length} mocked DELETE requests; ${reads.length} local reads); ${longResult}`;
 }

@@ -6,6 +6,8 @@ import "./segments/material-fields.css";
 
 export function SourceForm({
 	initial,
+	value,
+	onChange,
 	onSave,
 	onCancel,
 	pending,
@@ -15,6 +17,8 @@ export function SourceForm({
 	className = "",
 }: {
 	initial?: Source;
+	value?: SourceFields;
+	onChange?: (fields: SourceFields) => void;
 	onSave: (fields: SourceFields) => void;
 	onCancel: () => void;
 	pending: boolean;
@@ -23,11 +27,13 @@ export function SourceForm({
 	cancelLabel?: string;
 	className?: string;
 }) {
-	const [fields, setFields] = useState<SourceFields>({
+	const [localFields, setLocalFields] = useState<SourceFields>({
 		title: initial?.title ?? "",
 		description: initial?.description ?? "",
 		note: initial?.note ?? "",
 	});
+	const fields = value ?? localFields;
+	const setFields = onChange ?? setLocalFields;
 	function submit(event: FormEvent) {
 		event.preventDefault();
 		if (pending) return;

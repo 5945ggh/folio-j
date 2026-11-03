@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { api } from "../api/client";
 import {
 	errorMessage,
@@ -8,11 +8,7 @@ import {
 	type Segment,
 } from "../content";
 import { ConfirmDialog, InlineError } from "../Shared";
-import {
-	refreshAfterSegmentDeletion,
-	type SegmentDeleteImpact,
-	sameSegmentDeleteImpact,
-} from "./deletion";
+import { refreshAfterSegmentDeletion } from "./deletion";
 
 export function SegmentDeleteDialog({
 	segment,
@@ -27,26 +23,17 @@ export function SegmentDeleteDialog({
 }) {
 	const client = useQueryClient();
 	const submitting = useRef(false);
-	const [confirmed, setConfirmed] = useState<SegmentDeleteImpact | null>(null);
 	const impact = useQuery({
 		queryKey: queries.segmentImpact(segment.id),
 		queryFn: () => getSegmentDeleteImpact(segment.id),
 		staleTime: 0,
 		retry: false,
 	});
-	// Keep the displayed scope stable while the pre-submit check refreshes the cache.
-	const shownImpact = confirmed ?? impact.data;
+	const shownImpact = impact.data;
 	const remove = useMutation({
 		mutationFn: async () => {
 			if (!shownImpact || shownImpact.segment_id !== segment.id)
 				throw new Error("无法核对目标片段，请重新读取删除影响范围。");
-			setConfirmed(shownImpact);
-			const fresh = await impact.refetch();
-			if (fresh.isError || !fresh.data)
-				throw fresh.error ?? new Error("无法核对删除范围，请重试。");
-			setConfirmed(fresh.data);
-			if (!sameSegmentDeleteImpact(shownImpact, fresh.data))
-				throw new Error("删除范围刚刚变化，请核对最新影响后再次确认。");
 			const { error, response } = await api.DELETE(
 				"/api/segments/{segment_id}",
 				{ params: { path: { segment_id: segment.id } } },

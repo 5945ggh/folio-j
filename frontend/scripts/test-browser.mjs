@@ -103,6 +103,8 @@ const scenarios = selectBrowserScenarios(
 		[320, 900, "?suite=workbench-render&theme=dark&reduced-motion"],
 		[1280, 900, "?suite=segment-materials"],
 		[1280, 900, "?suite=analysis-reading"],
+		[1280, 900, "?suite=source-edit-delete"],
+		[390, 900, "?suite=source-edit-delete"],
 		[1280, 900, "?suite=source-deletion"],
 		[390, 900, "?suite=source-deletion"],
 		[1280, 900, "?suite=analysis-rename"],

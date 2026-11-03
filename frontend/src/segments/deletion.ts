@@ -1,20 +1,5 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
-import type { components } from "../api/schema";
 import type { Segment } from "../content";
-
-export type SegmentDeleteImpact = components["schemas"]["SegmentDeleteImpact"];
-
-/** Every reported field is part of the user's confirmation, including identity. */
-export function sameSegmentDeleteImpact(
-	confirmed: SegmentDeleteImpact,
-	fresh: SegmentDeleteImpact,
-): boolean {
-	const keys = Object.keys(confirmed) as (keyof SegmentDeleteImpact)[];
-	return (
-		keys.length === Object.keys(fresh).length &&
-		keys.every((key) => confirmed[key] === fresh[key])
-	);
-}
 
 function records(data: unknown): Record<string, unknown>[] {
 	if (Array.isArray(data)) return data.flatMap(records);

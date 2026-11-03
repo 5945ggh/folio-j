@@ -27,8 +27,6 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 		materialReads = 0,
 		deleteRequests = 0,
 		impactReads = 0;
-	let holdImpact = false;
-	let releaseImpact: (() => void) | undefined;
 	let releaseDelete: ((response: Response) => void) | undefined;
 	const impact: components["schemas"]["SourceDeleteImpact"] = {
 		source_id: source.id,
@@ -64,10 +62,6 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 			path === `/api/sources/${source.id}/delete-impact`
 		) {
 			impactReads++;
-			if (holdImpact)
-				await new Promise<void>((resolve) => {
-					releaseImpact = resolve;
-				});
 			return Response.json({ ...impact });
 		}
 		if (request.method === "GET" && path === `/api/sources/${source.id}`)
@@ -221,36 +215,18 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 		if (preview)
 			return "source deletion: actual source detail confirmation preview";
 		impact.analysis_count++;
-		button("确认删除").click();
-		await until(
-			() =>
-				!!dialog()?.textContent?.includes("删除范围刚刚变化") &&
-				!!dialog()?.textContent?.includes("5 份讲解"),
-			"Analysis-only impact change must update counts and require reconfirmation",
-		);
-		check(deleteRequests === 0, "Changed analysis count must prevent DELETE");
-		await until(
-			() => !button("确认删除").disabled,
-			"Reconfirmation must become available",
-		);
-		holdImpact = true;
 		const beforeImpact = impactReads;
 		const confirm = button("确认删除");
 		// Same-task clicks exercise the guard before React commits pending state.
 		confirm.click();
 		confirm.click();
-		await until(() => !!releaseImpact, "Submission must recheck latest impact");
-		await cancelPending();
-		check(
-			impactReads === beforeImpact + 1 && deleteRequests === 0,
-			"Duplicate clicks during recheck must not issue another mutation",
-		);
-		holdImpact = false;
-		check(releaseImpact, "Impact recheck must be releasable");
-		releaseImpact();
 		await until(
 			() => Number(deleteRequests) === 1,
-			"Confirmed unchanged impact must submit one DELETE",
+			"One confirmation must submit exactly one DELETE without rereading counts",
+		);
+		check(
+			impactReads === beforeImpact,
+			"Confirmation must not recheck impact counts",
 		);
 		button("删除中…").click();
 		await cancelPending();
@@ -302,7 +278,7 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 				),
 			"Refreshed directory must remove deleted source and retain other sources",
 		);
-		return `source deletion: impact disclosure, analysis-only reconfirmation, duplicate/cancel/Escape guards, failed DELETE retry and directory refresh verified at ${innerWidth}px`;
+		return `source deletion: impact disclosure, direct deletion after count changes, duplicate/cancel/Escape guards, failed DELETE retry and directory refresh verified at ${innerWidth}px`;
 	} finally {
 		if (!preview) dispose();
 	}

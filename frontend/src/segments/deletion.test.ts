@@ -1,39 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
-import {
-	refreshAfterSegmentDeletion,
-	type SegmentDeleteImpact,
-	sameSegmentDeleteImpact,
-} from "./deletion.ts";
+import { refreshAfterSegmentDeletion } from "./deletion.ts";
 
-const impact: SegmentDeleteImpact = {
-	segment_id: "segment",
-	analysis_count: 1,
-	thread_count: 2,
-	message_count: 3,
-	active_job_count: 0,
-};
 const segment = {
 	id: "segment",
 	source_id: "source",
 	material_provenance: null,
 };
-
-test("confirmation covers every reported impact field, including analyses and identity", () => {
-	assert.equal(sameSegmentDeleteImpact(impact, { ...impact }), true);
-	for (const key of Object.keys(impact) as (keyof SegmentDeleteImpact)[]) {
-		const value = impact[key];
-		assert.equal(
-			sameSegmentDeleteImpact(impact, {
-				...impact,
-				[key]: typeof value === "number" ? value + 1 : "other",
-			}),
-			false,
-			key,
-		);
-	}
-});
 
 test("deletion retires late reads and related caches while retaining other learning content", async () => {
 	const client = new QueryClient();

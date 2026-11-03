@@ -41,6 +41,7 @@ import { segmentNavigation } from "./segment-navigation";
 import { segmentShareRegression } from "./segment-share";
 import { settingsModels } from "./settings-models";
 import { sourceDeletion } from "./source-deletion";
+import { sourceEditDelete } from "./source-edit-delete";
 import { themeRegression } from "./theme";
 import { translationRegression } from "./translation";
 import { workbenchRegression } from "./workbench";
@@ -432,6 +433,7 @@ try {
 		["reader-image-performance", readerImages],
 		["catalog-overview", overviewImportRegression],
 		["source-deletion", sourceDeletion],
+		["source-edit-delete", sourceEditDelete],
 		["catalog-reuse", reusedImportRegression],
 		["catalog-toolbar", catalogToolbarRegression],
 		["segment-catalog", segmentCatalog],

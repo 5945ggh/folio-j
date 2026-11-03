@@ -25,11 +25,8 @@ export function BookDeleteDialog({
 	});
 	const deletion = useMutation({
 		mutationFn: async () => {
-			const fresh = await impact.refetch();
-			if (!fresh.data || fresh.isError)
-				throw fresh.error ?? new Error("无法核对翻译删除影响。");
-			if (JSON.stringify(fresh.data) !== JSON.stringify(impact.data))
-				throw new Error("翻译记录刚刚变化，请核对当前影响后重新确认删除。");
+			if (!impact.data || impact.data.material_id !== book.id)
+				throw new Error("无法核对目标书籍，请重新读取删除影响。");
 			await deleteMaterial(book.id);
 			await refreshAfterBookDeletion(client, book.id, book.source_id);
 		},

@@ -7,6 +7,7 @@ import { readPreference, savePreference } from "./catalog/hooks";
 import { forgetSourceImports } from "./catalog/import-state";
 import { Icon } from "./catalog/LibraryTools";
 import { SourceDirectory } from "./catalog/SourceDirectory";
+import { SourceEditDialog } from "./catalog/SourceEditDialog";
 import { SourceSpace } from "./catalog/SourceSpace";
 import { SourceContent } from "./catalog/SourceViews";
 import {
@@ -213,7 +214,6 @@ function SourceDelete({
 	close: () => void;
 	deleted: () => void;
 }) {
-	const [previewFailure, setPreviewFailure] = useState(false);
 	const submitting = useRef(false);
 	const impact = useQuery({
 		queryKey: queries.impact(source.id),
@@ -222,21 +222,8 @@ function SourceDelete({
 	});
 	const remove = useMutation({
 		mutationFn: async () => {
-			setPreviewFailure(false);
-			const latest = await impact.refetch();
-			if (latest.isError || !latest.data) {
-				setPreviewFailure(true);
-				throw latest.error ?? new Error("无法核对删除范围，请重试。");
-			}
-			if (
-				latest.data.material_count !== impact.data?.material_count ||
-				latest.data.segment_count !== impact.data?.segment_count ||
-				latest.data.analysis_count !== impact.data?.analysis_count ||
-				latest.data.thread_count !== impact.data?.thread_count ||
-				latest.data.message_count !== impact.data?.message_count ||
-				latest.data.active_job_count !== impact.data?.active_job_count
-			)
-				throw new Error("删除范围刚刚变化，请核对最新影响后再次确认。");
+			if (!impact.data || impact.data.source_id !== source.id)
+				throw new Error("无法核对目标来源，请重新读取删除影响。");
 			const { error, response } = await api.DELETE("/api/sources/{source_id}", {
 				params: { path: { source_id: source.id } },
 			});
@@ -250,12 +237,6 @@ function SourceDelete({
 	function cancel() {
 		if (!submitting.current) close();
 	}
-	useEffect(() => {
-		if (previewFailure && impact.isSuccess) {
-			remove.reset();
-			setPreviewFailure(false);
-		}
-	}, [impact.isSuccess, previewFailure, remove.reset]);
 	return (
 		<ConfirmDialog titleId="delete-title" onClose={cancel}>
 			<p className="eyebrow">删除确认</p>
@@ -279,11 +260,7 @@ function SourceDelete({
 					文件不会被删除。删除后无法从页面恢复；其他来源不受影响。
 				</p>
 			)}
-			<InlineError
-				error={
-					impact.isError && remove.error === impact.error ? null : remove.error
-				}
-			/>
+			<InlineError error={remove.error} />
 			<div className="actions">
 				<button
 					className="button danger"
@@ -335,7 +312,6 @@ export function SourceDetail() {
 		};
 	}, []);
 	const [editing, setEditing] = useState(false);
-	const editGeneration = useRef(0);
 	const [creating, setCreating] = useState(false);
 	const [deleting, setDeleting] = useState(false);
 	const [info, setInfo] = useState(false);
@@ -348,27 +324,6 @@ export function SourceDetail() {
 	useEffect(() => {
 		if (source.isSuccess) savePreference("last-source", id);
 	}, [id, source.isSuccess]);
-	const update = useMutation({
-		mutationFn: async ({
-			fields,
-		}: {
-			fields: SourceFields;
-			generation: number;
-		}) => {
-			const { data, error, response } = await api.PATCH(
-				"/api/sources/{source_id}",
-				{ params: { path: { source_id: id } }, body: fields },
-			);
-			return requireData(data, error, response.status);
-		},
-		onSuccess: (_source, request) => {
-			if (active.current && request.generation === editGeneration.current)
-				setEditing(false);
-			void client.invalidateQueries({ queryKey: queries.source(id) });
-			void client.invalidateQueries({ queryKey: queries.sources });
-			void client.invalidateQueries({ queryKey: catalogKeys.all });
-		},
-	});
 	const create = useMutation({
 		mutationFn: async ({
 			fields,
@@ -497,8 +452,6 @@ export function SourceDetail() {
 								role="menuitem"
 								onClick={() =>
 									action(() => {
-										editGeneration.current += 1;
-										update.reset();
 										setEditing(true);
 									})
 								}
@@ -549,23 +502,11 @@ export function SourceDetail() {
 						</ConfirmDialog>
 					)}
 					{editing && (
-						<ConfirmDialog
-							titleId="edit-source-title"
+						<SourceEditDialog
+							key={source.data.id}
+							initial={source.data}
 							onClose={() => setEditing(false)}
-							restoreFocusId="source-menu-trigger"
-						>
-							<h2 id="edit-source-title">编辑来源</h2>
-							<SourceForm
-								initial={source.data}
-								onSave={(fields) =>
-									update.mutate({ fields, generation: editGeneration.current })
-								}
-								onCancel={() => setEditing(false)}
-								pending={update.isPending}
-								error={update.error}
-								submitLabel="保存更改"
-							/>
-						</ConfirmDialog>
+						/>
 					)}
 					{creating && (
 						<ConfirmDialog titleId="add-segment-title" onClose={closeSegment}>
