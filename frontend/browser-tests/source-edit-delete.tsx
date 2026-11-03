@@ -1,3 +1,8 @@
+import {
+	type QueryClient,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useLocation } from "react-router";
 import type { AnalysisDetail } from "../src/analysis/api";
@@ -19,6 +24,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 	const { SourceEditDialog } = await import("../src/catalog/SourceEditDialog");
 	const { BookDeleteDialog } = await import("../src/catalog/BookDeleteDialog");
 	const { AnalysisPanel } = await import("../src/analysis/AnalysisPanel");
+	const { getSource, queries } = await import("../src/content");
 	const { container, mount, mock, until, inputValue } = h;
 	const check: BrowserHarness["check"] = h.check;
 	const button = (label: string, parent: ParentNode = container) => {
@@ -49,7 +55,19 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		top().dispatchEvent(new Event("cancel", { cancelable: true }));
 	const patches: Record<string, unknown>[] = [];
 	let releasePatch: ((response: Response) => void) | undefined;
+	let releaseSourceRead: ((response: Response) => void) | undefined;
+	let staleReadCompleted = false;
+	let queryClient: QueryClient | undefined;
 	mock(async (request) => {
+		if (
+			request.method === "GET" &&
+			new URL(request.url).pathname === `/api/sources/${source.id}`
+		) {
+			// Deliberately return even if cancellation aborts the request signal.
+			return new Promise<Response>((resolve) => {
+				releaseSourceRead = resolve;
+			});
+		}
 		if (
 			request.method === "PATCH" &&
 			new URL(request.url).pathname === `/api/sources/${source.id}`
@@ -64,19 +82,36 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		);
 	});
 	function Editor() {
+		const client = useQueryClient();
+		queryClient = client;
+		useState(() => client.setQueryData(queries.source(source.id), source));
+		const current = useQuery({
+			queryKey: queries.source(source.id),
+			// Match SourceDetail: the real GET does not consume AbortSignal.
+			queryFn: async () => {
+				const result = await getSource(source.id);
+				staleReadCompleted = true;
+				return result;
+			},
+		});
 		const [open, setOpen] = useState(true);
 		const location = useLocation();
 		return (
 			<>
 				<output data-path>{location.pathname}</output>
+				<h1 data-source-title>{current.data?.title}</h1>
+				<p data-source-note>{current.data?.note}</p>
 				<Link to={location.pathname === "/away" ? "/finish" : "/away"}>
 					离开测试
 				</Link>
 				<button type="button" onClick={() => setOpen(true)}>
 					编辑测试来源
 				</button>
-				{open && (
-					<SourceEditDialog initial={source} onClose={() => setOpen(false)} />
+				{open && current.data && (
+					<SourceEditDialog
+						initial={current.data}
+						onClose={() => setOpen(false)}
+					/>
 				)}
 			</>
 		);
@@ -84,8 +119,8 @@ export async function sourceEditDelete(h: BrowserHarness) {
 	let dispose = await mount(<Editor />);
 	try {
 		await until(
-			() => !!container.querySelector(".source-form"),
-			"Editor must mount",
+			() => !!container.querySelector(".source-form") && !!releaseSourceRead,
+			"Cached source opens while its stale background GET remains pending",
 		);
 		button("保存更改").click();
 		await until(
@@ -190,6 +225,38 @@ export async function sourceEditDelete(h: BrowserHarness) {
 			() => !container.querySelector("dialog[open]"),
 			"Successful save closes directly",
 		);
+		await until(
+			() => container.querySelector("[data-path]")?.textContent === "/away",
+			"Successful save completes the pending navigation",
+		);
+		check(queryClient, "Source editor must expose its real query client");
+		const savedSource = queryClient.getQueryData<Source>(
+			queries.source(source.id),
+		);
+		check(
+			savedSource?.title === "自己的名称" && savedSource.note === "",
+			"Successful save publishes title and cleared note to source cache",
+		);
+		check(!staleReadCompleted, "The old GET must still be pending after save");
+		respond(releaseSourceRead, Response.json(source));
+		await until(
+			() => staleReadCompleted,
+			"The old real source GET returns its stale body despite cancellation",
+		);
+		await new Promise((resolve) => requestAnimationFrame(resolve));
+		const afterStaleRead = queryClient.getQueryData<Source>(
+			queries.source(source.id),
+		);
+		check(
+			afterStaleRead?.title === "自己的名称" && afterStaleRead.note === "",
+			"Late source GET must not overwrite the successful save in cache",
+		);
+		check(
+			container.querySelector("[data-source-title]")?.textContent ===
+				"自己的名称" &&
+				container.querySelector("[data-source-note]")?.textContent === "",
+			"Source query subscribers retain saved title and cleared note after old GET",
+		);
 		button("编辑测试来源").click();
 		await until(
 			() => !!container.querySelector(".source-form"),
@@ -198,6 +265,13 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		const discardField =
 			container.querySelector<HTMLInputElement>(".source-form input");
 		check(discardField, "Discard editor input exists");
+		check(
+			discardField.value === "自己的名称" &&
+				container.querySelectorAll<HTMLTextAreaElement>(
+					".source-form textarea",
+				)[1]?.value === "",
+			"Reopened editor starts from the successful save after the late GET",
+		);
 		inputValue(discardField, "放弃的内容");
 		container.querySelector<HTMLAnchorElement>("a")?.click();
 		await until(

@@ -41,7 +41,11 @@ export function SourceEditDialog({
 			);
 			return requireData(data, error, response.status);
 		},
-		onSuccess: (source) => {
+		onSuccess: async (source) => {
+			await client.cancelQueries({
+				queryKey: queries.source(initial.id),
+				exact: true,
+			});
 			completed.current = true;
 			client.setQueryData(queries.source(initial.id), source);
 			void client.invalidateQueries({ queryKey: queries.sources });
