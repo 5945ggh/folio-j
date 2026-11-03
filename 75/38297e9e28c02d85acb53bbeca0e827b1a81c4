@@ -1,0 +1,57 @@
+backend/tests/test_context_copy_settings.py
+  s_34ecb9ae6f6c5f::t_e7615b6d325c23 28,67,74-78,87,89,106-107,123,130-131,134,144,146-149,151-163,179-180
+  s_34ecb9ae6f6c5f::t_e8e72487d33893 182-185
+backend/src/app/services/context_copy_settings.py
+  s_34ecb9ae6f6c5f::t_9752fdcc495b65 1,31
+frontend/browser-tests/reader-settings.tsx
+  s_34ecb9ae6f6c5f::t_412f2a654f81d4 345-347,646,686,842,865,909,937,959
+  s_34ecb9ae6f6c5f::t_4fcf3251e978eb 132-133,135,349-351,353-356,641-642,644,647,649-651,659-660,666,669-670,681-682,685,687-690,723,725,728-731,734-735,737,739-740,743-744,758,763-764,803,805,807,810-811,816,820-821,824-825,827,829-833,835-841,844-845,847-854,857-859,862-863,866-869,907-908,911-916,923,926-931,935-936,939-940,945,947-948,954,958,960-961,964-965,967-969,972-982,1014
+  s_34ecb9ae6f6c5f::t_637af0f55b08dd 751,754
+  s_34ecb9ae6f6c5f::t_12a4d0258587fb 870-871,875-877,879-880,882-885,890-893,896-905
+frontend/browser-tests/reader-context-copy.tsx
+  s_34ecb9ae6f6c5f::t_0c441895d4b32f 125-126,128,501-503,508,514,516,518,520-521,523-525,530,537,539-540,545,551,554-555,558,562,572,574-575,581,587,713
+  s_34ecb9ae6f6c5f::t_412f2a654f81d4 497-500,510,517,527,576,582
+  s_34ecb9ae6f6c5f::t_4fcf3251e978eb 535-536,541-543,548-550,559-561,567-569,577-580,583-586,588-590
+frontend/src/settings/context-copy-draft.test.ts
+  s_34ecb9ae6f6c5f::t_881425df6e634e 20-21
+  s_34ecb9ae6f6c5f::t_20c27f864c2b8c 3,5,12-17,19,22-27,29,32-57,60-76
+backend/src/app/context_copy_schemas.py
+  s_34ecb9ae6f6c5f::t_9752fdcc495b65 23
+frontend/src/materials/use-reader-copy-editor.ts
+  s_34ecb9ae6f6c5f::t_7eb35917525a4a 48-83
+  s_34ecb9ae6f6c5f::t_af879b8c91f7f2 1-3,6,9,11-15,17-35,40-41,43-44,46-47,84-87,90-102
+backend/openapi.json
+  s_34ecb9ae6f6c5f::t_8b108fcd76bffc 753
+docs/ARCHITECTURE.md
+  s_34ecb9ae6f6c5f::t_1aec10d27e1d87 88
+docs/INFORMATION_ARCHITECTURE.md
+  s_34ecb9ae6f6c5f::t_ad547d8903d907 201
+docs/PRD.md
+  s_34ecb9ae6f6c5f::t_8789e973d9430a 269
+frontend/src/materials/MaterialReader.tsx
+  s_34ecb9ae6f6c5f::t_83641964b72725 416-418
+frontend/src/materials/ReaderCopySettings.tsx
+  s_34ecb9ae6f6c5f::t_bb316dddff64ef 72,77,96,123-125,136-137,168,177,194-200,214,244,249,268-275
+frontend/src/settings/context-copy-api.ts
+  s_34ecb9ae6f6c5f::t_4b7ea0afc742a5 3
+frontend/src/settings/context-copy-draft.ts
+  s_34ecb9ae6f6c5f::t_fc6e1707a0f937 1
+frontend/src/settings/context-copy-query.ts
+  s_34ecb9ae6f6c5f::t_a007d56608f5e7 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7538297e9e28c02d85acb53bbeca0e827b1a81c4",
+  "prompts": {},
+  "sessions": {
+    "s_34ecb9ae6f6c5f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a0fc-9ae0-7a02-a05d-59ec5122426d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
