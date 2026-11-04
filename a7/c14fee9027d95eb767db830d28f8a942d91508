@@ -1,0 +1,23 @@
+AGENTS.md
+  s_38172931c4c5f1::t_7fe6806565f6d4 77-78,80-83
+  s_38172931c4c5f1::t_1fe6c073588298 79
+docs/ARCHITECTURE.md
+  s_38172931c4c5f1::t_7fe6806565f6d4 645
+  s_38172931c4c5f1::t_1fe6c073588298 644
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a7c14fee9027d95eb767db830d28f8a942d91508",
+  "prompts": {},
+  "sessions": {
+    "s_38172931c4c5f1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a17b-0081-7690-8968-5f163918c700",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
