@@ -27,6 +27,7 @@ export type ReaderRecordState = Readonly<{
 	manualPosition: { left: number; top: number } | null;
 	inlineRequest: ReaderInlineRequest | null;
 	previewSerial: number;
+	previewEntrance: boolean;
 }>;
 export type ReaderRecordContext = {
 	active: boolean;
@@ -60,6 +61,7 @@ export const EMPTY_READER_RECORD_STATE: ReaderRecordState = {
 	manualPosition: null,
 	inlineRequest: null,
 	previewSerial: 0,
+	previewEntrance: false,
 };
 
 /** Owns record presentation rules; native selection and layout remain frame capabilities. */
@@ -170,6 +172,7 @@ export class ReaderRecordPresentation {
 			markHit: value,
 			selection: null,
 			previewSerial: this.snapshot.previewSerial + 1,
+			previewEntrance: this.snapshot.markHit === null && !value.fixed,
 		});
 		this.emphasize(null);
 		this.dependencies.hideTranslation();

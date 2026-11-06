@@ -252,8 +252,14 @@ function Reader({
 	const [selectionError, setSelectionError] = useState<Error | null>(null);
 	const [originError, setOriginError] = useState<Error | null>(null);
 	const [recordState, setRecordState] = useState(EMPTY_READER_RECORD_STATE);
-	const { selection, markHit, manualPosition, inlineRequest, previewSerial } =
-		recordState;
+	const {
+		selection,
+		markHit,
+		manualPosition,
+		inlineRequest,
+		previewSerial,
+		previewEntrance,
+	} = recordState;
 	const frames = useRef(new ReaderFrames());
 	const dictionary = useRef<DictionaryControl>(null);
 	const [dictionaryReady, setDictionaryReady] = useState(false);
@@ -2532,6 +2538,7 @@ function Reader({
 					hitRecords.translations.length > 0) && (
 					<ChapterRecords
 						key={previewSerial}
+						animateEntrance={previewEntrance}
 						marginEntry={marginRecordEntry(markHit)}
 						manualPosition={manualPosition}
 						onManualPositionChange={(value) => records.setManualPosition(value)}

@@ -201,6 +201,20 @@ function harness() {
 
 const mutate = (update: () => void) => update();
 
+test("record entrance plays on opening, not when switching an open preview", () => {
+	const h = harness();
+	h.owner.openPreview(hit("segment"));
+	assert.equal(h.owner.state.previewEntrance, true);
+	h.owner.openPreview(hit("first", "translation"));
+	assert.equal(h.owner.state.previewEntrance, false);
+	h.owner.closePreview();
+	h.owner.openPreview(hit("first", "translation"));
+	assert.equal(h.owner.state.previewEntrance, true);
+	h.owner.closePreview();
+	h.owner.openPreview({ ...hit("segment"), fixed: true });
+	assert.equal(h.owner.state.previewEntrance, false);
+});
+
 test("new selection dismisses a temporary preview; hiding its toolbar preserves the native selection", () => {
 	const h = harness();
 	h.owner.openPreview(hit("segment"));
