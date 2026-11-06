@@ -1,0 +1,43 @@
+docs/USAGE.md
+  s_5bfd878e4c4a7c::t_38922e0d20454c 63-64
+backend/prompts/translation/system_v3.txt
+  s_990574beed4b05::t_538ff9e24331ae 1-5,7-21
+  s_990574beed4b05::t_67599a8cc5bcdf 6
+backend/tests/test_translations.py
+  s_990574beed4b05::t_b4d95416383287 170-172,180-188,190-213,215-222
+  s_990574beed4b05::t_3f4f4c729cd8d9 585,611-636,648-649,655-660
+  s_5bfd878e4c4a7c::t_439e9b4d852408 19,173-179,189,214
+  s_990574beed4b05::t_5a32c55456e62d 77-86,89-90,94,155,159,166
+  s_990574beed4b05::t_e5c6c4991b6d15 167-169
+docs/ARCHITECTURE.md
+  s_990574beed4b05::t_84738359fdb658 383
+  s_5bfd878e4c4a7c::t_38922e0d20454c 520
+backend/src/app/services/translations.py
+  s_990574beed4b05::t_05ed87ffc5571f 51-52,56-58,317-318,333-334
+  s_5bfd878e4c4a7c::t_38922e0d20454c 53,68
+  s_990574beed4b05::t_67599a8cc5bcdf 66-67,69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "acd5ad99bbdd4a45b89420616a339cdba9016e21",
+  "prompts": {},
+  "sessions": {
+    "s_5bfd878e4c4a7c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1b0f7-cff6-7df1-b86f-baec88a0b7f2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_990574beed4b05": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1abd3-b741-71d2-88c4-625fec1fb73d",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
