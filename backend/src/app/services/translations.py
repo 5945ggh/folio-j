@@ -48,11 +48,14 @@ from app.translation_schemas import (
 )
 
 ACTIVE = ("queued", "running", "stopping")
-PROMPT_VERSION = "translation-v2"
-PROMPT_PATH = REPO_ROOT / "backend/prompts/translation/system_v2.txt"
+PROMPT_VERSION = "translation-v3"
+PROMPT_PATH = REPO_ROOT / "backend/prompts/translation/system_v3.txt"
+MAX_MATERIAL_TITLE_CHARACTERS = 300
 
 
-def render_messages(*, text: str, before: str, after: str, language: str) -> list[dict[str, Any]]:
+def render_messages(
+    *, text: str, before: str, after: str, language: str, source_title: str, material_title: str
+) -> list[dict[str, Any]]:
     return [
         {"role": "system", "content": PROMPT_PATH.read_text(encoding="utf-8")},
         {
@@ -60,6 +63,10 @@ def render_messages(*, text: str, before: str, after: str, language: str) -> lis
             "content": json.dumps(
                 {
                     "target_language": language,
+                    "source_context": {
+                        "source_title": source_title,
+                        "material_title": material_title[:MAX_MATERIAL_TITLE_CHARACTERS],
+                    },
                     "reference_context": {"before": before, "after": after},
                     "target": text,
                 },
@@ -307,7 +314,8 @@ async def accept(
         await visible_task(session, old)
         await session.commit()
         return task_response(old)
-    await recheck_reference(session, prepared)
+    material = await recheck_reference(session, prepared)
+    source = await require_source(session, prepared.source_id)
     count = await session.scalar(
         select(func.count()).select_from(TranslationTask).where(TranslationTask.status.in_(ACTIVE))
     )
@@ -322,6 +330,8 @@ async def accept(
         before=data.context_before,
         after=data.context_after,
         text=prepared.text,
+        source_title=source.title,
+        material_title=material.title,
     )
     snapshot = dict(
         provider_id=provider.id,

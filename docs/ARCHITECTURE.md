@@ -380,7 +380,7 @@ erDiagram
 
 同协议历史保留实际reasoning与工具字段。旧版本或协议切换时，无法合法重放的原生消息作为按原顺序保留的历史资料追加，不伪造私有推理或用摘要替代内容。已保存但收尾失败的成果在下一轮以持久事实恢复。渲染后的messages、工具定义和模板版本写入快照及Run；长期依据为[主对话system](../backend/prompts/chat/system_v8.j2)、[本轮输入模板](../backend/prompts/chat/user_v4.j2)、[工具定义](../backend/prompts/chat/tools_v5.json)、[快捷问题](../backend/prompts/chat/explanation_request_v1.j2)及[上下文实现](../backend/src/app/services/context.py)。历史转换与成果恢复另使用`chat/history_material_v1.j2`、`recovered_artifacts_v1.j2`；临时聚合审阅快照不是生产依据。
 
-旧任务执行以已保存的实际messages、tools或prompt为准，不从旧模板文件重新渲染。旧模板保留用于源码与阶段记录对照，其中`translation/v1.txt`另由兼容性测试读取以构造旧任务快照；具体引用及保留用途见[旧模板核对记录](handovers/archived/AGENT_CONTEXT_ACCEPTANCE.md#旧模板引用与保留核对)。历史记录中的旧文本仍可随冻结历史回放，文件是否参与当前加载与历史文本是否保留分别判断。
+旧任务执行以已保存的实际messages、tools或prompt为准，不从旧模板文件重新渲染。旧模板保留用于源码与阶段记录对照，`translation/v1.txt` 和 `translation/system_v2.txt` 还由兼容性测试读取以构造旧任务快照；历史引用及保留用途见[旧模板核对记录](handovers/archived/AGENT_CONTEXT_ACCEPTANCE.md#旧模板引用与保留核对)。历史记录中的旧文本仍可随冻结历史回放，文件是否参与当前加载与历史文本是否保留分别判断。
 
 **持久讲解格式契约**（占位，`[TBD-07]`）：
 
@@ -517,7 +517,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 `services/translations.py` 提供独立任务生命周期，不借用 chat_jobs 或虚构线程。目标复用精确材料出处值，受理时 prepare／写事务 recheck 并固定原文、实际语境、方案修订、Provider／模型配置、模板及凭据内部引用。请求身份全局唯一，同键异文或路径材料身份不同返回冲突／无效请求。历史按材料分页，可用规范出处摘要筛选；成功结果引用不可变任务输入，正文不原地修改。
 
-翻译使用 [translation-v2 系统模板](../backend/prompts/translation/system_v2.txt)，仅翻译 `target`；user 消息以 JSON 分别提供目标语言、`reference_context` 与 `target`，语境只用于理解。受理时固定实际 system／user messages，执行时原样写入 Run 并传入两种协议的 adapter。旧 v1 任务继续使用已保存的单条 prompt，历史结果不随模板升级改写。
+翻译使用 [translation-v3 系统模板](../backend/prompts/translation/system_v3.txt)。user 消息以 JSON 提供目标语言、`source_context`、`reference_context` 和待译原文 `target`。来源名称、材料标题和前后文用于理解语境，发送的材料标题最多取前 300 个 Unicode 码点。受理时固定实际 system／user messages，执行时原样写入 Run 并传入两种协议的 adapter。旧任务继续使用已保存的 messages 或单条 prompt，历史结果不随模板升级改写。
 
 专用 worker 同时执行一项翻译，真实调用仍占全局模型并发限制。Run 以 translation 用途、task.run_id 关联，job_id 留空；调用经过 llm，每任务最多一次，无 SDK 自动重试。成功结果与任务终态原子提交；适配器已返回的截断、拒绝或空输出仍在 Run 保存脱敏输出、用量及原始响应，任务保持失败且不创建成功结果。停止、材料或 Source 删除在写事务中撤销 token，尽力取消进程内调用，迟到输出不得发布。重启未完成任务标 interrupted，不自动重放。材料删除保留可见 Segment 采用过的结果；结果、任务、Run 详情同样检查来源及可见关系，不能借直接 ID 绕过门禁。
 
