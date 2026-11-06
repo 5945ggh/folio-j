@@ -1,0 +1,30 @@
+frontend/src/materials/reader-record-presentation.ts
+  s_990574beed4b05::t_46fcb761faaf0b 30,64,175
+frontend/src/materials/chapter-records.css
+  s_990574beed4b05::t_46fcb761faaf0b 23-36
+docs/DESIGN_SYSTEM.md
+  s_990574beed4b05::t_05e6bc4ddae6a6 71-72
+frontend/src/materials/ChapterRecords.tsx
+  s_990574beed4b05::t_46fcb761faaf0b 53,60,293
+frontend/src/materials/MaterialReader.tsx
+  s_990574beed4b05::t_476f395a31c4de 255-262
+  s_990574beed4b05::t_46fcb761faaf0b 2541
+frontend/src/materials/reader-record-presentation.test.ts
+  s_990574beed4b05::t_05e6bc4ddae6a6 204-217
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "60bd7d9b396701b59044f3e090b7a098bcd52922",
+  "prompts": {},
+  "sessions": {
+    "s_990574beed4b05": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1abd3-b741-71d2-88c4-625fec1fb73d",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
