@@ -50,12 +50,14 @@ type Props = Omit<
 	translationSessions: TranslationSessions;
 	onTranslationRemoved?: TranslationRemoved;
 	manualPosition?: ReaderCardPosition | null;
+	animateEntrance?: boolean;
 	onManualPositionChange?: (value: ReaderCardPosition | null) => void;
 };
 
 export function ChapterRecords(props: Props) {
 	const {
 		anchor,
+		animateEntrance = false,
 		fixed,
 		expanded,
 		inactive,
@@ -288,7 +290,7 @@ export function ChapterRecords(props: Props) {
 	return (
 		<div
 			ref={element}
-			className={`reader-chapter-records reader-popover${expanded ? " expanded" : ""}`}
+			className={`reader-chapter-records reader-popover${animateEntrance ? " enter" : ""}${expanded ? " expanded" : ""}`}
 			style={{
 				...position,
 				height: expanded ? position?.maxHeight : undefined,

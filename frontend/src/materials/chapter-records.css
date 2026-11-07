@@ -20,6 +20,20 @@
 .reader-r1 .reader-chapter-records.expanded {
 	width: min(460px, calc(100vw - 24px));
 }
+.reader-r1 .reader-chapter-records.enter {
+	animation: reader-record-appear 130ms ease-out;
+}
+@keyframes reader-record-appear {
+	from {
+		opacity: 0;
+		transform: translateY(3px);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.reader-r1 .reader-chapter-records.enter {
+		animation: none;
+	}
+}
 
 .reader-chapter-records > [data-reader-card-draggable="true"] {
 	cursor: grab;
