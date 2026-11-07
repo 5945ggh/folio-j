@@ -1,0 +1,157 @@
+docs/handovers/epub-reading/README.md
+  s_5bfd878e4c4a7c::t_b759efa6130cb2 79
+frontend/src/api/schema.d.ts
+  s_5bfd878e4c4a7c::t_2e0315fa087153 428-429,2258-2285,4657-4659,4669-4677,5009,5011-5013,5028
+backend/src/app/services/materials.py
+  s_5bfd878e4c4a7c::t_2e0315fa087153 26-27,35,43-51,325-334,336-341,348-411
+  s_5bfd878e4c4a7c::t_5bd1b95877b77e 342-344
+  s_5bfd878e4c4a7c::t_6dbbe384512b26 345-346
+docs/handovers/text-study/TEST_MATRIX.md
+  s_5bfd878e4c4a7c::t_18cdfc21c0847a 13,43
+frontend/src/segments/deletion.ts
+  s_5bfd878e4c4a7c::t_4d1d355c4ea7df 110-115
+  s_5bfd878e4c4a7c::t_4d69a7a63f80b2 8-13,17-20,57-61,78-81,135,172,174-176
+  s_5bfd878e4c4a7c::t_c1c74e2b10b528 27,29,36,47-56,62-68,77,116-124,128,133,178
+  s_5bfd878e4c4a7c::t_e041b73b5a99b2 125-127
+  s_5bfd878e4c4a7c::t_ff486e56d25d85 129-132
+  s_5bfd878e4c4a7c::t_457cbd5afa272c 134
+  s_5bfd878e4c4a7c::t_a06fa10d9c5dbe 171
+  s_5bfd878e4c4a7c::t_f87f4768e492a3 148-149,151,154,156,183-188
+frontend/src/catalog/book-menu.css
+  s_5bfd878e4c4a7c::t_71dca8d8ac88d5 35-37
+backend/tests/test_material_learning_deletion.py
+  s_5bfd878e4c4a7c::t_c2828e53bac5a1 1-61,64,67-124,127-236,239,242-347
+  s_5bfd878e4c4a7c::t_8109113c79c020 348-380,383-407,410-434,436-437
+  s_5bfd878e4c4a7c::t_d97739d83a0f83 62-63
+  s_5bfd878e4c4a7c::t_b60615ae8e9e36 65-66
+  s_5bfd878e4c4a7c::t_510e96971b054e 125-126
+  s_5bfd878e4c4a7c::t_43e871f89ce050 237-238
+  s_5bfd878e4c4a7c::t_f81c8a617e9d45 240-241
+  s_5bfd878e4c4a7c::t_c9fdb723fadbaf 381-382
+  s_5bfd878e4c4a7c::t_a3627d94c12d3d 408-409
+  s_5bfd878e4c4a7c::t_e24434109f5884 435
+backend/src/app/material_schemas.py
+  s_5bfd878e4c4a7c::t_2e0315fa087153 147-163
+docs/INFORMATION_ARCHITECTURE.md
+  s_5bfd878e4c4a7c::t_6067625b6584e3 48
+docs/PRD.md
+  s_5bfd878e4c4a7c::t_44a74cf2da8d0c 490,502-503
+  s_5bfd878e4c4a7c::t_e87fc36be19d05 501
+  s_5bfd878e4c4a7c::t_be8eb6a6113b23 99
+backend/tests/test_translations.py
+  s_5bfd878e4c4a7c::t_c2828e53bac5a1 578-582
+frontend/src/catalog/book-delete-dialog.css
+  s_5bfd878e4c4a7c::t_e0f2759b60e42c 1-54
+docs/GLOSSARY.md
+  s_5bfd878e4c4a7c::t_b759efa6130cb2 40
+docs/USAGE.md
+  s_5bfd878e4c4a7c::t_6610364dffce9b 13
+docs/ARCHITECTURE.md
+  s_5bfd878e4c4a7c::t_b759efa6130cb2 60,68
+  s_5bfd878e4c4a7c::t_db29763906ad56 132-138
+frontend/src/catalog/book-deletion.ts
+  s_5bfd878e4c4a7c::t_4d1d355c4ea7df 28-30
+  s_5bfd878e4c4a7c::t_4d69a7a63f80b2 31-32,50-57
+  s_5bfd878e4c4a7c::t_63c2a8d241863f 1-2,10,17-21,23-27,33-34,58
+  s_5bfd878e4c4a7c::t_fd3d6f39f958cd 13
+  s_5bfd878e4c4a7c::t_4c20898e9a322b 35-36
+  s_5bfd878e4c4a7c::t_428f5a8576d3fa 59-60
+  s_5bfd878e4c4a7c::t_7030befdfba69c 42-43
+backend/openapi.json
+  s_5bfd878e4c4a7c::t_2e0315fa087153 2569-2642,8331-8340,8344-8351,8354-8356,8956,8966-8975,8983,9000
+frontend/browser-tests/source-edit-delete.tsx
+  s_5bfd878e4c4a7c::t_5b26aaed7c09b0 354,363,400,436,479-480,485-488,500-502,508
+  s_5bfd878e4c4a7c::t_ce00a22d6b7f12 310-319,366,371,374,377-378,381-394,399,403-430,442,447-448,451-452,454,457,461-462,465-466,469,473,478,517-518,521,524,664-676,689-723
+  s_5bfd878e4c4a7c::t_3b6859d5d188d3 402,435,481-484,489-499,503-507,678
+  s_5bfd878e4c4a7c::t_e9cf96e89d46f7 682,687-688
+  s_5bfd878e4c4a7c::t_41f9f50610000a 683-686
+  s_5bfd878e4c4a7c::t_7d4ff1ff380dc6 349
+  s_5bfd878e4c4a7c::t_a12a0733d46417 395-397,432-433
+  s_5bfd878e4c4a7c::t_c2556d1ee1ab7a 346-348
+  s_5bfd878e4c4a7c::t_7ecad41ad55f0c 350-353
+  s_5bfd878e4c4a7c::t_eea12d3ebda388 355-357,360-362
+  s_5bfd878e4c4a7c::t_65a3b5e6200888 364-365
+  s_5bfd878e4c4a7c::t_9ebf55b501619d 367
+  s_5bfd878e4c4a7c::t_990f0e992de132 369-370
+  s_5bfd878e4c4a7c::t_9ae17a7750e90b 372-373
+  s_5bfd878e4c4a7c::t_df588b856ceabc 375-376
+  s_5bfd878e4c4a7c::t_729104594dc1c2 379-380
+  s_5bfd878e4c4a7c::t_93fc117b1a4df2 398
+  s_5bfd878e4c4a7c::t_098d59d14bbaad 401
+  s_5bfd878e4c4a7c::t_8512016446f8d9 431
+  s_5bfd878e4c4a7c::t_5f7895a3eef8a1 434
+  s_5bfd878e4c4a7c::t_e6a6f980e5a3e7 437-441
+  s_5bfd878e4c4a7c::t_2c7cedcfa953fc 443-446
+  s_5bfd878e4c4a7c::t_4379ccbbba3e15 449-450
+  s_5bfd878e4c4a7c::t_43fcd1cb65aa2c 453
+  s_5bfd878e4c4a7c::t_273cb1d69b4bce 455-456
+  s_5bfd878e4c4a7c::t_94e64900138eb6 458-460
+  s_5bfd878e4c4a7c::t_1a31980036439f 463-464
+  s_5bfd878e4c4a7c::t_3a6ca0d73ab2fc 467-468
+  s_5bfd878e4c4a7c::t_08b24254030c08 470-472
+  s_5bfd878e4c4a7c::t_b2cec58438ab61 474-477
+  s_5bfd878e4c4a7c::t_761e99269f9b7e 509-511,514-516
+  s_5bfd878e4c4a7c::t_d5363d2a0c977a 519-520
+  s_5bfd878e4c4a7c::t_f5b0b186384413 522-523
+  s_5bfd878e4c4a7c::t_a72f5295481e46 677
+  s_5bfd878e4c4a7c::t_ed5461bb7f9f16 679-681
+  s_5bfd878e4c4a7c::t_dcb41f300d7c3f 724
+  s_5bfd878e4c4a7c::t_5357b0dbbb1386 333-345,358-359,512-513
+frontend/src/catalog/book-deletion.test.ts
+  s_5bfd878e4c4a7c::t_7d4ff1ff380dc6 134-202
+  s_5bfd878e4c4a7c::t_09df93b5176fea 203-205
+  s_5bfd878e4c4a7c::t_ae74226a7d6082 206-311
+frontend/src/catalog/BookDeleteDialog.tsx
+  s_5bfd878e4c4a7c::t_4d69a7a63f80b2 24-25,35-40,106,163-168
+  s_5bfd878e4c4a7c::t_8768d9438a5f60 2-3,21,23,32,88,92
+  s_5bfd878e4c4a7c::t_fd3d6f39f958cd 33-34
+  s_5bfd878e4c4a7c::t_06918b982c9e12 50,59-63,73-76,79,85-86,96-105,107-128,130-131,133,135-150
+  s_5bfd878e4c4a7c::t_5362f9d1b2c6dd 7,51-58,64-72,132
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_5bfd878e4c4a7c::t_6067625b6584e3 3,44
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_5bfd878e4c4a7c::t_18cdfc21c0847a 19
+backend/src/app/services/translations.py
+  s_5bfd878e4c4a7c::t_2e0315fa087153 652-654,658,672-674,676-683,685
+  s_5bfd878e4c4a7c::t_6cafb7d3e81ef0 668,688
+  s_5bfd878e4c4a7c::t_778be9f3ef60be 675
+backend/src/app/api/materials.py
+  s_5bfd878e4c4a7c::t_2e0315fa087153 11-12,324-355,359-361
+docs/handovers/reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md
+  s_5bfd878e4c4a7c::t_50b43b78411746 1-2,4-6,8-14,24-27
+  s_5bfd878e4c4a7c::t_6067625b6584e3 3
+  s_5bfd878e4c4a7c::t_19895a5fab766e 19
+  s_5bfd878e4c4a7c::t_09834ec90e9999 20
+  s_5bfd878e4c4a7c::t_60322e12ef30f7 15-18,21-23
+  s_5bfd878e4c4a7c::t_5cb982fd44fb10 7
+frontend/src/catalog/Books.tsx
+  s_5bfd878e4c4a7c::t_71dca8d8ac88d5 270
+backend/src/app/services/sources.py
+  s_5bfd878e4c4a7c::t_2e0315fa087153 333-349,371,476-477
+frontend/src/materials/api.ts
+  s_5bfd878e4c4a7c::t_4d69a7a63f80b2 215-216,218,221-225,228,232-244
+  s_5bfd878e4c4a7c::t_b9e006c572f9b9 214
+  s_5bfd878e4c4a7c::t_d88428052234c3 217
+  s_5bfd878e4c4a7c::t_659843f37f7fa9 219-220
+  s_5bfd878e4c4a7c::t_bf484cb64bb48a 226-227
+  s_5bfd878e4c4a7c::t_4bd3f828ee2f87 229-231
+  s_5bfd878e4c4a7c::t_3eaeed9e3c0586 246-247
+docs/handovers/README.md
+  s_5bfd878e4c4a7c::t_fff8bb956ad90d 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dd17a0e17e1fd8d5ff92c23a59507242c641d75e",
+  "prompts": {},
+  "sessions": {
+    "s_5bfd878e4c4a7c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1b0f7-cff6-7df1-b86f-baec88a0b7f2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
