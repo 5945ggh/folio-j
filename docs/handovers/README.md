@@ -11,6 +11,7 @@
 | 当前能力、实现差额与验证限制 | [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)，统一维护核对版本及验收入口 |
 | EPUB 学习衔接接下来做什么 | [阶段安排](epub-reading/README.md#下一阶段接力顺序)：材料对话、消息引用和从讨论形成讲解；[接手提示词](epub-reading/AGENT_PROMPT.md)引用本安排 |
 | 阅读实践还有哪些独立目标 | [实际阅读评测计划](reading-practice/PLAN.md)：扩展书内搜索、阅读设置迁移候选及数据保护 |
+| 删除书籍时怎样保留或一并清理学习积累 | [可选清理验收](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)，记录精确关联范围、事务回滚、缓存隔离与浏览器检查 |
 | 翻译、设备朗读与后续 adapter 如何继续验证 | [阅读辅助后续安排](epub-reading/README.md#阅读辅助后续安排)：真实样句、设备声音、资源预算与接入条件 |
 | 句界、语境预算与定位有哪些固定预期 | [C2 精确样例](text-study/C2_EXACT_CASES.md)与 [文本资料验收矩阵](text-study/TEST_MATRIX.md)：现行规则和固定输入；实际结果由实施基线链接原验收 |
 

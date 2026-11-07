@@ -211,9 +211,38 @@ export async function getReadings(
 	return requireData(data, error, response.status);
 }
 
-export async function deleteMaterial(id: string): Promise<void> {
-	const { error, response } = await api.DELETE("/api/materials/{material_id}", {
-		params: { path: { material_id: id } },
-	});
+export async function getMaterialDeleteImpact(
+	id: string,
+	deleteLearningContent = false,
+	signal?: AbortSignal,
+) {
+	const { data, error, response } = await api.GET(
+		"/api/materials/{material_id}/delete-impact",
+		{
+			params: {
+				path: { material_id: id },
+				query: { delete_learning_content: deleteLearningContent },
+			},
+			signal,
+		},
+	);
+	return requireData(data, error, response.status);
+}
+
+export async function deleteMaterial(
+	id: string,
+	deleteLearningContent = false,
+) {
+	const { data, error, response } = await api.DELETE(
+		"/api/materials/{material_id}",
+		{
+			params: {
+				path: { material_id: id },
+				query: { delete_learning_content: deleteLearningContent },
+			},
+		},
+	);
 	if (error || !response.ok) throw errorMessage(error, response.status);
+	if (deleteLearningContent) return requireData(data, error, response.status);
+	return undefined;
 }

@@ -575,6 +575,11 @@ async def test_bounded_queue_settings_and_frozen_config(
             hidden_result_count=0,
             retained_result_count=1,
             active_task_count=2,
+            segment_count=1,
+            analysis_count=0,
+            thread_count=0,
+            message_count=0,
+            active_job_count=0,
         )
         assert (await client.delete(f"/api/materials/{material['id']}")).status_code == 204
         assert (await client.delete(f"/api/segments/{saved[0].json()['id']}")).status_code == 204

@@ -1,0 +1,54 @@
+.confirm-card.book-delete-dialog p.book-delete-intro {
+	margin-bottom: 18px;
+	font-size: 14px;
+}
+.book-delete-dialog .book-delete-impact {
+	margin-bottom: 18px;
+}
+.confirm-card.book-delete-dialog .book-delete-impact p {
+	margin: 5px 0 0;
+}
+.confirm-card.book-delete-dialog p.book-delete-summary {
+	color: var(--color-text);
+}
+.book-delete-dialog .book-delete-summary strong {
+	font-weight: 600;
+}
+.book-delete-dialog .book-delete-notes {
+	padding-top: 14px;
+	border-top: 1px solid var(--color-border-subtle);
+}
+.confirm-card.book-delete-dialog .book-delete-notes p {
+	margin: 0 0 6px;
+	font-size: 12px;
+	line-height: 1.65;
+}
+.book-delete-option {
+	display: flex;
+	justify-content: flex-end;
+	margin: 20px 0 14px;
+}
+.book-delete-option label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--color-text-secondary);
+	font-size: 13px;
+	line-height: 1.5;
+	cursor: pointer;
+}
+.book-delete-option input[type="checkbox"] {
+	flex: none;
+	width: 14px;
+	height: 14px;
+	margin: 0;
+	padding: 0;
+	accent-color: var(--color-accent-solid);
+}
+.book-delete-option label:has(:disabled) {
+	cursor: default;
+	opacity: 0.6;
+}
+.book-delete-actions {
+	justify-content: flex-end;
+}

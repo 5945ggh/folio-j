@@ -330,6 +330,23 @@ async def soft_delete_discussions(
     return active_ids
 
 
+async def soft_delete_segments(
+    session: AsyncSession, segment_ids: list[str], deleted: datetime
+) -> list[str]:
+    """Delete learning content in the caller's transaction, without committing."""
+    cancelled = await soft_delete_discussions(session, segment_ids, deleted)
+    from app.services.analyses import soft_delete_for_segments
+
+    await soft_delete_for_segments(session, segment_ids, deleted)
+    if segment_ids:
+        await session.execute(
+            update(Segment)
+            .where(Segment.id.in_(segment_ids), Segment.deleted_at.is_(None))
+            .values(deleted_at=deleted, updated_at=deleted)
+        )
+    return cancelled
+
+
 async def delete_source(
     session: AsyncSession, source_id: str, dispatch_lock: asyncio.Lock
 ) -> list[str]:
@@ -351,10 +368,7 @@ async def _delete_source_committed(session: AsyncSession, source_id: str) -> lis
                 )
             ).all()
         )
-        cancelled = await soft_delete_discussions(session, ids, deleted)
-        from app.services.analyses import soft_delete_for_segments
-
-        await soft_delete_for_segments(session, ids, deleted)
+        cancelled = await soft_delete_segments(session, ids, deleted)
         from app.services.translations import revoke_tasks
 
         await revoke_tasks(session, source_id=source_id)
@@ -365,11 +379,6 @@ async def _delete_source_committed(session: AsyncSession, source_id: str) -> lis
         )
         source.deleted_at = deleted
         source.updated_at = deleted
-        await session.execute(
-            update(Segment)
-            .where(Segment.source_id == source_id, Segment.deleted_at.is_(None))
-            .values(deleted_at=deleted, updated_at=deleted)
-        )
         await session.commit()
         return cancelled
     except BaseException:
@@ -464,14 +473,8 @@ async def delete_segment(
 async def _delete_segment_committed(session: AsyncSession, segment_id: str) -> list[str]:
     try:
         await begin_write(session)
-        segment = await require_segment(session, segment_id)
-        deleted = utc_now()
-        cancelled = await soft_delete_discussions(session, [segment_id], deleted)
-        from app.services.analyses import soft_delete_for_segments
-
-        await soft_delete_for_segments(session, [segment_id], deleted)
-        segment.deleted_at = deleted
-        segment.updated_at = deleted
+        await require_segment(session, segment_id)
+        cancelled = await soft_delete_segments(session, [segment_id], utc_now())
         await session.commit()
         return cancelled
     except BaseException:

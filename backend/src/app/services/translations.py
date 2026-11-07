@@ -649,11 +649,13 @@ async def revoke_tasks(
                 run.status, run.finished_at = "cancelled", utc_now()
 
 
-async def delete_impact(session: AsyncSession, material_id: str) -> TranslationDeleteImpact:
+async def delete_impact(
+    session: AsyncSession, material_id: str, *, excluded_segment_ids: list[str] | None = None
+) -> TranslationDeleteImpact:
     material = await session.scalar(
         select(Material).options(defer(Material.compiled_bundle)).where(Material.id == material_id)
     )
-    if material is None or material.deleted_at is not None:
+    if material is None:
         raise HTTPException(404, "材料不存在")
     await require_source(session, material.source_id)
     rows = (
@@ -663,23 +665,27 @@ async def delete_impact(session: AsyncSession, material_id: str) -> TranslationD
     ).all()
     retained = 0
     total = 0
+    excluded = set(excluded_segment_ids or [])
     for task in rows:
         if task.result_id is None:
             continue
-        linked = await session.scalar(
-            select(TranslationAdoption.id)
-            .join(Segment, Segment.id == TranslationAdoption.segment_id)
-            .where(
-                TranslationAdoption.result_id == task.result_id,
-                Segment.deleted_at.is_(None),
-                Segment.source_id == task.source_id,
-            )
-            .limit(1)
+        linked = list(
+            (
+                await session.scalars(
+                    select(TranslationAdoption.segment_id)
+                    .join(Segment, Segment.id == TranslationAdoption.segment_id)
+                    .where(
+                        TranslationAdoption.result_id == task.result_id,
+                        Segment.deleted_at.is_(None),
+                        Segment.source_id == task.source_id,
+                    )
+                )
+            ).all()
         )
-        if linked is None and task.reader_deleted_at is not None:
+        if not linked and task.reader_deleted_at is not None:
             continue
         total += 1
-        retained += int(linked is not None)
+        retained += int(any(segment_id not in excluded for segment_id in linked))
     return TranslationDeleteImpact(
         material_id=material_id,
         hidden_result_count=total - retained,

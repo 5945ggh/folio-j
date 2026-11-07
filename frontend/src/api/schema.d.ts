@@ -425,8 +425,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Material Translation Delete Impact */
-        get: operations["material_translation_delete_impact_api_materials__material_id__delete_impact_get"];
+        /** Material Delete Impact */
+        get: operations["getMaterialDeleteImpact"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2255,6 +2255,34 @@ export interface components {
              */
             media_type: "image/png" | "image/jpeg";
         };
+        /** MaterialDeleteImpact */
+        MaterialDeleteImpact: {
+            /** Active Job Count */
+            active_job_count: number;
+            /** Active Task Count */
+            active_task_count: number;
+            /** Analysis Count */
+            analysis_count: number;
+            /** Hidden Result Count */
+            hidden_result_count: number;
+            /** Material Id */
+            material_id: string;
+            /** Message Count */
+            message_count: number;
+            /** Retained Result Count */
+            retained_result_count: number;
+            /** Segment Count */
+            segment_count: number;
+            /** Thread Count */
+            thread_count: number;
+        };
+        /** MaterialDeleteResult */
+        MaterialDeleteResult: {
+            /** Deleted Segment Ids */
+            deleted_segment_ids: string[];
+            /** Material Id */
+            material_id: string;
+        };
         /** MaterialDetailsResponse */
         MaterialDetailsResponse: {
             /** Chapter Count */
@@ -3731,17 +3759,6 @@ export interface components {
             /** Text */
             text: string;
         };
-        /** TranslationDeleteImpact */
-        TranslationDeleteImpact: {
-            /** Active Task Count */
-            active_task_count: number;
-            /** Hidden Result Count */
-            hidden_result_count: number;
-            /** Material Id */
-            material_id: string;
-            /** Retained Result Count */
-            retained_result_count: number;
-        };
         /** TranslationHistoryResponse */
         TranslationHistoryResponse: {
             /** Next Offset */
@@ -4637,7 +4654,9 @@ export interface operations {
     };
     deleteMaterial: {
         parameters: {
-            query?: never;
+            query?: {
+                delete_learning_content?: boolean;
+            };
             header?: never;
             path: {
                 material_id: string;
@@ -4647,6 +4666,15 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialDeleteResult"];
+                };
+            };
+            /** @description 书籍已删除，学习积累保留 */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -4978,9 +5006,11 @@ export interface operations {
             };
         };
     };
-    material_translation_delete_impact_api_materials__material_id__delete_impact_get: {
+    getMaterialDeleteImpact: {
         parameters: {
-            query?: never;
+            query?: {
+                delete_learning_content?: boolean;
+            };
             header?: never;
             path: {
                 material_id: string;
@@ -4995,7 +5025,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TranslationDeleteImpact"];
+                    "application/json": components["schemas"]["MaterialDeleteImpact"];
                 };
             };
             /** @description Validation Error */

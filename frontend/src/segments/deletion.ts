@@ -5,27 +5,35 @@ function records(data: unknown): Record<string, unknown>[] {
 	if (Array.isArray(data)) return data.flatMap(records);
 	if (!data || typeof data !== "object") return [];
 	const record = data as Record<string, unknown>;
-	return [record, ...records(record.items), ...records(record.pages)];
+	return [
+		record,
+		...records(record.items),
+		...records(record.pages),
+		...records(record.segments),
+	];
 }
 
 /** Preserve pagination metadata while removing the deleted row from mounted views. */
-function withoutSegment(data: unknown, segmentId: string): unknown {
+function withoutSegments(
+	data: unknown,
+	segmentIds: ReadonlySet<string>,
+): unknown {
 	if (Array.isArray(data))
 		return data
 			.filter(
 				(item) =>
 					!item ||
 					typeof item !== "object" ||
-					(item.id !== segmentId && item.segment_id !== segmentId),
+					(!segmentIds.has(item.id) && !segmentIds.has(item.segment_id)),
 			)
-			.map((item) => withoutSegment(item, segmentId));
+			.map((item) => withoutSegments(item, segmentIds));
 	if (!data || typeof data !== "object") return data;
 	const record = data as Record<string, unknown>;
 	return Object.fromEntries(
 		Object.entries(record).map(([key, value]) => [
 			key,
 			key === "items" || key === "pages" || key === "segments"
-				? withoutSegment(value, segmentId)
+				? withoutSegments(value, segmentIds)
 				: value,
 		]),
 	);
@@ -36,6 +44,28 @@ export async function refreshAfterSegmentDeletion(
 	client: QueryClient,
 	segment: Pick<Segment, "id" | "source_id" | "material_provenance">,
 ): Promise<void> {
+	return refreshAfterSegmentsDeletion(client, {
+		ids: [segment.id],
+		sourceId: segment.source_id,
+		materialId: segment.material_provenance?.material_id,
+	});
+}
+
+/** Batch related eviction and list refresh so a book deletion refetches each list once. */
+export async function refreshAfterSegmentsDeletion(
+	client: QueryClient,
+	{
+		ids,
+		sourceId,
+		materialId,
+	}: {
+		ids: readonly string[];
+		sourceId: string;
+		materialId?: string;
+	},
+	refresh = true,
+): Promise<void> {
+	const segmentIds = new Set(ids);
 	const cached = client.getQueryCache().getAll();
 	const analysisIds = new Set<string>();
 	const threadIds = new Set<string>();
@@ -44,8 +74,11 @@ export async function refreshAfterSegmentDeletion(
 		const [kind, id] = query.queryKey;
 		for (const record of records(query.state.data)) {
 			if (
-				record.segment_id !== segment.id &&
-				!((kind === "analyses" || kind === "chat-threads") && id === segment.id)
+				!segmentIds.has(String(record.segment_id)) &&
+				!(
+					(kind === "analyses" || kind === "chat-threads") &&
+					segmentIds.has(String(id))
+				)
 			)
 				continue;
 			if (typeof record.id !== "string") continue;
@@ -74,13 +107,32 @@ export async function refreshAfterSegmentDeletion(
 				jobIds.add(record.id);
 	}
 	const deletedQueries: QueryKey[] = [
-		["segment", segment.id],
-		["segments", segment.id],
-		["segment-edit-current", segment.id],
-		["segment-delete-impact", segment.id],
-		["segment-translations", segment.id],
-		["analyses", segment.id],
-		["chat-threads", segment.id],
+		// A first detail read has no ownership data yet. Retire it conservatively;
+		// known unrelated details retain their cache and can keep rendering.
+		...cached
+			.filter(
+				({ queryKey: [kind], state }) =>
+					state.data === undefined &&
+					state.fetchStatus === "fetching" &&
+					[
+						"analysis",
+						"analysis-impact",
+						"chat-thread",
+						"chat-messages",
+						"chat-request",
+						"chat-job",
+					].includes(String(kind)),
+			)
+			.map(({ queryKey }) => queryKey),
+		...ids.flatMap((id) => [
+			["segment", id],
+			["segments", id],
+			["segment-edit-current", id],
+			["segment-delete-impact", id],
+			["segment-translations", id],
+			["analyses", id],
+			["chat-threads", id],
+		]),
 		...[...analysisIds].flatMap((id) => [
 			["analysis", id],
 			["analysis-impact", id],
@@ -93,16 +145,15 @@ export async function refreshAfterSegmentDeletion(
 		...[...jobIds].map((id) => ["chat-job", id]),
 	];
 	const refreshedQueries: QueryKey[] = [
-		["source-segments", segment.source_id],
-		["source", segment.source_id],
+		["source-segments", sourceId],
+		["source", sourceId],
 		["sources"],
-		["source-delete-impact", segment.source_id],
+		["source-delete-impact", sourceId],
 		["catalog"],
 		["source-entry"],
-		["material-segment-matches", segment.source_id],
+		["material-segment-matches", sourceId],
 	];
-	if (segment.material_provenance) {
-		const materialId = segment.material_provenance.material_id;
+	if (materialId) {
 		refreshedQueries.push(
 			["material-chapter-segments", materialId],
 			["book-details", materialId],
@@ -117,21 +168,22 @@ export async function refreshAfterSegmentDeletion(
 	// Keep deleted rows absent even if the subsequent list refresh fails.
 	client.setQueriesData(
 		{
-			predicate: ({ queryKey: [kind, scope, source] }) =>
-				(kind === "source-segments" && scope === segment.source_id) ||
+			predicate: ({ queryKey: [kind, scope] }) =>
+				(kind === "source-segments" && scope === sourceId) ||
 				(kind === "catalog" &&
-					(scope === "segments" || scope === "analyses") &&
-					source === segment.source_id) ||
-				(kind === "material-segment-matches" && scope === segment.source_id) ||
-				(kind === "material-chapter-segments" &&
-					scope === segment.material_provenance?.material_id),
+					(scope === "segments" || scope === "analyses")) ||
+				(kind === "material-segment-matches" && scope === sourceId) ||
+				(kind === "material-chapter-segments" && scope === materialId),
 		},
-		(data) => withoutSegment(data, segment.id),
+		(data) => withoutSegments(data, segmentIds),
 	);
 	// Inactive views must fetch before showing old lists or reader marks again.
 	for (const queryKey of refreshedQueries)
 		client.removeQueries({ queryKey, type: "inactive" });
-	await Promise.all(
-		refreshedQueries.map((queryKey) => client.invalidateQueries({ queryKey })),
-	);
+	if (refresh)
+		await Promise.all(
+			refreshedQueries.map((queryKey) =>
+				client.invalidateQueries({ queryKey }),
+			),
+		);
 }

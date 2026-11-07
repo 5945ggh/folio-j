@@ -32,6 +32,9 @@
 .book-menu button[aria-checked="true"] {
 	color: var(--color-accent);
 }
+.book-menu button.text-danger {
+	color: var(--color-danger);
+}
 .book-menu button:disabled {
 	color: var(--color-text-disabled);
 	cursor: default;

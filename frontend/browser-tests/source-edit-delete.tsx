@@ -307,32 +307,16 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		product_sha256: "p",
 		warnings: [],
 	};
-	let bookReads = 0,
-		bookDeletes = 0;
-	let releaseDelete: ((response: Response) => void) | undefined;
-	mock(async (request) => {
-		const path = new URL(request.url).pathname;
-		if (
-			request.method === "GET" &&
-			path === `/api/materials/${book.id}/delete-impact`
-		) {
-			bookReads++;
-			return Response.json({
-				material_id: book.id,
-				hidden_result_count: 2,
-				retained_result_count: 1,
-				active_task_count: 0,
-			});
-		}
-		if (request.method === "DELETE" && path === `/api/materials/${book.id}`) {
-			bookDeletes++;
-			return new Promise<Response>((resolve) => {
-				releaseDelete = resolve;
-			});
-		}
-		throw new Error(
-			`Unexpected book deletion request ${request.method} ${path}`,
-		);
+	const bookImpact = (cascade: boolean, empty = false) => ({
+		material_id: book.id,
+		hidden_result_count: empty ? 0 : cascade ? 3 : 2,
+		retained_result_count: empty ? 0 : cascade ? 0 : 1,
+		active_task_count: empty ? 0 : 2,
+		segment_count: empty ? 0 : 3,
+		analysis_count: empty ? 0 : 4,
+		thread_count: empty ? 0 : 5,
+		message_count: empty ? 0 : 12,
+		active_job_count: empty ? 0 : 1,
 	});
 	function BookDeletion() {
 		const [open, setOpen] = useState(true);
@@ -346,50 +330,198 @@ export async function sourceEditDelete(h: BrowserHarness) {
 			<p>书籍已删除</p>
 		);
 	}
-	dispose = await mount(<BookDeletion />);
-	try {
-		await until(
-			() => !!dialogText()?.includes("2 份未关联"),
-			"Book impact appears",
-		);
-		const reads = bookReads;
-		const remove = button("删除书籍");
-		remove.click();
-		remove.click();
-		await until(() => !!releaseDelete, "Book DELETE starts");
-		check(
-			bookDeletes === 1 && bookReads === reads,
-			"Book confirmation directly deletes once",
-		);
-		cancelEvent();
-		check(
-			container.querySelector("dialog[open]"),
-			"Pending book deletion stays open",
-		);
-		check(releaseDelete, "Book response must be available");
-		respond(
-			releaseDelete,
-			Response.json({ detail: "删除暂时失败" }, { status: 500 }),
-		);
-		await until(
-			() => !!dialogText()?.includes("删除暂时失败"),
-			"Book deletion failure remains visible",
-		);
+	let releaseDelete: ((response: Response) => void) | undefined;
+	for (const cascade of [false, true]) {
+		let bookReads = 0;
+		const submittedModes: string[] = [];
+		let releaseOldImpact: ((response: Response) => void) | undefined;
+		mock(async (request) => {
+			const url = new URL(request.url);
+			const mode = url.searchParams.get("delete_learning_content");
+			if (
+				request.method === "GET" &&
+				url.pathname === `/api/materials/${book.id}/delete-impact`
+			) {
+				bookReads++;
+				if (bookReads === 1)
+					return Response.json({ detail: "影响暂时无法读取" }, { status: 500 });
+				// Resolve this obsolete unchecked read after the checked mode is ready.
+				if (cascade && mode === "false" && bookReads === 4)
+					return new Promise<Response>((resolve) => {
+						releaseOldImpact = resolve;
+					});
+				return Response.json(bookImpact(mode === "true"));
+			}
+			if (
+				request.method === "DELETE" &&
+				url.pathname === `/api/materials/${book.id}`
+			) {
+				submittedModes.push(mode ?? "missing");
+				return new Promise<Response>((resolve) => {
+					releaseDelete = resolve;
+				});
+			}
+			throw new Error(
+				`Unexpected book deletion request ${request.method} ${url}`,
+			);
+		});
 		releaseDelete = undefined;
-		button("删除书籍").click();
-		await until(() => !!releaseDelete, "Book retry starts");
-		check(
-			bookReads === reads && Number(bookDeletes) === 2,
-			"Retry does not reread impact",
-		);
-		check(releaseDelete, "Book retry response is available");
-		respond(releaseDelete, new Response(null, { status: 204 }));
-		await until(
-			() => !!container.textContent?.includes("书籍已删除"),
-			"Book deletion succeeds",
-		);
-	} finally {
-		dispose();
+		dispose = await mount(<BookDeletion />);
+		try {
+			await until(
+				() => !!dialogText()?.includes("影响暂时无法读取"),
+				"Impact failure stays visible",
+			);
+			const checkbox = container.querySelector<HTMLInputElement>(
+				'input[type="checkbox"]',
+			);
+			check(
+				checkbox && !checkbox.checked,
+				"Book deletion starts with learning content retained",
+			);
+			check(
+				checkbox.closest("label")?.textContent?.trim() === "同时删除学习积累",
+				"Cleanup uses the concise checkbox label",
+			);
+			check(button("删除书籍").disabled, "Impact failure prevents deletion");
+			button("重试读取删除影响").click();
+			await until(
+				() => !!dialogText()?.includes("2 份译文随本书隐藏"),
+				"Impact retry displays retained mode",
+			);
+			check(
+				dialogText()?.includes("3 个学习片段、4 份讲解") &&
+					dialogText()?.includes("5 个讨论、12 条消息") &&
+					dialogText()?.includes("1 个讨论任务继续运行") &&
+					dialogText()?.includes("2 个翻译任务") &&
+					dialogText()?.includes("1 份仍可从保留的片段查看"),
+				"All learning impact counts appear",
+			);
+			if (cascade) {
+				checkbox.click();
+				await until(
+					() => !!dialogText()?.includes("3 份译文随本书隐藏"),
+					"Cascade impact uses its own query",
+				);
+				checkbox.click();
+				await until(
+					() => !!releaseOldImpact,
+					"Unchecked refresh remains in flight",
+				);
+				checkbox.click();
+				await until(
+					() =>
+						checkbox.checked &&
+						!!dialogText()?.includes("3 份译文随本书隐藏") &&
+						!button("删除书籍").disabled,
+					"Checked mode can finish before old unchecked impact",
+				);
+				respond(
+					releaseOldImpact,
+					Response.json({ ...bookImpact(false), hidden_result_count: 99 }),
+				);
+				await new Promise((resolve) => setTimeout(resolve, 0));
+				check(
+					!dialogText()?.includes("99") &&
+						dialogText()?.includes("3 份译文随本书隐藏"),
+					"Late unchecked data cannot replace checked counts",
+				);
+				check(
+					dialogText()?.includes("人工讲解") &&
+						dialogText()?.includes("后续讨论") &&
+						dialogText()?.includes("手动录入的片段保留") &&
+						dialogText()?.includes("将停止 1 个讨论任务、2 个翻译任务"),
+					"Cascade warning explains its exact scope",
+				);
+			}
+			const reads = bookReads;
+			const remove = button("删除书籍");
+			remove.click();
+			remove.click();
+			await until(() => !!releaseDelete, "Book DELETE starts");
+			check(
+				submittedModes.length === 1 &&
+					submittedModes[0] === String(cascade) &&
+					bookReads === reads,
+				"Submit directly deletes the selected mode once",
+			);
+			check(
+				checkbox.disabled && button("取消").disabled,
+				"Pending deletion locks checkbox and cancel",
+			);
+			checkbox.click();
+			cancelEvent();
+			check(
+				container.querySelector("dialog[open]") && checkbox.checked === cascade,
+				"Pending deletion cannot close or change mode",
+			);
+			respond(
+				releaseDelete,
+				Response.json({ detail: "删除暂时失败" }, { status: 500 }),
+			);
+			await until(
+				() => !!dialogText()?.includes("删除暂时失败"),
+				"Book deletion failure stays visible",
+			);
+			check(
+				checkbox.checked === cascade && !checkbox.disabled,
+				"Failure preserves selection for retry",
+			);
+			releaseDelete = undefined;
+			button("删除书籍").click();
+			await until(() => !!releaseDelete, "Book retry starts");
+			check(
+				bookReads === reads &&
+					Number(submittedModes.length) === 2 &&
+					submittedModes[1] === String(cascade),
+				"Retry preserves mode and does not reread impact",
+			);
+			if (cascade) {
+				respond(releaseDelete, new Response(null, { status: 204 }));
+				await until(
+					() => !!dialogText()?.includes("操作失败"),
+					"Cascade deletion requires a response receipt",
+				);
+				check(checkbox.checked, "Missing receipt keeps cleanup mode selected");
+				releaseDelete = undefined;
+				button("删除书籍").click();
+				await until(() => !!releaseDelete, "Receipt retry starts");
+				respond(
+					releaseDelete,
+					Response.json({
+						material_id: "different-book",
+						deleted_segment_ids: ["unrelated-segment"],
+					}),
+				);
+				await until(
+					() => !!dialogText()?.includes("删除回执与目标书籍不一致"),
+					"A different book receipt cannot complete deletion",
+				);
+				releaseDelete = undefined;
+				button("删除书籍").click();
+				await until(() => !!releaseDelete, "Matching receipt retry starts");
+				check(
+					bookReads === reads &&
+						submittedModes.every((mode) => mode === "true"),
+					"Receipt retries keep their mode without rereading counts",
+				);
+			}
+			respond(
+				releaseDelete,
+				cascade
+					? Response.json({
+							material_id: book.id,
+							deleted_segment_ids: ["saved-from-book"],
+						})
+					: new Response(null, { status: 204 }),
+			);
+			await until(
+				() => !!container.textContent?.includes("书籍已删除"),
+				"Book deletion succeeds",
+			);
+		} finally {
+			dispose();
+		}
 	}
 
 	const analysis: AnalysisDetail = {
@@ -529,5 +661,65 @@ export async function sourceEditDelete(h: BrowserHarness) {
 	} finally {
 		dispose();
 	}
-	return `source edit and deletion ${innerWidth}px: changed-field PATCH, clearing, close/navigation draft reminder, retry; direct book/analysis DELETE, impact display, duplicate and pending-close guards`;
+	const capture = new URLSearchParams(location.search);
+	if (capture.has("capture")) {
+		const empty = capture.has("empty");
+		const unchecked = empty || capture.has("unchecked");
+		document.documentElement.dataset.theme =
+			capture.get("mode") === "dark" ? "dark" : "light";
+		mock(async (request) => {
+			if (new URL(request.url).pathname.endsWith("/delete-impact"))
+				return Response.json(
+					bookImpact(
+						new URL(request.url).searchParams.get("delete_learning_content") ===
+							"true",
+						empty,
+					),
+				);
+			throw new Error(`Unexpected capture request ${request.url}`);
+		});
+		await mount(<BookDeletion />);
+		await until(
+			() =>
+				!!dialogText()?.includes(
+					empty ? "本书暂无关联的学习片段" : "3 个学习片段",
+				),
+			"Capture dialog and impact finish mounting",
+		);
+		await until(() => !button("删除书籍").disabled, "Capture impact loads");
+		const checkbox = container.querySelector<HTMLInputElement>(
+			'input[type="checkbox"]',
+		);
+		check(checkbox, "Capture cleanup checkbox exists");
+		if (!unchecked) {
+			checkbox.click();
+			await until(
+				() =>
+					!!dialogText()?.includes("3 份译文随本书隐藏") &&
+					!button("删除书籍").disabled,
+				"Capture shows selected learning cleanup",
+			);
+		}
+		check(
+			checkbox.checked === !unchecked,
+			"Capture preserves the requested cleanup mode",
+		);
+		if (empty) {
+			check(
+				!/(?:^|\s)0\s*(?:个|份|条)/.test(dialogText() ?? ""),
+				"Empty impact omits zero counts",
+			);
+			check(
+				!dialogText()?.includes("任务") && !dialogText()?.includes("份译文"),
+				"Empty impact omits task and translation notices",
+			);
+		} else {
+			check(
+				dialogText()?.includes("3 个学习片段、4 份讲解、5 个讨论、12 条消息"),
+				"Capture shows nonzero learning counts",
+			);
+		}
+	}
+
+	return `source edit and deletion ${innerWidth}px: changed-field PATCH, clearing, close/navigation draft reminder, retry; direct book/analysis DELETE, optional learning cleanup, impact retry, late mode isolation, retained selection, duplicate and pending-close guards`;
 }

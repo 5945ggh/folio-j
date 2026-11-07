@@ -144,3 +144,20 @@ class MaterialIllustrationsResponse(BaseModel):
     offset: int
     limit: int
     items: list[MaterialIllustrationItem]
+
+
+class MaterialDeleteImpact(BaseModel):
+    material_id: str
+    hidden_result_count: int
+    retained_result_count: int
+    active_task_count: int
+    segment_count: int
+    analysis_count: int
+    thread_count: int
+    message_count: int
+    active_job_count: int
+
+
+class MaterialDeleteResult(BaseModel):
+    material_id: str
+    deleted_segment_ids: list[str]

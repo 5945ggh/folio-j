@@ -11,7 +11,6 @@ from app.services.chapter_translations import list_chapter_translations
 from app.translation_schemas import (
     MaterialChapterTranslations,
     TranslationCreate,
-    TranslationDeleteImpact,
     TranslationHistoryResponse,
     TranslationRemovalResponse,
     TranslationResultResponse,
@@ -99,13 +98,6 @@ async def segment_translations(
     segment_id: str, session: Session
 ) -> list[TranslationResultResponse]:
     return await service.segment_results(session, segment_id)
-
-
-@router.get("/materials/{material_id}/delete-impact", response_model=TranslationDeleteImpact)
-async def material_translation_delete_impact(
-    material_id: str, session: Session
-) -> TranslationDeleteImpact:
-    return await service.delete_impact(session, material_id)
 
 
 @router.delete(

@@ -57,7 +57,7 @@ flowchart LR
 
 讨论、成果保存和条目整理的产品路径见[PRD 6.3–6.5](PRD.md#63-形成并阅读讲解)。实现以Segment为共同归属：新建Analysis创建独立身份，编辑已有Analysis创建不可变Revision；Occurrence须定位目标原文并引用实际保存的Revision／Section，历史引用不漂移。当前Analysis已实现，Occurrence和可选提取尚未实现；用户直接整理不伪造Run。
 
-删除范围及用户确认见[PRD F2](PRD.md#f2-source-与片段)。当前 Source／Material／Segment／Analysis 使用 deleted_at 逻辑删除，相关事务和迟到结果检查阻止内容重新可见；独立 Material 删除保留 Source、Segment 及其学习内容。Section 删除只在新修订中移除。Occurrence 关联删除与最终物理清理仍待其持久化契约落实。
+删除范围及用户确认见[PRD F2](PRD.md#f2-source-与片段)。当前 Source／Material／Segment／Analysis 使用 deleted_at 逻辑删除，相关事务和迟到结果检查阻止内容重新可见；独立 Material 删除默认保留 Source、Segment 及其学习内容，可按本书精确出处一并删除片段及其学习内容。Section 删除只在新修订中移除。Occurrence 关联删除与最终物理清理仍待其持久化契约落实。
 
 ## 3. 领域模型
 
@@ -65,7 +65,7 @@ flowchart LR
 
 设置按界面分组保存：`PATCH /api/settings` 接收完整的可选 profile 分组和字段可选的 defaults，仅校验、更新明确提交的字段；同次 profile 与 defaults 在一个事务提交，失败不部分写入。省略字段保留存量值，模型及预设身份显式 null 表示清除。既有 PUT 接口保留完整替换契约。验证历史按 Run 中保存的 Provider／登记模型身份及状态过滤后分页，不依赖配置仍然存在；只返回未软删的 verification Run。
 
-Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一写事务中标记来源、所属材料及学习内容，并清理全部下属材料的托管副本与派生阅读数据，具体范围见第 3.1 节。独立材料删除保留 Material 身份墓碑并清理其托管副本及派生阅读数据，不改 Source、片段、讲解、讨论或片段任务；独立翻译任务按第 4.8 节撤销。接受问答、成功保存持久讲解或建立精确材料出处时，在对应短写事务中首次设置 `text_locked_at`；共同保护函数不提交事务、不递增片段记录 revision，也不重写已有锁定时间。原文编辑、来源／片段删除共用事务校验边界。
+Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一写事务中标记来源、所属材料及学习内容，并清理全部下属材料的托管副本与派生阅读数据，具体范围见第 3.1 节。独立材料删除保留 Material 身份墓碑并清理其托管副本及派生阅读数据，默认保留学习积累。显式选择一并删除时，同事务处理精确关联片段及其讲解、讨论和任务，具体规则见第 3.1 节。独立翻译任务按第 4.8 节撤销。接受问答、成功保存持久讲解或建立精确材料出处时，在对应短写事务中首次设置 `text_locked_at`；共同保护函数不提交事务、不递增片段记录 revision，也不重写已有锁定时间。原文编辑、来源／片段删除共用事务校验边界。
 
 数据库生命周期由应用 lifespan 管理。`0001_schema_baseline` 以固定 Alembic DDL 建立原有 28 张业务表，包括材料软删除与活跃材料部分唯一索引、精确出处、语境设置及翻译表；`0002_context_copy_settings` 新增独立复制设置表，`0003_material_bookmarks` 新增位置书签表，`0004_translation_reader_removal` 为翻译任务新增可空的阅读移除时间，当前 head 共 30 张业务表。空库顺序执行四份脚本，既有基线库只执行新增脚本；版本脚本不导入运行时 ORM，也不调用自动建表。旧开发阶段的回填、批量重建及中间 revision 已移除，历史编号与当时的数据保护事实保留在阶段验收中。
 
@@ -129,7 +129,13 @@ EPUB 已确定的不变式：原始素材字节不可变，材料归属 Source�
 
 存储 envelope 解压上限为 128 MiB，为片段结构开销留出有界空间；逻辑 JSON 编码与还原仍各限 64 MiB。解码检查格式版本、整条压缩流、章／part 数量、空骨架及引用类型／范围，先检查骨架逻辑大小，再累计全书 JSON 转义后的片段字节数，重复图片引用在拼接 HTML 前逐次计入预算。v1 图片池包、旧裸 zlib 包、无版本 JSON、未知版本及含冗余 `resource_html` 的 envelope 均拒绝，不设转换或回退。阅读、出处、翻译、片段和统计共用该 interface；章节 HTTP 响应本就不含完整资源 HTML，本次不改变该响应结构，注音资产沿用原格式。开发库重建与历史数据边界见[升级与备份](UPGRADING.md#epub-存储格式与开发库重建)，收益与验证范围见[存储验收](handovers/archived/EPUB_STORAGE_ACCEPTANCE.md)。
 
-`DELETE /api/materials/{material_id}` 在短写事务中核对所属 Source 存活，设置 Material.deleted_at 并清理该材料的托管副本和派生阅读数据，成功返回 204。保留 id、source_id、title、源字节摘要、版本身份及创建／删除时间等出处依据；original_bytes 与 compiled_bundle 清为空 BLOB，warnings 清空，仅已删除材料允许缺少内容。活跃材料及其已发布内容仍保持不可变。删除该材料的全书／章节位置、使用状态、自动／自定义封面、分词当前指针与全部分词代次；先删指针后删代次，清理与删除标记同事务提交，失败全部回滚。重复删除补齐清理后仍返回 204，不存在或所属 Source 已删除返回 404。该操作不调用 Source／Segment 级联删除，不中断保留片段的任务。首版无恢复、移动或一并删除积累参数。
+`GET /api/materials/{material_id}/delete-impact` 按精确材料出处统计关联活跃 Segment、讲解、讨论、消息与活动任务，同时返回翻译的隐藏／保留数量。`delete_learning_content` 默认为 false，选择 true 时计算删除这些片段后仍可从其他活跃片段访问的译文快照。预览数量只供确认时参考，删除事务重新按材料身份确定实际范围。
+
+`DELETE /api/materials/{material_id}` 默认返回 204，保留学习积累。可选 query `delete_learning_content=true` 在同一短写事务内，按 `SegmentMaterialProvenance.material_id` 及 Source 关系选择活跃片段，复用 Segment 软删除规则处理讲解、讨论及 Run，撤销活动 Job 的执行令牌，再清理书籍资源。接受讨论与删除共用 dispatch lock，提交成功后才尽力取消进程内执行。任一步骤失败全部回滚。选中该模式时返回 200，正文包含 `material_id` 与 `deleted_segment_ids`，其中包括该材料下此前已软删除的片段，使响应丢失后的重试仍能清理相同缓存。
+
+两种模式均核对所属 Source 存活，设置 Material.deleted_at，保留 id、source_id、title、源字节摘要、版本身份及创建／删除时间等出处依据。original_bytes 与 compiled_bundle 清为空 BLOB，warnings 清空，仅已删除材料允许缺少内容。删除该材料的全书／章节位置、使用状态、自动／自定义封面、分词当前指针与全部分词代次，先删指针后删代次。书签及备注仍保留并随材料隐藏。重复删除可补齐清理，已删材料的明确身份也允许继续清理关联片段，无须读取已清空的编译包。不存在或所属 Source 已删除返回 404。普通删除保留片段任务，其他材料、其片段及无材料出处的手动片段均保留。
+
+前端以材料身份和所选模式区分影响查询，校验响应目标。删除成功后按回执中的片段 ID 批量取消在途读取，清理片段、讲解、讨论和任务缓存，再刷新来源聚合、目录与阅读标记。新状态不被迟到结果恢复，其他片段继续沿用自己的缓存。
 
 `DELETE /api/sources/{source_id}` 在同一写事务中对该来源全部材料执行上述托管与派生数据清理，包括已软删材料的遗留资源；设置尚未删除材料的 `deleted_at`，保留已有删除时间。材料身份、版本身份、历史出处、书签及备注保留，Source→Segment／Analysis／讨论／Run 的既有软删除范围不变。独立翻译任务在同一事务中撤销，已有译文结果及采用记录保留并受来源可见性约束；仅提交成功后才尽力取消进程内调用。任一清理失败均回滚来源、材料、学习内容与任务状态，不能留下已删除但资源未清理的部分结果。不自动追溯清理此前已删除的来源，材料对话的删除影响留待其切片。
 

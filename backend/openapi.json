@@ -2566,6 +2566,80 @@
         "title": "MaterialCoverInput",
         "type": "object"
       },
+      "MaterialDeleteImpact": {
+        "properties": {
+          "active_job_count": {
+            "title": "Active Job Count",
+            "type": "integer"
+          },
+          "active_task_count": {
+            "title": "Active Task Count",
+            "type": "integer"
+          },
+          "analysis_count": {
+            "title": "Analysis Count",
+            "type": "integer"
+          },
+          "hidden_result_count": {
+            "title": "Hidden Result Count",
+            "type": "integer"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "message_count": {
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "retained_result_count": {
+            "title": "Retained Result Count",
+            "type": "integer"
+          },
+          "segment_count": {
+            "title": "Segment Count",
+            "type": "integer"
+          },
+          "thread_count": {
+            "title": "Thread Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "material_id",
+          "hidden_result_count",
+          "retained_result_count",
+          "active_task_count",
+          "segment_count",
+          "analysis_count",
+          "thread_count",
+          "message_count",
+          "active_job_count"
+        ],
+        "title": "MaterialDeleteImpact",
+        "type": "object"
+      },
+      "MaterialDeleteResult": {
+        "properties": {
+          "deleted_segment_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Deleted Segment Ids",
+            "type": "array"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "deleted_segment_ids"
+        ],
+        "title": "MaterialDeleteResult",
+        "type": "object"
+      },
       "MaterialDetailsResponse": {
         "properties": {
           "chapter_count": {
@@ -6580,34 +6654,6 @@
         "title": "TranslationCreate",
         "type": "object"
       },
-      "TranslationDeleteImpact": {
-        "properties": {
-          "active_task_count": {
-            "title": "Active Task Count",
-            "type": "integer"
-          },
-          "hidden_result_count": {
-            "title": "Hidden Result Count",
-            "type": "integer"
-          },
-          "material_id": {
-            "title": "Material Id",
-            "type": "string"
-          },
-          "retained_result_count": {
-            "title": "Retained Result Count",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "material_id",
-          "hidden_result_count",
-          "retained_result_count",
-          "active_task_count"
-        ],
-        "title": "TranslationDeleteImpact",
-        "type": "object"
-      },
       "TranslationHistoryResponse": {
         "properties": {
           "next_offset": {
@@ -8282,11 +8328,31 @@
               "title": "Material Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "delete_learning_content",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Delete Learning Content",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
-          "204": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialDeleteResult"
+                }
+              }
+            },
             "description": "Successful Response"
+          },
+          "204": {
+            "description": "书籍已删除，学习积累保留"
           },
           "422": {
             "content": {
@@ -8887,7 +8953,7 @@
     },
     "/api/materials/{material_id}/delete-impact": {
       "get": {
-        "operationId": "material_translation_delete_impact_api_materials__material_id__delete_impact_get",
+        "operationId": "getMaterialDeleteImpact",
         "parameters": [
           {
             "in": "path",
@@ -8897,6 +8963,16 @@
               "title": "Material Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "delete_learning_content",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Delete Learning Content",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -8904,7 +8980,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TranslationDeleteImpact"
+                  "$ref": "#/components/schemas/MaterialDeleteImpact"
                 }
               }
             },
@@ -8921,7 +8997,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Material Translation Delete Impact"
+        "summary": "Material Delete Impact"
       }
     },
     "/api/materials/{material_id}/details": {

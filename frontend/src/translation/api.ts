@@ -93,11 +93,3 @@ export async function getSegmentTranslations(id: string) {
 	);
 	return requireData(data, error, response.status);
 }
-
-export async function getTranslationDeleteImpact(id: string) {
-	const { data, error, response } = await api.GET(
-		"/api/materials/{material_id}/delete-impact",
-		{ params: { path: { material_id: id } } },
-	);
-	return requireData(data, error, response.status);
-}

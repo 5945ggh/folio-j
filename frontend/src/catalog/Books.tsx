@@ -267,6 +267,7 @@ export function BookCard({
 						<button
 							type="button"
 							role="menuitem"
+							className="text-danger"
 							tabIndex={-1}
 							onClick={() => {
 								menu.current?.hidePopover();

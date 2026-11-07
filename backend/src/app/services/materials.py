@@ -23,6 +23,8 @@ from app.material_schemas import (
     ChapterResource,
     ChapterSummary,
     MaterialChapterResponse,
+    MaterialDeleteImpact,
+    MaterialDeleteResult,
     MaterialImportResponse,
     MaterialResponse,
     MaterialSummary,
@@ -30,7 +32,7 @@ from app.material_schemas import (
     ReadingPositionResponse,
     ReadingPositionUpdate,
 )
-from app.models import Source
+from app.models import Segment, SegmentMaterialProvenance, Source
 from app.readings_schemas import MaterialReadingsPrepare
 from app.services import readings
 from app.services.epub import EpubError, compile_epub_bytes
@@ -38,7 +40,15 @@ from app.services.epub_readings import text_resources
 from app.services.material_cleanup import clear_material_assets
 from app.services.position_progress import chapter_progress
 from app.services.reader_views import MaterialIdentity
-from app.services.sources import as_utc, begin_write, require_source, utc_now
+from app.services.sources import (
+    analysis_count_for_segments,
+    as_utc,
+    begin_write,
+    discussion_counts,
+    require_source,
+    soft_delete_segments,
+    utc_now,
+)
 
 if TYPE_CHECKING:
     from app.services.reader_views import ReaderViews
@@ -312,24 +322,90 @@ async def save_position(
         raise
 
 
-async def delete_material(session: AsyncSession, material_id: str) -> None:
-    """Keep a tombstone and remove this material's assets atomically."""
-    try:
-        await begin_write(session)
-        existing_id = await session.scalar(
-            select(Material.id)
-            .join(Source, Material.source_id == Source.id)
-            .where(Material.id == material_id, Source.deleted_at.is_(None))
-        )
-        if existing_id is None:
-            raise HTTPException(404, "材料不存在")
-        from app.services.translations import revoke_tasks
+async def require_material_delete_target(session: AsyncSession, material_id: str) -> None:
+    """An existing tombstone remains an explicit target for cleanup and retries."""
+    existing_id = await session.scalar(
+        select(Material.id)
+        .join(Source, Material.source_id == Source.id)
+        .where(Material.id == material_id, Source.deleted_at.is_(None))
+    )
+    if existing_id is None:
+        raise HTTPException(404, "材料不存在")
 
-        await revoke_tasks(session, material_id=material_id)
-        await clear_material_assets(
-            session, select(Material.id).where(Material.id == material_id), utc_now()
+
+async def material_segment_ids(
+    session: AsyncSession, material_id: str, *, include_deleted: bool = False
+) -> list[str]:
+    statement = (
+        select(Segment.id)
+        .join(SegmentMaterialProvenance, SegmentMaterialProvenance.segment_id == Segment.id)
+        .join(Material, Material.id == SegmentMaterialProvenance.material_id)
+        .where(
+            SegmentMaterialProvenance.material_id == material_id,
+            Segment.source_id == Material.source_id,
+            SegmentMaterialProvenance.source_id == Material.source_id,
         )
-        await session.commit()
-    except BaseException:
-        await session.rollback()
-        raise
+        .order_by(Segment.id)
+    )
+    if not include_deleted:
+        statement = statement.where(Segment.deleted_at.is_(None))
+    return list((await session.scalars(statement)).all())
+
+
+async def material_delete_impact(
+    session: AsyncSession, material_id: str, *, delete_learning_content: bool = False
+) -> MaterialDeleteImpact:
+    await require_material_delete_target(session, material_id)
+    ids = await material_segment_ids(session, material_id)
+    from app.services.translations import delete_impact
+
+    translations = await delete_impact(
+        session, material_id, excluded_segment_ids=ids if delete_learning_content else []
+    )
+    threads, messages, jobs = await discussion_counts(session, ids)
+    return MaterialDeleteImpact(
+        **translations.model_dump(),
+        segment_count=len(ids),
+        analysis_count=await analysis_count_for_segments(session, ids),
+        thread_count=threads,
+        message_count=messages,
+        active_job_count=jobs,
+    )
+
+
+async def delete_material(
+    session: AsyncSession,
+    material_id: str,
+    dispatch_lock: asyncio.Lock,
+    *,
+    delete_learning_content: bool = False,
+) -> tuple[MaterialDeleteResult, list[str]]:
+    """Keep a tombstone and atomically remove assets and the selected learning content."""
+    async with dispatch_lock:
+        try:
+            await begin_write(session)
+            await require_material_delete_target(session, material_id)
+            deleted = utc_now()
+            ids = (
+                await material_segment_ids(session, material_id) if delete_learning_content else []
+            )
+            cancelled = await soft_delete_segments(session, ids, deleted)
+            from app.services.translations import revoke_tasks
+
+            await revoke_tasks(session, material_id=material_id)
+            await clear_material_assets(
+                session, select(Material.id).where(Material.id == material_id), deleted
+            )
+            # Include earlier soft deletions so a lost response can be safely replayed.
+            deleted_ids = (
+                await material_segment_ids(session, material_id, include_deleted=True)
+                if delete_learning_content
+                else []
+            )
+            await session.commit()
+            return MaterialDeleteResult(
+                material_id=material_id, deleted_segment_ids=deleted_ids
+            ), cancelled
+        except BaseException:
+            await session.rollback()
+            raise

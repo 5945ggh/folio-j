@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_session
 from app.material_schemas import (
     MaterialChapterResponse,
+    MaterialDeleteImpact,
+    MaterialDeleteResult,
     MaterialIllustrationsResponse,
     MaterialImportResponse,
     MaterialResponse,
@@ -319,10 +321,41 @@ async def get_readings(
     )
 
 
-@router.delete("/materials/{material_id}", status_code=204, operation_id="deleteMaterial")
-async def delete_material(material_id: str, session: Session, request: Request) -> Response:
-    await service.delete_material(session, material_id)
+@router.get(
+    "/materials/{material_id}/delete-impact",
+    response_model=MaterialDeleteImpact,
+    operation_id="getMaterialDeleteImpact",
+)
+async def material_delete_impact(
+    material_id: str, session: Session, delete_learning_content: bool = False
+) -> MaterialDeleteImpact:
+    return await service.material_delete_impact(
+        session, material_id, delete_learning_content=delete_learning_content
+    )
+
+
+@router.delete(
+    "/materials/{material_id}",
+    response_model=MaterialDeleteResult,
+    responses={204: {"description": "书籍已删除，学习积累保留"}},
+    operation_id="deleteMaterial",
+)
+async def delete_material(
+    material_id: str,
+    session: Session,
+    request: Request,
+    delete_learning_content: bool = False,
+) -> MaterialDeleteResult | Response:
+    result, cancelled = await service.delete_material(
+        session,
+        material_id,
+        request.app.state.chat_dispatch_lock,
+        delete_learning_content=delete_learning_content,
+    )
+    from app.jobs.runtime import request_chat_cancel
     from app.services.translations import cancel_revoked
 
     await cancel_revoked(request.app)
-    return Response(status_code=204)
+    for job_id in cancelled:
+        request_chat_cancel(request.app, job_id)
+    return result if delete_learning_content else Response(status_code=204)

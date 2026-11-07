@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-11-03。编辑与偏好保护减负已完成，代码核对到 `7f8aabc3`，起点为 `main 165e85f5`，验证见[本轮验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)。即时查词辅助选项见[查词选项验收](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)。其余工程、设备和使用验收仍以对应记录的版本及环境为准。
+> 状态核对：2026-11-07。书籍可选清理学习积累已实现并通过工程验证，实施起点为 `main 10d4b733`，见[本轮范围与验证](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)。此前编辑与偏好保护减负已完成，代码核对到 `7f8aabc3`，起点为 `main 165e85f5`，验证见[本轮验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)。即时查词辅助选项见[查词选项验收](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)。其余工程、设备和使用验收仍以对应记录的版本及环境为准。
 > 本文件汇总当前能力、实现缺口和验收入口。产品范围见 [PRD](../PRD.md)，领域含义见 [GLOSSARY](../GLOSSARY.md)，技术选型见 [TECH_STACK](../TECH_STACK.md)；具体实现由[架构](../ARCHITECTURE.md)维护。
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
@@ -41,7 +41,7 @@
 | 导入来源表单 | 添加书籍与新建来源完整视图切换，创建后自动选择来源并保留文件；单组操作、中文文案与表单提交保护 | [导入来源表单调整](archived/library-a1/ACCEPTANCE.md#2026-10-19-导入来源表单调整) |
 | EPUB 导入书卡反馈 | 提交立即关闭弹窗，当前标签页内以准备书卡承接导入；来源概览与书籍网格共享状态，成功提供入口且不抢导航，失败可重试或移除提示 | [验收与限制](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md#2026-10-26-提交前-cr-修复) |
 | 书籍管理 | 用户使用验收待进行。紧凑菜单与阅读状态二级入口、真实详情、书名与封面原子编辑／恢复、草稿／冲突保护及安全返回；公共默认外壳已统一并清理旧样式；移动仍禁用，不替换 EPUB；独立删除见下行 | [现行契约](../ARCHITECTURE.md#311-目录与材料使用状态)、[验收记录](archived/book-management/ACCEPTANCE.md) |
-| 材料独立删除 | 素材库与来源书卡删除材料并清空托管原书与派生阅读数据，保留材料身份、Source、片段、讲解、讨论及其他材料；完整访问门禁、幂等删除、目录计数与缓存隔离；重导创建新身份，移动与一并删除继续后置 | [产品规则](../PRD.md#421-本轮材料目录与阅读管理)、[验收记录](archived/MATERIAL_DELETION_ACCEPTANCE.md) |
+| 材料独立删除 | 默认保留学习积累，可勾选清理精确出处属于本书的片段及其讲解、讨论和任务。确认展示影响数量，删除事务按实际关联处理，失败整体回滚。已通过工程验证，用户使用验收待进行 | [产品规则](../PRD.md#f2-source-与片段)、[本轮验收](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)、[默认删除历史验收](archived/MATERIAL_DELETION_ACCEPTANCE.md) |
 | 来源删除资源清理 | 来源删除与单本删除共用材料清理，在同一事务清空全部下属材料原书与派生数据，包括已软删材料遗留资源；学习内容仍按既有规则软删除，保留材料身份、历史出处与书签；失败整体回滚，不追溯清理此前已删除来源 | [产品规则](../PRD.md#f2-source-与片段)、[验收记录](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md) |
 | EPUB 编译包存储与编译器 | 完整资源 HTML 仅为编译临时态；最终资源保留正文、样式及定位，章节 HTML 与原图按 v2 图片池格式保存；无旧格式读取、回退或转换工具；有界编译及展开预算保留，原 EPUB 与历史备份保留 | [格式与不变式](../ARCHITECTURE.md#31-实体)、[开发库边界](../UPGRADING.md#epub-存储格式与开发库重建)、[验收与测量](archived/EPUB_STORAGE_ACCEPTANCE.md) |
 | 来源空间 S2 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；来源栏可调宽并保存偏好，片段／讲解列表搜索、排序与空态已打磨；工程验收完成，用户使用验收待进行 | [S2 工程验收](archived/sources-s2/ACCEPTANCE.md) |
