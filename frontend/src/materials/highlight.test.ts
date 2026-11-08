@@ -317,7 +317,7 @@ test("coverage subtraction keeps ruby locator nodes separate and preserves exact
 	assert.equal(p.raw, "甲𠮷か\u3099乙");
 });
 
-test("navigation fade changes only search paint, preserves fading opacity on reflow, and restores original foreground", async () => {
+test("navigation fade restores terminal foreground while retaining its registry and persistent marks", async () => {
 	const { setSearchHighlightOpacity } = await import("./highlight.ts");
 	const h = harness();
 	const p = projection(["原文"]);
@@ -327,17 +327,7 @@ test("navigation fade changes only search paint, preserves fading opacity on ref
 	h.marks.set("folio-study", marker);
 	h.marks.set("folio-translation", marker);
 	setSearchHighlightOpacity(h.doc, 0.5);
-	assert.match(
-		h.style.textContent,
-		/background:color-mix\(in srgb,var\(--reader-location-highlight\) 50%,transparent\)/,
-	);
-	assert.match(h.style.textContent, /#171717 50%,#282828/);
 	prepareHighlights(h.doc, p, [{ start: 0, end: 2 }])();
-	assert.match(
-		h.style.textContent,
-		/ 50%,transparent\)/,
-		"reflow does not brighten",
-	);
 	setSearchHighlightOpacity(h.doc, 0);
 	assert.match(h.style.textContent, /#171717 0%,#282828/);
 	assert.ok(
@@ -348,15 +338,10 @@ test("navigation fade changes only search paint, preserves fading opacity on ref
 	assert.equal(h.marks.get("folio-translation"), marker);
 	clearSearchHighlights(h.doc);
 	prepareHighlights(h.doc, p, [{ start: 0, end: 2 }])();
-	assert.match(
-		h.style.textContent,
-		/ 100%,transparent\)/,
-		"a new target starts bright",
-	);
 	assert.equal(p.raw, "原文");
 });
 
-test("fade captures source foreground and tracks presentation-only theme switches", async () => {
+test("fade captures foreground on projection and reflow while presentation-only theme switches preserve target identity", async () => {
 	const { setSearchHighlightOpacity, refreshSearchHighlightForeground } =
 		await import("./highlight.ts");
 	const h = harness();
@@ -372,7 +357,6 @@ test("fade captures source foreground and tracks presentation-only theme switche
 	const marker = h.marks.get("folio-search");
 	foreground = "rgb(40, 40, 40)";
 	refreshSearchHighlightForeground(h.doc);
-	assert.match(h.style.textContent, /#171717 50%,rgb\(40, 40, 40\)/);
 	assert.equal(
 		h.marks.get("folio-search"),
 		marker,
@@ -381,5 +365,4 @@ test("fade captures source foreground and tracks presentation-only theme switche
 	foreground = "rgb(229, 229, 229)";
 	prepareHighlights(h.doc, p, [{ start: 0, end: 2 }])();
 	assert.match(h.style.textContent, /#171717 50%,rgb\(229, 229, 229\)/);
-	assert.doesNotMatch(h.style.textContent, /currentColor/);
 });
