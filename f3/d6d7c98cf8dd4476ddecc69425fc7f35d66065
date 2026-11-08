@@ -1,0 +1,29 @@
+frontend/scripts/measure-reader.mjs
+  s_46f3ff3e1f0290::t_7ac256e9ecf413 1,4,6,14,23,26,29
+frontend/scripts/reader-baseline.mjs
+  s_46f3ff3e1f0290::t_0b0ecfdd916847 1-43
+docs/DEVELOPMENT.md
+  s_46f3ff3e1f0290::t_014dbafe1bc105 134-136
+frontend/scripts/test-browser.mjs
+  s_46f3ff3e1f0290::t_7ac256e9ecf413 12,205-207
+  s_46f3ff3e1f0290::t_0d79884436e57e 5,7-10
+frontend/scripts/measure-reader.test.mjs
+  s_46f3ff3e1f0290::t_3d1273e5087cba 48-51
+  s_46f3ff3e1f0290::t_5973e46bcb174f 1-47,52-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f3d6d7c98cf8dd4476ddecc69425fc7f35d66065",
+  "prompts": {},
+  "sessions": {
+    "s_46f3ff3e1f0290": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bb5f-aaf0-7602-b738-c1062546a0b5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
