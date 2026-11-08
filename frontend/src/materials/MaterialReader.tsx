@@ -1476,16 +1476,6 @@ function Reader({
 						?.imageOffsets.get(anchor.image_id ?? -1),
 				);
 			},
-			atBeginning: () => {
-				const root = container.current;
-				if (!root || !presentation.current.canSample(viewportSize(root)))
-					return false;
-				const offset =
-					latest.current.settings.writing_mode === "vertical-rl"
-						? root.scrollLeft
-						: root.scrollTop;
-				return Number.isFinite(offset) && Math.abs(offset) <= 1;
-			},
 			loadChapter: (id) => {
 				navigationHighlight.current?.clear(true);
 				if (chapter.data?.id === id) return Promise.resolve(chapter.data);
@@ -2703,9 +2693,6 @@ function Reader({
 								value.progress,
 							]),
 						)
-					}
-					onBeginning={() =>
-						void navigation.current.navigate({ type: "beginning" }, "left")
 					}
 					closing={leftView.exiting}
 					inactive={

@@ -290,10 +290,22 @@ export function StudyPreview({
 						</button>
 						<button
 							type="button"
+							className="reader-study-preview-close"
 							aria-label="关闭学习片段预览"
 							onClick={onClose}
 						>
-							×
+							<svg
+								viewBox="0 0 24 24"
+								width="18"
+								height="18"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.6"
+								strokeLinecap="round"
+								aria-hidden="true"
+							>
+								<path d="m6 6 12 12M18 6 6 18" />
+							</svg>
 						</button>
 					</div>
 				</header>

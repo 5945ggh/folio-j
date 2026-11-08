@@ -75,7 +75,6 @@ function fixture(reading = new JumpReadingSession(), initiallyReady = true) {
 	let currentSettings = settings;
 	let captured: Position | null = position("A");
 	let progress: number | null = 0.4;
-	let physicalStart = false;
 	let unavailable = false;
 	let loader = async (id: string) => chapter(id);
 	const context = (): ReaderNavigationContext => ({
@@ -86,7 +85,6 @@ function fixture(reading = new JumpReadingSession(), initiallyReady = true) {
 		remembered: (id) => remembered.get(id),
 		presentedAnchor: () => captured,
 		progressFor: () => progress,
-		atBeginning: () => physicalStart,
 		loadChapter: (id) => {
 			loads.push(id);
 			return loader(id);
@@ -114,7 +112,6 @@ function fixture(reading = new JumpReadingSession(), initiallyReady = true) {
 				: anchor;
 		if (located && index === presentations.length - 1) {
 			captured = result;
-			physicalStart = presentation.destination?.beginning ?? physicalStart;
 		}
 		presentation.complete({ anchor: result, located });
 	};
@@ -140,9 +137,6 @@ function fixture(reading = new JumpReadingSession(), initiallyReady = true) {
 		},
 		setCaptured(next: Position | null) {
 			captured = next;
-		},
-		setPhysicalStart(next: boolean) {
-			physicalStart = next;
 		},
 		setSettings(next: Settings) {
 			currentSettings = next;
@@ -332,20 +326,6 @@ test("return progress stays with its origin through later reading, failed return
 	f.complete();
 	assert.equal(f.navigation.state.origin, null);
 	assert.equal(f.navigation.state.originProgress, null);
-});
-
-test("beginning snapshots zero, chapter-end and unavailable progress for its new origin", async () => {
-	for (const progress of [0, 1, null]) {
-		const f = fixture();
-		await f.navigate({ type: "chapter", id: "B" });
-		f.complete();
-		f.setCaptured(position("B", 60));
-		f.setPhysicalStart(false);
-		f.setProgress(progress);
-		await f.navigate({ type: "beginning" });
-		assert.deepEqual(f.navigation.state.origin, position("B", 60));
-		assert.equal(f.navigation.state.originProgress, progress);
-	}
 });
 
 test("out-of-order chapter loads accept only the latest request", async () => {
@@ -547,31 +527,6 @@ test("same-chapter directory selection invalidates pending requests without requ
 	assert.deepEqual(f.closed, ["left"]);
 });
 
-test("explicit beginning uses physical start and preserves undo on exact repeats", async () => {
-	const f = fixture();
-	assert.equal(await f.navigate({ type: "beginning" }), true);
-	assert.deepEqual(f.navigation.state.origin, position("A"));
-	assert.equal(f.presentations.at(-1)?.destination?.beginning, true);
-	f.complete();
-	f.setCaptured(position("A", 1));
-	assert.equal(await f.navigate({ type: "beginning" }), false);
-	assert.deepEqual(f.navigation.state.origin, position("A"));
-	assert.equal(f.presentations.length, 2);
-	f.setPhysicalStart(false);
-	assert.equal(await f.navigate({ type: "beginning" }), true);
-	assert.deepEqual(f.navigation.state.origin, position("A", 1));
-});
-
-test("explicit beginning replaces an earlier chapter origin with the current presented anchor", async () => {
-	const f = fixture();
-	await f.navigate({ type: "chapter", id: "B" });
-	f.complete();
-	f.setCaptured(position("B", 60));
-	f.setPhysicalStart(false);
-	assert.equal(await f.navigate({ type: "beginning" }), true);
-	assert.deepEqual(f.navigation.state.origin, position("B", 60));
-});
-
 test("a deferred destination and remembered position adopt the latest settings", async () => {
 	const f = fixture();
 	const saved = { ...position("B", 70), at_chapter_end: true };
@@ -726,7 +681,6 @@ test("confirmed reading replaces only the next accepted jump origin", async () =
 	f.complete();
 	f.setCaptured(position("B", 60));
 	f.setProgress(0.6);
-	f.setPhysicalStart(false);
 	reading.sample(0, 1_000, 0);
 	reading.input(100);
 	reading.sample(500, 1_000, 100);
@@ -877,16 +831,6 @@ test("remembered text and image positions retain their location and chapter-end 
 				part: data.parts[0],
 			});
 			assert.deepEqual(anchor, original);
-			f.complete();
-			f.setPhysicalStart(false);
-			await f.navigate({ type: "beginning" });
-			assert.equal(f.presentations.at(-1)?.destination?.beginning, true);
-			assert.equal(f.presentations.at(-1)?.destination?.target.kind, "text");
-			assert.equal(f.presentations.at(-1)?.destination?.target.offset, 0);
-			assert.equal(
-				f.presentations.at(-1)?.destination?.target.at_chapter_end,
-				false,
-			);
 		}
 	}
 });

@@ -5,7 +5,6 @@ import { JumpReadingSession } from "./return-origin.ts";
 type NavigationChapter = { id: string; title: string };
 export type ReaderNavigationIntent =
 	| { type: "chapter"; id: string }
-	| { type: "beginning" }
 	| { type: "adjacent"; direction: "previous" | "next" }
 	| {
 			type: "position";
@@ -48,7 +47,6 @@ export type ReaderNavigationContext = {
 	remembered: (id: string) => Position | undefined;
 	presentedAnchor: () => Position | null;
 	progressFor: (anchor: Position) => number | null;
-	atBeginning: () => boolean;
 	loadChapter: (id: string) => Promise<Chapter>;
 	saveDeparture: (anchor: Position) => void;
 	// null attaches the initial surface without navigating or saving a position.
@@ -70,12 +68,10 @@ function chapterDestination(
 	saved: Position | undefined,
 	versionId: string,
 	settings: Settings,
-	beginning: boolean,
 ): NavigationDraft {
 	const part = chapter.parts[0];
 	if (!part) throw new Error("章节没有可阅读内容");
-	if (saved && !beginning)
-		return { target: { ...saved, settings }, beginning: false };
+	if (saved) return { target: { ...saved, settings }, beginning: false };
 	const image = part.html.match(/data-epub-image="(\d+)"/);
 	return {
 		target: {
@@ -282,7 +278,6 @@ export class ReaderNavigation {
 						active.remembered(id),
 						active.versionId,
 						active.settings,
-						intent.type === "beginning",
 					);
 			const target = draft.target;
 			if (target.version_id !== active.versionId)
@@ -305,20 +300,10 @@ export class ReaderNavigation {
 				part,
 			};
 			const last = active.presentedAnchor();
-			if (
-				intent.type === "beginning" &&
-				active.atBeginning() &&
-				last?.version_id === target.version_id &&
-				last.chapter_id === target.chapter_id
-			) {
-				if (source) active.closePanels(source);
-				return false;
-			}
 			if (last) active.saveDeparture(last);
 			if (intent.type !== "return") {
 				const origin =
-					intent.type === "beginning" ||
-					(this.reading.shouldReplace && last !== null)
+					this.reading.shouldReplace && last !== null
 						? last
 						: (this.origin ?? last);
 				if (origin !== this.origin) {

@@ -675,6 +675,19 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 					panel.scrollWidth <= panel.clientWidth + 1,
 				`Record panel must fit ${innerWidth}×${innerHeight} viewport: ${JSON.stringify(bounds.toJSON())}`,
 			);
+			const close = panel.querySelector(".reader-study-preview-close svg");
+			const title = panel.querySelector(".reader-record-title");
+			check(close && title, "Record header must have a vector close icon");
+			const iconBounds = close.getBoundingClientRect();
+			const titleBounds = title.getBoundingClientRect();
+			check(
+				Math.abs(
+					iconBounds.top +
+						iconBounds.height / 2 -
+						(titleBounds.top + titleBounds.height / 2),
+				) < 1,
+				"Record close icon must share the title row's vertical centre",
+			);
 		};
 		await new Promise<void>((resolve) =>
 			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
@@ -1567,6 +1580,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			!h.container.querySelector(".reader-record-locate-original"),
 			"Contextual translation must omit redundant source location",
 		);
+		containedPanel();
 		if (preview && previewPanel === "translation-contextual") {
 			await finishTranslationPreview();
 			return "contextual translation detail: completed result with shared actions and no redundant origin return";

@@ -344,7 +344,6 @@ export async function themeRegression(h: BrowserHarness) {
 						tab="toc"
 						onTab={noop}
 						onChoose={noop}
-						onBeginning={noop}
 						onNavigate={noop}
 						onClose={noop}
 					/>

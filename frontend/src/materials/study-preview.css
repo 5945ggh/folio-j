@@ -62,10 +62,19 @@
 	padding: 7px;
 	font-size: 12px;
 }
-.reader-r1 .reader-study-preview-actions button:last-child {
-	font-size: 21px;
+.reader-r1 .reader-study-preview-actions .reader-study-preview-close {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	width: 32px;
+	height: 32px;
 	padding: 0;
+	border: 0;
+	line-height: 1;
+}
+.reader-r1 .reader-study-preview-actions .reader-study-preview-close svg {
+	display: block;
+	flex: none;
 }
 .reader-r1 .reader-study-preview-content {
 	min-height: 0;

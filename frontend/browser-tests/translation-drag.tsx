@@ -9,6 +9,19 @@ export async function translationDragRegression(
 		"[data-reader-card-drag-handle]",
 	);
 	check(header, "Selection translation requires a draggable title header");
+	const closeIcon = header.querySelector(".translation-icon-button svg");
+	const titleRow = header.querySelector(".reader-popover-title");
+	check(closeIcon && titleRow, "Translation title row must have a close icon");
+	const iconBounds = closeIcon.getBoundingClientRect();
+	const titleBounds = titleRow.getBoundingClientRect();
+	check(
+		Math.abs(
+			iconBounds.top +
+				iconBounds.height / 2 -
+				(titleBounds.top + titleBounds.height / 2),
+		) < 1,
+		"Translation close icon must share the title row's vertical centre",
+	);
 	check(
 		header.dataset.readerCardDraggable === String(innerWidth > 600),
 		"Only wide translation cards should be draggable",

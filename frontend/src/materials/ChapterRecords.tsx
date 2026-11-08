@@ -383,8 +383,24 @@ export function ChapterRecords(props: Props) {
 							{expanded ? "收起" : "展开"}
 						</button>
 					)}
-					<button type="button" aria-label="关闭阅读记录" onClick={onClose}>
-						×
+					<button
+						type="button"
+						className="reader-study-preview-close"
+						aria-label="关闭阅读记录"
+						onClick={onClose}
+					>
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="1.6"
+							strokeLinecap="round"
+							aria-hidden="true"
+						>
+							<path d="m6 6 12 12M18 6 6 18" />
+						</svg>
 					</button>
 				</div>
 			</header>

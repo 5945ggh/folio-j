@@ -176,7 +176,6 @@ export function ReaderNavigationPanel(
 		chapterId: string;
 		progress: number | null;
 		chapterProgress: ReadonlyMap<string, number | null>;
-		onBeginning: () => void;
 		tab: "toc" | "bookmarks" | "search";
 		bookmarks: ReaderBookmarks;
 		onTab: (tab: "toc" | "bookmarks" | "search") => void;
@@ -204,13 +203,6 @@ export function ReaderNavigationPanel(
 								? ""
 								: ` · 章内 ${Math.round(props.progress * 100)}%`}
 						</span>
-						<button
-							type="button"
-							className="reader-chapter-beginning"
-							onClick={props.onBeginning}
-						>
-							回到章首
-						</button>
 					</div>
 					<div
 						className="reader-query-tabs"
