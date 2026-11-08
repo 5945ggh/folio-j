@@ -1,0 +1,24 @@
+docs/ARCHITECTURE.md
+  s_46f3ff3e1f0290::t_0cea9d8abd4f14 601
+frontend/src/materials/ChapterRecords.tsx
+  s_46f3ff3e1f0290::t_cc2458f9f23352 29,37,39-41
+frontend/src/materials/StudyPreview.tsx
+  s_46f3ff3e1f0290::t_cc2458f9f23352 223-224
+  s_46f3ff3e1f0290::t_f88b08783741b0 48,221,472
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b4b0874b6f9ab9b70e37923414d3dec978784fdd",
+  "prompts": {},
+  "sessions": {
+    "s_46f3ff3e1f0290": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bb5f-aaf0-7602-b738-c1062546a0b5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
