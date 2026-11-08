@@ -1,0 +1,38 @@
+docs/INFORMATION_ARCHITECTURE.md
+  h_c735ec7f46d14b 38,60,365
+frontend/browser-tests/main.tsx
+  h_c735ec7f46d14b 45,438
+frontend/browser-tests/reading-aids.tsx
+  h_c735ec7f46d14b 637-658,853
+frontend/browser-tests/source-onboarding.tsx
+  h_c735ec7f46d14b 1-207
+frontend/scripts/test-browser.mjs
+  h_c735ec7f46d14b 110-111
+frontend/src/Shared.tsx
+  h_c735ec7f46d14b 223,242-253
+frontend/src/SourcePages.tsx
+  h_c735ec7f46d14b 32-36,104,190-222
+frontend/src/catalog/ImportDialog.tsx
+  h_c735ec7f46d14b 17-19,30,55,58,82-86,95,134-138,140-141,144,149-187
+frontend/src/catalog/SourceDirectory.tsx
+  h_c735ec7f46d14b 154-170
+frontend/src/catalog/import-dialog.css
+  h_c735ec7f46d14b 99-118,227-230
+frontend/src/catalog/sources-s2.css
+  h_c735ec7f46d14b 150-152,232
+frontend/src/speech/index.tsx
+  h_c735ec7f46d14b 95-101,130-143,358
+frontend/src/speech/speech.css
+  h_c735ec7f46d14b 114-119,127-145,152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cc3f18242556d9dc86b61fa1a4a2988fd8c7ae3f",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
