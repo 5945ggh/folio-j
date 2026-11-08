@@ -1,0 +1,65 @@
+backend/alembic/env.py
+  s_861563f4a988ba::t_d3064f087b07d0 5,49-58
+backend/pyproject.toml
+  s_861563f4a988ba::t_ae894eb5c647c4 35-37
+backend/src/app/backup.py
+  s_861563f4a988ba::t_3310d4d3fb954a 25,34,149,233,239,244-246
+backend/src/app/config.py
+  s_861563f4a988ba::t_bed99593faadf3 10-12
+backend/src/app/launcher.py
+  s_861563f4a988ba::t_d970c79f5ff90b 1-126
+backend/src/app/main.py
+  s_861563f4a988ba::t_620c162e33d563 20,25,156-158
+backend/src/app/prompting.py
+  s_861563f4a988ba::t_465c508f9b8e57 10-11,16
+backend/src/app/resources.py
+  s_861563f4a988ba::t_29676984cef997 1-25
+backend/src/app/services/context_plugins.py
+  s_861563f4a988ba::t_c46a7423b7a0fd 10,12
+backend/src/app/services/settings.py
+  s_861563f4a988ba::t_67fc070229da80 23
+backend/src/app/services/translations.py
+  s_861563f4a988ba::t_66e4bfee74069e 13,20,53
+backend/tests/test_backup.py
+  s_861563f4a988ba::t_0e477ccae008d6 53-55
+backend/tests/test_launcher.py
+  s_861563f4a988ba::t_0a23c3e6b204b7 1-192
+backend/tests/test_smoke_frozen.py
+  s_861563f4a988ba::t_5e1b1639a9c40c 1-175
+backend/uv.lock
+  s_861563f4a988ba::t_a2626b6ca24587 2,32-40,152-154,181,287-288,567-578,721-729,865-904,947-955,981-989
+docs/ARCHITECTURE.md
+  s_861563f4a988ba::t_80f18195aee3c4 690-693
+docs/DEVELOPMENT.md
+  s_861563f4a988ba::t_abbcf5706431b0 172-189
+docs/TECH_STACK.md
+  s_861563f4a988ba::t_1e014cc66b1a5e 92-93
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_861563f4a988ba::t_de09777b745903 10-11
+docs/handovers/archived/PYINSTALLER_ACCEPTANCE.md
+  s_861563f4a988ba::t_235ea04555316d 1-38
+scripts/frozen/README.md
+  s_861563f4a988ba::t_6df814e1794e45 1-15
+scripts/frozen/entry.py
+  s_861563f4a988ba::t_0dc920ff3973f8 1-6
+scripts/package_frozen.py
+  s_861563f4a988ba::t_4faf3eefa91dfd 1-219
+scripts/smoke_frozen.py
+  s_861563f4a988ba::t_a40005be027181 1-596
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1f28e1b90681e9517191ca69cc0701480e221524",
+  "prompts": {},
+  "sessions": {
+    "s_861563f4a988ba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ba57-ecae-7231-ac9a-9ab267f626f2",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
