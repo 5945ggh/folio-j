@@ -131,7 +131,9 @@ test -s "${loop_dir:?}/learning.db" &&
 
 ## 阅读会话性能测量
 
-`node frontend/scripts/measure-reader.mjs --baseline` 在隔离 Vite 中读取本轮历史基线的阅读器模块；不切换工作树、不修改磁盘上的生产代码。省略 `--baseline` 测量当前实现。设置 `READER_MEASUREMENT_RUNS=3` 重复三次，默认覆盖 1280 和 390 宽度；通过 `BROWSER_TEST_QUERY='?suite=reader-session&direction=vertical-rl'` 可选择竖排。
+`node frontend/scripts/measure-reader.mjs` 测量当前实现。加 `--baseline` 时，隔离 Vite 从固定提交 `ae44fc8` 读取 `MaterialReader.tsx`、`reader-frames.ts`、`study-marks-query.ts` 和 `chapter-translations-query.ts`，在内存中替换这四个模块；其余代码、依赖与离线夹具沿用当前版本，不切换工作树或修改生产文件。这是 2026-10-24 阅读会话保留优化的局部历史对照，不代表完整旧版应用；本地 Git 必须包含该提交及四个文件，浅克隆或源码 ZIP 可能不具备。日常测量使用当前模式即可。
+
+设置 `READER_MEASUREMENT_RUNS=3` 重复三次，默认覆盖 1280 和 390 宽度；通过 `BROWSER_TEST_QUERY='?suite=reader-session&direction=vertical-rl'` 可选择竖排。
 
 测量使用离线接口夹具和真实 Chrome DOM 时钟，输出材料／出处／注音准备／章节请求的相对时间、iframe 呈现时间、可读与保存状态，以及 iframe／Document 身份是否复用；夹具响应耗时不能代表真实后端或模型耗时。验收与比较口径见[阅读会话记录](handovers/archived/text-study/READER_SESSION_ACCEPTANCE.md)，复用接口与生命周期见[架构](ARCHITECTURE.md#312-阅读器-r11-呈现与只读派生查询)。
 

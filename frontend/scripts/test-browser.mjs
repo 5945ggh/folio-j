@@ -2,14 +2,16 @@ import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
+import {
+	browserScreenshotName,
+	selectBrowserScenarios,
+} from "./browser-test-plan.mjs";
 import { findChromium } from "./chromium.mjs";
+import { historicalReaderBaseline } from "./reader-baseline.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
-const { selectBrowserScenarios, browserScreenshotName } = await import(
-	pathToFileURL(path.join(frontend, "scripts/browser-test-plan.mjs")).href
-);
 const scenarios = selectBrowserScenarios(
 	[
 		[1280, 900, "?suite=native-select&theme=light"],
@@ -200,6 +202,9 @@ try {
 			watch: null,
 		},
 		plugins: [
+			...(process.env.BROWSER_TEST_BASELINE
+				? [historicalReaderBaseline(frontend)]
+				: []),
 			{
 				name: "block-unmocked-browser-test-api",
 				configureServer(testServer) {
