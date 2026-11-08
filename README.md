@@ -1,5 +1,10 @@
 # Folio-J
 
+[![License: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)](COPYING.md)
+[![Runtime: Local Web](https://img.shields.io/badge/runtime-local%20web-526D82)](#快速开始)
+[![macOS: verified](https://img.shields.io/badge/macOS-verified-4C8C69)](#快速开始)
+[![Windows 11: experimental](https://img.shields.io/badge/Windows%2011-experimental-orange)](docs/handovers/WINDOWS_ACCEPTANCE.md)
+
 Folio-J 是一个运行在本机的日语沉浸阅读与学习工具。
 
 读一本日文书，遇到生词时，我们可以随时查词；遇到每个词都认识、连起来却读不懂的地方，也许看看翻译就够了，也许还需要找 AI 问得更深入一些。
@@ -95,3 +100,9 @@ Folio-J 从 EPUB 阅读起步。后续我们希望让积累下来的片段和讲
 
 Folio-J 还在早期开发中。欢迎在 Issues 里聊聊你某次具体的阅读经历：你当时想弄懂什么，在哪一步停了下来，希望怎样继续往下读……
 如果遇到故障，欢迎向作者反馈。也欢迎提交 PR，一起修复问题、打磨阅读体验或补充文档～
+
+## 许可证
+
+Folio-J 采用 **GNU Affero General Public License v3.0 or later（AGPL-3.0-or-later）**。你可以依照协议使用、修改和再分发，包括商业使用；分发程序或提供修改版网络服务时，应履行相应的源码提供义务。软件不提供担保。
+
+完整条款见 [LICENSE](LICENSE)，授权范围、第三方材料与源码获取说明见 [COPYING.md](COPYING.md)。

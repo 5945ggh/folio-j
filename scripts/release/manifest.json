@@ -1,5 +1,7 @@
 {
   "files": [
+    "LICENSE",
+    "COPYING.md",
     ".python-version",
     ".nvmrc",
     "backend/.python-version",

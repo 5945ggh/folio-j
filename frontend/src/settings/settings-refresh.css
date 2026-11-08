@@ -268,6 +268,17 @@
 	font-size: 12px;
 	line-height: 1.6;
 }
+.settings-page .settings-license {
+	margin-top: 36px;
+	padding-top: 16px;
+	border-top: 1px solid var(--settings-line);
+}
+.settings-page .settings-license p {
+	margin: 4px 0;
+}
+.settings-page .settings-license a {
+	color: var(--settings-blue);
+}
 .settings-page .settings-section-note {
 	margin: 10px 0 12px;
 }

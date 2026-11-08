@@ -4,6 +4,7 @@
 
 | 想确认的问题 | 负责文档 | 维护边界 |
 |---|---|---|
+| 如何使用、修改与再分发项目 | [授权声明](../COPYING.md)、[许可证全文](../LICENSE) | AGPL-3.0-or-later、第三方材料与用户内容边界、对应源码提供 |
 | 如何阅读、设置模型和保存讲解 | [使用指南](USAGE.md) | 日常操作、模型调用与费用、应用配置 |
 | 如何准备开发环境、执行检查和生成快照 | [开发指南](DEVELOPMENT.md) | 依赖版本、开发命令、API 生成与快照工具 |
 | 如何试用 Windows 并记录实机结果 | [Windows 验收清单](handovers/WINDOWS_ACCEPTANCE.md) | Windows 11 x64、PowerShell、Chrome／Edge 的实验性范围、操作与待验项目 |

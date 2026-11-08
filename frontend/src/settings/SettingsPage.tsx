@@ -223,6 +223,30 @@ export function SettingsPage() {
 							)}
 						</>
 					)}
+					<footer className="settings-license settings-hint">
+						<p>Copyright (C) 2026 Folio-J contributors</p>
+						<p>
+							Folio-J 按 AGPL-3.0-or-later
+							授权，可依协议修改和再分发，不提供任何担保。
+						</p>
+						<p>
+							<a
+								href="https://github.com/5945ggh/folio-j"
+								target="_blank"
+								rel="noreferrer"
+							>
+								项目源码
+							</a>
+							{" · "}
+							<a
+								href="https://www.gnu.org/licenses/agpl-3.0.html"
+								target="_blank"
+								rel="noreferrer"
+							>
+								许可证全文
+							</a>
+						</p>
+					</footer>
 				</div>
 			</SettingsDraftProvider>
 		</Shell>

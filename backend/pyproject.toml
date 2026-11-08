@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "folio-j-backend"
 version = "0.1.0"
 description = "Local API for Folio-J"
+license = "AGPL-3.0-or-later"
 requires-python = ">=3.11"
 dependencies = [
   "aiosqlite",

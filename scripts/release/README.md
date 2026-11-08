@@ -55,3 +55,7 @@ uv run --project backend --no-dev python scripts/run.py start
 打开终端显示的地址，默认是 [http://127.0.0.1:8010](http://127.0.0.1:8010)。从「素材库」新建来源，导入一本可重排 EPUB。想试用讲解时，在书中选一句话，保存为学习片段，打开片段并选择手写讲解。在终端按 Ctrl-C 停止服务。
 
 [使用指南](docs/USAGE.md)介绍查词、翻译、书签、讨论和模型设置。[升级与备份](docs/UPGRADING.md)说明怎样保管数据、换新版本和恢复到独立位置。包内 `RELEASE.json` 记录这份程序的版本与源代码提交号。
+
+## 许可证
+
+Folio-J 采用 AGPL-3.0-or-later。完整条款见 [LICENSE](LICENSE)，授权范围与源代码获取说明见 [COPYING.md](COPYING.md)。

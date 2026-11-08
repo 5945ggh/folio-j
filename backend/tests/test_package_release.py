@@ -61,7 +61,7 @@ def repository(tmp_path: Path) -> Path:
         "scripts/release/manifest.json",
         json.dumps(
             {
-                "files": ["backend/uv.lock"],
+                "files": ["LICENSE", "COPYING.md", "backend/uv.lock"],
                 "directories": ["frontend/src"],
                 "exclude": ["*.test.ts", "*/fixtures/*"],
                 "templates": {"scripts/release/README.md": "README.md"},
@@ -69,6 +69,8 @@ def repository(tmp_path: Path) -> Path:
         ),
     )
     write(repo, "scripts/release/README.md", "Public release\n")
+    write(repo, "LICENSE", "Project license\n")
+    write(repo, "COPYING.md", "Project licensing scope and source\n")
     write(repo, "backend/uv.lock", "locked dependencies\n")
     write(repo, "frontend/src/main.ts", "application\n")
     write(repo, "frontend/src/main.test.ts", "private test text\n")
@@ -84,6 +86,8 @@ def test_package_uses_ref_blobs_and_manifest_even_with_dirty_worktree(
     revision = git(repository, "rev-parse", "HEAD")
     write(repository, "frontend/src/main.ts", "uncommitted application\n")
     write(repository, "scripts/release/README.md", "uncommitted README\n")
+    write(repository, "LICENSE", "uncommitted license\n")
+    write(repository, "COPYING.md", "uncommitted licensing statement\n")
     write(repository, "scripts/release/manifest.json", "invalid dirty manifest")
     write(repository, "frontend/src/untracked.ts", "untracked file\n")
     output = tmp_path / "source.zip"
@@ -95,10 +99,19 @@ def test_package_uses_ref_blobs_and_manifest_even_with_dirty_worktree(
         prefix = "Folio-J-0.1-beta.1/"
         assert set(archive.namelist()) == {
             prefix + name
-            for name in ("README.md", "RELEASE.json", "backend/uv.lock", "frontend/src/main.ts")
+            for name in (
+                "LICENSE",
+                "COPYING.md",
+                "README.md",
+                "RELEASE.json",
+                "backend/uv.lock",
+                "frontend/src/main.ts",
+            )
         }
         assert archive.read(prefix + "frontend/src/main.ts") == b"application\n"
         assert archive.read(prefix + "README.md") == b"Public release\n"
+        assert archive.read(prefix + "LICENSE") == b"Project license\n"
+        assert archive.read(prefix + "COPYING.md") == b"Project licensing scope and source\n"
         assert json.loads(archive.read(prefix + "RELEASE.json")) == {
             "version": "0.1-beta.1",
             "commit": revision,
