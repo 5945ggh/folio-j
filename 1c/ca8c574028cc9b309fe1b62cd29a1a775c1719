@@ -1,0 +1,20 @@
+backend/tests/test_smoke_frozen.py
+  s_861563f4a988ba::t_7f49e3196bfed7 66,68,70-71,81
+  s_861563f4a988ba::t_430127cfd9aaf5 90-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1cca8c574028cc9b309fe1b62cd29a1a775c1719",
+  "prompts": {},
+  "sessions": {
+    "s_861563f4a988ba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ba57-ecae-7231-ac9a-9ab267f626f2",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
