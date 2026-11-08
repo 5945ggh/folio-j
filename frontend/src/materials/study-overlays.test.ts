@@ -3,7 +3,6 @@ import test from "node:test";
 import {
 	nativeSelectionKey,
 	studyOverlayPosition,
-	studyPreviewPosition,
 	studySidebarPosition,
 } from "./study-overlays.ts";
 
@@ -32,27 +31,6 @@ test("selection tools stay above the bottom controls and within narrow or vertic
 		),
 		{ left: 12, top: 64 },
 	);
-});
-
-test("preview adapts its height to the space above or below without covering the target", () => {
-	for (const anchor of [
-		{ left: 200, right: 220, top: 240, bottom: 266 },
-		{ left: 20, right: 370, top: 600, bottom: 626 },
-		{ left: 200, right: 220, top: 350, bottom: 376 },
-	]) {
-		const position = studyPreviewPosition(
-			anchor,
-			{ width: 390, height: 800 },
-			{ width: 366, height: 420 },
-		);
-		const height = Math.min(420, position.maxHeight);
-		assert.ok(
-			position.top + height <= anchor.top - 8 ||
-				position.top >= anchor.bottom + 8,
-		);
-		assert.ok(position.top >= 64 && position.top + height <= 724);
-		assert.ok(position.left >= 12 && position.left + 366 <= 378);
-	}
 });
 
 test("native keyboard range extension wins over reading scroll shortcuts", () => {

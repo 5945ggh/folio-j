@@ -26,6 +26,7 @@ import {
 	type ReaderCardBounds,
 	type ReaderCardPosition,
 } from "./reader-card-drag";
+import type { ScreenAnchor } from "./reader-study";
 import { StudyPreview, type StudyPreviewProps } from "./StudyPreview";
 import { studySidebarPosition } from "./study-overlays";
 import { useReaderCardDrag } from "./use-reader-card-drag";
@@ -33,8 +34,11 @@ import "./chapter-records.css";
 
 type Props = Omit<
 	StudyPreviewProps,
-	"onEmphasize" | "embedded" | "actionSlots" | "relatedRecordCount"
+	"onEmphasize" | "actionSlots" | "relatedRecordCount"
 > & {
+	anchor: ScreenAnchor;
+	onExpand: () => void;
+	onCollapse: () => void;
 	chapter: Chapter;
 	sourceId: string;
 	direction: "horizontal-tb" | "vertical-rl";
@@ -473,7 +477,6 @@ export function ChapterRecords(props: Props) {
 					<div hidden={!!props.segmentsError}>
 						<StudyPreview
 							{...props}
-							embedded
 							onLocateOriginal={fixed ? props.onLocateOriginal : undefined}
 							relatedRecordCount={relatedRecordCount}
 							actionSlots={{ back: segmentBackSlot }}

@@ -9,26 +9,20 @@ import { NativeSelect } from "../NativeSelect";
 import { useViewActivity } from "../navigation/view-activity";
 import type { MarginRecordEntry } from "./chapter-records";
 import { useReaderSessionRefresh } from "./reader-session-query";
-import type { ScreenAnchor } from "./reader-study";
 import type { ChapterSegment } from "./study-api";
-import { studyPreviewPosition } from "./study-overlays";
 import { previewAnalyses, previewDocument } from "./study-preview";
 import "./study-preview.css";
 import "./reader-popover.css";
 
 export type StudyPreviewProps = {
-	anchor: ScreenAnchor;
 	items: readonly ChapterSegment[];
 	fixed?: boolean;
 	loading?: boolean;
 	expanded: boolean;
 	inactive?: boolean;
-	embedded?: boolean;
 	actionSlots?: { back: HTMLElement | null };
 	marginEntry?: MarginRecordEntry;
 	relatedRecordCount?: number;
-	onExpand: () => void;
-	onCollapse: () => void;
 	onClose: () => void;
 	onOpen: (segmentId: string, analysisId?: string, revisionId?: string) => void;
 	onLocateOriginal?: (item: ChapterSegment) => void;
@@ -36,18 +30,14 @@ export type StudyPreviewProps = {
 };
 
 export function StudyPreview({
-	anchor,
 	items,
 	fixed = false,
 	loading = false,
 	expanded,
 	inactive: panelInactive = false,
-	embedded = false,
 	actionSlots,
 	marginEntry,
 	relatedRecordCount = items.length,
-	onExpand,
-	onCollapse,
 	onClose,
 	onOpen,
 	onLocateOriginal,
@@ -55,7 +45,7 @@ export function StudyPreview({
 }: StudyPreviewProps) {
 	const activity = useViewActivity();
 	const inactive = panelInactive || !activity.active;
-	const element = useRef<HTMLDivElement>(null);
+	const element = useRef<HTMLElement>(null);
 	const content = useRef<HTMLDivElement>(null);
 	const analysisPreview = useRef<HTMLDivElement>(null);
 	const [previewClipped, setPreviewClipped] = useState(false);
@@ -64,7 +54,6 @@ export function StudyPreview({
 	const listScrollTop = useRef(0);
 	const callbacks = useRef({ onClose, onEmphasize });
 	callbacks.current = { onClose, onEmphasize };
-	const headingId = useId();
 	const pickerId = useId();
 	const [selectedId, setSelectedId] = useState<string | null | undefined>();
 	const [expandedOriginalId, setExpandedOriginalId] = useState<string | null>(
@@ -87,11 +76,6 @@ export function StudyPreview({
 			item.segment_id === (selectedId === undefined ? automaticId : selectedId),
 	);
 	const segmentId = selected?.segment_id ?? "";
-	const [position, setPosition] = useState({
-		left: 12,
-		top: 82,
-		maxHeight: 420,
-	});
 
 	useEffect(() => {
 		callbacks.current.onEmphasize(inactive ? null : segmentId || null);
@@ -110,27 +94,6 @@ export function StudyPreview({
 		node.addEventListener("keydown", handleEscape);
 		return () => node.removeEventListener("keydown", handleEscape);
 	}, [inactive]);
-	useLayoutEffect(() => {
-		if (inactive || expanded || fixed || embedded) return;
-		const node = element.current;
-		if (!node) return;
-		const measure = () =>
-			setPosition(
-				studyPreviewPosition(
-					anchor,
-					{ width: window.innerWidth, height: window.innerHeight },
-					{ width: node.offsetWidth, height: node.offsetHeight },
-				),
-			);
-		measure();
-		const observer = new ResizeObserver(measure);
-		observer.observe(node);
-		window.addEventListener("resize", measure);
-		return () => {
-			observer.disconnect();
-			window.removeEventListener("resize", measure);
-		};
-	}, [inactive, anchor, expanded, fixed, embedded]);
 	useLayoutEffect(() => {
 		if (!segmentId || !content.current) return;
 		content.current.scrollTop = 0;
@@ -255,61 +218,14 @@ export function StudyPreview({
 	}, [document, fixed, expanded, inactive]);
 
 	return (
-		// biome-ignore lint/a11y/useAriaPropsSupportedByRole: both dialog and the named embedded region support labels.
-		<div
+		<section
 			ref={element}
-			className={`reader-study-preview reader-popover${embedded ? " embedded" : ""}${expanded ? " expanded" : ""}${fixed ? " fixed" : ""}${translation ? " has-translation" : ""}`}
-			style={expanded || fixed || embedded ? undefined : position}
-			role={embedded ? "region" : "dialog"}
-			aria-label={embedded ? "学习片段" : undefined}
-			aria-labelledby={embedded ? undefined : headingId}
+			className={`reader-study-preview reader-popover embedded${expanded ? " expanded" : ""}${fixed ? " fixed" : ""}${translation ? " has-translation" : ""}`}
+			aria-label="学习片段"
 			aria-hidden={inactive || undefined}
 			inert={inactive || undefined}
 			data-reader-tool=""
-			data-reader-panel-side={expanded ? "right" : undefined}
 		>
-			{!embedded && (
-				<header className="reader-study-preview-header">
-					<div>
-						<strong id={headingId}>
-							{selected
-								? "学习片段"
-								: fixed
-									? `本章片段 · ${items.length}`
-									: `此处的学习片段 · ${items.length}`}
-						</strong>
-					</div>
-					<div className="reader-study-preview-actions">
-						<button
-							type="button"
-							onClick={expanded ? onCollapse : onExpand}
-							aria-label={expanded ? "收起学习片段预览" : "展开学习片段预览"}
-							aria-expanded={expanded}
-						>
-							{expanded ? "收起" : "展开"}
-						</button>
-						<button
-							type="button"
-							className="reader-study-preview-close"
-							aria-label="关闭学习片段预览"
-							onClick={onClose}
-						>
-							<svg
-								viewBox="0 0 24 24"
-								width="18"
-								height="18"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.6"
-								strokeLinecap="round"
-								aria-hidden="true"
-							>
-								<path d="m6 6 12 12M18 6 6 18" />
-							</svg>
-						</button>
-					</div>
-				</header>
-			)}
 			{selected &&
 				!inactive &&
 				canReturn &&
@@ -553,7 +469,7 @@ export function StudyPreview({
 					)}
 				</footer>
 			)}
-		</div>
+		</section>
 	);
 }
 

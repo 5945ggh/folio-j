@@ -1,33 +1,14 @@
 .reader-r1 .reader-study-preview {
-	position: fixed;
-	z-index: 48;
 	display: flex;
 	flex-direction: column;
-	width: min(370px, calc(100vw - 24px));
-	max-height: min(420px, calc(100dvh - 100px));
 	box-sizing: border-box;
-	border: 1px solid var(--reader-line);
-	border-radius: 12px;
 	background: var(--reader-bg);
 	color: var(--reader-fg);
-	box-shadow: 0 8px 32px var(--reader-shadow);
 	font:
 		13px / 1.65 system-ui,
 		sans-serif;
 	writing-mode: horizontal-tb;
 	text-align: left;
-	overflow: hidden;
-}
-.reader-r1 .reader-study-preview.fixed {
-	top: 82px;
-	right: 24px;
-}
-.reader-r1 .reader-study-preview.expanded {
-	top: 76px;
-	right: 12px;
-	bottom: 12px;
-	width: min(460px, calc(100vw - 24px));
-	max-height: none;
 }
 .reader-r1 .reader-study-preview-header {
 	display: flex;
@@ -411,15 +392,6 @@
 	.reader-study-preview-markdown
 	.analysis-markdown {
 	font-size: 14px;
-}
-@media (max-width: 500px) {
-	.reader-r1 .reader-study-preview.fixed {
-		right: 12px;
-	}
-	.reader-r1 .reader-study-preview.expanded {
-		top: 76px;
-		bottom: 12px;
-	}
 }
 
 .reader-r1

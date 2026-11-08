@@ -287,7 +287,6 @@ export async function themeRegression(h: BrowserHarness) {
 			const dispose = await h.mount(
 				<div className="reader-r1" data-theme={theme}>
 					<StudyPreview
-						anchor={{ left: 20, top: 100, right: 50, bottom: 120 }}
 						items={[
 							{
 								segment_id: "saved",
@@ -297,9 +296,6 @@ export async function themeRegression(h: BrowserHarness) {
 							},
 						]}
 						expanded
-						embedded
-						onExpand={noop}
-						onCollapse={noop}
 						onClose={noop}
 						onOpen={noop}
 						onEmphasize={noop}
