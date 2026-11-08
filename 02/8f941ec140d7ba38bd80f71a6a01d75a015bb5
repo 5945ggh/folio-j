@@ -1,0 +1,21 @@
+docs/PRD.md
+  s_e702b79071fe99::t_c43939c4b5f1a3 6,289
+docs/PRODUCT_DIRECTION.md
+  s_e702b79071fe99::t_c43939c4b5f1a3 3,54-69,175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "028f941ec140d7ba38bd80f71a6a01d75a015bb5",
+  "prompts": {},
+  "sessions": {
+    "s_e702b79071fe99": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ba59-5c2a-7a22-99a6-3a906cce0c2d",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
