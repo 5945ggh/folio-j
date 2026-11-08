@@ -11,7 +11,7 @@
 	color: var(--color-accent);
 }
 .source-text-button:focus-visible {
-	outline: 2px solid var(--color-accent);
+	outline: 1px solid var(--color-accent);
 	outline-offset: 3px;
 	border-radius: 3px;
 }
@@ -272,7 +272,7 @@
 	box-shadow: none;
 }
 .sources-s2 :is(a, button, input, select, textarea):focus-visible {
-	outline: 2px solid var(--color-focus);
+	outline: 1px solid var(--color-focus);
 	outline-offset: 3px;
 }
 .source-list-toolbar {

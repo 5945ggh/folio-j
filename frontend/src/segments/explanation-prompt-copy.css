@@ -45,7 +45,7 @@
 }
 .app-shell.segment-study-shell .segment-prompt-feedback button:focus-visible,
 .app-shell.segment-study-shell .segment-prompt-feedback textarea:focus-visible {
-	outline: 2px solid var(--accent);
+	outline: 1px solid var(--accent);
 	outline-offset: 2px;
 }
 .app-shell.segment-study-shell .segment-prompt-fallback {

@@ -89,7 +89,7 @@
 }
 .s2-source-search input:focus {
 	border-color: var(--color-focus);
-	outline: 2px solid
+	outline: 1px solid
 		light-dark(
 			#2168d41a,
 			color-mix(in srgb, var(--color-focus) 25%, transparent)

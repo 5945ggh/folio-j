@@ -51,7 +51,7 @@
 }
 .reader-study-tool button:focus-visible,
 .reader-study-notice button:focus-visible {
-	outline: 2px solid var(--reader-tool-focus);
+	outline: 1px solid var(--reader-tool-focus);
 	outline-offset: -2px;
 }
 .reader-study-tool.toolbar {
@@ -198,6 +198,6 @@
 	background: var(--reader-soft);
 }
 .reader-r1 .reader-study-margin:focus-visible {
-	outline: 2px solid var(--reader-mark-focus);
+	outline: 1px solid var(--reader-mark-focus);
 	outline-offset: -3px;
 }

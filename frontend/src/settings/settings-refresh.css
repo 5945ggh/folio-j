@@ -147,7 +147,7 @@
 	cursor: pointer;
 }
 .settings-page .learning-disclosure > summary:focus-visible {
-	outline: 2px solid var(--color-focus);
+	outline: 1px solid var(--color-focus);
 	outline-offset: 2px;
 }
 .settings-page .learning-help {
@@ -259,7 +259,7 @@
 }
 .settings-page .settings-control:focus-visible,
 .settings-page .settings-field :is(input, select, textarea):focus-visible {
-	outline: 2px solid var(--color-focus);
+	outline: 1px solid var(--color-focus);
 	outline-offset: 1px;
 	border-color: var(--settings-blue);
 }
@@ -314,7 +314,7 @@
 .settings-page .settings-tabs a:focus-visible,
 .settings-page .settings-subnav a:focus-visible,
 .settings-page .settings-model-guide a:focus-visible {
-	outline: 2px solid var(--color-focus);
+	outline: 1px solid var(--color-focus);
 	outline-offset: 3px;
 }
 .settings-page .settings-button:disabled {
@@ -558,7 +558,7 @@
 	background: var(--color-text-on-accent);
 }
 .settings-page .learning-context-switch:focus-visible {
-	outline: 2px solid var(--color-focus);
+	outline: 1px solid var(--color-focus);
 	outline-offset: 3px;
 }
 @media (prefers-reduced-motion: no-preference) {

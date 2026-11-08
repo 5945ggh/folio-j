@@ -31,7 +31,7 @@
 }
 .reader-copy-feedback button:focus-visible,
 .reader-copy-feedback textarea:focus-visible {
-	outline: 2px solid var(--reader-mark-focus);
+	outline: 1px solid var(--reader-mark-focus);
 	outline-offset: 2px;
 }
 .reader-copy-fallback {
