@@ -5,8 +5,11 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import {
+	lazy,
+	type MouseEvent,
 	memo,
 	type ReactNode,
+	Suspense,
 	useCallback,
 	useEffect,
 	useId,
@@ -52,6 +55,14 @@ import { type ExplanationProgress, ExplanationRequests } from "./explanation";
 import type { ReplyOperation } from "./progress";
 import { ReplyProgress } from "./ReplyProgress";
 import { describeReview } from "./review";
+
+import "./model-configuration.css";
+
+const ModelSetupDialog = lazy(() =>
+	import("../settings/ModelSetupDialog").then((module) => ({
+		default: module.ModelSetupDialog,
+	})),
+);
 
 type Pending = PendingSubmission;
 type ExplanationInput = {
@@ -118,6 +129,7 @@ function ComposerSetting({
 				className="chat-setting-button"
 				aria-label={label}
 				aria-haspopup="dialog"
+				aria-controls={id}
 				title={title ?? label}
 				popoverTarget={id}
 			>
@@ -142,7 +154,7 @@ function ComposerSetting({
 						'input[type="radio"]:checked:not(:disabled)',
 					);
 					const first = menu.querySelector<HTMLElement>(
-						"input:not(:disabled),select:not(:disabled),textarea:not(:disabled)",
+						"input:not(:disabled),select:not(:disabled),textarea:not(:disabled),button:not(:disabled)",
 					);
 					(selected ?? first)?.focus();
 				}}
@@ -346,7 +358,9 @@ function ThreadPanel({
 	onSubmissionStarted,
 	onJobAccepted,
 	onOpenArtifact,
+	onConfigureModels,
 }: {
+	onConfigureModels: (event: MouseEvent<HTMLButtonElement>) => void;
 	segment: Segment;
 	threadId: string;
 	draft: Draft;
@@ -868,9 +882,26 @@ function ThreadPanel({
 											</span>
 										</label>
 									))}
-								{!models.some(
-									({ provider, model }) => provider.enabled && model.enabled,
-								) && <p className="chat-choice-empty">暂无可用模型</p>}
+								{providers.isPending ? (
+									<p className="chat-choice-empty" role="status">
+										正在加载模型…
+									</p>
+								) : providers.isError ? (
+									<div>
+										<InlineError error={providers.error} />
+										<button
+											type="button"
+											className="chat-model-configure"
+											onClick={() => void providers.refetch()}
+										>
+											重试模型列表
+										</button>
+									</div>
+								) : !models.some(
+										({ provider, model }) => provider.enabled && model.enabled,
+									) ? (
+									<p className="chat-choice-empty">暂无可用模型</p>
+								) : null}
 							</fieldset>
 							<label className="chat-stream-choice">
 								<span>流式生成</span>
@@ -884,6 +915,13 @@ function ThreadPanel({
 									onChange={(event) => setStream(event.target.checked)}
 								/>
 							</label>
+							<button
+								type="button"
+								className="chat-model-configure"
+								onClick={onConfigureModels}
+							>
+								配置模型与服务 →
+							</button>
 						</ComposerSetting>
 						<ComposerSetting
 							label="设置审核模式"
@@ -1017,6 +1055,23 @@ export function Workbench({
 	const [createKey, setCreateKey] = useState<string | null>(null);
 	const [firstModelId, setFirstModelId] = useState<string | null>(null);
 	const handledExplanations = useRef(new Set<string>());
+	const [configuringModels, setConfiguringModels] = useState(false);
+	const [manualExplanationToken, setManualExplanationToken] = useState<
+		string | null
+	>(null);
+	function configureModels(event: MouseEvent<HTMLButtonElement>) {
+		const popup = event.currentTarget.closest<HTMLElement>("[popover]");
+		if (popup) {
+			popup.hidePopover();
+			document
+				.querySelector<HTMLButtonElement>(
+					`button[popovertarget="${CSS.escape(popup.id)}"]`,
+				)
+				?.focus();
+		} else event.currentTarget.focus();
+		if (explainToken) setManualExplanationToken(explainToken);
+		setConfiguringModels(true);
+	}
 	const [explanationAttempts, setExplanationAttempts] = useState<
 		Record<string, ExplanationAttempt>
 	>({});
@@ -1197,14 +1252,21 @@ export function Workbench({
 	useEffect(() => {
 		if (
 			!explainToken ||
+			configuringModels ||
+			manualExplanationToken === explainToken ||
 			handledExplanations.current.has(explainToken) ||
 			!defaults.isSuccess ||
 			!providers.isSuccess ||
-			(selected && selectedInfo.isPending) ||
-			!explanationModel ||
-			!availableModels.some(({ model }) => model.id === explanationModel)
+			(selected && selectedInfo.isPending)
 		)
 			return;
+		if (
+			!explanationModel ||
+			!availableModels.some(({ model }) => model.id === explanationModel)
+		) {
+			setManualExplanationToken(explainToken);
+			return;
+		}
 		handledExplanations.current.add(explainToken);
 		explain.mutate({
 			token: explainToken,
@@ -1213,6 +1275,8 @@ export function Workbench({
 		});
 	}, [
 		explainToken,
+		configuringModels,
+		manualExplanationToken,
 		defaults.isSuccess,
 		providers.isSuccess,
 		selected,
@@ -1228,6 +1292,11 @@ export function Workbench({
 
 	return (
 		<section className="workbench" aria-label="片段讨论工作台">
+			{configuringModels && (
+				<Suspense fallback={<p role="status">正在打开模型配置…</p>}>
+					<ModelSetupDialog onClose={() => setConfiguringModels(false)} />
+				</Suspense>
+			)}
 			<div className="chat-list-view" hidden={view !== "list"}>
 				<div className="chat-pane-header">
 					<div>
@@ -1385,6 +1454,7 @@ export function Workbench({
 							setPending={setSelectedPending}
 							initialJobId={acceptedJobIds[selected] ?? null}
 							initialError={explanationErrors[selected] ?? null}
+							onConfigureModels={configureModels}
 							onClearInitialError={clearExplanationError}
 							onSubmissionStarted={onSubmissionStarted}
 							onJobAccepted={onJobAccepted}
@@ -1396,6 +1466,8 @@ export function Workbench({
 							providers.isPending ||
 							(selected && selectedInfo.isPending) ||
 							(needsExplanationModel &&
+								manualExplanationToken !== explainToken &&
+								!configuringModels &&
 								availableModels.some(
 									({ model }) => model.id === explanationModel,
 								))) ? (
@@ -1410,19 +1482,43 @@ export function Workbench({
 						<div className="chat-first-generation">
 							<h3>创建 AI 讲解</h3>
 							<p>选择模型后，在新对话中创建并保存一份独立讲解。</p>
-							<label htmlFor="explanation-model">模型</label>
-							<NativeSelect
-								id="explanation-model"
-								value={firstModelId ?? ""}
-								onChange={(event) => setFirstModelId(event.target.value)}
-							>
-								<option value="">请选择模型</option>
-								{availableModels.map(({ provider, model }) => (
-									<option key={model.id} value={model.id}>
-										{provider.name} / {model.model_id}
-									</option>
-								))}
-							</NativeSelect>
+							{providers.isSuccess && availableModels.length === 0 ? (
+								<div className="chat-model-guide">
+									<p>
+										还没有可用模型。添加模型服务并登记模型，或启用已有模型后继续。
+									</p>
+									<button
+										type="button"
+										className="button secondary"
+										onClick={configureModels}
+									>
+										配置模型与服务
+									</button>
+								</div>
+							) : (
+								<>
+									<label htmlFor="explanation-model">模型</label>
+									<NativeSelect
+										id="explanation-model"
+										value={firstModelId ?? ""}
+										onChange={(event) => setFirstModelId(event.target.value)}
+									>
+										<option value="">请选择模型</option>
+										{availableModels.map(({ provider, model }) => (
+											<option key={model.id} value={model.id}>
+												{provider.name} / {model.model_id}
+											</option>
+										))}
+									</NativeSelect>
+									<button
+										type="button"
+										className="chat-model-configure"
+										onClick={configureModels}
+									>
+										配置模型与服务 →
+									</button>
+								</>
+							)}
 							{defaults.isError && <InlineError error={defaults.error} />}
 							{providers.isError && <InlineError error={providers.error} />}
 							{threads.isError && <InlineError error={threads.error} />}
@@ -1431,6 +1527,7 @@ export function Workbench({
 								type="button"
 								className="button primary"
 								disabled={
+									configuringModels ||
 									!defaults.isSuccess ||
 									!providers.isSuccess ||
 									!firstModelId ||
@@ -1440,7 +1537,7 @@ export function Workbench({
 									Boolean(explanationAttempts[explainToken]?.pending)
 								}
 								onClick={() => {
-									if (!firstModelId) return;
+									if (!firstModelId || configuringModels) return;
 									handledExplanations.current.add(explainToken);
 									explain.mutate({
 										token: explainToken,

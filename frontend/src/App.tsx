@@ -54,8 +54,8 @@ function SegmentRoute() {
 }
 
 export function App() {
-	const { pathname } = useLocation();
-	const sessionRoute = readerSessionRoute(pathname);
+	const { pathname, state } = useLocation();
+	const sessionRoute = readerSessionRoute(pathname, state);
 	return (
 		<>
 			{sessionRoute && (

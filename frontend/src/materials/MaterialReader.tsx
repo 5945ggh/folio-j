@@ -813,6 +813,33 @@ function Reader({
 		presentation.current.setActive(active, discard.current);
 		return () => presentation.current.setActive(false, discard.current);
 	}, [active, discard]);
+	const recordsChecked =
+		active &&
+		!marks.loading &&
+		!marks.isFetching &&
+		!chapterTranslations.loading &&
+		!chapterTranslations.isFetching;
+	// Keep the mounted record detail while a paused session refreshes its facts.
+	// The surface remains inactive until the current chapter has been checked.
+	const recordFacts = useRef({
+		chapterId,
+		segments: marks.items,
+		translations: chapterTranslations.items,
+	});
+	if (recordFacts.current.chapterId !== chapterId)
+		recordFacts.current = {
+			chapterId,
+			segments: marks.items,
+			translations: chapterTranslations.items,
+		};
+	else if (recordsChecked)
+		recordFacts.current = {
+			chapterId,
+			segments: marks.isError ? recordFacts.current.segments : marks.items,
+			translations: chapterTranslations.isError
+				? recordFacts.current.translations
+				: chapterTranslations.items,
+		};
 	recordContext.current = {
 		active,
 		alive: alive.current,
@@ -824,13 +851,9 @@ function Reader({
 		panels,
 		compactPanels,
 		studyTargetActive: studyTarget !== null,
-		segments: marks.items,
-		translations: chapterTranslations.items,
-		settled:
-			!marks.loading &&
-			!marks.isFetching &&
-			!chapterTranslations.loading &&
-			!chapterTranslations.isFetching,
+		segments: recordFacts.current.segments,
+		translations: recordFacts.current.translations,
+		settled: recordsChecked && !marks.isError && !chapterTranslations.isError,
 	};
 	const openMarkHit = useCallback(
 		(value: StudyMarkHit, trigger: HTMLButtonElement | null = null) => {
@@ -2546,6 +2569,10 @@ function Reader({
 						anchorPlacement={markHit.anchorPlacement}
 						fixed={markHit.fixed}
 						loading={marks.loading}
+						segmentsError={marks.error}
+						onRetrySegments={() => {
+							void marks.refetch();
+						}}
 						items={visibleHitItems}
 						translations={hitRecords.translations}
 						translationsLoading={chapterTranslations.loading}
@@ -2573,6 +2600,8 @@ function Reader({
 						expanded={panels.right === "study"}
 						inactive={
 							!active ||
+							marks.loading ||
+							chapterTranslations.loading ||
 							(panels.right === "study" &&
 								compactPanels &&
 								panels.activeSide !== "right")

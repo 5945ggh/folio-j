@@ -1,6 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { Link } from "react-router";
 import { NativeSelect } from "../NativeSelect";
 import { useAutosavingFields } from "./AutosavingSettings";
 import {
@@ -9,6 +8,7 @@ import {
 	type Settings,
 	settingsKeys,
 } from "./api";
+import { SettingsLink as Link } from "./SettingsNavigation";
 import { commitSettingsResponse } from "./settings-cache";
 
 type ModelFields = Pick<

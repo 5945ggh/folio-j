@@ -1,0 +1,9 @@
+.settings-page .model-setup-dialog {
+	width: min(720px, calc(100vw - 32px));
+}
+.settings-page .model-setup-dialog > .settings-actions {
+	justify-content: flex-end;
+	margin-top: 24px;
+	padding-top: 18px;
+	border-top: 1px solid var(--settings-line);
+}

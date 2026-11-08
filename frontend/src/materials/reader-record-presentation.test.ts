@@ -394,6 +394,25 @@ test("refreshing an empty page retains a preview until settled; fixed lists stay
 	assert.deepEqual(h.owner.hitRecords, { segments: [], translations: [] });
 });
 
+test("temporary empty records while suspended cannot dismiss the retained preview", () => {
+	const h = harness();
+	const preview = hit("segment");
+	h.owner.openPreview(preview);
+	h.context.active = false;
+	h.context.segments = [];
+	h.context.translations = [];
+	h.context.settled = true;
+	h.owner.reconcile();
+	assert.equal(h.owner.state.markHit, preview);
+	h.context.active = true;
+	h.context.settled = false;
+	h.owner.reconcile();
+	assert.equal(h.owner.state.markHit, preview);
+	h.context.settled = true;
+	h.owner.reconcile();
+	assert.equal(h.owner.state.markHit, null);
+});
+
 test("late A results, loading and failures cannot replace B or resurrect a dismissed target", () => {
 	const h = harness();
 	h.owner.openTextMark(hit("first", "translation"));

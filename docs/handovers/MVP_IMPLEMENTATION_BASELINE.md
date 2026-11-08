@@ -5,6 +5,8 @@
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
 
+2026-11-08，设置返回链与原地模型配置已在 `50cb57d1` 之后实现并通过工程验证；属于候选代码之后的界面改进，尚未发布。入口与会话边界见下表及[设置交互](../INFORMATION_ARCHITECTURE.md#设置顶部分类)。
+
 2026-11-08 开始准备 `v0.1.0-beta.2`，应用候选代码为 `ec60b484`，已纳入用户确认的细焦点框与占位提示调整。正式发行状态与附件见 [GitHub 发布记录](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.2)；候选与恢复验证见[beta.2 发布准备与验收](BETA_2_RELEASE_ACCEPTANCE.md)。
 
 2026-10-29 至 10-30 的复制、阅读设置及书签整合，见[复制数据库升级](archived/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md#现用库升级与主分支集成)与[书签集成记录](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md#2026-10-30-原目录集成)；现用库后续升级至 `0004_translation_reader_removal` 的数据与凭据核对见[翻译修复验收](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md#现用库与原目录交付)。浏览器检查的执行范围及未重跑项保留在原记录，后续安排见[实际阅读评测计划](reading-practice/PLAN.md)。
@@ -13,6 +15,7 @@
 
 | 能力 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- |
+| 设置返回与原地模型配置 | 阅读进入翻译／词典设置显示可关闭的书名返回提示与页头入口，分类与服务管理间保留来处及提示关闭状态；沿用有界阅读保活和返回复核，保留翻译查看目标及语境草稿。讨论与 AI 讲解原地复用模型服务配置，保留本页输入；缺模型意图恢复后需明确继续，不自动调用或改默认值。无新增迁移或依赖，真实模型与实体触屏未测 | [返回链浏览器回归](../../frontend/browser-tests/settings-return.tsx)、[模型配置浏览器回归](../../frontend/browser-tests/model-setup.tsx)、[页面契约](../INFORMATION_ARCHITECTURE.md#设置顶部分类) |
 | 编辑与删除确认 | Analysis 改名后写生效；Source 只提交改动字段并提供普通放弃提醒；Source／Segment／Analysis／书籍删除保留初次影响及对象身份，不再提交前复核计数 | [减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md) |
 | 翻译写入口收缩 | 独立 adopt 与单版删除退出；现行片段原子创建、Adoption 收据与历史读取、整组删除及任务门禁保留 | [减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md) |
 | Windows 实验性支持 | Windows CI 已通过。原生 PowerShell 源码启动、共享进程锁、备份恢复、词典占用文件回收与测试隔离；开发模式重载／退出等待后端清理，旧单索引可跨重启回收。继承用户目录权限，不新增 ACL；Windows 11 实机待验 | [Windows 验收与清单](WINDOWS_ACCEPTANCE.md)、[Windows CI](archived/WINDOWS_CI_ACCEPTANCE.md#2026-11-01-windows-ci)、[开发指南](../DEVELOPMENT.md#windows-自动验证) |

@@ -19,6 +19,7 @@ import { dictionarySettings } from "./dictionary-settings";
 import { explanationRegression } from "./explanation";
 import { materialImport } from "./material-import";
 import { materialVocabulary } from "./material-vocabulary";
+import { modelSetup } from "./model-setup";
 import { nativeSelectRegression } from "./native-select";
 import { navigationFeedback } from "./navigation-feedback";
 import { positionBookmarks } from "./position-bookmarks";
@@ -40,6 +41,7 @@ import { segmentMaterials } from "./segment-materials";
 import { segmentNavigation } from "./segment-navigation";
 import { segmentShareRegression } from "./segment-share";
 import { settingsModels } from "./settings-models";
+import { settingsReturn } from "./settings-return";
 import { sourceDeletion } from "./source-deletion";
 import { sourceEditDelete } from "./source-edit-delete";
 import { sourceOnboarding } from "./source-onboarding";
@@ -422,6 +424,8 @@ try {
 		["native-select", nativeSelectRegression],
 		["material-vocabulary", materialVocabulary],
 		["settings-models", settingsModels],
+		["model-setup", modelSetup],
+		["settings-return", settingsReturn],
 		["dictionary-settings", dictionarySettings],
 		["app-theme", appTheme],
 		["reader-images", readerImages],

@@ -83,6 +83,7 @@ export interface TranslationSession {
 	}): Promise<TranslationOutcome>;
 	edit(change: TranslationEdit): boolean;
 	browseHistory(): void;
+	leaveForSettings(): void;
 	execute(command: {
 		kind: "translate" | "verify";
 	}): Promise<TranslationOutcome>;
@@ -357,6 +358,9 @@ export function createTranslationSessions(
 			return true;
 		};
 		browseHistory = () => {
+			this.automatic = "consumed";
+		};
+		leaveForSettings = () => {
 			this.automatic = "consumed";
 		};
 		execute: TranslationSession["execute"] = (command) =>

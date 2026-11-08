@@ -1,6 +1,6 @@
 import "./settings-refresh.css";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import { InlineError, Shell } from "../Shared";
 import { DeviceSpeechSettings } from "../speech";
 import { AppearanceSettings } from "../theme/AppearanceSettings";
@@ -13,6 +13,10 @@ import { PermissionSettings } from "./PermissionSettings";
 import { ProviderSettings } from "./ProviderSettings";
 import { RunHistory } from "./RunHistory";
 import { SettingsDraftProvider } from "./SettingsForms";
+import {
+	SettingsLink as Link,
+	SettingsReadingReturn,
+} from "./SettingsNavigation";
 
 export function SettingsPage() {
 	const [searchParams] = useSearchParams();
@@ -58,6 +62,7 @@ export function SettingsPage() {
 			<SettingsDraftProvider>
 				<header className="settings-topbar">
 					<h1>设置</h1>
+					<SettingsReadingReturn />
 				</header>
 				<nav className="settings-tabs" aria-label="设置分类">
 					<Link

@@ -1,12 +1,12 @@
 import "./translation-settings.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { Link } from "react-router";
 import { RequestError } from "../content";
 import { NativeSelect } from "../NativeSelect";
 import { InlineError } from "../Shared";
 import { useAutosavingFields } from "../settings/AutosavingSettings";
 import { getProviders, getSettings, settingsKeys } from "../settings/api";
+import { SettingsLink as Link } from "../settings/SettingsNavigation";
 import {
 	getTranslationSettings,
 	saveTranslationSettings,

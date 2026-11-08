@@ -42,6 +42,8 @@ type Props = Omit<
 	translations: readonly ChapterTranslation[];
 	translationsLoading: boolean;
 	translationsError: Error | null;
+	segmentsError?: Error | null;
+	onRetrySegments?: () => void;
 	unavailable: number;
 	onRetryTranslations: () => void;
 	onEmphasize: (id: string | null, kind?: "segment" | "translation") => void;
@@ -294,6 +296,7 @@ export function ChapterRecords(props: Props) {
 			style={{
 				...position,
 				height: expanded ? position?.maxHeight : undefined,
+				visibility: inactive ? "hidden" : undefined,
 			}}
 			role="dialog"
 			aria-modal="false"
@@ -443,15 +446,25 @@ export function ChapterRecords(props: Props) {
 					aria-labelledby={showTabs ? `${id}-segment` : `${id}-title`}
 					hidden={tab !== "segment"}
 				>
-					<StudyPreview
-						{...props}
-						embedded
-						onLocateOriginal={fixed ? props.onLocateOriginal : undefined}
-						relatedRecordCount={relatedRecordCount}
-						actionSlots={{ back: segmentBackSlot }}
-						inactive={inactive || tab !== "segment"}
-						onEmphasize={(value) => onEmphasize(value, "segment")}
-					/>
+					{props.segmentsError && (
+						<div>
+							<InlineError error={props.segmentsError} />
+							<button type="button" onClick={props.onRetrySegments}>
+								重试读取本章片段
+							</button>
+						</div>
+					)}
+					<div hidden={!!props.segmentsError}>
+						<StudyPreview
+							{...props}
+							embedded
+							onLocateOriginal={fixed ? props.onLocateOriginal : undefined}
+							relatedRecordCount={relatedRecordCount}
+							actionSlots={{ back: segmentBackSlot }}
+							inactive={inactive || tab !== "segment" || !!props.segmentsError}
+							onEmphasize={(value) => onEmphasize(value, "segment")}
+						/>
+					</div>
 				</div>
 				{/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: both tabpanel and the named single-type region support labels. */}
 				<div
@@ -461,22 +474,38 @@ export function ChapterRecords(props: Props) {
 					hidden={tab !== "translation"}
 				>
 					{selected ? (
-						<TranslationPanel
-							key={selected.identity_sha256}
-							embedded
-							showDetails={fixed || expanded}
-							initialResultId={selected.result_id}
-							materialId={chapter.material_id}
-							sourceId={props.sourceId}
-							target={{ reference: selected.material_provenance, chapter }}
-							visible={!inactive && tab === "translation"}
-							translationSessions={props.translationSessions}
-							onResultSelected={props.onResultSelected}
-							onRemoved={props.onTranslationRemoved}
-							onOpenSegment={props.onOpen}
-							onBackToOrigin={fixed ? props.onBackToOrigin : undefined}
-							onClose={onClose}
-						/>
+						<>
+							{props.translationsError && (
+								<div>
+									<InlineError error={props.translationsError} />
+									<button type="button" onClick={props.onRetryTranslations}>
+										重试读取本章翻译
+									</button>
+								</div>
+							)}
+							<div hidden={!!props.translationsError}>
+								<TranslationPanel
+									key={selected.identity_sha256}
+									embedded
+									showDetails={fixed || expanded}
+									initialResultId={selected.result_id}
+									materialId={chapter.material_id}
+									sourceId={props.sourceId}
+									target={{ reference: selected.material_provenance, chapter }}
+									visible={
+										!inactive &&
+										tab === "translation" &&
+										!props.translationsError
+									}
+									translationSessions={props.translationSessions}
+									onResultSelected={props.onResultSelected}
+									onRemoved={props.onTranslationRemoved}
+									onOpenSegment={props.onOpen}
+									onBackToOrigin={fixed ? props.onBackToOrigin : undefined}
+									onClose={onClose}
+								/>
+							</div>
+						</>
 					) : (
 						<div className="reader-record-translations">
 							{props.translationsLoading && (

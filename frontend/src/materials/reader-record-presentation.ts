@@ -300,6 +300,7 @@ export class ReaderRecordPresentation {
 	}
 	reconcile(): void {
 		const context = this.dependencies.current();
+		if (!context.active || !context.alive) return;
 		if (this.chapterId !== context.chapterId) {
 			this.chapterId = context.chapterId;
 			this.closeInline();

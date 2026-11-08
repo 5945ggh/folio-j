@@ -15,7 +15,7 @@ import {
 /** Keeps one reading session across Segment visits without replacing router context. */
 export function ReaderSessionHost() {
 	const location = useLocation();
-	const route = readerSessionRoute(location.pathname);
+	const route = readerSessionRoute(location.pathname, location.state);
 	const materialId = route?.kind === "reader" ? route.materialId : undefined;
 	const current = useMemo(
 		() =>
@@ -26,7 +26,8 @@ export function ReaderSessionHost() {
 	const next = advanceRetainedSession(
 		state,
 		current,
-		route?.kind === "segment",
+		route?.kind === "segment" ||
+			(route?.kind === "settings" && state.entry?.key === route.materialId),
 		Date.now(),
 	);
 	if (next !== state) setState(next);

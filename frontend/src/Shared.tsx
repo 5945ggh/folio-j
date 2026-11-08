@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { Link, NavLink } from "react-router";
+import { Link, NavLink, useLocation } from "react-router";
 import { handleDialogCancel } from "./dialog-events";
+import { settingsReturnState } from "./navigation";
 
 function displayError(error: Error): string {
 	if (
@@ -58,6 +59,7 @@ export function Shell({
 			return false;
 		}
 	});
+	const location = useLocation();
 	const [drawer, setDrawer] = useState(false);
 	function toggle() {
 		setCollapsed((value) => {
@@ -100,6 +102,11 @@ export function Shell({
 				onClick={() => setDrawer(false)}
 				className="nav-settings"
 				to="/settings"
+				state={
+					/^\/settings\/?$/i.test(location.pathname)
+						? settingsReturnState(location)
+						: undefined
+				}
 				aria-label="设置"
 				title={collapsed ? undefined : "设置"}
 				data-tooltip="设置"
@@ -259,6 +266,8 @@ export function ConfirmDialog({
 			className={`confirm-card ${animateEntrance ? "dialog-enter-motion" : ""} ${className}`}
 			aria-labelledby={titleId}
 			onKeyDown={(event) => {
+				if ((event.target as Element).closest("dialog") !== event.currentTarget)
+					return;
 				if (event.key !== "Tab") return;
 				const controls = Array.from(
 					event.currentTarget.querySelectorAll<HTMLElement>(

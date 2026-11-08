@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
 import {
 	type DictionaryLibrary,
 	deleteDictionary,
@@ -12,7 +11,6 @@ import {
 	updateDictionaryLibrary,
 } from "../materials/dictionary-api";
 import { NativeSelect } from "../NativeSelect";
-import { returnDestination } from "../navigation";
 import { ConfirmDialog, InlineError } from "../Shared";
 import { useSettingsDraft } from "./SettingsForms";
 import "./dictionary-settings.css";
@@ -153,9 +151,6 @@ function DictionaryMenu({
 
 export function DictionarySettings() {
 	const client = useQueryClient();
-	const location = useLocation();
-	const reader = returnDestination(location.state, { to: "", label: "" });
-	const fromBook = /^\/materials\/[a-zA-Z0-9_-]+(?:[?#]|$)/.test(reader.to);
 	const input = useRef<HTMLInputElement>(null);
 	const [deleting, setDeleting] = useState<
 		DictionaryLibrary["dictionaries"][number] | null
@@ -216,16 +211,6 @@ export function DictionarySettings() {
 	);
 	return (
 		<section className="dictionary-settings" aria-label="查词词典">
-			{fromBook && (
-				<Link
-					className="settings-back-link dictionary-reader-return"
-					to={reader.to}
-					state={reader.state}
-					aria-label="返回阅读"
-				>
-					← 返回阅读<span>{reader.label}</span>
-				</Link>
-			)}
 			<div className="settings-page-head">
 				<h2>词典</h2>
 				<p>选择阅读时使用的词典，适用于所有书籍。</p>

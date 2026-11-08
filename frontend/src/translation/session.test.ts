@@ -640,6 +640,27 @@ test("a synchronous subscriber cannot bypass a submission reservation", async ()
 	assert.equal(f.requests.length, 1);
 });
 
+test("leaving for settings consumes automatic intent without losing context or blocking explicit translation", async () => {
+	const f = fixture();
+	f.adapter.settings = async () => ({ ...settings, model_id: null });
+	await f.session.open({ kind: "selection" });
+	f.session.edit({ kind: "context", before: "保留的语境草稿" });
+	f.session.leaveForSettings();
+	f.adapter.settings = async () => settings;
+	assert.deepEqual(await f.session.open({ kind: "selection" }), {
+		kind: "not-executed",
+		reason: "automatic",
+	});
+	assert.equal(f.requests.length, 0);
+	assert.equal(f.session.getSnapshot().draft.before, "保留的语境草稿");
+	assert.equal(
+		(await f.session.execute({ kind: "translate" })).kind,
+		"accepted",
+	);
+	assert.equal(f.requests.length, 1);
+	assert.equal(f.requests[0]?.context_before, "保留的语境草稿");
+});
+
 test("repeated whole-target removal joins, including synchronous subscribers", async () => {
 	const f = fixture();
 	const receipt = deferred<Awaited<ReturnType<typeof f.session.remove>>>();

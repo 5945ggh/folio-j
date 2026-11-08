@@ -208,3 +208,38 @@ export function returnState(
 		returnTo: returnTrail(candidate, destinationPath) ?? CATALOG_FALLBACK,
 	};
 }
+
+/** Settings retain only an explicit return to a reader, including its parent trail. */
+export function settingsReadingReturn(
+	state: unknown,
+): ReturnDestination | null {
+	const destination = returnDestination(state, { to: "", label: "" });
+	return /^\/materials\/[A-Za-z0-9_-]+\/?(?:[?#]|$)/.test(destination.to)
+		? destination
+		: null;
+}
+
+export function settingsReturnState(location: {
+	pathname: string;
+	search: string;
+	hash: string;
+	state: unknown;
+}): ReturnDestination["state"] {
+	if (/^\/materials\/[A-Za-z0-9_-]+\/?$/i.test(location.pathname))
+		return returnState(
+			{
+				to: `${location.pathname.replace(/\/$/, "").replace(/^\/materials/i, "/materials")}${location.search}${location.hash}`,
+				label: "阅读",
+			},
+			returnDestination(location.state, CATALOG_FALLBACK),
+			"/settings",
+		);
+	const reader = settingsReadingReturn(location.state);
+	return reader
+		? returnState(
+				reader,
+				reader.state ? returnDestination(reader.state) : undefined,
+				"/settings",
+			)
+		: undefined;
+}

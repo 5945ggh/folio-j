@@ -9,7 +9,6 @@ import {
 	useState,
 	useSyncExternalStore,
 } from "react";
-import { Link } from "react-router";
 import { chapterTranslationsKey } from "../materials/chapter-translations-query";
 import {
 	clampReaderCardPosition,
@@ -23,6 +22,7 @@ import { studySidebarPosition } from "../materials/study-overlays";
 import { useReaderCardDrag } from "../materials/use-reader-card-drag";
 import { useViewActivity } from "../navigation/view-activity";
 import { InlineError } from "../Shared";
+import { SettingsLink } from "../settings/SettingsNavigation";
 import { SpeechControls } from "../speech";
 import { getSpeechController } from "../speech/browser";
 import {
@@ -945,7 +945,13 @@ export function TranslationPanel({
 						)}
 						{settings.data && !settings.data.model_id && (
 							<p>
-								请先在<Link to="/settings?section=translation">翻译设置</Link>
+								请先在
+								<SettingsLink
+									to="/settings?section=translation"
+									onClick={() => session.leaveForSettings()}
+								>
+									翻译设置
+								</SettingsLink>
 								选择模型。
 							</p>
 						)}
@@ -974,7 +980,12 @@ export function TranslationPanel({
 					) : (
 						<InlineError error={settings.error} />
 					)}
-					<Link to="/settings?section=translation">翻译设置</Link>
+					<SettingsLink
+						to="/settings?section=translation"
+						onClick={() => session.leaveForSettings()}
+					>
+						翻译设置
+					</SettingsLink>
 					<div className="translation-budget">
 						{(["before", "after"] as const).map((side) => (
 							<label key={side}>
@@ -1049,7 +1060,13 @@ export function TranslationPanel({
 					<small>提交后固定本次输入。旧译文仍使用上次生成时的语境。</small>
 					{settings.data && !settings.data.model_id && (
 						<p>
-							先在<Link to="/settings?section=translation">翻译设置</Link>
+							先在
+							<SettingsLink
+								to="/settings?section=translation"
+								onClick={() => session.leaveForSettings()}
+							>
+								翻译设置
+							</SettingsLink>
 							选择模型。
 						</p>
 					)}
