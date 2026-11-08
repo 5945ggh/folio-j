@@ -3,16 +3,17 @@
 import hashlib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Literal, Protocol, cast
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
+
+from app.resources import PROMPTS
 
 Stream = Literal["system", "context"]
 STREAMS: tuple[Stream, ...] = ("system", "context")
 FORMAT_VERSION = "v1"
 ENV = Environment(
-    loader=FileSystemLoader(Path(__file__).resolve().parents[2] / "prompts" / "context"),
+    loader=FileSystemLoader(PROMPTS / "context"),
     undefined=StrictUndefined,
     autoescape=False,
 )

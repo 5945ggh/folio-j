@@ -2,6 +2,7 @@
 
 import asyncio
 import sys
+from pathlib import Path
 
 from sqlalchemy import Connection
 
@@ -45,9 +46,16 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_migrations_online() -> None:
-    settings = load_settings()
-    print(f"迁移使用的数据库：{settings.database.path}", file=sys.stderr, flush=True)
-    engine = create_engine(settings.database.path)
+    # The production launcher validates the path before taking the worker lock.
+    # Reloading settings afterwards would mistake a fresh empty database's lock
+    # for an orphan companion; the normal Alembic CLI still resolves settings here.
+    database_path = context.config.attributes.get("database_path")
+    if database_path is None:
+        database_path = load_settings().database.path
+    if not isinstance(database_path, Path):
+        raise ValueError("迁移数据库路径必须是已校验的 Path")
+    print(f"迁移使用的数据库：{database_path}", file=sys.stderr, flush=True)
+    engine = create_engine(database_path)
     try:
         async with engine.connect() as connection:
             await connection.run_sync(do_run_migrations)

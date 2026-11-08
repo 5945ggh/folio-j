@@ -50,7 +50,9 @@ def backup_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Cli:
         "import os\n"
         "if installation := os.environ.get('FOLIO_TEST_INSTALLATION'):\n"
         "    import app.config\n"
-        "    app.config.REPO_ROOT = Path(installation)\n",
+        "    import app.resources\n"
+        "    app.config.REPO_ROOT = Path(installation)\n"
+        "    app.resources.RESOURCE_ROOT = Path(installation)\n",
         encoding="utf-8",
     )
     monkeypatch.setenv(

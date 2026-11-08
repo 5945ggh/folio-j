@@ -10,13 +10,14 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
-from app.config import REPO_ROOT, load_settings
+from app.config import load_settings
 from app.ids import new_ulid
 from app.jobs.supervision import worker
 from app.llm.adapters import CallSnapshot, generate_text
 from app.llm.errors import describe_call_failure
 from app.material_models import Material
 from app.models import Segment
+from app.resources import PROMPTS
 from app.services.material_provenance import (
     identity_sha256,
     prepare_reference,
@@ -49,7 +50,7 @@ from app.translation_schemas import (
 
 ACTIVE = ("queued", "running", "stopping")
 PROMPT_VERSION = "translation-v3"
-PROMPT_PATH = REPO_ROOT / "backend/prompts/translation/system_v3.txt"
+PROMPT_PATH = PROMPTS / "translation/system_v3.txt"
 MAX_MATERIAL_TITLE_CHARACTERS = 300
 
 

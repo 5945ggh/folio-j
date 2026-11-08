@@ -2,14 +2,14 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from app.prompting import ContextEvent, ContextPlugin, Stream
+from app.resources import PROMPTS as PROMPT_ROOT
 
-PROMPTS = Path(__file__).resolve().parents[3] / "prompts" / "chat"
+PROMPTS = PROMPT_ROOT / "chat"
 ENV = Environment(loader=FileSystemLoader(PROMPTS), undefined=StrictUndefined, autoescape=False)
 
 

@@ -32,6 +32,9 @@ dev = [
     "pytest-asyncio",
     "ruff",
 ]
+packaging = [
+    "pyinstaller>=6,<7",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/app"]

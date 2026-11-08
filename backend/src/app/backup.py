@@ -22,7 +22,7 @@ from alembic.script import ScriptDirectory
 from alembic.util.exc import CommandError
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.config import REPO_ROOT, load_settings
+from app.config import load_settings
 from app.epub_storage import decode
 from app.platform_io import (
     FileLockError,
@@ -31,6 +31,7 @@ from app.platform_io import (
     is_link_or_reparse,
     publish_directory,
 )
+from app.resources import RESOURCE_ROOT
 from app.services.dictionary_store import DictionaryStore
 
 FIRST_SUPPORTED_REVISION = "0004_translation_reader_removal"
@@ -145,7 +146,7 @@ def _check_sqlite(connection: sqlite3.Connection) -> None:
 def _supported_revisions() -> set[str]:
     """Support the first release baseline and its installed migration descendants."""
     try:
-        scripts = ScriptDirectory(str(REPO_ROOT / "backend" / "alembic"))
+        scripts = ScriptDirectory(str(RESOURCE_ROOT / "backend" / "alembic"))
         return {
             revision.revision
             for revision in scripts.iterate_revisions(
@@ -229,18 +230,20 @@ def _check_dictionaries(index: Path, library: Path) -> None:
 
 
 def _application_version() -> ApplicationVersion:
-    release = REPO_ROOT / "RELEASE.json"
+    release = RESOURCE_ROOT / "RELEASE.json"
     if release.exists():
         return ApplicationVersion.model_validate_json(release.read_bytes())
     try:
         version = importlib.metadata.version("folio-j-backend")
     except importlib.metadata.PackageNotFoundError:
-        with (REPO_ROOT / "backend" / "pyproject.toml").open("rb") as stream:
+        with (RESOURCE_ROOT / "backend" / "pyproject.toml").open("rb") as stream:
             version = str(tomllib.load(stream)["project"]["version"])
     commit = None
     try:
         commit = subprocess.check_output(
-            ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True
+            ["git", "-C", str(RESOURCE_ROOT), "rev-parse", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
         ).strip()
     except (OSError, subprocess.CalledProcessError):
         pass

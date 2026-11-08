@@ -89,6 +89,8 @@ Reader 使用无脚本同源 iframe 和 CSP／sandbox 隔离作者样式，搜�
 2. **需要窗口外壳时：** 使用 pywebview 包一层，改动很小。
 3. **如需独立桌面安装包：** 可评估 Tauri，将后端作为 sidecar（PyInstaller 打包；若届时后端已用其他语言重写，则直接集成）。
 
+另有 PyInstaller **实验目录包**：预构建前端，随包携带 Python、后端生产依赖和当前 Core 分词词典，仍由本机服务托管页面，使用系统浏览器。PyInstaller 只属于可选 `packaging` 依赖组，不进入运行依赖。当前正式源码 ZIP 的流程保持不变；目录包的构建、使用与验证范围见[开发指南](DEVELOPMENT.md#实验目录包)和[试做记录](handovers/archived/PYINSTALLER_ACCEPTANCE.md)。
+
 Windows 实验性支持面向 Windows 11 x64、PowerShell 和 Chrome／Edge，沿用同一源码包。平台文件操作使用标准库 `fcntl`／`msvcrt`、Windows 启动子树使用 `ctypes` 调用 Job Object，不增加运行依赖。凭据及备份沿用用户目录继承权限，不新增 Windows ACL 管理；Windows CI 与实机验证状态见[验收记录](handovers/WINDOWS_ACCEPTANCE.md)。
 
 ## 5. 仓库与工具

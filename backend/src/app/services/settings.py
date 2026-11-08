@@ -20,6 +20,7 @@ from app.ids import new_ulid
 from app.jobs.supervision import worker
 from app.llm.errors import describe_call_failure
 from app.models import Segment, Source
+from app.resources import PROMPTS
 from app.settings_models import Defaults, Profile, Provider, ProviderModel, Run, Style
 from app.settings_schemas import (
     DefaultsInput,
@@ -46,8 +47,6 @@ from app.settings_schemas import (
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
-
-PROMPTS = Path(__file__).resolve().parents[3] / "prompts"
 
 VERIFICATION_SECONDS = 60
 VERIFICATION_VERSION = "v1"

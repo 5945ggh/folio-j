@@ -17,11 +17,12 @@ from app.api.health import router as health_router
 from app.api.materials import router as materials_router
 from app.api.settings import router as settings_router
 from app.api.sources import router as sources_router
-from app.config import REPO_ROOT, load_settings
+from app.config import load_settings
 from app.db import create_engine
 from app.jobs.runtime import recover_chat_jobs, start_chat_worker
 from app.jobs.supervision import BackgroundWorker, workers
 from app.platform_io import FileLockError, exclusive_file_lock
+from app.resources import RESOURCE_ROOT
 from app.services import translations
 from app.services.analyses import AnalysisWriteError
 from app.services.chat import ChatError
@@ -152,7 +153,9 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
     from app.api.chat import router as chat_router
 
     application.include_router(chat_router)
-    built_frontend = frontend_dir if frontend_dir is not None else REPO_ROOT / "frontend" / "dist"
+    built_frontend = (
+        frontend_dir if frontend_dir is not None else RESOURCE_ROOT / "frontend" / "dist"
+    )
     api_methods = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
     @application.api_route("/api", methods=api_methods, include_in_schema=False)

@@ -169,6 +169,24 @@ python3 scripts/package_release.py --ref HEAD --version 0.1.0+candidate.1 --outp
 
 源码 ZIP 与实验目录包均须包含根目录的 `LICENSE` 和 `COPYING.md`。发布前核对两文件内容及包内首页链接。二进制发行还须在下载处提供对应版本的完整源码与必要构建脚本；含未提交修改的实验包不能只用 `RELEASE.json` 中的提交号代表对应源码。授权范围见[授权声明](../COPYING.md)。
 
+## 实验目录包
+
+目录包在构建机器上预构建前端、捆绑 Python 与生产依赖，使用者直接启动本机服务并在系统浏览器中使用，无需安装 Python 或 Node.js。目前是本机试做，不替代公开 beta 的源码 ZIP；跨系统与架构需要分别构建和验证。
+
+先执行 `just build`，再在独立构建环境安装锁定的生产依赖与可选打包工具。以下为 POSIX shell 命令，输出目录必须尚不存在。
+
+```sh
+UV_PROJECT_ENVIRONMENT="$PWD/.cache/frozen/venv" uv sync --project backend --locked --no-dev --group packaging
+.cache/frozen/venv/bin/python scripts/package_frozen.py --version 0.1.0-frozen-trial.3 --output dist/frozen-trial.3
+backend/.venv/bin/python scripts/smoke_frozen.py dist/frozen-trial.3/Folio-J
+```
+
+打包器读取当前工作区，前端产物须由同一工作区刚刚构建。`RELEASE.json` 保留版本与提交号，`BUILD.json` 另记工作区是否有改动、平台、Python、PyInstaller 与分词词典版本；不能将未提交实验包当作对应提交的正式发行。输出包含 `Folio-J/`、保留符号链接和执行权限的 `.tar.gz`、`SIZE.json`。第三方许可证随目录保存。构建环境与缓存不属于交付内容。
+
+用户进入完整的 `Folio-J/` 目录后，先运行 `./Folio-J data-path` 核对学习库，再运行 `./Folio-J start`。Windows 可执行文件名为 `Folio-J.exe`，该平台的冻结包尚未验证。`start --no-browser` 只启动服务；`Ctrl-C` 停止。`backup <新目录>`、`restore <备份目录> <新恢复目录>` 沿用[数据与凭据保护规则](UPGRADING.md#数据与凭据)，恢复后仍须将用户配置指向恢复库。完整操作说明也放在包内首页。
+
+`smoke_frozen.py` 将产物复制并移位到中文空格临时目录，在无 Python／Node PATH、独立 HOME 和临时数据库下验证真实 HTTP、分词资源、持久学习内容及备份恢复；只访问 loopback，不调用真实模型。试做尺寸与具体检查结果见[PyInstaller 验收记录](handovers/archived/PYINSTALLER_ACCEPTANCE.md)。
+
 ## 仓库快照
 
 运行 `just snapshot`（别名 `just snap`）可为远端 agent 生成仓库快照。需要 PATH 中已有 Repomix；它是可选开发工具，不加入项目锁定依赖。

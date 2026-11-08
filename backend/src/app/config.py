@@ -7,7 +7,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+from app.resources import installation_root
+
+REPO_ROOT = installation_root()
 USER_DIRECTORY = Path("~/Folio-J-Data")
 
 

@@ -7,6 +7,8 @@
 
 2026-11-08，设置返回链与原地模型配置已在 `50cb57d1` 之后实现并通过工程验证；属于候选代码之后的界面改进，尚未发布。入口与会话边界见下表及[设置交互](../INFORMATION_ARCHITECTURE.md#设置顶部分类)。
 
+2026-11-08，`e9aee1ab` 加 `codex/pyinstaller-browser-trial` 工作区已试做 PyInstaller 目录包，保留系统浏览器使用方式与现有 Core 词典，使用者无需安装 Python／Node。macOS ARM64 已通过解压移位、隔离运行、合成 SDK 调用和备份恢复验证；仍为未发布实验，不替代正式源码 ZIP。实测尺寸、复现入口及限制见[试做验收](archived/PYINSTALLER_ACCEPTANCE.md)。
+
 2026-11-08 开始准备 `v0.1.0-beta.2`，应用候选代码为 `ec60b484`，已纳入用户确认的细焦点框与占位提示调整。正式发行状态与附件见 [GitHub 发布记录](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.2)；候选与恢复验证见[beta.2 发布准备与验收](BETA_2_RELEASE_ACCEPTANCE.md)。
 
 2026-10-29 至 10-30 的复制、阅读设置及书签整合，见[复制数据库升级](archived/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md#现用库升级与主分支集成)与[书签集成记录](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md#2026-10-30-原目录集成)；现用库后续升级至 `0004_translation_reader_removal` 的数据与凭据核对见[翻译修复验收](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md#现用库与原目录交付)。浏览器检查的执行范围及未重跑项保留在原记录，后续安排见[实际阅读评测计划](reading-practice/PLAN.md)。
