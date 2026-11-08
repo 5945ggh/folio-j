@@ -220,7 +220,7 @@ export function ConfirmDialog({
 }: {
 	titleId: string;
 	className?: string;
-	restoreFocusId?: string;
+	restoreFocusId?: string | string[];
 	animateEntrance?: boolean;
 	onClose: () => void;
 	children: ReactNode;
@@ -239,7 +239,18 @@ export function ConfirmDialog({
 				previous !== document.body
 			)
 				previous.focus();
-			else if (restoreFocusId) document.getElementById(restoreFocusId)?.focus();
+			else if (restoreFocusId) {
+				const ids = Array.isArray(restoreFocusId)
+					? restoreFocusId
+					: [restoreFocusId];
+				for (const id of ids) {
+					const target = document.getElementById(id);
+					if (target && target.getClientRects().length > 0) {
+						target.focus();
+						break;
+					}
+				}
+			}
 		};
 	}, [restoreFocusId]);
 	return (

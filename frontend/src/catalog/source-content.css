@@ -230,6 +230,7 @@
 	margin: 0 auto 24px;
 	color: var(--color-text-muted);
 }
+.source-welcome h1,
 .source-welcome h2 {
 	margin: 0;
 	font-size: 20px;

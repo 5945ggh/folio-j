@@ -14,6 +14,9 @@ import { ConfirmDialog, InlineError } from "../Shared";
 import { catalogKeys } from "./api";
 import { useMaterialImport } from "./ImportCards";
 import { Icon } from "./LibraryTools";
+
+const restoreFocusIds = ["library-add", "library-empty-import"];
+
 export function ImportDialog({
 	sourceId,
 	close,
@@ -24,6 +27,7 @@ export function ImportDialog({
 	const client = useQueryClient();
 	const sourceSelectId = useId();
 	const sourceSelect = useRef<HTMLSelectElement>(null);
+	const sourceEmptyAction = useRef<HTMLButtonElement>(null);
 	const sourceView = useRef<HTMLDivElement>(null);
 	const initialView = useRef(true);
 	const mounted = useRef(true);
@@ -48,9 +52,10 @@ export function ImportDialog({
 			return;
 		}
 		if (newSource) sourceView.current?.querySelector("input")?.focus();
-		else sourceSelect.current?.focus();
+		else (sourceSelect.current ?? sourceEmptyAction.current)?.focus();
 	}, [newSource]);
 	const sources = useQuery({ queryKey: queries.sources, queryFn: listSources });
+	const noSources = !sourceId && sources.data?.length === 0;
 	const create = useMutation({
 		mutationFn: async (fields: SourceFields) => {
 			const { data, error, response } = await api.POST("/api/sources", {
@@ -74,6 +79,11 @@ export function ImportDialog({
 	const upload = useMaterialImport();
 	const importing = upload.isPending;
 	const submitted = useRef(false);
+	const startNewSource = () => {
+		create.reset();
+		upload.reset();
+		setNewSource(true);
+	};
 	const returnToImport = () => {
 		if (!create.isPending) setNewSource(false);
 	};
@@ -82,7 +92,7 @@ export function ImportDialog({
 			className="import-dialog"
 			titleId="import-title"
 			onClose={newSource ? returnToImport : dismiss}
-			restoreFocusId="library-add"
+			restoreFocusId={restoreFocusIds}
 		>
 			<header className="import-dialog-heading">
 				<h2 id="import-title">{newSource ? "新建来源" : "添加书籍"}</h2>
@@ -121,44 +131,65 @@ export function ImportDialog({
 						</label>
 					</div>
 					<div className="field">
-						<div className="import-field-heading">
-							<label htmlFor={sourceSelectId}>所属来源</label>
-							{!sourceId && (
-								<button
-									className="import-text-button"
-									type="button"
-									disabled={importing}
-									onClick={() => {
-										create.reset();
+						{noSources ? (
+							<button
+								ref={sourceEmptyAction}
+								className="import-source-empty"
+								type="button"
+								aria-label="新建来源"
+								aria-describedby={`${sourceSelectId}-empty-note`}
+								disabled={importing}
+								onClick={startNewSource}
+							>
+								<Icon name="plus" />
+								<span className="import-source-empty-copy">
+									<span>新建来源</span>
+									<span
+										id={`${sourceSelectId}-empty-note`}
+										className="import-source-empty-note"
+									>
+										还没有来源，创建后继续添加书籍。
+									</span>
+								</span>
+							</button>
+						) : (
+							<>
+								<div className="import-field-heading">
+									<label htmlFor={sourceSelectId}>所属来源</label>
+									{!sourceId && (
+										<button
+											className="import-text-button"
+											type="button"
+											disabled={importing}
+											onClick={startNewSource}
+										>
+											<Icon name="plus" />
+											新建来源
+										</button>
+									)}
+								</div>
+								<NativeSelect
+									id={sourceSelectId}
+									ref={sourceSelect}
+									required
+									value={selected}
+									disabled={importing || Boolean(sourceId)}
+									onChange={(event) => {
+										setSelected(event.target.value);
 										upload.reset();
-										setNewSource(true);
 									}}
 								>
-									<Icon name="plus" />
-									新建来源
-								</button>
-							)}
-						</div>
-						<NativeSelect
-							id={sourceSelectId}
-							ref={sourceSelect}
-							required
-							value={selected}
-							disabled={importing || Boolean(sourceId)}
-							onChange={(event) => {
-								setSelected(event.target.value);
-								upload.reset();
-							}}
-						>
-							<option value="">
-								{sources.isPending ? "正在加载来源…" : "请选择来源"}
-							</option>
-							{sources.data?.map((source) => (
-								<option key={source.id} value={source.id}>
-									{source.title}
-								</option>
-							))}
-						</NativeSelect>
+									<option value="">
+										{sources.isPending ? "正在加载来源…" : "请选择来源"}
+									</option>
+									{sources.data?.map((source) => (
+										<option key={source.id} value={source.id}>
+											{source.title}
+										</option>
+									))}
+								</NativeSelect>
+							</>
+						)}
 					</div>
 					{sources.isError && <InlineError error={sources.error} />}
 				</div>

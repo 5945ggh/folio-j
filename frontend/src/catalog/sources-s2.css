@@ -147,6 +147,9 @@
 	font-size: 13px;
 	padding: 15px 8px;
 }
+.s2-directory-empty p {
+	margin: 0 0 10px;
+}
 .s2-search-chip {
 	align-self: flex-start;
 	max-width: calc(100% - 24px);
@@ -217,15 +220,7 @@
 	overflow-wrap: anywhere;
 }
 .s2-welcome {
-	margin: 12vh auto;
-	max-width: 430px;
-}
-.s2-welcome h1 {
-	font-size: 24px;
-}
-.s2-welcome p {
-	color: var(--color-text-muted);
-	line-height: 1.8;
+	padding-top: clamp(56px, 15vh, 144px);
 }
 .s2-source-drawer {
 	margin: 0 auto 0 0;

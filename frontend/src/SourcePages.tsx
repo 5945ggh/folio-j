@@ -29,7 +29,11 @@ import {
 import { SegmentForm, SourceForm } from "./Forms";
 import { ConfirmDialog, InlineError, Shell } from "./Shared";
 
-function SourceFrame({ children }: { children: ReactNode }) {
+function SourceFrame({
+	children,
+}: {
+	children: ReactNode | ((startCreate: () => void) => ReactNode);
+}) {
 	const client = useQueryClient();
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -97,7 +101,7 @@ function SourceFrame({ children }: { children: ReactNode }) {
 					>
 						切换来源
 					</button>
-					{children}
+					{typeof children === "function" ? children(startCreate) : children}
 				</div>
 			</SourceSpace>
 			{drawer && (
@@ -183,25 +187,42 @@ export function SourceIndex() {
 	}, [target.data, target.isSuccess, target.isFetching, navigate, entrySearch]);
 	return (
 		<SourceFrame>
-			{target.isPending || target.isFetching ? (
-				<p role="status">正在打开来源…</p>
-			) : target.isError ? (
-				<div className="state-card">
-					<InlineError error={target.error} />
-					<button
-						className="button secondary"
-						type="button"
-						onClick={() => void target.refetch()}
-					>
-						重试
-					</button>
-				</div>
-			) : !target.data ? (
-				<div className="s2-welcome">
-					<h1>从一份来源开始</h1>
-					<p>在来源栏新建来源，便可导入素材或手动添加片段</p>
-				</div>
-			) : null}
+			{(startCreate) =>
+				target.isPending || target.isFetching ? (
+					<p role="status">正在打开来源…</p>
+				) : target.isError ? (
+					<div className="state-card">
+						<InlineError error={target.error} />
+						<button
+							className="button secondary"
+							type="button"
+							onClick={() => void target.refetch()}
+						>
+							重试
+						</button>
+					</div>
+				) : !target.data ? (
+					<div className="source-welcome s2-welcome">
+						<div className="source-welcome-icon">
+							<Icon name="book" />
+						</div>
+						<h1>定义你的首个来源</h1>
+						<p>创建来源后，便可以导入素材或手动添加片段。</p>
+						<div className="actions">
+							<button
+								className="button primary"
+								type="button"
+								onClick={(event) => {
+									event.currentTarget.focus();
+									startCreate();
+								}}
+							>
+								新建来源
+							</button>
+						</div>
+					</div>
+				) : null
+			}
 		</SourceFrame>
 	);
 }

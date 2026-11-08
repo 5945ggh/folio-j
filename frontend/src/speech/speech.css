@@ -111,6 +111,12 @@
 	font-size: 13px;
 	line-height: 1.5;
 }
+.device-speech-settings-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
 .device-speech-settings h3 {
 	margin: 0;
 	font-size: 18px;
@@ -118,13 +124,33 @@
 	font-weight: 650;
 	letter-spacing: -0.015em;
 }
+.device-speech-settings .device-speech-settings-close {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	min-height: 28px;
+	margin: -4px -4px -4px 0;
+	padding: 4px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--speech-muted);
+	cursor: pointer;
+}
+.device-speech-settings .device-speech-settings-close:hover {
+	background: var(--speech-soft);
+	color: var(--speech-fg);
+}
 .device-speech-settings p {
 	margin: 0;
 	font-size: 12px;
 	line-height: 1.6;
 	overflow-wrap: anywhere;
 }
-.device-speech-settings > h3 + p {
+.device-speech-settings > .device-speech-settings-heading + p {
 	margin-top: 10px;
 	color: var(--speech-muted);
 }

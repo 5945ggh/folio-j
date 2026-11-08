@@ -634,6 +634,37 @@ export async function readingAidsRegression(
 			document.activeElement === settingsTrigger,
 			"Escape must return focus to sound settings trigger",
 		);
+		settingsTrigger.click();
+		await h.until(
+			() => !!h.container.querySelector(".device-speech-popover:popover-open"),
+			"Sound settings should reopen for its close button",
+		);
+		const reopened = h.container.querySelector<HTMLElement>(
+			".device-speech-popover:popover-open",
+		);
+		check(reopened, "Missing reopened sound popover");
+		const closeSettings = [...reopened.querySelectorAll("button")].find(
+			(node) => node.getAttribute("aria-label") === "关闭朗读设置",
+		);
+		check(closeSettings, "Sound settings must expose a close button");
+		const closeIcon = closeSettings.querySelector("svg");
+		check(
+			closeIcon && closeIcon.getBoundingClientRect().width >= 16,
+			"Sound settings close icon must not shrink under shared button styles",
+		);
+		check(
+			getComputedStyle(closeSettings).borderTopWidth === "0px",
+			"Sound settings close button must have no border",
+		);
+		closeSettings.click();
+		await h.until(
+			() => !reopened.matches(":popover-open"),
+			"Close button must close sound settings",
+		);
+		check(
+			document.activeElement === settingsTrigger,
+			"Close button must return focus to sound settings trigger",
+		);
 		check(
 			speech.cancellations === beforeSettings,
 			"Opening sound settings interrupted playback",
@@ -828,5 +859,5 @@ export async function readingAidsRegression(
 	} finally {
 		disposeMultiline();
 	}
-	return `reading aids: ${innerWidth}px; light/dark × horizontal/vertical fit and source visibility with real iframe presentation; collapsed secondary controls; fake start/stop/end/error; translation close preserves speech; replay snapshot and changed voice/rate; in-place settings Escape/focus; leaving reader clears target; short multiline original expands and collapses; minimum rendered translation contrast ${minimumTranslationContrast.toFixed(2)}:1`;
+	return `reading aids: ${innerWidth}px; light/dark × horizontal/vertical fit and source visibility with real iframe presentation; collapsed secondary controls; fake start/stop/end/error; translation close preserves speech; replay snapshot and changed voice/rate; in-place settings Escape/close/focus; leaving reader clears target; short multiline original expands and collapses; minimum rendered translation contrast ${minimumTranslationContrast.toFixed(2)}:1`;
 }

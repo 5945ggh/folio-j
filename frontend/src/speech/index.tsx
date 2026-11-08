@@ -92,7 +92,13 @@ const statusLabels = {
 };
 
 /** Both the settings page and the in-place popover share this form, without route cleanup. */
-function SpeechSettingsForm({ compact = false }: { compact?: boolean }) {
+function SpeechSettingsForm({
+	compact = false,
+	onClose,
+}: {
+	compact?: boolean;
+	onClose?: () => void;
+}) {
 	const { state, controller } = useDeviceSpeech();
 	const id = useId();
 	const [preferenceHint, setPreferenceHint] = useState(false);
@@ -121,7 +127,20 @@ function SpeechSettingsForm({ compact = false }: { compact?: boolean }) {
 			data-compact={compact || undefined}
 			aria-labelledby={`${id}-title`}
 		>
-			<h3 id={`${id}-title`}>朗读设置</h3>
+			<div className="device-speech-settings-heading">
+				<h3 id={`${id}-title`}>朗读设置</h3>
+				{onClose && (
+					<button
+						type="button"
+						className="device-speech-settings-close"
+						aria-label="关闭朗读设置"
+						title="关闭朗读设置"
+						onClick={onClose}
+					>
+						<SpeechIcon action="close" />
+					</button>
+				)}
+			</div>
 			{!compact && (
 				<p>
 					声音由当前浏览器和系统提供；选择与语速仅保存在当前浏览器。不会保存音频文件。
@@ -336,7 +355,7 @@ function SpeechSettingsPopover({ showRate = false }: { showRate?: boolean }) {
 					close();
 				}}
 			>
-				<SpeechSettingsForm compact />
+				<SpeechSettingsForm compact onClose={close} />
 			</div>
 		</>
 	);

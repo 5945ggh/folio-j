@@ -42,6 +42,7 @@ import { segmentShareRegression } from "./segment-share";
 import { settingsModels } from "./settings-models";
 import { sourceDeletion } from "./source-deletion";
 import { sourceEditDelete } from "./source-edit-delete";
+import { sourceOnboarding } from "./source-onboarding";
 import { themeRegression } from "./theme";
 import { translationRegression } from "./translation";
 import { workbenchRegression } from "./workbench";
@@ -434,6 +435,7 @@ try {
 		["catalog-overview", overviewImportRegression],
 		["source-deletion", sourceDeletion],
 		["source-edit-delete", sourceEditDelete],
+		["source-onboarding", sourceOnboarding],
 		["catalog-reuse", reusedImportRegression],
 		["catalog-toolbar", catalogToolbarRegression],
 		["segment-catalog", segmentCatalog],

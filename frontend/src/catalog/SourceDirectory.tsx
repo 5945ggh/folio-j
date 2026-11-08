@@ -151,9 +151,23 @@ export function SourceDirectory({
 						</button>
 					</>
 				) : sources.data.items.length === 0 ? (
-					<p className="s2-directory-empty">
-						{state.q ? "没有匹配的来源。" : "还没有来源，可在上方新建。"}
-					</p>
+					state.q ? (
+						<p className="s2-directory-empty">没有匹配的来源。</p>
+					) : (
+						<div className="s2-directory-empty">
+							<p>还没有来源。</p>
+							<button
+								className="button secondary"
+								type="button"
+								onClick={(event) => {
+									event.currentTarget.focus();
+									onCreate();
+								}}
+							>
+								新建来源
+							</button>
+						</div>
+					)
 				) : (
 					<nav aria-label="选择来源">
 						{sources.data.items.map((source) => (
