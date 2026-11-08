@@ -1,0 +1,29 @@
+docs/handovers/BETA_2_RELEASE_ACCEPTANCE.md
+  s_c0bca8b333401b::t_76c41e3bf860f4 19-22
+  s_c0bca8b333401b::t_d221e5e0f7d895 24-25
+  s_c0bca8b333401b::t_a929d25cc71f8c 1-2,4-10,12-14,16,26,35-36,38-41
+  s_c0bca8b333401b::t_d8062e01a289be 18
+  s_c0bca8b333401b::t_0ae433a628dc81 23,27-34,37
+  s_c0bca8b333401b::t_e9b9e88882d08d 3,11,15,17
+docs/handovers/README.md
+  s_c0bca8b333401b::t_a929d25cc71f8c 10
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_c0bca8b333401b::t_e9b9e88882d08d 8
+  s_c0bca8b333401b::t_a929d25cc71f8c 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2254cd6ec3c4910a3d59f7e78b42f23035de9326",
+  "prompts": {},
+  "sessions": {
+    "s_c0bca8b333401b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1b8c9-3b72-7671-810c-4ba748ae8985",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
