@@ -1,0 +1,24 @@
+docs/handovers/archived/MAINTENANCE_AUDIT_20261108.md
+  s_46f3ff3e1f0290::t_58415bc06ea566 1-15,17-30
+  s_46f3ff3e1f0290::t_7c04d7f834c3b5 16,31-42
+docs/handovers/README.md
+  s_46f3ff3e1f0290::t_58415bc06ea566 61
+frontend/src/materials/highlight.test.ts
+  s_46f3ff3e1f0290::t_5167c3dee32516 320,344
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fa284419943deca713df5b1b86d7a705b09c1f78",
+  "prompts": {},
+  "sessions": {
+    "s_46f3ff3e1f0290": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bb5f-aaf0-7602-b738-c1062546a0b5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
