@@ -63,9 +63,12 @@ def test_stale_resource_cannot_pass_with_presence_alone(resources: tuple[Path, P
         smoke.check_resources(package, repository)
 
 
+@pytest.mark.parametrize("system_root_key", ["SystemRoot", "SYSTEMROOT"])
 def test_child_isolation_removes_host_runtime_and_daily_data_configuration(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, system_root_key: str
 ) -> None:
+    for key in ("SystemRoot", "SYSTEMROOT"):
+        monkeypatch.delenv(key, raising=False)
     for key, value in {
         "PATH": "/usr/local/bin:/usr/bin",
         "HOME": "/real/user",
@@ -75,7 +78,7 @@ def test_child_isolation_removes_host_runtime_and_daily_data_configuration(
         "FOLIO_J_DATABASE_PATH": "/daily/app.db",
         "OPENAI_API_KEY": "never-inherit",
         "HTTPS_PROXY": "http://proxy.invalid",
-        "SystemRoot": "C:/Windows",
+        system_root_key: "C:/Windows",
     }.items():
         monkeypatch.setenv(key, value)
     database = tmp_path / "临时数据 data" / "app.db"
@@ -84,7 +87,9 @@ def test_child_isolation_removes_host_runtime_and_daily_data_configuration(
     assert environment["HOME"] == environment["USERPROFILE"]
     assert Path(environment["HOME"]).is_relative_to(tmp_path)
     assert not database.exists()
-    assert environment["SystemRoot"] == "C:/Windows"
+    # Windows normalizes os.environ keys to uppercase; plain dicts do not.
+    normalized_environment = {key.upper(): value for key, value in environment.items()}
+    assert normalized_environment["SYSTEMROOT"] == "C:/Windows"
     assert set(environment).isdisjoint(
         {"PYTHONPATH", "PYTHONHOME", "NODE_PATH", "OPENAI_API_KEY", "HTTPS_PROXY"}
     )
