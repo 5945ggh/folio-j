@@ -5,6 +5,8 @@
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
 
+2026-11-08 开始准备 `v0.1.0-beta.2`，应用候选代码为 `ec60b484`，已纳入用户确认的细焦点框与占位提示调整。正式发行状态与附件见 [GitHub 发布记录](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.2)；候选与恢复验证见[beta.2 发布准备与验收](BETA_2_RELEASE_ACCEPTANCE.md)。
+
 2026-10-29 至 10-30 的复制、阅读设置及书签整合，见[复制数据库升级](archived/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md#现用库升级与主分支集成)与[书签集成记录](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md#2026-10-30-原目录集成)；现用库后续升级至 `0004_translation_reader_removal` 的数据与凭据核对见[翻译修复验收](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md#现用库与原目录交付)。浏览器检查的执行范围及未重跑项保留在原记录，后续安排见[实际阅读评测计划](reading-practice/PLAN.md)。
 
 ## 1. 当前实现、差额与验收依据
