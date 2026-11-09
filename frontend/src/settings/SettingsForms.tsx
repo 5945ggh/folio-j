@@ -7,7 +7,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useBeforeUnload, useBlocker } from "react-router";
+import { type Location, useBeforeUnload, useBlocker } from "react-router";
 import { ConfirmDialog } from "../Shared";
 import {
 	completeDraft,
@@ -75,6 +75,35 @@ export function SettingsDraftProvider({ children }: { children: ReactNode }) {
 	const blocker = useBlocker(({ currentLocation, nextLocation }) =>
 		shouldBlockSettingsNavigation(currentLocation, nextLocation, entries()),
 	);
+	const blockerRef = useRef(blocker);
+	blockerRef.current = blocker;
+	const consumedNavigation = useRef<Location | null>(null);
+	const proceedNavigation = useCallback(
+		(expected: Location, prepare?: () => void) => {
+			const current = blockerRef.current;
+			if (
+				current.state !== "blocked" ||
+				current.location !== expected ||
+				consumedNavigation.current === expected
+			)
+				return;
+			// Discard/save notifications can render the old blocked state before Router updates it.
+			consumedNavigation.current = expected;
+			prepare?.();
+			current.proceed();
+		},
+		[],
+	);
+	const resetNavigation = useCallback(() => {
+		const current = blockerRef.current;
+		if (
+			current.state !== "blocked" ||
+			consumedNavigation.current === current.location
+		)
+			return;
+		consumedNavigation.current = current.location;
+		current.reset();
+	}, []);
 	useBeforeUnload(
 		useCallback((event) => {
 			if (
@@ -103,9 +132,16 @@ export function SettingsDraftProvider({ children }: { children: ReactNode }) {
 		blocker.state === "blocked" && !waitForAutosave && !continueAfterAutosave;
 	useEffect(() => {
 		if (blocker.state === "blocked" && continueAfterAutosave && !saving)
-			blocker.proceed();
-	}, [blocker, continueAfterAutosave, saving]);
+			proceedNavigation(blocker.location);
+	}, [blocker, continueAfterAutosave, saving, proceedNavigation]);
 	async function saveAndLeave() {
+		const current = blockerRef.current;
+		if (
+			current.state !== "blocked" ||
+			consumedNavigation.current === current.location
+		)
+			return;
+		const destination = current.location;
 		setSaving(true);
 		setFailed(false);
 		try {
@@ -115,7 +151,7 @@ export function SettingsDraftProvider({ children }: { children: ReactNode }) {
 					return;
 				}
 			}
-			if (blocker.state === "blocked") blocker.proceed();
+			proceedNavigation(destination);
 		} catch {
 			setFailed(true);
 		} finally {
@@ -132,7 +168,7 @@ export function SettingsDraftProvider({ children }: { children: ReactNode }) {
 					onClose={() => {
 						if (!pending) {
 							setFailed(false);
-							blocker.reset();
+							resetNavigation();
 						}
 					}}
 				>
@@ -161,8 +197,10 @@ export function SettingsDraftProvider({ children }: { children: ReactNode }) {
 							className="settings-button danger"
 							disabled={pending}
 							onClick={() => {
-								for (const draft of entries()) draft.discard();
-								blocker.proceed();
+								if (blocker.state !== "blocked") return;
+								proceedNavigation(blocker.location, () => {
+									for (const draft of entries()) draft.discard();
+								});
 							}}
 						>
 							放弃修改
@@ -174,7 +212,7 @@ export function SettingsDraftProvider({ children }: { children: ReactNode }) {
 							data-dialog-cancel
 							onClick={() => {
 								setFailed(false);
-								blocker.reset();
+								resetNavigation();
 							}}
 						>
 							继续编辑

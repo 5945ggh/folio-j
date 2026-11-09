@@ -80,7 +80,7 @@ async function pageBoundaryFallbacks(h: BrowserHarness) {
 }
 
 /** Exercise the product route tree, including lazy boundaries, with offline APIs. */
-export async function routeLoading(h: BrowserHarness) {
+async function routeLoadingScenario(h: BrowserHarness) {
 	// Start at the actual trailing-slash URL and switch both forms without rebuilding frames.
 	const readerResult = await readerSession(h, true, true);
 	// main.tsx installs fetch before importing this product route tree.
@@ -256,6 +256,28 @@ export async function routeLoading(h: BrowserHarness) {
 	} finally {
 		dispose();
 	}
-	await pageBoundaryFallbacks(h);
 	return `${readerResult}\nactual App routes: discussion draft survives hide/reopen; settings draft guards path and query changes, survives cancellation, and leaves on confirmation; PageBoundary lazy loading, resolution and rejection recovery controls`;
+}
+
+/** A recovered page boundary must not turn an unexpected navigation exception into a pass. */
+export async function routeLoading(h: BrowserHarness) {
+	const check: BrowserHarness["check"] = h.check;
+	const errors: string[] = [];
+	const original = console.error;
+	console.error = (...args: unknown[]) => {
+		errors.push(args.map(String).join(" "));
+		original(...args);
+	};
+	try {
+		const result = await routeLoadingScenario(h);
+		check(
+			errors.length === 0,
+			`Actual route navigation emitted unexpected errors: ${errors.join("\n")}`,
+		);
+		// This separate scenario deliberately rejects a lazy import and exercises its error boundary.
+		await pageBoundaryFallbacks(h);
+		return result;
+	} finally {
+		console.error = original;
+	}
 }
