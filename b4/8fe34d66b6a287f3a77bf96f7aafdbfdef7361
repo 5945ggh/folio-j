@@ -1,0 +1,199 @@
+scripts/release/README.md
+  s_3e2251961fffb1::t_32b02c18e8f497 18,44
+  s_3e2251961fffb1::t_685233d203bf06 22,28,37
+scripts/frozen/README.md
+  s_3e2251961fffb1::t_802b8fe0a10aa8 7,9-15
+backend/src/app/services/settings.py
+  s_3e2251961fffb1::t_e956fc66a4a2ac 26,57-61
+  s_3e2251961fffb1::t_cccad412a3035c 62-63
+frontend/src/settings/data-location-api.ts
+  s_3e2251961fffb1::t_fd624adf4f2723 1-10
+frontend/src/settings/SettingsPage.tsx
+  s_3e2251961fffb1::t_fd624adf4f2723 9,33,40-41,46,113-118,121-123
+backend/src/app/config.py
+  s_3e2251961fffb1::t_4b15ae63e029dc 5,70-74,80,84-89,101-107,116-122,124-127,129-135,143-156,158,160-161,171-178
+  s_3e2251961fffb1::t_9e3cacea4dabb1 51-54,63-67,75-79,90-91,93,128
+  s_3e2251961fffb1::t_846bd03020d93f 15-22,94-96
+  s_3e2251961fffb1::t_d8041dcfbf9728 108-115,163-170
+  s_3e2251961fffb1::t_e676d75c6d317d 83,92,157
+  s_3e2251961fffb1::t_80b494dfee2e41 68-69
+scripts/frozen/entry.py
+  s_3e2251961fffb1::t_29bc404cd1d5c7 3-5,12-33,37-38,40-42,45
+  s_3e2251961fffb1::t_03d2d31df51e56 34
+  s_3e2251961fffb1::t_b7a80b23bc7f38 35-36,39
+  s_3e2251961fffb1::t_c5cb5545348847 6-11
+scripts/release/justfile
+  s_3e2251961fffb1::t_5dad6aee13ef7b 22-23
+  s_3e2251961fffb1::t_fb0daffcac53cc 20
+backend/tests/test_frozen_entry.py
+  s_3e2251961fffb1::t_64fdbcf1a8bb39 42-47,65-70
+  s_3e2251961fffb1::t_b7a80b23bc7f38 5,93,111-127
+  s_3e2251961fffb1::t_4c51399bbbbcad 1-4,6-41,48-64,71-92,94-110
+backend/src/app/export_openapi.py
+  s_3e2251961fffb1::t_91dcaa23153d6f 5-6,9,13-19
+backend/tests/test_launcher.py
+  s_3e2251961fffb1::t_c5cb5545348847 435-467
+  s_3e2251961fffb1::t_eccd606c090f21 468-483
+  s_3e2251961fffb1::t_03d2d31df51e56 372-434
+docs/ARCHITECTURE.md
+  s_3e2251961fffb1::t_32b02c18e8f497 696-704
+backend/src/app/services/data_location.py
+  s_3e2251961fffb1::t_c6612cc0a5be2c 1-5,7-9,11-12,14-15,18-37,39-53,55-56,58-107,111-158,161-164,167-168,170,175-182,184-185,191-192,196-203,206,230-232,234,238,246-247,250-254,259-265,269-274,277-280,288-290,345-350,352,354-360
+  s_3e2251961fffb1::t_e06b2a202eeaa5 281-287
+  s_3e2251961fffb1::t_846bd03020d93f 17,242-245,256-257,291-344
+  s_3e2251961fffb1::t_e676d75c6d317d 13,54,57,108-110,165-166,193-195,233,235-237,239-241,266-268,275-276,351
+  s_3e2251961fffb1::t_d8041dcfbf9728 6,16,38,159-160,169,171-174,183,186-190,204-205,207-211,214-229,255,353
+  s_3e2251961fffb1::t_6975ae882ed0ce 10,212-213,248-249,258
+frontend/src/settings/DataLocationSettings.tsx
+  s_3e2251961fffb1::t_016abcc13ed85d 53-58,62-64,69
+  s_3e2251961fffb1::t_238991fd23916b 8
+  s_3e2251961fffb1::t_fd624adf4f2723 1-7,9-52,59-61,65-68,70-83
+backend/static/startup/index.html
+  s_3e2251961fffb1::t_64fdbcf1a8bb39 56-57
+  s_3e2251961fffb1::t_03d2d31df51e56 18,20,52,59
+  s_3e2251961fffb1::t_f2b6b11bd04a7d 1-17,21,23-30,32-37,44,46-47,49-51,62,65-66,68-69,71,82,87-88,90-92
+  s_3e2251961fffb1::t_ae6664d0a0d5da 19,22,31,38-43,45,48,53-55,60-61,63-64,67,70,72-81,83-86,89
+  s_3e2251961fffb1::t_a18311fd01b98a 58
+backend/src/app/launcher.py
+  s_3e2251961fffb1::t_c5cb5545348847 108-109
+  s_3e2251961fffb1::t_f27be893995f36 21,25,42-46,81-87,89-98,103-107,110-113,117,178
+  s_3e2251961fffb1::t_eccd606c090f21 16,56-60
+  s_3e2251961fffb1::t_03d2d31df51e56 13,88,99-100,157,180-183
+  s_3e2251961fffb1::t_644ba8970fdc71 61,101-102
+backend/src/app/api/settings.py
+  s_3e2251961fffb1::t_e956fc66a4a2ac 14,44-48
+  s_3e2251961fffb1::t_0817cadd37b31d 49-50
+frontend/browser-tests/data-location.tsx
+  s_3e2251961fffb1::t_1db5c7933f5cf9 30,44,46,76,161,177
+  s_3e2251961fffb1::t_458047b5a76189 1-29,32-43,45,47-74,78-84,86-110,113-160,162-166,171-175,180,182-186,191,199-200,202-206
+  s_3e2251961fffb1::t_68e29dd10fd99e 192-198,201
+  s_3e2251961fffb1::t_734585d5ce18f8 167-170
+  s_3e2251961fffb1::t_016abcc13ed85d 75,77,111-112,176,178-179,187-190
+  s_3e2251961fffb1::t_04557dbc9c1f35 31,85,181
+backend/tests/test_startup.py
+  s_3e2251961fffb1::t_64fdbcf1a8bb39 137,139-142,204-240
+  s_3e2251961fffb1::t_4c51399bbbbcad 1-2,4-99,101-105,107-112,114-117,119-136,138,144-203
+  s_3e2251961fffb1::t_f2226d0017e667 241-285
+  s_3e2251961fffb1::t_004acb2ec03955 3,286-411
+  s_3e2251961fffb1::t_d3c81c1ed936ac 100,106,113,118,143
+backend/tests/test_data_location.py
+  s_3e2251961fffb1::t_b33fbca447a953 333,336-337,339,341-342,353,378-502
+  s_3e2251961fffb1::t_d8041dcfbf9728 9,22-26,287,294
+  s_3e2251961fffb1::t_e06b2a202eeaa5 343,365,377,503-526
+  s_3e2251961fffb1::t_1720d194036003 1-8,10-21,27-286,288-293,295-327,349,351,355-356,360
+  s_3e2251961fffb1::t_89b5cfff4952d0 328-332,334-335,338,340,344-348,350,352,354,357-359,361-364,366-376
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_3e2251961fffb1::t_cef8f0f1849f35 22-23
+docs/handovers/DATA_LOCATION_ACCEPTANCE.md
+  s_3e2251961fffb1::t_49032126eefd0c 17
+  s_3e2251961fffb1::t_3e038806772649 15-16,18-22
+  s_3e2251961fffb1::t_cef8f0f1849f35 1-14,23,26-32
+  s_3e2251961fffb1::t_9b5412179ca4ec 24-25
+docs/handovers/README.md
+  s_3e2251961fffb1::t_cef8f0f1849f35 13
+scripts/package_frozen.py
+  s_3e2251961fffb1::t_f27be893995f36 173
+backend/tests/test_settings_api.py
+  s_3e2251961fffb1::t_e956fc66a4a2ac 74-88
+  s_3e2251961fffb1::t_93e795dce072f1 73
+backend/src/app/services/startup.py
+  s_3e2251961fffb1::t_03d2d31df51e56 7,30,62,72-74,117,182-183
+  s_3e2251961fffb1::t_f2b6b11bd04a7d 1-6,8-9,11-16,18-29,31,33-36,44-61,63,66-71,75,81,83-87,89-100,102-104,108,156-168,173-181,184-188
+  s_3e2251961fffb1::t_ae6664d0a0d5da 10,17,32,37-43,65,76-80,88,105-107,122,124-155
+  s_3e2251961fffb1::t_b7a80b23bc7f38 101,169-172
+  s_3e2251961fffb1::t_64fdbcf1a8bb39 64,82,109-116,118-121,123
+docs/USAGE.md
+  s_3e2251961fffb1::t_45424591017481 5
+  s_3e2251961fffb1::t_1e103d2083cd6d 112
+  s_3e2251961fffb1::t_9a6a6ac68ffaa3 117-123,127,141,148-156
+  s_3e2251961fffb1::t_a97c12311c17f5 140
+backend/openapi.json
+  s_3e2251961fffb1::t_b485fd20d24e39 6367-6473,7574-7677,11640-11641
+  s_3e2251961fffb1::t_e48f43d3649281 807-824,11624-11639
+frontend/src/api/schema.d.ts
+  s_3e2251961fffb1::t_c5cb5545348847 7-23,4167,4188-4206
+  s_3e2251961fffb1::t_6163a2238ef579 24-40,3753-3754,4168-4187
+  s_3e2251961fffb1::t_6933f9d84b0474 3743-3744
+  s_3e2251961fffb1::t_b485fd20d24e39 41-74,3731-3742,3745-3752,3755-3759,4207-4259,6799
+  s_3e2251961fffb1::t_e48f43d3649281 1096-1112,1797-1803,6780-6798
+backend/tests/test_run_script.py
+  s_3e2251961fffb1::t_5dad6aee13ef7b 50-68
+backend/tests/conftest.py
+  s_3e2251961fffb1::t_e676d75c6d317d 22-26
+  s_3e2251961fffb1::t_c6612cc0a5be2c 10,20-21
+backend/tests/test_config.py
+  s_3e2251961fffb1::t_32966f9ee9a3b8 207
+  s_3e2251961fffb1::t_e79afd2d5eb397 201-206,208-238
+docs/TECH_STACK.md
+  s_3e2251961fffb1::t_32b02c18e8f497 96
+  s_3e2251961fffb1::t_802b8fe0a10aa8 97
+backend/src/app/settings_schemas.py
+  s_3e2251961fffb1::t_e956fc66a4a2ac 22-26
+scripts/release/manifest.json
+  s_3e2251961fffb1::t_f27be893995f36 27
+frontend/src/settings/settings-refresh.css
+  s_3e2251961fffb1::t_fd624adf4f2723 480-509
+justfile
+  s_3e2251961fffb1::t_5dad6aee13ef7b 43-44
+  s_3e2251961fffb1::t_fb0daffcac53cc 37
+scripts/smoke_source.py
+  s_3e2251961fffb1::t_5dad6aee13ef7b 33
+README.md
+  s_3e2251961fffb1::t_f938cc674fe945 52,63,79,86
+  s_3e2251961fffb1::t_685233d203bf06 60,75
+scripts/run.py
+  s_3e2251961fffb1::t_5dad6aee13ef7b 88-93,113,116-117,133-136,143-146
+frontend/browser-tests/main.tsx
+  s_3e2251961fffb1::t_458047b5a76189 17,436
+frontend/scripts/test-browser.mjs
+  s_3e2251961fffb1::t_458047b5a76189 27-30
+docs/PRD.md
+  s_3e2251961fffb1::t_f938cc674fe945 339-348,351
+docs/INFORMATION_ARCHITECTURE.md
+  s_3e2251961fffb1::t_f938cc674fe945 102-106
+docs/DEVELOPMENT.md
+  s_3e2251961fffb1::t_32b02c18e8f497 15,36
+  s_3e2251961fffb1::t_685233d203bf06 20
+docs/handovers/WINDOWS_ACCEPTANCE.md
+  s_3e2251961fffb1::t_cef8f0f1849f35 54-66
+scripts/smoke_frozen.py
+  s_3e2251961fffb1::t_c047b31159abc7 54-56,58
+  s_3e2251961fffb1::t_11666131c559b4 57
+backend/tests/test_smoke_frozen.py
+  s_3e2251961fffb1::t_c047b31159abc7 32,47
+docs/UPGRADING.md
+  s_3e2251961fffb1::t_a97c12311c17f5 84
+  s_3e2251961fffb1::t_685233d203bf06 8-9
+  s_3e2251961fffb1::t_1e103d2083cd6d 13,47
+  s_3e2251961fffb1::t_9a6a6ac68ffaa3 12,45,70-71,73
+backend/tests/test_windows_reload.py
+  s_3e2251961fffb1::t_783041aade8af9 33-34,98-105,160-163,171-173
+  s_3e2251961fffb1::t_38f28e65228bdd 40,112-113
+config/app.example.toml
+  s_3e2251961fffb1::t_cef8f0f1849f35 11-12
+backend/src/app/startup.py
+  s_3e2251961fffb1::t_f27be893995f36 85-86,92,94-95,97-98
+  s_3e2251961fffb1::t_64fdbcf1a8bb39 47-56
+  s_3e2251961fffb1::t_f2b6b11bd04a7d 1-27,29-46,67-82,84,99-130
+  s_3e2251961fffb1::t_c5cb5545348847 28,87-91,93,96
+  s_3e2251961fffb1::t_ae6664d0a0d5da 57-66
+  s_3e2251961fffb1::t_29bc404cd1d5c7 83
+backend/tests/test_windows_launcher.py
+  s_3e2251961fffb1::t_edbe9e482a4363 43-48,53-54,60,72,75-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b48fe34d66b6a287f3a77bf96f7aafdbfdef7361",
+  "prompts": {},
+  "sessions": {
+    "s_3e2251961fffb1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bfb6-ed13-7ef0-9859-e80d598006ff",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
