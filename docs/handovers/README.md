@@ -10,6 +10,7 @@
 | beta.2 怎样收口与验证 | [beta.2 发布准备与验收](BETA_2_RELEASE_ACCEPTANCE.md)，记录候选范围、遗留视觉分支、恢复验证和定版待办 |
 | Windows 实验性支持怎样验证 | [Windows 验收与实机清单](WINDOWS_ACCEPTANCE.md)，覆盖源码运行、数据保护、阅读体验及自动验证限制 |
 | Windows 冻结包修复怎样重建与接力 | [冻结包修复验收](WINDOWS_FROZEN_ACCEPTANCE.md)，记录编码、停服、ZIP、CI 与本地及实机验证边界 |
+| 首次数据位置、兼容与故障恢复怎样验证 | [数据位置验收](DATA_LOCATION_ACCEPTANCE.md)，记录新启动流程、位置记忆、交互失败暂停及本地／Windows 验证范围 |
 | 当前能力、实现差额与验证限制 | [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)，统一维护核对版本及验收入口 |
 | EPUB 学习衔接接下来做什么 | [阶段安排](epub-reading/README.md#下一阶段接力顺序)：材料对话、消息引用和从讨论形成讲解；[接手提示词](epub-reading/AGENT_PROMPT.md)引用本安排 |
 | 阅读实践还有哪些独立目标 | [实际阅读评测计划](reading-practice/PLAN.md)：扩展书内搜索、阅读设置迁移候选及数据保护 |

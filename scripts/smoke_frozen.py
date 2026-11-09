@@ -51,7 +51,11 @@ def executable(package: Path) -> Path:
 def check_resources(package: Path, repository: Path = REPOSITORY) -> None:
     """Catch omissions even in templates not reached by this offline workflow."""
     resource_root = package / "_internal"
-    for source_directory in ("backend/prompts", "backend/alembic"):
+    for source_directory in (
+        "backend/prompts",
+        "backend/alembic",
+        "backend/static/startup",
+    ):
         sources = [
             path
             for path in (repository / source_directory).rglob("*")

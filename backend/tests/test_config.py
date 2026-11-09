@@ -198,3 +198,41 @@ def test_non_loopback_host_rejected(tmp_path: Path) -> None:
     write_config(config, '[server]\nhost = "0.0.0.0"\n')
     with pytest.raises(ValidationError):
         load_settings(config)
+
+
+def test_configuration_permission_error_names_file_and_possible_security_software(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = Path.home() / "Folio-J-Data" / "app.toml"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(Path.home() / "separate" / "app.db"))
+
+    def denied_open(*args: object, **kwargs: object) -> object:
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(Path, "open", denied_open)
+    with pytest.raises(ValueError) as error:
+        load_settings()
+    assert str(path) in str(error.value)
+    assert "无法读取配置文件" in str(error.value)
+    assert "可能是安全软件" in str(error.value)
+
+
+def test_database_permission_error_is_access_failure_not_missing_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = Path.home() / "blocked" / "app.db"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(path))
+    original_stat = Path.stat
+
+    def denied_stat(self: Path, *, follow_symlinks: bool = True) -> object:
+        if self == path:
+            raise PermissionError("denied")
+        return original_stat(self, follow_symlinks=follow_symlinks)
+
+    monkeypatch.setattr(Path, "stat", denied_stat)
+    with pytest.raises(ValueError) as error:
+        load_settings()
+    assert str(path) in str(error.value)
+    assert "无法访问数据库" in str(error.value)
+    assert "可能是安全软件" in str(error.value)
+    assert "不可写" not in str(error.value)

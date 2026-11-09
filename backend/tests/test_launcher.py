@@ -369,3 +369,115 @@ def test_windows_server_restores_sigbreak_after_every_exit(
             1 if outcome == "startup_interrupt" else 0
         )
     assert events == ["registered", "cleanup", "restored"]
+
+
+@pytest.mark.parametrize("choose_data", [False, True])
+def test_cli_interactive_entry_can_reopen_selection_without_touching_data(
+    choose_data: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.services import data_location
+    from app.services.data_location import LocationStatus
+    from app.startup import StartupApplication
+
+    frontend = tmp_path / "frontend/dist"
+    frontend.mkdir(parents=True)
+    (frontend / "index.html").touch()
+    monkeypatch.setattr(launcher, "RESOURCE_ROOT", tmp_path)
+    settings = Settings(database=DatabaseSettings(path=tmp_path / "chosen/app.db"))
+    status = LocationStatus(
+        settings=settings,
+        needs_selection=False,
+        recovery=False,
+        selected_path=settings.database.path,
+        default_path=tmp_path / "default/app.db",
+        error=None,
+        source="remembered",
+        warning=None,
+    )
+    monkeypatch.setattr(data_location, "location_status", lambda: status)
+
+    def run(server: launcher.BrowserServer) -> None:
+        app = server.config.app
+        assert isinstance(app, StartupApplication)
+        assert app.service.status.needs_selection is choose_data
+        assert app.service.status.selected_path == settings.database.path
+        assert server.browser_url is None
+        server.started = True
+
+    monkeypatch.setattr(launcher.BrowserServer, "run", run)
+    argv = ["start", "--no-browser"] + (["--choose-data"] if choose_data else [])
+    assert launcher.main(argv) == 0
+    assert not settings.database.path.parent.exists()
+    assert not (tmp_path / "default").exists()
+
+
+def test_migrate_permission_error_preserves_write_failure_reason(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from collections.abc import Generator
+    from contextlib import contextmanager
+
+    from app.platform_io import FileLockError
+
+    database = tmp_path / "app.db"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
+
+    @contextmanager
+    def denied(path: Path) -> Generator[None, None, None]:
+        raise FileLockError("access denied") from PermissionError("access denied")
+        yield
+
+    monkeypatch.setattr(launcher, "exclusive_file_lock", denied)
+    assert launcher.main(["migrate"]) == 1
+    error = capsys.readouterr().err
+    assert "没有权限" in error
+    assert "启动页面选择可写的数据目录" in error
+
+
+def test_recovery_server_uses_configured_port_when_database_cannot_load(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.config import ServerSettings
+    from app.services import data_location
+    from app.services.data_location import LocationStatus
+
+    frontend = tmp_path / "frontend/dist"
+    frontend.mkdir(parents=True)
+    (frontend / "index.html").touch()
+    monkeypatch.setattr(launcher, "RESOURCE_ROOT", tmp_path)
+    status = LocationStatus(
+        settings=None,
+        needs_selection=True,
+        recovery=True,
+        selected_path=tmp_path / "missing/app.db",
+        default_path=tmp_path / "default/app.db",
+        error="数据库丢失",
+        source="remembered",
+        warning=None,
+        server=ServerSettings(port=8055),
+    )
+    monkeypatch.setattr(data_location, "location_status", lambda: status)
+
+    def run(server: launcher.BrowserServer) -> None:
+        assert server.config.port == 8055
+        server.started = True
+
+    monkeypatch.setattr(launcher.BrowserServer, "run", run)
+    assert launcher.main(["start", "--no-browser"]) == 0
+    assert not (tmp_path / "missing").exists()
+
+
+@pytest.mark.parametrize("first_signal", [signal.SIGINT, signal.SIGTERM])
+@pytest.mark.parametrize("second_signal", [signal.SIGINT, signal.SIGTERM, 21])
+def test_repeated_stop_preserves_graceful_cleanup_and_only_first_replayed_signal(
+    first_signal: int,
+    second_signal: int,
+) -> None:
+    server = launcher.BrowserServer(uvicorn.Config("unused"), None)
+    server.handle_exit(first_signal, None)
+    assert server.should_exit
+    assert not server.force_exit
+    server.handle_exit(second_signal, None)
+    assert server.should_exit
+    assert not server.force_exit
+    assert server._captured_signals == [first_signal]  # type: ignore[reportPrivateUsage]

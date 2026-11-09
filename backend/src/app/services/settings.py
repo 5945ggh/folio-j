@@ -23,6 +23,7 @@ from app.models import Segment, Source
 from app.resources import PROMPTS
 from app.settings_models import Defaults, Profile, Provider, ProviderModel, Run, Style
 from app.settings_schemas import (
+    DataLocationResponse,
     DefaultsInput,
     DefaultsPatch,
     DefaultsResponse,
@@ -51,6 +52,13 @@ if TYPE_CHECKING:
 VERIFICATION_SECONDS = 60
 VERIFICATION_VERSION = "v1"
 DEFAULT_STYLE_ID = "00000000000000000000000001"
+
+
+def get_data_location(database_path: Path) -> DataLocationResponse:
+    """Report the running library rather than re-resolving mutable configuration."""
+    return DataLocationResponse(
+        database_path=str(database_path), data_directory=str(database_path.parent)
+    )
 
 
 def now() -> datetime:

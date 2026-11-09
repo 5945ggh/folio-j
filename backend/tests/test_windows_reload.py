@@ -30,11 +30,14 @@ import time
 from types import SimpleNamespace
 
 sys.path.insert(0, {scripts!r})
+sys.path.insert(0, {tests!r})
+from support_network import install_network_guard
 import run as launcher
 from uvicorn import Config, Server
 from windows_reload import ReloadServer, WindowsReload
 
 STATE = Path({state!r})
+install_network_guard(on_denied=lambda: (STATE / "network-attempt").touch())
 
 async def app(scope, receive, send):
     assert scope["type"] == "lifespan"
@@ -92,12 +95,22 @@ def main():
     launcher.load_settings = lambda: SimpleNamespace(
         server=SimpleNamespace(host="127.0.0.1", port=0, dev_port=0),
         database=SimpleNamespace(path=STATE / "unused.db"))
+    if mode == "start":
+        # Production now runs in process. Exercise its actual stop handler and
+        # Uvicorn lifespan, while keeping this fixture off HTTP and databases.
+        from app import launcher as production
+        production.start_interactive = lambda **kwargs: production._serve(
+            app, launcher.load_settings(), no_browser=True)
+        production.BrowserServer.run = lambda self: Server.run(self, sockets=[])
+        (STATE / "application.pid").write_text(str(os.getpid()))
     built_index = STATE / "frontend/dist/index.html"
     built_index.parent.mkdir(parents=True)
     built_index.touch()
     sys.argv = [__file__, "dev" if mode == "reload" else "start"]
     threading.Thread(target=controls, daemon=True).start()
     assert launcher.main() == 0
+    assert not (STATE / "unused.db").exists()
+    assert not (STATE / "network-attempt").exists()
 
 if __name__ == "__main__":
     main()
@@ -144,7 +157,10 @@ def shutdown_fixture(
 ) -> Iterator[Callable[[str], subprocess.Popen[bytes]]]:
     script = tmp_path / "shutdown_fixture.py"
     script.write_text(
-        FIXTURE.format(scripts=str(ROOT / "scripts"), state=str(tmp_path)), encoding="utf-8"
+        FIXTURE.format(
+            scripts=str(ROOT / "scripts"), tests=str(ROOT / "backend/tests"), state=str(tmp_path)
+        ),
+        encoding="utf-8",
     )
     processes: list[subprocess.Popen[bytes]] = []
     output_log = tmp_path / "launcher.log"
@@ -152,6 +168,9 @@ def shutdown_fixture(
     def launch(mode: str) -> subprocess.Popen[bytes]:
         environment = os.environ.copy()
         environment["PYTHONIOENCODING"] = "utf-8"
+        environment["HOME"] = str(tmp_path)
+        environment["USERPROFILE"] = str(tmp_path)
+        environment["FOLIO_J_DATABASE_PATH"] = str(tmp_path / "unused.db")
         with output_log.open("ab") as output:
             process = subprocess.Popen(
                 [sys.executable, str(script), mode],

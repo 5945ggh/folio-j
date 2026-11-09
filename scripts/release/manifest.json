@@ -24,6 +24,7 @@
   "directories": [
     "backend/src/app",
     "backend/prompts",
+    "backend/static/startup",
     "backend/alembic",
     "frontend/src",
     "frontend/public"

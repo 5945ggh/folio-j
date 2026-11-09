@@ -15,17 +15,17 @@ Folio-J 是在本机浏览器中使用的日语阅读与学习工具。导入日
 
 </details>
 
-**首次安装**默认把书籍和学习记录保存在主目录下的 `~/Folio-J-Data/app.db`。如需换到其他位置，在第一次启动前编辑用户配置。[选择数据位置](docs/USAGE.md#自定义数据位置与端口)
+**首次安装**启动后可选择默认 `~/Folio-J-Data`、其他绝对目录或打开已有学习库；确认后记住位置，更新程序继续沿用。数据不可访问时保留恢复页面，不会另建空库。[选择数据位置](docs/USAGE.md#应用配置)
 
 **已有数据**请先从旧版本完成备份，再核对新版显示的数据库路径。升级步骤见[升级与备份](docs/UPGRADING.md)。
 
-已安装 `just` 时，先安装依赖并查看数据路径。
+已安装 `just` 时，先安装依赖。
 
 ```sh
 just setup
 ```
 
-确认路径后，构建并启动应用。
+构建并启动应用，首次按页面选择数据位置。
 
 ```sh
 just start
@@ -34,18 +34,16 @@ just start
 <details>
 <summary>未安装 just 时的等价命令</summary>
 
-先安装依赖并查看数据路径。
+先安装依赖。
 
 ```sh
 uv sync --project backend --locked --no-dev
 pnpm --dir frontend install --frozen-lockfile
-uv run --project backend --no-dev python -m app.config
 ```
 
-确认数据路径，再运行以下三步。
+运行以下两步，启动后按页面选择数据；迁移由启动流程执行。
 
 ```sh
-uv run --directory backend --no-dev alembic upgrade head
 pnpm --dir frontend build
 uv run --project backend --no-dev python scripts/run.py start
 ```

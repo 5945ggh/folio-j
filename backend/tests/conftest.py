@@ -7,6 +7,7 @@ import pytest
 from support_network import install_network_guard
 
 from app import config as app_config
+from app.services import data_location
 
 
 @pytest.fixture(autouse=True)
@@ -16,6 +17,13 @@ def isolate_user_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> No
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     assert Path.home() == tmp_path
     monkeypatch.delenv("FOLIO_J_DATABASE_PATH", raising=False)
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
+    # Never read or write the real Windows registry in backend tests.
+    monkeypatch.setattr(
+        data_location,
+        "_selection_store",
+        data_location._FileSelectionStore,  # pyright: ignore[reportPrivateUsage]
+    )
     # Also isolate installation config and legacy data/app.db selection.
     monkeypatch.setattr(app_config, "REPO_ROOT", tmp_path / "installation")
 

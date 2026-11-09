@@ -40,21 +40,24 @@ def wait_for(path, process):
         assert time.monotonic() < deadline, f"Timed out waiting for {path.name}"
         time.sleep(0.02)
 
-async def application(scope, receive, send):
-    assert scope["type"] == "lifespan"
-    assert (await receive())["type"] == "lifespan.startup"
-    await send({"type": "lifespan.startup.complete"})
-    assert (await receive())["type"] == "lifespan.shutdown"
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+
+@asynccontextmanager
+async def lifespan(application):
+    yield
     (STATE / "cleanup-started").touch()
     while not (STATE / "release").exists():
         await asyncio.sleep(0.01)
     (STATE / "cleanup-finished").touch()
-    await send({"type": "lifespan.shutdown.complete"})
+
+application = FastAPI(lifespan=lifespan)
 
 def serve():
     from app import launcher
     from app import main as app_main
     from app.config import DatabaseSettings, ServerSettings, Settings
+    from app.services import data_location
 
     class ObservedServer(launcher.BrowserServer):
         async def startup(self, sockets=None):
@@ -66,9 +69,13 @@ def serve():
     launcher.BrowserServer = ObservedServer
     launcher.RESOURCE_ROOT = STATE
     launcher.migrate = lambda database_path: None
-    launcher.load_settings = lambda: Settings(
+    settings = Settings(
         database=DatabaseSettings(path=STATE / "学习📚𠮷.db"),
         server=ServerSettings(host="127.0.0.1").model_copy(update={"port": 0}))
+    data_location.location_status = lambda: data_location.LocationStatus(
+        settings=settings, needs_selection=False, recovery=False,
+        selected_path=settings.database.path, default_path=STATE / "default/app.db",
+        error=None, source="environment", warning=None)
     app_main.create_app = lambda **kwargs: application
     raise SystemExit(launcher.main(["start", "--no-browser"]))
 

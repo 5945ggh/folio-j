@@ -19,6 +19,11 @@ class Input(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class DataLocationResponse(BaseModel):
+    database_path: str
+    data_directory: str
+
+
 class ProfileInput(Input):
     native_language: str = Field(max_length=100)
     explain_language: str = Field(max_length=100)

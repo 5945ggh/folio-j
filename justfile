@@ -31,18 +31,17 @@ snapshot:
 setup:
     uv sync --project backend --locked
     pnpm --dir frontend install --frozen-lockfile
-    @just data-path
 
 # 查看下次迁移和启动将使用的数据库路径。
 data-path:
-    @uv run --project backend python -m app.config
+    @uv run --project backend python -m app.launcher data-path
 
 # 同时启动 FastAPI 热重载与 Vite；Ctrl-C 一并停止子进程。
 dev: migrate
     uv run --project backend python scripts/run.py dev
 
-# 构建前端并由 FastAPI 托管。
-start: migrate build
+# 构建前端，选择或恢复数据位置后由 FastAPI 托管。
+start: build
     uv run --project backend python scripts/run.py start
 
 build:

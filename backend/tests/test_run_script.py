@@ -47,6 +47,25 @@ def test_missing_node_is_reported(monkeypatch: pytest.MonkeyPatch) -> None:
         launcher.frontend_command()
 
 
+@pytest.mark.parametrize("result", [0, 1])
+def test_production_start_can_recover_before_resolving_old_data_path(
+    result: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app import launcher as application_launcher
+
+    def broken_settings() -> None:
+        raise AssertionError("Production must not read data before the startup page")
+
+    def start(arguments: list[str]) -> int:
+        assert arguments == ["start"]
+        return result
+
+    monkeypatch.setattr(launcher.sys, "argv", ["run.py", "start"])
+    monkeypatch.setattr(launcher, "load_settings", broken_settings)
+    monkeypatch.setattr(application_launcher, "main", start)
+    assert launcher.main() == result
+
+
 @pytest.mark.parametrize("platform", ["nt", "posix"])
 def test_main_selects_reload_adapter_and_waits_for_its_application(
     monkeypatch: pytest.MonkeyPatch, platform: str

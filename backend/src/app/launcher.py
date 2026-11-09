@@ -10,16 +10,19 @@ import sqlite3
 import sys
 import webbrowser
 from collections.abc import Sequence
+from dataclasses import replace
 from io import TextIOWrapper
 from pathlib import Path
+from types import FrameType
 
 import uvicorn
 from alembic.config import Config
 from alembic.util.exc import CommandError
+from starlette.types import ASGIApp as ASGIApplication
 
 from alembic import command
 from app.backup import create_backup, restore_backup
-from app.config import USER_DIRECTORY, Settings, load_settings
+from app.config import Settings, load_settings
 from app.platform_io import FileLockError, exclusive_file_lock
 from app.resources import RESOURCE_ROOT
 
@@ -36,7 +39,11 @@ def migrate(database_path: Path | None = None) -> None:
             configuration.set_main_option("script_location", str(RESOURCE_ROOT / "backend/alembic"))
             command.upgrade(configuration, "head")
     except FileLockError as exc:
-        raise ValueError(f"请先停止使用此数据库的全部服务：{database}") from exc
+        if isinstance(exc.__cause__, PermissionError):
+            raise ValueError(
+                f"没有权限访问数据库进程锁：{lock}。请在启动页面选择可写的数据目录。"
+            ) from exc
+        raise ValueError(f"数据库正在使用或进程锁不可用：{database}。{exc}") from exc
 
 
 class BrowserServer(uvicorn.Server):
@@ -45,6 +52,12 @@ class BrowserServer(uvicorn.Server):
     def __init__(self, config: uvicorn.Config, url: str | None) -> None:
         super().__init__(config)
         self.browser_url = url
+
+    def handle_exit(self, sig: int, frame: FrameType | None) -> None:
+        # A second console stop must not force-exit while database resources close,
+        # or queue another signal for Uvicorn to replay after that cleanup.
+        if not self.should_exit:
+            super().handle_exit(sig, frame)
 
     async def startup(self, sockets: list[socket.socket] | None = None) -> None:
         await super().startup(sockets=sockets)
@@ -64,12 +77,44 @@ def start(settings: Settings, *, no_browser: bool) -> int:
     # spawning sys.executable -m uvicorn (which would restart the frozen CLI).
     from app.main import create_app
 
-    url = f"http://{settings.server.host}:{settings.server.port}"
     print(f"数据库：{settings.database.path}", flush=True)
+    return _serve(
+        create_app(frontend_dir=frontend, database_path=settings.database.path),
+        settings,
+        no_browser=no_browser,
+    )
+
+
+def start_interactive(*, no_browser: bool, choose_data: bool = False) -> int:
+    """Use a database-independent page for first selection and startup recovery."""
+    from app.main import create_app
+    from app.services.data_location import location_status
+    from app.services.startup import StartupService
+    from app.startup import StartupApplication
+
+    frontend = RESOURCE_ROOT / "frontend/dist"
+    if not (frontend / "index.html").is_file():
+        raise ValueError("缺少前端构建，请重新安装完整程序包或先构建前端。")
+    status = location_status()
+    if choose_data:
+        status = replace(status, needs_selection=True)
+    if status.selected_path is not None:
+        print(f"数据库：{status.selected_path}", flush=True)
+    service = StartupService(
+        status,
+        migrate,
+        lambda database: create_app(frontend_dir=frontend, database_path=database),
+    )
+    settings = status.settings or Settings(server=status.server or Settings().server)
+    return _serve(StartupApplication(service), settings, no_browser=no_browser)
+
+
+def _serve(application: ASGIApplication, settings: Settings, *, no_browser: bool) -> int:
+    url = f"http://{settings.server.host}:{settings.server.port}"
     print(f"启动访问地址：{url}", flush=True)
     print("按 Ctrl-C 停止服务。", flush=True)
     configuration = uvicorn.Config(
-        create_app(frontend_dir=frontend, database_path=settings.database.path),
+        application,
         host=settings.server.host,
         port=settings.server.port,
         loop="asyncio",
@@ -109,6 +154,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command")
     serve = commands.add_parser("start", help="升级数据库并启动，默认打开系统浏览器")
     serve.add_argument("--no-browser", action="store_true", help="启动后不自动打开浏览器")
+    serve.add_argument("--choose-data", action="store_true", help="重新选择数据位置后启动")
     commands.add_parser("data-path", help="显示下次启动使用的数据库路径")
     commands.add_parser("migrate", help="停服后将数据库升级到当前版本")
     backup = commands.add_parser("backup", help="停服后备份到新目录")
@@ -129,12 +175,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             migrate()
         elif arguments.command == "data-path":
             print(f"下次迁移和启动使用的数据库：{load_settings().database.path}")
-            print(
-                f"首次使用如需自选位置，请先在 {USER_DIRECTORY / 'app.toml'} "
-                "中设置 [database].path。"
-            )
+            print("启动后可在首次设置或恢复页面选择数据位置。")
         else:
-            return start(load_settings(), no_browser=bool(getattr(arguments, "no_browser", False)))
+            return start_interactive(
+                no_browser=bool(getattr(arguments, "no_browser", False)),
+                choose_data=bool(getattr(arguments, "choose_data", False)),
+            )
     except (ValueError, OSError, sqlite3.Error, CommandError) as exc:
         print(f"操作失败：{exc}", file=sys.stderr)
         return 1

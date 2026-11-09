@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Folio-J · 数据位置</title>
+<style nonce="__FOLIO_STARTUP_NONCE__">
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#252525;background:#f5f5f4;color-scheme:light}*{box-sizing:border-box}body{margin:0;padding:60px 24px}main{max-width:680px;margin:0 auto;background:#fff;border:1px solid #e4e4e7;border-radius:18px;padding:38px}header{font-size:13px;color:#6b7280;letter-spacing:.08em}h1{font-size:26px;font-weight:600;margin:20px 0 12px}p{line-height:1.7;margin:10px 0;color:#616161}.location{display:block;word-break:break-all;margin-top:6px;font-family:ui-monospace,monospace;color:#252525}.notice{padding:14px 16px;border-radius:9px;background:#fff5f3;color:#a33120;margin:20px 0;white-space:pre-wrap;overflow-wrap:anywhere}.warning{background:#fff8e5;color:#7b5900}label{display:block;font-size:14px;margin:24px 0 8px}input{width:100%;padding:12px;border:1px solid #d4d4d8;border-radius:8px;font:inherit;font-size:14px}button{border:1px solid #d4d4d8;border-radius:8px;background:#fff;color:#252525;padding:11px 16px;font:inherit;font-size:14px;cursor:pointer}button.primary{background:#252525;border-color:#252525;color:white}button:hover{filter:brightness(.94)}button:focus-visible,input:focus-visible{outline:2px solid #3b82f6;outline-offset:3px}button:disabled,input:disabled{opacity:.55;cursor:wait}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.small{font-size:13px}hr{border:0;border-top:1px solid #eee;margin:28px 0}.status{min-height:24px;margin-top:15px} [hidden]{display:none!important}@media(max-width:540px){body{padding:24px 12px}main{padding:26px 22px}.actions button{width:100%}}
+</style>
+</head>
+<body>
+<main>
+<header>FOLIO-J</header>
+<h1 id="title">选择数据位置</h1>
+<p id="intro">学习内容、设置和模型凭据会保存在你选择的位置。确认后创建数据目录，以后启动会继续使用。</p>
+<div id="error" class="notice" role="alert" hidden></div>
+<div id="warning" class="notice warning" hidden></div>
+<p id="configured" class="small" hidden>原配置的数据库<span id="configured-path" class="location"></span></p>
+<div id="current-candidate" hidden><p class="small">本次已确认的数据位置<span id="retry-current-path" class="location"></span></p><button id="retry-current" class="primary" type="button">重试当前选择</button></div>
+<p id="selected" class="small" hidden>当前尝试的数据库<span id="selected-path" class="location"></span></p>
+<p class="small">默认数据目录<span id="default-path" class="location"></span></p>
+<div class="actions"><button id="retry" class="primary" type="button" hidden>重试原配置位置</button><button id="default" class="primary" type="button" disabled>使用默认位置</button></div>
+<hr>
+<label for="directory">其他数据目录（完整绝对路径）</label>
+<input id="directory" type="text" autocomplete="off" spellcheck="false" placeholder="粘贴文件管理器中的完整目录路径">
+<p class="small">新位置创建 app.db；打开已有数据时，请填写包含 app.db 的目录，也可填写数据库文件的完整路径。</p>
+<div class="actions">
+<button id="new" type="button">在此创建新数据</button>
+<button id="existing" type="button">打开已有数据</button>
+</div>
+<button id="reload-state" type="button" hidden>重试读取启动状态</button>
+<p id="status" class="status small" role="status" aria-live="polite"></p>
+</main>
+<script nonce="__FOLIO_STARTUP_NONCE__">
+const token="__FOLIO_STARTUP_NONCE__";
+const el=id=>document.getElementById(id);
+let defaultDirectory="";
+let stateLoaded=false;
+let busy=false;
+function updateControls(){
+ document.querySelectorAll("button,input").forEach(control=>control.disabled=busy);
+ el("default").disabled=busy||!stateLoaded||!defaultDirectory;
+}
+function show(state){
+ stateLoaded=true;
+ if(state.ready){location.replace("/");return;}
+ defaultDirectory=state.default_directory;
+ el("reload-state").hidden=true;
+ el("default-path").textContent=defaultDirectory;
+ el("error").hidden=!state.error;el("error").textContent=state.error||"";
+ el("warning").hidden=!state.warning;el("warning").textContent=state.warning||"";
+ el("configured").hidden=!state.configured_path;el("configured-path").textContent=state.configured_path||"";
+ el("selected").hidden=!state.selected_path||state.selected_path===state.configured_path||state.selected_path===state.retry_current_path;el("selected-path").textContent=state.selected_path||"";
+ el("current-candidate").hidden=!state.retry_current_path;
+ el("retry-current-path").textContent=state.retry_current_path||"";
+ el("retry").hidden=!state.recovery;
+ el("default").textContent=state.recovery?"在默认位置创建新数据":"使用默认位置";
+ if(state.recovery&&state.selected_path&&!el("directory").value)el("directory").value=state.selected_path;
+ el("title").textContent=state.recovery?"恢复数据连接":"选择数据位置";
+ el("intro").textContent=state.recovery?"当前数据无法启动。请修复目录访问后重试当前选择，或重试原配置位置。也可以打开另一份已有数据。":"学习内容、设置和模型凭据会保存在你选择的位置。确认后创建数据目录，以后启动会继续使用。";
+ updateControls();
+}
+async function choose(directory,mode,retry=null){
+ busy=true;updateControls();
+ el("status").textContent="正在检查数据并启动，请稍候…";
+ try{
+  const response=await fetch(retry||"/_startup/select",{method:"POST",headers:{"Content-Type":"application/json","X-Folio-Startup-Token":token},body:retry?undefined:JSON.stringify({directory,mode})});
+  const result=await response.json();
+  if(!response.ok)throw new Error(typeof result.detail==="string"?result.detail:"无法提交，请核对目录后重试。");
+  show(result);el("status").textContent=result.ready?"启动成功，正在打开…":"请修复访问或修改位置后重试。";
+ }catch(error){el("error").hidden=false;el("error").textContent=error.message;el("status").textContent="操作未完成，请重试。";}
+ finally{busy=false;updateControls();}
+}
+async function loadState(){
+ busy=true;updateControls();el("reload-state").hidden=true;
+ try{
+  const response=await fetch("/_startup/state");
+  if(!response.ok)throw new Error("无法读取启动状态，请重试。");
+  show(await response.json());
+ }catch(error){stateLoaded=false;el("error").hidden=false;el("error").textContent=error.message;el("reload-state").hidden=false;}
+ finally{busy=false;updateControls();}
+}
+el("reload-state").addEventListener("click",loadState);
+el("retry").addEventListener("click",()=>choose("","existing","/_startup/retry"));
+el("retry-current").addEventListener("click",()=>choose("","existing","/_startup/retry-current"));
+el("default").addEventListener("click",()=>{if(stateLoaded&&defaultDirectory)choose(defaultDirectory,"new");});
+el("new").addEventListener("click",()=>choose(el("directory").value,"new"));
+el("existing").addEventListener("click",()=>choose(el("directory").value,"existing"));
+loadState();
+</script>
+</body>
+</html>

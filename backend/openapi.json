@@ -804,6 +804,24 @@
         "title": "CoverageThreshold",
         "type": "object"
       },
+      "DataLocationResponse": {
+        "properties": {
+          "data_directory": {
+            "title": "Data Directory",
+            "type": "string"
+          },
+          "database_path": {
+            "title": "Database Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "database_path",
+          "data_directory"
+        ],
+        "title": "DataLocationResponse",
+        "type": "object"
+      },
       "DefaultsInput": {
         "additionalProperties": false,
         "properties": {
@@ -6346,6 +6364,113 @@
         "title": "SourceUpdate",
         "type": "object"
       },
+      "StartupSelection": {
+        "properties": {
+          "directory": {
+            "maxLength": 32768,
+            "minLength": 1,
+            "title": "Directory",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "new",
+              "existing"
+            ],
+            "title": "Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "directory",
+          "mode"
+        ],
+        "title": "StartupSelection",
+        "type": "object"
+      },
+      "StartupState": {
+        "properties": {
+          "configured_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Configured Path"
+          },
+          "default_directory": {
+            "title": "Default Directory",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "recovery": {
+            "title": "Recovery",
+            "type": "boolean"
+          },
+          "retry_current_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry Current Path"
+          },
+          "selected_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Path"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "required": [
+          "ready",
+          "recovery",
+          "selected_path",
+          "configured_path",
+          "default_directory",
+          "retry_current_path",
+          "error",
+          "warning"
+        ],
+        "title": "StartupState",
+        "type": "object"
+      },
       "StyleInput": {
         "additionalProperties": false,
         "properties": {
@@ -7446,6 +7571,110 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/_startup/retry": {
+      "post": {
+        "operationId": "startup_retry__startup_retry_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartupState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Startup Retry",
+        "tags": [
+          "startup"
+        ]
+      }
+    },
+    "/_startup/retry-current": {
+      "post": {
+        "operationId": "startup_retry_current__startup_retry_current_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartupState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Startup Retry Current",
+        "tags": [
+          "startup"
+        ]
+      }
+    },
+    "/_startup/select": {
+      "post": {
+        "operationId": "startup_select__startup_select_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartupSelection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartupState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Startup Select",
+        "tags": [
+          "startup"
+        ]
+      }
+    },
+    "/_startup/state": {
+      "get": {
+        "operationId": "startup_state__startup_state_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartupState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Startup State",
+        "tags": [
+          "startup"
+        ]
+      }
+    },
     "/api/analyses/{analysis_id}": {
       "delete": {
         "operationId": "deleteAnalysis",
@@ -11390,6 +11619,24 @@
           }
         },
         "summary": "Save Settings"
+      }
+    },
+    "/api/settings/data-location": {
+      "get": {
+        "operationId": "getDataLocation",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataLocationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Data Location"
       }
     },
     "/api/settings/defaults": {

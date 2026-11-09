@@ -14,6 +14,7 @@ import { overviewImportRegression } from "./catalog-overview";
 import { reusedImportRegression } from "./catalog-reuse";
 import { catalogToolbarRegression } from "./catalog-toolbar";
 import { chapterRecords } from "./chapter-records";
+import { dataLocation } from "./data-location";
 import { dictionaryInflectionLayout } from "./dictionary-inflection-layout";
 import { dictionarySettings } from "./dictionary-settings";
 import { explanationRegression } from "./explanation";
@@ -432,6 +433,7 @@ try {
 		["focused-navigation", focusedNavigation],
 		["workbench-activity", workbenchActivityRegression],
 		["dictionary-settings", dictionarySettings],
+		["data-location", dataLocation],
 		["app-theme", appTheme],
 		["reader-images", readerImages],
 		["position-bookmarks", positionBookmarks],

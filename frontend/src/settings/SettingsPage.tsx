@@ -6,6 +6,7 @@ import { DeviceSpeechSettings } from "../speech";
 import { AppearanceSettings } from "../theme/AppearanceSettings";
 import { TranslationSettingsSection } from "../translation/TranslationSettings";
 import { getProviders, getSettings, settingsKeys } from "./api";
+import { DataLocationSettings } from "./DataLocationSettings";
 import { DictionarySettings } from "./DictionarySettings";
 import { LearningSettings } from "./LearningSettings";
 import { ModelDefaults } from "./ModelDefaults";
@@ -29,18 +30,20 @@ export function SettingsPage() {
 	const speech = section === "speech";
 	const appearance = section === "appearance";
 	const dictionary = section === "dictionary";
+	const dataLocation = section === "data-location";
 	const learning =
 		!models &&
 		!permissions &&
 		!translation &&
 		!speech &&
 		!appearance &&
-		!dictionary;
+		!dictionary &&
+		!dataLocation;
 	const services = section === "providers";
 	const settings = useQuery({
 		queryKey: settingsKeys.settings,
 		queryFn: getSettings,
-		enabled: !appearance && !dictionary && !translation,
+		enabled: !appearance && !dictionary && !translation && !dataLocation,
 	});
 	const providers = useQuery({
 		queryKey: settingsKeys.providers,
@@ -107,9 +110,17 @@ export function SettingsPage() {
 					>
 						设备朗读
 					</Link>
+					<Link
+						to="/settings?section=data-location"
+						aria-current={dataLocation ? "page" : undefined}
+					>
+						数据位置
+					</Link>
 				</nav>
 				<div className="settings-content">
-					{dictionary ? (
+					{dataLocation ? (
+						<DataLocationSettings />
+					) : dictionary ? (
 						<DictionarySettings />
 					) : history ? (
 						<>

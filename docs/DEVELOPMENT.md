@@ -12,12 +12,12 @@ Python 默认版本同时固定在根目录的 [.python-version](../.python-vers
 
 Windows 实验性支持以 Windows 11 x64、PowerShell 5.1／7 和 Chrome／Edge 为目标，推荐 `just 1.58` 或更新版本。`just setup/dev/start/lint/test/build/gen-api/migrate/backup/restore` 可使用原生命令入口；`snapshot` 的可选脚本仍要求 POSIX shell。本文其余行内环境变量赋值、`mktemp` 等示例使用 POSIX shell；PowerShell 的配置写法见[应用配置](USAGE.md#配置优先级与高级选项)，完整实机步骤见 [Windows 测试清单](handovers/WINDOWS_ACCEPTANCE.md)。
 
-首次执行迁移或启动前，先确认数据库位置：新安装默认使用 `~/Folio-J-Data/app.db`，需要自定义时先按[应用配置](USAGE.md#应用配置)编辑 `~/Folio-J-Data/app.toml`。未显式配置路径且程序目录已有 `data/app.db` 时，继续使用该旧库；已有数据先按[升级与备份](UPGRADING.md)备份。开发时可用 `FOLIO_J_DATABASE_PATH` 指向独立测试库，避免修改日常数据。
+生产 `just start` 在构建后进入统一启动流程，首次通过页面选择默认 `~/Folio-J-Data` 或自定义目录，确认前不创建数据。`uv run --project backend python -m app.launcher start --choose-data` 可重开选择页，数据故障时保持恢复页。旧库与旧配置继续兼容，位置记忆优先级见[应用配置](USAGE.md#配置优先级与高级选项)。开发模式和显式 `just migrate` 仍直接使用解析出的路径；已有数据先按[升级与备份](UPGRADING.md)备份，测试用 `FOLIO_J_DATABASE_PATH` 指向独立库。
 
 在仓库根目录运行：
 
 ```sh
-just setup   # 安装锁定的后端与前端依赖，显示选中的数据库路径
+just setup   # 仅安装锁定的后端与前端依赖，不读取学习库配置
 just dev     # 初始化／升级数据库，启动 FastAPI + Vite 热重载
 ```
 
@@ -33,7 +33,7 @@ just test         # 后端与前端纯逻辑测试，禁止真实网络和模型
 just gen-api      # 本地导出 OpenAPI 并生成前端类型，不需启动服务
 just migrate      # 从空库建立当前 schema，或执行已有库的后续迁移
 just data-path    # 查看当前配置会使用哪个数据库
-just start        # 初始化／升级数据库并构建前端，由 FastAPI 在 8010 端口托管（默认）
+just start        # 构建前端，选择／恢复学习库并启动，默认 8010
 just build        # 构建前端
 just check-docs   # 检查公共文档本地路径，明确报告未核验的私有证据
 just check-private-evidence # 同时核验本机私有证据，缺失时报错

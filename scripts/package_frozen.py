@@ -170,6 +170,7 @@ def build(version: str, output: Path) -> dict[str, Any]:
         ]
         for source, destination in (
             (ROOT / "backend/prompts", "backend/prompts"),
+            (ROOT / "backend/static/startup", "backend/static/startup"),
             (migrations, "backend/alembic"),
             (ROOT / "backend/alembic.ini", "backend"),
             (frontend, "frontend/dist"),

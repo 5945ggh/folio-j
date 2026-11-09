@@ -477,6 +477,36 @@
 	color: var(--settings-muted);
 	font-size: 13px;
 }
+.settings-page .data-location-paths {
+	margin: 20px 0 12px;
+}
+.settings-page .data-location-row {
+	padding: 16px;
+}
+.settings-page .data-location-row + .data-location-row {
+	border-top: 1px solid var(--settings-line);
+}
+.settings-page .data-location-row dt {
+	margin-bottom: 8px;
+	font-size: 13px;
+	font-weight: 500;
+}
+.settings-page .data-location-row dd {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 12px;
+	min-width: 0;
+	margin: 0;
+}
+.settings-page .data-location-path {
+	max-width: 100%;
+	font-size: 13px;
+	line-height: 1.7;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	user-select: text;
+}
 @media (max-width: 620px) {
 	.settings-page .settings-topbar {
 		min-height: 54px;

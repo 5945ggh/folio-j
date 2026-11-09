@@ -14,14 +14,13 @@ default:
 setup:
     uv sync --project backend --locked --no-dev
     pnpm --dir frontend install --frozen-lockfile
-    @just data-path
 
 # 查看配置和数据库位置；不创建数据库。
 data-path:
-    @uv run --project backend --no-dev python -m app.config
+    @uv run --project backend --no-dev python -m app.launcher data-path
 
-# 先迁移数据库，再从源码构建并启动。
-start: migrate build
+# 构建页面，选择或恢复数据位置后启动。
+start: build
     uv run --project backend --no-dev python scripts/run.py start
 
 build:

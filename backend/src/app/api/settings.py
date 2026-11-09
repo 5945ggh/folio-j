@@ -11,6 +11,7 @@ from app.api.segment_context import router as segment_context_router
 from app.db import get_session
 from app.services import settings as service
 from app.settings_schemas import (
+    DataLocationResponse,
     DefaultsInput,
     DefaultsResponse,
     ModelInput,
@@ -38,6 +39,13 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 
 def database_path(request: Request) -> Path:
     return request.app.state.database_path
+
+
+@router.get(
+    "/settings/data-location", response_model=DataLocationResponse, operation_id="getDataLocation"
+)
+async def get_data_location(request: Request) -> DataLocationResponse:
+    return service.get_data_location(database_path(request))
 
 
 @router.get("/settings", response_model=SettingsResponse, operation_id="getSettings")

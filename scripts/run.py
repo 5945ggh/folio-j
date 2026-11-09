@@ -85,6 +85,12 @@ def main() -> int:
         print("Usage: run.py dev|start", file=sys.stderr)
         return 2
 
+    if sys.argv[1] == "start":
+        # Resolve data only inside the recoverable browser startup flow.
+        from app.launcher import main as application_main
+
+        return application_main(["start"])
+
     settings = load_settings()
     stop_requested = False
 
@@ -103,25 +109,12 @@ def main() -> int:
 
         signal.signal(signal.SIGBREAK, request_stop)
         contain_process_tree()
-    mode = sys.argv[1]
-    if mode == "start" and not (ROOT / "frontend/dist/index.html").is_file():
-        print(
-            "缺少前端构建，请先执行 pnpm --dir frontend build（或 just build）。",
-            file=sys.stderr,
-        )
-        return 1
-
     api_url = f"http://{settings.server.host}:{settings.server.port}"
-    access_url = (
-        f"http://{settings.server.host}:{settings.server.dev_port}"
-        if mode == "dev"
-        else api_url
-    )
+    access_url = f"http://{settings.server.host}:{settings.server.dev_port}"
     print(f"数据库：{settings.database.path.resolve()}", flush=True)
     print(f"启动访问地址：{access_url}", flush=True)
-    if mode == "dev":
-        print(f"API 文档：{api_url}/api/docs", flush=True)
-    port_fields = "port（应用）或 dev_port（开发页面）" if mode == "dev" else "port"
+    print(f"API 文档：{api_url}/api/docs", flush=True)
+    port_fields = "port（应用）或 dev_port（开发页面）"
     print(
         f"若提示端口被占用，请修改 app.toml 的 [server].{port_fields} 后重启。",
         flush=True,
@@ -137,22 +130,20 @@ def main() -> int:
         "--port",
         str(settings.server.port),
     ]
-    if mode == "dev":
-        if os.name == "nt":
-            command = [sys.executable, str(ROOT / "scripts/windows_reload.py")]
-        else:
-            command.extend(["--reload", "--reload-dir", str(ROOT / "backend/src")])
+    if os.name == "nt":
+        command = [sys.executable, str(ROOT / "scripts/windows_reload.py")]
+    else:
+        command.extend(["--reload", "--reload-dir", str(ROOT / "backend/src")])
 
     processes: list[subprocess.Popen[bytes]] = []
     application: subprocess.Popen[bytes] | None = None
     try:
         application = spawn_process(command)
         processes.append(application)
-        if mode == "dev":
-            environment = os.environ.copy()
-            environment["FOLIO_API_TARGET"] = api_url
-            environment["FOLIO_DEV_PORT"] = str(settings.server.dev_port)
-            processes.append(spawn_process(frontend_command(), environment))
+        environment = os.environ.copy()
+        environment["FOLIO_API_TARGET"] = api_url
+        environment["FOLIO_DEV_PORT"] = str(settings.server.dev_port)
+        processes.append(spawn_process(frontend_command(), environment))
         while not stop_requested:
             for process in processes:
                 result = process.poll()

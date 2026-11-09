@@ -30,7 +30,7 @@ def check_application(source: Path, environment: dict[str, str], port: int) -> N
         / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     )
     launcher = subprocess.Popen(
-        [str(python), "scripts/run.py", "start"],
+        [str(python), "-m", "app.launcher", "start", "--no-browser"],
         cwd=source,
         env=environment,
         creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,

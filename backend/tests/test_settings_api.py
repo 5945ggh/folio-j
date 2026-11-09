@@ -71,6 +71,22 @@ async def create_provider(client: AsyncClient, **changes: object) -> dict[str, A
 
 
 @pytest.mark.asyncio
+async def test_data_location_reports_running_library_without_reloading_configuration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "学习 𠮷" / "app.db"
+    async with settings_client(database) as client:
+        monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(tmp_path / "another.db"))
+        response = await client.get("/api/settings/data-location")
+        assert response.status_code == 200, response.text
+        assert response.json() == {
+            "database_path": str(database.resolve()),
+            "data_directory": str(database.parent.resolve()),
+        }
+    assert not (tmp_path / "another.db").exists()
+
+
+@pytest.mark.asyncio
 async def test_settings_profile_styles_and_defaults_roundtrip(tmp_path: Path) -> None:
     database = tmp_path / "folio.db"
     async with settings_client(database) as client:

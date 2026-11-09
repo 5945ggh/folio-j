@@ -4,6 +4,74 @@
  */
 
 export interface paths {
+    "/_startup/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Startup Retry */
+        post: operations["startup_retry__startup_retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/_startup/retry-current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Startup Retry Current */
+        post: operations["startup_retry_current__startup_retry_current_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/_startup/select": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Startup Select */
+        post: operations["startup_select__startup_select_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/_startup/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Startup State */
+        get: operations["startup_state__startup_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analyses/{analysis_id}": {
         parameters: {
             query?: never;
@@ -1025,6 +1093,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/data-location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Data Location */
+        get: operations["getDataLocation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings/defaults": {
         parameters: {
             query?: never;
@@ -1708,6 +1793,13 @@ export interface components {
             target: number;
             /** Vocabulary Size */
             vocabulary_size: number | null;
+        };
+        /** DataLocationResponse */
+        DataLocationResponse: {
+            /** Data Directory */
+            data_directory: string;
+            /** Database Path */
+            database_path: string;
         };
         /** DefaultsInput */
         DefaultsInput: {
@@ -3636,6 +3728,35 @@ export interface components {
             /** Title */
             title?: string;
         };
+        /** StartupSelection */
+        StartupSelection: {
+            /** Directory */
+            directory: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "new" | "existing";
+        };
+        /** StartupState */
+        StartupState: {
+            /** Configured Path */
+            configured_path: string | null;
+            /** Default Directory */
+            default_directory: string;
+            /** Error */
+            error: string | null;
+            /** Ready */
+            ready: boolean;
+            /** Recovery */
+            recovery: boolean;
+            /** Retry Current Path */
+            retry_current_path: string | null;
+            /** Selected Path */
+            selected_path: string | null;
+            /** Warning */
+            warning: string | null;
+        };
         /** StyleInput */
         StyleInput: {
             /** Body Md */
@@ -4043,6 +4164,99 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    startup_retry__startup_retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartupState"];
+                };
+            };
+        };
+    };
+    startup_retry_current__startup_retry_current_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartupState"];
+                };
+            };
+        };
+    };
+    startup_select__startup_select_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartupSelection"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartupState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    startup_state__startup_state_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartupState"];
+                };
+            };
+        };
+    };
     getAnalysis: {
         parameters: {
             query?: {
@@ -6561,6 +6775,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getDataLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataLocationResponse"];
                 };
             };
         };

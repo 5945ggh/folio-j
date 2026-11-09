@@ -93,6 +93,8 @@ Reader 使用无脚本同源 iframe 和 CSP／sandbox 隔离作者样式，搜�
 
 Windows 实验性支持面向 Windows 11 x64、PowerShell 和 Chrome／Edge，可从源码运行或原生构建实验目录包。平台文件操作使用标准库 `fcntl`／`msvcrt`、Windows 启动子树使用 `ctypes` 调用 Job Object，不增加运行依赖。凭据及备份沿用用户目录继承权限，不新增 Windows ACL 管理；Windows CI 与实机验证状态见[验收记录](handovers/WINDOWS_ACCEPTANCE.md)。
 
+首次数据选择与启动恢复使用独立静态页面和 FastAPI 本机服务，不引入桌面窗口或文件选择依赖。学习库位置以 Windows 当前用户注册表／POSIX 独立 JSON 记录，均使用标准库；设置页通过已有生成客户端及 TanStack Query 只读查看实际运行路径。交互与兼容规则见[PRD 数据位置](PRD.md#数据位置与启动恢复)。
+
 ## 5. 仓库与工具
 
 - 采用 monorepo：`backend/`、`frontend/`、`config/`、`docs/`。

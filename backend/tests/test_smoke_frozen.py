@@ -29,6 +29,7 @@ def resources(tmp_path: Path) -> tuple[Path, Path]:
     write(repository, "backend/prompts/context/events_v1.j2", b"{{ events }}")
     write(repository, "backend/alembic/env.py", b"# migration environment")
     write(repository, "backend/alembic/versions/0001_initial.py", b"revision = 'initial'")
+    write(repository, "backend/static/startup/index.html", b"<html>Startup fixture</html>")
     write(repository, "backend/alembic/__pycache__/env.pyc", b"do not distribute")
     package = tmp_path / "目录包 package"
     shutil.copytree(repository, package / "_internal")
@@ -43,6 +44,7 @@ def resources(tmp_path: Path) -> tuple[Path, Path]:
         "backend/prompts/context/events_v1.j2",
         "backend/alembic/env.py",
         "backend/alembic/versions/0001_initial.py",
+        "backend/static/startup/index.html",
         "RELEASE.json",
     ],
 )
