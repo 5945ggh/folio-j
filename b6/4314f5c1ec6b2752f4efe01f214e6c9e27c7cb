@@ -1,0 +1,63 @@
+docs/DEVELOPMENT.md
+  s_3e2251961fffb1::t_1b58d4b023ce64 219,283
+  s_3e2251961fffb1::t_724fb12596187a 204,206,208
+  s_3e2251961fffb1::t_11bbfc23835ac8 9,67,178,181-182,184-185,188,192-203,205,207,209-211,213-214,218,255-258,260,264,266-267,275-282
+  s_3e2251961fffb1::t_f6cdee270bc529 212,215-217,220-254,259,261-263,265,268-274
+  s_3e2251961fffb1::t_12128e41edec39 190
+backend/tests/test_windows_launcher.py
+  s_3e2251961fffb1::t_69aaab81ce9407 1-42,44-55,57-70,73-122,124-158
+  s_3e2251961fffb1::t_7b4fbb93af9122 71
+  s_3e2251961fffb1::t_4bb4b494ffe06c 123
+  s_3e2251961fffb1::t_fd64d076299e5a 43,56,72
+scripts/smoke_frozen.py
+  s_3e2251961fffb1::t_65649b447622da 114,535,565-566
+backend/tests/test_launcher.py
+  s_3e2251961fffb1::t_27bba896e83eaf 4-5,10,16,196-205,209-220,224-245,249-264,270-306,310
+  s_3e2251961fffb1::t_6bfe0c8657ae05 206-208,221-223,246-248,307-309
+  s_3e2251961fffb1::t_4bb4b494ffe06c 265-269
+backend/src/app/launcher.py
+  s_3e2251961fffb1::t_007a32583285ff 7,13,82,84-85,90,93,100-105
+  s_3e2251961fffb1::t_4bb4b494ffe06c 81,83,86,94-95
+docs/handovers/WINDOWS_ACCEPTANCE.md
+  s_3e2251961fffb1::t_12128e41edec39 11,17,21,24-25,50-54,56-64,122,141,145
+  s_3e2251961fffb1::t_1b58d4b023ce64 55,94,96
+  s_3e2251961fffb1::t_f6cdee270bc529 3
+scripts/package_frozen.py
+  s_3e2251961fffb1::t_65649b447622da 18,78-94,201,203
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_3e2251961fffb1::t_c62409964328a3 13
+  s_3e2251961fffb1::t_626e1b3b8e8d3e 12
+.github/workflows/windows.yml
+  s_3e2251961fffb1::t_4ec4d0d72418fc 66-154
+docs/handovers/WINDOWS_FROZEN_ACCEPTANCE.md
+  s_3e2251961fffb1::t_c62409964328a3 1-20,31-36
+  s_3e2251961fffb1::t_724fb12596187a 21-30
+backend/tests/test_smoke_frozen.py
+  s_3e2251961fffb1::t_cfdc42bb374fb0 77-78,96-104
+docs/TECH_STACK.md
+  s_3e2251961fffb1::t_11bbfc23835ac8 12,92,94
+scripts/frozen/README.md
+  s_3e2251961fffb1::t_11bbfc23835ac8 5,9,11
+docs/ARCHITECTURE.md
+  s_3e2251961fffb1::t_c62409964328a3 696-697
+backend/tests/test_package_frozen.py
+  s_3e2251961fffb1::t_d4eb3650351835 1-68
+docs/handovers/README.md
+  s_3e2251961fffb1::t_c62409964328a3 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b64314f5c1ec6b2752f4efe01f214e6c9e27c7cb",
+  "prompts": {},
+  "sessions": {
+    "s_3e2251961fffb1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bfb6-ed13-7ef0-9859-e80d598006ff",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
