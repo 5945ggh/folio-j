@@ -130,7 +130,7 @@
 	right: 0;
 	height: 70px;
 	display: grid;
-	grid-template-columns: minmax(70px, 1fr) minmax(0, 3fr) minmax(40px, 1fr);
+	grid-template-columns: minmax(100px, 1fr) minmax(0, 3fr) minmax(152px, 1fr);
 	align-items: center;
 	padding: 0 24px;
 	gap: 12px;
@@ -142,14 +142,53 @@
 	-webkit-backdrop-filter: blur(3px);
 	backdrop-filter: blur(3px);
 }
-.reader-top > a {
-	justify-self: start;
+.reader-heading-navigation {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
 	color: var(--reader-muted);
 }
-.reader-top > button {
-	justify-self: end;
-	font-size: 22px;
+.reader-navigation-divider {
+	flex: none;
+	width: 1px;
+	height: 16px;
+	background: var(--reader-line);
+	pointer-events: none;
+}
+.reader-return-link {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	min-width: 0;
+	min-height: 44px;
+	padding: 0 6px;
+	border-radius: 6px;
+}
+.reader-return-link span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.reader-r1 .reader-navigation-icon {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 36px;
+	min-height: 44px;
+	border-radius: 6px;
 	color: var(--reader-muted);
+}
+.reader-r1 .reader-navigation-icon:hover,
+.reader-return-link:hover {
+	background: var(--reader-soft);
+	color: var(--reader-fg);
+}
+.reader-navigation-icon svg,
+.reader-return-link svg {
+	flex: none;
+	width: 20px;
+	height: 20px;
 }
 .reader-heading {
 	min-width: 0;
@@ -446,11 +485,19 @@
 	}
 	.reader-top {
 		padding: 0 14px;
-		grid-template-columns: 56px minmax(0, 1fr) 32px;
+		grid-template-columns: auto minmax(0, 1fr) auto;
 		gap: 6px;
 	}
-	.reader-top > a span {
-		font-size: 10px;
+	.reader-heading-navigation {
+		gap: 4px;
+	}
+	.reader-return-link {
+		justify-content: center;
+		width: 32px;
+		padding: 0;
+	}
+	.reader-return-link span {
+		display: none;
 	}
 	.reader-r1 .reader-viewport {
 		width: 100%;
@@ -547,6 +594,10 @@
 	left: auto;
 	right: 0;
 	transform: none;
+}
+.reader-heading-navigation [data-tooltip]::after {
+	left: 0;
+	right: auto;
 }
 .reader-book-info {
 	margin: 0 0 20px;

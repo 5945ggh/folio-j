@@ -34,6 +34,7 @@ import {
 import { InlineError } from "../Shared";
 import type { ContextCopySettings } from "../settings/context-copy-api";
 import { contextCopyKey } from "../settings/context-copy-cache";
+import { SettingsLink } from "../settings/SettingsNavigation";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "../speech";
 import { getSpeechController } from "../speech/browser";
 import {
@@ -190,6 +191,34 @@ import {
 } from "./vocabulary-navigation";
 
 const defaults: Settings = DEFAULT_READING_SETTINGS;
+function ReaderNavigationIcon({
+	name,
+}: {
+	name: "home" | "back" | "settings";
+}) {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.6"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			{name === "home" ? (
+				<path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9" />
+			) : name === "back" ? (
+				<path d="m14 6-6 6 6 6" />
+			) : (
+				<>
+					<path d="m9.5 3-.6 2.2-2 .9-2-.6-2.5 4.3L4 11.4v2.2l-1.6 1.6L5 19.5l2-.6 2 .9.6 2.2h5l.6-2.2 2-.9 2 .6 2.5-4.3-1.6-1.6v-2.2l1.6-1.6L19 5.5l-2 .6-2-.9-.5-2.2z" />
+					<circle cx="12" cy="12.5" r="3" />
+				</>
+			)}
+		</svg>
+	);
+}
 type ReaderPositionWriter = {
 	current: PositionQueue<Position> | null;
 	healthy: boolean;
@@ -1870,14 +1899,29 @@ function Reader({
 				inert={!toolsVisible}
 				aria-hidden={!toolsVisible}
 			>
-				<Link
-					to={returnTo.to}
-					state={returnTo.state}
-					onClick={leave}
-					aria-label={`返回${returnTo.label}`}
-				>
-					← <span>{returnTo.label}</span>
-				</Link>
+				<div className="reader-heading-navigation">
+					<Link
+						className="reader-navigation-icon reader-home-link"
+						to="/"
+						onClick={leave}
+						aria-label="首页（素材库）"
+						data-tooltip="首页（素材库）"
+					>
+						<ReaderNavigationIcon name="home" />
+					</Link>
+					<span className="reader-navigation-divider" aria-hidden="true" />
+					<Link
+						className="reader-return-link"
+						to={returnTo.to}
+						state={returnTo.state}
+						onClick={leave}
+						aria-label={`返回${returnTo.label}`}
+						data-tooltip={`返回${returnTo.label}`}
+					>
+						<ReaderNavigationIcon name="back" />
+						<span>返回{returnTo.label}</span>
+					</Link>
+				</div>
 				<div className="reader-heading">
 					<h1 title={book.title}>{book.title}</h1>
 					<p>
@@ -1929,6 +1973,15 @@ function Reader({
 					>
 						<CatalogIcon name="more" />
 					</button>
+					<SettingsLink
+						className="reader-navigation-icon"
+						to="/settings"
+						onClick={leave}
+						aria-label="全局设置"
+						data-tooltip="全局设置"
+					>
+						<ReaderNavigationIcon name="settings" />
+					</SettingsLink>
 				</div>
 			</header>
 			<div className="reader-alerts" aria-live="polite">

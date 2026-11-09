@@ -10,7 +10,13 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router";
+import {
+	Link,
+	type Location,
+	useLocation,
+	useNavigate,
+	useParams,
+} from "react-router";
 import { AnalysisEditor } from "./analysis/AnalysisEditor";
 import { AnalysisPanel } from "./analysis/AnalysisPanel";
 import type { AnalysisDetail } from "./analysis/api";
@@ -47,6 +53,7 @@ import {
 	type SegmentLocation,
 	updateSegmentLocation,
 } from "./navigation";
+import { useViewActivity } from "./navigation/view-activity";
 import { ConfirmDialog, InlineError } from "./Shared";
 import { changedSegmentFields, segmentEditFields } from "./segments/edit";
 import { NewAnalysisActions } from "./segments/NewAnalysisActions";
@@ -77,12 +84,19 @@ function saveConversationWidth(width: number) {
 	}
 }
 
-export function SegmentDetail() {
+export type SegmentSessionEntry = { segmentId: string; location: Location };
+
+export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 	const editSnapshot = useRef<Segment | null>(null);
-	const { id = "" } = useParams();
-	useStopSpeechOnLeave(id);
+	const params = useParams();
+	const id = entry?.segmentId ?? params.id ?? "";
+	const { active, activation } = useViewActivity();
+	const [checkedActivation, setCheckedActivation] = useState(activation);
+	const checked = checkedActivation === activation;
+	useStopSpeechOnLeave(id, active);
 	const navigate = useNavigate();
-	const location = useLocation();
+	const routedLocation = useLocation();
+	const location = entry?.location ?? routedLocation;
 	const {
 		analysisId: selectedAnalysis,
 		revisionId: selectedRevision,
@@ -129,6 +143,7 @@ export function SegmentDetail() {
 	const setChatOpen = (open: boolean) => {
 		updateLocation({ chatOpen: open });
 		requestAnimationFrame(() => {
+			if (activeId.current !== id) return;
 			if (open && compact) discussionClose.current?.focus();
 			else if (!open)
 				document.getElementById("segment-discussion-toggle")?.focus();
@@ -148,6 +163,7 @@ export function SegmentDetail() {
 		revisionId: string | null,
 		focusReturn = false,
 	) => {
+		if (activeId.current !== id) return;
 		if (analysisId && !selectedAnalysis)
 			analysisListScroll.current = readerRef.current?.scrollTop ?? null;
 		setPendingReadingScroll({
@@ -167,6 +183,8 @@ export function SegmentDetail() {
 		const reader = readerRef.current;
 		const section = analysisRef.current;
 		if (
+			!active ||
+			!checked ||
 			!pending ||
 			!reader ||
 			!section ||
@@ -188,14 +206,14 @@ export function SegmentDetail() {
 			section
 				.querySelector<HTMLButtonElement>("#analysis-list-return")
 				?.focus({ preventScroll: true });
-	}, [pendingReadingScroll, selectedAnalysis, selectedRevision]);
+	}, [
+		active,
+		checked,
+		pendingReadingScroll,
+		selectedAnalysis,
+		selectedRevision,
+	]);
 	const client = useQueryClient();
-	useEffect(() => {
-		activeId.current = id;
-		return () => {
-			activeId.current = null;
-		};
-	}, [id]);
 	const [editing, setEditing] = useState<
 		| "segment-more-trigger"
 		| "segment-original-trigger"
@@ -241,19 +259,51 @@ export function SegmentDetail() {
 	const segment = useQuery({
 		queryKey: queries.segment(id),
 		queryFn: () => getSegment(id),
+		enabled: active,
 	});
 	useEffect(() => {
-		if (!segment.isSuccess || !workspaceRef.current) return;
+		if (!active || checked) return;
+		let current = true;
+		// Keep the old view mounted but hidden until visibility has been verified.
+		void (async () => {
+			// A pre-departure read may contain a now-deleted Segment. Never reuse it
+			// as evidence for this return, even when it has not produced data yet.
+			await client.cancelQueries({
+				queryKey: queries.segment(id),
+				exact: true,
+			});
+			if (!current) return;
+			try {
+				await client.fetchQuery({
+					queryKey: queries.segment(id),
+					queryFn: () => getSegment(id),
+					staleTime: 0,
+					retry: false,
+				});
+			} catch {
+				// The query owns the error; keep the retained view hidden for retry.
+			} finally {
+				if (current) setCheckedActivation(activation);
+			}
+		})();
+		return () => {
+			current = false;
+		};
+	}, [active, checked, activation, client, id]);
+	useEffect(() => {
+		if (!active || !checked || !segment.isSuccess || !workspaceRef.current)
+			return;
 		const observer = new ResizeObserver(() => {
 			setWorkspaceWidth(workspaceRef.current?.clientWidth ?? 0);
 		});
 		observer.observe(workspaceRef.current);
 		return () => observer.disconnect();
-	}, [segment.isSuccess]);
+	}, [active, checked, segment.isSuccess]);
 	useLayoutEffect(() => {
 		const workspace = workspaceRef.current;
 		const dock = speechDockRef.current;
-		if (!segment.isSuccess || !workspace || !dock) return;
+		if (!active || !checked || !segment.isSuccess || !workspace || !dock)
+			return;
 		const updateHeight = () => {
 			workspace.style.setProperty(
 				"--segment-speech-height",
@@ -264,19 +314,21 @@ export function SegmentDetail() {
 		const observer = new ResizeObserver(updateHeight);
 		observer.observe(dock);
 		return () => observer.disconnect();
-	}, [segment.isSuccess]);
+	}, [active, checked, segment.isSuccess]);
 	useEffect(() => {
 		if (
+			active &&
+			checked &&
 			compact &&
 			chatOpen &&
 			readerRef.current?.contains(document.activeElement)
 		)
 			discussionClose.current?.focus();
-	}, [compact, chatOpen]);
+	}, [active, checked, compact, chatOpen]);
 	const source = useQuery({
 		queryKey: queries.source(segment.data?.source_id ?? ""),
 		queryFn: () => getSource(segment.data?.source_id ?? ""),
-		enabled: segment.isSuccess,
+		enabled: active && checked && segment.isSuccess,
 	});
 	const [conflictReadVersion, setConflictReadVersion] = useState(0);
 	const update = useMutation({
@@ -324,11 +376,19 @@ export function SegmentDetail() {
 		retry: false,
 	});
 	const current = segment.data;
+	const available = active && checked && segment.isSuccess;
+	activeId.current = available ? id : null;
+	useEffect(() => {
+		activeId.current = available ? id : null;
+		return () => {
+			activeId.current = null;
+		};
+	}, [available, id]);
 	return (
 		<SegmentFrame
 			returnTo={returnTo}
 			chatOpen={chatOpen}
-			available={segment.isSuccess}
+			available={available}
 			onToggleDiscussion={() => setChatOpen(!chatOpen)}
 			onEdit={() => {
 				update.reset();
@@ -339,7 +399,11 @@ export function SegmentDetail() {
 			}}
 			onDelete={() => setDeleting(true)}
 		>
-			{segment.isError ? (
+			{!checked ? (
+				<p className="segment-page-state" role="status">
+					正在读取片段…
+				</p>
+			) : segment.isError ? (
 				<div className="segment-page-state" role="alert">
 					<h1>
 						{segment.error instanceof RequestError &&
@@ -365,9 +429,13 @@ export function SegmentDetail() {
 				<p className="segment-page-state" role="status">
 					正在加载片段…
 				</p>
-			) : (
+			) : null}
+			{current && (
 				<div
 					className={`segment-shell ${chatOpen ? "" : "conversation-closed"}`}
+					hidden={!available}
+					inert={!available}
+					style={!available ? { display: "none" } : undefined}
 				>
 					<div
 						className="segment-workspace"
@@ -558,6 +626,7 @@ export function SegmentDetail() {
 							{workbenchMounted && (
 								<Workbench
 									key={current.id}
+									active={available}
 									headerAction={
 										<button
 											ref={discussionClose}

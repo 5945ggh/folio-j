@@ -12,14 +12,17 @@ import { MaterialsPage } from "./catalog/MaterialsPage";
 import { PageBoundary } from "./navigation/PageBoundary";
 import { readerSessionRoute } from "./navigation/reader-session-route";
 import { Shell } from "./Shared";
+import { segmentSessionRoute } from "./segments/segment-session-route";
 
 const ReaderSessionHost = lazy(() =>
 	import("./materials/ReaderSessionHost").then((page) => ({
 		default: page.ReaderSessionHost,
 	})),
 );
-const SegmentDetail = lazy(() =>
-	import("./SegmentPage").then((page) => ({ default: page.SegmentDetail })),
+const SegmentSessionHost = lazy(() =>
+	import("./segments/SegmentSessionHost").then((page) => ({
+		default: page.SegmentSessionHost,
+	})),
 );
 const SettingsPage = lazy(() =>
 	import("./settings/SettingsPage").then((page) => ({
@@ -48,19 +51,20 @@ function SourceRoute() {
 	return <SourceDetail key={id} />;
 }
 
-function SegmentRoute() {
-	const { id } = useParams();
-	return <SegmentDetail key={id} />;
-}
-
 export function App() {
 	const { pathname, state } = useLocation();
 	const sessionRoute = readerSessionRoute(pathname, state);
+	const segmentRoute = segmentSessionRoute(pathname, state);
 	return (
 		<>
 			{sessionRoute && (
 				<PageBoundary>
 					<ReaderSessionHost />
+				</PageBoundary>
+			)}
+			{segmentRoute && (
+				<PageBoundary>
+					<SegmentSessionHost />
 				</PageBoundary>
 			)}
 			<PageBoundary key={pathname}>
@@ -83,7 +87,7 @@ export const appRoutes = createRoutesFromElements(
 			element={<MaterialVocabularyPage />}
 		/>
 		<Route path="/materials/:id" element={null} />
-		<Route path="/segments/:id" element={<SegmentRoute />} />
+		<Route path="/segments/:id" element={null} />
 		<Route path="/settings" element={<SettingsPage />} />
 		<Route
 			path="*"

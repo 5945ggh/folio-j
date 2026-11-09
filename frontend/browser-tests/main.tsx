@@ -17,6 +17,7 @@ import { chapterRecords } from "./chapter-records";
 import { dictionaryInflectionLayout } from "./dictionary-inflection-layout";
 import { dictionarySettings } from "./dictionary-settings";
 import { explanationRegression } from "./explanation";
+import { focusedNavigation } from "./focused-navigation";
 import { materialImport } from "./material-import";
 import { materialVocabulary } from "./material-vocabulary";
 import { modelSetup } from "./model-setup";
@@ -48,6 +49,7 @@ import { sourceOnboarding } from "./source-onboarding";
 import { themeRegression } from "./theme";
 import { translationRegression } from "./translation";
 import { workbenchRegression } from "./workbench";
+import { workbenchActivityRegression } from "./workbench-activity";
 import { workbenchHistory } from "./workbench-history";
 import { workbenchRender } from "./workbench-render";
 
@@ -426,6 +428,8 @@ try {
 		["settings-models", settingsModels],
 		["model-setup", modelSetup],
 		["settings-return", settingsReturn],
+		["focused-navigation", focusedNavigation],
+		["workbench-activity", workbenchActivityRegression],
 		["dictionary-settings", dictionarySettings],
 		["app-theme", appTheme],
 		["reader-images", readerImages],

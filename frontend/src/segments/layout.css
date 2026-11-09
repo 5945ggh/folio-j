@@ -21,7 +21,7 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 14px;
+	gap: 4px;
 	padding: 14px 5px;
 	border-right: 1px solid var(--border);
 	background: var(--sidebar);
@@ -33,6 +33,7 @@
 	justify-content: center;
 	width: 44px;
 	height: 44px;
+	flex-shrink: 0;
 	padding: 0;
 	border: 0;
 	border-radius: 7px;
@@ -49,7 +50,7 @@
 	opacity: 0.45;
 }
 .app-shell.segment-study-shell .segment-tool-group {
-	margin-top: 28px;
+	margin-top: 38px;
 }
 .app-shell.segment-study-shell .segment-tool-more {
 	position: relative;
@@ -268,14 +269,15 @@
 	}
 	.app-shell.segment-study-shell .segment-tools {
 		flex-direction: row;
-		justify-content: space-between;
-		gap: 8px;
+		justify-content: flex-start;
+		gap: 4px;
 		padding: 6px 12px;
 		border-right: 0;
 		border-bottom: 1px solid var(--border);
 	}
 	.app-shell.segment-study-shell .segment-tool {
 		width: auto;
+		min-width: 44px;
 		padding: 0 8px;
 		gap: 6px;
 	}
@@ -286,6 +288,9 @@
 	.app-shell.segment-study-shell .segment-tool-group,
 	.app-shell.segment-study-shell .segment-tool-more {
 		margin: 0;
+	}
+	.app-shell.segment-study-shell .segment-tool-group {
+		margin-inline: auto;
 	}
 	.app-shell.segment-study-shell .segment-tools-menu {
 		left: auto;
@@ -299,7 +304,8 @@
 		transform: none;
 		max-width: 230px;
 	}
-	.app-shell.segment-study-shell .segment-tool-more .segment-tool-label {
+	.app-shell.segment-study-shell .segment-tool-more .segment-tool-label,
+	.app-shell.segment-study-shell .segment-settings-link .segment-tool-label {
 		left: auto;
 		right: 0;
 	}
@@ -308,6 +314,11 @@
 	}
 	.app-shell.segment-study-shell .segment-identity {
 		margin-bottom: 20px;
+	}
+}
+@media (max-width: 420px) {
+	.app-shell.segment-study-shell .segment-tool-mobile-label {
+		display: none;
 	}
 }
 

@@ -2,15 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Link, type LinkProps, useLocation } from "react-router";
 import { Icon } from "../catalog/LibraryTools";
+import { getSegment, getSource, queries } from "../content";
 import { getMaterial, materialKeys } from "../materials/api";
+import { getSegmentProvenance } from "../materials/study-api";
 import {
 	type ReturnDestination,
-	settingsReadingReturn,
+	settingsPageReturn,
 	settingsReturnState,
 } from "../navigation";
 import "./settings-reading-return.css";
 
-/** Preserve a reader's return trail while moving between settings sections. */
+/** Preserve the learning page's return trail while moving between settings sections. */
 export function SettingsLink(props: Omit<LinkProps, "state">) {
 	const location = useLocation();
 	return <Link {...props} state={settingsReturnState(location)} />;
@@ -18,22 +20,91 @@ export function SettingsLink(props: Omit<LinkProps, "state">) {
 
 export function SettingsReadingReturn() {
 	const location = useLocation();
-	const reader = settingsReadingReturn(location.state);
+	const reader = settingsPageReturn(location.state);
 	return reader ? <ReadingReturn key={reader.to} reader={reader} /> : null;
 }
 
-function ReadingReturn({ reader }: { reader: ReturnDestination }) {
-	const materialId =
-		new URL(reader.to, "https://folio.invalid").pathname.split("/")[2] ?? "";
-	const book = useQuery({
-		queryKey: materialKeys.book(materialId),
-		queryFn: () => getMaterial(materialId),
-		// Reuse the book already loaded by the reader; direct settings entries can read its title.
+/** Optional context reuses the learning page's cache and never gates navigation. */
+function SegmentReturnIdentity({ segmentId }: { segmentId: string }) {
+	const segment = useQuery({
+		queryKey: queries.segment(segmentId),
+		queryFn: () => getSegment(segmentId),
 		staleTime: Number.POSITIVE_INFINITY,
 		retry: false,
 	});
+	const sourceId = segment.data?.source_id ?? "";
+	const source = useQuery({
+		queryKey: queries.source(sourceId),
+		queryFn: () => getSource(sourceId),
+		enabled: segment.isSuccess && Boolean(sourceId),
+		staleTime: Number.POSITIVE_INFINITY,
+		retry: false,
+	});
+	const reference = segment.data?.material_provenance;
+	const origin = useQuery({
+		queryKey: ["segments", segmentId, "material-provenance"],
+		queryFn: ({ signal }) => getSegmentProvenance(segmentId, signal),
+		enabled: segment.isSuccess && Boolean(reference),
+		staleTime: Number.POSITIVE_INFINITY,
+		retry: false,
+	});
+	const text = segment.isSuccess
+		? segment.data.text.trim().replace(/\s+/gu, " ")
+		: "";
+	// Bound the live-region announcement as well as the visible two-line preview.
+	const characters = [...text];
+	const excerpt =
+		characters.length > 120 ? `${characters.slice(0, 120).join("")}…` : text;
+	const sourceTitle =
+		source.isSuccess && source.data.id === sourceId
+			? source.data.title.trim()
+			: "";
+	const bookTitle =
+		reference &&
+		origin.isSuccess &&
+		origin.data.segment_id === segmentId &&
+		origin.data.status === "resolved" &&
+		origin.data.material_provenance?.material_id === reference.material_id
+			? origin.data.title?.trim()
+			: undefined;
+	const sourceLabel = sourceTitle
+		? `来源：${sourceTitle}`
+		: segment.isError || source.isError
+			? "来源信息暂不可用"
+			: "正在读取来源…";
+	const attribution = `${sourceLabel}${bookTitle ? ` · 《${bookTitle}》` : ""}`;
+	return (
+		<>
+			<p
+				className="settings-reading-notice-excerpt"
+				lang={excerpt ? "ja" : undefined}
+				title={excerpt || undefined}
+			>
+				{excerpt ? `「${excerpt}」` : "学习片段"}
+			</p>
+			<p className="settings-reading-notice-source" title={attribution}>
+				{attribution}
+			</p>
+		</>
+	);
+}
+
+function ReadingReturn({ reader }: { reader: ReturnDestination }) {
+	const isReader = reader.to.startsWith("/materials/");
+	const entryId =
+		new URL(reader.to, "https://folio.invalid").pathname.split("/")[2] ?? "";
+	const book = useQuery({
+		queryKey: materialKeys.book(entryId),
+		queryFn: () => getMaterial(entryId),
+		// Reuse the book already loaded by the reader; direct settings entries can read its title.
+		staleTime: Number.POSITIVE_INFINITY,
+		retry: false,
+		enabled: isReader,
+	});
 	const title =
 		book.data?.title || (reader.label !== "阅读" ? reader.label : "原书");
+	const action = isReader ? "继续阅读" : "返回片段";
+	const accessibleLabel = isReader ? `继续阅读《${title}》` : "返回学习片段";
 	const [dismissed, setDismissed] = useState(false);
 	const headerLink = useRef<HTMLAnchorElement>(null);
 	return (
@@ -44,15 +115,20 @@ function ReadingReturn({ reader }: { reader: ReturnDestination }) {
 				className="settings-reading-return"
 				to={reader.to}
 				state={reader.state}
-				aria-label={`继续阅读《${title}》`}
-				title={`继续阅读《${title}》`}
+				aria-label={accessibleLabel}
+				title={accessibleLabel}
 			>
 				<span aria-hidden="true">←</span>
-				<span>继续阅读</span>
-				<span className="settings-reading-return-title">《{title}》</span>
+				<span>{action}</span>
+				{isReader && (
+					<span className="settings-reading-return-title">《{title}》</span>
+				)}
 			</Link>
 			{!dismissed && (
-				<aside className="settings-reading-notice" aria-label="阅读返回提示">
+				<aside
+					className="settings-reading-notice"
+					aria-label={isReader ? "阅读返回提示" : "片段返回提示"}
+				>
 					<span className="settings-reading-notice-icon" aria-hidden="true">
 						<Icon name="book" />
 					</span>
@@ -63,17 +139,20 @@ function ReadingReturn({ reader }: { reader: ReturnDestination }) {
 						aria-atomic="true"
 					>
 						<p className="settings-reading-notice-context">
-							正在为这本书调整设置
+							{isReader ? "刚才在读" : "刚才在看"}
 						</p>
-						<p className="settings-reading-notice-title" title={title}>
-							《{title}》
-						</p>
+						{isReader && (
+							<p className="settings-reading-notice-title" title={title}>
+								《{title}》
+							</p>
+						)}
+						{!isReader && <SegmentReturnIdentity segmentId={entryId} />}
 					</div>
 					<button
 						className="settings-reading-notice-close"
 						type="button"
-						aria-label="关闭阅读返回提示"
-						title="关闭提示，仍可从页头继续阅读"
+						aria-label={isReader ? "关闭阅读返回提示" : "关闭片段返回提示"}
+						title={`关闭提示，仍可从页头${action}`}
 						onClick={() => {
 							setDismissed(true);
 							headerLink.current?.focus();
@@ -97,7 +176,7 @@ function ReadingReturn({ reader }: { reader: ReturnDestination }) {
 						to={reader.to}
 						state={reader.state}
 					>
-						继续阅读 <span aria-hidden="true">→</span>
+						{action} <span aria-hidden="true">→</span>
 					</Link>
 				</aside>
 			)}

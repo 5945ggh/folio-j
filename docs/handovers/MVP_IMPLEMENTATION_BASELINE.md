@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-11-07。书籍可选清理学习积累已实现并通过工程验证，实施起点为 `main 10d4b733`，见[本轮范围与验证](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)。此前编辑与偏好保护减负已完成，代码核对到 `7f8aabc3`，起点为 `main 165e85f5`，验证见[本轮验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)。即时查词辅助选项见[查词选项验收](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)。其余工程、设备和使用验收仍以对应记录的版本及环境为准。
+> 状态核对：2026-11-09。阅读与片段全局导航的本地整合及统一浏览器复验见[本轮验收](reading-practice/FOCUSED_NAVIGATION_ACCEPTANCE.md)。书籍可选清理学习积累已实现并通过工程验证，实施起点为 `main 10d4b733`，见[范围与验证](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)。此前编辑与偏好保护减负已完成，代码核对到 `7f8aabc3`，起点为 `main 165e85f5`，验证见[减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)。即时查词辅助选项见[查词选项验收](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)。其余工程、设备和使用验收仍以对应记录的版本及环境为准。
 > 本文件汇总当前能力、实现缺口和验收入口。产品范围见 [PRD](../PRD.md)，领域含义见 [GLOSSARY](../GLOSSARY.md)，技术选型见 [TECH_STACK](../TECH_STACK.md)；具体实现由[架构](../ARCHITECTURE.md)维护。
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
@@ -17,6 +17,7 @@
 
 | 能力 | 当前能力与边界 | 验收依据 |
 | --- | --- | --- |
+| 阅读与片段全局导航 | `main fa284419` 起点的全局导航改动已在本地提交并合入 `main`：首页统一回 `/`（当前素材库），阅读器顶栏与片段工具栏提供全局设置；设置返回直接来处并保留父链，片段本次设置往返保留讨论草稿、讲解与滚动，返回重新核验可用性，隐藏页面不抢导航或自动发起新调用。刷新与退出该范围后释放；原书仍沿用十分钟保活。尚未推送或发布 | [本轮验收](reading-practice/FOCUSED_NAVIGATION_ACCEPTANCE.md)、[页面契约](../INFORMATION_ARCHITECTURE.md#设置顶部分类) |
 | 设置返回与原地模型配置 | 阅读进入翻译／词典设置显示可关闭的书名返回提示与页头入口，分类与服务管理间保留来处及提示关闭状态；沿用有界阅读保活和返回复核，保留翻译查看目标及语境草稿。讨论与 AI 讲解原地复用模型服务配置，保留本页输入；缺模型意图恢复后需明确继续，不自动调用或改默认值。无新增迁移或依赖，真实模型与实体触屏未测 | [返回链浏览器回归](../../frontend/browser-tests/settings-return.tsx)、[模型配置浏览器回归](../../frontend/browser-tests/model-setup.tsx)、[页面契约](../INFORMATION_ARCHITECTURE.md#设置顶部分类) |
 | 编辑与删除确认 | Analysis 改名后写生效；Source 只提交改动字段并提供普通放弃提醒；Source／Segment／Analysis／书籍删除保留初次影响及对象身份，不再提交前复核计数 | [减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md) |
 | 翻译写入口收缩 | 独立 adopt 与单版删除退出；现行片段原子创建、Adoption 收据与历史读取、整组删除及任务门禁保留 | [减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md) |

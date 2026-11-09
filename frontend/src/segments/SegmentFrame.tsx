@@ -1,8 +1,13 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { ReturnDestination } from "../navigation";
+import { SettingsLink } from "../settings/SettingsNavigation";
 
-function ToolIcon({ name }: { name: "back" | "chat" | "more" }) {
+function ToolIcon({
+	name,
+}: {
+	name: "home" | "back" | "chat" | "more" | "settings";
+}) {
 	return (
 		<svg
 			aria-hidden="true"
@@ -15,7 +20,14 @@ function ToolIcon({ name }: { name: "back" | "chat" | "more" }) {
 			strokeLinecap="round"
 			strokeLinejoin="round"
 		>
-			{name === "back" ? (
+			{name === "home" ? (
+				<path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9" />
+			) : name === "settings" ? (
+				<>
+					<path d="m9.5 3-.6 2.2-2 .9-2-.6-2.5 4.3L4 11.4v2.2l-1.6 1.6L5 19.5l2-.6 2 .9.6 2.2h5l.6-2.2 2-.9 2 .6 2.5-4.3-1.6-1.6v-2.2l1.6-1.6L19 5.5l-2 .6-2-.9-.5-2.2z" />
+					<circle cx="12" cy="12.5" r="3" />
+				</>
+			) : name === "back" ? (
 				<path d="m14 5-7 7 7 7M7 12h12" />
 			) : name === "chat" ? (
 				<path d="M20 11.5a8 8 0 0 1-8 8 8.5 8.5 0 0 1-3.3-.7L4 20l1.2-4.7A8 8 0 1 1 20 11.5Z" />
@@ -75,6 +87,16 @@ export function SegmentFrame({
 	return (
 		<div className="app-shell segment-study-shell">
 			<nav className="segment-tools" aria-label="片段工具">
+				<Link
+					className="segment-tool"
+					to="/"
+					aria-label="首页（素材库）"
+					title="首页（素材库）"
+				>
+					<ToolIcon name="home" />
+					<span className="segment-tool-mobile-label">首页</span>
+					<span className="segment-tool-label">首页（素材库）</span>
+				</Link>
 				<Link
 					className="segment-tool"
 					to={returnTo.to}
@@ -146,6 +168,16 @@ export function SegmentFrame({
 						</div>
 					)}
 				</div>
+				<SettingsLink
+					className="segment-tool segment-settings-link"
+					to="/settings"
+					aria-label="全局设置"
+					title="全局设置"
+				>
+					<ToolIcon name="settings" />
+					<span className="segment-tool-mobile-label">设置</span>
+					<span className="segment-tool-label">全局设置</span>
+				</SettingsLink>
 			</nav>
 			<main className="segment-study-main">
 				{children}

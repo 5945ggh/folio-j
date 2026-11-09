@@ -19,13 +19,13 @@ export function emptyRetainedSession<T>(): RetainedSession<T> {
 	};
 }
 
-/** One retained view; a lease starts on departure and never extends while away. */
+/** One retained view; an optional lease starts on departure and never extends while away. */
 export function advanceRetainedSession<T>(
 	state: RetainedSession<T>,
 	current: RetainedEntry<T> | null,
 	retain: boolean,
 	now: number,
-	retentionMs = DEFAULT_RETENTION_MS,
+	retentionMs: number | null = DEFAULT_RETENTION_MS,
 ): RetainedSession<T> {
 	const expired = state.expiresAt !== null && now >= state.expiresAt;
 	if (current) {
@@ -48,12 +48,12 @@ export function advanceRetainedSession<T>(
 		};
 	}
 	if (!state.entry) return state;
-	if (expired || !retain || retentionMs <= 0)
+	if (expired || !retain || (retentionMs !== null && retentionMs <= 0))
 		return { ...emptyRetainedSession<T>(), instance: state.instance };
 	if (!state.active) return state;
 	return {
 		...state,
 		active: false,
-		expiresAt: now + retentionMs,
+		expiresAt: retentionMs === null ? null : now + retentionMs,
 	};
 }

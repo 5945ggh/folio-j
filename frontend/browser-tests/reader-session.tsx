@@ -169,7 +169,7 @@ export async function readerSession(
 			}
 		}
 		let data = readerSessionFixtureData(path, {
-			realApp,
+			realApp: realApp || retained,
 			invalidProvenance,
 			addedStudyRecord,
 		});

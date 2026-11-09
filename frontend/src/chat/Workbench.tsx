@@ -1004,6 +1004,7 @@ function ThreadPanel({
 }
 
 export function Workbench({
+	active: viewActive = true,
 	headerAction,
 	segment,
 	explainToken,
@@ -1013,6 +1014,7 @@ export function Workbench({
 	onJobAccepted,
 	onOpenArtifact,
 }: {
+	active?: boolean;
 	headerAction?: ReactNode;
 	segment: Segment;
 	explainToken: string | null;
@@ -1059,6 +1061,12 @@ export function Workbench({
 	const [manualExplanationToken, setManualExplanationToken] = useState<
 		string | null
 	>(null);
+	const viewActiveRef = useRef(viewActive);
+	viewActiveRef.current = viewActive;
+	useEffect(() => {
+		// Leaving to settings consumes only the not-yet-submitted automatic intent.
+		if (!viewActive && explainToken) setManualExplanationToken(explainToken);
+	}, [viewActive, explainToken]);
 	function configureModels(event: MouseEvent<HTMLButtonElement>) {
 		const popup = event.currentTarget.closest<HTMLElement>("[popover]");
 		if (popup) {
@@ -1136,9 +1144,11 @@ export function Workbench({
 		}) => createThread(segment.id, requestId, modelId),
 		onSuccess: (item) => {
 			setCreateKey(null);
-			setSelected(item.id);
-			onSelectThread(item.id);
-			setView("detail");
+			if (viewActiveRef.current) {
+				setSelected(item.id);
+				onSelectThread(item.id);
+				setView("detail");
+			}
 			void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
 		},
 		onError: (error) => {
@@ -1243,14 +1253,17 @@ export function Workbench({
 							: new Error("提交失败"),
 				}));
 			}
-			setSelected(item.id);
-			onSelectThread(item.id);
-			setView("detail");
+			if (viewActiveRef.current) {
+				setSelected(item.id);
+				onSelectThread(item.id);
+				setView("detail");
+			}
 			void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
 		},
 	});
 	useEffect(() => {
 		if (
+			!viewActive ||
 			!explainToken ||
 			configuringModels ||
 			manualExplanationToken === explainToken ||
@@ -1274,6 +1287,7 @@ export function Workbench({
 			segmentRevision: segment.revision,
 		});
 	}, [
+		viewActive,
 		explainToken,
 		configuringModels,
 		manualExplanationToken,

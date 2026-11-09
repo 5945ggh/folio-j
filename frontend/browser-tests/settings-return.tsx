@@ -1,4 +1,5 @@
-import { Link } from "react-router";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
@@ -17,10 +18,19 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 	const check: BrowserHarness["check"] = h.check;
 	const params = new URLSearchParams(location.search);
 	const preview = params.has("preview");
-	document.documentElement.dataset.theme =
-		params.get("theme") === "dark" ? "dark" : "light";
-	if (preview)
-		document.querySelector<HTMLElement>("#result")?.setAttribute("hidden", "");
+	const capture = params.has("capture");
+	let navigate: ReturnType<typeof useNavigate> | undefined;
+	function Navigator() {
+		const go = useNavigate();
+		useEffect(() => {
+			navigate = go;
+		}, [go]);
+		return null;
+	}
+	const { startAppTheme } = await import("../src/theme/browser");
+	startAppTheme().select(params.get("theme") === "dark" ? "dark" : "light");
+	// Keep the harness output from displacing the full-height application surface.
+	document.querySelector<HTMLElement>("#result")?.setAttribute("hidden", "");
 	const bookTitle = params.has("long-title")
 		? "夏目漱石作品集：坊っちゃん・吾輩は猫である・こころを原文で読む"
 		: fixture.book.title;
@@ -154,7 +164,10 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 	}
 	const sourceTo = "/sources/source?view=materials&page=2";
 	const dispose = await h.mount(
-		<App />,
+		<>
+			<Navigator />
+			<App />
+		</>,
 		"/",
 		sourceTo,
 		appRoutes.map((route) =>
@@ -280,13 +293,27 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 				"Translation settings must expose a validated return link",
 			);
 			check(
+				container.querySelector(".settings-reading-notice-context")
+					?.textContent === "刚才在读" &&
+					container.querySelector(".settings-reading-notice-title")
+						?.textContent === `《${bookTitle}》` &&
+					container
+						.querySelector(".settings-reading-notice-action")
+						?.textContent?.trim() === "继续阅读 →",
+				"Reader return notice must identify the last reading context, full book title and continue-reading action",
+			);
+			await until(
+				() => frames.every((frame) => !frame.getClientRects().length),
+				"Settings must finish suspending the reader surface after its route commits",
+			);
+			check(
 				frames.every(
 					(frame, index) =>
 						frame.isConnected &&
 						frame.contentDocument === documents[index] &&
 						!frame.getClientRects().length,
 				),
-				"Settings must suspend, not dispose, reader documents",
+				`Settings must suspend, not dispose, reader documents: ${JSON.stringify(frames.map((frame, index) => ({ connected: frame.isConnected, sameDocument: frame.contentDocument === documents[index], rects: frame.getClientRects().length })))}`,
 			);
 		};
 		const returnToReader = async (viaNotice = false) => {
@@ -367,8 +394,19 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 			"Bottom settings controls must scroll clear of the floating notice",
 		);
 		check(
-			headerReturn.textContent?.includes(bookTitle),
-			"Page header must name the return book",
+			headerReturn.textContent?.includes(bookTitle) &&
+				headerReturn.textContent.includes("继续阅读"),
+			"Page header must name the return book and continue-reading action",
+		);
+		const noticeTitle = notice.querySelector<HTMLElement>(
+			".settings-reading-notice-title",
+		);
+		check(
+			noticeTitle &&
+				noticeTitle.title === bookTitle &&
+				getComputedStyle(noticeTitle).whiteSpace === "nowrap" &&
+				getComputedStyle(noticeTitle).textOverflow === "ellipsis",
+			"Reader notice must preserve the full book title while visually limiting it to one line",
 		);
 		if (preview)
 			return "settings return preview: contextual return notice and header action";
@@ -468,8 +506,26 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 				!container.querySelector(".settings-reading-notice"),
 			"Independent settings must not invent a reading return",
 		);
+		if (capture) {
+			check(navigate, "Capture must use the real data router");
+			navigate("/settings?section=appearance", {
+				state: {
+					returnTo: {
+						to: `/materials/${fixture.materialId}`,
+						label: "阅读",
+						parent: { to: sourceTo, label: "原来源" },
+					},
+				},
+			});
+			await until(
+				() =>
+					container.querySelector(".settings-reading-notice-title")
+						?.textContent === `《${bookTitle}》`,
+				"Final capture must show the reader return notice on settings",
+			);
+		}
 		return `settings return ${innerWidth}px: actual App; trailing-slash entry; exact reader/catalog return trail; same documents/detail/context; model settings save; provider navigation; failed record refresh retry; dismissal and header fallback; section persistence and new-trip reset; independent settings exclusion; no translation generation`;
 	} finally {
-		if (!preview) dispose();
+		if (!preview && !capture) dispose();
 	}
 }

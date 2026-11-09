@@ -30,11 +30,12 @@ function useDeviceSpeech() {
 	return { controller, state };
 }
 /** Call once on each reading/segment page; scopeKey also clears same-route target navigation. */
-export function useStopSpeechOnLeave(scopeKey?: string) {
+export function useStopSpeechOnLeave(scopeKey?: string, active = true) {
 	useEffect(() => {
 		void scopeKey;
+		if (!active) return;
 		return () => getSpeechController().dismiss();
-	}, [scopeKey]);
+	}, [scopeKey, active]);
 }
 function SpeechRate({ onPreferenceChange }: { onPreferenceChange(): void }) {
 	const { state, controller } = useDeviceSpeech();

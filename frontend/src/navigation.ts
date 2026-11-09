@@ -209,14 +209,29 @@ export function returnState(
 	};
 }
 
-/** Settings retain only an explicit return to a reader, including its parent trail. */
+/** Settings return only to an explicit, validated reader or learning segment. */
+export function settingsPageReturn(state: unknown): ReturnDestination | null {
+	const destination = returnDestination(state, { to: "", label: "" });
+	return /^\/(?:materials|segments)\/[A-Za-z0-9_-]+(?:[?#]|$)/.test(
+		destination.to,
+	)
+		? destination
+		: null;
+}
+
+/** Find the associated reader within the validated learning page's bounded parent trail. */
 export function settingsReadingReturn(
 	state: unknown,
 ): ReturnDestination | null {
-	const destination = returnDestination(state, { to: "", label: "" });
-	return /^\/materials\/[A-Za-z0-9_-]+\/?(?:[?#]|$)/.test(destination.to)
-		? destination
-		: null;
+	let destination = settingsPageReturn(state);
+	while (destination) {
+		if (/^\/materials\/[A-Za-z0-9_-]+(?:[?#]|$)/.test(destination.to))
+			return destination;
+		destination = destination.state
+			? settingsPageReturn(destination.state)
+			: null;
+	}
+	return null;
 }
 
 export function settingsReturnState(location: {
@@ -225,20 +240,28 @@ export function settingsReturnState(location: {
 	hash: string;
 	state: unknown;
 }): ReturnDestination["state"] {
-	if (/^\/materials\/[A-Za-z0-9_-]+\/?$/i.test(location.pathname))
+	if (
+		/^\/(?:materials|segments)\/[A-Za-z0-9_-]+\/?$/i.test(location.pathname)
+	) {
+		const isReader = /^\/materials\//i.test(location.pathname);
 		return returnState(
 			{
-				to: `${location.pathname.replace(/\/$/, "").replace(/^\/materials/i, "/materials")}${location.search}${location.hash}`,
-				label: "阅读",
+				to: `${location.pathname.replace(/\/$/, "").replace(/^\/(materials|segments)/i, (path) => path.toLowerCase())}${location.search}${location.hash}`,
+				label: isReader ? "阅读" : "片段",
 			},
-			returnDestination(location.state, CATALOG_FALLBACK),
+			returnDestination(
+				location.state,
+				isReader ? CATALOG_FALLBACK : { to: "/sources", label: "来源目录" },
+			),
 			"/settings",
 		);
-	const reader = settingsReadingReturn(location.state);
-	return reader
+	}
+	if (!/^\/settings\/?$/i.test(location.pathname)) return undefined;
+	const destination = settingsPageReturn(location.state);
+	return destination
 		? returnState(
-				reader,
-				reader.state ? returnDestination(reader.state) : undefined,
+				destination,
+				destination.state ? returnDestination(destination.state) : undefined,
 				"/settings",
 			)
 		: undefined;

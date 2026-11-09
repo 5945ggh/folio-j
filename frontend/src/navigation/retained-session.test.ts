@@ -86,3 +86,34 @@ test("active query changes preserve the instance and a zero lease disables reten
 	assert.equal(changed.activation, first.activation);
 	assert.equal(advanceRetainedSession(changed, null, true, 2, 0).entry, null);
 });
+
+test("a settings-scoped draft survives until explicit return or scope exit without an idle timeout", () => {
+	const opened = advanceRetainedSession(
+		emptyRetainedSession<string>(),
+		{ key: "segment", value: "draft" },
+		false,
+		0,
+		null,
+	);
+	const settings = advanceRetainedSession(opened, null, true, 1, null);
+	assert.equal(settings.active, false);
+	assert.equal(settings.expiresAt, null);
+	assert.equal(
+		advanceRetainedSession(settings, null, true, 3_600_000, null),
+		settings,
+	);
+	const returned = advanceRetainedSession(
+		settings,
+		opened.entry,
+		false,
+		3_600_001,
+		null,
+	);
+	assert.equal(returned.instance, opened.instance);
+	assert.equal(returned.activation, 1);
+	assert.equal(returned.entry?.value, "draft");
+	assert.equal(
+		advanceRetainedSession(settings, null, false, 3_600_002, null).entry,
+		null,
+	);
+});

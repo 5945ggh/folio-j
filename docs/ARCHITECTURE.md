@@ -667,7 +667,7 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 
 收起讨论与返回讨论列表不卸载当前挂载的ThreadPanel，不等同于停止任务；保留本页草稿、待核实提交与审核补充要求。Segment按身份切换时重新挂载以隔离局部状态，同一Segment的查询参数变化不重新挂载。生成与审核继续使用已有Job／Run和确切成果引用，不新增后台协议或自动模型调用。视觉验收覆盖长原文与讲解对照、桌面独立滚动、窄屏和返回路径。
 
-`settings/SettingsNavigation.tsx` 统一生成与传递已校验的阅读返回链，设置分类和服务入口共用；悬浮阅读提示的关闭状态仅属于当前设置往返，跨分类保留，离开设置后释放，不改变返回链或阅读会话。书名复用材料查询缓存。`ReaderSessionHost` 沿用十分钟保活与返回复核，不在 Storage 保存临时翻译草稿。`MaterialReader` 保留同章已发布记录用于维持详情身份，暂停与恢复刷新期间不据临时空记录关闭浮卡；刷新失败保留目标并显示重试，成功后才协调失效记录。`TranslationSession.leaveForSettings()` 消费尚未执行的自动意图，保留草稿与已受理请求。
+`settings/SettingsNavigation.tsx` 统一生成与传递已校验的阅读器／片段返回链，设置分类和服务入口共用；返回提示的关闭状态仅属于当前设置往返，跨分类保留，离开设置后释放。`settingsPageReturn` 取得直接来处，`settingsReadingReturn` 沿有界父链识别关联原书；书名复用材料查询缓存。`ReaderSessionHost` 沿用十分钟保活与返回复核。`SegmentSessionHost` 复用 `advanceRetainedSession`，仅在当前片段的明确设置往返范围内保留一个实例，租期取空表示按路径退出释放，避免配置期间因超时丢失讨论草稿；不写入 Storage。片段入口显式传入冻结的身份与 URL，`ViewActivity` 控制暂停，后台回调不能导航设置页；返回重新读取片段，失败时隐藏旧正文并保留挂载及输入供重试。暂停停止原朗读与布局采样，尚未发起的自动讲解意图转为显式继续。`MaterialReader` 保留同章已发布记录用于维持详情身份，暂停与恢复刷新期间不据临时空记录关闭浮卡；刷新失败保留目标并显示重试，成功后才协调失效记录。`TranslationSession.leaveForSettings()` 消费尚未执行的自动意图，保留草稿与已受理请求。
 
 `settings/ModelSetupDialog.tsx` 在原页复用 `ProviderSettings` 与设置草稿保护，服务／模型变更通过既有 Query 更新刷新讨论选择列表，不另建接入表单或跨页草稿存储。Workbench 的配置显隐与按请求身份标记的显式继续状态阻止缺模型讲解在配置恢复后自动提交；已经受理的任务继续沿既有协调器执行。
 
@@ -683,7 +683,7 @@ C2 将“保存为学习片段”的目标快照、语境预装和草稿编辑�
 
 当前前端按页面及 `catalog`／`materials`／`chat`／`analysis`／`settings` 模块组织。API 类型在 `api/schema.d.ts` 生成，各模块 `api.ts` 封装调用，TanStack Query 维护查询与 mutation；讨论推进见 `chat/discussion.ts`，阅读位置队列见 `materials/persistence.ts`。后台状态由轮询读取。
 
-默认素材库同步加载，阅读会话宿主、片段、来源、书籍详情与设置页面通过模块顶层 `React.lazy` 按路由加载，公共依赖和样式由 Vite 自动拆分。阅读、片段及带有效阅读返回链的设置路径共用稳定的 `PageBoundary` 和 `ReaderSessionHost`，挂载判定沿用 Router 的 `matchRoutes`，设置仅保留与当前材料身份一致的会话；真实 DataRouter 注册页面路由，宿主显式接收当前阅读入口并维护保活实例。其他页面的错误边界按 pathname 重置，查询参数变化保留组件身份。等待时显示加载状态，代码加载失败提供重新加载入口；现有导航、位置与草稿规则由各页面继续维护。构建和冷加载比较见[路由加载验收](handovers/archived/ROUTE_LOADING_ACCEPTANCE.md)。
+默认素材库同步加载，阅读与片段会话宿主、来源、书籍详情与设置页面通过模块顶层 `React.lazy` 按路由加载，公共依赖和样式由 Vite 自动拆分。`ReaderSessionHost` 在阅读、片段及带关联原书返回链的设置路径保持稳定；`SegmentSessionHost` 在片段及以该片段为直接来处的设置路径保持稳定，各自使用独立的 `PageBoundary`。挂载判定沿用 Router 的 `matchRoutes`，设置只保留身份相符的实例；真实 DataRouter 注册页面路由，宿主显式传递冻结的身份与入口 URL。其他页面的错误边界按 pathname 重置，查询参数变化保留组件身份。等待时显示加载状态，代码加载失败提供重新加载入口；现有导航、位置与草稿规则由各页面继续维护。构建和冷加载比较见[路由加载验收](handovers/archived/ROUTE_LOADING_ACCEPTANCE.md)。
 
 ## 7. 当前仓库目录
 
