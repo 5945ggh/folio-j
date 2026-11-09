@@ -34,3 +34,11 @@ Windows 构建器直接输出 ZIP，POSIX 平台继续输出保留权限与符�
 修复提交后，从包含最新提交的 `main` 导出 Git bundle，在 Windows 更新干净检出，再构建新的试用版本。不得沿用首轮 ZIP 的版本、摘要或通过结论。核对 `BUILD.json` 的提交与 `dirty` 状态，原目录和最终 ZIP 解压后各运行未修改的 `smoke_frozen.py`。
 
 通过自动验证后，在 Chrome／Edge 人工核对阅读、即时查词、片段完整资料浮层、保存与重启，以及换程序目录后使用同一数据、备份恢复和真实 Ctrl-C 停服。真实模型、朗读声音、Defender／SmartScreen 和正式签名分别记录结果；HTTP 冒烟不替代浏览器和设备体验。
+
+## Windows 控制台日志修复
+
+2026-11-09，用户转述 Windows 实机日志原样显示 `ESC[32m`、`ESC[1m` 等 ANSI 颜色控制码。另有普通权限访问 `C:\Users\nxx\Folio-J-Data\app.db` 返回 WinError 5 的报告；本轮按用户要求只处理日志，数据目录权限与闪退继续由 Windows 端复测。
+
+从 `main b64314f5` 开始，将 Windows `app.launcher` 的 Uvicorn 配置设为 `use_colors=False`，启动日志及 HTTP 访问日志均为纯文本，其他平台保留自动颜色判断。不引入 Win32 终端模式操作，不新增启动脚本、退出等待或 ACL 修改，无新增依赖或 TBD。
+
+回归通过实际启动配置创建 Uvicorn formatter，模拟 stdout／stderr 均为 TTY，核对 Windows 的 INFO、请求行与 `200 OK` 无 ANSI 序列，其他平台仍可自动着色。启动入口定向测试 25 passed；`just lint`、`just test`、`just check-docs` 和 `git diff --check` 通过，全量后端 1416 passed、3 skipped，前端 826 passed。未修改前端，未重跑生产构建或浏览器回归；Windows 默认控制台与 Windows Terminal 的实际显示尚未复验。

@@ -76,6 +76,8 @@ def start(settings: Settings, *, no_browser: bool) -> int:
         http="h11",
         ws="none",
         lifespan="on",
+        # A Windows console can be a TTY without interpreting ANSI sequences.
+        use_colors=False if sys.platform == "win32" else None,
     )
     server = BrowserServer(configuration, None if no_browser else url)
     sigbreak = signal.SIGBREAK if sys.platform == "win32" else None

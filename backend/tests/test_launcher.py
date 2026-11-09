@@ -2,6 +2,7 @@
 
 import asyncio
 import io
+import logging
 import signal
 import socket
 import sqlite3
@@ -11,6 +12,7 @@ from types import FrameType, SimpleNamespace
 
 import pytest
 import uvicorn
+from uvicorn.config import LOGGING_CONFIG
 
 from app import config, launcher, resources
 from app.config import DatabaseSettings, Settings
@@ -120,6 +122,65 @@ def test_start_migrates_before_in_process_server(
     monkeypatch.setattr(launcher.BrowserServer, "run", run)
     assert launcher.start(Settings(), no_browser=True) == 0
     assert events == ["migrate", "serve"]
+
+
+@pytest.mark.parametrize("platform", ["win32", "linux"])
+def test_windows_logs_are_plain_text_even_when_console_reports_tty(
+    platform: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    frontend = tmp_path / "frontend/dist"
+    frontend.mkdir(parents=True)
+    (frontend / "index.html").touch()
+    monkeypatch.setattr(launcher, "RESOURCE_ROOT", tmp_path)
+    monkeypatch.setattr(launcher, "sys", SimpleNamespace(platform=platform))
+
+    def migrate(database_path: Path | None = None) -> None:
+        pass
+
+    def register(number: int, handler: object) -> signal.Handlers:
+        return signal.SIG_DFL
+
+    monkeypatch.setattr(launcher, "migrate", migrate)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
+    # Uvicorn mutates its shared logging defaults when configuring colors.
+    for name in ("default", "access"):
+        monkeypatch.setitem(LOGGING_CONFIG["formatters"][name], "use_colors", None)
+    monkeypatch.setattr(
+        launcher,
+        "signal",
+        SimpleNamespace(
+            SIGBREAK=21,
+            default_int_handler=signal.default_int_handler,
+            signal=register,
+        ),
+    )
+
+    def run(server: launcher.BrowserServer) -> None:
+        access = logging.LogRecord(
+            "uvicorn.access",
+            logging.INFO,
+            __file__,
+            0,
+            '%s - "%s %s HTTP/%s" %d',
+            ("127.0.0.1:54306", "GET", "/api/sources", "1.1", 200),
+            None,
+        )
+        startup = logging.LogRecord(
+            "uvicorn", logging.INFO, __file__, 0, "Application startup complete.", (), None
+        )
+        access_output = logging.getLogger("uvicorn.access").handlers[0].format(access)
+        startup_output = logging.getLogger("uvicorn").handlers[0].format(startup)
+        assert "GET /api/sources HTTP/1.1" in access_output
+        assert "200 OK" in access_output
+        assert "INFO" in startup_output
+        assert "Application startup complete." in startup_output
+        for output in (access_output, startup_output):
+            assert ("\x1b[" in output) == (platform != "win32")
+        server.started = True
+
+    monkeypatch.setattr(launcher.BrowserServer, "run", run)
+    assert launcher.start(Settings(), no_browser=True) == 0
 
 
 def test_start_checks_frontend_before_touching_database(

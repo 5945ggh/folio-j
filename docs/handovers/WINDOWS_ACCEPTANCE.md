@@ -56,6 +56,7 @@ dev_port = 5188
 - [ ] 从 ZIP 解压出的完整 `Folio-J/` 复制到 `$winProgram`，使用上面的独立数据环境变量。运行 `.\Folio-J.exe data-path`，输出为测试库绝对路径，`Test-Path $env:FOLIO_J_DATABASE_PATH` 仍为 `False`。
 - [ ] 在 PowerShell 设置 `[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)`，执行 `$winPathOutput = .\Folio-J.exe data-path | Out-String`，核对 `$winPathOutput` 中的中文、空格、emoji 和罕字未丢失或替换；测试结束恢复终端原编码或关闭专用终端。
 - [ ] 运行 `.\Folio-J.exe start`，在 Chrome／Edge 完成下面“阅读、词典与人工资料”检查。停止并重启后保留内容；按一次及连续两次 Ctrl-C 均能退出并释放端口。`start --no-browser` 不自动打开浏览器。
+- [ ] 分别从默认控制台和 Windows Terminal 启动，访问页面后日志显示可读的 `INFO`、请求路径及 `200 OK`，不出现 `ESC[32m`、`ESC[1m` 等控制码；Windows 冻结入口使用纯文本日志。
 - [ ] 停止后执行 `.\Folio-J.exe backup $winBackup` 和 `.\Folio-J.exe restore $winBackup $winRestore`（先按下方定义两个新目录变量），按“备份、恢复与版本替换”核对结果；将数据路径指向恢复目录后重启。
 - [ ] 将完整程序目录换到另一位置，保留独立数据路径；先 `data-path` 再 `start`，书籍、词典、片段与讲解仍可用。只搬可执行文件、遗漏 `_internal` 不属于有效升级方式。
 

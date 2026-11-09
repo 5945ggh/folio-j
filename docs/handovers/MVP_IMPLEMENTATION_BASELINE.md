@@ -11,6 +11,8 @@
 
 2026-11-09，基于 `main 81975d00` 的 Windows 冻结包修复补齐 UTF-8 管道输出、SIGBREAK 停服、Windows ZIP、PowerShell／镜像构建说明和独立冻结包 CI。本批已完成本地验证，未推送；本地检查与 Windows 接力状态见[本批验收](WINDOWS_FROZEN_ACCEPTANCE.md)。
 
+2026-11-09，基于 `b64314f5` 的后续日志修复将 Windows 冻结入口日志设为纯文本；普通权限下的数据目录拒绝访问仍由 Windows 端复测定位，见[追加记录](WINDOWS_FROZEN_ACCEPTANCE.md#windows-控制台日志修复)。
+
 2026-11-08 开始准备 `v0.1.0-beta.2`，应用候选代码为 `ec60b484`，已纳入用户确认的细焦点框与占位提示调整。正式发行状态与附件见 [GitHub 发布记录](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.2)；候选与恢复验证见[beta.2 发布准备与验收](BETA_2_RELEASE_ACCEPTANCE.md)。
 
 2026-10-29 至 10-30 的复制、阅读设置及书签整合，见[复制数据库升级](archived/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md#现用库升级与主分支集成)与[书签集成记录](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md#2026-10-30-原目录集成)；现用库后续升级至 `0004_translation_reader_removal` 的数据与凭据核对见[翻译修复验收](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md#现用库与原目录交付)。浏览器检查的执行范围及未重跑项保留在原记录，后续安排见[实际阅读评测计划](reading-practice/PLAN.md)。
