@@ -38,6 +38,7 @@ import { recordSaving } from "./record-saving";
 import { routeLoading } from "./route-loading";
 import { routeMotion } from "./route-motion";
 import { segmentCatalog } from "./segment-catalog";
+import { segmentDictionary } from "./segment-dictionary";
 import { segmentMaterials } from "./segment-materials";
 import { segmentNavigation } from "./segment-navigation";
 import { segmentShareRegression } from "./segment-share";
@@ -437,6 +438,7 @@ try {
 		["reader-layout-switch", readerLayoutSwitch],
 		["reader-context-copy", readerContextCopy],
 		["reader-dictionary", readerDictionary],
+		["segment-dictionary", segmentDictionary],
 		["dictionary-inflection-layout", dictionaryInflectionLayout],
 		["reader-settings", readerSettings],
 		["reader-image-performance", readerImages],

@@ -1,11 +1,12 @@
 import {
 	DictionaryCards,
 	type LookupLevel,
-} from "../src/materials/DictionaryCards";
-import type { DictionaryMatch } from "../src/materials/dictionary-api";
-import { dictionaryPages } from "../src/materials/dictionary-pages";
+} from "../src/dictionary/DictionaryCards";
+import type { DictionaryMatch } from "../src/dictionary/dictionary-api";
+import { dictionaryPages } from "../src/dictionary/dictionary-pages";
+import { dictionaryPassage } from "../src/dictionary/dictionary-passage";
 import "../src/materials/reader-r1.css";
-import "../src/materials/dictionary.css";
+import "../src/dictionary/dictionary.css";
 import type { BrowserHarness } from "./harness";
 
 const surface = "食べさせられていなかった";
@@ -69,6 +70,59 @@ export async function dictionaryInflectionLayout(h: BrowserHarness) {
 		pointer && resize,
 		"Runner must provide native pointer and viewport resize",
 	);
+	const passageFixture = document.createElement("div");
+	passageFixture.style.cssText =
+		"position:fixed;inset:0;z-index:9999;background:white;font-size:20px;line-height:2;";
+	passageFixture.innerHTML =
+		'<section lang="ja">前文。</section><section lang="ja"><span>😀か</span><b>\u3099猫</b><ruby>歩<rt>ある</rt></ruby>く。</section><section lang="ja">後文。</section><p><span>猫</span><a href="#">犬</a><span>鳥</span></p><p lang="zh">中文</p><p>Latin</p><pre lang="ja">前文。\n猫が歩く。\u2028後文。</pre><section class="loanword" lang="ja">コーヒー</section><section class="halfwidth" lang="ja">ｺｰﾋｰ</section>';
+	document.body.append(passageFixture);
+	try {
+		const hit = (selector: string, start = 0, end = start + 1) => {
+			const element = passageFixture.querySelector(selector);
+			check(element?.firstChild, "Passage fixture must contain target text");
+			const range = document.createRange();
+			range.setStart(element.firstChild, start);
+			range.setEnd(element.firstChild, end);
+			const rect = range.getBoundingClientRect();
+			return dictionaryPassage(
+				passageFixture,
+				rect.left + rect.width / 2,
+				rect.top + rect.height / 2,
+			);
+		};
+		const canonical = hit("b", 1);
+		check(
+			canonical?.text === "😀が猫歩く。" && canonical.offset === 2,
+			"Block-local lookup must normalize NFC and count supplementary characters as one code point",
+		);
+		check(
+			canonical.range(1, 2)?.toString() === "か\u3099",
+			"Canonical response ranges must restore decomposed inline DOM text across nodes",
+		);
+		check(
+			hit("p span")?.text === "猫" && hit("p span:last-child")?.text === "鳥",
+			"Interactive nodes must split lookup windows without inventing adjacent text",
+		);
+		check(
+			hit("a") === null &&
+				hit('[lang="zh"]') === null &&
+				hit("p:last-of-type") === null,
+			"Links, explicitly Chinese text and Latin glyphs must not trigger lookup",
+		);
+		const line = hit("pre", 4);
+		check(
+			line?.text === "猫が歩く。" && line.offset === 0,
+			"Raw and Unicode line breaks must stop the lookup window inside one block",
+		);
+		check(
+			hit(".loanword", 1)?.text === "コーヒー" &&
+				hit(".loanword", 1)?.offset === 1 &&
+				hit(".halfwidth", 1)?.text === "ｺｰﾋｰ",
+			"Shared Japanese marks must permit lookup on fullwidth and halfwidth prolonged sound marks",
+		);
+	} finally {
+		passageFixture.remove();
+	}
 	const initial = { width: innerWidth, height: innerHeight };
 	let dispose = () => {};
 	const mount = async (levels: LookupLevel[]) => {

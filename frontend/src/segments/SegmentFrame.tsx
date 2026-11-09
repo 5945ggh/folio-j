@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { ReturnDestination } from "../navigation";
 import { SettingsLink } from "../settings/SettingsNavigation";
+import { SegmentDictionaryTool } from "./SegmentDictionary";
 
 function ToolIcon({
 	name,
@@ -127,6 +128,7 @@ export function SegmentFrame({
 						</span>
 					</button>
 				</div>
+				<SegmentDictionaryTool />
 				<div className="segment-tool-more" ref={menu}>
 					<button
 						ref={trigger}

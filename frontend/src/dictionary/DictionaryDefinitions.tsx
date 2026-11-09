@@ -2,19 +2,20 @@ import {
 	type CSSProperties,
 	type MouseEvent,
 	type PointerEvent,
+	type ReactNode,
 	useCallback,
 	useEffect,
 	useRef,
 	useState,
 } from "react";
+import { FOCUS_TIMING } from "../materials/focus";
 import type { LookupLevel } from "./DictionaryCards";
 import type { DictionaryNode } from "./dictionary-api";
 import {
 	type DictionaryPassage,
 	dictionaryPassage,
 } from "./dictionary-passage";
-import { FOCUS_TIMING } from "./focus";
-import type { DictionaryMode } from "./ReaderDictionary";
+import type { DictionaryMode } from "./preferences";
 
 function definitionStyle(
 	style: DictionaryNode["style"],
@@ -65,25 +66,58 @@ function covers(coverage: Range | null | undefined, glyph: Range) {
 	);
 }
 
-/** A Japanese definition remains selectable, with optional settled Shift pointing. */
 export function DictionaryDefinitions({
 	nodes,
+	...props
+}: {
+	nodes: DictionaryNode[];
+} & Omit<
+	Parameters<typeof DictionaryText>[0],
+	"children" | "contentKey" | "lang"
+>) {
+	return (
+		<DictionaryText {...props} contentKey={nodes} lang="ja">
+			{entryContent(nodes)}
+		</DictionaryText>
+	);
+}
+
+/** Selectable text with settled Shift pointing and optional click lookup. */
+export function DictionaryText({
+	children,
+	contentKey,
+	resetKey,
 	mode,
 	enabled,
 	pending = false,
 	child,
 	onLookup,
+	className = "dict-definitions",
+	lang,
+	requireShift = false,
 }: {
-	nodes: DictionaryNode[];
+	children: ReactNode;
+	contentKey: unknown;
+	resetKey?: unknown;
 	mode: DictionaryMode;
 	enabled: boolean;
 	pending?: boolean;
 	child?: LookupLevel;
 	onLookup: (passage: DictionaryPassage) => void;
+	className?: string;
+	lang?: string;
+	requireShift?: boolean;
 }) {
 	const container = useRef<HTMLDivElement>(null);
-	const latest = useRef({ nodes, mode, enabled, pending, child, onLookup });
-	latest.current = { nodes, mode, enabled, pending, child, onLookup };
+	const latest = useRef({
+		contentKey,
+		mode,
+		enabled,
+		pending,
+		child,
+		onLookup,
+	});
+	latest.current = { contentKey, mode, enabled, pending, child, onLookup };
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const candidate = useRef<Range | null>(null);
 	const lastLookup = useRef<Range | null>(null);
@@ -95,6 +129,7 @@ export function DictionaryDefinitions({
 		x: number;
 		y: number;
 		blocked: boolean;
+		pointerType: string;
 	} | null>(null);
 	const cancel = useCallback(() => {
 		if (timer.current !== null) clearTimeout(timer.current);
@@ -105,7 +140,10 @@ export function DictionaryDefinitions({
 		const element = container.current;
 		if (
 			!element?.isConnected ||
-			!element.contains(element.ownerDocument.elementFromPoint(x, y))
+			!element.contains(element.ownerDocument.elementFromPoint(x, y)) ||
+			element.ownerDocument
+				.elementFromPoint(x, y)
+				?.closest("a,button,input,textarea,select,[contenteditable]")
 		)
 			return null;
 		return dictionaryPassage(element, x, y);
@@ -156,14 +194,14 @@ export function DictionaryDefinitions({
 		if (covers(candidate.current, glyph)) return;
 		cancel();
 		candidate.current = glyph;
-		const content = current.nodes;
+		const content = current.contentKey;
 		timer.current = setTimeout(() => {
 			cancel();
 			const active = latest.current;
 			if (
 				active.mode !== "hover" ||
 				!active.enabled ||
-				active.nodes !== content ||
+				active.contentKey !== content ||
 				!container.current?.ownerDocument.getSelection()?.isCollapsed
 			)
 				return;
@@ -221,7 +259,7 @@ export function DictionaryDefinitions({
 	useEffect(() => {
 		lastLookup.current = null;
 		return cancel;
-	}, [nodes, cancel]);
+	}, [contentKey, resetKey, cancel]);
 	const previousChild = useRef(child);
 	useEffect(() => {
 		if (pending) return;
@@ -280,6 +318,7 @@ export function DictionaryDefinitions({
 			x: event.clientX,
 			y: event.clientY,
 			blocked: shiftPointing || event.button !== 0,
+			pointerType: event.pointerType,
 		};
 		if (shiftPointing && event.button === 0) {
 			// A quick Shift click commits the pending point immediately. Consume its
@@ -290,10 +329,14 @@ export function DictionaryDefinitions({
 	};
 	const click = (event: MouseEvent<HTMLDivElement>) => {
 		const blocked = press.current?.blocked;
+		const pointerType = press.current?.pointerType ?? "mouse";
 		press.current = null;
 		cancel();
 		if (
 			blocked ||
+			!enabled ||
+			mode === "off" ||
+			(requireShift && mode === "hover" && pointerType === "mouse") ||
 			event.button !== 0 ||
 			event.detail > 1 ||
 			event.shiftKey ||
@@ -311,8 +354,9 @@ export function DictionaryDefinitions({
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: A pointer looks up a glyph; keyboard users can query an explicit selection.
 		<div
-			className="dict-definitions"
-			lang="ja"
+			className={className}
+			data-dictionary-text=""
+			lang={lang}
 			ref={container}
 			onClick={click}
 			onPointerEnter={track}
@@ -331,7 +375,7 @@ export function DictionaryDefinitions({
 				if (press.current) press.current.blocked = true;
 			}}
 		>
-			{entryContent(nodes)}
+			{children}
 		</div>
 	);
 }

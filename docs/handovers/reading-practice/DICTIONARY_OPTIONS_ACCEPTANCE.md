@@ -14,7 +14,7 @@
 
 后端回归见 [test_dictionary_lookup.py](../../../backend/tests/test_dictionary_lookup.py)，覆盖四种组合、词首与词中点击、明确选区、同音／词性排序、sequence 代表及完整释义、截断前限制、有无既有 token 的还原，以及 Unicode 码点起点。
 
-前端偏好回归见 [preferences.test.ts](../../../frontend/src/materials/preferences.test.ts)。真实组件回归见 [reader-dictionary.tsx](../../../frontend/browser-tests/reader-dictionary.tsx)，覆盖正文与嵌套选区的请求配置、缓存分离、独立切换、跨标签同步、清除高亮和迟到结果拒绝。浏览器场景包括 1280／900／740／390／320 宽度，以及 1280×900、320×320、640×360 的设置场景。
+前端偏好回归见 [preferences.test.ts](../../../frontend/src/dictionary/preferences.test.ts)。真实组件回归见 [reader-dictionary.tsx](../../../frontend/browser-tests/reader-dictionary.tsx)，覆盖正文与嵌套选区的请求配置、缓存分离、独立切换、跨标签同步、清除高亮和迟到结果拒绝。浏览器场景包括 1280／900／740／390／320 宽度，以及 1280×900、320×320、640×360 的设置场景。
 
 | 检查 | 结果 |
 | --- | --- |

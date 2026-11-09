@@ -1,11 +1,22 @@
 import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { LookupText } from "../dictionary/LookupText";
 import { imageHref, safeHref } from "./links";
 
-export const Markdown = memo(function Markdown({ text }: { text: string }) {
+export const Markdown = memo(function Markdown({
+	text,
+	lookup = false,
+}: {
+	text: string;
+	lookup?: boolean;
+}) {
 	return (
-		<div className="analysis-markdown">
+		<LookupText
+			className="analysis-markdown"
+			contentKey={text}
+			enabled={lookup}
+		>
 			<ReactMarkdown
 				remarkPlugins={[remarkGfm]}
 				skipHtml
@@ -34,6 +45,6 @@ export const Markdown = memo(function Markdown({ text }: { text: string }) {
 			>
 				{text}
 			</ReactMarkdown>
-		</div>
+		</LookupText>
 	);
 });

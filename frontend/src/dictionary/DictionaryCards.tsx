@@ -7,6 +7,8 @@ import {
 	useRef,
 	useState,
 } from "react";
+import type { ReaderCardPosition } from "../materials/reader-card-drag";
+import { useReaderCardDrag } from "../materials/use-reader-card-drag";
 import { DictionaryDefinitions } from "./DictionaryDefinitions";
 import type { DictionaryMatch, DictionaryRequest } from "./dictionary-api";
 import { dictionaryInflection } from "./dictionary-inflection";
@@ -18,11 +20,8 @@ import {
 } from "./dictionary-layout";
 import type { DictionaryPage } from "./dictionary-pages";
 import type { DictionaryPassage } from "./dictionary-passage";
-import type { DictionaryMode } from "./ReaderDictionary";
-import type { ReaderCardPosition } from "./reader-card-drag";
-import type { ScreenAnchor, StudyMarkHit } from "./reader-study";
-import { useReaderCardDrag } from "./use-reader-card-drag";
-import "./reader-popover.css";
+import type { DictionaryMode } from "./preferences";
+import type { DictionaryAnchor as ScreenAnchor } from "./types";
 
 export type LookupOrigin = {
 	input: Omit<
@@ -31,7 +30,7 @@ export type LookupOrigin = {
 	>;
 	anchor: ScreenAnchor;
 	parentBoxes?: ScreenAnchor[];
-	record?: StudyMarkHit | null;
+	record?: () => void;
 	highlight?: (start: number, end: number) => void;
 	clear?: () => void;
 	passage?: DictionaryPassage;
@@ -117,7 +116,7 @@ export function DictionaryCards({
 	choose: (depth: number, index: number) => void;
 	backTo: (depth: number) => void;
 	close: () => void;
-	onRecord: (hit: StudyMarkHit) => void;
+	onRecord: (record: () => void) => void;
 }) {
 	const [viewport, setViewport] = useState(() => ({
 		width: window.innerWidth,

@@ -15,7 +15,7 @@ export async function readerDictionary(h: BrowserHarness) {
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
 	const { SettingsPage } = await import("../src/settings/SettingsPage");
 	const { updateDictionaryLibrary } = await import(
-		"../src/materials/dictionary-api"
+		"../src/dictionary/dictionary-api"
 	);
 	let readerClient: QueryClient | undefined;
 	function ReaderUnderTest() {
@@ -1594,15 +1594,15 @@ export async function readerDictionary(h: BrowserHarness) {
 				"Pending lookups must leave the option menu usable",
 			);
 			const stored = JSON.parse(
-				localStorage.getItem("folio-reader-ui-v1") ?? "{}",
+				localStorage.getItem("folio-dictionary-preferences-v1") ?? "{}",
 			);
 			localStorage.setItem(
-				"folio-reader-ui-v1",
-				JSON.stringify({ ...stored, dictionaryAssistedRanking: false }),
+				"folio-dictionary-preferences-v1",
+				JSON.stringify({ ...stored, assistedRanking: false }),
 			);
 			window.dispatchEvent(
 				new StorageEvent("storage", {
-					key: "folio-reader-ui-v1",
+					key: "folio-dictionary-preferences-v1",
 					storageArea: localStorage,
 				}),
 			);
@@ -1897,7 +1897,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			"The Reader management link must open the installed dictionary library",
 		);
 		const back = h.container.querySelector<HTMLAnchorElement>(
-			'a[aria-label="返回阅读"]',
+			"a#settings-reading-return",
 		);
 		check(
 			back?.getAttribute("href") === "/materials/dictionary",

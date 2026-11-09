@@ -1,4 +1,28 @@
-.reader-r1 .dict-trigger {
+/* Shared surfaces carry their own controls; hosts only supply palette and placement. */
+:where(.dict-config, .dict-card) button,
+:where(.dict-config, .dict-card) input {
+	font: inherit;
+	color: inherit;
+}
+:where(.dict-config, .dict-card) button {
+	border: 1px solid transparent;
+	border-radius: 6px;
+	background: transparent;
+	cursor: pointer;
+	padding: 7px 10px;
+}
+:where(.dict-config, .dict-card) button:hover {
+	background: var(--reader-soft);
+}
+:where(.dict-config, .dict-card) button:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+:where(.dict-config, .dict-card) :focus-visible {
+	outline: 2px solid var(--reader-accent);
+	outline-offset: -2px;
+}
+.dict-trigger {
 	display: inline-grid;
 	place-items: center;
 }
@@ -13,6 +37,42 @@
 		0 1px 3px var(--reader-shadow);
 	border-radius: 13px;
 }
+.dict-card {
+	background: color-mix(
+		in srgb,
+		var(--reader-bg) var(--dict-opacity, 72%),
+		transparent
+	);
+	-webkit-backdrop-filter: blur(9px);
+	backdrop-filter: blur(9px);
+}
+.dict-card:focus-within {
+	border-color: color-mix(in srgb, var(--reader-fg) 30%, var(--reader-bg));
+}
+.dict-card:focus,
+.dict-card :is(h2, .dict-card-head):focus {
+	outline: none;
+}
+.dict-card-head {
+	position: relative;
+}
+.dict-card-head::before {
+	content: "";
+	position: absolute;
+	top: 5px;
+	left: 50%;
+	width: 23px;
+	height: 3px;
+	transform: translateX(-50%);
+	border-radius: 2px;
+	background: var(--reader-line);
+	pointer-events: none;
+}
+.dict-card-head:is(:hover, :focus-visible, :has(:focus-visible))::before,
+.dict-card[data-dragging] .dict-card-head::before {
+	background: var(--reader-muted);
+}
+
 .dict-config {
 	position: absolute;
 	bottom: calc(69px + env(safe-area-inset-bottom, 0px));
@@ -272,7 +332,7 @@
 	align-items: center;
 	gap: 2px;
 }
-.reader-r1 .dict-option-help {
+.dict-config .dict-option-help {
 	position: static;
 	display: inline-grid;
 	place-items: center;
@@ -295,7 +355,25 @@
 	border-radius: 50%;
 	font: 9px / 1 system-ui;
 }
-.reader-r1 .dict-option-help::after {
+.dict-config .dict-option-help::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	padding: 6px 9px;
+	border-radius: 6px;
+	font: 400 11px / 1.5 system-ui;
+	background: var(--reader-fg);
+	color: var(--reader-bg);
+	box-shadow: 0 2px 8px var(--reader-shadow);
+	pointer-events: none;
+	opacity: 0;
+	visibility: hidden;
+}
+.dict-config .dict-option-help:hover::after,
+.dict-config .dict-option-help:focus-visible::after {
+	opacity: 1;
+	visibility: visible;
+}
+.dict-config .dict-option-help::after {
 	left: 0;
 	bottom: calc(100% + 6px);
 	transform: none;
@@ -306,7 +384,7 @@
 	text-align: left;
 	z-index: 1;
 }
-.reader-r1 .dict-option-help:focus::after {
+.dict-config .dict-option-help:focus::after {
 	opacity: 1;
 	visibility: visible;
 	transition-delay: 0ms;
@@ -442,5 +520,68 @@
 @media (prefers-reduced-motion: reduce) {
 	.dict-card {
 		animation: none;
+	}
+}
+
+.dict-lookup-toggle input[type="checkbox"] {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: var(--reader-accent);
+}
+.dict-lookup-toggle input[role="switch"] {
+	appearance: none;
+	width: 36px;
+	height: 22px;
+	padding: 2px;
+	border: 1px solid var(--reader-muted);
+	border-radius: 999px;
+	background: var(--reader-soft);
+	cursor: pointer;
+}
+.dict-lookup-toggle input[role="switch"]::before {
+	content: "";
+	display: block;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background: var(--reader-muted);
+	transform: translateX(0);
+}
+.dict-lookup-toggle input[role="switch"]:checked {
+	border-color: var(--reader-accent);
+	background: var(--reader-accent);
+}
+.dict-lookup-toggle input[role="switch"]:checked::before {
+	transform: translateX(14px);
+	background: var(--reader-bg);
+}
+@media (prefers-reduced-motion: no-preference) {
+	.dict-lookup-toggle input[role="switch"] {
+		transition:
+			background-color 180ms ease,
+			border-color 180ms ease;
+	}
+	.dict-lookup-toggle input[role="switch"]::before {
+		transition:
+			transform 180ms ease,
+			background-color 180ms ease;
+	}
+}
+@media (forced-colors: active) {
+	.dict-lookup-toggle input[role="switch"]::before {
+		background: ButtonText;
+	}
+	.dict-lookup-toggle input[role="switch"]:checked::before {
+		background: Highlight;
+	}
+}
+
+@media (forced-colors: active) {
+	.dict-card:focus-visible,
+	.dict-card :is(h2, .dict-card-head):focus-visible {
+		outline: 2px solid Highlight;
+		outline-offset: -2px;
 	}
 }

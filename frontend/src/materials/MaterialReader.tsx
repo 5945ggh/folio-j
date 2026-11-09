@@ -1,3 +1,4 @@
+import { useDictionaryPreferences } from "../dictionary/use-dictionary-preferences";
 import { NativeSelect } from "../NativeSelect";
 import "./reader-r1.css";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -440,6 +441,11 @@ function Reader({
 		null,
 	);
 	const [toolsVisible, setToolsVisible] = useState(true);
+	const {
+		preferences: dictionaryPreferences,
+		storageFailed: dictionaryStorageFailed,
+		updatePreferences: updateDictionaryPreferences,
+	} = useDictionaryPreferences();
 	const [ui, setUi] = useState(readReaderUiPreferences);
 	const copySettings = copyEditor.query;
 	const [settingsExpanded, setSettingsExpanded] = useState(
@@ -899,7 +905,7 @@ function Reader({
 			chapterId,
 			dictionaryMode:
 				active && dictionaryReady && !studyTarget
-					? (ui.dictionaryMode ?? "off")
+					? dictionaryPreferences.mode
 					: "off",
 			onLookup: (hit) => {
 				if (hit) {
@@ -2309,6 +2315,7 @@ function Reader({
 					</button>
 					<ReaderDictionary
 						ref={dictionary}
+						storageFailed={dictionaryStorageFailed}
 						onActivate={() => setRightToolInFront(false)}
 						behindPanel={panelAboveCards || directImage !== undefined}
 						manageState={returnState(
@@ -2320,21 +2327,16 @@ function Reader({
 						onReady={setDictionaryReady}
 						portal={shell.current}
 						opacity={ui.dictionaryOpacity ?? DEFAULT_DICTIONARY_OPACITY}
-						autoExpand={ui.dictionaryAutoExpand ?? true}
-						onAutoExpand={(dictionaryAutoExpand) =>
-							setUiPreference({ ...latest.current.ui, dictionaryAutoExpand })
+						autoExpand={dictionaryPreferences.autoExpand}
+						onAutoExpand={(autoExpand) =>
+							updateDictionaryPreferences({ autoExpand })
 						}
-						assistedRanking={ui.dictionaryAssistedRanking ?? true}
-						onAssistedRanking={(dictionaryAssistedRanking) =>
-							setUiPreference({
-								...latest.current.ui,
-								dictionaryAssistedRanking,
-							})
+						assistedRanking={dictionaryPreferences.assistedRanking}
+						onAssistedRanking={(assistedRanking) =>
+							updateDictionaryPreferences({ assistedRanking })
 						}
-						mode={ui.dictionaryMode ?? "off"}
-						onMode={(mode) =>
-							setUiPreference({ ...latest.current.ui, dictionaryMode: mode })
-						}
+						mode={dictionaryPreferences.mode}
+						onMode={(mode) => updateDictionaryPreferences({ mode })}
 						onRecord={openMarkHit}
 						restoreFocus={() =>
 							container.current?.focus({ preventScroll: true })
@@ -2464,7 +2466,7 @@ function Reader({
 			{selection && !studyTarget && (
 				<SelectionToolbar
 					onLookup={
-						dictionaryReady && ui.dictionaryMode && ui.dictionaryMode !== "off"
+						dictionaryReady && dictionaryPreferences.mode !== "off"
 							? () => {
 									records.clearToolbar();
 									dictionary.current?.selection(selection);

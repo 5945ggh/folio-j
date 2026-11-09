@@ -9,7 +9,7 @@ import {
 	selectDictionary,
 	subscribeDictionaryLibrary,
 	updateDictionaryLibrary,
-} from "../materials/dictionary-api";
+} from "../dictionary/dictionary-api";
 import { NativeSelect } from "../NativeSelect";
 import { ConfirmDialog, InlineError } from "../Shared";
 import { useSettingsDraft } from "./SettingsForms";

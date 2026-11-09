@@ -230,7 +230,7 @@ export function AnalysisPanel({
 						<div className="analysis-document-heading">
 							<div className="analysis-document-title">
 								{presentation.title ? (
-									<Markdown text={presentation.title.markdown} />
+									<Markdown text={presentation.title.markdown} lookup />
 								) : (
 									<h2>{document.title}</h2>
 								)}
@@ -302,7 +302,7 @@ export function AnalysisPanel({
 								id={anchor}
 								className="analysis-section"
 							>
-								<Markdown text={block.raw} />
+								<Markdown text={block.raw} lookup />
 							</section>
 						) : (
 							<span key={block.id ?? index} id={anchor} />

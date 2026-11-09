@@ -1,0 +1,47 @@
+.segment-dictionary-scope {
+	display: contents;
+	/* Shared dictionary surfaces inherit the host's application palette. */
+	--reader-bg: var(--color-surface);
+	--reader-fg: var(--color-text);
+	--reader-muted: var(--color-text-muted);
+	--reader-line: var(--color-border);
+	--reader-soft: var(--color-surface-muted);
+	--reader-shadow: var(--color-shadow);
+	--reader-accent: var(--color-accent);
+	--reader-on-accent-soft: var(--color-accent);
+	--reader-accent-soft: var(--color-accent-soft);
+	--reader-selection-bg: var(--color-selection);
+	--reader-error: var(--color-danger);
+}
+.segment-dictionary-layer {
+	display: contents;
+}
+.segment-dictionary-scope .dict-config {
+	position: fixed;
+	top: 160px;
+	bottom: auto;
+	left: 68px;
+	transform: none;
+	max-height: calc(100dvh - 176px);
+}
+.segment-dictionary-selection {
+	position: fixed;
+	z-index: 51;
+	padding: 7px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 7px;
+	background: var(--color-surface);
+	color: var(--color-text);
+	box-shadow: 0 3px 16px var(--color-shadow);
+	font-size: 13px;
+}
+::highlight(folio-segment-word) {
+	background: var(--color-selection);
+}
+@media (max-width: 720px) {
+	.segment-dictionary-scope .dict-config {
+		top: 68px;
+		left: 12px;
+		max-height: calc(100dvh - 80px);
+	}
+}

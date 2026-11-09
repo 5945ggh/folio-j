@@ -51,6 +51,7 @@ import {
 	readSegmentLocation,
 	returnDestination,
 	type SegmentLocation,
+	settingsReturnState,
 	updateSegmentLocation,
 } from "./navigation";
 import { useViewActivity } from "./navigation/view-activity";
@@ -59,6 +60,7 @@ import { changedSegmentFields, segmentEditFields } from "./segments/edit";
 import { NewAnalysisActions } from "./segments/NewAnalysisActions";
 import { OriginalCard } from "./segments/OriginalCard";
 import { SegmentDeleteDialog } from "./segments/SegmentDeleteDialog";
+import { SegmentDictionary } from "./segments/SegmentDictionary";
 import { SegmentFrame } from "./segments/SegmentFrame";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "./speech";
 
@@ -385,430 +387,439 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 		};
 	}, [available, id]);
 	return (
-		<SegmentFrame
-			returnTo={returnTo}
-			chatOpen={chatOpen}
+		<SegmentDictionary
 			available={available}
-			onToggleDiscussion={() => setChatOpen(!chatOpen)}
-			onEdit={() => {
-				update.reset();
-				editSnapshot.current = segment.data
-					? structuredClone(segment.data)
-					: null;
-				setEditing("segment-more-trigger");
-			}}
-			onDelete={() => setDeleting(true)}
+			resetKey={`${id}:${selectedAnalysis}:${selectedRevision}:${compact && chatOpen}:${editing}:${Boolean(analysisEditor)}:${deleting}`}
+			manageState={settingsReturnState(location)}
 		>
-			{!checked ? (
-				<p className="segment-page-state" role="status">
-					正在读取片段…
-				</p>
-			) : segment.isError ? (
-				<div className="segment-page-state" role="alert">
-					<h1>
-						{segment.error instanceof RequestError &&
-						segment.error.status === 404
-							? "找不到这条记录"
-							: "暂时无法加载"}
-					</h1>
-					<InlineError error={segment.error} />
-					{!(
-						segment.error instanceof RequestError &&
-						segment.error.status === 404
-					) && (
-						<button
-							className="button secondary"
-							type="button"
-							onClick={() => void segment.refetch()}
-						>
-							重试
-						</button>
-					)}
-				</div>
-			) : !current ? (
-				<p className="segment-page-state" role="status">
-					正在加载片段…
-				</p>
-			) : null}
-			{current && (
-				<div
-					className={`segment-shell ${chatOpen ? "" : "conversation-closed"}`}
-					hidden={!available}
-					inert={!available}
-					style={!available ? { display: "none" } : undefined}
-				>
+			<SegmentFrame
+				returnTo={returnTo}
+				chatOpen={chatOpen}
+				available={available}
+				onToggleDiscussion={() => setChatOpen(!chatOpen)}
+				onEdit={() => {
+					update.reset();
+					editSnapshot.current = segment.data
+						? structuredClone(segment.data)
+						: null;
+					setEditing("segment-more-trigger");
+				}}
+				onDelete={() => setDeleting(true)}
+			>
+				{!checked ? (
+					<p className="segment-page-state" role="status">
+						正在读取片段…
+					</p>
+				) : segment.isError ? (
+					<div className="segment-page-state" role="alert">
+						<h1>
+							{segment.error instanceof RequestError &&
+							segment.error.status === 404
+								? "找不到这条记录"
+								: "暂时无法加载"}
+						</h1>
+						<InlineError error={segment.error} />
+						{!(
+							segment.error instanceof RequestError &&
+							segment.error.status === 404
+						) && (
+							<button
+								className="button secondary"
+								type="button"
+								onClick={() => void segment.refetch()}
+							>
+								重试
+							</button>
+						)}
+					</div>
+				) : !current ? (
+					<p className="segment-page-state" role="status">
+						正在加载片段…
+					</p>
+				) : null}
+				{current && (
 					<div
-						className="segment-workspace"
-						ref={workspaceRef}
-						style={
-							{
-								"--conversation-width": `${conversationWidth}px`,
-							} as CSSProperties
-						}
+						className={`segment-shell ${chatOpen ? "" : "conversation-closed"}`}
+						hidden={!available}
+						inert={!available}
+						style={!available ? { display: "none" } : undefined}
 					>
-						<section
-							className="segment-reader"
-							ref={readerRef}
-							aria-label="片段阅读与讲解"
-							inert={compact && chatOpen}
-							aria-hidden={compact && chatOpen}
+						<div
+							className="segment-workspace"
+							ref={workspaceRef}
+							style={
+								{
+									"--conversation-width": `${conversationWidth}px`,
+								} as CSSProperties
+							}
 						>
-							<div className="segment-reader-inner">
-								<header className="segment-identity">
-									<Link
-										to={`/sources/${current.source_id}`}
-										title={source.data?.title}
-									>
-										{source.data?.title ? (
-											<>
-												<span className="segment-source-label">所属来源：</span>
-												<span className="segment-source-name">
-													{source.data.title}
-												</span>
-											</>
-										) : (
-											"查看所属来源"
-										)}
-										<span aria-hidden="true">→</span>
-									</Link>
-								</header>
-								<SegmentMaterialOrigin segment={current} />
-								<OriginalCard
-									segment={current}
-									sourceQuery={source}
-									interactive={!(compact && chatOpen)}
-									returnFocusId={
-										compact && chatOpen
-											? "segment-discussion-toggle"
-											: "segment-original-trigger"
-									}
-									onEdit={() => {
-										update.reset();
-										editSnapshot.current = structuredClone(current);
-										setEditing(
+							<section
+								className="segment-reader"
+								ref={readerRef}
+								aria-label="片段阅读与讲解"
+								tabIndex={-1}
+								inert={compact && chatOpen}
+								aria-hidden={compact && chatOpen}
+							>
+								<div className="segment-reader-inner">
+									<header className="segment-identity">
+										<Link
+											to={`/sources/${current.source_id}`}
+											title={source.data?.title}
+										>
+											{source.data?.title ? (
+												<>
+													<span className="segment-source-label">
+														所属来源：
+													</span>
+													<span className="segment-source-name">
+														{source.data.title}
+													</span>
+												</>
+											) : (
+												"查看所属来源"
+											)}
+											<span aria-hidden="true">→</span>
+										</Link>
+									</header>
+									<SegmentMaterialOrigin segment={current} />
+									<OriginalCard
+										segment={current}
+										sourceQuery={source}
+										interactive={!(compact && chatOpen)}
+										returnFocusId={
 											compact && chatOpen
 												? "segment-discussion-toggle"
-												: "segment-original-trigger",
-										);
-									}}
-								/>
-								<section
-									ref={analysisRef}
-									id="segment-analyses"
-									aria-label="讲解"
-									className="segment-analyses"
-								>
-									<AnalysisPanel
-										segmentId={current.id}
-										selectedId={selectedAnalysis}
-										revisionId={selectedRevision}
-										onSelect={selectAnalysis}
-										onEdit={
-											segment.isSuccess
-												? (document) =>
+												: "segment-original-trigger"
+										}
+										onEdit={() => {
+											update.reset();
+											editSnapshot.current = structuredClone(current);
+											setEditing(
+												compact && chatOpen
+													? "segment-discussion-toggle"
+													: "segment-original-trigger",
+											);
+										}}
+									/>
+									<section
+										ref={analysisRef}
+										id="segment-analyses"
+										aria-label="讲解"
+										className="segment-analyses"
+									>
+										<AnalysisPanel
+											segmentId={current.id}
+											selectedId={selectedAnalysis}
+											revisionId={selectedRevision}
+											onSelect={selectAnalysis}
+											onEdit={
+												segment.isSuccess
+													? (document) =>
+															setAnalysisEditor({
+																segment: current,
+																initial: document,
+																restoreFocusId: `manual-analysis-edit-${document.id}`,
+															})
+													: undefined
+											}
+											toolbarActions={
+												<NewAnalysisActions
+													segmentId={current.id}
+													disabled={!segment.isSuccess}
+													onCreate={() =>
 														setAnalysisEditor({
 															segment: current,
-															initial: document,
-															restoreFocusId: `manual-analysis-edit-${document.id}`,
+															restoreFocusId: "manual-analysis-create",
 														})
-												: undefined
-										}
-										toolbarActions={
-											<NewAnalysisActions
-												segmentId={current.id}
-												disabled={!segment.isSuccess}
-												onCreate={() =>
-													setAnalysisEditor({
-														segment: current,
-														restoreFocusId: "manual-analysis-create",
-													})
-												}
-												onExplain={() => {
-													setChatOpen(true);
-													setExplainToken(crypto.randomUUID());
-												}}
-											/>
-										}
-									></AnalysisPanel>
-								</section>
+													}
+													onExplain={() => {
+														setChatOpen(true);
+														setExplainToken(crypto.randomUUID());
+													}}
+												/>
+											}
+										></AnalysisPanel>
+									</section>
+								</div>
+							</section>
+							<div className="segment-speech-dock" ref={speechDockRef}>
+								<SpeechPlaybackBar />
 							</div>
-						</section>
-						<div className="segment-speech-dock" ref={speechDockRef}>
-							<SpeechPlaybackBar />
-						</div>
-						<aside
-							id="segment-conversation"
-							className="segment-conversation"
-							ref={conversationRef}
-							hidden={!chatOpen}
-							onKeyDown={(event) => {
-								if (
-									event.key === "Escape" &&
-									!event.defaultPrevented &&
-									!document.querySelector("dialog[open], :popover-open")
-								) {
-									event.stopPropagation();
-									setChatOpen(false);
-								}
-							}}
-						>
-							<hr
-								className="conversation-resizer"
-								aria-label="调整对话栏宽度"
-								aria-controls="segment-conversation"
-								aria-orientation="vertical"
-								aria-valuemin={widthRange.min}
-								aria-valuemax={widthRange.max}
-								aria-valuenow={Math.round(
-									clampConversationWidth(conversationWidth, workspaceWidth),
-								)}
-								tabIndex={0}
-								onPointerDown={(event) => {
-									if (event.button !== 0 || !conversationRef.current) return;
-									event.preventDefault();
-									const width =
-										conversationRef.current.getBoundingClientRect().width;
-									resizeStart.current = {
-										pointerId: event.pointerId,
-										x: event.clientX,
-										width,
-										lastWidth: width,
-									};
-									event.currentTarget.setPointerCapture(event.pointerId);
-								}}
-								onPointerMove={(event) => {
-									const start = resizeStart.current;
-									if (!start || start.pointerId !== event.pointerId) return;
-									const width = Math.round(
-										clampConversationWidth(
-											start.width + start.x - event.clientX,
-											workspaceRef.current?.clientWidth ?? 0,
-										),
-									);
-									start.lastWidth = width;
-									setConversationWidth(width);
-								}}
-								onPointerUp={(event) => {
-									if (resizeStart.current?.pointerId !== event.pointerId)
-										return;
-									saveConversationWidth(resizeStart.current.lastWidth);
-									resizeStart.current = null;
-								}}
-								onPointerCancel={() => {
-									resizeStart.current = null;
-								}}
+							<aside
+								id="segment-conversation"
+								className="segment-conversation"
+								ref={conversationRef}
+								hidden={!chatOpen}
 								onKeyDown={(event) => {
-									const step = event.shiftKey ? 48 : 16;
-									const currentWidth = clampConversationWidth(
-										conversationWidth,
-										workspaceRef.current?.clientWidth ?? 0,
-									);
-									const next =
-										event.key === "ArrowLeft"
-											? currentWidth + step
-											: event.key === "ArrowRight"
-												? currentWidth - step
-												: event.key === "Home"
-													? widthRange.min
-													: event.key === "End"
-														? widthRange.max
-														: null;
-									if (next === null) return;
-									event.preventDefault();
-									const width = clampConversationWidth(
-										next,
-										workspaceRef.current?.clientWidth ?? 0,
-									);
-									setConversationWidth(width);
-									saveConversationWidth(width);
+									if (
+										event.key === "Escape" &&
+										!event.defaultPrevented &&
+										!document.querySelector("dialog[open], :popover-open")
+									) {
+										event.stopPropagation();
+										setChatOpen(false);
+									}
 								}}
-							/>
-							{workbenchMounted && (
-								<Workbench
-									key={current.id}
-									active={available}
-									headerAction={
-										<button
-											ref={discussionClose}
-											className="chat-icon-button"
-											type="button"
-											aria-label={compact ? "返回阅读" : "收起讨论"}
-											title={compact ? "返回阅读" : "收起讨论"}
-											data-tooltip={compact ? "返回阅读" : "收起讨论"}
-											onClick={() => setChatOpen(false)}
-										>
-											<svg
-												aria-hidden="true"
-												width="18"
-												height="18"
-												viewBox="0 0 24 24"
-												fill="none"
-												stroke="currentColor"
-												strokeWidth="1.6"
-												strokeLinecap="round"
-												strokeLinejoin="round"
-											>
-												<rect x="3" y="4" width="18" height="16" rx="2" />
-												<path d="M15 4v16" />
-											</svg>
-										</button>
-									}
-									segment={current}
-									selectedThreadId={selectedThread}
-									onSelectThread={(threadId) =>
-										updateLocation({ threadId, chatOpen: true })
-									}
-									explainToken={explainToken}
-									onSubmissionStarted={(requestId) => {
-										const latest = readSegmentLocation(
-											locationRef.current.latest.search,
-										);
-										requestReading.current = captureReadingPosition(
-											requestReading.current,
-											requestId,
-											latest,
-										);
+							>
+								<hr
+									className="conversation-resizer"
+									aria-label="调整对话栏宽度"
+									aria-controls="segment-conversation"
+									aria-orientation="vertical"
+									aria-valuemin={widthRange.min}
+									aria-valuemax={widthRange.max}
+									aria-valuenow={Math.round(
+										clampConversationWidth(conversationWidth, workspaceWidth),
+									)}
+									tabIndex={0}
+									onPointerDown={(event) => {
+										if (event.button !== 0 || !conversationRef.current) return;
+										event.preventDefault();
+										const width =
+											conversationRef.current.getBoundingClientRect().width;
+										resizeStart.current = {
+											pointerId: event.pointerId,
+											x: event.clientX,
+											width,
+											lastWidth: width,
+										};
+										event.currentTarget.setPointerCapture(event.pointerId);
 									}}
-									onJobAccepted={(job: Job) => {
-										jobReading.current[job.id] = requestReading.current[
-											job.request_id
-										] ?? { analysisId: null, revisionId: null };
-									}}
-									onOpenArtifact={(analysisId, revisionId, job) => {
-										const latest = readSegmentLocation(
-											locationRef.current.latest.search,
+									onPointerMove={(event) => {
+										const start = resizeStart.current;
+										if (!start || start.pointerId !== event.pointerId) return;
+										const width = Math.round(
+											clampConversationWidth(
+												start.width + start.x - event.clientX,
+												workspaceRef.current?.clientWidth ?? 0,
+											),
 										);
-										if (
-											job &&
-											!shouldOpenArtifact(
-												readingPositionForJob(
-													jobReading.current,
-													requestReading.current,
-													job,
-												),
-												latest,
-											)
-										)
+										start.lastWidth = width;
+										setConversationWidth(width);
+									}}
+									onPointerUp={(event) => {
+										if (resizeStart.current?.pointerId !== event.pointerId)
 											return;
-										selectAnalysis(analysisId, revisionId);
+										saveConversationWidth(resizeStart.current.lastWidth);
+										resizeStart.current = null;
+									}}
+									onPointerCancel={() => {
+										resizeStart.current = null;
+									}}
+									onKeyDown={(event) => {
+										const step = event.shiftKey ? 48 : 16;
+										const currentWidth = clampConversationWidth(
+											conversationWidth,
+											workspaceRef.current?.clientWidth ?? 0,
+										);
+										const next =
+											event.key === "ArrowLeft"
+												? currentWidth + step
+												: event.key === "ArrowRight"
+													? currentWidth - step
+													: event.key === "Home"
+														? widthRange.min
+														: event.key === "End"
+															? widthRange.max
+															: null;
+										if (next === null) return;
+										event.preventDefault();
+										const width = clampConversationWidth(
+											next,
+											workspaceRef.current?.clientWidth ?? 0,
+										);
+										setConversationWidth(width);
+										saveConversationWidth(width);
 									}}
 								/>
-							)}
-						</aside>
-					</div>
-					{deleting && (
-						<SegmentDeleteDialog
-							segment={current}
-							restoreFocusId="segment-more-trigger"
-							close={() => setDeleting(false)}
-							onDeleted={() => {
-								if (activeId.current === id)
-									navigate(`/sources/${current.source_id}`);
-							}}
-						/>
-					)}
-				</div>
-			)}
-			{editing && editSnapshot.current && (
-				<ConfirmDialog
-					titleId="edit-segment-title"
-					restoreFocusId={editing}
-					onClose={() => setEditing(null)}
-				>
-					<h2 id="edit-segment-title">编辑片段资料</h2>
-					<div className="segment-editor">
-						{editConflicted && (
-							<section aria-label="当前已保存内容">
-								<h3>当前已保存内容</h3>
-								{conflictCurrent.isFetching ? (
-									<p role="status">正在读取当前内容…</p>
-								) : conflictCurrent.isError ? (
-									<>
-										<InlineError error={conflictCurrent.error} />
-										<button
-											type="button"
-											onClick={() => void conflictCurrent.refetch()}
-										>
-											重试读取当前内容
-										</button>
-									</>
-								) : conflictCurrent.data ? (
-									<>
-										{segmentEditFields.map(([name, label]) => (
-											<div key={name} className="segment-material-field">
-												<h4>
-													{name === "source_ref" &&
-													conflictCurrent.data.material_provenance
-														? "出处补充"
-														: label}
-												</h4>
-												<p style={{ whiteSpace: "pre-wrap" }}>
-													{conflictCurrent.data[name] || "（空）"}
-												</p>
-											</div>
-										))}
-										<button
-											type="button"
-											onClick={() => {
-												if (
-													!editSnapshot.current ||
-													!conflictCurrent.data ||
-													conflictCurrent.isFetching ||
-													conflictCurrent.isError
+								{workbenchMounted && (
+									<Workbench
+										key={current.id}
+										active={available}
+										headerAction={
+											<button
+												ref={discussionClose}
+												className="chat-icon-button"
+												type="button"
+												aria-label={compact ? "返回阅读" : "收起讨论"}
+												title={compact ? "返回阅读" : "收起讨论"}
+												data-tooltip={compact ? "返回阅读" : "收起讨论"}
+												onClick={() => setChatOpen(false)}
+											>
+												<svg
+													aria-hidden="true"
+													width="18"
+													height="18"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													strokeWidth="1.6"
+													strokeLinecap="round"
+													strokeLinejoin="round"
+												>
+													<rect x="3" y="4" width="18" height="16" rx="2" />
+													<path d="M15 4v16" />
+												</svg>
+											</button>
+										}
+										segment={current}
+										selectedThreadId={selectedThread}
+										onSelectThread={(threadId) =>
+											updateLocation({ threadId, chatOpen: true })
+										}
+										explainToken={explainToken}
+										onSubmissionStarted={(requestId) => {
+											const latest = readSegmentLocation(
+												locationRef.current.latest.search,
+											);
+											requestReading.current = captureReadingPosition(
+												requestReading.current,
+												requestId,
+												latest,
+											);
+										}}
+										onJobAccepted={(job: Job) => {
+											jobReading.current[job.id] = requestReading.current[
+												job.request_id
+											] ?? { analysisId: null, revisionId: null };
+										}}
+										onOpenArtifact={(analysisId, revisionId, job) => {
+											const latest = readSegmentLocation(
+												locationRef.current.latest.search,
+											);
+											if (
+												job &&
+												!shouldOpenArtifact(
+													readingPositionForJob(
+														jobReading.current,
+														requestReading.current,
+														job,
+													),
+													latest,
 												)
-													return;
-												editSnapshot.current = {
-													...editSnapshot.current,
-													revision: conflictCurrent.data.revision,
-												};
-												update.reset();
-											}}
-										>
-											已核对，允许按当前版本保存草稿
-										</button>
-									</>
-								) : null}
-							</section>
+											)
+												return;
+											selectAnalysis(analysisId, revisionId);
+										}}
+									/>
+								)}
+							</aside>
+						</div>
+						{deleting && (
+							<SegmentDeleteDialog
+								segment={current}
+								restoreFocusId="segment-more-trigger"
+								close={() => setDeleting(false)}
+								onDeleted={() => {
+									if (activeId.current === id)
+										navigate(`/sources/${current.source_id}`);
+								}}
+							/>
 						)}
-						<SegmentForm
-							key={id}
-							initial={editSnapshot.current}
-							onSave={(fields) => update.mutate(fields)}
-							onCancel={() => setEditing(null)}
-							pending={update.isPending}
-							submitDisabled={editConflicted}
-							error={
-								update.error instanceof RequestError &&
-								update.error.status === 409
-									? new Error(
-											"片段已被其他操作更新，草稿已保留。请核对上方的当前内容，再明确重试保存。",
-										)
-									: update.error
-							}
-							submitLabel="保存更改"
-						/>
 					</div>
-				</ConfirmDialog>
-			)}
-			{analysisEditor && (
-				<AnalysisEditor
-					segment={analysisEditor.segment}
-					initial={analysisEditor.initial}
-					refreshError={segment.isError ? segment.error : null}
-					restoreFocusId={analysisEditor.restoreFocusId}
-					onClose={() => setAnalysisEditor(null)}
-					onSaved={(result) => {
-						if (activeId.current !== id) return;
-						setAnalysisEditor(null);
-						const target = savedAnalysisLocation(result);
-						selectAnalysis(
-							target.analysisId,
-							target.revisionId,
-							!analysisEditor.initial,
-						);
-					}}
-				/>
-			)}
-		</SegmentFrame>
+				)}
+				{editing && editSnapshot.current && (
+					<ConfirmDialog
+						titleId="edit-segment-title"
+						restoreFocusId={editing}
+						onClose={() => setEditing(null)}
+					>
+						<h2 id="edit-segment-title">编辑片段资料</h2>
+						<div className="segment-editor">
+							{editConflicted && (
+								<section aria-label="当前已保存内容">
+									<h3>当前已保存内容</h3>
+									{conflictCurrent.isFetching ? (
+										<p role="status">正在读取当前内容…</p>
+									) : conflictCurrent.isError ? (
+										<>
+											<InlineError error={conflictCurrent.error} />
+											<button
+												type="button"
+												onClick={() => void conflictCurrent.refetch()}
+											>
+												重试读取当前内容
+											</button>
+										</>
+									) : conflictCurrent.data ? (
+										<>
+											{segmentEditFields.map(([name, label]) => (
+												<div key={name} className="segment-material-field">
+													<h4>
+														{name === "source_ref" &&
+														conflictCurrent.data.material_provenance
+															? "出处补充"
+															: label}
+													</h4>
+													<p style={{ whiteSpace: "pre-wrap" }}>
+														{conflictCurrent.data[name] || "（空）"}
+													</p>
+												</div>
+											))}
+											<button
+												type="button"
+												onClick={() => {
+													if (
+														!editSnapshot.current ||
+														!conflictCurrent.data ||
+														conflictCurrent.isFetching ||
+														conflictCurrent.isError
+													)
+														return;
+													editSnapshot.current = {
+														...editSnapshot.current,
+														revision: conflictCurrent.data.revision,
+													};
+													update.reset();
+												}}
+											>
+												已核对，允许按当前版本保存草稿
+											</button>
+										</>
+									) : null}
+								</section>
+							)}
+							<SegmentForm
+								key={id}
+								initial={editSnapshot.current}
+								onSave={(fields) => update.mutate(fields)}
+								onCancel={() => setEditing(null)}
+								pending={update.isPending}
+								submitDisabled={editConflicted}
+								error={
+									update.error instanceof RequestError &&
+									update.error.status === 409
+										? new Error(
+												"片段已被其他操作更新，草稿已保留。请核对上方的当前内容，再明确重试保存。",
+											)
+										: update.error
+								}
+								submitLabel="保存更改"
+							/>
+						</div>
+					</ConfirmDialog>
+				)}
+				{analysisEditor && (
+					<AnalysisEditor
+						segment={analysisEditor.segment}
+						initial={analysisEditor.initial}
+						refreshError={segment.isError ? segment.error : null}
+						restoreFocusId={analysisEditor.restoreFocusId}
+						onClose={() => setAnalysisEditor(null)}
+						onSaved={(result) => {
+							if (activeId.current !== id) return;
+							setAnalysisEditor(null);
+							const target = savedAnalysisLocation(result);
+							selectAnalysis(
+								target.analysisId,
+								target.revisionId,
+								!analysisEditor.initial,
+							);
+						}}
+					/>
+				)}
+			</SegmentFrame>
+		</SegmentDictionary>
 	);
 }

@@ -1,8 +1,8 @@
 import {
 	clampReaderCardPosition,
 	type ReaderCardPosition,
-} from "./reader-card-drag.ts";
-import type { ScreenAnchor } from "./reader-study.ts";
+} from "../materials/reader-card-drag.ts";
+import type { DictionaryAnchor as ScreenAnchor } from "./types.ts";
 
 export const compactDictionaryWidth = 740;
 const gap = 8;

@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Segment } from "../content";
+import { LookupText } from "../dictionary/LookupText";
 import { SegmentMaterialOrigin } from "../materials/SegmentMaterialOrigin";
 import { ConfirmDialog, dateLabel } from "../Shared";
 import { SpeechControls } from "../speech";
@@ -8,6 +9,7 @@ import {
 	SegmentCurrentTranslation,
 	SegmentTranslations,
 } from "../translation/SegmentTranslations";
+import { SegmentDictionaryDialogLayer } from "./SegmentDictionary";
 import { SegmentShare, type ShareSourceQuery } from "./SegmentShare";
 import "./material-fields.css";
 import "./original-card.css";
@@ -16,15 +18,24 @@ function Field({
 	label,
 	value,
 	lang,
+	lookup = false,
 }: {
 	label: string;
 	value: string;
 	lang?: string;
+	lookup?: boolean;
 }) {
 	return value.trim() ? (
 		<section className="segment-material-field">
 			<h4>{label}</h4>
-			<p lang={lang}>{value}</p>
+			<LookupText
+				className="segment-material-field-text"
+				contentKey={value}
+				lang={lang}
+				enabled={lookup}
+			>
+				<p lang={lang}>{value}</p>
+			</LookupText>
 		</section>
 	) : null;
 }
@@ -69,7 +80,11 @@ export function OriginalCard({
 						iconOnly
 					/>
 				</header>
-				<div className="segment-context-preview" lang="ja">
+				<LookupText
+					className="segment-context-preview"
+					lang="ja"
+					contentKey={`${segment.context_before}\n${segment.text}\n${segment.context_after}`}
+				>
 					{segment.context_before.trim() && (
 						<section className="segment-context" aria-label="已保存前文">
 							<div className="segment-context-line segment-context-before">
@@ -87,7 +102,7 @@ export function OriginalCard({
 							</div>
 						</section>
 					)}
-				</div>
+				</LookupText>
 				<SegmentCurrentTranslation translation={segment.translation} />
 				<div className="segment-original-actions">
 					<button
@@ -141,9 +156,19 @@ export function OriginalCard({
 								aria-label="原文与语境"
 							>
 								<h3 className="segment-group-title">原文与语境</h3>
-								<Field label="前文" value={segment.context_before} lang="ja" />
-								<Field label="目标原文" value={segment.text} lang="ja" />
-								<Field label="后文" value={segment.context_after} lang="ja" />
+								<Field
+									label="前文"
+									value={segment.context_before}
+									lang="ja"
+									lookup
+								/>
+								<Field label="目标原文" value={segment.text} lang="ja" lookup />
+								<Field
+									label="后文"
+									value={segment.context_after}
+									lang="ja"
+									lookup
+								/>
 							</section>
 							{(segment.translation.trim() || segment.transcription.trim()) && (
 								<section
@@ -193,6 +218,7 @@ export function OriginalCard({
 								完成
 							</button>
 						</footer>
+						<SegmentDictionaryDialogLayer />
 					</ConfirmDialog>,
 					overlayHost,
 				)}
