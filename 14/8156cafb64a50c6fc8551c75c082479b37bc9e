@@ -1,0 +1,25 @@
+frontend/browser-tests/route-loading.tsx
+  s_da6aeef9fd5774::t_53ab9fd9a09d70 273-276
+  s_da6aeef9fd5774::t_aef4933e90c7d6 83,261-272,277-283
+frontend/src/settings/SettingsForms.tsx
+  s_da6aeef9fd5774::t_cc2d00daee6fae 10,78-106,135-136,138-144,154,171,200-203,215
+docs/handovers/reading-practice/SETTINGS_LEAVE_ACCEPTANCE.md
+  s_da6aeef9fd5774::t_7729cd413278f8 11
+  s_da6aeef9fd5774::t_156191db5632d5 1-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "148156cafb64a50c6fc8551c75c082479b37bc9e",
+  "prompts": {},
+  "sessions": {
+    "s_da6aeef9fd5774": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bbbc-227a-7e80-bba6-ae05356ae231",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
