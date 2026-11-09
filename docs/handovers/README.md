@@ -45,6 +45,7 @@
 
 | 范围 | 计划、设计与验收证据 |
 | --- | --- |
+| 横排章末裁剪 | [占宽滚动条修复与回归](archived/reading-practice/READER_SCROLLBAR_ACCEPTANCE.md) |
 | 带上下文复制 | [首版验收](archived/reading-practice/CONTEXT_COPY_ACCEPTANCE.md)、[数据库持久化与现用库升级](archived/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md) |
 | 阅读设置 | [结构调查与原型记录](archived/reading-practice/READER_SETTINGS_STRUCTURE.md)、[结构与会话保护验收](archived/reading-practice/READER_SETTINGS_ACCEPTANCE.md) |
 | 应用设置 | [自动保存、服务管理与验证记录整理验收](archived/settings-refresh/POLISH_ACCEPTANCE.md) |

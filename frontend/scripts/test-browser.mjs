@@ -86,6 +86,8 @@ const scenarios = selectBrowserScenarios(
 		[390, 900, "?suite=reader-layout-switch"],
 		[1280, 900, "?suite=reader-layout-switch&direction=vertical-rl"],
 		[390, 900, "?suite=reader-layout-switch&direction=vertical-rl"],
+		[1280, 900, "?suite=reader-scrollbar"],
+		[390, 900, "?suite=reader-scrollbar"],
 		[1280, 900, "?suite=reader-images"],
 		[1280, 900, "?suite=reader-images&strict"],
 		[1280, 900, "?suite=reader-image-performance"],

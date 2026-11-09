@@ -235,6 +235,10 @@
 	scrollbar-color: var(--reader-line) transparent;
 	overscroll-behavior: contain;
 }
+.reader-r1 .reader-viewport:not(.material-vertical) {
+	/* The iframe's 1px height probe must retain the final reading width. */
+	scrollbar-gutter: stable;
+}
 .reader-r1 .reader-viewport.material-vertical {
 	top: var(--reader-top-space);
 	bottom: calc(var(--reader-bottom-space) - 52px);

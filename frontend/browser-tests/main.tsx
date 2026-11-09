@@ -32,6 +32,7 @@ import { defaultReaderContextCopyResponse } from "./reader-context-copy-fixture"
 import { readerDictionary } from "./reader-dictionary";
 import { readerImages } from "./reader-images";
 import { readerLayoutSwitch } from "./reader-layout-switch";
+import { readerScrollbar } from "./reader-scrollbar";
 import { readerSession } from "./reader-session";
 import { readerSettings } from "./reader-settings";
 import { readingAidsRegression } from "./reading-aids";
@@ -438,6 +439,7 @@ try {
 		["reader-images", readerImages],
 		["position-bookmarks", positionBookmarks],
 		["reader-layout-switch", readerLayoutSwitch],
+		["reader-scrollbar", readerScrollbar],
 		["reader-context-copy", readerContextCopy],
 		["reader-dictionary", readerDictionary],
 		["segment-dictionary", segmentDictionary],

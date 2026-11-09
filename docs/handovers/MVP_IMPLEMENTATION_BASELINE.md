@@ -60,7 +60,7 @@
 | EPUB 编译包存储与编译器 | 完整资源 HTML 仅为编译临时态；最终资源保留正文、样式及定位，章节 HTML 与原图按 v2 图片池格式保存；无旧格式读取、回退或转换工具；有界编译及展开预算保留，原 EPUB 与历史备份保留 | [格式与不变式](../ARCHITECTURE.md#31-实体)、[开发库边界](../UPGRADING.md#epub-存储格式与开发库重建)、[验收与测量](archived/EPUB_STORAGE_ACCEPTANCE.md) |
 | 来源空间 S2 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；来源栏可调宽并保存偏好，片段／讲解列表搜索、排序与空态已打磨；工程验收完成，用户使用验收待进行 | [S2 工程验收](archived/sources-s2/ACCEPTANCE.md) |
 | EPUB 导入与恢复 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读并清理托管原书与派生数据 | [切片 1](archived/epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](archived/epub-reading/SLICE_0_ACCEPTANCE.md)、[来源删除清理](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md) |
-| 阅读器 R1.1 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级 | [R1.1 工程验收](archived/reader-r1/ACCEPTANCE.md)、[交互优化](archived/reader-r1/INTERACTION_POLISH.md) |
+| 阅读器 R1.1 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级；基于 `main b48fe34d` 的横排修复已通过本地验收，稳定滚动条槽消除占宽滚动条导致的章末裁剪 | [R1.1 工程验收](archived/reader-r1/ACCEPTANCE.md)、[交互优化](archived/reader-r1/INTERACTION_POLISH.md)、[章末裁剪验收](archived/reading-practice/READER_SCROLLBAR_ACCEPTANCE.md) |
 | 独立图片查看器 | 正文与图库共用查看器，按入口返回；居中图片与虚化背景、缩放拖动、复制图片、原图下载及在图库中查看当前出现项；真实触屏和系统剪贴板未验 | [验收与提交前修复](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27)、[交互契约](../INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[使用指南](../USAGE.md#目录搜索与书签) |
 | 图片加载与定位优化 | 正文图先显示，后台按出现身份定位；阅读会话有界复用元数据与图片字节 | [测量与验证](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md) |
 | 阅读会话复用 | 同标签页片段往返复用最近一本书的正文与 iframe，返回重新核验并刷新学习状态；暂离十分钟或离开适用范围释放，仍按片段精确出处定位；测量未显示离线可读时间稳定下降 | [测量与验收](archived/text-study/READER_SESSION_ACCEPTANCE.md)、[宿主调整](archived/text-study/READER_SESSION_ACCEPTANCE.md#2026-10-25-阅读会话宿主局部调整) |
