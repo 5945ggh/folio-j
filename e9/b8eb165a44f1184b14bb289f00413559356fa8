@@ -1,0 +1,151 @@
+docs/INFORMATION_ARCHITECTURE.md
+  s_da6aeef9fd5774::t_25a3d0ec8d5a7e 106,236
+  s_da6aeef9fd5774::t_4554fd2c91bd27 108,260-262
+  s_da6aeef9fd5774::t_c700899db3d864 130
+docs/ARCHITECTURE.md
+  s_da6aeef9fd5774::t_4554fd2c91bd27 670
+  s_da6aeef9fd5774::t_e221360da37fd5 686
+docs/USAGE.md
+  s_da6aeef9fd5774::t_4554fd2c91bd27 19-20,74-75
+  s_da6aeef9fd5774::t_e221360da37fd5 73
+frontend/src/App.tsx
+  s_da6aeef9fd5774::t_0036fbda2e6f64 15
+  s_da6aeef9fd5774::t_4f4655195ca636 22-25,57,65-69,90
+docs/PRD.md
+  s_da6aeef9fd5774::t_4554fd2c91bd27 149,343
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_da6aeef9fd5774::t_10c05f2841d3f6 3,20
+frontend/src/segments/SegmentSessionHost.tsx
+  s_da6aeef9fd5774::t_4f4655195ca636 1-16,19-49
+  s_da6aeef9fd5774::t_0036fbda2e6f64 17-18
+frontend/src/segments/SegmentFrame.tsx
+  s_da6aeef9fd5774::t_3027399f8af7a6 4,6-10,23-30,90-99,171-180
+frontend/src/segments/segment-session-route.test.ts
+  s_da6aeef9fd5774::t_3e5858780fe3dc 1-13,16-17,20,29,41-45,48-49
+  s_da6aeef9fd5774::t_0036fbda2e6f64 14-15,18-19,21-28,30-40,46-47
+frontend/browser-tests/workbench-activity.tsx
+  s_da6aeef9fd5774::t_ff9a851bb396f1 254
+  s_da6aeef9fd5774::t_2f8f6fdb2663d9 69,72,83,92-93
+  s_da6aeef9fd5774::t_0b789c40308c47 45,74
+  s_da6aeef9fd5774::t_19590300931cf3 1-6,8-18,21-44,46-68,70-71,73,75-82,84-91,94-167,172-185,190-193,197-225,228-253,255-264
+  s_da6aeef9fd5774::t_b523632a2bef6e 7,19-20
+  s_da6aeef9fd5774::t_3fd0c9a2335144 168-171,186-189,194-196,226-227
+frontend/src/settings/SettingsNavigation.tsx
+  s_da6aeef9fd5774::t_74697ff74f6930 10,23,93,102,106-107,118-119,122,144,148,154-155
+  s_da6aeef9fd5774::t_e65255798137ab 56-57
+  s_da6aeef9fd5774::t_ac8093dffd2f7a 58-66,68-69,78-82,179
+  s_da6aeef9fd5774::t_464be432a1cc27 123-125,128-131,145-147
+  s_da6aeef9fd5774::t_2edfce11ed3639 51,54-55,70-71,75,94,97-98,149
+  s_da6aeef9fd5774::t_37ecd43a19b4bb 5,7,15,27-50,52-53,67,72-74,76-77,83-91,142
+frontend/src/speech/index.tsx
+  s_da6aeef9fd5774::t_bf57a874845b87 33,36,38
+frontend/src/navigation/retained-session.ts
+  s_da6aeef9fd5774::t_4f4655195ca636 22,28,51,57
+frontend/src/navigation.ts
+  s_da6aeef9fd5774::t_74697ff74f6930 212-213,222,226-229,233-234,249,259-261,263-264
+  s_da6aeef9fd5774::t_f695332d1b7e31 243-246,250,252-255,258
+  s_da6aeef9fd5774::t_464be432a1cc27 215-217,223-225,230-232
+  s_da6aeef9fd5774::t_b61e452d2d33c9 235-236
+frontend/src/SegmentPage.tsx
+  s_da6aeef9fd5774::t_ef29897f40cbcb 271-274
+  s_da6aeef9fd5774::t_71b28325cace64 166,268-270,275-288,292-293,380-386,629
+  s_da6aeef9fd5774::t_0036fbda2e6f64 13-19,209-215,294-295,305-306
+  s_da6aeef9fd5774::t_c9d9547ce99f2a 391,402-406,432-433,436-438
+  s_da6aeef9fd5774::t_bf57a874845b87 87-89,91-96,98-99,146,186-187,262,265-267,289-291,301,317,320-321,327,331,379
+  s_da6aeef9fd5774::t_625b5a9ad9dcbf 56
+frontend/browser-tests/settings-return.tsx
+  s_da6aeef9fd5774::t_342b422f8c784b 316
+  s_da6aeef9fd5774::t_0100cf379c4f66 25-27,167-170,511-525
+  s_9238d02aa71790::t_bf937c07f32908 1-2,529
+  s_da6aeef9fd5774::t_f3acd129e44bf5 296-308,397-408
+  s_9238d02aa71790::t_fd936b8cd77327 21,30-33,409
+  s_da6aeef9fd5774::t_7f0c53751dc33b 22-24,28-29,295,509-510,526
+frontend/src/materials/reader-r1.css
+  s_da6aeef9fd5774::t_f63baac74968a4 133,145-147,149,158-164,167-179,184-186,190-192,488,493-496,498-500,598-601
+  s_da6aeef9fd5774::t_20fb96b2d7eaa1 148,152-157,165-166,182-183,187-189,491-492,497
+docs/handovers/reading-practice/FOCUSED_NAVIGATION_ACCEPTANCE.md
+  s_da6aeef9fd5774::t_293fa4e04c0d2f 50,60,62
+  s_da6aeef9fd5774::t_58ad7abc45d146 1-2,4-43,45-46
+  s_da6aeef9fd5774::t_cec466ce6e2393 44,63-86
+  s_da6aeef9fd5774::t_05d5b28cb82967 47-49
+  s_da6aeef9fd5774::t_2193e77b16babd 51-52
+  s_da6aeef9fd5774::t_b10479b1d01642 61
+  s_da6aeef9fd5774::t_10c05f2841d3f6 3,87-94
+  s_da6aeef9fd5774::t_b4c6ea814bbcd6 53-59
+frontend/src/settings/settings-reading-return.css
+  s_da6aeef9fd5774::t_37ecd43a19b4bb 80-99,136
+frontend/browser-tests/focused-navigation.tsx
+  s_da6aeef9fd5774::t_3db7588311aa4d 63-80,84-90,118,427-428,435,437-438,449-455,457-499,610,689,912,951
+  s_da6aeef9fd5774::t_be5d9074cf6c94 91-92,293-297
+  s_da6aeef9fd5774::t_fda5cc78b72791 762-905,952
+  s_da6aeef9fd5774::t_5ddc91f91e2fc9 663-687
+  s_da6aeef9fd5774::t_342b422f8c784b 46,758,1008
+  s_da6aeef9fd5774::t_afb33ad812188f 564-565,582-584
+  s_da6aeef9fd5774::t_ae28ae22979489 1,47-51,586-591,759
+  s_da6aeef9fd5774::t_f64b06233f2e51 314-321
+  s_da6aeef9fd5774::t_03ba2bbb9d279a 538
+  s_da6aeef9fd5774::t_900f6c2123d1fb 436
+  s_da6aeef9fd5774::t_728861fe9694d7 133-232,324-326,411,517,549-561,580
+  s_da6aeef9fd5774::t_3a356f981797ed 6
+  s_da6aeef9fd5774::t_0100cf379c4f66 234,242,248,254,262,267,272,279,286,290,301,328,332,414,421,425,431,500,504,509,514,520,535,539,543,547,568,573,579,592,701,704,707-708,711,714,720-721,728,730,737,740-741,746,906,908,911,923,925-949,960-1007,1009-1052
+  s_da6aeef9fd5774::t_de29c985292962 283,291-292,308-313,501
+  s_da6aeef9fd5774::t_33b5afb5562be2 127
+  s_da6aeef9fd5774::t_53ab9fd9a09d70 81-82,236,243,256-257,264,269,273-274,284,287,298,305,323,329,409,416-417,422,426,432-433,505,515,531-532,536,540,562-563,569,576,581,594-609,621-656,690-692,916-917
+  s_da6aeef9fd5774::t_f3acd129e44bf5 3,41-43,237,260,333-408,412,439-448,456,611-619,913
+  s_da6aeef9fd5774::t_9917299fbadc58 2,4-5,7-40,44-45,52-62,83,93-117,119-126,128-132,233,235,238-241,244-247,249-253,255,258-259,261,263,265-266,268,270-271,275-278,280-282,285,288-289,299-300,302-304,306-307,322,327,330-331,410,413,415,418-420,423-424,429-430,434,502-503,506-508,510-513,516,518-519,521-530,533-534,537,541-542,544-546,548,566-567,570-572,574-575,577-578,585,593,620,657-662,688,693-700,702-703,705-706,709-710,712-713,715-719,722-727,729,731-736,738-739,742-745,747-757,760-761,907,909-910,914-915,918-922,924,950,953-959,1053
+frontend/src/materials/MaterialReader.tsx
+  s_da6aeef9fd5774::t_f63baac74968a4 37,199-210,213-221,1902-1911,1913-1920,1923-1924
+  s_da6aeef9fd5774::t_20f6acadcf5b2d 1976-1984
+  s_da6aeef9fd5774::t_20fb96b2d7eaa1 194-198,211-212,1912,1921-1922
+frontend/src/segments/segment-session-route.ts
+  s_da6aeef9fd5774::t_0036fbda2e6f64 10-12,15-18
+  s_da6aeef9fd5774::t_4f4655195ca636 1-9,13-14,19-20
+frontend/src/segments/layout.css
+  s_da6aeef9fd5774::t_3027399f8af7a6 36,280,307-308,319-321
+  s_da6aeef9fd5774::t_74d054df5c2c24 24,53,272-273,292-293
+  s_da6aeef9fd5774::t_af3ad0b20c5f6c 294
+  s_da6aeef9fd5774::t_d07922b958a5d2 322-323
+frontend/scripts/test-browser.mjs
+  s_da6aeef9fd5774::t_873c4f47204fd6 29-30
+  s_da6aeef9fd5774::t_ee109a0f308eb2 35-38
+  s_da6aeef9fd5774::t_f8f5fb0ff30c38 31-34
+frontend/src/navigation/settings-return.test.ts
+  s_da6aeef9fd5774::t_e0a89490414bd3 5,78-80,86-91,98-108,113-115,122,126-128,140-142,160-162,172-174,179,184
+  s_da6aeef9fd5774::t_f695332d1b7e31 125,129-139
+  s_da6aeef9fd5774::t_6fb4a47b2933ba 185-234
+  s_da6aeef9fd5774::t_464be432a1cc27 81-85,92-97,109-112,116-121,123-124,143-159,163-171,175-178,180-183
+frontend/src/chat/Workbench.tsx
+  s_da6aeef9fd5774::t_bf57a874845b87 1066-1069,1266,1290
+  s_da6aeef9fd5774::t_71b28325cace64 1007,1017,1064-1065,1147-1151,1256-1260
+frontend/src/navigation/retained-session.test.ts
+  s_da6aeef9fd5774::t_0036fbda2e6f64 94-96,101-111,115-118
+  s_da6aeef9fd5774::t_3e5858780fe3dc 89-93,97-100,112-114,119
+frontend/browser-tests/main.tsx
+  s_da6aeef9fd5774::t_3d5deaa96cf583 20,52,431-432
+frontend/browser-tests/reader-session.tsx
+  s_da6aeef9fd5774::t_a22b022f4a3551 172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e9b8eb165a44f1184b14bb289f00413559356fa8",
+  "prompts": {},
+  "sessions": {
+    "s_9238d02aa71790": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1b9c5-85f6-71c3-8fb6-8d0891c6cf12",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_da6aeef9fd5774": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bbbc-227a-7e80-bba6-ae05356ae231",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
