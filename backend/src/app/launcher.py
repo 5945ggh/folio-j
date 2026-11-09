@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import signal
 import socket
 import sqlite3
 import sys
 import webbrowser
 from collections.abc import Sequence
+from io import TextIOWrapper
 from pathlib import Path
 
 import uvicorn
@@ -76,16 +78,31 @@ def start(settings: Settings, *, no_browser: bool) -> int:
         lifespan="on",
     )
     server = BrowserServer(configuration, None if no_browser else url)
+    sigbreak = signal.SIGBREAK if sys.platform == "win32" else None
+    previous_sigbreak = None
+    if sigbreak is not None:
+        # Uvicorn restores and replays SIGBREAK after cleanup. Its Windows
+        # default would terminate the process instead of reaching our normal stop.
+        previous_sigbreak = signal.signal(sigbreak, signal.default_int_handler)
     try:
         server.run()
     except KeyboardInterrupt:
-        # Uvicorn replays SIGINT after its ASGI cleanup has finished. Treat that
+        # Uvicorn replays stop signals after its ASGI cleanup has finished. Treat that
         # normal terminal stop as success only if startup had completed.
         pass
+    finally:
+        if sigbreak is not None and previous_sigbreak is not None:
+            signal.signal(sigbreak, previous_sigbreak)
     return 0 if server.started else 1
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    if sys.platform == "win32":
+        # Redirected Windows streams may use cp936 even when the console supports
+        # Unicode. Keep paths and diagnostics printable, including lone surrogates.
+        for stream in (sys.stdout, sys.stderr):
+            if isinstance(stream, TextIOWrapper):
+                stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Folio-J 本地浏览器应用")
     commands = parser.add_subparsers(dest="command")
     serve = commands.add_parser("start", help="升级数据库并启动，默认打开系统浏览器")

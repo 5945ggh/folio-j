@@ -1,16 +1,19 @@
 """Exercise the frozen CLI's migration and lifecycle seams without network access."""
 
 import asyncio
+import io
+import signal
 import socket
 import sqlite3
 import sys
 from pathlib import Path
+from types import FrameType, SimpleNamespace
 
 import pytest
 import uvicorn
 
 from app import config, launcher, resources
-from app.config import Settings
+from app.config import DatabaseSettings, Settings
 from app.platform_io import exclusive_file_lock
 
 
@@ -190,3 +193,118 @@ def test_server_bind_failure_is_not_reported_as_success(
     with pytest.raises(SystemExit) as stopped:
         launcher.start(Settings(), no_browser=True)
     assert stopped.value.code == 1
+
+
+@pytest.mark.parametrize("command", ["data-path", "backup"])
+def test_windows_cli_reconfigures_cp936_output_and_errors(
+    command: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "学习📚𠮷" / "app.db"
+    output, errors = io.BytesIO(), io.BytesIO()
+    stdout = io.TextIOWrapper(output, encoding="cp936")
+    stderr = io.TextIOWrapper(errors, encoding="cp936")
+    monkeypatch.setattr(
+        launcher, "sys", SimpleNamespace(platform="win32", stdout=stdout, stderr=stderr)
+    )
+    monkeypatch.setattr(sys, "stdout", stdout)
+    monkeypatch.setattr(sys, "stderr", stderr)
+    monkeypatch.setattr(
+        launcher, "load_settings", lambda: Settings(database=DatabaseSettings(path=path))
+    )
+
+    def backup(destination: Path) -> Path:
+        # An unpaired surrogate must not turn the error report into another error.
+        raise ValueError(f"无法备份 {path} \ud800")
+
+    monkeypatch.setattr(launcher, "create_backup", backup)
+    try:
+        result = launcher.main(
+            [command, str(tmp_path / "backup")] if command == "backup" else [command]
+        )
+        stdout.flush()
+        stderr.flush()
+        assert stdout.encoding == stderr.encoding == "utf-8"
+        assert stdout.errors == stderr.errors == "replace"
+        if command == "backup":
+            assert result == 1
+            assert f"操作失败：无法备份 {path} ?" in errors.getvalue().decode("utf-8")
+        else:
+            assert result == 0
+            assert str(path) in output.getvalue().decode("utf-8")
+    finally:
+        # Keep pytest's stream restoration separate from owning these buffers.
+        stdout.detach()
+        stderr.detach()
+
+
+@pytest.mark.parametrize("missing", [False, True])
+def test_windows_cli_accepts_replacement_and_missing_streams(
+    missing: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stdout = None if missing else io.StringIO()
+    stderr = None if missing else io.StringIO()
+    monkeypatch.setattr(
+        launcher, "sys", SimpleNamespace(platform="win32", stdout=stdout, stderr=stderr)
+    )
+    monkeypatch.setattr(sys, "stdout", stdout)
+    monkeypatch.setattr(sys, "stderr", stderr)
+    assert launcher.main(["data-path"]) == 0
+    if stdout is not None:
+        assert "下次迁移和启动使用的数据库" in stdout.getvalue()
+
+
+@pytest.mark.parametrize("outcome", ["complete", "interrupt", "startup_interrupt", "bind_failure"])
+def test_windows_server_restores_sigbreak_after_every_exit(
+    outcome: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    frontend = tmp_path / "frontend/dist"
+    frontend.mkdir(parents=True)
+    (frontend / "index.html").touch()
+    monkeypatch.setattr(launcher, "RESOURCE_ROOT", tmp_path)
+    monkeypatch.setattr(launcher, "sys", SimpleNamespace(platform="win32"))
+
+    def migrate(database_path: Path | None = None) -> None:
+        pass
+
+    monkeypatch.setattr(launcher, "migrate", migrate)
+    # SIGBREAK is absent on POSIX; keep this registration regression portable.
+    sigbreak = getattr(signal, "SIGBREAK", 21)
+    monkeypatch.setattr(signal, "SIGBREAK", sigbreak, raising=False)
+    events: list[str] = []
+
+    def original_handler(number: int, frame: FrameType | None) -> None:
+        pass
+
+    def register(number: int, handler: object) -> object:
+        assert number == sigbreak
+        if not events:
+            assert handler is signal.default_int_handler
+            events.append("registered")
+            return original_handler
+        assert events == ["registered", "cleanup"]
+        assert handler is original_handler
+        events.append("restored")
+        return signal.default_int_handler
+
+    def run(server: launcher.BrowserServer) -> None:
+        assert events == ["registered"]
+        server.started = outcome not in ("startup_interrupt", "bind_failure")
+        try:
+            if outcome == "bind_failure":
+                raise SystemExit(1)
+            if outcome in ("interrupt", "startup_interrupt"):
+                signal.default_int_handler(sigbreak, None)
+        finally:
+            events.append("cleanup")
+
+    monkeypatch.setattr(signal, "signal", register)
+    monkeypatch.setattr(launcher.BrowserServer, "run", run)
+    if outcome == "bind_failure":
+        with pytest.raises(SystemExit) as stopped:
+            launcher.start(Settings(), no_browser=True)
+        assert stopped.value.code == 1
+    else:
+        assert launcher.start(Settings(), no_browser=True) == (
+            1 if outcome == "startup_interrupt" else 0
+        )
+    assert events == ["registered", "cleanup", "restored"]

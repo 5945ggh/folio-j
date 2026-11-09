@@ -9,7 +9,7 @@
 >
 > 版本策略：项目初始化时取各依赖的最新稳定版，由 lockfile（`uv.lock`、`pnpm-lock.yaml`）锁定；升级需显式进行。
 
-当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.11、Node.js 24，Python 包最低支持 3.11；实际依赖以锁文件为准。已采用 `openai` 官方 SDK、Jinja2、markdown-it-py、hypothesis、react-markdown 与 remark-gfm，覆盖模型协议、提示词模板、规范化与性质测试、讲解渲染；SudachiPy 与 SudachiDict-core 用于分词与全量注音。SSE、shadcn/ui 与 Zustand 尚未引入。
+当前工程锁文件为 `backend/uv.lock` 和 `frontend/pnpm-lock.yaml`。开发环境使用 Python 3.11、Node.js 24、pnpm 10.34.5，Python 包最低支持 3.11；实际依赖以锁文件为准。已采用 `openai` 官方 SDK、Jinja2、markdown-it-py、hypothesis、react-markdown 与 remark-gfm，覆盖模型协议、提示词模板、规范化与性质测试、讲解渲染；SudachiPy 与 SudachiDict-core 用于分词与全量注音。SSE、shadcn/ui 与 Zustand 尚未引入。
 
 基础运行补充依赖：Uvicorn 承载 ASGI 服务，httpx 通过本地 ASGI transport 测试 API，Hatchling 构建 Python 的 src 布局包。前端 TypeScript 暂锁 5.9.3，以满足所选 openapi-typescript 7.x 的 peer 范围；Node 类型锁在 24 系列，与运行时一致。Tailwind 使用官方 Vite 插件，不提前引入未使用的 shadcn 组件或 Zustand。
 
@@ -89,9 +89,9 @@ Reader 使用无脚本同源 iframe 和 CSP／sandbox 隔离作者样式，搜�
 2. **需要窗口外壳时：** 使用 pywebview 包一层，改动很小。
 3. **如需独立桌面安装包：** 可评估 Tauri，将后端作为 sidecar（PyInstaller 打包；若届时后端已用其他语言重写，则直接集成）。
 
-另有 PyInstaller **实验目录包**：预构建前端，随包携带 Python、后端生产依赖和当前 Core 分词词典，仍由本机服务托管页面，使用系统浏览器。PyInstaller 只属于可选 `packaging` 依赖组，不进入运行依赖。当前正式源码 ZIP 的流程保持不变；目录包的构建、使用与验证范围见[开发指南](DEVELOPMENT.md#实验目录包)和[试做记录](handovers/archived/PYINSTALLER_ACCEPTANCE.md)。
+另有 PyInstaller **实验目录包**：预构建前端，随包携带 Python、后端生产依赖和当前 Core 分词词典，仍由本机服务托管页面，使用系统浏览器。PyInstaller 只属于可选 `packaging` 依赖组，不进入运行依赖。按目标平台原生构建；Windows 产物为 ZIP，其他平台为保留符号链接与执行权限的 tar.gz。构建环境独立于开发环境，Windows PowerShell 无需 just；正式源码 ZIP 的流程保持不变。目录包的构建、使用与验证范围见[开发指南](DEVELOPMENT.md#实验目录包)和[试做记录](handovers/archived/PYINSTALLER_ACCEPTANCE.md)。
 
-Windows 实验性支持面向 Windows 11 x64、PowerShell 和 Chrome／Edge，沿用同一源码包。平台文件操作使用标准库 `fcntl`／`msvcrt`、Windows 启动子树使用 `ctypes` 调用 Job Object，不增加运行依赖。凭据及备份沿用用户目录继承权限，不新增 Windows ACL 管理；Windows CI 与实机验证状态见[验收记录](handovers/WINDOWS_ACCEPTANCE.md)。
+Windows 实验性支持面向 Windows 11 x64、PowerShell 和 Chrome／Edge，可从源码运行或原生构建实验目录包。平台文件操作使用标准库 `fcntl`／`msvcrt`、Windows 启动子树使用 `ctypes` 调用 Job Object，不增加运行依赖。凭据及备份沿用用户目录继承权限，不新增 Windows ACL 管理；Windows CI 与实机验证状态见[验收记录](handovers/WINDOWS_ACCEPTANCE.md)。
 
 ## 5. 仓库与工具
 

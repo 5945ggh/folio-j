@@ -15,6 +15,7 @@ import tarfile
 import tempfile
 from pathlib import Path
 from typing import Any
+from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -72,6 +73,23 @@ def third_party_notices() -> str:
                 f"\n--- Python {name} ---\n{path.read_text(errors='replace')}\n"
             )
     return "".join(sections)
+
+
+def archive_bundle(bundle: Path, version: str) -> Path:
+    """Ship Windows as ZIP; preserve POSIX executable bits and symlinks in tar."""
+    target = platform.system()
+    extension = "zip" if target == "Windows" else "tar.gz"
+    archive_path = bundle.parent / (
+        f"Folio-J-{version}-{target.lower()}-{platform.machine()}.{extension}"
+    )
+    if target == "Windows":
+        with ZipFile(archive_path, "w", compression=ZIP_DEFLATED) as archive:
+            for path in sorted(bundle.rglob("*")):
+                archive.write(path, path.relative_to(bundle.parent).as_posix())
+    else:
+        with tarfile.open(archive_path, "w:gz") as archive:
+            archive.add(bundle, arcname="Folio-J")
+    return archive_path
 
 
 def build(version: str, output: Path) -> dict[str, Any]:
@@ -180,15 +198,9 @@ def build(version: str, output: Path) -> dict[str, Any]:
         summary: dict[str, Any] = {"release": identity, "bundle": file_sizes(bundle)}
         summary["dictionary"] = file_sizes(bundle / "_internal/sudachidict_core")
         summary["frontend"] = file_sizes(bundle / "_internal/frontend/dist")
-        archive_name = (
-            f"Folio-J-{version}-{platform.system().lower()}-{platform.machine()}.tar.gz"
-        )
-        # tar preserves the symlinks and executable bit in macOS framework bundles.
-        archive_path = stage / "dist" / archive_name
-        with tarfile.open(archive_path, "w:gz") as archive:
-            archive.add(bundle, arcname="Folio-J")
+        archive_path = archive_bundle(bundle, version)
         summary["archive"] = {
-            "name": archive_name,
+            "name": archive_path.name,
             "bytes": archive_path.stat().st_size,
         }
         (stage / "dist/SIZE.json").write_text(

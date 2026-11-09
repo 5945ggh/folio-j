@@ -74,6 +74,8 @@ def test_child_isolation_removes_host_runtime_and_daily_data_configuration(
         "HOME": "/real/user",
         "PYTHONPATH": "/checkout/backend/src",
         "PYTHONHOME": "/real/python",
+        "PYTHONIOENCODING": "cp936",
+        "PYTHONUTF8": "0",
         "NODE_PATH": "/real/node_modules",
         "FOLIO_J_DATABASE_PATH": "/daily/app.db",
         "OPENAI_API_KEY": "never-inherit",
@@ -91,7 +93,15 @@ def test_child_isolation_removes_host_runtime_and_daily_data_configuration(
     normalized_environment = {key.upper(): value for key, value in environment.items()}
     assert normalized_environment["SYSTEMROOT"] == "C:/Windows"
     assert set(environment).isdisjoint(
-        {"PYTHONPATH", "PYTHONHOME", "NODE_PATH", "OPENAI_API_KEY", "HTTPS_PROXY"}
+        {
+            "PYTHONPATH",
+            "PYTHONHOME",
+            "PYTHONIOENCODING",
+            "PYTHONUTF8",
+            "NODE_PATH",
+            "OPENAI_API_KEY",
+            "HTTPS_PROXY",
+        }
     )
     assert Path(environment["PATH"]).is_relative_to(tmp_path)
     assert not list(Path(environment["PATH"]).iterdir())

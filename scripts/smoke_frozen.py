@@ -93,7 +93,6 @@ def isolated_environment(root: Path, database: Path) -> dict[str, str]:
         TEMP=str(temp),
         PATH=str(empty_path),
         FOLIO_J_DATABASE_PATH=str(database),
-        PYTHONIOENCODING="utf-8",
     )
     return environment
 
@@ -112,7 +111,7 @@ def command(
         capture_output=True,
         text=True,
         encoding="utf-8",
-        errors="replace",
+        errors="strict",
         timeout=120,
         check=False,
     )
@@ -533,7 +532,7 @@ def smoke(package: Path) -> None:
         check_resources(relocated)
         cwd = root / "独立工作目录 unrelated cwd"
         cwd.mkdir()
-        database = root / "原始数据 original data" / "app.db"
+        database = root / "原始数据 🗂 𠮷 original data" / "app.db"
         environment = isolated_environment(root, database)
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
@@ -563,8 +562,8 @@ def smoke(package: Path) -> None:
         # An ordinary restart protects the data before testing backup/restore.
         with application(binary, cwd, environment, port) as client:
             check_saved(client, saved)
-        backup = root / "备份 backup & $literal"
-        restored = root / "恢复 restored & $literal"
+        backup = root / "备份 🗂 𠮷 backup & $literal"
+        restored = root / "恢复 🗂 𠮷 restored & $literal"
         command(binary, cwd, environment, "backup", str(backup))
         command(binary, cwd, environment, "restore", str(backup), str(restored))
         command(binary, cwd, environment, "backup", str(backup), reject=True)

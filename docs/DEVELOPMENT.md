@@ -6,7 +6,7 @@
 
 ## 环境准备
 
-准备 Python 3.11、Node.js 24、uv 和 pnpm 10。开发命令通过 `just` 统一调用，建议安装 `just`；仅试用应用可按[快速开始](../README.md#快速开始)中的直接命令运行。
+准备 Python 3.11、Node.js 24、uv 和 pnpm 10.34.5。开发命令通过 `just` 统一调用，建议安装 `just`；仅试用应用可按[快速开始](../README.md#快速开始)中的直接命令运行。
 
 Python 默认版本同时固定在根目录的 [.python-version](../.python-version) 和 [backend/.python-version](../backend/.python-version)，确保 `uv --project backend` 及后端目录内的命令使用同一版本。Python 包最低支持 3.11，Node 版本见 [.nvmrc](../.nvmrc)。依赖分别锁定在 [backend/uv.lock](../backend/uv.lock) 和 [frontend/pnpm-lock.yaml](../frontend/pnpm-lock.yaml)。
 
@@ -64,7 +64,7 @@ just check-assets # 验证保留的实验和静态原型
 
 ## Windows 自动验证
 
-[Windows workflow](../.github/workflows/windows.yml) 在 `windows-2025` runner 上安装锁定依赖，先执行静态检查与进程生命周期定向回归，再执行完整后端与前端测试、生产构建、Chrome／Edge 定向组件回归，并打包当前提交后运行源码 ZIP 冒烟脚本。工作流可从 Actions 手动触发，也随 PR、`main` 和 `codex/windows-*` 分支推送运行。配置存在不表示远端执行已通过，结果见 [Windows 验收记录](handovers/WINDOWS_ACCEPTANCE.md)。
+[Windows workflow](../.github/workflows/windows.yml) 在 `windows-2025` runner 上安装锁定依赖，先执行静态检查与进程生命周期定向回归，再执行完整后端与前端测试、生产构建、Chrome／Edge 定向组件回归，并打包当前提交后运行源码 ZIP 冒烟脚本。独立的冻结包任务使用生产依赖与 `packaging` 组构建 Windows ZIP，分别对原始目录和 ZIP 解压目录运行冻结包冒烟，上传目录包、构建信息及对应源码。工作流可从 Actions 手动触发，也随 PR、`main` 和 `codex/windows-*` 分支推送运行。配置存在不表示远端执行已通过，结果见 [Windows 验收记录](handovers/WINDOWS_ACCEPTANCE.md)。
 
 源码包冒烟使用独立中文与空格目录、临时 HOME／USERPROFILE 和新数据库，验证迁移、真实服务启动与停止、离线备份、拒绝覆盖已有目标、恢复后重启，不调用模型。已安装 `uv`、`pnpm`、`just` 时可在本机复现：
 
@@ -175,19 +175,112 @@ python3 scripts/package_release.py --ref HEAD --version 0.1.0+candidate.1 --outp
 
 目录包在构建机器上预构建前端、捆绑 Python 与生产依赖，使用者直接启动本机服务并在系统浏览器中使用，无需安装 Python 或 Node.js。目前是本机试做，不替代公开 beta 的源码 ZIP；跨系统与架构需要分别构建和验证。
 
-先执行 `just build`，再在独立构建环境安装锁定的生产依赖与可选打包工具。以下为 POSIX shell 命令，输出目录必须尚不存在。
+先构建同一工作区的前端，再用独立环境安装锁定的生产依赖与 `packaging` 组。输出目录必须尚不存在。POSIX shell：
 
 ```sh
+pnpm --dir frontend install --frozen-lockfile
+pnpm --dir frontend build
 UV_PROJECT_ENVIRONMENT="$PWD/.cache/frozen/venv" uv sync --project backend --locked --no-dev --group packaging
-.cache/frozen/venv/bin/python scripts/package_frozen.py --version 0.1.0-frozen-trial.3 --output dist/frozen-trial.3
-backend/.venv/bin/python scripts/smoke_frozen.py dist/frozen-trial.3/Folio-J
+.cache/frozen/venv/bin/python scripts/package_frozen.py --version 0.1.0-frozen-trial.4 --output dist/frozen-trial.4
+.cache/frozen/venv/bin/python scripts/smoke_frozen.py dist/frozen-trial.4/Folio-J
 ```
 
-打包器读取当前工作区，前端产物须由同一工作区刚刚构建。`RELEASE.json` 保留版本与提交号，`BUILD.json` 另记工作区是否有改动、平台、Python、PyInstaller 与分词词典版本；不能将未提交实验包当作对应提交的正式发行。输出包含 `Folio-J/`、保留符号链接和执行权限的 `.tar.gz`、`SIZE.json`。第三方许可证随目录保存。构建环境与缓存不属于交付内容。
+### Windows 原生构建
 
-用户进入完整的 `Folio-J/` 目录后，先运行 `./Folio-J data-path` 核对学习库，再运行 `./Folio-J start`。Windows 可执行文件名为 `Folio-J.exe`，该平台的冻结包尚未验证。`start --no-browser` 只启动服务；`Ctrl-C` 停止。`backup <新目录>`、`restore <备份目录> <新恢复目录>` 沿用[数据与凭据保护规则](UPGRADING.md#数据与凭据)，恢复后仍须将用户配置指向恢复库。完整操作说明也放在包内首页。
+在 Windows 11 x64 上准备 Git、Python 3.11、Node.js 24、uv、pnpm 10.34.5，用 PowerShell 在完整 Git 仓库根目录执行；无需安装 just。已安装 Corepack 时可用 `corepack prepare pnpm@10.34.5 --activate` 选择 pnpm 版本。构建器读取 Git 提交号和工作区状态，不能只复制源码文件后省略 `.git`。
 
-`smoke_frozen.py` 将产物复制并移位到中文空格临时目录，在无 Python／Node PATH、独立 HOME 和临时数据库下验证真实 HTTP、分词资源、持久学习内容及备份恢复；只访问 loopback，不调用真实模型。试做尺寸与具体检查结果见[PyInstaller 验收记录](handovers/archived/PYINSTALLER_ACCEPTANCE.md)。
+若从另一台机器转移源码，先将待交付修改提交并合入本地 `main`，再生成 bundle；远端推送不是必要步骤：
+
+```sh
+mkdir -p dist
+git bundle create dist/folio-j-main.bundle main
+git rev-parse main
+```
+
+bundle 保存已提交的 `main` 及其历史，不包含未提交修改、未跟踪的本地原型、依赖或学习数据。将 bundle 复制到 Windows，核对来源提交号。新目录用 `git clone --branch main C:\转移\folio-j-main.bundle C:\项目\folio-j`；已有仓库先确认工作区干净，再更新本地 `main`：
+
+```powershell
+git fetch C:\转移\folio-j-main.bundle main
+if ($LASTEXITCODE -ne 0) { throw 'bundle 读取失败' }
+git switch main
+if ($LASTEXITCODE -ne 0) { throw '切换 main 失败' }
+git merge --ff-only FETCH_HEAD
+if ($LASTEXITCODE -ne 0) { throw 'main 无法快进，请先处理分支差异' }
+git rev-parse HEAD
+```
+
+若不能快进，先处理本地分支差异，不用强制重置覆盖工作。在仓库根目录执行下面的构建块。它在每步失败后停止，并在成功或失败时恢复环境变量；输出目录已存在时须换一个新的版本和目录。
+
+```powershell
+$frozenUseMirror = $false # 国内下载备用：改为 $true
+$frozenVersion = '0.1.0-win-trial.2'
+$frozenOutput = 'dist/win-trial.2'
+$frozenPreviousEnvironment = $env:UV_PROJECT_ENVIRONMENT
+$frozenPreviousIndex = $env:UV_DEFAULT_INDEX
+try {
+    if (Test-Path $frozenOutput) { throw "输出目录已存在：$frozenOutput" }
+    pnpm --dir frontend install --frozen-lockfile
+    if ($LASTEXITCODE -ne 0) { throw '前端依赖安装失败' }
+    pnpm --dir frontend build
+    if ($LASTEXITCODE -ne 0) { throw '前端构建失败' }
+    # 保持锁文件中的源配置，退出时恢复原覆盖。
+    Remove-Item Env:UV_DEFAULT_INDEX -ErrorAction SilentlyContinue
+    if ($frozenUseMirror) {
+        New-Item -ItemType Directory -Force .cache/frozen -ErrorAction Stop | Out-Null
+        uv export --project backend --locked --no-dev --group packaging --format requirements-txt --no-emit-project --output-file .cache/frozen/requirements.txt
+        if ($LASTEXITCODE -ne 0) { throw '锁定依赖导出失败' }
+        $env:UV_PROJECT_ENVIRONMENT = Join-Path (Get-Location).Path '.cache/frozen/venv-mirror'
+        if (Test-Path $env:UV_PROJECT_ENVIRONMENT) { throw '请为镜像构建选择新的虚拟环境目录' }
+        uv venv --python 3.11 $env:UV_PROJECT_ENVIRONMENT
+        if ($LASTEXITCODE -ne 0) { throw '构建环境创建失败' }
+        $frozenPython = Join-Path $env:UV_PROJECT_ENVIRONMENT 'Scripts/python.exe'
+        uv pip install --python $frozenPython --require-hashes --default-index https://pypi.tuna.tsinghua.edu.cn/simple -r .cache/frozen/requirements.txt
+        if ($LASTEXITCODE -ne 0) { throw '镜像依赖安装或 hash 校验失败' }
+    } else {
+        $env:UV_PROJECT_ENVIRONMENT = Join-Path (Get-Location).Path '.cache/frozen/venv'
+        uv sync --project backend --python 3.11 --locked --no-dev --group packaging
+        if ($LASTEXITCODE -ne 0) { throw '锁定依赖安装失败' }
+        $frozenPython = Join-Path $env:UV_PROJECT_ENVIRONMENT 'Scripts/python.exe'
+    }
+    & $frozenPython scripts/package_frozen.py --version $frozenVersion --output $frozenOutput
+    if ($LASTEXITCODE -ne 0) { throw '冻结包构建失败' }
+    & $frozenPython scripts/smoke_frozen.py (Join-Path $frozenOutput 'Folio-J')
+    if ($LASTEXITCODE -ne 0) { throw '原始目录包冒烟失败' }
+} finally {
+    if ($null -eq $frozenPreviousEnvironment) { Remove-Item Env:UV_PROJECT_ENVIRONMENT -ErrorAction SilentlyContinue }
+    else { $env:UV_PROJECT_ENVIRONMENT = $frozenPreviousEnvironment }
+    if ($null -eq $frozenPreviousIndex) { Remove-Item Env:UV_DEFAULT_INDEX -ErrorAction SilentlyContinue }
+    else { $env:UV_DEFAULT_INDEX = $frozenPreviousIndex }
+}
+```
+
+#### 国内下载备用
+
+默认安装无法下载时，将上面构建块的 `$frozenUseMirror` 改为 `$true`。备用分支使用新的独立环境，从同一锁文件导出带 hash 的依赖，再只对安装命令使用清华镜像。前端下载受限时，可对上面 `pnpm install` 单次加 `--registry=https://registry.npmmirror.com`，仍保留 `--frozen-lockfile`。这些选项不修改项目默认源与锁文件。
+
+临时设置 `UV_DEFAULT_INDEX` 会改变锁文件的源配置，导致 `uv sync --locked`／`uv export --locked` 要求更新锁；构建块会暂时移除该覆盖，退出时恢复，不用重锁解决下载问题。`uv export` 默认保留 hash，勿加 `--no-hashes`；`--output-file` 避免 PowerShell 重定向改变文件编码。`--no-emit-project` 省去本地项目安装，构建器已通过 PyInstaller 的 `--paths backend/src` 收集应用。镜像必须提供与锁文件 hash 相符的文件；缺失时保留错误，换用可访问的源，不移除 hash 校验。
+
+#### 最终 ZIP 解压验证
+
+原始目录包冒烟通过后，在同一 PowerShell 中解压唯一的 ZIP 到新中文空格目录，再运行未修改的冒烟脚本；`$frozenPython` 仍指向刚才使用的构建环境：
+
+```powershell
+$frozenArchives = @(Get-ChildItem -LiteralPath $frozenOutput -Filter '*.zip' -File)
+if ($frozenArchives.Count -ne 1) { throw '应只有一个 Windows 目录包 ZIP' }
+$frozenExtracted = Join-Path $env:TEMP ('Folio-J 解压验收 ' + [guid]::NewGuid().ToString('N'))
+Expand-Archive -LiteralPath $frozenArchives[0].FullName -DestinationPath $frozenExtracted -ErrorAction Stop
+& $frozenPython scripts/smoke_frozen.py (Join-Path $frozenExtracted 'Folio-J')
+if ($LASTEXITCODE -ne 0) { throw 'ZIP 解压包冒烟失败' }
+Get-FileHash -LiteralPath $frozenArchives[0].FullName -Algorithm SHA256
+```
+
+### 产物与验收范围
+
+打包器读取当前工作区，前端产物须由同一工作区刚刚构建。`RELEASE.json` 保留版本与提交号，`BUILD.json` 另记工作区是否有改动、平台、Python、PyInstaller 与分词词典版本；不能将未提交实验包当作对应提交的正式发行。输出包含 `Folio-J/`、Windows 原生 ZIP（其他平台为保留符号链接和执行权限的 `.tar.gz`）与 `SIZE.json`。第三方许可证随目录保存。构建环境与缓存不属于交付内容；分发二进制时同时提供对应源码和构建脚本。
+
+用户进入完整的 `Folio-J/` 目录后，先运行 `./Folio-J data-path` 核对学习库，再运行 `./Folio-J start`；Windows 使用 `.\Folio-J.exe`。`data-path` 不创建数据库。`start --no-browser` 只启动服务；`Ctrl-C` 停止。`backup <新目录>`、`restore <备份目录> <新恢复目录>` 沿用[数据与凭据保护规则](UPGRADING.md#数据与凭据)，恢复后仍须将用户配置指向恢复库。完整操作说明也放在包内首页。
+
+`smoke_frozen.py` 将产物复制并移位到中文空格临时目录，在无 Python／Node PATH、独立 HOME 下验证含 emoji 和罕字的数据／备份／恢复路径、管道 UTF-8 输出、真实 HTTP、分词资源、持久学习内容及备份恢复，并在 Windows 检查 CTRL_BREAK 退出；只访问 loopback，不调用真实模型。该检查覆盖服务与数据流程，阅读排版、浮层和浏览器操作仍按 [Windows 实机清单](handovers/WINDOWS_ACCEPTANCE.md)验证。早期本机尺寸与检查结果见[PyInstaller 验收记录](handovers/archived/PYINSTALLER_ACCEPTANCE.md)，本批状态见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
 ## 仓库快照
 
