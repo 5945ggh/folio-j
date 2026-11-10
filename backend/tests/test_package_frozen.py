@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import tarfile
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,7 @@ def test_windows_zip_extracts_complete_directory_with_unicode_paths(
         assert (destination / "Folio-J" / name).read_bytes() == content
 
 
+@pytest.mark.skipif(os.name == "nt", reason="POSIX executable mode bits require a POSIX filesystem")
 def test_posix_archive_preserves_executable_permissions_and_symlinks(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

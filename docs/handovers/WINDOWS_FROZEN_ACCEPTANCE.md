@@ -64,3 +64,11 @@ Windows 构建器直接输出 ZIP，POSIX 平台继续输出保留权限与符�
 预期路径改为同样规范化，并精确核对唯一数据库输出行；错误库、前缀碰撞、重复或缺失路径行、意外建库均拒绝。补充六项针对性回归，不改变数据保护规则；冻结冒烟测试 22 passed。
 
 上述两项修复从 `main 88a720db` 独立实施，未新增依赖、schema、prompt 或 TBD。`just lint`、`just test`、`just check-docs`、`git diff --check` 及 actionlint 通过，后端 1513 passed、4 skipped，前端 826 passed。Windows 最终运行结果以修复后的远端记录为准。
+
+## Windows 夹具资源释放与平台前提
+
+`74f4c51e` 的[Windows 运行](https://github.com/5945ggh/folio-j/actions/runs/42734617970)已完成冻结包构建、原始目录冒烟、中文空格路径 ZIP 解压冒烟及产物上传。源码任务的 strict 类型检查、启动与重复停服通过；全量后端为 1511 passed、3 failed、3 skipped，三处失败来自测试夹具的平台前提。
+
+SQLite 连接的事务上下文只提交／回滚，不负责关闭；三个数据目录夹具改为同时进入事务和 `closing`，保证提交后释放连接再做删除、损坏和文件检查。Windows 的字节范围独占锁会阻止其他描述符读取，将锁文件内容未改写的断言移至释放锁之后，锁内仍要求迁移失败且数据库未创建。POSIX 执行位无法在 Windows 文件系统上表示，该权限与符号链接测试只在 POSIX 执行；Windows ZIP 完整性及 Unicode 路径回归继续执行。
+
+Windows CI 在全量测试前新增这两个文件的快速预检，及早检出文件生命周期和归档前提错误。本地针对性测试 44 passed；`just lint`、`just test`、`just check-docs`、actionlint 与 `git diff --check` 通过，全量后端 1513 passed、4 skipped，前端 826 passed。无生产代码、数据保护规则、依赖或 TBD 变更。

@@ -7,7 +7,7 @@ import json
 import os
 import sqlite3
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from pathlib import Path
 
 import pytest
@@ -18,7 +18,7 @@ from app.services import data_location as locations
 
 def database(path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("CREATE TABLE alembic_version (version_num TEXT)")
         connection.execute("INSERT INTO alembic_version VALUES ('0004_translation_reader_removal')")
         connection.execute("CREATE TABLE sources (id INTEGER)")
@@ -330,7 +330,7 @@ def test_windows_registry_pointer_uses_fake_adapter_only(
 def test_unrelated_sqlite_is_rejected_without_schema_or_file_changes(tmp_path: Path) -> None:
     path = tmp_path / "unrelated" / "app.db"
     path.parent.mkdir()
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("CREATE TABLE another_app (value TEXT)")
         connection.execute("INSERT INTO another_app VALUES ('retain')")
     before = path.read_bytes()
@@ -396,7 +396,8 @@ def test_retry_prepared_candidate_allows_only_plain_worker_lock_and_keeps_migrat
         with pytest.raises(ValueError, match="正在使用|进程锁"):
             migrate(path)
         assert not path.exists()
-        assert lock.read_bytes() == b"original worker lock"
+    # Windows byte-range locks also exclude reads through another descriptor.
+    assert lock.read_bytes() == b"original worker lock"
     assert locations.read_selection() is None
     migrate(path)
     assert locations.validate_retry_selection(settings) is settings
@@ -431,7 +432,7 @@ def test_retry_prepared_candidate_rejects_other_orphaned_companions(
 def test_retry_rejects_unrelated_database_created_after_prepare(tmp_path: Path) -> None:
     settings = locations.prepare_selection(tmp_path / "candidate")
     path = settings.database.path
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("CREATE TABLE unrelated_app (id INTEGER)")
     before = path.read_bytes()
     with pytest.raises(locations.DataLocationError, match="不是可识别的 Folio-J"):
