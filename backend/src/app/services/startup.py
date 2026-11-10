@@ -163,7 +163,16 @@ class StartupService:
             application = self._create_application(settings.database.path)
             await resources.enter_async_context(application.router.lifespan_context(application))
             if remember:
-                await asyncio.to_thread(data_location.remember_selection, settings.database.path)
+                try:
+                    await asyncio.to_thread(
+                        data_location.remember_selection, settings.database.path
+                    )
+                except (data_location.DataLocationError, OSError) as exc:
+                    warning = (
+                        f"{exc}\n本次继续使用该学习库。"
+                        "下次启动请核对数据位置，必要时重新选择已有库。"
+                    )
+                    self._warning = f"{self._warning}\n{warning}" if self._warning else warning
         except Exception as exc:
             self._error = str(exc) or type(exc).__name__
             try:

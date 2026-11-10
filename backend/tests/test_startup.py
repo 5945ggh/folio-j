@@ -116,7 +116,7 @@ async def test_failure_keeps_page_recoverable_and_closes_application(
     def remember(path: Path) -> None:
         events.append("remember")
         if failing and failure == "remember":
-            raise OSError("remember failed")
+            raise RuntimeError("remember failed")
 
     monkeypatch.setattr(data_location, "remember_selection", remember)
     service = StartupService(
@@ -145,6 +145,99 @@ async def test_failure_keeps_page_recoverable_and_closes_application(
         await service.select(StartupSelection(directory=str(tmp_path / "chosen"), mode="existing"))
     ).ready
     await service.close()
+
+
+@pytest.mark.parametrize("error_type", [data_location.DataLocationError, OSError])
+@pytest.mark.parametrize("previous_selection", [False, True])
+@pytest.mark.asyncio
+async def test_remember_failure_keeps_real_application_running_and_next_start_uses_saved_state(
+    error_type: type[Exception],
+    previous_selection: bool,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from app import main
+    from app.launcher import migrate
+    from app.platform_io import FileLockError, exclusive_file_lock
+
+    previous = tmp_path / "previous" / "app.db" if previous_selection else None
+    if previous is not None:
+        await asyncio.to_thread(migrate, previous)
+        data_location.remember_selection(previous)
+
+    def application(path: Path) -> FastAPI:
+        app = main.create_app(database_path=path)
+        app.state.chat_worker_enabled = False
+        app.state.verification_worker_enabled = False
+        return app
+
+    def remember(path: Path) -> None:
+        # Migration and the real lifespan must both have succeeded before persistence.
+        assert path.is_file()
+        with pytest.raises(FileLockError):
+            with exclusive_file_lock(Path(f"{path}.worker.lock")):
+                pass
+        raise error_type("位置记录写入被拒绝")
+
+    monkeypatch.setattr(data_location, "remember_selection", remember)
+    service = StartupService(initial_status(tmp_path), migrate, application)
+    directory = tmp_path / "chosen"
+    path = directory / "app.db"
+    bootstrap = StartupApplication(service)
+    try:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=bootstrap), base_url="http://127.0.0.1:8010"
+        ) as client:
+            response = await client.post(
+                "/_startup/select",
+                json={"directory": str(directory), "mode": "new"},
+                headers={
+                    "Origin": "http://127.0.0.1:8010",
+                    "X-Folio-Startup-Token": service.token,
+                },
+            )
+            assert response.status_code == 200
+            state = response.json()
+            assert state["ready"] is True
+            assert state["recovery"] is False
+            assert state["error"] is None
+            assert state["selected_path"] == str(path)
+            assert state["retry_current_path"] is None
+            assert "位置记录写入被拒绝" in state["warning"]
+            assert "下次" in state["warning"]
+            assert state["warning"] in capsys.readouterr().err
+            assert data_location.read_selection() == previous
+            assert (await client.get("/api/health")).status_code == 200
+            assert (await client.get("/api/settings/data-location")).json()["database_path"] == str(
+                path
+            )
+            assert (await client.get("/_startup/state")).json()["warning"] == state["warning"]
+            with pytest.raises(FileLockError):
+                with exclusive_file_lock(Path(f"{path}.worker.lock")):
+                    pass
+            rejected = await client.post(
+                "/_startup/select",
+                json={"directory": str(tmp_path / "another"), "mode": "new"},
+                headers={
+                    "Origin": "http://127.0.0.1:8010",
+                    "X-Folio-Startup-Token": service.token,
+                },
+            )
+            assert rejected.status_code == 409
+            assert not (tmp_path / "another").exists()
+    finally:
+        await service.close()
+    with exclusive_file_lock(Path(f"{path}.worker.lock")):
+        pass
+    next_status = data_location.location_status()
+    assert not next_status.recovery
+    if previous is None:
+        assert next_status.needs_selection
+        assert next_status.settings is None
+    else:
+        assert next_status.settings is not None
+        assert next_status.settings.database.path == previous
 
 
 @pytest.mark.asyncio

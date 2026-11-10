@@ -12,9 +12,14 @@
 <main>
 <header>FOLIO-J</header>
 <h1 id="title">选择数据位置</h1>
-<p id="intro">学习内容、设置和模型凭据会保存在你选择的位置。确认后创建数据目录，以后启动会继续使用。</p>
+<p id="intro">学习内容、设置和模型凭据会保存在你选择的位置。启动成功后会尝试记住位置；未能记住时，下次可重新选择已有库。</p>
 <div id="error" class="notice" role="alert" hidden></div>
 <div id="warning" class="notice warning" hidden></div>
+<div id="ready" hidden>
+<p class="small">本次使用的数据库<span id="ready-path" class="location"></span></p>
+<button id="enter" class="primary" type="button">进入学习界面</button>
+</div>
+<div id="selection">
 <p id="configured" class="small" hidden>原配置的数据库<span id="configured-path" class="location"></span></p>
 <div id="current-candidate" hidden><p class="small">本次已确认的数据位置<span id="retry-current-path" class="location"></span></p><button id="retry-current" class="primary" type="button">重试当前选择</button></div>
 <p id="selected" class="small" hidden>当前尝试的数据库<span id="selected-path" class="location"></span></p>
@@ -29,6 +34,7 @@
 <button id="existing" type="button">打开已有数据</button>
 </div>
 <button id="reload-state" type="button" hidden>重试读取启动状态</button>
+</div>
 <p id="status" class="status small" role="status" aria-live="polite"></p>
 </main>
 <script nonce="__FOLIO_STARTUP_NONCE__">
@@ -43,7 +49,17 @@ function updateControls(){
 }
 function show(state){
  stateLoaded=true;
- if(state.ready){location.replace("/");return;}
+ if(state.ready){
+  if(!state.warning){location.replace("/");return;}
+  el("title").textContent="应用已启动";
+  el("intro").textContent="学习库已就绪，可以继续使用。请留意以下启动提示。";
+  el("error").hidden=true;
+  el("warning").hidden=false;el("warning").textContent=state.warning;
+  el("ready-path").textContent=state.selected_path||"";
+  el("selection").hidden=true;el("ready").hidden=false;
+  el("status").textContent="可进入学习界面。";
+  updateControls();return;
+ }
  defaultDirectory=state.default_directory;
  el("reload-state").hidden=true;
  el("default-path").textContent=defaultDirectory;
@@ -57,7 +73,7 @@ function show(state){
  el("default").textContent=state.recovery?"在默认位置创建新数据":"使用默认位置";
  if(state.recovery&&state.selected_path&&!el("directory").value)el("directory").value=state.selected_path;
  el("title").textContent=state.recovery?"恢复数据连接":"选择数据位置";
- el("intro").textContent=state.recovery?"当前数据无法启动。请修复目录访问后重试当前选择，或重试原配置位置。也可以打开另一份已有数据。":"学习内容、设置和模型凭据会保存在你选择的位置。确认后创建数据目录，以后启动会继续使用。";
+ el("intro").textContent=state.recovery?"当前数据无法启动。请修复目录访问后重试当前选择，或重试原配置位置。也可以打开另一份已有数据。":"学习内容、设置和模型凭据会保存在你选择的位置。启动成功后会尝试记住位置；未能记住时，下次可重新选择已有库。";
  updateControls();
 }
 async function choose(directory,mode,retry=null){
@@ -67,7 +83,7 @@ async function choose(directory,mode,retry=null){
   const response=await fetch(retry||"/_startup/select",{method:"POST",headers:{"Content-Type":"application/json","X-Folio-Startup-Token":token},body:retry?undefined:JSON.stringify({directory,mode})});
   const result=await response.json();
   if(!response.ok)throw new Error(typeof result.detail==="string"?result.detail:"无法提交，请核对目录后重试。");
-  show(result);el("status").textContent=result.ready?"启动成功，正在打开…":"请修复访问或修改位置后重试。";
+  show(result);if(!result.ready)el("status").textContent="请修复访问或修改位置后重试。";
  }catch(error){el("error").hidden=false;el("error").textContent=error.message;el("status").textContent="操作未完成，请重试。";}
  finally{busy=false;updateControls();}
 }
@@ -86,6 +102,7 @@ el("retry-current").addEventListener("click",()=>choose("","existing","/_startup
 el("default").addEventListener("click",()=>{if(stateLoaded&&defaultDirectory)choose(defaultDirectory,"new");});
 el("new").addEventListener("click",()=>choose(el("directory").value,"new"));
 el("existing").addEventListener("click",()=>choose(el("directory").value,"existing"));
+el("enter").addEventListener("click",()=>location.replace("/"));
 loadState();
 </script>
 </body>

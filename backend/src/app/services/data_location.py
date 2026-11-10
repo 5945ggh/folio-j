@@ -1,24 +1,20 @@
 """Choose learning data independently from installation files and remember that choice."""
 
-import importlib
 import json
 import os
 import sqlite3
 import stat
-import sys
 import tempfile
-from contextlib import AbstractContextManager, closing, suppress
+from contextlib import closing, suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol, cast
+from typing import cast
 
 from app import config
 from app.config import ServerSettings, Settings
 from app.platform_io import is_link_or_reparse
 
 _PERMISSION_HINT = "请核对目录访问权限，或选择可写目录；也可能是安全软件拦截了程序访问。"
-_REGISTRY_KEY = r"Software\Folio-J"
-_REGISTRY_VALUE = "DatabasePath"
 
 
 class DataLocationError(ValueError):
@@ -36,55 +32,6 @@ class LocationStatus:
     source: str = "default"
     warning: str | None = None
     server: ServerSettings | None = None
-
-
-class _SelectionStore(Protocol):
-    def read(self) -> str | None: ...
-    def write(self, database_path: str) -> None: ...
-
-
-class _Registry(Protocol):
-    HKEY_CURRENT_USER: int
-    KEY_READ: int
-    KEY_SET_VALUE: int
-    REG_SZ: int
-
-    def OpenKey(
-        self, key: int, sub_key: str, reserved: int, access: int
-    ) -> AbstractContextManager[object]: ...
-    def CreateKeyEx(
-        self, key: int, sub_key: str, reserved: int, access: int
-    ) -> AbstractContextManager[object]: ...
-    def QueryValueEx(self, key: object, value_name: str) -> tuple[object, int]: ...
-    def SetValueEx(
-        self, key: object, value_name: str, reserved: int, value_type: int, value: str
-    ) -> None: ...
-
-
-def _registry_adapter() -> _Registry:
-    return cast(_Registry, importlib.import_module("winreg"))
-
-
-class _RegistrySelectionStore:
-    def read(self) -> str | None:
-        registry = _registry_adapter()
-        try:
-            with registry.OpenKey(
-                registry.HKEY_CURRENT_USER, _REGISTRY_KEY, 0, registry.KEY_READ
-            ) as key:
-                value, value_type = registry.QueryValueEx(key, _REGISTRY_VALUE)
-        except FileNotFoundError:
-            return None
-        if value_type != registry.REG_SZ or not isinstance(value, str):
-            raise DataLocationError("已记住的数据位置记录无效，请重新选择已有学习库。")
-        return value
-
-    def write(self, database_path: str) -> None:
-        registry = _registry_adapter()
-        with registry.CreateKeyEx(
-            registry.HKEY_CURRENT_USER, _REGISTRY_KEY, 0, registry.KEY_SET_VALUE
-        ) as key:
-            registry.SetValueEx(key, _REGISTRY_VALUE, 0, registry.REG_SZ, database_path)
 
 
 class _FileSelectionStore:
@@ -131,14 +78,10 @@ class _FileSelectionStore:
                 temporary.unlink(missing_ok=True)
 
 
-def _selection_store() -> _SelectionStore:
-    return _RegistrySelectionStore() if sys.platform == "win32" else _FileSelectionStore()
-
-
 def read_selection() -> Path | None:
     """Read a pointer without creating files or falling back from a damaged record."""
     try:
-        value = _selection_store().read()
+        value = _FileSelectionStore().read()
     except OSError as exc:
         raise DataLocationError(
             f"无法读取已记住的数据位置：{exc.filename or '用户数据位置记录'}。{_PERMISSION_HINT}"
@@ -352,7 +295,7 @@ def remember_selection(database_path: Path) -> None:
         raise DataLocationError(f"学习库尚未创建，无法记住数据位置：{database_path}")
     _validate_library_identity(database_path)
     try:
-        _selection_store().write(str(database_path.resolve()))
+        _FileSelectionStore().write(str(database_path.resolve()))
     except OSError as exc:
         raise DataLocationError(
             f"学习库已就绪，但无法记住数据位置 {database_path}。"

@@ -1,13 +1,12 @@
 """Startup selection, persistence failures, and compatibility stay off user storage."""
 
-# Registry and filesystem adapters are internal test seams.
+# Filesystem adapters are internal test seams.
 # pyright: reportPrivateUsage=false
 
 import json
 import os
 import sqlite3
-from collections.abc import Generator
-from contextlib import closing, contextmanager
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -50,13 +49,26 @@ def test_first_launch_inspection_does_not_create_default_or_pointer() -> None:
 def test_existing_locations_continue_without_selection(
     source: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    if source != "default":
+        database(Path.home() / "Folio-J-Data" / "app.db")
+    if source not in {"default", "legacy"}:
+        database(config.REPO_ROOT / "data" / "app.db")
     if source == "default":
         path = database(Path.home() / "Folio-J-Data" / "app.db")
     elif source == "legacy":
         path = database(config.REPO_ROOT / "data" / "app.db")
     else:
         path = database(Path.home() / "original" / "app.db")
+        if source in {"program", "environment"}:
+            config_file(
+                Path.home() / "Folio-J-Data" / "app.toml",
+                '[database]\npath="~/lower-priority-user.db"\n',
+            )
         if source == "environment":
+            config_file(
+                config.REPO_ROOT / "config" / "app.toml",
+                '[database]\npath="lower-priority-program.db"\n',
+            )
             monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(path))
         else:
             file = (
@@ -71,6 +83,18 @@ def test_existing_locations_continue_without_selection(
     assert status.settings is not None
     assert status.settings.database.path == path
     assert status.source == source
+    assert not locations._FileSelectionStore().path.exists()
+
+
+def test_unregistered_library_outside_fixed_candidates_is_not_discovered(tmp_path: Path) -> None:
+    unregistered = database(tmp_path / "another-installation" / "data" / "app.db")
+    before = unregistered.read_bytes()
+    status = locations.location_status()
+    assert status.needs_selection
+    assert not status.recovery
+    assert status.settings is None
+    assert unregistered.read_bytes() == before
+    assert not status.default_path.parent.exists()
     assert not locations._FileSelectionStore().path.exists()
 
 
@@ -126,6 +150,40 @@ def test_bad_pointer_never_falls_back_or_creates_database(damaged: str) -> None:
     assert existing_default.read_bytes() == before
     assert not (Path.home() / "lost").exists()
     assert store.path.read_text(encoding="utf-8") == content
+
+
+def test_unreadable_pointer_enters_recovery_without_using_existing_fallbacks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    chosen = database(tmp_path / "chosen" / "app.db")
+    locations.remember_selection(chosen)
+    pointer = locations._FileSelectionStore().path
+    candidates = [
+        pointer,
+        chosen,
+        database(Path.home() / "Folio-J-Data" / "app.db"),
+        database(config.REPO_ROOT / "data" / "app.db"),
+    ]
+    before = {path: path.read_bytes() for path in candidates}
+    original_open = Path.open
+
+    def blocked_open(self: Path, *args: object, **kwargs: object) -> object:
+        if self == pointer:
+            raise PermissionError(13, "blocked pointer", str(pointer))
+        return original_open(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    with monkeypatch.context() as blocked:
+        blocked.setattr(Path, "open", blocked_open)
+        status = locations.location_status()
+        assert status.recovery
+        assert not status.needs_selection
+        assert status.settings is None
+        assert status.source == "remembered"
+        assert status.error is not None
+        assert str(pointer) in status.error
+        with pytest.raises(locations.DataLocationError, match="无法读取已记住"):
+            config.load_settings()
+    assert {path: path.read_bytes() for path in candidates} == before
 
 
 def test_prepare_new_does_not_create_database_or_remember(tmp_path: Path) -> None:
@@ -261,70 +319,26 @@ def test_unreadable_old_settings_only_bypassed_for_explicit_other_location(
     assert "默认值" in status.warning
 
 
-def test_xdg_pointer_location_and_relative_xdg_fallback(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("config_home", ["default", "absolute", "relative"])
+def test_selection_record_roundtrips_in_user_json(
+    config_home: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
-    assert locations._FileSelectionStore().path == tmp_path / "xdg/folio-j/data-location.json"
-    monkeypatch.setenv("XDG_CONFIG_HOME", "relative")
-    assert (
-        locations._FileSelectionStore().path == Path.home() / ".config/folio-j/data-location.json"
-    )
-
-
-class FakeRegistry:
-    HKEY_CURRENT_USER = 1
-    KEY_READ = 2
-    KEY_SET_VALUE = 4
-    REG_SZ = 1
-
-    def __init__(self) -> None:
-        self.value: str | None = None
-        self.fail_writes = False
-        self.keys: list[str] = []
-
-    @contextmanager
-    def OpenKey(self, key: int, sub_key: str, reserved: int, access: int) -> Generator[object]:
-        self.keys.append(sub_key)
-        if self.value is None:
-            raise FileNotFoundError
-        yield self
-
-    @contextmanager
-    def CreateKeyEx(self, key: int, sub_key: str, reserved: int, access: int) -> Generator[object]:
-        self.keys.append(sub_key)
-        if self.fail_writes:
-            raise PermissionError("registry denied")
-        yield self
-
-    def QueryValueEx(self, key: object, value_name: str) -> tuple[object, int]:
-        assert value_name == "DatabasePath"
-        return self.value, self.REG_SZ
-
-    def SetValueEx(
-        self, key: object, value_name: str, reserved: int, value_type: int, value: str
-    ) -> None:
-        assert value_name == "DatabasePath"
-        self.value = value
-
-
-def test_windows_registry_pointer_uses_fake_adapter_only(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    fake = FakeRegistry()
-    monkeypatch.setattr(locations, "_registry_adapter", lambda: fake)
-    monkeypatch.setattr(locations, "_selection_store", locations._RegistrySelectionStore)
+    root = Path.home() / ".config"
+    if config_home == "absolute":
+        root = tmp_path / "xdg"
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(root))
+    elif config_home == "relative":
+        monkeypatch.setenv("XDG_CONFIG_HOME", "relative")
+    pointer = root / "folio-j" / "data-location.json"
+    assert locations._FileSelectionStore().path == pointer
     assert locations.read_selection() is None
-    path = database(tmp_path / "registry-choice" / "app.db")
+    assert not pointer.parent.exists()
+    path = database(tmp_path / "所选学习库" / "app.db")
     locations.remember_selection(path)
+    assert json.loads(pointer.read_text(encoding="utf-8")) == {"database_path": str(path)}
     assert locations.read_selection() == path
-    assert set(fake.keys) == {r"Software\Folio-J"}
-    assert not locations._FileSelectionStore().path.exists()
-    fake.fail_writes = True
-    replacement = database(tmp_path / "another" / "app.db")
-    with pytest.raises(locations.DataLocationError, match="无法记住"):
-        locations.remember_selection(replacement)
-    assert locations.read_selection() == path
+    assert config.load_settings().database.path == path
+    assert locations.location_status().source == "remembered"
 
 
 def test_unrelated_sqlite_is_rejected_without_schema_or_file_changes(tmp_path: Path) -> None:
