@@ -126,6 +126,23 @@ def command(
     return result.stdout
 
 
+def check_data_path(output: str, database: Path) -> None:
+    """Match the settings' canonical path without allowing data-path to create it."""
+    prefix = "下次迁移和启动使用的数据库："
+    reported = [
+        line.removeprefix(prefix)
+        for line in output.splitlines()
+        if line.startswith(prefix)
+    ]
+    # Settings resolves paths, including Windows' short user-directory aliases.
+    expected = str(database.resolve())
+    if reported != [expected] or database.exists():
+        raise RuntimeError(
+            "data-path selected the wrong database or created it\n"
+            f"Expected: {expected}\nReported: {reported!r}"
+        )
+
+
 class Client:
     def __init__(self, port: int) -> None:
         self.origin = f"http://127.0.0.1:{port}"
@@ -544,11 +561,7 @@ def smoke(package: Path) -> None:
         config = Path(environment["HOME"]) / "Folio-J-Data"
         config.mkdir()
         (config / "app.toml").write_text(f"[server]\nport = {port}\n", encoding="utf-8")
-        if (
-            str(database) not in command(binary, cwd, environment, "data-path")
-            or database.exists()
-        ):
-            raise RuntimeError("data-path selected the wrong database or created it")
+        check_data_path(command(binary, cwd, environment, "data-path"), database)
         command(binary, cwd, environment, "migrate")
         with closing(sqlite3.connect(database)) as connection:
             if not connection.execute(

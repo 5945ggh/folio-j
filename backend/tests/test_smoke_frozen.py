@@ -120,6 +120,49 @@ def test_source_checkout_is_not_accepted_as_a_frozen_package(tmp_path: Path) -> 
     assert smoke.executable(binary) == binary.resolve()
 
 
+def test_data_path_accepts_resolved_windows_short_user_directory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    short = Path(
+        r"C:\Users\RUNNER~1\AppData\Local\Temp\Folio-J frozen 中文 smoke\原始数据 🗂 𠮷\app.db"
+    )
+    canonical = Path(
+        r"C:\Users\runneradmin\AppData\Local\Temp\Folio-J frozen 中文 smoke\原始数据 🗂 𠮷\app.db"
+    )
+    resolve = Path.resolve
+
+    def resolve_short(path: Path, strict: bool = False) -> Path:
+        return canonical if path == short else resolve(path, strict=strict)
+
+    # Simulate Windows GetFinalPathNameByHandle's 8.3 expansion on any host OS.
+    monkeypatch.setattr(Path, "resolve", resolve_short)
+    output = f"下次迁移和启动使用的数据库：{canonical}\n启动后可选择数据位置。\n"
+    assert str(short) not in output  # The previous raw substring check rejected this.
+    smoke.check_data_path(output, short)
+
+
+@pytest.mark.parametrize("reported", ["daily", "suffix", "missing", "duplicate"])
+def test_data_path_rejects_wrong_or_ambiguous_database(tmp_path: Path, reported: str) -> None:
+    database = tmp_path / "isolated" / "app.db"
+    correct = f"下次迁移和启动使用的数据库：{database.resolve()}\n"
+    output = {
+        "daily": f"下次迁移和启动使用的数据库：{tmp_path / 'daily' / 'app.db'}\n",
+        "suffix": correct.rstrip() + ".daily\n",
+        "missing": str(database.resolve()),
+        "duplicate": correct + correct,
+    }[reported]
+    with pytest.raises(RuntimeError, match="wrong database"):
+        smoke.check_data_path(output, database)
+    assert not database.exists()
+
+
+def test_data_path_rejects_creation_even_when_reported_path_is_correct(tmp_path: Path) -> None:
+    database = write(tmp_path, "isolated/app.db")
+    output = f"下次迁移和启动使用的数据库：{database.resolve()}\n"
+    with pytest.raises(RuntimeError, match="created it"):
+        smoke.check_data_path(output, database)
+
+
 @pytest.mark.parametrize("failure", ["missing_js", "missing_css", "external_asset", "fallback"])
 def test_frontend_check_catches_packaging_errors(
     monkeypatch: pytest.MonkeyPatch, failure: str

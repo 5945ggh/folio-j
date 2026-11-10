@@ -56,3 +56,11 @@ Windows 构建器直接输出 ZIP，POSIX 平台继续输出保留权限与符�
 2026-11-10，`88a720db` 的[实际运行](https://github.com/5945ggh/folio-j/actions/runs/42733431675)已通过 workflow 解析与临时路径初始化。源码任务在 Windows pyright 下将 `SIGBREAK` 推断为固定值 `21`，两处 nullable 变量检查被判恒真。
 
 安装与恢复改用显式 Windows 平台分支，保留原处理器恢复、启动退出码和中断处理。默认平台与 `--pythonplatform Windows` 的完整 pyright 均为零错误；既有启动器回归 35 passed，覆盖处理器恢复及各类退出路径。
+
+## Windows 冻结冒烟路径规范化修复
+
+同次运行的冻结包已成功构建为 Windows AMD64 ZIP，随后在 `data-path` 检查失败。冒烟将 `RUNNER~1` 短名路径直接与 CLI 输出比较，而配置会用 `Path.resolve()` 展开为长名，导致原始字符串判断误报。
+
+预期路径改为同样规范化，并精确核对唯一数据库输出行；错误库、前缀碰撞、重复或缺失路径行、意外建库均拒绝。补充六项针对性回归，不改变数据保护规则；冻结冒烟测试 22 passed。
+
+上述两项修复从 `main 88a720db` 独立实施，未新增依赖、schema、prompt 或 TBD。`just lint`、`just test`、`just check-docs`、`git diff --check` 及 actionlint 通过，后端 1513 passed、4 skipped，前端 826 passed。Windows 最终运行结果以修复后的远端记录为准。
