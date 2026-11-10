@@ -1,0 +1,22 @@
+backend/src/app/launcher.py
+  s_a9ba3cf2f0a75c::t_be39cfeafe0329 129,132,140-141
+docs/handovers/WINDOWS_FROZEN_ACCEPTANCE.md
+  s_a9ba3cf2f0a75c::t_beb18a8298af14 54,56,58
+  s_a9ba3cf2f0a75c::t_c9ecc970e1fc79 53,55,57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0b4125dfb4a98be096a3b9af488e41db8250e64d",
+  "prompts": {},
+  "sessions": {
+    "s_a9ba3cf2f0a75c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c0af-dcff-7802-a0f3-59d5f61428a1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
