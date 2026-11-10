@@ -125,12 +125,11 @@ def _serve(application: ASGIApplication, settings: Settings, *, no_browser: bool
         use_colors=False if sys.platform == "win32" else None,
     )
     server = BrowserServer(configuration, None if no_browser else url)
-    sigbreak = signal.SIGBREAK if sys.platform == "win32" else None
     previous_sigbreak = None
-    if sigbreak is not None:
+    if sys.platform == "win32":
         # Uvicorn restores and replays SIGBREAK after cleanup. Its Windows
         # default would terminate the process instead of reaching our normal stop.
-        previous_sigbreak = signal.signal(sigbreak, signal.default_int_handler)
+        previous_sigbreak = signal.signal(signal.SIGBREAK, signal.default_int_handler)
     try:
         server.run()
     except KeyboardInterrupt:
@@ -138,8 +137,8 @@ def _serve(application: ASGIApplication, settings: Settings, *, no_browser: bool
         # normal terminal stop as success only if startup had completed.
         pass
     finally:
-        if sigbreak is not None and previous_sigbreak is not None:
-            signal.signal(sigbreak, previous_sigbreak)
+        if sys.platform == "win32" and previous_sigbreak is not None:
+            signal.signal(signal.SIGBREAK, previous_sigbreak)
     return 0 if server.started else 1
 
 

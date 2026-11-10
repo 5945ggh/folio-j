@@ -50,3 +50,9 @@ Windows 构建器直接输出 ZIP，POSIX 平台继续输出保留权限与符�
 从 `main 0c1e0744` 开始，将冻结构建环境和产物路径移到现有初始化 step，用 `Join-Path $env:RUNNER_TEMP` 构造路径并通过 UTF-8 写入 `GITHUB_ENV`。安装依赖、构建、冒烟和上传均在后续步骤读取，保留 runner 临时目录及独立虚拟环境。没有新增项目依赖、应用行为、schema 或 TBD。
 
 临时安装的 actionlint 1.7.12 在修复前准确检出两处非法 context，修复后的完整 workflow 通过专用语法与表达式检查。`just lint`、`just test`、`just check-docs` 和 `git diff --check` 通过；后端 1507 passed、4 skipped，前端 826 passed。独立工作区复用既有依赖，显式指定本工作区 `PYTHONPATH` 并使用 `UV_NO_SYNC=1 UV_OFFLINE=1`；测试真实网络保持禁用，允许本机 socketpair。实际 Windows CI 结果仍以修复推送后的远端运行为准。
+
+## Windows SIGBREAK 类型检查修复
+
+2026-11-10，`88a720db` 的[实际运行](https://github.com/5945ggh/folio-j/actions/runs/42733431675)已通过 workflow 解析与临时路径初始化。源码任务在 Windows pyright 下将 `SIGBREAK` 推断为固定值 `21`，两处 nullable 变量检查被判恒真。
+
+安装与恢复改用显式 Windows 平台分支，保留原处理器恢复、启动退出码和中断处理。默认平台与 `--pythonplatform Windows` 的完整 pyright 均为零错误；既有启动器回归 35 passed，覆盖处理器恢复及各类退出路径。
