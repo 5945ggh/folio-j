@@ -1,0 +1,33 @@
+docs/handovers/DATA_LOCATION_ACCEPTANCE.md
+  s_3e2251961fffb1::t_2e6eda41816824 30-37
+backend/tests/test_launcher.py
+  s_599603c98c5ee0::t_f63595c9df96be 10-11,15,18-19,25,106-108,110-111,114,116-117,120-121,124-169,171,174-176,180-181,192,237,273,285,296,303,373,410,413
+docs/DEVELOPMENT.md
+  s_599603c98c5ee0::t_26805c011a6bb4 281
+docs/UPGRADING.md
+  s_599603c98c5ee0::t_9620e480e16d3d 17,20-21,23-33,36,42,46-47,68,73,77,81,83-91,93,102,105,107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b52b1661044828ed4bce686d0550105a499443ea",
+  "prompts": {},
+  "sessions": {
+    "s_3e2251961fffb1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1bfb6-ed13-7ef0-9859-e80d598006ff",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_599603c98c5ee0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c00b-1b90-7ca1-8863-78df4a772fc2",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
