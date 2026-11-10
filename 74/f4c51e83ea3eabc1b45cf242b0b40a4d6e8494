@@ -1,0 +1,25 @@
+docs/handovers/WINDOWS_FROZEN_ACCEPTANCE.md
+  s_a9ba3cf2f0a75c::t_991a2092e36315 59-66
+backend/tests/test_smoke_frozen.py
+  s_a9ba3cf2f0a75c::t_82c407b228efec 123-144,146-165
+  s_a9ba3cf2f0a75c::t_f3b46df2ac98e1 145
+scripts/smoke_frozen.py
+  s_a9ba3cf2f0a75c::t_f3b46df2ac98e1 132-136
+  s_a9ba3cf2f0a75c::t_0431458ea41649 129-131,137-145,564
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "74f4c51e83ea3eabc1b45cf242b0b40a4d6e8494",
+  "prompts": {},
+  "sessions": {
+    "s_a9ba3cf2f0a75c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c0af-dcff-7802-a0f3-59d5f61428a1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
