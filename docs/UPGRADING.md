@@ -14,24 +14,37 @@
 
 ## 制作备份
 
-要做备份时，先停止 Folio-J，在程序目录中运行 `just data-path`。确认显示的是你要备份的数据库后，运行下面的命令。
+要做备份时，先停止 Folio-J，在程序目录中核对数据库路径，确认是你要备份的数据库后，再执行备份。按安装方式选择命令：
 
 ```sh
+# 源码版
+just data-path
 just backup "$HOME/folio-backup-01"
+
+# macOS / Linux 冻结包
+./Folio-J data-path
+./Folio-J backup "$HOME/folio-backup-01"
 ```
 
-如果启动应用时用 `FOLIO_J_DATABASE_PATH` 指定了数据库，查看路径和备份时都要带上它。例如，你的数据库在 `/Volumes/Study/Folio-J/app.db`，就先用 `FOLIO_J_DATABASE_PATH="/Volumes/Study/Folio-J/app.db" just data-path` 核对，再运行下面的命令。
+Windows 冻结包在 PowerShell 中运行：
+
+```powershell
+.\Folio-J.exe data-path
+.\Folio-J.exe backup "$HOME/folio-backup-01"
+```
+
+如果启动应用时用 `FOLIO_J_DATABASE_PATH` 指定了数据库，查看路径和备份时都要带上它。例如，你的数据库在 `/Volumes/Study/Folio-J/app.db`，就先用 `FOLIO_J_DATABASE_PATH="/Volumes/Study/Folio-J/app.db" just data-path` 核对，再运行下面的命令。macOS／Linux 冻结包将 `just` 换成 `./Folio-J`。
 
 ```sh
 FOLIO_J_DATABASE_PATH="/Volumes/Study/Folio-J/app.db" just backup "$HOME/folio-backup-01"
 ```
 
-PowerShell 中先设置环境变量，再调用相同的命令。备份结束后删除该变量；下例路径请替换成实际源库。
+PowerShell 中先设置环境变量，再调用命令。备份结束后删除该变量；下例使用冻结包，源码版将 `.\Folio-J.exe` 换成 `just`，路径请替换成实际源库。
 
 ```powershell
 $env:FOLIO_J_DATABASE_PATH = "D:/学习资料/app.db"
-just data-path
-just backup "$HOME/folio-backup-01"
+.\Folio-J.exe data-path
+.\Folio-J.exe backup "$HOME/folio-backup-01"
 Remove-Item Env:FOLIO_J_DATABASE_PATH
 ```
 
@@ -52,22 +65,32 @@ Windows 使用所在目录继承的访问权限，不额外设置 ACL。请把�
 ## 当前迁移基线
 
 - **已有数据库升级**：当前 Alembic 迁移链从 `0001_schema_baseline` 到 `0004_translation_reader_removal`。版本属于这条链时，用旧版备份后再用新版启动。
-- **原生备份恢复**：`just restore` 接受含 `manifest.json` 的 v1 备份。数据库须从 `0004_translation_reader_removal` 起且版本在当前程序已知的迁移链内；仍在使用的 EPUB 须为 `epub-reading-v2`、编译包为 FJEPUB v2。恢复先还原备份时的版本，后续升级由启动时的迁移完成。
+- **原生备份恢复**：恢复命令接受含 `manifest.json` 的 v1 备份。数据库须从 `0004_translation_reader_removal` 起且版本在当前程序已知的迁移链内；仍在使用的 EPUB 须为 `epub-reading-v2`、编译包为 FJEPUB v2。恢复先还原备份时的版本，后续升级由启动时的迁移完成。
 - **早期开发库与手工备份**：含 `backup-info.txt` 的旧备份应使用其中记录的程序版本及当时的恢复步骤。早期迁移链（如 `0001_initial`）及旧 EPUB 编译包也需使用匹配版本。修改版本标签不能转换数据；重新导入 EPUB 也不能恢复原来的书签、片段出处与讲解关联。
 
 ## 恢复备份、回退版本或迁移到新电脑
 
-恢复操作不会覆盖或破坏你当前的数据库，而是将备份还原到一个**全新的文件夹**中，再通过修改配置指向这个新文件夹。因此无论是找回误删资料、升级失败回退，还是换新电脑，操作逻辑完全一致：
+恢复操作不会覆盖或破坏你当前的数据库，而是将备份还原到一个**全新的文件夹**中，再通过启动选择页打开恢复库。因此无论是找回误删资料、升级失败回退，还是换新电脑，操作逻辑完全一致：
 
 ### 通用恢复步骤（以换新电脑或找回数据为例）
 
-1. **准备环境与备份文件**：若应用正在运行，先按 `Ctrl-C` 停止。如果是换到新电脑，先在新电脑上解压 Folio-J 并运行 `just setup`，再把旧电脑上的备份文件夹（如 `folio-backup-01`）复制到新电脑的主目录。
+1. **准备环境与备份文件**：若应用正在运行，先按 `Ctrl-C` 停止。如果是换到新电脑，先在新电脑上解压 Folio-J；冻结包保留完整的程序目录即可，源码版按[快速开始](../README.md#快速开始)准备环境并运行 `just setup`。再把旧电脑上的备份文件夹（如 `folio-backup-01`）完整复制到新电脑的主目录。
 2. **执行恢复命令**：在 Folio-J 程序目录中运行以下命令，将备份还原到一个新的数据文件夹（如 `~/folio-restored-01`，若重名请换一个新名字）：
 
    ```sh
+   # 源码版
    just restore "$HOME/folio-backup-01" "$HOME/folio-restored-01"
+
+   # macOS / Linux 冻结包
+   ./Folio-J restore "$HOME/folio-backup-01" "$HOME/folio-restored-01"
    ```
-3. **选择恢复库**：运行 `uv run --project backend python -m app.launcher start --choose-data`，在选择页填写新恢复目录，点击“打开已有数据”。冻结包使用 `./Folio-J start --choose-data`，Windows 使用 `.\Folio-J.exe start --choose-data`。如果使用了 `FOLIO_J_DATABASE_PATH`，先移除或修改该变量；它仍具有最高优先级。打开已有库不会搬迁或覆盖原库。
+
+   Windows 冻结包在 PowerShell 中运行：
+
+   ```powershell
+   .\Folio-J.exe restore "$HOME/folio-backup-01" "$HOME/folio-restored-01"
+   ```
+3. **选择恢复库**：源码版运行 `uv run --project backend python -m app.launcher start --choose-data`，在选择页填写新恢复目录，点击“打开已有数据”。冻结包使用 `./Folio-J start --choose-data`，Windows 使用 `.\Folio-J.exe start --choose-data`。如果使用了 `FOLIO_J_DATABASE_PATH`，先移除或修改该变量；它仍具有最高优先级。打开已有库不会搬迁或覆盖原库。
 4. **确认运行位置**：进入“设置 → 数据位置”，核对数据库指向新恢复目录中的 `app.db`，再检查书架、学习记录和词典。位置会被记住，之后正常启动即可。
 
 旧版程序没有选择页时，沿用旧版说明修改配置或用 `FOLIO_J_DATABASE_PATH` 指向恢复库；不要让旧程序直接读取已被新版升级的库。
@@ -76,12 +99,12 @@ Windows 使用所在目录继承的访问权限，不额外设置 ACL。请把�
 
 如果新版无法正常启动、想先退回旧版继续看书：
 
-1. 如果新版仍在运行，先按 `Ctrl-C` 停止。进入**升级前能正常使用的旧版程序文件夹**（若已删除，请重新解压对应旧版本并运行 `just setup`）。
+1. 如果新版仍在运行，先按 `Ctrl-C` 停止。进入**升级前能正常使用的旧版程序文件夹**（若已删除，请重新解压对应旧版本；源码版另需按该版本说明安装依赖，冻结包无需安装依赖）。
 2. 在旧版程序目录中完成[通用恢复步骤](#通用恢复步骤以换新电脑或找回数据为例)的第 2–4 步，恢复时选择**升级前制作的备份**即可。
 
-## 没有安装 just 时
+## 源码版没有安装 just 时
 
-若未安装 `just`，可在程序根目录用 `uv run --project backend --no-dev python -m app.launcher data-path` 核对源库，再运行对应的备份或恢复命令。平时若用 `FOLIO_J_DATABASE_PATH` 临时指定学习库，核对和备份时同样要带上它。完整启动步骤见[快速开始](../README.md#快速开始)。
+冻结包直接使用上文的程序命令。源码版若未安装 `just`，可在程序根目录用 `uv run --project backend --no-dev python -m app.launcher data-path` 核对源库，再运行对应的备份或恢复命令。平时若用 `FOLIO_J_DATABASE_PATH` 临时指定学习库，核对和备份时同样要带上它。完整启动步骤见[快速开始](../README.md#快速开始)。
 
 ```sh
 # 制作备份

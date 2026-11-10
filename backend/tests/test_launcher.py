@@ -7,16 +7,22 @@ import signal
 import socket
 import sqlite3
 import sys
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from types import FrameType, SimpleNamespace
 
+import httpx
 import pytest
 import uvicorn
+from fastapi import FastAPI
+from starlette.types import Message, Scope
 from uvicorn.config import LOGGING_CONFIG
 
 from app import config, launcher, resources
 from app.config import DatabaseSettings, Settings
 from app.platform_io import exclusive_file_lock
+from app.startup import StartupApplication
 
 
 def test_frozen_assets_and_installation_paths_are_separate(
@@ -97,31 +103,82 @@ def test_browser_opens_only_after_successful_startup(
     assert opened == ([url] if ready and not no_browser else [])
 
 
-def test_start_migrates_before_in_process_server(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("startup_failure", [False, True])
+def test_cli_drives_application_lifespan_and_closes_resources(
+    startup_failure: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from app import main
+
     frontend = tmp_path / "frontend/dist"
     frontend.mkdir(parents=True)
-    (frontend / "index.html").write_text("<html>Folio-J</html>", encoding="utf-8")
+    (frontend / "index.html").touch()
     monkeypatch.setattr(launcher, "RESOURCE_ROOT", tmp_path)
+    database = tmp_path / "chosen/app.db"
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
     events: list[str] = []
 
-    def migrate(database_path: Path | None = None) -> None:
-        assert database_path == Settings().database.path
+    def migrate(path: Path | None = None) -> None:
+        assert path == database
         events.append("migrate")
 
-    def run(server: launcher.BrowserServer) -> None:
-        assert events == ["migrate"]
-        assert server.config.workers == 1
-        assert not isinstance(server.config.app, str)
-        assert server.browser_url is None
-        events.append("serve")
-        server.started = True
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
+        events.append("start")
+        try:
+            if startup_failure:
+                raise RuntimeError("初始化失败")
+            yield
+        finally:
+            events.append("close")
+
+    application = FastAPI(lifespan=lifespan)
+
+    def create_application(*, frontend_dir: Path, database_path: Path) -> FastAPI:
+        assert frontend_dir == frontend
+        assert database_path == database
+        return application
 
     monkeypatch.setattr(launcher, "migrate", migrate)
+    monkeypatch.setattr(main, "create_app", create_application)
+
+    async def lifecycle(bootstrap: StartupApplication) -> None:
+        incoming: asyncio.Queue[Message] = asyncio.Queue()
+        outgoing: asyncio.Queue[Message] = asyncio.Queue()
+        scope: Scope = {"type": "lifespan", "asgi": {"version": "3.0"}, "state": {}}
+        task = asyncio.create_task(bootstrap(scope, incoming.get, outgoing.put))
+        try:
+            await incoming.put({"type": "lifespan.startup"})
+            assert await asyncio.wait_for(outgoing.get(), 5) == {
+                "type": "lifespan.startup.complete"
+            }
+            assert events == ["migrate", "start", *(["close"] if startup_failure else [])]
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=bootstrap), base_url="http://127.0.0.1:8010"
+            ) as client:
+                state = (await client.get("/_startup/state")).json()
+                assert state["ready"] is not startup_failure
+                assert state["recovery"] is startup_failure
+                if startup_failure:
+                    assert state["error"] == "初始化失败"
+                    assert (await client.get("/api/health")).status_code == 503
+        finally:
+            await incoming.put({"type": "lifespan.shutdown"})
+            await asyncio.wait_for(task, 5)
+        assert await outgoing.get() == {"type": "lifespan.shutdown.complete"}
+        assert events == ["migrate", "start", "close"]
+
+    def run(server: launcher.BrowserServer) -> None:
+        assert events == []
+        assert server.config.workers == 1
+        assert server.browser_url is None
+        bootstrap = server.config.app
+        assert isinstance(bootstrap, StartupApplication)
+        asyncio.run(lifecycle(bootstrap))
+        server.started = True
+
     monkeypatch.setattr(launcher.BrowserServer, "run", run)
-    assert launcher.start(Settings(), no_browser=True) == 0
-    assert events == ["migrate", "serve"]
+    assert launcher.main(["start", "--no-browser"]) == 0
+    assert not database.parent.exists()
 
 
 @pytest.mark.parametrize("platform", ["win32", "linux"])
@@ -132,15 +189,12 @@ def test_windows_logs_are_plain_text_even_when_console_reports_tty(
     frontend.mkdir(parents=True)
     (frontend / "index.html").touch()
     monkeypatch.setattr(launcher, "RESOURCE_ROOT", tmp_path)
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(tmp_path / "unused.db"))
     monkeypatch.setattr(launcher, "sys", SimpleNamespace(platform=platform))
-
-    def migrate(database_path: Path | None = None) -> None:
-        pass
 
     def register(number: int, handler: object) -> signal.Handlers:
         return signal.SIG_DFL
 
-    monkeypatch.setattr(launcher, "migrate", migrate)
     monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
     monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
     # Uvicorn mutates its shared logging defaults when configuring colors.
@@ -180,7 +234,7 @@ def test_windows_logs_are_plain_text_even_when_console_reports_tty(
         server.started = True
 
     monkeypatch.setattr(launcher.BrowserServer, "run", run)
-    assert launcher.start(Settings(), no_browser=True) == 0
+    assert launcher.start_interactive(no_browser=True) == 0
 
 
 def test_start_checks_frontend_before_touching_database(
@@ -216,10 +270,8 @@ def test_server_exit_preserves_startup_result_after_cleanup(
     frontend.mkdir(parents=True)
     (frontend / "index.html").write_text("Folio-J", encoding="utf-8")
     monkeypatch.setattr(launcher, "RESOURCE_ROOT", tmp_path)
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(tmp_path / "unused.db"))
     cleanup: list[str] = []
-
-    def migrate(database_path: Path | None = None) -> None:
-        pass
 
     def run(server: launcher.BrowserServer) -> None:
         server.started = ready
@@ -229,9 +281,8 @@ def test_server_exit_preserves_startup_result_after_cleanup(
         finally:
             cleanup.append("complete")
 
-    monkeypatch.setattr(launcher, "migrate", migrate)
     monkeypatch.setattr(launcher.BrowserServer, "run", run)
-    assert launcher.start(Settings(), no_browser=True) == (0 if ready else 1)
+    assert launcher.start_interactive(no_browser=True) == (0 if ready else 1)
     assert cleanup == ["complete"]
 
 
@@ -242,17 +293,14 @@ def test_server_bind_failure_is_not_reported_as_success(
     frontend.mkdir(parents=True)
     (frontend / "index.html").write_text("Folio-J", encoding="utf-8")
     monkeypatch.setattr(launcher, "RESOURCE_ROOT", tmp_path)
-
-    def migrate(database_path: Path | None = None) -> None:
-        pass
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(tmp_path / "unused.db"))
 
     def run(server: launcher.BrowserServer) -> None:
         raise SystemExit(1)
 
-    monkeypatch.setattr(launcher, "migrate", migrate)
     monkeypatch.setattr(launcher.BrowserServer, "run", run)
     with pytest.raises(SystemExit) as stopped:
-        launcher.start(Settings(), no_browser=True)
+        launcher.start_interactive(no_browser=True)
     assert stopped.value.code == 1
 
 
@@ -322,12 +370,9 @@ def test_windows_server_restores_sigbreak_after_every_exit(
     frontend.mkdir(parents=True)
     (frontend / "index.html").touch()
     monkeypatch.setattr(launcher, "RESOURCE_ROOT", tmp_path)
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(tmp_path / "unused.db"))
     monkeypatch.setattr(launcher, "sys", SimpleNamespace(platform="win32"))
 
-    def migrate(database_path: Path | None = None) -> None:
-        pass
-
-    monkeypatch.setattr(launcher, "migrate", migrate)
     # SIGBREAK is absent on POSIX; keep this registration regression portable.
     sigbreak = getattr(signal, "SIGBREAK", 21)
     monkeypatch.setattr(signal, "SIGBREAK", sigbreak, raising=False)
@@ -362,10 +407,10 @@ def test_windows_server_restores_sigbreak_after_every_exit(
     monkeypatch.setattr(launcher.BrowserServer, "run", run)
     if outcome == "bind_failure":
         with pytest.raises(SystemExit) as stopped:
-            launcher.start(Settings(), no_browser=True)
+            launcher.start_interactive(no_browser=True)
         assert stopped.value.code == 1
     else:
-        assert launcher.start(Settings(), no_browser=True) == (
+        assert launcher.start_interactive(no_browser=True) == (
             1 if outcome == "startup_interrupt" else 0
         )
     assert events == ["registered", "cleanup", "restored"]

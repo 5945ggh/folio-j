@@ -68,23 +68,6 @@ class BrowserServer(uvicorn.Server):
                 print(f"无法自动打开浏览器，请手动访问 {self.browser_url}：{exc}", file=sys.stderr)
 
 
-def start(settings: Settings, *, no_browser: bool) -> int:
-    frontend = RESOURCE_ROOT / "frontend/dist"
-    if not (frontend / "index.html").is_file():
-        raise ValueError("缺少前端构建，请重新安装完整程序包或先构建前端。")
-    migrate(settings.database.path)
-    # Import directly so PyInstaller can discover the application and avoid
-    # spawning sys.executable -m uvicorn (which would restart the frozen CLI).
-    from app.main import create_app
-
-    print(f"数据库：{settings.database.path}", flush=True)
-    return _serve(
-        create_app(frontend_dir=frontend, database_path=settings.database.path),
-        settings,
-        no_browser=no_browser,
-    )
-
-
 def start_interactive(*, no_browser: bool, choose_data: bool = False) -> int:
     """Use a database-independent page for first selection and startup recovery."""
     from app.main import create_app

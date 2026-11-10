@@ -27,6 +27,14 @@
 
 设置浏览器回归覆盖 1280／320 像素、浅／深色、长 Unicode 路径、复制成功／失败、读取失败重试、离开取消与迟到隔离；既有模型设置回归覆盖分类切换、草稿保护及自动保存重试。截图为合成路径场景，实际位置选择与恢复另按上述真实浏览器流程验证。
 
+## 验收收口
+
+2026-11-09，基于 `main b48fe34d` 的 `codex/data-location-closeout` 工作区移除无正式调用方的旧 `launcher.start()`，日志、退出码、绑定失败和 SIGBREAK 回归改走正式启动入口；旧同步迁移时序测试由 CLI 与 ASGI 生命周期的正常／失败场景替代，验证初始化、恢复页和资源关闭的装配。升级与开发指南统一通过选择页打开恢复库，并补齐冻结包备份与恢复命令。旧构建 `dist/data-location-local.1/` 已清理，保留最终 `.2` 及 `b48fe34d` bundle。
+
+`just lint`、`just test`、`just check-docs` 和 `git diff --check` 通过，后端 1509 passed、3 skipped，前端 826 passed；最终启动器定向回归 36 项通过。全量测试在允许本机 socketpair 的环境运行，继续使用临时数据和网络防护。本轮未改变页面或产品行为，沿用前述浏览器验收；未重建冻结包，无新增依赖、状态或 TBD。
+
+2026-11-10，提交前在 `main 2aeb8dbe` 基准上复验这批收口改动：`just lint`、`just test`、`just check-docs` 和 `git diff --check` 通过，后端 1515 passed、3 skipped，前端 826 passed。测试继续使用临时数据和网络防护；本轮未重建冻结包，Windows 实机范围沿用下节。
+
 ## 后续实机范围
 
 Windows 原生注册表、火绒实际拦截与放行、默认控制台的交互暂停，以及新冻结包完整流程须由 Windows 端重建后验证；源码和冻结包 CI 未推送执行。真实模型、设备朗读和扫描／搬迁均不在本批范围。Windows 接力用[实机清单](WINDOWS_ACCEPTANCE.md#首次选择记住位置与恢复)，常用操作见[使用指南](../USAGE.md#应用配置)。

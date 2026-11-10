@@ -278,7 +278,7 @@ Get-FileHash -LiteralPath $frozenArchives[0].FullName -Algorithm SHA256
 
 打包器读取当前工作区，前端产物须由同一工作区刚刚构建。`RELEASE.json` 保留版本与提交号，`BUILD.json` 另记工作区是否有改动、平台、Python、PyInstaller 与分词词典版本；不能将未提交实验包当作对应提交的正式发行。输出包含 `Folio-J/`、Windows 原生 ZIP（其他平台为保留符号链接和执行权限的 `.tar.gz`）与 `SIZE.json`。第三方许可证随目录保存。构建环境与缓存不属于交付内容；分发二进制时同时提供对应源码和构建脚本。
 
-用户进入完整的 `Folio-J/` 目录后，先运行 `./Folio-J data-path` 核对学习库，再运行 `./Folio-J start`；Windows 使用 `.\Folio-J.exe`。`data-path` 不创建数据库。`start --no-browser` 只启动服务；`Ctrl-C` 停止。`backup <新目录>`、`restore <备份目录> <新恢复目录>` 沿用[数据与凭据保护规则](UPGRADING.md#数据与凭据)，恢复后仍须将用户配置指向恢复库。完整操作说明也放在包内首页。
+用户进入完整的 `Folio-J/` 目录后，先运行 `./Folio-J data-path` 核对学习库，再运行 `./Folio-J start`；Windows 使用 `.\Folio-J.exe`。`data-path` 不创建数据库。`start --no-browser` 只启动服务；`Ctrl-C` 停止。`backup <新目录>`、`restore <备份目录> <新恢复目录>` 沿用[数据与凭据保护规则](UPGRADING.md#数据与凭据)，恢复后运行 `start --choose-data`，通过启动选择页打开恢复库。完整操作说明也放在包内首页。
 
 `smoke_frozen.py` 将产物复制并移位到中文空格临时目录，在无 Python／Node PATH、独立 HOME 下验证含 emoji 和罕字的数据／备份／恢复路径、管道 UTF-8 输出、真实 HTTP、分词资源、持久学习内容及备份恢复，并在 Windows 检查 CTRL_BREAK 退出；只访问 loopback，不调用真实模型。该检查覆盖服务与数据流程，阅读排版、浮层和浏览器操作仍按 [Windows 实机清单](handovers/WINDOWS_ACCEPTANCE.md)验证。早期本机尺寸与检查结果见[PyInstaller 验收记录](handovers/archived/PYINSTALLER_ACCEPTANCE.md)，本批状态见[实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
