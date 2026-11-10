@@ -65,7 +65,8 @@ export async function segmentNavigation(h: BrowserHarness) {
 	const searchParagraph = 370;
 	const searchText = paragraphs[searchParagraph] ?? "";
 	h.mock(async (request) => {
-		const path = new URL(request.url).pathname;
+		const url = new URL(request.url);
+		const path = url.pathname;
 		if (path === "/api/segments/saved") segmentReads++;
 		let data = readerSessionFixtureData(path, {
 			originChapter,
@@ -121,7 +122,23 @@ export async function segmentNavigation(h: BrowserHarness) {
 					},
 				],
 			} satisfies Schema["MaterialSearchResponse"];
-		else if (data === undefined)
+		else if (path.endsWith("/record-search")) {
+			const kind = url.searchParams.get("kind");
+			check(
+				kind === "segment" || kind === "translation" || kind === "bookmark",
+				"Record search must request a known content type",
+			);
+			data = {
+				material_id: book.id,
+				version_id: book.version_id,
+				query: url.searchParams.get("q") ?? "",
+				kind,
+				total: 0,
+				offset: 0,
+				limit: 40,
+				items: [],
+			} satisfies Schema["MaterialRecordSearchResponse"];
+		} else if (data === undefined)
 			throw new Error(
 				`Unmocked Segment navigation request ${request.method} ${path}`,
 			);
@@ -270,32 +287,29 @@ export async function segmentNavigation(h: BrowserHarness) {
 			() => delayedRequests > 0,
 			"Returned Segment target must await the controlled chapter response",
 		);
-		const toc = h.container.querySelector<HTMLButtonElement>(
-			'button[aria-label="目录"]',
+		const searchTool = h.container.querySelector<HTMLButtonElement>(
+			'button[aria-label="本书搜索"]',
 		);
 		check(
-			toc,
+			searchTool,
 			"Retained reader must expose navigation while the target chapter is pending",
 		);
-		toc.click();
+		searchTool.click();
 		await h.until(
-			() => !!h.container.querySelector('button[data-tab="search"]'),
-			"Navigation search tab must mount",
+			() => !!h.container.querySelector(".reader-search-panel"),
+			"Independent book search panel must mount",
 		);
-		h.container
-			.querySelector<HTMLButtonElement>('button[data-tab="search"]')
-			?.click();
 		const search = h.container.querySelector<HTMLInputElement>(
-			'input[placeholder="搜索本书原文…"]',
+			'input[aria-label="搜索本书"]',
 		);
 		check(search, "Actual search input must mount");
 		h.inputValue(search, searchText);
 		await h.until(
-			() => !!h.container.querySelector("button.reader-query-hit"),
+			() => !!h.container.querySelector("button.reader-search-hit"),
 			"Search must return the newer same-chapter target",
 		);
 		h.container
-			.querySelector<HTMLButtonElement>("button.reader-query-hit")
+			.querySelector<HTMLButtonElement>("button.reader-search-hit")
 			?.click();
 		check(releaseChapter, "Test must own the outstanding chapter response");
 		releaseChapter();

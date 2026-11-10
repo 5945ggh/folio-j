@@ -1,0 +1,738 @@
+import type { components } from "../src/api/schema";
+import type { BrowserHarness } from "./harness";
+import { defaultContextCopySettings } from "./reader-context-copy-fixture";
+import {
+	readerSessionFixture as fixture,
+	readerSessionFixtureData,
+} from "./reader-session-fixture";
+
+type Schema = components["schemas"];
+/** Real Reader, local-only APIs and exact iframe ranges exercise search independently of layout. */
+export async function readerSearch(h: BrowserHarness, preview = false) {
+	const check: BrowserHarness["check"] = h.check;
+	const { MaterialReader } = await import("../src/materials/MaterialReader");
+	const { book, chapter, targetStart, targetText, timestamp, reference } =
+		fixture;
+	const otherChapter = { ...chapter, id: "other-chapter", title: "第二章" };
+	const { targetIdentity } = await import("../src/translation/state");
+	const translationIdentity = await targetIdentity(reference);
+	const savedTranslation = {
+		id: "translation-saved",
+		material_id: book.id,
+		source_id: "source",
+		chapter_id: chapter.id,
+		identity_sha256: fixture.hash,
+		material_provenance: reference,
+		parts: [],
+		text: targetText,
+		translation: "已保存的失配译文",
+		context_before: "",
+		context_after: "",
+		created_at: timestamp,
+		reader_deleted: false,
+		material_deleted: false,
+		adopted_segment_ids: [],
+		task_id: "task",
+		run_id: "run",
+		scheme_id: "scheme",
+		scheme_name: "合成方案",
+		scheme_revision: 0,
+		target_language: "中文",
+		model_id: "model",
+		provider_name: "离线",
+		protocol: "openai",
+		prompt_version: "1",
+		temperature: null,
+		reasoning_effort: null,
+		max_output_tokens: null,
+	} satisfies Schema["TranslationResultResponse"];
+	const normalTranslation: Schema["TranslationResultResponse"] = {
+		...savedTranslation,
+		id: "translation-normal",
+		identity_sha256: translationIdentity,
+		translation: "跨章打开的正常译文",
+	};
+	const calls: URL[] = [];
+	let releaseOld: (() => void) | undefined;
+	const oldGate = new Promise<void>((resolve) => {
+		releaseOld = resolve;
+	});
+	let releaseBookmark: (() => void) | undefined;
+	const bookmarkGate = new Promise<void>((resolve) => {
+		releaseBookmark = resolve;
+	});
+	let bookmarkRequested = false;
+	const positionWrites: Schema["ReadingPositionUpdate"][] = [];
+	let position = book.reading_position;
+	localStorage.clear();
+	localStorage.setItem(
+		"folio-reader-ui-v1",
+		JSON.stringify({
+			focus: false,
+			theme:
+				new URLSearchParams(location.search).get("mode") === "dark"
+					? "black"
+					: "white",
+		}),
+	);
+	h.mock(async (request) => {
+		const url = new URL(request.url);
+		const path = url.pathname;
+		if (path === "/api/settings/translation")
+			return Response.json({
+				id: "scheme",
+				adapter: "llm",
+				revision: 0,
+				name: "合成方案",
+				model_id: "model",
+				target_language: "中文",
+				before_sentences: 2,
+				after_sentences: 2,
+				before_characters: 100,
+				after_characters: 100,
+				max_context_characters: 2000,
+				max_target_characters: 2000,
+			});
+		if (path === "/api/settings/context-copy")
+			return Response.json(defaultContextCopySettings);
+		if (path.endsWith("/search") || path.endsWith("/record-search")) {
+			calls.push(url);
+			const q = url.searchParams.get("q") ?? "";
+			const kind = url.searchParams.get("kind");
+			if (q === "古い") await oldGate;
+			if (q === "失敗" && kind === "translation")
+				return Response.json({ detail: "译文暂不可用" }, { status: 503 });
+			const common = {
+				material_id: book.id,
+				version_id: book.version_id,
+				query: q,
+				offset: Number(url.searchParams.get("offset") ?? 0),
+				limit: Number(url.searchParams.get("limit") ?? 40),
+			};
+			if (!kind)
+				return Response.json({
+					...common,
+					total: q ? 1 : 0,
+					items: q
+						? [
+								{
+									chapter_id: chapter.id,
+									chapter_title: chapter.title,
+									part_index: 2,
+									resource_id: "r",
+									spine_index: 0,
+									start: targetStart,
+									end: targetStart + targetText.length,
+									match: targetText,
+									before: "",
+									after: "",
+								},
+							]
+						: [],
+				} satisfies Schema["MaterialSearchResponse"]);
+			check(
+				kind === "segment" || kind === "translation" || kind === "bookmark",
+				"Search must request a known record kind",
+			);
+			return Response.json({
+				...common,
+				kind,
+				total: kind === "segment" ? 43 : 1,
+				items: Array.from(
+					{
+						length:
+							kind === "segment"
+								? Math.min(common.limit, 43 - common.offset)
+								: 1,
+					},
+					(_, index) => ({
+						kind,
+						id:
+							kind === "segment"
+								? common.offset + index === 0
+									? "saved"
+									: `saved-${common.offset + index}`
+								: `${kind}-saved`,
+						chapter_id: chapter.id,
+						chapter_title: chapter.title,
+						snippet: `${q || "浏览"} · ${kind}资料`,
+						source_excerpt: targetText,
+						material_provenance: kind === "bookmark" ? null : reference,
+						position:
+							q === "失配" && kind !== "segment"
+								? null
+								: {
+										version_id: book.version_id,
+										chapter_id: chapter.id,
+										resource_id: "r",
+										part_index: 2,
+										kind: "text",
+										offset: targetStart,
+										at_chapter_end: false,
+									},
+						segment_id: kind === "segment" ? "saved" : null,
+						result_id:
+							kind === "translation"
+								? q === "正常"
+									? "translation-normal"
+									: "translation-saved"
+								: null,
+						identity_sha256:
+							kind === "translation" ? translationIdentity : null,
+						bookmark_id: kind === "bookmark" ? "bookmark-saved" : null,
+					}),
+				),
+			} satisfies Schema["MaterialRecordSearchResponse"]);
+		}
+		if (path === "/api/translation-results/translation-saved")
+			return Response.json(savedTranslation);
+		if (path === "/api/translation-results/translation-normal")
+			return Response.json(normalTranslation);
+		if (path.endsWith(`/chapters/${chapter.id}/translations`))
+			return Response.json({
+				items: [
+					{
+						identity_sha256: translationIdentity,
+						result_id: normalTranslation.id,
+						material_provenance: reference,
+						excerpt: targetText,
+						translation_excerpt: normalTranslation.translation,
+						result_count: 1,
+						target_language: normalTranslation.target_language,
+						created_at: timestamp,
+					},
+				],
+				next_cursor: null,
+				unavailable_count: 0,
+			} satisfies Schema["MaterialChapterTranslations"]);
+		if (path === `/api/materials/${book.id}/translations`)
+			return Response.json({
+				results: [normalTranslation],
+				tasks: [],
+				next_offset: null,
+			});
+		if (path.endsWith("/bookmarks/bookmark-saved")) {
+			bookmarkRequested = true;
+			await bookmarkGate;
+			return Response.json({
+				id: "bookmark-saved",
+				material_id: book.id,
+				chapter_title: chapter.title,
+				excerpt: targetText,
+				note: "延迟书签",
+				revision: 0,
+				created_at: timestamp,
+				updated_at: timestamp,
+				position: {
+					version_id: book.version_id,
+					chapter_id: chapter.id,
+					resource_id: "r",
+					part_index: 2,
+					kind: "text",
+					offset: targetStart,
+					at_chapter_end: false,
+				},
+			} satisfies Schema["BookmarkResponse"]);
+		}
+		if (path === `/api/materials/${book.id}`)
+			return Response.json({
+				...book,
+				reading_position: position,
+				chapters: [
+					...book.chapters,
+					{
+						id: otherChapter.id,
+						title: otherChapter.title,
+						level: 0,
+						part_count: 3,
+					},
+				],
+			} satisfies Schema["MaterialResponse"]);
+		if (path.endsWith(`/chapters/${otherChapter.id}`))
+			return Response.json(otherChapter);
+		if (path.endsWith("/reading-position") && request.method === "PUT") {
+			const update: Schema["ReadingPositionUpdate"] = await request.json();
+			positionWrites.push(update);
+			position = {
+				...update,
+				revision: update.expected_revision + 1,
+				progress: 0,
+				updated_at: timestamp,
+			};
+			return Response.json(position);
+		}
+		const data = readerSessionFixtureData(path);
+		if (data !== undefined) return Response.json(data);
+		throw new Error(`Unmocked search request ${request.method} ${path}`);
+	});
+	const panel = () =>
+		h.container.querySelector<HTMLElement>(".reader-search-panel");
+	const tool = (name: string) => {
+		const found = h.container.querySelector<HTMLButtonElement>(
+			`button[aria-label="${name}"]`,
+		);
+		check(found && !found.disabled, `Missing active ${name} tool`);
+		return found;
+	};
+	const click = (label: string, root: ParentNode = panel() ?? h.container) => {
+		const found = [...root.querySelectorAll<HTMLButtonElement>("button")].find(
+			(item) =>
+				item.textContent?.trim() === label ||
+				item.getAttribute("aria-label") === label,
+		);
+		check(found && !found.disabled, `Missing active search button ${label}`);
+		found.click();
+	};
+	const input = () => {
+		const found = panel()?.querySelector<HTMLInputElement>(
+			'input[aria-label="搜索本书"]',
+		);
+		check(found, "Search must expose labelled input");
+		return found;
+	};
+	const settle = () => new Promise((resolve) => setTimeout(resolve, 100));
+	const dispose = await h.mount(
+		<MaterialReader />,
+		"/materials/:id",
+		`/materials/${book.id}`,
+	);
+	try {
+		await h.until(
+			() => !!h.container.querySelector("iframe.material-part"),
+			"Reader must render exact source frames",
+		);
+		tool("目录").click();
+		await settle();
+		check(
+			!h.container.querySelector('[role="tab"][data-value="search"]'),
+			"Directory must not retain a search tab",
+		);
+		tool("本书搜索").click();
+		await h.until(
+			() => !!panel(),
+			"Independent search tool must open search panel",
+		);
+		await h.until(
+			() =>
+				calls.filter((url) => url.pathname.endsWith("/record-search"))
+					.length === 3,
+			"Empty query must browse three record categories",
+		);
+		check(
+			!calls.some((url) => url.pathname.endsWith("/search")),
+			"Empty query must not scan original text",
+		);
+		await h.until(
+			() =>
+				panel()?.querySelectorAll(
+					'.reader-search-group[aria-label="片段"] .reader-search-hit',
+				).length === 2,
+			"All view must preview exactly two segment records",
+		);
+		if (preview) return `reader search preview ${innerWidth}px`;
+		// Remaining assertions follow the real panel's accessible controls below.
+		const field = input();
+		field.dispatchEvent(
+			new CompositionEvent("compositionstart", { bubbles: true }),
+		);
+		h.inputValue(field, "は");
+		await settle();
+		check(
+			!calls.some((url) => url.searchParams.get("q") === "は"),
+			"IME intermediate text must not query",
+		);
+		h.inputValue(field, "春");
+		field.dispatchEvent(
+			new CompositionEvent("compositionend", { bubbles: true, data: "春" }),
+		);
+		await h.until(
+			() => calls.some((url) => url.searchParams.get("q") === "春"),
+			"IME final value must query",
+		);
+		h.inputValue(input(), "古い");
+		await h.until(
+			() => calls.some((url) => url.searchParams.get("q") === "古い"),
+			"Old query must start",
+		);
+		h.inputValue(input(), "新しい");
+		await h.until(
+			() => panel()?.textContent?.includes("新しい · segment资料") ?? false,
+			"New query must render before old response",
+		);
+		releaseOld?.();
+		await settle();
+		check(
+			!panel()?.textContent?.includes("古い ·"),
+			"Late old response must not overwrite current search",
+		);
+		tool("本书搜索").click();
+		await h.until(() => !panel(), "Search must close");
+		tool("本书搜索").click();
+		await h.until(() => !!panel(), "Search must reopen");
+		check(input().value === "新しい", "Closing search must preserve query");
+		const filters = panel()?.querySelector<HTMLButtonElement>(
+			".reader-search-filter-toggle",
+		);
+		check(filters, "Unified filters must be available");
+		filters.click();
+		await h.until(
+			() =>
+				!panel()?.querySelector<HTMLElement>(".reader-search-filters")?.hidden,
+			"Filters must expand",
+		);
+		const trigger = panel()?.querySelector<HTMLButtonElement>(
+			".reader-search-chapter-trigger",
+		);
+		check(trigger, "Chapter picker must be available");
+		trigger.click();
+		await h.until(
+			() =>
+				!!document.querySelector(".reader-search-chapter-popover:popover-open"),
+			"Chapter popover must open",
+		);
+		const checkbox = (label: string) => {
+			const item = document.querySelector<HTMLInputElement>(
+				`.reader-search-chapter-popover input[aria-label="${label}"]`,
+			);
+			check(item, `Missing chapter checkbox ${label}`);
+			return item;
+		};
+		checkbox("全部章节").click();
+		await h.until(
+			() => panel()?.textContent?.includes("尚未选择章节") ?? false,
+			"No chapters must show explicit empty state",
+		);
+		const beforeEmpty = calls.length;
+		await settle();
+		check(
+			calls.length === beforeEmpty,
+			"No chapters must never send whole-book requests",
+		);
+		checkbox(chapter.title).click();
+		await h.until(
+			() =>
+				calls.some(
+					(url) => url.searchParams.getAll("chapter_ids").join() === chapter.id,
+				),
+			"Selected chapter must reach API",
+		);
+		check(
+			checkbox("全部章节").indeterminate,
+			"Partial selection must show mixed checkbox",
+		);
+		checkbox(otherChapter.title).click();
+		await h.until(
+			() => checkbox("全部章节").checked,
+			"Chapter selections must combine to all",
+		);
+		checkbox(chapter.title).click();
+		await h.until(
+			() => checkbox("全部章节").indeterminate,
+			"Removing chapter must restore mixed state",
+		);
+		checkbox("全部章节").click();
+		await h.until(
+			() => checkbox("全部章节").checked,
+			"Mixed total checkbox must select all",
+		);
+		checkbox("全部章节").dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+		);
+		await h.until(
+			() =>
+				!document.querySelector(".reader-search-chapter-popover:popover-open"),
+			"Escape must close chapter popup",
+		);
+		check(!!panel(), "Popup Escape must preserve search");
+		await h.until(
+			() =>
+				!!panel()?.querySelector(
+					'.reader-search-group[aria-label="片段"] .reader-search-hit',
+				),
+			"Results must settle after chapter changes",
+		);
+		const fold = panel()?.querySelector<HTMLButtonElement>(
+			'.reader-search-group[aria-label="片段"] .reader-search-group-toggle',
+		);
+		check(fold, "Categories must expose independent fold control");
+		const beforeFold = calls.length;
+		fold.click();
+		await h.until(
+			() => fold.getAttribute("aria-expanded") === "false",
+			"Group must collapse",
+		);
+		check(input().value === "新しい", "Folding must preserve query");
+		fold.click();
+		await settle();
+		check(
+			calls.length === beforeFold,
+			"Folding must not change conditions or fetch",
+		);
+		click("原文");
+		await h.until(
+			() => !!panel()?.textContent?.includes(targetText),
+			"Original-only results must render",
+		);
+		const hit = panel()?.querySelector<HTMLButtonElement>(".reader-search-hit");
+		check(hit, "Original result must be actionable");
+		hit.click();
+		const highlights = () =>
+			[
+				...h.container.querySelectorAll<HTMLIFrameElement>(
+					"iframe.material-part",
+				),
+			]
+				.flatMap((frame) => {
+					const ranges =
+						frame.contentDocument?.defaultView?.CSS.highlights.get(
+							"folio-search",
+						);
+					return ranges ? [...ranges].map((range) => range.toString()) : [];
+				})
+				.join("");
+		await h.until(
+			() => highlights() === targetText,
+			"Result must highlight exact real iframe source",
+		);
+		if (innerWidth <= 720) {
+			await h.until(() => !panel(), "Narrow navigation must close search");
+			tool("本书搜索").click();
+			await h.until(
+				() => !!panel(),
+				"Search must reopen after narrow navigation",
+			);
+		} else check(!!panel(), "Desktop navigation must retain list");
+		check(input().value === "新しい", "Navigation must retain keyword");
+		click("全部");
+		h.inputValue(input(), "失敗");
+		await h.until(
+			() => panel()?.textContent?.includes("译文读取失败") ?? false,
+			"One category must expose its own failure",
+		);
+		check(
+			panel()?.textContent?.includes("失敗 · segment资料"),
+			"Translation failure must not conceal segments",
+		);
+		check(
+			panel()?.textContent?.includes("失敗 · bookmark资料"),
+			"Translation failure must not conceal bookmarks",
+		);
+		click("片段");
+		await h.until(
+			() => panel()?.querySelectorAll(".reader-search-hit").length === 40,
+			"Single category must show first 40 records",
+		);
+		click("继续加载 40 条");
+		await h.until(
+			() => panel()?.querySelectorAll(".reader-search-hit").length === 43,
+			"Category pagination must append remaining records",
+		);
+		check(
+			calls.some(
+				(url) =>
+					url.searchParams.get("kind") === "segment" &&
+					url.searchParams.get("offset") === "40",
+			),
+			"Next page must request offset 40",
+		);
+		const resultList = panel()?.querySelector<HTMLElement>(
+			".reader-search-results",
+		);
+		check(resultList, "Long category must have independent scroll container");
+		resultList.scrollTop = 1200;
+		resultList.dispatchEvent(new Event("scroll", { bubbles: true }));
+		await settle();
+		const preservedTop = resultList.scrollTop;
+		check(
+			preservedTop > 500,
+			"Long category must actually scroll before closing",
+		);
+		tool("本书搜索").click();
+		await h.until(() => !panel(), "Long list must close");
+		tool("本书搜索").click();
+		await h.until(
+			() => panel()?.querySelectorAll(".reader-search-hit").length === 43,
+			"Reopened long list must retain both pages",
+		);
+		let scrollFailure: unknown;
+		await h
+			.until(
+				() =>
+					Math.abs(
+						(panel()?.querySelector<HTMLElement>(".reader-search-results")
+							?.scrollTop ?? 0) - preservedTop,
+					) < 2,
+				`Long list must restore scroll after data becomes ready (expected ${preservedTop})`,
+			)
+			.catch((error: unknown) => {
+				scrollFailure = error;
+			});
+		const segmentHit =
+			panel()?.querySelector<HTMLButtonElement>(".reader-search-hit");
+		check(segmentHit, "Segment search result must remain actionable");
+		segmentHit.click();
+		await h.until(
+			() => !!h.container.querySelector(".reader-study-preview"),
+			"Segment result must open existing Reader study preview",
+		);
+		check(
+			!h.container.querySelector(".workbench"),
+			"Search preview must not mount workbench",
+		);
+		await settle();
+		await settle();
+		if (!panel() || panel()?.hasAttribute("inert")) {
+			tool("本书搜索").click();
+			await h.until(
+				() => !!panel() && !panel()?.hasAttribute("inert"),
+				"Search must be active for next result",
+			);
+		}
+		click("书签");
+		await h.until(
+			() => panel()?.querySelectorAll(".reader-search-hit").length === 1,
+			"Bookmark-only result must render",
+		);
+		const bookmarkHit =
+			panel()?.querySelector<HTMLButtonElement>(".reader-search-hit");
+		check(bookmarkHit, "Bookmark result must be actionable");
+		bookmarkHit.click();
+		await h.until(
+			() => bookmarkRequested,
+			"Bookmark result detail GET must begin",
+		);
+		tool("下一章").click();
+		await h.until(
+			() => position?.chapter_id === otherChapter.id,
+			"User navigation must present and save next chapter while bookmark GET is pending",
+		);
+		const writesBeforeRelease = positionWrites.length;
+		releaseBookmark?.();
+		await settle();
+		await settle();
+		check(
+			position?.chapter_id === otherChapter.id,
+			"Late bookmark GET must not jump back to old chapter",
+		);
+		check(
+			!positionWrites
+				.slice(writesBeforeRelease)
+				.some((write) => write.chapter_id === chapter.id),
+			"Late bookmark GET must not persist superseded target",
+		);
+		check(
+			!h.container.querySelector(".reader-bookmark-detail"),
+			"Late bookmark GET must not open superseded bookmark detail",
+		);
+		if (!panel() || panel()?.hasAttribute("inert")) {
+			tool("本书搜索").click();
+			await h.until(
+				() => !!panel() && !panel()?.hasAttribute("inert"),
+				"Search must be active for historical results",
+			);
+		}
+		click("译文");
+		h.inputValue(input(), "正常");
+		await h.until(
+			() => panel()?.textContent?.includes("正常 · translation资料") ?? false,
+			"Normal translation search must render across chapters",
+		);
+		check(
+			position?.chapter_id === otherChapter.id,
+			"Cross-chapter translation test must start in other chapter",
+		);
+		panel()?.querySelector<HTMLButtonElement>(".reader-search-hit")?.click();
+		await h.until(
+			() =>
+				position?.chapter_id === chapter.id &&
+				(h.container
+					.querySelector(".reader-record-popover")
+					?.textContent?.includes(normalTranslation.translation) ??
+					h.container.textContent?.includes(normalTranslation.translation) ??
+					false),
+			"First cross-chapter translation click must navigate and open saved content",
+		);
+		await settle();
+		await settle();
+		window.dispatchEvent(new Event("resize"));
+		await new Promise((resolve) => setTimeout(resolve, 700));
+		check(
+			h.container.textContent?.includes(normalTranslation.translation),
+			"Cross-chapter translation preview must survive post-navigation geometry refresh",
+		);
+		check(
+			!h.container.querySelector(".reader-search-saved-translation"),
+			"Resolvable translation must use existing records preview",
+		);
+		tool("下一章").click();
+		await h.until(
+			() => position?.chapter_id === otherChapter.id,
+			"Return to next chapter for historical detail tests",
+		);
+		await settle();
+		if (!panel() || panel()?.hasAttribute("inert")) {
+			tool("本书搜索").click();
+			await h.until(
+				() => !!panel() && !panel()?.hasAttribute("inert"),
+				"Search must return from normal translation",
+			);
+		}
+		click("译文");
+		h.inputValue(input(), "失配");
+		await h.until(
+			() => panel()?.textContent?.includes("失配 · translation资料") ?? false,
+			"Historical translation must remain searchable",
+		);
+		panel()?.querySelector<HTMLButtonElement>(".reader-search-hit")?.click();
+		await h.until(
+			() =>
+				h.container
+					.querySelector(".reader-search-saved-translation")
+					?.textContent?.includes("已保存的失配译文") ?? false,
+			"Unlocatable translation must open saved read-only content",
+		);
+		check(
+			h.container
+				.querySelector(".reader-search-saved-translation")
+				?.textContent?.includes("原文位置暂不可用"),
+			"Historical translation must explain unavailable location",
+		);
+		check(
+			position?.chapter_id === otherChapter.id,
+			"Unlocatable translation must not move current reading position",
+		);
+		tool("关闭已保存译文").click();
+		await settle();
+		if (!panel() || panel()?.hasAttribute("inert")) {
+			tool("本书搜索").click();
+			await h.until(
+				() => !!panel() && !panel()?.hasAttribute("inert"),
+				"Search must return from saved translation",
+			);
+		}
+		click("书签");
+		await h.until(
+			() => panel()?.textContent?.includes("失配 · bookmark资料") ?? false,
+			"Unlocatable bookmark must remain searchable",
+		);
+		panel()?.querySelector<HTMLButtonElement>(".reader-search-hit")?.click();
+		await h.until(
+			() => !!h.container.querySelector(".reader-bookmark-detail-excerpt"),
+			"Unlocatable bookmark must retain readable detail",
+		);
+		const go = h.container.querySelector<HTMLButtonElement>(
+			".reader-bookmark-detail .reader-bookmark-go",
+		);
+		check(go?.disabled, "Unlocatable bookmark must disable source navigation");
+		check(
+			position?.chapter_id === otherChapter.id,
+			"Unlocatable bookmark detail must not move reading position",
+		);
+		if (scrollFailure) throw scrollFailure;
+		return `reader search: ${innerWidth}px; independent entry, empty-query records, IME/stale isolation, reopen retention, chapter multi-select/mixed/empty guard, folding/failure isolation, two-record previews/40-record pagination, exact iframe navigation/study preview, long-list scroll restoration and superseded bookmark GET isolation, unlocatable translation/bookmark read-only details and persistent first-click cross-chapter translation preview`;
+	} finally {
+		releaseOld?.();
+		releaseBookmark?.();
+		if (!preview) dispose();
+	}
+}

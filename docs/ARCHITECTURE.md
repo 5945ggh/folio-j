@@ -206,9 +206,15 @@ Reader 暂停时保留 iframe 与正文投影，停用输入、重排与位置�
 
 阅读页入场由现有 `presented` 稳定呈现信号触发，正文视口和 iframe 不做动画位移，保留定位及浮卡坐标。进入阅读器使用普通导航，不捕获加载页快照或延长数据加载；保留会话再次显示时，租期与恢复核验不变。动画及加载提示参数见[阅读外观与工具显隐](INFORMATION_ARCHITECTURE.md#阅读外观与工具显隐)。
 
-搜索与图库按不可变编译包派生，不新增领域实体、持久索引或数据库表，不改变原字节、正文、版本及产物摘要。DTO 见 [OpenAPI](../backend/openapi.json)；浏览器兼容与历史成本观测见[阅读器验收](handovers/archived/reader-r1/ACCEPTANCE.md)和[历史 API 记录](handovers/archived/reader-r1/API.md#本机只读查询成本记录)。服务层在线程中执行解压、扫描、HTML 解析与图片解码；当前无派生缓存，每次非空搜索／图库请求仍解析有界全书包。每个请求核验 Material、所属 Source 和必填 version_id；缺失／不可见返回 404、查询版本不符返回 409、参数错误返回 422，不改变位置写入的版本／范围错误 422 契约。
+原文搜索与图库按不可变编译包派生，不新增领域实体、持久索引或数据库表，不改变原字节、正文、版本及产物摘要。DTO 见 [OpenAPI](../backend/openapi.json)；浏览器兼容与历史成本观测见[阅读器验收](handovers/archived/reader-r1/ACCEPTANCE.md)和[历史 API 记录](handovers/archived/reader-r1/API.md#本机只读查询成本记录)。服务层在线程中执行解压、扫描、HTML 解析与图片解码；当前无派生缓存，每次非空原文搜索／图库请求仍解析有界全书包。每个请求核验 Material、所属 Source 和必填 version_id；缺失／不可见返回 404、查询版本不符返回 409、参数错误返回 422，不改变位置写入的版本／范围错误 422 契约。
 
-`GET /api/materials/{material_id}/search` 的 q 默认空、输入至多 160 码点，服务去两端空白并 NFC；空白查询返回空页且不解压扫描。搜索与 `GET .../illustrations` 共用 offset 默认 0 且非负、limit 默认 40 且范围 1–100。搜索按章节／part／spine 顺序扫描资源局部正文，排除 rt／rp 与 UI 标题；重复和重叠字面命中均保留。同资源同 spine 的连续 part 可衔接，不跨章、资源或 spine 出现拼接；命中归 start 所在 part，保留资源码点半开范围与前后各至多 40 码点摘录，不能把 start 当作摘录偏移或 UTF-16 索引。分页只保留请求页并统计完整范围，不构造全量命中数组。
+`GET /api/materials/{material_id}/search` 的 q 默认空、输入至多 160 码点，服务去两端空白并 NFC；空白查询返回空页且不解压扫描。原文搜索接受重复查询参数 `chapter_ids`，省略时查询全章，重复值去重，未知章返回 422；空集合由前端停止请求并显示空态，不用省略参数表达。搜索与 `GET .../illustrations` 共用 offset 默认 0 且非负、limit 默认 40 且范围 1–100。搜索按章节／part／spine 顺序扫描资源局部正文，排除 rt／rp 与 UI 标题；重复和重叠字面命中均保留。同资源同 spine 的连续 part 可衔接，不跨章、资源或 spine 出现拼接；命中归 start 所在 part，保留资源码点半开范围与前后各至多 40 码点摘录，不能把 start 当作摘录偏移或 UTF-16 索引。分页只保留请求页并统计完整范围，不构造全量命中数组。
+
+`GET /api/materials/{material_id}/record-search` 独立查询可变资料，不把资料拼入编译正文扫描。必填 `version_id` 和 `kind=segment|translation|bookmark`，`q` 默认空、至多 160 码点并去首尾空白／NFC，章节与分页参数沿用原文搜索规则。空关键词返回该类可见资料。片段范围为确切关联本书的原文、当前译文和备注；阅读译文先按确切出处选最新成功且未删除结果，再匹配译文；书签匹配备注和原文摘要。归属和删除门禁按持久身份核验，不从 Source 名或自由文本出处推断。
+
+响应返回材料、版本、规范化查询、类型、真实 `total`、分页和 `items`。各项保留对象身份、可用章名、至多 160 码点的命中附近 `snippet`、原文摘要及可用定位／精确出处；类型对应的片段、译文或书签身份供既有预览读取。按章、part、资源码点排列，同位置按身份稳定排序。历史出处失配不隐藏仍可见资料，定位值可空；限定部分章节时排除无法确认归章的项。响应不增加命中字段信息，前端不提供字段筛选或命中标签，仅高亮实际展示的 snippet。全部视图分别请求四类两条预览与总数，单类视图每页 40 条；原文总数计处数，资料计对象条数。
+
+搜索状态由当前材料的 Reader 会话持有，查询键包含材料、版本、关键词、规范章节集合、类型和分页，迟到响应不能覆盖新条件。原文与可变资料保持各自查询和读取路径，记录创建、更新或删除后使相关资料查询失效。搜索不创建领域实体、持久索引或 Run，不写最近打开或阅读位置；明确前往才进入既有精确定位链路。资料搜索不改变模型读取权限。页面与恢复规则见[书内搜索与图库](INFORMATION_ARCHITECTURE.md#书内搜索与图库)。
 
 `GET .../illustrations/locate` 按 version、chapter、part 和 image_id 一次扫描得到精确出现项及总数；版本或材料失效仍分别返回 409 或 404。图库按已清洗 part HTML 顺序保留每个有效图片出现项，包括重复图与纯图片章。ordinal 为版本内从零开始的清单序号，不能跨版本引用；导航仍核对 chapter／part／resource／image_id。清单保留原始 alt、不虚构宽高、不携带全图 base64；`GET .../illustrations/{ordinal}/content` 仅按需读取包内带 data-epub-image 的 PNG／JPEG／GIF／WebP，不接受任意路径、ZIP 成员或远程 URL，不提供 SVG。编码与字节受 64 MiB 编译预算约束；编码超限返回 413，解码、MIME 签名或字节校验失败返回 422，出现项不存在返回 404。签名核对不保证浏览器完整解码成功。响应 MIME 与识别类型一致，带 nosniff 和 private, no-store；封面的 4 MiB 专用预算不套用正文图片。GET 均不写 Run、usage 或 reading_positions。
 

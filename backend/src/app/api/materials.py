@@ -26,11 +26,13 @@ from app.readings_schemas import (
     MaterialReadingsResponse,
     MaterialReadingsSummary,
 )
+from app.record_search_schemas import MaterialRecordSearchResponse, RecordSearchKind
 from app.services import (
     material_metadata,
     material_segments,
     reader_queries,
     readings,
+    record_search,
     statistics,
     vocabulary,
 )
@@ -228,8 +230,31 @@ async def search_material(
     q: Annotated[str, Query(max_length=160)] = "",
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 40,
+    chapter_ids: Annotated[list[str] | None, Query()] = None,
 ) -> MaterialSearchResponse:
-    return await reader_queries.search(session, material_id, version_id, q, offset, limit)
+    return await reader_queries.search(
+        session, material_id, version_id, q, offset, limit, chapter_ids
+    )
+
+
+@router.get(
+    "/materials/{material_id}/record-search",
+    response_model=MaterialRecordSearchResponse,
+    operation_id="searchMaterialRecords",
+)
+async def search_material_records(
+    material_id: str,
+    session: Session,
+    version_id: str,
+    kind: RecordSearchKind,
+    q: Annotated[str, Query(max_length=160)] = "",
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 40,
+    chapter_ids: Annotated[list[str] | None, Query()] = None,
+) -> MaterialRecordSearchResponse:
+    return await record_search.search(
+        session, material_id, version_id, kind, q, offset, limit, chapter_ids
+    )
 
 
 @router.get(

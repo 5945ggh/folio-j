@@ -1,6 +1,5 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
-import { Icon as CatalogIcon } from "../catalog/LibraryTools";
 import { useViewActivity } from "../navigation/view-activity";
 import {
 	type Illustration,
@@ -9,7 +8,6 @@ import {
 	type Material,
 	type Position,
 	type Settings,
-	searchMaterial,
 } from "./api";
 import { restoreReaderPanelFocus, useReaderPresence } from "./motion";
 import {
@@ -19,13 +17,7 @@ import {
 import { ReaderIcon } from "./ReaderControls";
 import { copyReaderImage, downloadReaderImage } from "./reader-image-actions";
 import type { ReaderImageCache } from "./reader-image-cache";
-import {
-	fitImageSize,
-	normalizeReaderQuery,
-	READER_QUERY_PAGE_SIZE,
-	READER_SEARCH_DELAY,
-	readerQueryTooLong,
-} from "./reader-panel-logic";
+import { fitImageSize, READER_QUERY_PAGE_SIZE } from "./reader-panel-logic";
 import "./reader-panels.css";
 
 type PanelProps = {
@@ -176,14 +168,14 @@ export function ReaderNavigationPanel(
 		chapterId: string;
 		progress: number | null;
 		chapterProgress: ReadonlyMap<string, number | null>;
-		tab: "toc" | "bookmarks" | "search";
+		tab: "toc" | "bookmarks";
 		bookmarks: ReaderBookmarks;
-		onTab: (tab: "toc" | "bookmarks" | "search") => void;
+		onTab: (tab: "toc" | "bookmarks") => void;
 		onChoose: (chapterId: string) => void;
 	},
 ) {
 	const id = useId();
-	const tabs = ["toc", "bookmarks", "search"] as const;
+	const tabs = ["toc", "bookmarks"] as const;
 	const current = props.chapters.find(
 		(chapter) => chapter.id === props.chapterId,
 	);
@@ -219,7 +211,7 @@ export function ReaderNavigationPanel(
 											tabs.length
 									] ?? "toc";
 							} else if (event.key === "Home") next = "toc";
-							else if (event.key === "End") next = "search";
+							else if (event.key === "End") next = "bookmarks";
 							else return;
 							event.preventDefault();
 							props.onTab(next);
@@ -242,12 +234,10 @@ export function ReaderNavigationPanel(
 							>
 								{tab === "toc" ? (
 									<ReaderIcon name="toc" />
-								) : tab === "bookmarks" ? (
-									<ReaderIcon name="bookmark" />
 								) : (
-									<CatalogIcon name="search" />
+									<ReaderIcon name="bookmark" />
 								)}
-								{tab === "toc" ? "目录" : tab === "bookmarks" ? "书签" : "搜索"}
+								{tab === "toc" ? "目录" : "书签"}
 							</button>
 						))}
 					</div>
@@ -308,184 +298,7 @@ export function ReaderNavigationPanel(
 					onNavigate={props.onNavigate}
 				/>
 			</div>
-			<div
-				id={`${id}-search-panel`}
-				role="tabpanel"
-				aria-labelledby={`${id}-search-tab`}
-				hidden={props.tab !== "search"}
-			>
-				<ReaderSearchContent {...props} active={props.tab === "search"} />
-			</div>
 		</ReaderQueryPanel>
-	);
-}
-
-function ReaderSearchContent(props: PanelProps & { active: boolean }) {
-	const activity = useViewActivity();
-	const [input, setInput] = useState("");
-	const [query, setQuery] = useState("");
-	const [composing, setComposing] = useState(false);
-	const inputId = useId();
-	const inputRef = useRef<HTMLInputElement>(null);
-	useEffect(() => {
-		if (props.active && document.activeElement?.getAttribute("role") !== "tab")
-			inputRef.current?.focus({ preventScroll: true });
-	}, [props.active]);
-	const normalized = normalizeReaderQuery(input);
-	const tooLong = readerQueryTooLong(input);
-	useEffect(() => {
-		if (composing) return;
-		const timeout = window.setTimeout(
-			() => setQuery(tooLong ? "" : normalized),
-			READER_SEARCH_DELAY,
-		);
-		return () => window.clearTimeout(timeout);
-	}, [normalized, tooLong, composing]);
-	const result = useInfiniteQuery({
-		queryKey: [
-			"materials",
-			props.materialId,
-			props.versionId,
-			"reader-search",
-			query,
-		],
-		initialPageParam: 0,
-		queryFn: ({ pageParam, signal }) =>
-			searchMaterial(
-				props.materialId,
-				props.versionId,
-				query,
-				pageParam,
-				signal,
-			),
-		getNextPageParam: (last) =>
-			last.offset + last.items.length < last.total
-				? last.offset + last.items.length
-				: undefined,
-		enabled:
-			activity.active &&
-			props.active &&
-			!!query &&
-			!composing &&
-			!tooLong &&
-			normalized === query,
-		retry: false,
-	});
-	const current = !composing && normalized === query && !tooLong;
-	const pages = current ? result.data?.pages : undefined;
-	return (
-		<div className="reader-query-body">
-			<NavigationFailure
-				error={props.navigationError}
-				retryHint="请再次点击搜索结果重试，或关闭面板继续阅读。"
-			/>
-			<label className="reader-query-hidden-label" htmlFor={inputId}>
-				搜索本书原文
-			</label>
-			<input
-				id={inputId}
-				ref={inputRef}
-				autoComplete="off"
-				type="search"
-				placeholder="搜索本书原文…"
-				value={input}
-				onChange={(event) => {
-					props.onCancelNavigation?.();
-					setInput(event.target.value);
-				}}
-				onCompositionStart={() => {
-					props.onCancelNavigation?.();
-					setComposing(true);
-				}}
-				onCompositionEnd={(event) => {
-					setComposing(false);
-					setInput(event.currentTarget.value);
-				}}
-				onKeyDown={(event) => {
-					if (
-						event.key === "Enter" &&
-						!event.nativeEvent.isComposing &&
-						!composing &&
-						!tooLong
-					)
-						setQuery(normalized);
-				}}
-			/>
-			<p className="reader-query-help">
-				字面查找原文，不搜索注音；不同资源或章节之间不拼接匹配。
-			</p>
-			<p aria-live="polite" className="reader-query-summary">
-				{tooLong
-					? "查询最多 160 个字符。"
-					: !normalized
-						? "输入文字，查找本书中的句子。"
-						: composing
-							? "输入完成后开始搜索。"
-							: !current || result.isPending
-								? "正在搜索…"
-								: pages
-									? `找到 ${pages[0]?.total ?? 0} 处`
-									: ""}
-			</p>
-			{current && result.isError && (
-				<div role="alert" className="reader-query-error">
-					搜索失败，已保留查询。
-					<button
-						type="button"
-						onClick={() => {
-							void result.refetch();
-						}}
-					>
-						重试
-					</button>
-				</div>
-			)}
-			<div className="reader-query-results">
-				{pages
-					?.flatMap((page) => page.items)
-					.map((hit) => (
-						<button
-							type="button"
-							className="reader-query-hit"
-							key={`${hit.chapter_id}:${hit.part_index}:${hit.spine_index}:${hit.resource_id}:${hit.start}`}
-							onClick={() =>
-								props.onNavigate(
-									{
-										version_id: props.versionId,
-										chapter_id: hit.chapter_id,
-										part_index: hit.part_index,
-										resource_id: hit.resource_id,
-										kind: "text",
-										offset: hit.start,
-										at_chapter_end: false,
-										settings: props.settings,
-									},
-									{ start: hit.start, end: hit.end },
-								)
-							}
-						>
-							<small>{hit.chapter_title}</small>
-							<span lang="ja">
-								{hit.before}
-								<mark>{hit.match}</mark>
-								{hit.after}
-							</span>
-						</button>
-					))}
-			</div>
-			{current && result.hasNextPage && (
-				<button
-					type="button"
-					className="reader-query-more"
-					disabled={result.isFetchingNextPage}
-					onClick={() => {
-						void result.fetchNextPage();
-					}}
-				>
-					{result.isFetchingNextPage ? "正在加载…" : "继续加载 40 条"}
-				</button>
-			)}
-		</div>
 	);
 }
 

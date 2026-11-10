@@ -134,6 +134,11 @@ export class ReaderNavigation {
 	get state(): ReaderNavigationState {
 		return this.snapshot;
 	}
+	/** Bind preparatory reads to this navigation intent before they have a position to navigate to. */
+	currentRequest(): () => boolean {
+		const request = this.request;
+		return () => this.context !== null && this.request === request;
+	}
 	bind(context: ReaderNavigationContext): void {
 		const attaching = this.context === null;
 		this.context = context;

@@ -656,6 +656,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/materials/{material_id}/record-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Material Records */
+        get: operations["searchMaterialRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/materials/{material_id}/search": {
         parameters: {
             query?: never;
@@ -2576,6 +2593,56 @@ export interface components {
             material_id: string;
             /** Token Count */
             token_count: number;
+            /** Version Id */
+            version_id: string;
+        };
+        /** MaterialRecordSearchItem */
+        MaterialRecordSearchItem: {
+            /** Bookmark Id */
+            bookmark_id?: string | null;
+            /** Chapter Id */
+            chapter_id?: string | null;
+            /** Chapter Title */
+            chapter_title?: string | null;
+            /** Id */
+            id: string;
+            /** Identity Sha256 */
+            identity_sha256?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "segment" | "translation" | "bookmark";
+            material_provenance?: components["schemas"]["MaterialProvenance"] | null;
+            position?: components["schemas"]["PositionAnchor"] | null;
+            /** Result Id */
+            result_id?: string | null;
+            /** Segment Id */
+            segment_id?: string | null;
+            /** Snippet */
+            snippet: string;
+            /** Source Excerpt */
+            source_excerpt?: string | null;
+        };
+        /** MaterialRecordSearchResponse */
+        MaterialRecordSearchResponse: {
+            /** Items */
+            items: components["schemas"]["MaterialRecordSearchItem"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "segment" | "translation" | "bookmark";
+            /** Limit */
+            limit: number;
+            /** Material Id */
+            material_id: string;
+            /** Offset */
+            offset: number;
+            /** Query */
+            query: string;
+            /** Total */
+            total: number;
             /** Version Id */
             version_id: string;
         };
@@ -5567,6 +5634,44 @@ export interface operations {
             };
         };
     };
+    searchMaterialRecords: {
+        parameters: {
+            query: {
+                version_id: string;
+                kind: "segment" | "translation" | "bookmark";
+                q?: string;
+                offset?: number;
+                limit?: number;
+                chapter_ids?: string[] | null;
+            };
+            header?: never;
+            path: {
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialRecordSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     searchMaterial: {
         parameters: {
             query: {
@@ -5574,6 +5679,7 @@ export interface operations {
                 q?: string;
                 offset?: number;
                 limit?: number;
+                chapter_ids?: string[] | null;
             };
             header?: never;
             path: {

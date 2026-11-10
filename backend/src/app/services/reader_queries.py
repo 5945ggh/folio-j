@@ -49,13 +49,31 @@ def _ranges(chapter: CompiledChapter) -> Iterator[list[tuple[int, ChapterPart]]]
         yield group
 
 
-def scan_search(material: Material, query: str, offset: int, limit: int) -> MaterialSearchResponse:
+def selected_chapters(book: CompiledBook, chapter_ids: list[str] | None) -> set[str] | None:
+    if chapter_ids is None:
+        return None
+    selected = set(chapter_ids)
+    if selected - {chapter.id for chapter in book.chapters}:
+        raise HTTPException(422, "搜索章节不存在")
+    return selected
+
+
+def scan_search(
+    material: Material,
+    query: str,
+    offset: int,
+    limit: int,
+    chapter_ids: list[str] | None = None,
+) -> MaterialSearchResponse:
     items: list[MaterialSearchItem] = []
     total = 0
-    if query:
+    if query or chapter_ids is not None:
         book = bundle(material)
+        selected = selected_chapters(book, chapter_ids)
         resources = {resource.id: resource for resource in book.resources}
         for chapter in book.chapters:
+            if not query or (selected is not None and chapter.id not in selected):
+                continue
             for group in _ranges(chapter):
                 first, last = group[0][1], group[-1][1]
                 text = resources[first.resource_id].text
@@ -101,10 +119,35 @@ async def search(
     q: str,
     offset: int,
     limit: int,
+    chapter_ids: list[str] | None = None,
 ) -> MaterialSearchResponse:
     material = await _material(session, material_id, version_id)
     query = unicodedata.normalize("NFC", q.strip())
-    return await asyncio.to_thread(scan_search, material, query, offset, limit)
+    identity = (
+        material.source_id,
+        material.version_id,
+        material.product_sha256,
+        material.contract_version,
+    )
+    snapshot = Material(
+        id=material.id, version_id=material.version_id, compiled_bundle=material.compiled_bundle
+    )
+    await session.rollback()
+    result = (
+        await asyncio.to_thread(scan_search, snapshot, query, offset, limit)
+        if chapter_ids is None
+        else await asyncio.to_thread(scan_search, snapshot, query, offset, limit, chapter_ids)
+    )
+    session.expire_all()
+    current = await _material(session, material_id, version_id)
+    if (
+        current.source_id,
+        current.version_id,
+        current.product_sha256,
+        current.contract_version,
+    ) != identity:
+        raise HTTPException(409, "材料版本已变更，请重新打开")
+    return result
 
 
 class _Images(HTMLParser):

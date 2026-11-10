@@ -103,13 +103,20 @@ export async function searchMaterial(
 	query: string,
 	offset: number,
 	signal?: AbortSignal,
+	chapterIds: string[] | null = null,
 ) {
 	const { data, error, response } = await api.GET(
 		"/api/materials/{material_id}/search",
 		{
 			params: {
 				path: { material_id: id },
-				query: { version_id: versionId, q: query, offset, limit: 40 },
+				query: {
+					version_id: versionId,
+					q: query,
+					offset,
+					limit: 40,
+					...(chapterIds === null ? {} : { chapter_ids: chapterIds }),
+				},
 			},
 			signal,
 		},

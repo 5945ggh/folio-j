@@ -158,6 +158,24 @@ function fixture(reading = new JumpReadingSession(), initiallyReady = true) {
 	};
 }
 
+test("preparatory reads and deferred record previews expire on later navigation or suspension", async () => {
+	const f = fixture();
+	const beforeRead = f.navigation.currentRequest();
+	assert.equal(beforeRead(), true);
+	f.bind();
+	assert.equal(beforeRead(), true);
+	await f.navigation.navigate({ type: "chapter", id: "B" });
+	assert.equal(beforeRead(), false);
+	const beforePreview = f.navigation.currentRequest();
+	f.complete();
+	await f.navigation.navigate({ type: "return" });
+	assert.equal(beforePreview(), false);
+	const beforeSuspension = f.navigation.currentRequest();
+	f.navigation.suspend();
+	f.bind();
+	assert.equal(beforeSuspension(), false);
+});
+
 test("directory, search and image jumps preserve the first stable origin", async () => {
 	const f = fixture();
 	assert.equal(await f.navigate({ type: "chapter", id: "B" }), true);

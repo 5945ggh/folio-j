@@ -201,7 +201,24 @@ export async function readerSession(
 				offset: 0,
 				limit: 50,
 			} satisfies Schema["MaterialSearchResponse"];
-		else if (path.endsWith("/reading-position") && request.method === "PUT") {
+		else if (path.endsWith("/record-search")) {
+			const url = new URL(request.url);
+			const kind = url.searchParams.get("kind");
+			check(
+				kind === "segment" || kind === "translation" || kind === "bookmark",
+				"Record search must request a known content type",
+			);
+			data = {
+				material_id: materialId,
+				version_id: versionId,
+				query: url.searchParams.get("q") ?? "",
+				kind,
+				total: 0,
+				offset: 0,
+				limit: 40,
+				items: [],
+			} satisfies Schema["MaterialRecordSearchResponse"];
+		} else if (path.endsWith("/reading-position") && request.method === "PUT") {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			saved++;
 			data = {
@@ -672,20 +689,20 @@ export async function readerSession(
 			const plainReturnUsage = usageReads;
 			const searchDraft = "尾斜杠片段往返保留的搜索草稿";
 			if (realApp) {
-				const toc = h.container.querySelector<HTMLButtonElement>(
-					'button[aria-label="目录"]',
+				const searchTool = h.container.querySelector<HTMLButtonElement>(
+					'button[aria-label="本书搜索"]',
 				);
-				check(toc, "Actual reader must expose the navigation panel");
-				toc.click();
+				check(
+					searchTool,
+					"Actual reader must expose the independent search tool",
+				);
+				searchTool.click();
 				await h.until(
-					() => !!h.container.querySelector('button[data-tab="search"]'),
-					"Actual reader navigation tabs must mount",
+					() => !!h.container.querySelector(".reader-search-panel"),
+					"Actual reader search panel must mount",
 				);
-				h.container
-					.querySelector<HTMLButtonElement>('button[data-tab="search"]')
-					?.click();
 				const search = h.container.querySelector<HTMLInputElement>(
-					'input[placeholder="搜索本书原文…"]',
+					'input[aria-label="搜索本书"]',
 				);
 				check(search, "Actual reader must expose its search draft input");
 				h.inputValue(search, searchDraft);
@@ -743,7 +760,7 @@ export async function readerSession(
 			);
 			if (realApp) {
 				const search = h.container.querySelector<HTMLInputElement>(
-					'input[placeholder="搜索本书原文…"]',
+					'input[aria-label="搜索本书"]',
 				);
 				check(
 					search?.value === searchDraft,

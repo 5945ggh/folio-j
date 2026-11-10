@@ -162,6 +162,7 @@ export function ReaderBookmarkDetail({
 	onNavigate,
 	restoreFocusId,
 	onDeleted,
+	canLocate = true,
 }: {
 	bookmark: Bookmark;
 	listUpdatedAt: number;
@@ -170,6 +171,7 @@ export function ReaderBookmarkDetail({
 	onNavigate: (position: Position) => void;
 	restoreFocusId: string;
 	onDeleted: (id: string) => void;
+	canLocate?: boolean;
 }) {
 	const panel = useRef<HTMLDivElement>(null);
 	const [deleting, setDeleting] = useState<Bookmark | null>(null);
@@ -202,7 +204,11 @@ export function ReaderBookmarkDetail({
 		const element = panel.current;
 		if (!element) return;
 		const previous = document.activeElement;
-		const side = element.closest<HTMLElement>("[data-reader-panel-side]");
+		const side =
+			element.closest<HTMLElement>("[data-reader-panel-side]") ??
+			element
+				.closest(".reader-r1")
+				?.querySelector<HTMLElement>('[data-reader-panel-side="left"]');
 		const position = () => {
 			const rect = side?.getBoundingClientRect() ?? { right: 392, top: 76 };
 			const placement = bookmarkDetailPosition(rect, {
@@ -278,6 +284,11 @@ export function ReaderBookmarkDetail({
 			</header>
 
 			<div className="reader-bookmark-detail-content">
+				{!canLocate && (
+					<p className="reader-search-empty">
+						原文位置暂不可用，以下为已保存内容。
+					</p>
+				)}
 				{!validation.isFetchedAfterMount && <p role="status">正在核验书签…</p>}
 				{validation.isError && (
 					<p role="alert">
@@ -352,6 +363,7 @@ export function ReaderBookmarkDetail({
 					<button
 						type="button"
 						className="reader-bookmark-note-action reader-bookmark-go"
+						disabled={!canLocate}
 						onClick={() => {
 							bookmarks.closeEditor();
 							onNavigate({ ...displayed.position, settings });

@@ -33,6 +33,7 @@ import { readerDictionary } from "./reader-dictionary";
 import { readerImages } from "./reader-images";
 import { readerLayoutSwitch } from "./reader-layout-switch";
 import { readerScrollbar } from "./reader-scrollbar";
+import { readerSearch } from "./reader-search";
 import { readerSession } from "./reader-session";
 import { readerSettings } from "./reader-settings";
 import { readingAidsRegression } from "./reading-aids";
@@ -445,6 +446,7 @@ try {
 		["segment-dictionary", segmentDictionary],
 		["dictionary-inflection-layout", dictionaryInflectionLayout],
 		["reader-settings", readerSettings],
+		["reader-search", readerSearch],
 		["reader-image-performance", readerImages],
 		["catalog-overview", overviewImportRegression],
 		["source-deletion", sourceDeletion],

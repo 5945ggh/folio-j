@@ -1,6 +1,6 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-11-09。阅读与片段全局导航的本地整合及统一浏览器复验见[本轮验收](reading-practice/FOCUSED_NAVIGATION_ACCEPTANCE.md)。书籍可选清理学习积累已实现并通过工程验证，实施起点为 `main 10d4b733`，见[范围与验证](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)。此前编辑与偏好保护减负已完成，代码核对到 `7f8aabc3`，起点为 `main 165e85f5`，验证见[减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)。片段即时查词及前端共享模块已完成本地整合，实施起点为 `main e9b8eb16`，见[片段查词验收](reading-practice/SEGMENT_DICTIONARY_ACCEPTANCE.md)。即时查词辅助选项见[查词选项验收](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)。其余工程、设备和使用验收仍以对应记录的版本及环境为准。
+> 状态核对：2026-11-11。本书搜索基于 `main f1ec22a9` 由 `codex/book-search` 实施，未推送；最终全量检查、11 个浏览器场景和隔离真实 API 人工复核通过，见[本书搜索验收](reading-practice/BOOK_SEARCH_ACCEPTANCE.md)。阅读与片段全局导航的本地整合及统一浏览器复验见[本轮验收](reading-practice/FOCUSED_NAVIGATION_ACCEPTANCE.md)。书籍可选清理学习积累已实现并通过工程验证，实施起点为 `main 10d4b733`，见[范围与验证](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)。此前编辑与偏好保护减负已完成，代码核对到 `7f8aabc3`，起点为 `main 165e85f5`，验证见[减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)。片段即时查词及前端共享模块已完成本地整合，实施起点为 `main e9b8eb16`，见[片段查词验收](reading-practice/SEGMENT_DICTIONARY_ACCEPTANCE.md)。即时查词辅助选项见[查词选项验收](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)。其余工程、设备和使用验收仍以对应记录的版本及环境为准。
 > 本文件汇总当前能力、实现缺口和验收入口。产品范围见 [PRD](../PRD.md)，领域含义见 [GLOSSARY](../GLOSSARY.md)，技术选型见 [TECH_STACK](../TECH_STACK.md)；具体实现由[架构](../ARCHITECTURE.md)维护。
 
 当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
@@ -41,7 +41,7 @@
 | 带上下文复制 | 选区复制目标、语境及可选出处；默认值独立保存数据库，整组有效时开关／重置立即、数字结束编辑后自动保存；后写生效，无复制专用冲突或离开流程，保留失败输入及重试；不创建学习内容 | [本轮减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)、[首版验收](archived/reading-practice/CONTEXT_COPY_ACCEPTANCE.md) |
 | 阅读设置四组与偏好自动保存 | 常用项直达，低频控件与说明折叠；复制摘要取成功保存值，错误收起后可见；分组恢复只影响自身，复制自动保存、不阻挡离开；片段草稿保护独立保留，不新增迁移 | [现行交互](../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)、[本轮减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md) |
 | 位置书签 | 附近提醒可仍然添加；单行成功摘要、限行卡片、章内进度、整卡详情与选中态、添加时间、快捷删除及独立跳转，共用删除确认；新摘要优先自然边界，旧摘要保持；删除书籍后保留并隐藏，不向重导材料换绑，本轮无数据库迁移 | [交互改进验收](archived/reading-practice/BOOKMARK_REFINEMENT_ACCEPTANCE.md)、[首版验收](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md)、[PRD 4.9](../PRD.md#49-阅读摘录书签与记录检索) |
-| 扩展书内搜索 | 已确认范围，尚未实现。后续搜索明确关联本书的片段、译文和书签；当前仍为原文字面检索 | [实施计划](reading-practice/PLAN.md) |
+| 本书搜索 | 已接入独立入口、原文／片段／最新阅读译文／书签分组、内容与章节组合筛选、空词资料浏览、有界分页及会话列表恢复；复用精确定位与资料预览，保留失配内容只读入口和删除门禁。最终全量检查、11 个浏览器场景及隔离真实 API 人工复核通过；未推送 | [本轮验收与限制](reading-practice/BOOK_SEARCH_ACCEPTANCE.md)、[交互契约](../INFORMATION_ARCHITECTURE.md#书内搜索与图库) |
 | 测试清理与入口回归 | 清理旧分支与重复断言，保留业务保护；Reader 恢复默认、迟到注音与缓存回收通过真实入口回归，浏览器筛选空集明确失败 | [验收与变异检查](archived/TEST_CLEANUP_ACCEPTANCE.md) |
 | 来源与片段 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定，共用原文保护规则 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](archived/text-study/A2_ACCEPTANCE.md)、[统一Agent验收](archived/AGENT_CONTEXT_ACCEPTANCE.md) |
 | 路由代码按需加载 | 默认素材库同步加载，其他页面按路由加载；阅读与片段路径共用稳定会话宿主，保留真实 URL、iframe 身份、精确返回与草稿；尾斜杠直达及地址切换有回归覆盖。原冷加载比较绑定当时版本，整合后未重测 | [路由加载验收与整合复核](archived/ROUTE_LOADING_ACCEPTANCE.md#主分支整合复核2026-10-27) |

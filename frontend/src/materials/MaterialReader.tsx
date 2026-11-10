@@ -66,6 +66,7 @@ import {
 	setUsage,
 	usageKey,
 } from "./api";
+import { type Bookmark, bookmarkKeys, getBookmark } from "./bookmarks-api";
 import { ChapterRecords } from "./ChapterRecords";
 import { marginRecordEntry, sameMarginRecordHit } from "./chapter-records";
 import {
@@ -106,6 +107,7 @@ import {
 	writeBookUiPreferences,
 	writeReaderUiPreferences,
 } from "./preferences";
+import { ReaderBookmarkDetail } from "./ReaderBookmarkDetail";
 import { ReaderBookmarkNotice, useReaderBookmarks } from "./ReaderBookmarks";
 import { ContextCopyFeedback, useReaderContextCopy } from "./ReaderContextCopy";
 import { ReaderIcon, ReaderPanel, ReaderSettings } from "./ReaderControls";
@@ -116,6 +118,8 @@ import {
 	ReaderGalleryPanel,
 	ReaderNavigationPanel,
 } from "./ReaderPanels";
+import { ReaderSearchPanel } from "./ReaderSearchPanel";
+import { ReaderSearchTranslation } from "./ReaderSearchTranslation";
 import {
 	type ReaderFrame as Frame,
 	partDocument,
@@ -147,6 +151,8 @@ import {
 	ReaderRecordPresentation,
 } from "./reader-record-presentation";
 import { readerResourceCache } from "./reader-resource-cache";
+import { initialReaderSearch, type RecordSearchItem } from "./reader-search";
+import type { ReaderSearchHit } from "./reader-search-api";
 import type { ReaderHighlightRange } from "./reader-selection";
 import {
 	cancelReaderSessionReads,
@@ -425,6 +431,18 @@ function Reader({
 			: null,
 	);
 	const bookmarks = useReaderBookmarks(book.id, book.version_id);
+	const [searchState, setSearchState] = useState(initialReaderSearch);
+	const searchScrollTop = useRef(0);
+	const [pendingSearchRecord, setPendingSearchRecord] = useState<{
+		item: RecordSearchItem;
+		current: () => boolean;
+	} | null>(null);
+	const [searchBookmark, setSearchBookmark] = useState<Bookmark | null>(null);
+	const [searchBookmarkLocatable, setSearchBookmarkLocatable] = useState(true);
+	const [searchTranslationId, setSearchTranslationId] = useState<string | null>(
+		null,
+	);
+	const [searchOpenError, setSearchOpenError] = useState<Error | null>(null);
 	const [panels, setPanels] = useState<ReaderPanelsState>(EMPTY_READER_PANELS);
 	const [rightToolInFront, setRightToolInFront] = useState(false);
 	const panelAboveCards =
@@ -510,10 +528,11 @@ function Reader({
 		error: navigationError,
 		busy: chapterSwitchBusy,
 	} = navigationState;
-	const invalidateNavigation = useCallback(
-		() => navigation.current.invalidate(),
-		[],
-	);
+	const invalidateNavigation = useCallback(() => {
+		navigation.current.invalidate();
+		setPendingSearchRecord(null);
+		setSearchOpenError(null);
+	}, []);
 	const viewerEscape = useRef<(() => void) | null>(null);
 	const registerViewerEscape = useCallback((close: (() => void) | null) => {
 		viewerEscape.current = close;
@@ -597,6 +616,8 @@ function Reader({
 	}, []);
 	const selectPanel = useCallback(
 		(next: ReaderPanelKind, toggle = false) => {
+			setSearchBookmark(null);
+			if (next !== "search") setSearchTranslationId(null);
 			if (
 				latest.current.translationOpen &&
 				latest.current.panels.right === "study" &&
@@ -622,6 +643,8 @@ function Reader({
 	);
 	const closePanel = useCallback(
 		(side?: ReaderPanelSide, invalidate = true) => {
+			if (!side || side === "right") setSearchTranslationId(null);
+			if (invalidate) setSearchBookmark(null);
 			if (
 				(!side || side === "right") &&
 				latest.current.panels.right === "study" &&
@@ -968,6 +991,66 @@ function Reader({
 	useEffect(() => {
 		records.reconcile();
 	});
+	useEffect(() => {
+		if (
+			!pendingSearchRecord ||
+			!active ||
+			navigationState.adjacentDisabled ||
+			!recordsChecked
+		)
+			return;
+		const { item, current } = pendingSearchRecord;
+		setPendingSearchRecord(null);
+		if (!current()) return;
+		if (
+			chapterId !== item.chapter_id ||
+			marks.isError ||
+			chapterTranslations.isError
+		) {
+			setSearchOpenError(new Error("原文已切换或资料暂不可用"));
+			return;
+		}
+		const exists =
+			item.kind === "segment"
+				? marks.items.some((entry) => entry.segment_id === item.segment_id)
+				: chapterTranslations.items.some(
+						(entry) =>
+							entry.identity_sha256 === item.identity_sha256 &&
+							entry.result_id === item.result_id,
+					);
+		if (!exists) {
+			setSearchOpenError(new Error("资料已更新或移除，请刷新搜索结果"));
+			return;
+		}
+		openMarkHit({
+			segmentIds: item.segment_id ? [item.segment_id] : [],
+			translationIds: item.identity_sha256 ? [item.identity_sha256] : [],
+			anchor: {
+				left: window.innerWidth - 20,
+				right: window.innerWidth - 12,
+				top: 100,
+				bottom: 110,
+			},
+			anchorPlacement: "margin-right",
+		});
+		// Search is an explicit persistent preview, independent of a transient DOM mark hover.
+		records.setManualPosition({
+			left: Math.max(12, window.innerWidth - 432),
+			top: 88,
+		});
+	}, [
+		pendingSearchRecord,
+		active,
+		navigationState.adjacentDisabled,
+		recordsChecked,
+		chapterId,
+		marks.isError,
+		marks.items,
+		chapterTranslations.isError,
+		chapterTranslations.items,
+		openMarkHit,
+		records,
+	]);
 	const queue = useRef<PositionQueue<Position> | null>(null);
 	if (!queue.current)
 		queue.current = new PositionQueue(
@@ -1857,6 +1940,84 @@ function Reader({
 			targetChapterId,
 		);
 	};
+	const chooseSearchResult = async (
+		hit: ReaderSearchHit,
+		current: () => boolean,
+	) => {
+		invalidateNavigation();
+		closeMarkHit();
+		bookmarks.closeEditor();
+		setSearchBookmark(null);
+		setSearchTranslationId(null);
+		if (hit.kind === "original") {
+			const item = hit.item;
+			const success = await navigation.current.navigate({
+				type: "position",
+				target: {
+					version_id: book.version_id,
+					chapter_id: item.chapter_id,
+					part_index: item.part_index,
+					resource_id: item.resource_id,
+					kind: "text",
+					offset: item.start,
+					at_chapter_end: false,
+					settings: latest.current.settings,
+				},
+				mark: { start: item.start, end: item.end },
+			});
+			if (success && current() && latest.current.compactPanels)
+				closePanel("left", false);
+			return;
+		}
+		const item = hit.item;
+		const navigationCurrent = navigation.current.currentRequest();
+		const bookmark = item.bookmark_id
+			? await client.fetchQuery({
+					queryKey: bookmarkKeys.item(book.id, item.bookmark_id),
+					queryFn: ({ signal }) =>
+						getBookmark(book.id, item.bookmark_id ?? "", signal),
+					staleTime: 0,
+				})
+			: null;
+		if (!current() || !navigationCurrent() || !activeRef.current) return;
+		if (!item.position) {
+			if (bookmark) {
+				setSearchBookmark(bookmark);
+				setSearchBookmarkLocatable(false);
+				bookmarks.edit(bookmark, false);
+				return;
+			}
+			if (item.segment_id) {
+				openStudySegment(item.segment_id);
+				return;
+			}
+			if (item.result_id) {
+				setSearchTranslationId(item.result_id);
+				setPanels((previous) => selectReaderPanel(previous, "study"));
+				return;
+			}
+			throw new Error("该记录的原文位置已不可用，无法在阅读器中打开");
+		}
+		const success = await navigation.current.navigate({
+			type: "position",
+			target: {
+				...(bookmark?.position ?? item.position),
+				settings: latest.current.settings,
+			},
+			highlightRanges: item.material_provenance?.ranges,
+		});
+		if (!success || !current()) return;
+		if (bookmark) {
+			setSearchBookmark(bookmark);
+			setSearchBookmarkLocatable(true);
+			bookmarks.edit(bookmark, false);
+		} else
+			setPendingSearchRecord({
+				item,
+				current: navigation.current.currentRequest(),
+			});
+		if (latest.current.compactPanels) closePanel("left", false);
+	};
 	const renderToken = generation;
 	const activateReaderTool = (target: Element) => {
 		if (target.closest(".dict-deck, .dict-config, .dict-trigger")) {
@@ -1883,6 +2044,7 @@ function Reader({
 			data-theme={theme}
 			data-tools-visible={toolsVisible}
 			data-left-open={!!panels.left}
+			data-search-open={panels.left === "search" || undefined}
 			data-right-open={!!panels.right}
 			data-active-side={panels.activeSide}
 			data-panel-above-cards={panelAboveCards || undefined}
@@ -2009,6 +2171,7 @@ function Reader({
 				<InlineError
 					error={
 						selectionError ??
+						searchOpenError ??
 						originError ??
 						error ??
 						positionError ??
@@ -2256,8 +2419,10 @@ function Reader({
 						<button
 							type="button"
 							aria-label="目录"
-							data-tooltip="目录、书签与搜索"
-							aria-expanded={panels.left !== null}
+							data-tooltip="目录与书签"
+							aria-expanded={
+								panels.left === "toc" || panels.left === "bookmarks"
+							}
 							onClick={() => selectPanel("toc", true)}
 						>
 							<ReaderIcon name="toc" />
@@ -2282,6 +2447,16 @@ function Reader({
 							<ReaderIcon name="next" />
 						</button>
 					</div>
+					<button
+						id="reader-search-trigger"
+						type="button"
+						aria-label="本书搜索"
+						data-tooltip="本书搜索"
+						aria-expanded={panels.left === "search"}
+						onClick={() => selectPanel("search", true)}
+					>
+						<CatalogIcon name="search" />
+					</button>
 					<button
 						type="button"
 						aria-label="添加当前位置书签"
@@ -2732,7 +2907,7 @@ function Reader({
 					偏好暂未存入浏览器，本次阅读仍可使用。
 				</p>
 			)}
-			{leftView.value !== null && (
+			{leftView.value !== null && leftView.value !== "search" && (
 				<ReaderNavigationPanel
 					key={`${book.id}-${book.version_id}`}
 					materialId={book.id}
@@ -2772,6 +2947,51 @@ function Reader({
 							"left",
 						)
 					}
+				/>
+			)}
+			{leftView.value === "search" && (
+				<ReaderSearchPanel
+					key={`${book.id}-${book.version_id}`}
+					book={book}
+					state={searchState}
+					onState={setSearchState}
+					scrollTop={searchScrollTop}
+					closing={leftView.exiting}
+					inactive={
+						!active ||
+						(compactPanels && !!panels.right && panels.activeSide === "right")
+					}
+					error={searchOpenError ?? navigationError}
+					onCancelNavigation={invalidateNavigation}
+					onClose={() => closePanel("left")}
+					onChoose={chooseSearchResult}
+				/>
+			)}
+			{active &&
+				searchBookmark &&
+				bookmarks.editing?.id === searchBookmark.id && (
+					<ReaderBookmarkDetail
+						key={`search-${bookmarks.editorRequest}`}
+						bookmark={searchBookmark}
+						canLocate={searchBookmarkLocatable}
+						bookmarks={bookmarks}
+						listUpdatedAt={0}
+						settings={settings}
+						restoreFocusId="reader-search-trigger"
+						onDeleted={() => setSearchBookmark(null)}
+						onNavigate={(target) => {
+							bookmarks.closeEditor();
+							setSearchBookmark(null);
+							void navigation.current.navigate({ type: "position", target });
+						}}
+					/>
+				)}
+			{searchTranslationId && panels.right === "study" && (
+				<ReaderSearchTranslation
+					materialId={book.id}
+					resultId={searchTranslationId}
+					inactive={!active || (compactPanels && panels.activeSide !== "right")}
+					onClose={() => closePanel("right")}
 				/>
 			)}
 			{rightView.value === "gallery" && (

@@ -28,15 +28,17 @@ export function selectReaderPanel(
 	const navigation =
 		next === "toc" || next === "bookmarks" || next === "search";
 	const side = navigation ? "left" : "right";
+	const sameLeftTool =
+		next === current.left || (next === "toc" && current.left === "bookmarks");
 	if (
 		compact &&
 		toggle &&
 		current.activeSide !== side &&
-		(current[side] === next || (navigation && current.left !== null))
+		(current[side] === next || (navigation && sameLeftTool))
 	)
 		return { ...current, activeSide: side };
 	if (next === "toc" || next === "bookmarks" || next === "search") {
-		const left = toggle && current.left !== null ? null : next;
+		const left = toggle && sameLeftTool ? null : next;
 		return {
 			...current,
 			left,

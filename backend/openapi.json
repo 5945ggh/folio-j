@@ -3188,6 +3188,187 @@
         "title": "MaterialReadingsSummary",
         "type": "object"
       },
+      "MaterialRecordSearchItem": {
+        "properties": {
+          "bookmark_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmark Id"
+          },
+          "chapter_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Id"
+          },
+          "chapter_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Title"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "identity_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity Sha256"
+          },
+          "kind": {
+            "enum": [
+              "segment",
+              "translation",
+              "bookmark"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "material_provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MaterialProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositionAnchor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Id"
+          },
+          "segment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segment Id"
+          },
+          "snippet": {
+            "title": "Snippet",
+            "type": "string"
+          },
+          "source_excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Excerpt"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "snippet"
+        ],
+        "title": "MaterialRecordSearchItem",
+        "type": "object"
+      },
+      "MaterialRecordSearchResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialRecordSearchItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "segment",
+              "translation",
+              "bookmark"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "material_id",
+          "version_id",
+          "query",
+          "kind",
+          "total",
+          "offset",
+          "limit",
+          "items"
+        ],
+        "title": "MaterialRecordSearchResponse",
+        "type": "object"
+      },
       "MaterialResourceReadings": {
         "properties": {
           "resource_id": {
@@ -9742,6 +9923,121 @@
         "summary": "Prepare Readings"
       }
     },
+    "/api/materials/{material_id}/record-search": {
+      "get": {
+        "operationId": "searchMaterialRecords",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "segment",
+                "translation",
+                "bookmark"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 160,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 40,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chapter_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Chapter Ids"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialRecordSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Material Records"
+      }
+    },
     "/api/materials/{material_id}/search": {
       "get": {
         "operationId": "searchMaterial",
@@ -9796,6 +10092,25 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "chapter_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Chapter Ids"
             }
           }
         ],

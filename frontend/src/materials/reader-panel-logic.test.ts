@@ -29,9 +29,9 @@ test("left navigation and right tools coexist and close independently", () => {
 		activeSide: "left",
 	});
 	assert.deepEqual(selectReaderPanel(both, "toc", true), {
-		left: null,
+		left: "toc",
 		right: "settings",
-		activeSide: "right",
+		activeSide: "left",
 	});
 	assert.deepEqual(closeReaderPanel(both, "left"), {
 		left: null,
@@ -48,14 +48,14 @@ test("compact tools reveal a covered panel without clearing its selected tab", (
 		activeSide: "right",
 	} as const;
 	const revealed = selectReaderPanel(both, "toc", true, true);
-	assert.deepEqual(revealed, { ...both, activeSide: "left" });
+	assert.deepEqual(revealed, { ...both, left: "toc", activeSide: "left" });
 	assert.deepEqual(selectReaderPanel(revealed, "toc", true, true), {
 		left: null,
 		right: "settings",
 		activeSide: "right",
 	});
 	assert.deepEqual(selectReaderPanel(revealed, "gallery", true, true), {
-		left: "search",
+		left: "toc",
 		right: "gallery",
 		activeSide: "right",
 	});

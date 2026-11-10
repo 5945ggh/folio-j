@@ -26,6 +26,7 @@ import {
 	listBookmarks,
 } from "./bookmarks-api";
 import { ReaderBookmarkDetail } from "./ReaderBookmarkDetail";
+import { readerSearchKey } from "./reader-search-api";
 import "./reader-bookmarks.css";
 
 const pendingCreations = new Map<string, BookmarkCreationIntent>();
@@ -49,9 +50,14 @@ export function useReaderBookmarks(materialId: string, versionId: string) {
 	const [editorRequest, setEditorRequest] = useState(0);
 	const drafts = bookmarkDraftSession(materialId, versionId);
 	const invalidate = () =>
-		client.invalidateQueries({
-			queryKey: bookmarkKeys.list(materialId, versionId),
-		});
+		Promise.all([
+			client.invalidateQueries({
+				queryKey: bookmarkKeys.list(materialId, versionId),
+			}),
+			client.invalidateQueries({
+				queryKey: [...readerSearchKey(materialId, versionId), "bookmark"],
+			}),
+		]);
 	const creation = useMutation({
 		mutationFn: (request: BookmarkCreate) =>
 			createBookmark(materialId, request),
