@@ -1,0 +1,22 @@
+.github/workflows/windows.yml
+  s_a9ba3cf2f0a75c::t_303e0a59068c5e 93,97-98
+docs/handovers/WINDOWS_FROZEN_ACCEPTANCE.md
+  s_a9ba3cf2f0a75c::t_0c94ef8e6cac91 45-51
+  s_a9ba3cf2f0a75c::t_b5ba10e5c9c851 52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "88a720db0064514134e05318f954016532f7eb18",
+  "prompts": {},
+  "sessions": {
+    "s_a9ba3cf2f0a75c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c0af-dcff-7802-a0f3-59d5f61428a1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
