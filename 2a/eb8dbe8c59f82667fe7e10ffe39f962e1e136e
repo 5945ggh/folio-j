@@ -1,0 +1,26 @@
+backend/tests/test_package_frozen.py
+  s_a9ba3cf2f0a75c::t_017747647c831c 6,51
+docs/handovers/WINDOWS_FROZEN_ACCEPTANCE.md
+  s_a9ba3cf2f0a75c::t_ab2e2d78727834 74
+  s_a9ba3cf2f0a75c::t_56617c347745d1 67-73
+backend/tests/test_data_location.py
+  s_a9ba3cf2f0a75c::t_017747647c831c 10,21,333,399-400,435
+.github/workflows/windows.yml
+  s_a9ba3cf2f0a75c::t_017747647c831c 46-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2aeb8dbe8c59f82667fe7e10ffe39f962e1e136e",
+  "prompts": {},
+  "sessions": {
+    "s_a9ba3cf2f0a75c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c0af-dcff-7802-a0f3-59d5f61428a1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
