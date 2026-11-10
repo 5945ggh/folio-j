@@ -42,3 +42,11 @@ Windows 构建器直接输出 ZIP，POSIX 平台继续输出保留权限与符�
 从 `main b64314f5` 开始，将 Windows `app.launcher` 的 Uvicorn 配置设为 `use_colors=False`，启动日志及 HTTP 访问日志均为纯文本，其他平台保留自动颜色判断。不引入 Win32 终端模式操作，不新增启动脚本、退出等待或 ACL 修改，无新增依赖或 TBD。
 
 回归通过实际启动配置创建 Uvicorn formatter，模拟 stdout／stderr 均为 TTY，核对 Windows 的 INFO、请求行与 `200 OK` 无 ANSI 序列，其他平台仍可自动着色。启动入口定向测试 25 passed；`just lint`、`just test`、`just check-docs` 和 `git diff --check` 通过，全量后端 1416 passed、3 skipped，前端 826 passed。未修改前端，未重跑生产构建或浏览器回归；Windows 默认控制台与 Windows Terminal 的实际显示尚未复验。
+
+## 工作流表达式作用域修复
+
+2026-11-10，推送 `0c1e0744` 后，[Windows workflow](https://github.com/5945ggh/folio-j/actions/runs/42732287086) 在调度前失败：冻结任务的 job 级 `env` 使用了两处 `runner.temp`，GitHub 在该层级不提供 `runner` context。[官方 context 表](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability)明确区分 job 与 step 的可用范围；此前本地 YAML 解析未覆盖表达式作用域。
+
+从 `main 0c1e0744` 开始，将冻结构建环境和产物路径移到现有初始化 step，用 `Join-Path $env:RUNNER_TEMP` 构造路径并通过 UTF-8 写入 `GITHUB_ENV`。安装依赖、构建、冒烟和上传均在后续步骤读取，保留 runner 临时目录及独立虚拟环境。没有新增项目依赖、应用行为、schema 或 TBD。
+
+临时安装的 actionlint 1.7.12 在修复前准确检出两处非法 context，修复后的完整 workflow 通过专用语法与表达式检查。`just lint`、`just test`、`just check-docs` 和 `git diff --check` 通过；后端 1507 passed、4 skipped，前端 826 passed。独立工作区复用既有依赖，显式指定本工作区 `PYTHONPATH` 并使用 `UV_NO_SYNC=1 UV_OFFLINE=1`；测试真实网络保持禁用，允许本机 socketpair。实际 Windows CI 结果仍以修复推送后的远端运行为准。
