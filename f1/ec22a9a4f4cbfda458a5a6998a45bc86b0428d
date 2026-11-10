@@ -1,0 +1,61 @@
+backend/src/app/services/startup.py
+  s_7a798f695f2388::t_f9c97fbcec99a8 166,170-175
+  s_7a798f695f2388::t_c3c5b818fc2dbb 167-169
+docs/USAGE.md
+  s_7a798f695f2388::t_7c71dcd063361a 117,119,156
+  s_7a798f695f2388::t_274167ccc343d8 154
+docs/handovers/WINDOWS_ACCEPTANCE.md
+  s_7a798f695f2388::t_a8118cdeababeb 56,60-61
+  s_7a798f695f2388::t_274167ccc343d8 59
+docs/UPGRADING.md
+  s_7a798f695f2388::t_7c71dcd063361a 12-13
+scripts/frozen/README.md
+  s_7a798f695f2388::t_7c71dcd063361a 7,11
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_7a798f695f2388::t_274167ccc343d8 24
+  s_7a798f695f2388::t_a8118cdeababeb 25
+docs/PRD.md
+  s_7a798f695f2388::t_e5ce1af0b40976 341,343,345
+backend/static/startup/index.html
+  s_7a798f695f2388::t_55fef98fb15c24 15,18-22,37,52-62,76,86,105
+README.md
+  s_7a798f695f2388::t_cac6553afa6373 52
+docs/ARCHITECTURE.md
+  s_7a798f695f2388::t_274167ccc343d8 700
+  s_7a798f695f2388::t_7c71dcd063361a 698
+docs/handovers/DATA_LOCATION_ACCEPTANCE.md
+  s_7a798f695f2388::t_c6c008fbea6d52 40,42-46
+  s_7a798f695f2388::t_b33100a663a9ad 48-49
+  s_7a798f695f2388::t_a8118cdeababeb 38-39,41,47,52
+scripts/release/README.md
+  s_7a798f695f2388::t_7c71dcd063361a 18
+backend/src/app/services/data_location.py
+  s_7a798f695f2388::t_f9c97fbcec99a8 8,11,84,298
+docs/TECH_STACK.md
+  s_7a798f695f2388::t_7c71dcd063361a 96
+backend/tests/test_startup.py
+  s_7a798f695f2388::t_dca36d16491641 119,150-161,163-177,179-214,217-240
+  s_7a798f695f2388::t_ad0d4cdd10ef56 162,178,215-216
+  s_7a798f695f2388::t_8d48f23b8594f6 241-242
+backend/tests/test_data_location.py
+  s_7a798f695f2388::t_221e071d73a599 3,9,52-55,62-66,68-71,89-100,155-188,322-323,326-333,335-336,338,340-341
+  s_7a798f695f2388::t_99ce2acfea3b24 324
+docs/INFORMATION_ARCHITECTURE.md
+  s_7a798f695f2388::t_cac6553afa6373 106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f1ec22a9a4f4cbfda458a5a6998a45bc86b0428d",
+  "prompts": {},
+  "sessions": {
+    "s_7a798f695f2388": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c38d-f6df-73d3-9ab6-2125cea9d934",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
