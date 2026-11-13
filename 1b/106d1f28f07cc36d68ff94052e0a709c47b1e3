@@ -1,0 +1,24 @@
+docs/handovers/archived/TEST_CLEANUP_ACCEPTANCE.md
+  s_a7510bc4818753::t_aa8c884bde6ebe 38-40,42-44
+  s_a7510bc4818753::t_fe325d9630efab 41,45
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_a7510bc4818753::t_fe325d9630efab 3
+frontend/browser-tests/inline-records.tsx
+  s_a7510bc4818753::t_39e0f0b7c03b0f 409-410,422-423
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1b106d1f28f07cc36d68ff94052e0a709c47b1e3",
+  "prompts": {},
+  "sessions": {
+    "s_a7510bc4818753": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d304-cc6f-7383-b1fb-f5840b972251",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
