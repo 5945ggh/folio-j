@@ -3,12 +3,21 @@
 import asyncio
 import json
 import sqlite3
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from aiosqlite import Connection
+from chat_tool_fixture import install_text_turn
+from sqlalchemy import event
+from sqlalchemy.engine.interfaces import DBAPICursor
+from sqlalchemy.pool import ConnectionPoolEntry
 from support_api import accept, chat_client, question_payload, seed_chat
 from support_api import offline_chat_discovery as offline_chat_discovery
+
+from app.jobs import runtime
+from app.llm import adapters
 
 
 @pytest.mark.asyncio
@@ -375,36 +384,48 @@ async def test_accept_rejects_current_credential_in_inputs_without_partial_write
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("conversation_size", [1, 40])
 async def test_history_page_projects_job_facts_without_loading_large_snapshots(
-    tmp_path: Path, conversation_size: int
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from sqlalchemy import event
+    async def generate(
+        _snapshot: adapters.CallSnapshot,
+        _key: str | None,
+        _progress: Callable[[str], Awaitable[None]],
+    ) -> adapters.GenerateResult:
+        return adapters.GenerateResult("离线回复", True, None, "{}")
 
+    install_text_turn(monkeypatch, generate)
+    job_marker, run_marker = "large-private-job", "large-private-run"
+    job_payload, run_payload = job_marker * 10000, run_marker * 10000
     database = tmp_path / "history-projection.db"
     async with chat_client(database) as (client, app):
         seed = await seed_chat(client)
         accepted = await accept(client, seed)
+        await runtime.execute_job(app, accepted["id"])
         with sqlite3.connect(database) as connection:
             connection.execute(
                 "UPDATE chat_jobs SET status='failed', error='保留的失败原因', "
-                "execution_state=?, input_snapshot=? WHERE id=?",
+                "execution_state=?, input_snapshot=?, "
+                "model_snapshot=json_set(model_snapshot, '$.private', ?), "
+                "request_payload=json_set(request_payload, '$.private', ?) WHERE id=?",
                 (
                     json.dumps(
                         {
                             "artifacts": [
                                 {"analysis_id": "saved-analysis", "revision_id": "old-revision"}
                             ],
-                            "messages": ["large-private-state" * 10000],
+                            "messages": [job_payload],
                         }
                     ),
                     json.dumps(
                         {
                             "question": "原问题",
                             "additional_instructions": "补充要求",
-                            "messages": ["large-private-input" * 10000],
+                            "messages": [job_payload],
                         }
                     ),
+                    job_payload,
+                    job_payload,
                     accepted["id"],
                 ),
             )
@@ -412,89 +433,112 @@ async def test_history_page_projects_job_facts_without_loading_large_snapshots(
                 "UPDATE chat_messages SET status='failed' WHERE job_id=? AND role='assistant'",
                 (accepted["id"],),
             )
-            connection.execute(
-                "UPDATE chat_threads SET active_job_id=NULL WHERE id=?", (seed["thread"]["id"],)
+            updated_run = connection.execute(
+                "UPDATE runs SET messages=?, raw_response=?, output_text=?, prompt_text=? "
+                "WHERE job_id=?",
+                (json.dumps([run_payload]), run_payload, run_payload, run_payload, accepted["id"]),
             )
-        with sqlite3.connect(database) as connection:
-            connection.row_factory = sqlite3.Row
-            job_row = dict(connection.execute("SELECT * FROM chat_jobs").fetchone())
-            message_rows = [
-                dict(row)
-                for row in connection.execute("SELECT * FROM chat_messages ORDER BY ordinal")
-            ]
-            for index in range(1, conversation_size):
-                identity = f"history-job-{index}"
-                job_row.update(id=identity, request_id=str(uuid4()))
-                columns = ", ".join(job_row)
-                placeholders = ", ".join("?" for _ in job_row)
-                connection.execute(
-                    f"INSERT INTO chat_jobs ({columns}) VALUES ({placeholders})",
-                    tuple(job_row.values()),
-                )
-                for message in message_rows:
-                    copy = {
-                        **message,
-                        "id": f"history-message-{index}-{message['role']}",
-                        "job_id": identity,
-                        "ordinal": index * 2 + message["ordinal"],
-                    }
-                    columns = ", ".join(copy)
-                    placeholders = ", ".join("?" for _ in copy)
-                    connection.execute(
-                        f"INSERT INTO chat_messages ({columns}) VALUES ({placeholders})",
-                        tuple(copy.values()),
-                    )
-        statements: list[str] = []
+            assert updated_run.rowcount == 1
+
         async with app.state.session_factory() as session:
             engine = session.bind.sync_engine
+        read_count = 0
+        loaded: set[str] = set()
+        row_probe = pytest.MonkeyPatch()
 
-        def capture(
+        def observe_row(_cursor: sqlite3.Cursor, row: tuple[object, ...]) -> tuple[object, ...]:
+            # Record private values returned by SQLite before the API filters them out.
+            for marker in (job_marker, run_marker):
+                if any(isinstance(value, str) and marker in value for value in row):
+                    loaded.add(marker)
+            return row
+
+        def observe_connection(
+            _connection: object, entry: ConnectionPoolEntry, _proxy: object
+        ) -> None:
+            driver = entry.driver_connection
+            assert isinstance(driver, Connection)
+            row_probe.setattr(driver, "row_factory", observe_row)
+
+        def observe_query(
             _connection: object,
-            _cursor: object,
-            statement: str,
+            cursor: DBAPICursor,
+            _statement: str,
             _parameters: object,
             _context: object,
             _many: bool,
         ) -> None:
-            if statement.lstrip().upper().startswith("SELECT"):
-                statements.append(statement)
+            nonlocal read_count
+            if cursor.description:
+                read_count += 1
 
-        event.listen(engine, "before_cursor_execute", capture)
+        endpoint = f"/api/threads/{seed['thread']['id']}/messages"
+        event.listen(engine, "checkout", observe_connection)
+        event.listen(engine, "after_cursor_execute", observe_query)
         try:
-            response = await client.get(
-                f"/api/threads/{seed['thread']['id']}/messages", params={"limit": 100}
-            )
-        finally:
-            event.remove(engine, "before_cursor_execute", capture)
-        assert response.status_code == 200, response.text
-        messages = response.json()["items"]
-        assert len(messages) == conversation_size * 2
-        summary = messages[1]["job_summary"]
-        assert summary == {
-            "artifacts": [{"analysis_id": "saved-analysis", "revision_id": "old-revision"}],
-            "error": "保留的失败原因",
-            "retry": {"question": "原问题\n\n补充要求"},
-        }
-        assert messages[0]["job_summary"] is None
-        assert len(statements) == 2, statements
-        # JSON paths may be selected; complete Job / Run columns must not be transferred.
-        projection = statements[-1].split("FROM")[0]
-        assert "JSON_EXTRACT(chat_jobs.execution_state," in projection
-        assert projection.count("chat_jobs.execution_state") == 1
-        assert "JSON_EXTRACT(chat_jobs.input_snapshot," in projection
-        assert projection.count("chat_jobs.input_snapshot") == 2
-        assert "model_snapshot" not in projection and "request_payload" not in projection
-        assert not any("FROM runs" in statement for statement in statements)
-        assert "large-private" not in response.text
-        statements.clear()
-        event.listen(engine, "before_cursor_execute", capture)
-        try:
+            first = await client.get(endpoint, params={"limit": 100})
+            assert first.status_code == 200, first.text
+            assert len(first.json()["items"]) == 2
+            first_read_count = read_count
+            assert first_read_count > 0
+
+            conversation_size = 40
+            _append_failed_turns(database, conversation_size)
+            read_count = 0
+            response = await client.get(endpoint, params={"limit": 100})
+            assert response.status_code == 200, response.text
+            messages = response.json()["items"]
+            assert len(messages) == conversation_size * 2
+            assert messages[0]["job_summary"] is None
+            assert messages[-1]["job_summary"] == {
+                "artifacts": [{"analysis_id": "saved-analysis", "revision_id": "old-revision"}],
+                "error": "保留的失败原因",
+                "retry": {"question": "原问题\n\n补充要求"},
+            }
+            assert not loaded, f"History read large database values: {loaded}"
+            assert "large-private" not in response.text
+            # Allow an extra batched read on a larger page without permitting per-turn reads.
+            assert read_count <= first_read_count + 1, (first_read_count, read_count)
+
             detail = await client.get(f"/api/jobs/{accepted['id']}")
+            assert detail.status_code == 200, detail.text
+            assert len(detail.json()["runs"]) == 1
+            assert run_marker not in loaded, "Job detail loaded a large Run value"
         finally:
-            event.remove(engine, "before_cursor_execute", capture)
-        assert detail.status_code == 200, detail.text
-        run_query = next(statement for statement in statements if "FROM runs" in statement)
-        assert run_query.split("FROM")[0].strip() == "SELECT runs.id, runs.status, runs.purpose"
+            event.remove(engine, "checkout", observe_connection)
+            event.remove(engine, "after_cursor_execute", observe_query)
+            row_probe.undo()
+
+
+def _append_failed_turns(database: Path, conversation_size: int) -> None:
+    with sqlite3.connect(database) as connection:
+        connection.row_factory = sqlite3.Row
+        job_row = dict(connection.execute("SELECT * FROM chat_jobs").fetchone())
+        message_rows = [
+            dict(row) for row in connection.execute("SELECT * FROM chat_messages ORDER BY ordinal")
+        ]
+        for index in range(1, conversation_size):
+            identity = f"history-job-{index}"
+            job_row.update(id=identity, request_id=str(uuid4()))
+            columns = ", ".join(job_row)
+            placeholders = ", ".join("?" for _ in job_row)
+            connection.execute(
+                f"INSERT INTO chat_jobs ({columns}) VALUES ({placeholders})",
+                tuple(job_row.values()),
+            )
+            for message in message_rows:
+                copy = {
+                    **message,
+                    "id": f"history-message-{index}-{message['role']}",
+                    "job_id": identity,
+                    "ordinal": index * 2 + message["ordinal"],
+                }
+                columns = ", ".join(copy)
+                placeholders = ", ".join("?" for _ in copy)
+                connection.execute(
+                    f"INSERT INTO chat_messages ({columns}) VALUES ({placeholders})",
+                    tuple(copy.values()),
+                )
 
 
 @pytest.mark.asyncio
