@@ -1,0 +1,26 @@
+backend/tests/test_chat_api.py
+  s_a7510bc4818753::t_416872868c5de2 6,11-15,19-21,388,390-398,404,408-410,436-438,441-442,445-446,448-449,451,453-460,463,465-466,471,473,475-477,479-502,504-506,508-509,511-513
+  s_a7510bc4818753::t_073641ebad184b 514-517,519-540
+  s_a7510bc4818753::t_8433ff2d1321b2 399,417,424,427-428,439,447,450,452,461,510
+  s_a7510bc4818753::t_1e2fcabb3cb849 518
+  s_a7510bc4818753::t_a27e990943dfd9 472
+  s_a7510bc4818753::t_e525f7f2935a3f 541
+docs/handovers/archived/TEST_CLEANUP_ACCEPTANCE.md
+  s_a7510bc4818753::t_cc7444a745e24b 41,44-45,47,49,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d013a4fcd5a0ea24cf44497d04f499a2b9a4c5d4",
+  "prompts": {},
+  "sessions": {
+    "s_a7510bc4818753": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d304-cc6f-7383-b1fb-f5840b972251",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
