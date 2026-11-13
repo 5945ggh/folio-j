@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import importlib
 import os
 import stat
@@ -55,7 +56,14 @@ def exclusive_file_lock(path: Path) -> Generator[None, None, None]:
             # The stdlib stubs expose these members only on a Windows type-check
             # host, while this module must also pass checks on POSIX.
             locking = cast(Callable[[int, int, int], None], msvcrt.locking)
-            locking(descriptor, int(msvcrt.LK_NBLCK), 1)
+            try:
+                locking(descriptor, int(msvcrt.LK_NBLCK), 1)
+            except PermissionError as exc:
+                # The CRT uses EACCES for byte-lock contention after a successful
+                # file open. Preserve actual file-access failures separately.
+                if exc.errno == errno.EACCES:
+                    raise BlockingIOError(errno.EAGAIN, "数据库进程锁已被占用") from exc
+                raise
         else:
             fcntl = importlib.import_module("fcntl")
 

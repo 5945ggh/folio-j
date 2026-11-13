@@ -55,7 +55,7 @@ just start      # 构建前端，由 FastAPI 托管，本地运行
 just test       # 后端 pytest + 前端纯逻辑测试（禁用真实网络；未来 LLM 测试只回放录制）
 just lint       # ruff + pyright + biome + tsc
 just gen-api    # 从后端 OpenAPI 重新生成前端客户端
-just migrate    # alembic upgrade head
+just migrate    # 持数据库排他锁执行 alembic upgrade head
 just snapshot   # Repomix 在 .snapshots/ 生成带时间戳的 XML 仓库快照；别名 just snap
 ```
 

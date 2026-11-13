@@ -1,5 +1,6 @@
 """Kernel locks protect separate processes and recover after an abrupt exit."""
 
+import errno
 import os
 import stat
 import subprocess
@@ -98,8 +99,9 @@ def test_windows_directory_flush_does_not_open_directory(
     fsync_directory(tmp_path)
 
 
+@pytest.mark.parametrize("contended", [False, True])
 def test_windows_lock_locks_same_byte_and_closes_descriptor(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, contended: bool
 ) -> None:
     path = tmp_path / "worker.lock"
     descriptors: list[int] = []
@@ -110,12 +112,22 @@ def test_windows_lock_locks_same_byte_and_closes_descriptor(
         assert os.lseek(descriptor, 0, os.SEEK_CUR) == 0
         assert os.read(descriptor, 1) == b"\0"
         descriptors.append(descriptor)
+        if contended:
+            raise PermissionError(errno.EACCES, "locking denied")
 
     msvcrt = ModuleType("msvcrt")
     msvcrt.__dict__.update(locking=locking, LK_NBLCK=2)
     monkeypatch.setitem(sys.modules, "msvcrt", msvcrt)
     monkeypatch.setattr(platform_io, "_WINDOWS", True)
-    with exclusive_file_lock(path):
-        assert len(descriptors) == 1
+    if contended:
+        with pytest.raises(FileLockError) as rejected:
+            with exclusive_file_lock(path):
+                pytest.fail("a contended lock was acquired")
+        # Windows reports EACCES for a held byte lock; callers must not confuse
+        # that with permission to open the file or recommend moving the library.
+        assert isinstance(rejected.value.__cause__, BlockingIOError)
+    else:
+        with exclusive_file_lock(path):
+            assert len(descriptors) == 1
     with pytest.raises(OSError):
         os.fstat(descriptors[0])

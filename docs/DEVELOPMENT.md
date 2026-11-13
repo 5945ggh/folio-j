@@ -31,7 +31,7 @@ just dev     # 初始化／升级数据库，启动 FastAPI + Vite 热重载
 just lint         # Ruff、pyright strict、Biome、TypeScript 与原型语法检查
 just test         # 后端与前端纯逻辑测试，禁止真实网络和模型调用
 just gen-api      # 本地导出 OpenAPI 并生成前端类型，不需启动服务
-just migrate      # 从空库建立当前 schema，或执行已有库的后续迁移
+just migrate      # 停服后持排他锁建立当前 schema，或执行已有库的后续迁移
 just data-path    # 查看当前配置会使用哪个数据库
 just start        # 构建前端，选择／恢复学习库并启动，默认 8010
 just build        # 构建前端
@@ -45,6 +45,8 @@ just check-assets # 验证保留的实验和静态原型
 `just` 或 `just --list` 列出可用命令，命令定义见 [justfile](../justfile)。
 
 `just dev` 和 `just start` 使用同一后端端口，应选择一种运行方式；同一数据库只运行一个后台实例。两者都会先执行迁移，使用已有数据前须核对[升级与备份指南](UPGRADING.md)。
+
+仓库与源码发行包的 `just migrate` 共用 `app.launcher migrate`，先取得与后台服务、备份一致的数据库排他锁，再执行 Alembic；数据库正在使用时拒绝迁移。日常迁移使用该入口，直接运行 Alembic CLI 不提供这层进程保护。
 
 后端 schema 变化后运行 `just gen-api`，将 OpenAPI 与前端生成类型一并提交；不要手改生成类型。工程约束、测试规则及提交要求由 [AGENTS.md](../AGENTS.md) 维护。
 

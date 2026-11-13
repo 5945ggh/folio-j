@@ -26,8 +26,9 @@ start: build
 build:
     pnpm --dir frontend build
 
+# 停服后持排他锁建立当前 schema 或升级已有库。
 migrate:
-    uv run --directory backend --no-dev alembic upgrade head
+    uv run --project backend --no-dev python -m app.launcher migrate
 
 # 停止服务后，备份到尚不存在的新目录。
 backup $directory:

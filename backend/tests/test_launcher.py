@@ -3,22 +3,28 @@
 import asyncio
 import io
 import logging
+import os
+import shutil
 import signal
 import socket
 import sqlite3
+import subprocess
 import sys
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, closing
 from pathlib import Path
 from types import FrameType, SimpleNamespace
 
 import httpx
 import pytest
 import uvicorn
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from fastapi import FastAPI
 from starlette.types import Message, Scope
 from uvicorn.config import LOGGING_CONFIG
 
+from alembic import command
 from app import config, launcher, resources
 from app.config import DatabaseSettings, Settings
 from app.platform_io import exclusive_file_lock
@@ -61,6 +67,80 @@ def test_cli_migration_rebuilds_empty_database_and_refuses_active_worker(
         assert launcher.main(["migrate"]) == 1
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == version
+
+
+@pytest.mark.parametrize("recipe", ["justfile", "scripts/release/justfile"])
+def test_migrate_recipe_refuses_in_use_database_before_applying_pending_revision(
+    recipe: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runner = shutil.which("just")
+    if runner is None or shutil.which("uv") is None:
+        pytest.skip("The migration entry-point regression requires just and uv")
+    root = Path(__file__).resolve().parents[2]
+    database = tmp_path / "学习 data" / "app.db"
+    guard = tmp_path / "offline-python"
+    guard.mkdir()
+    marker = guard / "network-attempt"
+    (guard / "sitecustomize.py").write_text(
+        "from pathlib import Path\n"
+        "from support_network import install_network_guard\n"
+        "def record_network_attempt():\n"
+        f"    Path({str(marker)!r}).touch()\n"
+        "install_network_guard(on_denied=record_network_attempt)\n"
+        "from app import config\n"
+        f"config.REPO_ROOT = Path({str(tmp_path / 'installation')!r})\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
+    environment = {
+        **os.environ,
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONPATH": os.pathsep.join((str(guard), str(root / "backend/tests"))),
+        "UV_PROJECT_ENVIRONMENT": sys.prefix,
+        "UV_NO_SYNC": "1",
+        "UV_OFFLINE": "1",
+        "UV_CACHE_DIR": str(tmp_path / "uv-cache"),
+    }
+
+    def migrate_recipe() -> subprocess.CompletedProcess[str]:
+        result = subprocess.run(
+            [runner, "--justfile", str(root / recipe), "--working-directory", str(root), "migrate"],
+            env=environment,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=30,
+            check=False,
+        )
+        assert not marker.exists(), "migration attempted real network access"
+        return result
+
+    created = migrate_recipe()
+    assert created.returncode == 0, created.stdout + created.stderr
+    configuration = Config()
+    configuration.attributes["database_path"] = database
+    configuration.set_main_option("script_location", str(root / "backend/alembic"))
+    scripts = ScriptDirectory.from_config(configuration)
+    head = scripts.get_current_head()
+    assert head is not None
+    revision = scripts.get_revision(head)
+    assert revision is not None and isinstance(revision.down_revision, str)
+    previous = revision.down_revision
+    command.downgrade(configuration, previous)
+    with closing(sqlite3.connect(database)) as connection:
+        before = list(connection.iterdump())
+    with exclusive_file_lock(Path(str(database) + ".worker.lock")):
+        rejected = migrate_recipe()
+        assert rejected.returncode != 0, rejected.stdout + rejected.stderr
+        assert "数据库正在使用或进程锁不可用" in rejected.stderr
+        with closing(sqlite3.connect(database)) as connection:
+            assert list(connection.iterdump()) == before
+    upgraded = migrate_recipe()
+    assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+    with closing(sqlite3.connect(database)) as connection:
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (head,)
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
 
 def test_cli_backup_and_restore_preserve_database(

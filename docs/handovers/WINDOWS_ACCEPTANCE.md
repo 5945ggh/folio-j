@@ -86,7 +86,7 @@ dev_port = 5188
 uv sync --project backend --locked --no-dev
 pnpm --dir frontend install --frozen-lockfile
 uv run --project backend --no-dev python -m app.config
-uv run --directory backend --no-dev alembic upgrade head
+uv run --project backend --no-dev python -m app.launcher migrate
 pnpm --dir frontend build
 uv run --project backend --no-dev python scripts/run.py start
 ```
@@ -97,6 +97,7 @@ uv run --project backend --no-dev python scripts/run.py start
 - [ ] 停止服务，临时移除环境覆盖：`Remove-Item Env:FOLIO_J_DATABASE_PATH`，运行 `just data-path` 或直接配置命令，仍指向测试配置指定的同一个库；之后重新设置 `$env:FOLIO_J_DATABASE_PATH = Join-Path $winData 'app.db'`。改用正斜杠写同一路径也能识别。真实用户配置无需修改。
 - [ ] 再运行迁移并重启，已有记录不丢失。程序目录与数据目录分开；程序目录内没有意外生成另一份 `data/app.db`。
 - [ ] 第一实例运行时，在另一 PowerShell 进入同一程序目录，设置同一个数据库环境变量，再用另一端口执行 `uv run --project backend --no-dev uvicorn app.main:app --host 127.0.0.1 --port 8018`。第二实例应因数据库已有执行进程而退出；第一实例继续可用。另一端口用于区分数据库锁与端口冲突。
+- [ ] 第一实例运行时执行 `just migrate` 或上面的直接迁移命令，应提示数据库正在使用并退出，库版本与数据不变；停止实例后再次迁移成功。
 - [ ] 在运行终端按一次及连续两次 Ctrl-C，服务均能退出；重复启动正常。`Get-NetTCPConnection -State Listen -LocalPort 8017,5188 -ErrorAction SilentlyContinue` 不再列出本次服务的监听项。
 - [ ] 单独测试异常关闭：记录本次启动器 PID，用任务管理器结束该启动器进程，检查其 API／前端子进程及监听端口一并退出；随后重启，能取得同一库的锁。只操作本次临时实例。
 - [ ] 完整仓库另运行 `just dev`，检查 5188 页面与 API 代理、后端修改后的热重载，以及 Ctrl-C 后两个端口释放。源码包没有开发脚本时记为“不适用”。

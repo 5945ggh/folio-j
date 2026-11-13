@@ -84,9 +84,9 @@ backup $directory:
 restore $backup_dir $destination:
     uv run --project backend python -m app.backup restore {{restore_source}} {{restore_destination}}
 
-# 从空库建立当前 schema，或执行已记录迁移；不自动清空数据库。
+# 停服后持排他锁建立当前 schema 或执行已有库迁移；不自动清空数据库。
 migrate:
-    uv run --directory backend alembic upgrade head
+    uv run --project backend python -m app.launcher migrate
 
 # 验证保留的实验与样书资产。
 check-assets:
