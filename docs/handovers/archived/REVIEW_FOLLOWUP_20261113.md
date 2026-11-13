@@ -9,3 +9,9 @@
 Windows 字节锁的 EACCES 只在成功打开文件后的 locking 阶段归为占用，文件打开权限错误保留原诊断；模拟回归先复现错误分类，再验证修复和描述符关闭。Windows 清单同步使用受保护的直接迁移入口。
 
 本批独立快照的 `just lint`、`just test`、`just check-docs` 与 `git diff --check` 通过；后端 1540 passed、3 skipped，前端 829 项通过。测试保留真实网络禁用守卫，仅允许其本机 socketpair 自检。回归执行仓库和发行模板的命令，未重新打包和解压源码包，Windows 原生运行未验证。本批无新依赖、数据库迁移或 TBD 决策。
+
+## 聊天上下文预算
+
+`services/context.py` 集中 200000 字符上限及当前 messages／冻结 tools 的 JSON 计量。首次受理、每次派发和 `save_analysis` 提交前的后续请求预检共用规则，保持原执行器的口径。两种协议、两种权限下，恰好达到上限可进入模拟适配器；超出一字符返回 422，线程和片段不变，无 Job、消息、Run 或原文锁定。拒绝后可修改问题并复用请求 ID，成功后同请求仍幂等重放。
+
+本批从迁移修复后的 `main 0dff139f` 开始，独立快照的 `just lint`、`just test`、`just check-docs` 与 `git diff --check` 通过；后端 1544 passed、3 skipped，前端 829 项通过。既有后续工具请求超限回滚回归继续通过。未调用真实模型；沿用 TBD-16 相关预算约束，无新上限、依赖、迁移或 API schema 变化。

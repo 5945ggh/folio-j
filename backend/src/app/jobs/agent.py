@@ -17,6 +17,7 @@ from app.ids import new_ulid
 from app.llm import adapters
 from app.llm.errors import describe_call_failure
 from app.services import analyses
+from app.services.context import context_fits
 from app.services.settings import now, redact_credential
 from app.settings_models import Run
 
@@ -27,7 +28,6 @@ MAX_CALLS = 8
 CALL_SECONDS = 180
 JOB_SECONDS = 600
 OUTPUT_CHAR_LIMIT = 200_000
-MAX_CONTEXT_CHARS = 200_000
 PROGRESS_INTERVAL_SECONDS = 0.25
 
 
@@ -154,10 +154,7 @@ async def _invoke(
     tool_choice: str = "auto",
     call_seconds: float,
 ) -> adapters.ToolTurn:
-    if (
-        len(json.dumps({"messages": messages, "tools": tools}, ensure_ascii=False))
-        > MAX_CONTEXT_CHARS
-    ):
+    if not context_fits(messages, tools):
         raise ContextLimitError()
     async with app.state.chat_dispatch_lock:
         if not await _authorized(app, job_id, token):
@@ -474,10 +471,7 @@ async def _save_analysis(
     from app.analysis_models import Analysis, AnalysisRevision
     from app.jobs.runtime import execution_authorized
 
-    if (
-        len(json.dumps({"messages": messages, "tools": tools}, ensure_ascii=False))
-        > MAX_CONTEXT_CHARS
-    ):
+    if not context_fits(messages, tools):
         raise ContextLimitError()
 
     if set(args) - {"source_md", "title"}:
@@ -534,10 +528,7 @@ async def _save_analysis(
         artifact = {"analysis_id": detail.id, "revision_id": detail.revision_id}
         output = {"status": "saved", "title": detail.title, **artifact}
         following = [*messages, _tool_output(protocol, call_id, output)]
-        if (
-            len(json.dumps({"messages": following, "tools": tools}, ensure_ascii=False))
-            > MAX_CONTEXT_CHARS
-        ):
+        if not context_fits(following, tools):
             # Creation only flushed. Raising rolls back the document and revision.
             raise ContextLimitError()
         state = dict(job.execution_state or {})

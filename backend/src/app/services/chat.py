@@ -30,7 +30,7 @@ from app.chat_schemas import (
 from app.ids import new_ulid
 from app.models import Segment, Source
 from app.services import context_provenance
-from app.services.context import ENV, MAX_MESSAGE_CHARS, make_input_snapshot
+from app.services.context import ENV, context_fits, make_input_snapshot
 from app.services.settings import ensure_settings, read_credential, redact_credential
 from app.services.sources import lock_segment_text
 from app.settings_models import Defaults, Profile, Provider, ProviderModel, Run, Style
@@ -519,7 +519,7 @@ async def accept_job(
             protocol,
             material_provenance=prepared_provenance.value,
         )
-        if len(json.dumps(snapshot["messages"], ensure_ascii=False)) > MAX_MESSAGE_CHARS:
+        if not context_fits(snapshot["messages"], snapshot["tools"]):
             raise ChatError(422, "上下文超过本地上限，请缩短问题或新建对话", "context_limit")
         model_snapshot: dict[str, Any] = {
             "provider_id": provider.id,

@@ -15,7 +15,13 @@ from app.services.context_plugins import CONTEXT_PLUGINS, ENV, PROMPTS
 from app.settings_models import Profile, Style
 
 PROMPT_VERSION = "v8+tools_v5+context_v1+user_v4"
-MAX_MESSAGE_CHARS = 200000
+MAX_CONTEXT_CHARS = 200_000
+
+
+def context_fits(messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> bool:
+    """Check the local chat budget for the messages and frozen tools sent to the adapter."""
+    payload = {"messages": messages, "tools": tools}
+    return len(json.dumps(payload, ensure_ascii=False)) <= MAX_CONTEXT_CHARS
 
 
 def snapshot_time(value: datetime) -> str:

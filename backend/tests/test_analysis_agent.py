@@ -4,19 +4,22 @@ import asyncio
 import json
 import sqlite3
 from collections.abc import Awaitable, Callable
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
-from support_api import accept, chat_client, seed_chat
+from support_api import accept, chat_client, question_payload, seed_chat
 
 from app.analysis_schemas import SectionOperation
 from app.jobs import runtime
 from app.llm import adapters
-from app.services import analyses
+from app.models import Segment, Source
+from app.services import analyses, context
 from app.services.sources import begin_write
+from app.settings_models import Defaults, Profile, Style
 
 DOCUMENT_BODY_MARKER = "だった是过去式。"
 DOCUMENT = f"## 大意\n\n昨日は雨だった。\n\n## 语法\n\n{DOCUMENT_BODY_MARKER}\n"
@@ -1338,13 +1341,96 @@ async def test_legacy_unfinished_generation_is_interrupted_without_model_or_arti
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
+@pytest.mark.parametrize("permission", ["review", "full_access"])
+async def test_chat_accepts_full_context_at_limit_and_rejects_one_character_more(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, protocol: str, permission: str
+) -> None:
+    database = tmp_path / "initial-budget.db"
+    async with chat_client(database) as (client, app):
+        seed = await seed_chat(client)
+        thread_path = f"/api/threads/{seed['thread']['id']}"
+        segment_path = f"/api/segments/{seed['segment']['id']}"
+        if protocol == "responses":
+            provider_path = f"/api/providers/{seed['provider']['id']}"
+            assert (await client.patch(provider_path, json={"protocol": protocol})).is_success
+        thread = await client.patch(
+            thread_path,
+            json={"expected_revision": seed["thread"]["revision"], "permission_mode": permission},
+        )
+        assert thread.is_success, thread.text
+        segment = await client.patch(
+            segment_path,
+            json={
+                "expected_revision": seed["segment"]["revision"],
+                "context_before": "前" * 94_000,
+                "context_after": "後" * 94_000,
+            },
+        )
+        assert segment.is_success, segment.text
+        seed = {**seed, "thread": thread.json(), "segment": segment.json()}
+        assert seed["segment"]["text_locked_at"] is None
+
+        async with app.state.session_factory() as session:
+            source_row = await session.get(Source, seed["source"]["id"])
+            segment_row = await session.get(Segment, seed["segment"]["id"])
+            profile = await session.get(Profile, 1)
+            defaults = await session.get(Defaults, 1)
+            assert source_row and segment_row and profile and defaults and defaults.style_id
+            style = await session.get(Style, defaults.style_id)
+            baseline = await context.make_input_snapshot(
+                session,
+                seed["thread"]["id"],
+                source_row,
+                segment_row,
+                profile,
+                style,
+                "あ",
+                protocol,
+            )
+        size = len(
+            json.dumps(
+                {"messages": baseline["messages"], "tools": baseline["tools"]}, ensure_ascii=False
+            )
+        )
+        assert size < context.MAX_CONTEXT_CHARS
+        question = "あ" * (context.MAX_CONTEXT_CHARS - size + 1)
+        captured = scripted_turn(monkeypatch, [("回答。", [], True)])
+        request = question_payload(seed, question=question + "あ")
+        rejected = await client.post(f"{thread_path}/jobs", json=request)
+        assert rejected.status_code == 422, rejected.text
+        assert rejected.json()["code"] == "context_limit"
+        assert (await client.get(thread_path)).json() == seed["thread"]
+        assert (await client.get(segment_path)).json() == seed["segment"]
+        assert captured == []
+        with closing(sqlite3.connect(database)) as connection:
+            assert connection.execute("SELECT count(*) FROM chat_jobs").fetchone() == (0,)
+            assert connection.execute("SELECT count(*) FROM chat_messages").fetchone() == (0,)
+            assert connection.execute("SELECT count(*) FROM runs").fetchone() == (0,)
+
+        request["question"] = question
+        accepted = await client.post(f"{thread_path}/jobs", json=request)
+        assert accepted.status_code == 202, accepted.text
+        job_id = accepted.json()["id"]
+        await runtime.execute_job(app, job_id)
+        result = (await client.get(f"/api/jobs/{job_id}")).json()
+        assert result["status"] == "succeeded"
+        assert result["permission_mode"] == permission
+        assert len(result["runs"]) == len(captured) == 1
+        assert captured[0]["snapshot"].protocol == protocol
+        assert captured[0]["tools"] == baseline["tools"]
+        actual = {"messages": captured[0]["messages"], "tools": captured[0]["tools"]}
+        assert len(json.dumps(actual, ensure_ascii=False)) == context.MAX_CONTEXT_CHARS
+        replay = await client.post(f"{thread_path}/jobs", json=request)
+        assert replay.status_code == 202 and replay.json()["id"] == job_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
 @pytest.mark.parametrize("overflow", ["fits", "result", "call"])
 async def test_save_respects_actual_followup_context_budget_before_commit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, protocol: str, overflow: str
 ) -> None:
     from test_chat_prompt_scope import accepted_input
-
-    from app.jobs import agent
 
     database = tmp_path / "save-budget.db"
     async with chat_client(database) as (client, app):
@@ -1401,7 +1487,7 @@ async def test_save_respects_actual_followup_context_budget_before_commit(
         if overflow != "call":
             baseline.append(result_item)
         size = len(json.dumps({"messages": baseline, "tools": frozen["tools"]}, ensure_ascii=False))
-        padding = agent.MAX_CONTEXT_CHARS - size + (overflow != "fits")
+        padding = context.MAX_CONTEXT_CHARS - size + (overflow != "fits")
         assert padding > 100000
         body = marker + "文" * padding
         captured = scripted_turn(
@@ -1423,7 +1509,7 @@ async def test_save_respects_actual_followup_context_budget_before_commit(
                     ensure_ascii=False,
                 )
             )
-            assert actual == agent.MAX_CONTEXT_CHARS
+            assert actual == context.MAX_CONTEXT_CHARS
             document = (
                 await client.get(f"/api/analyses/{final['artifacts'][0]['analysis_id']}")
             ).json()
