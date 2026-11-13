@@ -1,0 +1,39 @@
+justfile
+  s_557bdb088ebd45::t_1cf2d3b6769f69 87,89
+AGENTS.md
+  s_557bdb088ebd45::t_1cf2d3b6769f69 58
+backend/src/app/platform_io.py
+  s_557bdb088ebd45::t_1cf2d3b6769f69 5,59-66
+docs/DEVELOPMENT.md
+  s_557bdb088ebd45::t_1cf2d3b6769f69 34,49
+  s_557bdb088ebd45::t_54b63909776a1a 50
+backend/tests/test_launcher.py
+  s_557bdb088ebd45::t_1cf2d3b6769f69 6-7,11,14,21-22,27,72-143
+  s_557bdb088ebd45::t_763d6e3e8e69b1 144-145
+backend/tests/test_platform_io.py
+  s_557bdb088ebd45::t_1cf2d3b6769f69 3,102,104,115-116,122-131
+scripts/release/justfile
+  s_557bdb088ebd45::t_1cf2d3b6769f69 29,31
+docs/handovers/WINDOWS_ACCEPTANCE.md
+  s_557bdb088ebd45::t_1cf2d3b6769f69 89,100
+docs/ARCHITECTURE.md
+  s_557bdb088ebd45::t_1cf2d3b6769f69 702
+docs/handovers/archived/REVIEW_FOLLOWUP_20261113.md
+  s_557bdb088ebd45::t_10157df4dc0d14 1-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0dff139f32272e0b67a2f3d890e94a3b019554d4",
+  "prompts": {},
+  "sessions": {
+    "s_557bdb088ebd45": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d24e-8844-77e1-b5e8-0425ee83f248",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
