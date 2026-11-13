@@ -1,3 +1,5 @@
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
+import { Link, Outlet } from "react-router";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
@@ -11,8 +13,31 @@ type Schema = components["schemas"];
 export async function readerSearch(h: BrowserHarness, preview = false) {
 	const check: BrowserHarness["check"] = h.check;
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
+	const { ReaderSessionHost } = await import(
+		"../src/materials/ReaderSessionHost"
+	);
 	const { book, chapter, targetStart, targetText, timestamp, reference } =
 		fixture;
+	const scene = new URLSearchParams(location.search).get("scene");
+	let client: QueryClient | undefined;
+	let segmentRead: "ready" | "error" | "deleted" | "pending" =
+		scene === "segment-read-error"
+			? "error"
+			: scene === "inline-overlap-pending"
+				? "pending"
+				: "ready";
+	let segmentPending = false;
+	let releaseSegment: (() => void) | undefined;
+	const segmentGate = new Promise<void>((resolve) => {
+		releaseSegment = resolve;
+	});
+	let translationPending = false;
+	let translationReadFails = false;
+	let pendingTranslationRefresh: Promise<void> | undefined;
+	let releaseTranslation: (() => void) | undefined;
+	const translationGate = new Promise<void>((resolve) => {
+		releaseTranslation = resolve;
+	});
 	const otherChapter = { ...chapter, id: "other-chapter", title: "第二章" };
 	const { targetIdentity } = await import("../src/translation/state");
 	const translationIdentity = await targetIdentity(reference);
@@ -78,6 +103,11 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 	h.mock(async (request) => {
 		const url = new URL(request.url);
 		const path = url.pathname;
+		if (
+			request.method === "DELETE" &&
+			path === `/api/materials/${book.id}/translations/${translationIdentity}`
+		)
+			return Response.json({ detail: "本地删除失败，请重试" }, { status: 503 });
 		if (path === "/api/settings/translation")
 			return Response.json({
 				id: "scheme",
@@ -188,7 +218,28 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 			return Response.json(savedTranslation);
 		if (path === "/api/translation-results/translation-normal")
 			return Response.json(normalTranslation);
-		if (path.endsWith(`/chapters/${chapter.id}/translations`))
+		if (path.endsWith(`/chapters/${chapter.id}/segments`)) {
+			if (segmentRead === "error")
+				return Response.json({ detail: "章片段暂不可用" }, { status: 503 });
+			if (segmentRead === "pending") {
+				segmentPending = true;
+				await segmentGate;
+				segmentPending = false;
+			}
+			return Response.json(
+				readerSessionFixtureData(path, {
+					studyRecords: segmentRead !== "deleted",
+				}),
+			);
+		}
+		if (path.endsWith(`/chapters/${chapter.id}/translations`)) {
+			if (scene === "translation-read-error" || translationReadFails)
+				return Response.json({ detail: "章译文暂不可用" }, { status: 503 });
+			if (scene === "translation-read-pending" || pendingTranslationRefresh) {
+				translationPending = true;
+				await (pendingTranslationRefresh ?? translationGate);
+				translationPending = false;
+			}
 			return Response.json({
 				items: [
 					{
@@ -205,6 +256,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 				next_cursor: null,
 				unavailable_count: 0,
 			} satisfies Schema["MaterialChapterTranslations"]);
+		}
 		if (path === `/api/materials/${book.id}/translations`)
 			return Response.json({
 				results: [normalTranslation],
@@ -291,11 +343,28 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 		return found;
 	};
 	const settle = () => new Promise((resolve) => setTimeout(resolve, 100));
-	const dispose = await h.mount(
-		<MaterialReader />,
-		"/materials/:id",
-		`/materials/${book.id}`,
-	);
+	function SearchReader() {
+		client = useQueryClient();
+		return scene === "preview-refresh" ? (
+			<>
+				<ReaderSessionHost />
+				<Outlet />
+			</>
+		) : (
+			<MaterialReader />
+		);
+	}
+	const readerPath = `/materials/${book.id}`;
+	const dispose =
+		scene === "preview-refresh"
+			? await h.mount(<SearchReader />, "/", readerPath, [
+					{ path: "materials/:id", element: null },
+					{
+						path: "settings",
+						element: <Link to={readerPath}>回到测试书籍</Link>,
+					},
+				])
+			: await h.mount(<SearchReader />, "/materials/:id", readerPath);
 	try {
 		await h.until(
 			() => !!h.container.querySelector("iframe.material-part"),
@@ -330,6 +399,296 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 			"All view must preview exactly two segment records",
 		);
 		if (preview) return `reader search preview ${innerWidth}px`;
+		if (scene) {
+			const queryClient = client;
+			check(queryClient, "Reader must mount with a query client");
+			const translation =
+				scene === "segment-read-error" || scene === "inline-overlap-pending";
+			if (translation) h.inputValue(input(), "正常");
+			const label = translation ? "译文" : "片段";
+			const firstHit = () =>
+				panel()?.querySelector<HTMLButtonElement>(
+					`.reader-search-group[aria-label="${label}"] .reader-search-hit`,
+				);
+			await h.until(
+				() =>
+					!!firstHit() &&
+					(!translation || firstHit()?.textContent?.includes("正常") === true),
+				"Search must return the target record",
+			);
+			firstHit()?.click();
+			const card = () =>
+				h.container.querySelector<HTMLElement>(".reader-chapter-records");
+			await h.until(
+				() =>
+					card()?.inert === false &&
+					card()?.textContent?.includes(
+						translation ? normalTranslation.translation : targetText,
+					) === true,
+				"Search must open an actionable preview while the other record type is unavailable",
+			);
+			if (scene === "inline-overlap-pending") {
+				check(segmentPending, "Chapter segments must still be loading");
+				click("关闭阅读记录", card() ?? undefined);
+				await h.until(() => !card(), "Search translation preview must close");
+				const frames = [
+					...h.container.querySelectorAll<HTMLIFrameElement>(
+						"iframe.material-part",
+					),
+				];
+				const doc = frames[2]?.contentDocument;
+				const leaf = doc?.querySelector(
+					`[data-locator-leaf="${fixture.targetParagraph}"]`,
+				);
+				check(doc && leaf?.firstChild, "Search must present the target leaf");
+				const range = doc.createRange();
+				range.setStart(leaf.firstChild, 2);
+				range.setEnd(leaf.firstChild, 3);
+				const rect = range.getBoundingClientRect();
+				for (const type of ["pointerdown", "pointerup"])
+					leaf.dispatchEvent(
+						new PointerEvent(type, {
+							bubbles: true,
+							cancelable: true,
+							pointerId: 7,
+							isPrimary: true,
+							pointerType: "mouse",
+							button: 0,
+							clientX: rect.left + rect.width / 2,
+							clientY: rect.top + rect.height / 2,
+						}),
+					);
+				await settle();
+				check(
+					!doc.querySelector("[data-reader-inline-translation]"),
+					"A partly loaded record group must not insert an inline translation",
+				);
+				segmentRead = "ready";
+				releaseSegment?.();
+				await h.until(
+					() =>
+						card()?.inert === false &&
+						!!card()?.querySelector('[role="tab"][aria-label="学习片段"]') &&
+						!!card()?.querySelector('[role="tab"][aria-label="翻译"]'),
+					"The original text tap must open the combined record preview once overlap is verified",
+				);
+				return "reader search translation preserves the combined body preview while segments load";
+			}
+			const open = card()?.querySelector<HTMLButtonElement>(
+				'button[aria-expanded="false"]',
+			);
+			check(open, "Preview must offer its normal expand action");
+			open.click();
+			await h.until(
+				() => card()?.classList.contains("expanded") === true,
+				"Preview must support expansion",
+			);
+			const refreshSegments = () =>
+				queryClient.invalidateQueries({
+					queryKey: [
+						"material-chapter-segments",
+						book.id,
+						book.version_id,
+						chapter.id,
+					],
+				});
+			if (scene === "preview-refresh") {
+				await h.until(
+					() => !!card()?.querySelector('[role="tab"][aria-label="翻译"]'),
+					"Two verified overlapping types must remain available",
+				);
+				const translationTab = () =>
+					card()?.querySelector<HTMLButtonElement>(
+						'[role="tab"][aria-label="翻译"]',
+					);
+				translationTab()?.click();
+				const translationKey = [
+					"material-chapter-translations",
+					book.id,
+					book.version_id,
+					chapter.id,
+				];
+				await h.until(
+					() => !!card()?.querySelector(".reader-record-translation"),
+					"Selecting the related translation tab must list its records",
+				);
+				card()
+					?.querySelector<HTMLButtonElement>(".reader-record-translation")
+					?.click();
+				const translationPanel = () =>
+					card()?.querySelector<HTMLElement>(".translation-card");
+				await h.until(
+					() =>
+						translationPanel()?.textContent?.includes(
+							normalTranslation.translation,
+						) === true,
+					"Selecting the related translation must open its details",
+				);
+				const openedTranslation = translationPanel();
+				segmentRead = "pending";
+				pendingTranslationRefresh = translationGate;
+				const refresh = Promise.all([
+					refreshSegments(),
+					queryClient.invalidateQueries({ queryKey: translationKey }),
+				]);
+				await h.until(
+					() => segmentPending && translationPending,
+					"Both background refreshes must be held",
+				);
+				await settle();
+				check(
+					card()?.inert === false,
+					"A background refresh must leave the preview actionable",
+				);
+				check(
+					translationTab()?.getAttribute("aria-selected") === "true" &&
+						translationPanel() === openedTranslation &&
+						openedTranslation?.parentElement?.hidden === false,
+					"Keep the selected related translation and its mounted details during refresh",
+				);
+				segmentRead = "ready";
+				pendingTranslationRefresh = undefined;
+				releaseSegment?.();
+				releaseTranslation?.();
+				await refresh;
+				h.container
+					.querySelector<HTMLAnchorElement>('a[aria-label="全局设置"]')
+					?.click();
+				const back = () =>
+					[...h.container.querySelectorAll<HTMLAnchorElement>("a")].find(
+						(link) => link.textContent === "回到测试书籍",
+					);
+				await h.until(
+					() => !!back(),
+					"Reader must suspend while settings are open",
+				);
+				pendingTranslationRefresh = new Promise<void>((resolve) => {
+					releaseTranslation = resolve;
+				});
+				back()?.click();
+				await h.until(
+					() => translationPending && card()?.inert === false,
+					"Selected translation must revalidate after settings while the verified segment stays usable",
+				);
+				check(
+					translationPanel() === openedTranslation &&
+						openedTranslation?.parentElement?.hidden &&
+						translationTab()?.getAttribute("aria-selected") === "true",
+					"Unverified translation must stay mounted and hidden without changing the selected tab",
+				);
+				pendingTranslationRefresh = undefined;
+				releaseTranslation?.();
+				await h.until(
+					() =>
+						translationPanel() === openedTranslation &&
+						!openedTranslation?.parentElement?.hidden &&
+						openedTranslation?.textContent?.includes(
+							normalTranslation.translation,
+						) === true,
+					"Verified translation must become visible again without remounting",
+				);
+				click("返回翻译列表", card() ?? undefined);
+				const remove = () =>
+					card()?.querySelector<HTMLButtonElement>(
+						".reader-record-translation-entry .translation-remove",
+					);
+				await h.until(() => !!remove(), "Return to related translation list");
+				remove()?.click();
+				const dialog = () =>
+					card()?.querySelector<HTMLDialogElement>("dialog:modal");
+				await h.until(
+					() => !!dialog(),
+					"Related translation must open deletion confirmation",
+				);
+				const openedDialog = dialog();
+				check(openedDialog, "A modal must be open");
+				click("确认删除翻译", openedDialog);
+				await h.until(
+					() =>
+						openedDialog.textContent?.includes("本地删除失败，请重试") === true,
+					"Failed deletion must keep its error in the confirmation",
+				);
+				translationReadFails = true;
+				await queryClient.invalidateQueries({ queryKey: translationKey });
+				await h.until(
+					() => remove()?.hidden === true,
+					"Failed chapter refresh must hide unverified row actions",
+				);
+				check(
+					dialog() === openedDialog &&
+						openedDialog.getBoundingClientRect().width > 0 &&
+						openedDialog.textContent?.includes("本地删除失败，请重试"),
+					"Failed refresh must preserve the visible confirmation and its retry feedback",
+				);
+				check(
+					card()?.querySelector(".reader-record-translation")?.getClientRects()
+						.length === 0 && remove()?.getClientRects().length === 0,
+					"Unverified row and removal controls must have no visible boxes",
+				);
+				const cancel = openedDialog.querySelector<HTMLButtonElement>(
+					"[data-dialog-cancel]",
+				);
+				check(
+					cancel && !cancel.disabled,
+					"Modal cancellation must be available",
+				);
+				const cancelBounds = cancel.getBoundingClientRect();
+				const x = cancelBounds.left + cancelBounds.width / 2;
+				const y = cancelBounds.top + cancelBounds.height / 2;
+				check(
+					document.elementFromPoint(x, y) === cancel,
+					"Cancel must be the visible hit target",
+				);
+				const pointer = (
+					window as Window & {
+						browserPointer?: (events: unknown[]) => Promise<void>;
+					}
+				).browserPointer;
+				check(pointer, "Browser pointer must be available");
+				await pointer([
+					{ type: "mouseMoved", x, y },
+					{ type: "mousePressed", x, y, button: "left", clickCount: 1 },
+					{ type: "mouseReleased", x, y, button: "left", clickCount: 1 },
+				]);
+				await h.until(
+					() => !dialog(),
+					"Native click must cancel the retained modal",
+				);
+				click("学习片段", card() ?? undefined);
+				await h.until(
+					() =>
+						card()
+							?.querySelector('[role="tab"][aria-label="学习片段"]')
+							?.getAttribute("aria-selected") === "true",
+					"Reader must be usable after modal cancellation",
+				);
+			}
+			if (scene === "translation-read-pending") {
+				check(
+					translationPending,
+					"Preview must be usable before the unrelated read settles",
+				);
+				segmentRead = "error";
+				await refreshSegments();
+				await h.until(
+					() => card()?.textContent?.includes("重试读取本章片段") === true,
+					"The target's own failed refresh must hide the content and offer retry",
+				);
+				check(
+					card()?.querySelector(".reader-study-preview")?.parentElement?.hidden,
+					"Own read failure must not show a stale Segment preview",
+				);
+				releaseTranslation?.();
+				await h.until(() => !translationPending, "Unrelated read must settle");
+				segmentRead = "deleted";
+				click("重试读取本章片段", card() ?? undefined);
+				await h.until(
+					() => !card(),
+					"A deleted target must close even when an overlapping translation remains",
+				);
+			}
+			return `reader search preview isolates ${scene} at ${innerWidth}px`;
+		}
 		// Remaining assertions follow the real panel's accessible controls below.
 		const field = input();
 		field.dispatchEvent(
@@ -731,6 +1090,8 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 		if (scrollFailure) throw scrollFailure;
 		return `reader search: ${innerWidth}px; independent entry, empty-query records, IME/stale isolation, reopen retention, chapter multi-select/mixed/empty guard, folding/failure isolation, two-record previews/40-record pagination, exact iframe navigation/study preview, long-list scroll restoration and superseded bookmark GET isolation, unlocatable translation/bookmark read-only details and persistent first-click cross-chapter translation preview`;
 	} finally {
+		releaseSegment?.();
+		releaseTranslation?.();
 		releaseOld?.();
 		releaseBookmark?.();
 		if (!preview) dispose();

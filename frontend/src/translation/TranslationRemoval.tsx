@@ -18,6 +18,7 @@ export function useTranslationRemoval({
 	onRemoved,
 	restoreFocusId,
 	onOpenConfirmation,
+	hideTrigger,
 	withLabel = false,
 	label = "清除此处全部翻译",
 }: {
@@ -25,6 +26,7 @@ export function useTranslationRemoval({
 	onRemoved?: TranslationRemoved;
 	restoreFocusId?: string;
 	onOpenConfirmation?: () => void;
+	hideTrigger?: boolean;
 	withLabel?: boolean;
 	label?: string;
 }) {
@@ -46,6 +48,7 @@ export function useTranslationRemoval({
 		<button
 			id={triggerId}
 			type="button"
+			hidden={hideTrigger}
 			className={
 				withLabel
 					? "translation-menu-item translation-remove"
@@ -121,6 +124,7 @@ export function TranslationRemoval(props: {
 	session: TranslationSession;
 	onRemoved?: TranslationRemoved;
 	label?: string;
+	hideTrigger?: boolean;
 }) {
 	const { action, dialog } = useTranslationRemoval(props);
 	return (

@@ -44,6 +44,7 @@ type Props = Omit<
 	direction: "horizontal-tb" | "vertical-rl";
 	anchorPlacement?: AnchorPlacement;
 	translations: readonly ChapterTranslation[];
+	searchPreview?: boolean;
 	translationsLoading: boolean;
 	translationsError: Error | null;
 	segmentsError?: Error | null;
@@ -109,6 +110,11 @@ export function ChapterRecords(props: Props) {
 			(selectedId === undefined ? automaticTranslationId : selectedId),
 	);
 	const relatedRecordCount = items.length + translations.length;
+	const segmentsChecking = props.searchPreview && props.loading;
+	const translationsChecking = props.searchPreview && props.translationsLoading;
+	const hideSegments = segmentsChecking || !!props.segmentsError;
+	const hideTranslations = translationsChecking || !!props.translationsError;
+	const hideTranslationEntries = props.searchPreview && hideTranslations;
 	const returnToRecords =
 		selectedId === undefined &&
 		marginEntry?.kind === "translation" &&
@@ -474,13 +480,14 @@ export function ChapterRecords(props: Props) {
 							</button>
 						</div>
 					)}
-					<div hidden={!!props.segmentsError}>
+					{segmentsChecking && <p role="status">正在读取本章片段…</p>}
+					<div hidden={hideSegments}>
 						<StudyPreview
 							{...props}
 							onLocateOriginal={fixed ? props.onLocateOriginal : undefined}
 							relatedRecordCount={relatedRecordCount}
 							actionSlots={{ back: segmentBackSlot }}
-							inactive={inactive || tab !== "segment" || !!props.segmentsError}
+							inactive={inactive || tab !== "segment" || hideSegments}
 							onEmphasize={(value) => onEmphasize(value, "segment")}
 						/>
 					</div>
@@ -502,7 +509,8 @@ export function ChapterRecords(props: Props) {
 									</button>
 								</div>
 							)}
-							<div hidden={!!props.translationsError}>
+							{translationsChecking && <p role="status">正在读取本章翻译…</p>}
+							<div hidden={hideTranslations}>
 								<TranslationPanel
 									key={selected.identity_sha256}
 									embedded
@@ -512,9 +520,7 @@ export function ChapterRecords(props: Props) {
 									sourceId={props.sourceId}
 									target={{ reference: selected.material_provenance, chapter }}
 									visible={
-										!inactive &&
-										tab === "translation" &&
-										!props.translationsError
+										!inactive && tab === "translation" && !hideTranslations
 									}
 									translationSessions={props.translationSessions}
 									onResultSelected={props.onResultSelected}
@@ -553,6 +559,7 @@ export function ChapterRecords(props: Props) {
 										className="reader-record-translation"
 										data-translation-id={item.identity_sha256}
 										type="button"
+										hidden={hideTranslationEntries}
 										onClick={() => {
 											nextFocus.current = "detail";
 											setSelectedId(item.identity_sha256);
@@ -587,6 +594,7 @@ export function ChapterRecords(props: Props) {
 											},
 										)}
 										onRemoved={props.onTranslationRemoved}
+										hideTrigger={hideTranslationEntries}
 										label={`清除此处全部翻译：${item.excerpt}`}
 									/>
 								</div>

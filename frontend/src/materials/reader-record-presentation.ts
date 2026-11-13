@@ -16,6 +16,31 @@ type HitRecords = {
 	segments: readonly ChapterSegment[];
 	translations: readonly ChapterTranslation[];
 };
+type SearchRecord =
+	| { kind: "segment"; id: string }
+	| { kind: "translation"; identity: string };
+export type SearchPreviewTarget =
+	| Extract<SearchRecord, { kind: "segment" }>
+	| (Extract<SearchRecord, { kind: "translation" }> & { resultId: string });
+export type ReaderPreviewHit = StudyMarkHit & {
+	searchTarget?: SearchRecord;
+};
+export type ChapterRecordStatus = "checking" | "refreshing" | "ready" | "error";
+
+export function hasSearchRecord(
+	records: HitRecords,
+	target: SearchRecord,
+	resultId?: string,
+): boolean {
+	return target.kind === "segment"
+		? records.segments.some((item) => item.segment_id === target.id)
+		: records.translations.some(
+				(item) =>
+					item.identity_sha256 === target.identity &&
+					(resultId === undefined || item.result_id === resultId),
+			);
+}
+
 export type ReaderInlineRequest = Readonly<{
 	chapterId: string;
 	item: ChapterTranslation;
@@ -23,7 +48,7 @@ export type ReaderInlineRequest = Readonly<{
 }>;
 export type ReaderRecordState = Readonly<{
 	selection: StudySelection | null;
-	markHit: StudyMarkHit | null;
+	markHit: ReaderPreviewHit | null;
 	manualPosition: { left: number; top: number } | null;
 	inlineRequest: ReaderInlineRequest | null;
 	previewSerial: number;
@@ -42,7 +67,7 @@ export type ReaderRecordContext = {
 	studyTargetActive: boolean;
 	segments: readonly ChapterSegment[];
 	translations: readonly ChapterTranslation[];
-	settled: boolean;
+	status: Record<SearchPreviewTarget["kind"], ChapterRecordStatus>;
 };
 type Dependencies = {
 	current: () => ReaderRecordContext;
@@ -72,7 +97,7 @@ export class ReaderRecordPresentation {
 	private hitCache: {
 		segments: readonly ChapterSegment[];
 		translations: readonly ChapterTranslation[];
-		hit: StudyMarkHit | null;
+		hit: ReaderPreviewHit | null;
 		value: HitRecords;
 	} | null = null;
 	// Material/version changes replace the keyed Reader and this instance.
@@ -87,13 +112,17 @@ export class ReaderRecordPresentation {
 	get hitRecords(): HitRecords {
 		const { segments, translations } = this.dependencies.current();
 		const hit = this.snapshot.markHit;
+		const target = hit?.searchTarget;
 		if (
 			this.hitCache?.segments === segments &&
 			this.hitCache.translations === translations &&
 			this.hitCache.hit === hit
 		)
 			return this.hitCache.value;
-		const value = recordsAtHit(segments, translations, hit);
+		const value =
+			target && !hasSearchRecord({ segments, translations }, target)
+				? { segments: [], translations: [] }
+				: recordsAtHit(segments, translations, hit);
 		this.hitCache = { segments, translations, hit, value };
 		return value;
 	}
@@ -163,7 +192,7 @@ export class ReaderRecordPresentation {
 		}
 	}
 	openPreview(
-		value: StudyMarkHit,
+		value: ReaderPreviewHit,
 		trigger: HTMLButtonElement | null = null,
 	): void {
 		this.closeInline();
@@ -197,6 +226,14 @@ export class ReaderRecordPresentation {
 			this.snapshot.inlineRequest?.item.identity_sha256 === item.identity_sha256
 		) {
 			this.closeInline();
+			return;
+		}
+		// A search may have loaded one type before the chapter's overlap is known.
+		if (
+			context.status.segment === "checking" ||
+			context.status.translation === "checking"
+		) {
+			this.openPreview(value);
 			return;
 		}
 		this.update({
@@ -308,13 +345,18 @@ export class ReaderRecordPresentation {
 			return;
 		}
 		const hit = this.snapshot.markHit;
-		const records = this.hitRecords;
+		const { segments, translations } = this.hitRecords;
+		const target = hit?.searchTarget;
+		const checked = target
+			? context.status[target.kind] === "ready"
+			: context.status.segment === "ready" &&
+				context.status.translation === "ready";
 		if (
 			hit &&
 			!hit.fixed &&
-			context.settled &&
-			!records.segments.length &&
-			!records.translations.length
+			checked &&
+			!segments.length &&
+			!translations.length
 		)
 			this.closePreview();
 	}
@@ -339,7 +381,8 @@ export class ReaderRecordPresentation {
 			return;
 		}
 		if (
-			context.settled &&
+			context.status.segment === "ready" &&
+			context.status.translation === "ready" &&
 			!inlineTranslationAtHit(
 				context.segments,
 				context.translations,

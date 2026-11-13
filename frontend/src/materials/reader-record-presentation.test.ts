@@ -5,6 +5,7 @@ import type { Chapter } from "./api.ts";
 import type { ChapterTranslation } from "./chapter-translations-query.ts";
 import { closeReaderPanel } from "./reader-panel-logic.ts";
 import {
+	hasSearchRecord,
 	type ReaderRecordContext,
 	ReaderRecordPresentation,
 } from "./reader-record-presentation.ts";
@@ -127,7 +128,7 @@ function harness() {
 		studyTargetActive: false,
 		segments: [segment("segment", 0)],
 		translations: [first, second],
-		settled: true,
+		status: { segment: "ready", translation: "ready" },
 	};
 	let nativeSelection = false;
 	let emphasis: { id: string; kind: "segment" | "translation" } | null = null;
@@ -379,12 +380,12 @@ test("refreshing an empty page retains a preview until settled; fixed lists stay
 	const h = harness();
 	const preview = hit("segment");
 	h.owner.openPreview(preview);
-	h.context.settled = false;
+	h.context.status.segment = "checking";
 	h.context.segments = [];
 	h.context.translations = [];
 	h.owner.reconcile();
 	assert.equal(h.owner.state.markHit, preview);
-	h.context.settled = true;
+	h.context.status.segment = "ready";
 	h.owner.reconcile();
 	assert.equal(h.owner.state.markHit, null);
 	const fixed = hit("", "segment", { fixed: true, segmentIds: [] });
@@ -401,15 +402,92 @@ test("temporary empty records while suspended cannot dismiss the retained previe
 	h.context.active = false;
 	h.context.segments = [];
 	h.context.translations = [];
-	h.context.settled = true;
 	h.owner.reconcile();
 	assert.equal(h.owner.state.markHit, preview);
 	h.context.active = true;
-	h.context.settled = false;
+	h.context.status.segment = "checking";
 	h.owner.reconcile();
 	assert.equal(h.owner.state.markHit, preview);
-	h.context.settled = true;
+	h.context.status.segment = "ready";
 	h.owner.reconcile();
+	assert.equal(h.owner.state.markHit, null);
+});
+
+test("search previews retain related selection during revalidation and close when the target is removed", () => {
+	const h = harness();
+	const related = segment("related", 10);
+	h.context.segments = [];
+	h.context.status.segment = "checking";
+	const preview = {
+		...hit("first", "translation"),
+		searchTarget: {
+			kind: "translation",
+			identity: h.first.identity_sha256,
+		} as const,
+	};
+	h.owner.openPreview(preview);
+	assert.deepEqual(h.owner.hitRecords.segments, []);
+	h.context.status.segment = "ready";
+	h.context.segments = [related];
+	assert.deepEqual(h.owner.hitRecords, {
+		segments: [related],
+		translations: [h.first],
+	});
+	h.context.status.segment = "refreshing";
+	h.owner.reconcile();
+	assert.deepEqual(h.owner.hitRecords.segments, [related]);
+	for (const status of ["checking", "error"] as const) {
+		h.context.status.segment = status;
+		h.owner.reconcile();
+		assert.equal(h.owner.state.markHit, preview);
+		assert.deepEqual(h.owner.hitRecords, {
+			segments: [related],
+			translations: [h.first],
+		});
+	}
+	h.context.status.segment = "ready";
+	h.context.status.translation = "checking";
+	h.context.translations = [];
+	h.owner.reconcile();
+	assert.equal(h.owner.state.markHit, preview);
+	h.context.status.translation = "ready";
+	h.context.translations = [{ ...h.first, result_id: "replacement" }];
+	assert.equal(
+		hasSearchRecord(h.context, preview.searchTarget, h.first.result_id),
+		false,
+	);
+	h.owner.reconcile();
+	assert.equal(h.owner.state.markHit, preview);
+	assert.equal(h.owner.hitRecords.translations[0]?.result_id, "replacement");
+	h.context.translations = [h.second];
+	h.owner.reconcile();
+	assert.equal(h.owner.state.markHit, null);
+});
+
+test("text hits wait for overlap verification before starting an inline translation", () => {
+	const h = harness();
+	const target = hit("first", "translation");
+	h.context.segments = [];
+	h.context.status.segment = "checking";
+	h.owner.openTextMark(target);
+	assert.equal(Boolean(h.owner.state.inlineRequest), false);
+	assert.equal(h.owner.state.markHit, target);
+	const overlapping = segment("overlap", 11);
+	h.context.segments = [overlapping];
+	h.context.status.segment = "ready";
+	h.owner.reconcile();
+	assert.deepEqual(h.owner.hitRecords, {
+		segments: [overlapping],
+		translations: [h.first],
+	});
+
+	h.context.segments = [];
+	h.context.status.segment = "refreshing";
+	h.owner.openTextMark(target);
+	assert.equal(h.owner.state.inlineRequest?.item, h.first);
+	h.context.status.segment = "checking";
+	h.owner.openTextMark(target);
+	assert.equal(h.owner.state.inlineRequest, null);
 	assert.equal(h.owner.state.markHit, null);
 });
 

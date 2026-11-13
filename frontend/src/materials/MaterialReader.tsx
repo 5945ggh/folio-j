@@ -146,12 +146,16 @@ import {
 	type ReaderRestoreIntent,
 } from "./reader-presentation";
 import {
+	type ChapterRecordStatus,
 	EMPTY_READER_RECORD_STATE,
+	hasSearchRecord,
+	type ReaderPreviewHit,
 	type ReaderRecordContext,
 	ReaderRecordPresentation,
+	type SearchPreviewTarget,
 } from "./reader-record-presentation";
 import { readerResourceCache } from "./reader-resource-cache";
-import { initialReaderSearch, type RecordSearchItem } from "./reader-search";
+import { initialReaderSearch } from "./reader-search";
 import type { ReaderSearchHit } from "./reader-search-api";
 import type { ReaderHighlightRange } from "./reader-selection";
 import {
@@ -164,7 +168,7 @@ import {
 	DEFAULT_READING_SETTINGS,
 	restoreReaderSettingsGroup,
 } from "./reader-settings";
-import type { ScreenAnchor, StudyMarkHit } from "./reader-study";
+import type { ScreenAnchor } from "./reader-study";
 import { JumpReadingSession, returnOriginLabel } from "./return-origin";
 import { SavedSegmentNotice, SelectionToolbar } from "./StudyOverlays";
 import { StudySegmentPanel } from "./StudySegmentPanel";
@@ -230,6 +234,16 @@ type ReaderPositionWriter = {
 	current: PositionQueue<Position> | null;
 	healthy: boolean;
 };
+
+function chapterRecordStatus(
+	active: boolean,
+	query: { loading: boolean; isError: boolean; isFetching: boolean },
+): ChapterRecordStatus {
+	if (!active || query.loading) return "checking";
+	if (query.isError) return "error";
+	return query.isFetching ? "refreshing" : "ready";
+}
+
 function Reader({
 	book,
 	returnTo,
@@ -434,7 +448,8 @@ function Reader({
 	const [searchState, setSearchState] = useState(initialReaderSearch);
 	const searchScrollTop = useRef(0);
 	const [pendingSearchRecord, setPendingSearchRecord] = useState<{
-		item: RecordSearchItem;
+		chapterId: string | null;
+		target: SearchPreviewTarget;
 		current: () => boolean;
 	} | null>(null);
 	const [searchBookmark, setSearchBookmark] = useState<Bookmark | null>(null);
@@ -871,33 +886,44 @@ function Reader({
 		presentation.current.setActive(active, discard.current);
 		return () => presentation.current.setActive(false, discard.current);
 	}, [active, discard]);
-	const recordsChecked =
-		active &&
-		!marks.loading &&
-		!marks.isFetching &&
-		!chapterTranslations.loading &&
-		!chapterTranslations.isFetching;
-	// Keep the mounted record detail while a paused session refreshes its facts.
-	// The surface remains inactive until the current chapter has been checked.
+	const recordStatus = {
+		segment: chapterRecordStatus(active, marks),
+		translation: chapterRecordStatus(active, chapterTranslations),
+	};
+	const searchPreviewTarget = markHit?.searchTarget;
+	const searchPreviewChecking = searchPreviewTarget
+		? recordStatus[searchPreviewTarget.kind] === "checking"
+		: marks.loading || chapterTranslations.loading;
+	const pendingSearchStatus = pendingSearchRecord
+		? recordStatus[pendingSearchRecord.target.kind]
+		: null;
+	// Keep each type's last verified rows during refresh. The status controls visibility.
 	const recordFacts = useRef({
 		chapterId,
-		segments: marks.items,
-		translations: chapterTranslations.items,
+		segments: [] as typeof marks.items,
+		translations: [] as typeof chapterTranslations.items,
 	});
 	if (recordFacts.current.chapterId !== chapterId)
 		recordFacts.current = {
 			chapterId,
-			segments: marks.items,
-			translations: chapterTranslations.items,
+			segments: [],
+			translations: [],
 		};
-	else if (recordsChecked)
-		recordFacts.current = {
-			chapterId,
-			segments: marks.isError ? recordFacts.current.segments : marks.items,
-			translations: chapterTranslations.isError
-				? recordFacts.current.translations
-				: chapterTranslations.items,
-		};
+	if (searchPreviewTarget || pendingSearchRecord) {
+		if (recordStatus.segment === "ready")
+			recordFacts.current.segments = marks.items;
+		if (recordStatus.translation === "ready")
+			recordFacts.current.translations = chapterTranslations.items;
+	} else if (
+		recordStatus.segment !== "checking" &&
+		recordStatus.segment !== "refreshing" &&
+		recordStatus.translation !== "checking" &&
+		recordStatus.translation !== "refreshing"
+	) {
+		if (!marks.isError) recordFacts.current.segments = marks.items;
+		if (!chapterTranslations.isError)
+			recordFacts.current.translations = chapterTranslations.items;
+	}
 	recordContext.current = {
 		active,
 		alive: alive.current,
@@ -911,10 +937,10 @@ function Reader({
 		studyTargetActive: studyTarget !== null,
 		segments: recordFacts.current.segments,
 		translations: recordFacts.current.translations,
-		settled: recordsChecked && !marks.isError && !chapterTranslations.isError,
+		status: recordStatus,
 	};
 	const openMarkHit = useCallback(
-		(value: StudyMarkHit, trigger: HTMLButtonElement | null = null) => {
+		(value: ReaderPreviewHit, trigger: HTMLButtonElement | null = null) => {
 			dictionary.current?.close();
 			records.openPreview(value, trigger);
 		},
@@ -996,35 +1022,34 @@ function Reader({
 			!pendingSearchRecord ||
 			!active ||
 			navigationState.adjacentDisabled ||
-			!recordsChecked
+			pendingSearchStatus === "checking" ||
+			pendingSearchStatus === "refreshing"
 		)
 			return;
-		const { item, current } = pendingSearchRecord;
+		const { chapterId: targetChapterId, target, current } = pendingSearchRecord;
 		setPendingSearchRecord(null);
 		if (!current()) return;
-		if (
-			chapterId !== item.chapter_id ||
-			marks.isError ||
-			chapterTranslations.isError
-		) {
+		if (chapterId !== targetChapterId || pendingSearchStatus === "error") {
 			setSearchOpenError(new Error("原文已切换或资料暂不可用"));
 			return;
 		}
-		const exists =
-			item.kind === "segment"
-				? marks.items.some((entry) => entry.segment_id === item.segment_id)
-				: chapterTranslations.items.some(
-						(entry) =>
-							entry.identity_sha256 === item.identity_sha256 &&
-							entry.result_id === item.result_id,
-					);
-		if (!exists) {
+		if (
+			!hasSearchRecord(
+				{ segments: marks.items, translations: chapterTranslations.items },
+				target,
+				target.kind === "translation" ? target.resultId : undefined,
+			)
+		) {
 			setSearchOpenError(new Error("资料已更新或移除，请刷新搜索结果"));
 			return;
 		}
 		openMarkHit({
-			segmentIds: item.segment_id ? [item.segment_id] : [],
-			translationIds: item.identity_sha256 ? [item.identity_sha256] : [],
+			segmentIds: target.kind === "segment" ? [target.id] : [],
+			translationIds: target.kind === "translation" ? [target.identity] : [],
+			searchTarget:
+				target.kind === "segment"
+					? target
+					: { kind: "translation", identity: target.identity },
 			anchor: {
 				left: window.innerWidth - 20,
 				right: window.innerWidth - 12,
@@ -1042,11 +1067,9 @@ function Reader({
 		pendingSearchRecord,
 		active,
 		navigationState.adjacentDisabled,
-		recordsChecked,
+		pendingSearchStatus,
 		chapterId,
-		marks.isError,
 		marks.items,
-		chapterTranslations.isError,
 		chapterTranslations.items,
 		openMarkHit,
 		records,
@@ -2011,11 +2034,26 @@ function Reader({
 			setSearchBookmark(bookmark);
 			setSearchBookmarkLocatable(true);
 			bookmarks.edit(bookmark, false);
-		} else
+		} else {
+			const target: SearchPreviewTarget | null =
+				item.kind === "segment" && item.segment_id
+					? { kind: "segment", id: item.segment_id }
+					: item.kind === "translation" &&
+							item.identity_sha256 &&
+							item.result_id
+						? {
+								kind: "translation",
+								identity: item.identity_sha256,
+								resultId: item.result_id,
+							}
+						: null;
+			if (!target) throw new Error("该记录的资料身份不可用，请刷新搜索结果");
 			setPendingSearchRecord({
-				item,
+				chapterId: item.chapter_id ?? null,
+				target,
 				current: navigation.current.currentRequest(),
 			});
+		}
 		if (latest.current.compactPanels) closePanel("left", false);
 	};
 	const renderToken = generation;
@@ -2789,6 +2827,7 @@ function Reader({
 						anchorPlacement={markHit.anchorPlacement}
 						fixed={markHit.fixed}
 						loading={marks.loading}
+						searchPreview={!!searchPreviewTarget}
 						segmentsError={marks.error}
 						onRetrySegments={() => {
 							void marks.refetch();
@@ -2820,8 +2859,7 @@ function Reader({
 						expanded={panels.right === "study"}
 						inactive={
 							!active ||
-							marks.loading ||
-							chapterTranslations.loading ||
+							searchPreviewChecking ||
 							(panels.right === "study" &&
 								compactPanels &&
 								panels.activeSide !== "right")
