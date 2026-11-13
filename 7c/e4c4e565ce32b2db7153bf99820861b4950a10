@@ -1,0 +1,29 @@
+docs/handovers/archived/REVIEW_FOLLOWUP_20261113.md
+  s_557bdb088ebd45::t_3028cb752a4e6f 12-17
+docs/ARCHITECTURE.md
+  s_557bdb088ebd45::t_15b5b0143a7175 363-365
+backend/src/app/services/chat.py
+  s_557bdb088ebd45::t_15b5b0143a7175 33,522
+backend/src/app/jobs/agent.py
+  s_557bdb088ebd45::t_15b5b0143a7175 20,157,474,531
+backend/src/app/services/context.py
+  s_557bdb088ebd45::t_15b5b0143a7175 18-24
+backend/tests/test_analysis_agent.py
+  s_557bdb088ebd45::t_15b5b0143a7175 7,14,19-20,22,1342-1426,1490,1512
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ce4c4e565ce32b2db7153bf99820861b4950a10",
+  "prompts": {},
+  "sessions": {
+    "s_557bdb088ebd45": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d24e-8844-77e1-b5e8-0425ee83f248",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
