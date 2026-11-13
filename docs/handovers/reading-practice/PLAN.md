@@ -1,32 +1,20 @@
-# 实际阅读评测：复制、书签与搜索
+# 实际阅读评测计划
 
-> 2026-11-11：本书搜索已在工作区接通，专项浏览器验证通过，最终批次复核待补，见[本轮验收](BOOK_SEARCH_ACCEPTANCE.md)。已确认范围由长期规范维护。当前交付状态见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)。
+当前能力与验收入口见 [MVP 实施基线](../MVP_IMPLEMENTATION_BASELINE.md)，阅读摘录、书签与检索的产品规则见 [PRD 4.9](../../PRD.md#49-阅读摘录书签与记录检索)。
 
-## 已确认方向
+## 后续评估
 
-用户需要将选中的日语连同必要语境复制到外部 AI 对话，并主动留下以后回来阅读或处理的位置。普通阅读感想独立于学习片段和讲解；书签作为阅读器基础能力维护。产品行为由 [PRD 4.9](../../PRD.md#49-阅读摘录书签与记录检索)负责，领域定义见 [GLOSSARY](../../GLOSSARY.md)，页面安排见[阅读与导航](../../INFORMATION_ARCHITECTURE.md)。
+按实际使用反馈独立评估复制模板编辑、多预设、精确范围批注、常驻高亮及书签独立归档查看。选定目标后使用独立短期分支，完成对应验证再推进下一项。
 
-## 后续实施
+本书搜索后续验证关注实体触屏和真实大型书库性能。环境、数据规模和观察结果分别记录，已有覆盖范围见[本书搜索验收](BOOK_SEARCH_ACCEPTANCE.md#验证边界)。
 
-原定顺序为“带上下文复制 → 位置书签与备注 → 扩展书内搜索”。前两项目标及阅读设置、翻译反馈修复、材料词汇已完成，当前能力与验收入口见[实施基线](../MVP_IMPLEMENTATION_BASELINE.md)。阅读设置的现行分组和保存范围见[阅读设置交互](../../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)，调查依据见[结构方案](../archived/reading-practice/READER_SETTINGS_STRUCTURE.md)。
+## 编辑与保存保护待评估事项
 
-本书搜索的工作区实现与检查见[本轮验收](BOOK_SEARCH_ACCEPTANCE.md)，产品范围已在 [PRD 4.9](../../PRD.md#49-阅读摘录书签与记录检索)确认，入口、分组、筛选和结果恢复见[书内搜索与图库](../../INFORMATION_ARCHITECTURE.md#书内搜索与图库)。独立入口复用左侧面板位置，目录退出搜索页签；原文扫描与三类可变资料查询分别实现，复用现有精确定位、资料预览、返回路径与删除门禁。
-
-服务契约与正式 Reader 已接通，最后一批修改后的全量检查及人工复核由主代理收口。服务端覆盖章节组合、空关键词资料浏览、每类真实总数、书中位置排序及最新可见成功译文；前端覆盖分组预览与分页、即时筛选、桌面保留列表和窄屏收起恢复。退出原型中的命中字段筛选与命中文案，同步移除正式目录搜索页签的专属状态和入口。历史译文、讲解全文、跨书检索与模型读取权限不扩展。
-
-验证使用合成资料检查本书关联、重复位置的独立身份、原文处数与资料条数、无章节空态、已删资料不可见和迟到结果隔离，并在真实浏览器检查白／黑纸面、桌面／窄屏和键盘操作。检查结论和未验证项写入本轮验收，不由本计划宣告通过。
-
-选定目标后使用独立短期分支，完成对应验证再推进下一项。复制模板编辑、多预设、精确范围批注、常驻高亮及书签独立归档查看继续按实际使用反馈独立评估。
-
-## 防御流程减负（2026-11-03）
-
-本轮已完成讲解改名、Source 差量编辑与普通放弃提醒、四处级联删除计数复核退出、复制偏好自动保存，以及独立 adopt／单版译文删除退出。保留内容、费用、出处、停止和删除一致性保护；无数据库迁移。分批验证与 API 脚本调整见[验收记录](../archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)，当前能力见实施基线。
-
-阅读位置 CAS、其他偏好 CAS、长文本冲突交互与提交恢复协议后置。Segment 原文在编辑期间被后台固定后，版本冲突与原文固定同为 409 的恢复路径需单独验证和处理；不以合并按钮替代可编辑性更新。审核模式、首次自动翻译、缓存预算和词典文件清理维持现状。
+阅读位置 CAS、其他偏好 CAS、长文本冲突交互与提交恢复协议后置。Segment 原文在编辑期间被后台固定时，需单独验证同为 409 的版本冲突与原文固定如何恢复，并据当前可编辑性更新界面。此前取舍与检查见[保护流程减负验收](../archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)。
 
 ## 阅读设置待评估事项
 
-以下承接[结构调查](../archived/reading-practice/READER_SETTINGS_STRUCTURE.md)的独有线索，作为候选与决定前提保留，尚未承诺实施或迁移。
+现行分组和保存范围见[阅读设置交互](../../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)。以下候选来自[结构调查](../archived/reading-practice/READER_SETTINGS_STRUCTURE.md)，按使用反馈决定是否实施。
 
 | 事项 | 现有线索与决定前提 |
 | --- | --- |
@@ -40,8 +28,6 @@
 ## 验证与数据保护
 
 当前已有需要保留的日常使用数据。数据库变更采用增量迁移，验证使用独立合成库；升级实际使用库前按[升级与备份](../../UPGRADING.md)制作一致性备份并核对凭据配套。测试不调用真实网络或模型。
-
-历史检查、浏览器观察及验证限制见[复制首版](../archived/reading-practice/CONTEXT_COPY_ACCEPTANCE.md)、[复制数据库持久化](../archived/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md)、[阅读设置](../archived/reading-practice/READER_SETTINGS_ACCEPTANCE.md)、[位置书签](../archived/reading-practice/BOOKMARKS_ACCEPTANCE.md)与[书签交互改进](../archived/reading-practice/BOOKMARK_REFINEMENT_ACCEPTANCE.md)；翻译修复与词汇页分别见[翻译验收](../archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md)、[词汇验收](../archived/reading-practice/VOCABULARY_ACCEPTANCE.md)。
 
 每阶段完成 `just lint`、`just test`、构建、文档检查与对应真实浏览器入口验证。新增逻辑覆盖行为和失败路径；回归按影响范围选择。浏览器证据区分模拟剪贴板、真实系统剪贴板及实体触屏设备。
 

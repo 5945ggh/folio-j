@@ -15,8 +15,8 @@
 | 怎样按词性、词频、词形或读音查看一本书的词汇并返回原文 | [材料词汇页](INFORMATION_ARCHITECTURE.md#材料词汇页)、[使用指南](USAGE.md#词汇统计与检索) | 页面、筛选与返回规则由阅读与导航维护，频次与身份口径见 PRD／架构，验证范围见[本轮验收](handovers/archived/reading-practice/VOCABULARY_ACCEPTANCE.md) |
 | 如何导入词典并在 EPUB、片段讲解和词卡里查词 | [使用步骤](USAGE.md#即时查词) | 原文与词卡操作见使用指南，范围与验收见[首轮试读记录](handovers/archived/epub-reading/DICTIONARY_PLAN.md)，后续验证见[EPUB 阶段入口](handovers/epub-reading/README.md#即时查词试读) |
 | EPUB 阅读与学习衔接如何继续推进 | [EPUB 原生阅读阶段](handovers/epub-reading/README.md) | 切片顺序、准备条件，以及注音、选区学习、材料对话和讲解形成的边界 |
-| 如何在本书中搜索原文、片段、译文与书签 | [搜索交互](INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[使用指南](USAGE.md#目录搜索与书签) | 独立入口、分组、内容与章节筛选、定位及会话恢复；资料范围见 PRD 4.9，交付状态见实施基线，工作区验证见[搜索验收](handovers/reading-practice/BOOK_SEARCH_ACCEPTANCE.md) |
-| 实际阅读中的搜索与设置需求怎样继续推进 | [实际阅读评测计划](handovers/reading-practice/PLAN.md) | 本书搜索实施与验证安排、设置迁移候选与数据保护 |
+| 如何在本书中搜索原文、片段、译文与书签 | [搜索交互](INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[使用指南](USAGE.md#目录搜索与书签) | 独立入口、分组、筛选、定位及会话恢复，交付状态见实施基线，验证范围见[搜索验收](handovers/reading-practice/BOOK_SEARCH_ACCEPTANCE.md) |
+| 阅读实践还有哪些候选与验证事项 | [实际阅读评测计划](handovers/reading-practice/PLAN.md) | 复制与书签扩展、阅读设置迁移、编辑与保存保护、搜索的设备与性能验证 |
 | 阅读设置如何分组，作用域与保存方式如何表达 | [阅读设置交互](INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)、[历史结构调查](handovers/archived/reading-practice/READER_SETTINGS_STRUCTURE.md) | 现行分组、保存范围与会话规则由阅读与导航维护；历史资料保留调查与低保真记录，未决迁移候选由阅读评测计划承接 |
 | 目录、书籍管理、阅读器和注音有哪些现行契约 | [架构](ARCHITECTURE.md#31-实体)、[阅读与导航](INFORMATION_ARCHITECTURE.md) | 服务接口、缓存与发布机制、页面操作及状态恢复；验收限制从实施基线查找 |
 | 首轮承诺什么行为、哪些决定未定 | [PRD.md](PRD.md) | 范围、产品行为、内容保护、验收与 `[TBD-xx]`；决定依据链接原始方案和验收，P0 不表示已经交付 |

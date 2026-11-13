@@ -13,7 +13,7 @@
 | 首次数据位置、兼容与故障恢复怎样验证 | [数据位置验收](DATA_LOCATION_ACCEPTANCE.md)，记录新启动流程、位置记忆、交互失败暂停及本地／Windows 验证范围 |
 | 当前能力、实现差额与验证限制 | [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)，统一维护核对版本及验收入口 |
 | EPUB 学习衔接接下来做什么 | [阶段安排](epub-reading/README.md#下一阶段接力顺序)：材料对话、消息引用和从讨论形成讲解；[接手提示词](epub-reading/AGENT_PROMPT.md)引用本安排 |
-| 阅读实践还有哪些独立目标 | [实际阅读评测计划](reading-practice/PLAN.md)：扩展书内搜索、阅读设置迁移候选及数据保护 |
+| 阅读实践还有哪些候选与验证事项 | [实际阅读评测计划](reading-practice/PLAN.md)，记录阅读体验候选、数据保护和后续验证条件 |
 | 删除书籍时怎样保留或一并清理学习积累 | [可选清理验收](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)，记录精确关联范围、事务回滚、缓存隔离与浏览器检查 |
 | 翻译、设备朗读与后续 adapter 如何继续验证 | [阅读辅助后续安排](epub-reading/README.md#阅读辅助后续安排)：真实样句、设备声音、资源预算与接入条件 |
 | 句界、语境预算与定位有哪些固定预期 | [C2 精确样例](text-study/C2_EXACT_CASES.md)与 [文本资料验收矩阵](text-study/TEST_MATRIX.md)：现行规则和固定输入；实际结果由实施基线链接原验收 |
@@ -61,5 +61,5 @@
 | 数据库与存储 | [开发期基线](archived/DATABASE_BASELINE_ACCEPTANCE.md)、[迁移基线整理](archived/DATABASE_MIGRATION_ACCEPTANCE.md)、[EPUB 编译存储](archived/EPUB_STORAGE_ACCEPTANCE.md)、[材料独立删除](archived/MATERIAL_DELETION_ACCEPTANCE.md)、[来源删除资源清理](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md)、[导入书卡反馈](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md) |
 | 主题与加载 | [Reader 主题](archived/READER_THEME_ACCEPTANCE.md)、[整站主题](archived/APPLICATION_THEME_ACCEPTANCE.md)、[图片查看器测量](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md)、[路由按需加载](archived/ROUTE_LOADING_ACCEPTANCE.md)、[后端读取测量](archived/READER_READ_PERFORMANCE_ACCEPTANCE.md) |
 | 状态与执行结构 | [编辑规则与讨论状态](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[事务与后台可靠性](archived/ARCHITECTURE_RELIABILITY_ACCEPTANCE.md)、[阅读恢复与来源导航](archived/READER_STATE_REFACTOR_ACCEPTANCE.md)、[阅读跳转](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md)、[翻译会话](archived/TRANSLATION_SESSION_REFACTOR_ACCEPTANCE.md)、[方向切换修复](archived/READER_LAYOUT_SWITCH_ACCEPTANCE.md)、[呈现协调](archived/READER_PRESENTATION_REFACTOR_ACCEPTANCE.md) |
-| 测试与维护 | [CR 修复](archived/CR_FIXES_ACCEPTANCE.md)、[测试质量整改](archived/TEST_QUALITY_ACCEPTANCE.md)、[测试清理与入口回归](archived/TEST_CLEANUP_ACCEPTANCE.md)、[维护四批与学习闭环复验](archived/MAINTENANCE_OPTIMIZATION.md)、[2026-11-08 维护审计复核](archived/MAINTENANCE_AUDIT_20261108.md)、[阶段收尾与译文分页测量](archived/CLOSEOUT_ACCEPTANCE.md) |
+| 测试与维护 | [CR 修复](archived/CR_FIXES_ACCEPTANCE.md)、[测试质量整改](archived/TEST_QUALITY_ACCEPTANCE.md)、[测试清理与入口回归](archived/TEST_CLEANUP_ACCEPTANCE.md)、[维护四批与学习闭环复验](archived/MAINTENANCE_OPTIMIZATION.md)、[2026-11-08 维护审计复核](archived/MAINTENANCE_AUDIT_20261108.md)、[2026-11-13 四项修复](archived/REVIEW_FOLLOWUP_20261113.md)、[阶段收尾与译文分页测量](archived/CLOSEOUT_ACCEPTANCE.md) |
 | 工程与研究起点 | [开发准备](archived/DEV_PREPARATION.md)、[anchor 试提取任务书](archived/ANCHOR_PILOT_AGENT_BRIEF.md)、[本机证据保留说明](archived/LOCAL_EVIDENCE.md) |
