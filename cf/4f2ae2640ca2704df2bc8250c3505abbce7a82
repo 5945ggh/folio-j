@@ -1,0 +1,28 @@
+docs/handovers/archived/REVIEW_FOLLOWUP_20261113.md
+  s_557bdb088ebd45::t_39b73f0f48aa23 45-58
+docs/handovers/README.md
+  s_557bdb088ebd45::t_194d1c889679d8 16,64
+docs/handovers/reading-practice/PLAN.md
+  s_557bdb088ebd45::t_194d1c889679d8 1,3,5,7,9,11,13,17
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_557bdb088ebd45::t_a4b7f7da29c8ad 3
+  s_557bdb088ebd45::t_194d1c889679d8 44
+docs/README.md
+  s_557bdb088ebd45::t_194d1c889679d8 18-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf4f2ae2640ca2704df2bc8250c3505abbce7a82",
+  "prompts": {},
+  "sessions": {
+    "s_557bdb088ebd45": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d24e-8844-77e1-b5e8-0425ee83f248",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
