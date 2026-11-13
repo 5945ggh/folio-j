@@ -1,0 +1,38 @@
+frontend/src/materials/reader-record-presentation.ts
+  s_557bdb088ebd45::t_96fafb0784574b 19-43,51,70,100,115,122-125,195,231-238,348-353,357-359,384-385
+frontend/src/translation/TranslationRemoval.tsx
+  s_557bdb088ebd45::t_96fafb0784574b 21,29,51,127
+frontend/src/materials/reader-record-presentation.test.ts
+  s_557bdb088ebd45::t_96fafb0784574b 8,131,383,388,408,411,416-492
+  s_557bdb088ebd45::t_8526e2998454e6 493
+docs/ARCHITECTURE.md
+  s_557bdb088ebd45::t_96fafb0784574b 605-606
+frontend/scripts/test-browser.mjs
+  s_557bdb088ebd45::t_96fafb0784574b 85-89
+docs/INFORMATION_ARCHITECTURE.md
+  s_557bdb088ebd45::t_96fafb0784574b 207-208
+frontend/src/materials/ChapterRecords.tsx
+  s_557bdb088ebd45::t_96fafb0784574b 47,113-117,483-484,490,512-513,523,562,597
+frontend/browser-tests/reader-search.tsx
+  s_557bdb088ebd45::t_96fafb0784574b 1-2,16-18,21-40,106-110,221-242,259,346-367,402-691,1093-1094
+docs/handovers/archived/REVIEW_FOLLOWUP_20261113.md
+  s_557bdb088ebd45::t_28b705d07c6632 18-44
+frontend/src/materials/MaterialReader.tsx
+  s_557bdb088ebd45::t_96fafb0784574b 149,151-152,155,158,171,237-246,451-452,889-900,903-904,909-910,912-926,940,943,1025-1026,1029,1032,1036-1042,1047-1052,1070,2037-2050,2052-2053,2056,2830,2862
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5a978b8994735cb54fd401ea53639308ed852e7c",
+  "prompts": {},
+  "sessions": {
+    "s_557bdb088ebd45": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d24e-8844-77e1-b5e8-0425ee83f248",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
