@@ -406,7 +406,8 @@ export async function inlineRecords(
 				);
 				const opened = card();
 				check(opened, "Margin handoff requires an open record preview");
-				const panelTop = opened.getBoundingClientRect().top;
+				// Compare layout anchors independently of the card's entrance transform.
+				const panelTop = opened.offsetTop;
 				await settled(
 					null,
 					"Inline output must finish closing after margin handoff",
@@ -418,8 +419,8 @@ export async function inlineRecords(
 				);
 				check(
 					Math.abs(singleMargin().getBoundingClientRect().top - markerTop) <=
-						1 && Math.abs(opened.getBoundingClientRect().top - panelTop) <= 1,
-					`Inline removal must preserve the margin entrance and preview anchor position: ${JSON.stringify({ duringClose, markerTop, markerAfter: singleMargin().getBoundingClientRect().top, panelTop, panelAfter: opened.getBoundingClientRect().top, scroll: viewport.scrollTop })}`,
+						1 && Math.abs(opened.offsetTop - panelTop) <= 1,
+					`Inline removal must preserve the margin entrance and preview layout anchor: ${JSON.stringify({ duringClose, markerTop, markerAfter: singleMargin().getBoundingClientRect().top, panelTop, panelAfter: opened.offsetTop, scroll: viewport.scrollTop })}`,
 				);
 				singleMargin().click();
 				await h.until(
