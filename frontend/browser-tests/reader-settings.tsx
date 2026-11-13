@@ -276,16 +276,13 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		return found;
 	};
 	const field = (label: string) => {
-		const found = [
-			...h.container.querySelectorAll(".reader-copy-settings label"),
-		]
-			.find(
-				(node) =>
-					node.querySelector("span")?.textContent?.trim() === label ||
-					node.textContent?.trim() === label,
-			)
-			?.querySelector("input");
-		check(found, `Missing copy field ${label}`);
+		const fields = [...h.container.querySelectorAll("input")].filter((input) =>
+			[...(input.labels ?? [])].some(
+				(node) => node.textContent?.trim() === label,
+			),
+		);
+		const [found] = fields;
+		check(found && fields.length === 1, `${label} must have one editing entry`);
 		return found;
 	};
 	const details = (label: string) => {
@@ -390,19 +387,33 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			return "reader chrome preview: middle-chapter text behind floating tools";
 		await open();
 		const panel = find<HTMLElement>('[role="dialog"][aria-label="阅读设置"]');
-		for (const label of ["更多排版", "更多界面", "带上下文复制"])
-			check(!details(label).open, `${label} must begin collapsed`);
-		for (const selector of [
-			'input[aria-label="字号"]',
-			'[aria-label="文字方向"]',
-			'[aria-label="注音显示"]',
-			'[aria-label="注音范围"]',
-			'[aria-label="纸面主题"]',
+		for (const label of [
+			"更多排版",
+			"更多界面",
+			"带上下文复制",
+			"注音使用说明",
+			"工具与阅读记录说明",
 		])
-			check(
-				find<HTMLElement>(selector).getClientRects().length,
-				`${selector} must be directly visible`,
+			check(!details(label).open, `${label} must begin collapsed`);
+		const namedControl = (label: string) => {
+			const controls = panel.querySelectorAll<HTMLElement>(
+				`[aria-label="${label}"]`,
 			);
+			const control = controls[0];
+			check(
+				control && controls.length === 1 && control.getClientRects().length,
+				`${label} must have one visible editing entry`,
+			);
+			return control;
+		};
+		for (const label of [
+			"字号",
+			"文字方向",
+			"注音显示",
+			"注音范围",
+			"纸面主题",
+		])
+			namedControl(label);
 		check(
 			!panel.querySelector('[aria-label="专注阅读"]') &&
 				!!h.container.querySelector('button[aria-label^="专注阅读："]'),
@@ -438,24 +449,40 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			),
 			"Cross-group reset must be removed",
 		);
-		for (const label of ["更多排版", "更多界面", "带上下文复制", "格式示例"])
+		for (const label of ["更多排版", "更多界面", "带上下文复制"])
 			await expand(label);
+		check(!details("格式示例").open, "Format example must begin collapsed");
+		await expand("格式示例");
+		lineHeight.focus();
 		check(
-			panel.querySelectorAll('input[type="range"]').length === 5 &&
-				panel.querySelectorAll('input[type="number"]').length === 4 &&
-				panel.querySelectorAll('input[role="switch"]').length === 2 &&
-				panel.querySelectorAll('input[type="checkbox"]:not([role="switch"])')
-					.length === 1 &&
-				panel.querySelectorAll(".reader-options").length === 5,
-			"17 panel values must retain one editing entry: 5 sliders, 4 budgets, 2 switches, 1 checkbox and 5 option groups",
+			document.activeElement === lineHeight,
+			"Expanded line height must accept focus",
 		);
-		for (const label of ["展示阅读记录下划线", "展示阅读记录页边入口"]) {
-			const control = find<HTMLInputElement>(
-				`input[aria-label="${label}"]`,
-				panel,
-			);
+		lineHeight.blur();
+		for (const label of [
+			"行距",
+			"字体",
+			"正文宽度",
+			"工具栏背景不透明度",
+			"浮窗背景不透明度",
+		])
+			namedControl(label);
+		for (const label of [
+			"前文句数",
+			"后文句数",
+			"前文字符上限",
+			"后文字符上限",
+			"附带出处",
+		])
 			check(
-				control.closest("label")?.textContent?.trim() === label &&
+				field(label).getClientRects().length,
+				`${label} must be visible when expanded`,
+			);
+		for (const label of ["展示阅读记录下划线", "展示阅读记录页边入口"]) {
+			const control = namedControl(label);
+			check(
+				control instanceof HTMLInputElement &&
+					control.closest("label")?.textContent?.trim() === label &&
 					control.getAttribute("role") === "switch" &&
 					control.getAttribute("aria-checked") === String(control.checked),
 				`${label} must expose its switch state and share its visible and accessible name`,
@@ -1011,7 +1038,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			() => route === "/settings/appearance",
 			"Retired Reader draft must not block unrelated settings",
 		);
-		return `reader settings: ${innerWidth}px/${vertical ? "vertical" : "horizontal"}/${dark ? "dark" : "light"}; real ReaderSessionHost + DataRouter; 17 panel controls and toolbar focus, shared popover opacity, collapsed focus, isolated resets/source position; panel/tool/chapter/scroll input retention; blur/reset autosave, invalid inputs, editable pending receipts, Segment-only guard, unblocked routes and shared serial PUTs surviving departure; ${requests.length} mocked requests`;
+		return `reader settings: ${innerWidth}px/${vertical ? "vertical" : "horizontal"}/${dark ? "dark" : "light"}; real ReaderSessionHost + DataRouter; named settings entries and toolbar focus, shared popover opacity, collapsed focus, isolated resets/source position; panel/tool/chapter/scroll input retention; blur/reset autosave, invalid inputs, editable pending receipts, Segment-only guard, unblocked routes and shared serial PUTs surviving departure; ${requests.length} mocked requests`;
 	} finally {
 		if (!preview) dispose();
 	}

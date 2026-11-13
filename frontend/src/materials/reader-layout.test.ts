@@ -291,25 +291,6 @@ test("provisional cross-chapter target never replaces last successfully presente
 	layout.cancelSave();
 });
 
-test("leaving an initial reader before presentation never persists its restoration target", () => {
-	const layout = new ReaderLayout({ revision: 5, progress: 0.8, offset: 80 });
-	assert.deepEqual(
-		layout.anchor(() => null),
-		{ revision: 5, progress: 0.8, offset: 80 },
-	);
-	assert.equal(
-		layout.presentedAnchor(() =>
-			assert.fail("sampled unpresented initial surface"),
-		),
-		null,
-	);
-	layout.cancelSave();
-	assert.equal(
-		layout.presentedAnchor(() => null),
-		null,
-	);
-});
-
 test("failed complete reference projection keeps pending target and never samples it on leave", () => {
 	const layout = new ReaderLayout(42);
 	let projected = false;

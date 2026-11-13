@@ -4,7 +4,6 @@ import { DEFAULT_CONTEXT_COPY } from "./context-copy.ts";
 import { DEFAULT_BOOK_UI, DEFAULT_READER_UI } from "./preferences.ts";
 import {
 	contextCopySummary,
-	DEFAULT_READER_SETTINGS_EXPANDED,
 	DEFAULT_READING_SETTINGS,
 	restoreReaderSettingsGroup,
 	typographySummary,
@@ -92,15 +91,5 @@ test("vertical typography summary does not imply stored width is active", () => 
 			{ ...DEFAULT_BOOK_UI, font: "gothic", width: 1040 },
 		),
 		"黑体 · 行距 2.4 · 宽度仅用于横排",
-	);
-});
-
-test("reading settings start with every secondary control and help folded", () => {
-	assert.equal(Object.values(DEFAULT_READER_SETTINGS_EXPANDED).length, 6);
-	assert.equal(
-		Object.values(DEFAULT_READER_SETTINGS_EXPANDED).every(
-			(open) => open === false,
-		),
-		true,
 	);
 });

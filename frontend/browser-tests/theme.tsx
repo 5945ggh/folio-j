@@ -464,7 +464,7 @@ export async function themeRegression(h: BrowserHarness) {
 		check(part && resource, "Missing frame fixture");
 		const html = `<section class="author" id="author"><p class="ink"><ruby><span data-locator-leaf="0">春</span><rt>はる</rt></ruby><span data-locator-leaf="1">の庭。</span></p><img data-epub-image="0" alt="作者图片" width="16" height="16" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><svg viewBox="0 0 10 10" width="16" height="16"><rect width="10" height="10" fill="#ff0000" /></svg></section>`;
 		const css =
-			"@layer author { html,body,#author.author .ink,#author.author span { color:#fefefe!important;background-color:#fff!important;background-image:linear-gradient(#fff,#fff)!important;-webkit-text-fill-color:#fff!important;text-shadow:1px 1px #fff!important; } } #author.author {color:#fff!important;background:linear-gradient(white,white)!important} #author .ink span{color:white!important;background-color:white!important}";
+			"@layer author { html,body,#author.author .ink,#author.author span { color:#fefefe!important;background-color:#fff!important;background-image:linear-gradient(#fff,#fff)!important;-webkit-text-fill-color:#fff!important;text-shadow:1px 1px #fff!important; } } #author.author {color:#fff!important;background:linear-gradient(white,white)!important} #author .ink span{color:white!important;background-color:white!important} #author img {opacity:.8; filter:saturate(.7); background-color:#def;}";
 		const frame = document.createElement("iframe");
 		frame.title = "作者样式主题回归";
 		frame.style.cssText = "width:100%;height:250px";
@@ -489,12 +489,23 @@ export async function themeRegression(h: BrowserHarness) {
 			const originalText = doc.body.textContent;
 			const leaves = [...doc.querySelectorAll("[data-locator-leaf]")];
 			const originals = [...doc.querySelectorAll("ruby,rt,img,svg,svg *")];
-			const imageMarkup = node("img", doc).outerHTML;
-			const svgMarkup = node("svg", doc).outerHTML;
+			const image = node<HTMLImageElement>("img", doc);
+			const svg = node<SVGSVGElement>("svg", doc);
+			const rect = node("rect", svg);
+			const imageMarkup = image.outerHTML;
+			const svgMarkup = svg.outerHTML;
+			const { opacity, filter, backgroundColor } = computed(image);
+			const { fill } = computed(rect);
 			for (const theme of ["white", "black", "white", "black"] as const) {
 				reader.dataset.theme = theme;
 				cleanup();
 				cleanup = applyFramePresentation(doc, theme, DEFAULT_BOOK_UI);
+				check(
+					[...doc.styleSheets].some(
+						(sheet) => sheet.ownerNode?.textContent === css,
+					),
+					"Theme must preserve the original author stylesheet",
+				);
 				check(
 					projectPart(doc, text, 0).raw === text,
 					"Theme changed exact projection",
@@ -519,11 +530,36 @@ export async function themeRegression(h: BrowserHarness) {
 						node("svg", doc).outerHTML === svgMarkup,
 					"Theme changed author images/SVG",
 				);
+				const imageStyle = computed(image);
+				check(
+					imageStyle.opacity === opacity &&
+						imageStyle.filter === filter &&
+						imageStyle.backgroundColor === backgroundColor &&
+						computed(rect).fill === fill,
+					"Theme must preserve the computed author image and SVG appearance",
+				);
+				check(
+					computed(doc.body).colorScheme ===
+						(theme === "black" ? "dark" : "light"),
+					"Frame native controls must follow the requested color scheme",
+				);
 				check(
 					luminance(background(doc.body)) < 0.1 === (theme === "black"),
 					"Frame background must follow requested theme",
 				);
 				for (const element of [...leaves, node("rt", doc)]) {
+					// Hidden text can retain line boxes and nominally contrasting colors.
+					for (
+						let ancestor: Element | null = element;
+						ancestor;
+						ancestor = ancestor.parentElement
+					) {
+						const style = computed(ancestor);
+						check(
+							style.visibility === "visible" && Number(style.opacity) > 0,
+							"Theme must keep original text and ruby visible through their ancestors",
+						);
+					}
 					contrast(
 						element,
 						`author layered important ${theme} ${element.tagName}`,
@@ -559,6 +595,7 @@ export async function themeRegression(h: BrowserHarness) {
 			],
 			reading_position: null,
 		};
+		let opened = false;
 		h.mock(async (request) => {
 			const path = new URL(request.url).pathname;
 			if (path === "/api/materials/theme" && request.method === "GET")
@@ -573,7 +610,8 @@ export async function themeRegression(h: BrowserHarness) {
 					created_at: timestamp,
 					updated_at: timestamp,
 				});
-			if (path.endsWith("/opened") || path.endsWith("/usage"))
+			if (path.endsWith("/opened") || path.endsWith("/usage")) {
+				if (path.endsWith("/opened")) opened = true;
 				return Response.json({
 					material_id: book.id,
 					status: "in_progress",
@@ -581,6 +619,7 @@ export async function themeRegression(h: BrowserHarness) {
 					last_opened_at: timestamp,
 					updated_at: timestamp,
 				});
+			}
 			if (path.endsWith("/readings/prepare"))
 				return Response.json({
 					material_id: book.id,
@@ -624,13 +663,13 @@ export async function themeRegression(h: BrowserHarness) {
 			"/materials/theme",
 		);
 		try {
-			await h.until(
-				() =>
-					!!h.container
-						.querySelector("iframe")
-						?.contentDocument?.querySelector("[data-locator-leaf]"),
-				"MaterialReader original not loaded",
-			);
+			await h.until(() => {
+				const frame = h.container.querySelector("iframe");
+				const leaf = frame?.contentDocument?.querySelector(
+					"[data-locator-leaf]",
+				);
+				return opened && Boolean(leaf?.getBoundingClientRect().height);
+			}, "MaterialReader must present readable original text");
 			check(
 				node(".reader-r1").getAttribute("data-theme") ===
 					(dark ? "black" : "white"),
@@ -638,10 +677,6 @@ export async function themeRegression(h: BrowserHarness) {
 			);
 			const doc = node<HTMLIFrameElement>("iframe").contentDocument;
 			check(doc, "Missing actual Reader frame");
-			await h.until(
-				() => !!doc.getElementById("folio-reader-presentation"),
-				"Actual Reader presentation not applied",
-			);
 			contrast(node("[data-locator-leaf]", doc), "Actual Reader original");
 			check(
 				luminance(background(doc.body)) < 0.1 === dark,
