@@ -1,6 +1,6 @@
 # Windows 冻结包修复与验收
 
-2026-11-09，实施起点为本地 `main 81975d00`，修复位于 `codex/windows-frozen-fixes`。代码包含该提交之前的全局导航和片段即时查词。构建命令、镜像备用路径及 bundle 转移方式由[开发指南](../DEVELOPMENT.md#实验目录包)维护；Windows 人工验证使用[实机清单](WINDOWS_ACCEPTANCE.md)。
+2026-11-09，实施起点为本地 `main 81975d00`，修复位于 `codex/windows-frozen-fixes`。代码包含该提交之前的全局导航和片段即时查词。构建命令、镜像备用路径及 bundle 转移方式由[开发指南](../../DEVELOPMENT.md#实验目录包)维护；Windows 人工验证使用[实机清单](../WINDOWS_ACCEPTANCE.md)。
 
 ## 起因与范围
 

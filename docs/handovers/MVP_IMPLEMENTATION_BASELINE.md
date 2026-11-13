@@ -1,118 +1,53 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-11-13。代码核对至本地 `main 5a978b89`；迁移锁、聊天预算与搜索预览修复已按独立目标提交并合入本地 `main`，尚未推送。验证与提交基准见[四项修复验收](archived/REVIEW_FOLLOWUP_20261113.md)；其中行内译文的动画断言已在后续[测试断言收敛](archived/TEST_CLEANUP_ACCEPTANCE.md#2026-11-13-维护审计后的断言收敛)修正。阅读与片段全局导航的本地整合及统一浏览器复验见[本轮验收](reading-practice/FOCUSED_NAVIGATION_ACCEPTANCE.md)。书籍可选清理学习积累已实现并通过工程验证，实施起点为 `main 10d4b733`，见[范围与验证](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)。此前编辑与偏好保护减负已完成，代码核对到 `7f8aabc3`，起点为 `main 165e85f5`，验证见[减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)。片段即时查词及前端共享模块已完成本地整合，实施起点为 `main e9b8eb16`，见[片段查词验收](reading-practice/SEGMENT_DICTIONARY_ACCEPTANCE.md)。即时查词辅助选项见[查词选项验收](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)。工程、设备和使用验收以对应记录的版本及环境为准。
-> 本文件汇总当前能力、实现缺口和验收入口。产品范围见 [PRD](../PRD.md)，领域含义见 [GLOSSARY](../GLOSSARY.md)，技术选型见 [TECH_STACK](../TECH_STACK.md)；具体实现由[架构](../ARCHITECTURE.md)维护。
+> 状态核对：2026-11-13，本地 `main d013a4fc`。本文件说明该开发快照的能力、缺口与验证范围；发布包的版本、附件和实际验收以 [beta.1](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.1)／[beta.2](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.2)发布记录为准。
 
-当前能力与缺口见下表，后续顺序与准备条件由[EPUB 阶段入口](epub-reading/README.md)维护；提交过程、检查数字及浏览器观察从对应验收记录查找。
-
-2026-11-08，设置返回链与原地模型配置已在 `50cb57d1` 之后实现并通过工程验证；属于候选代码之后的界面改进，尚未发布。入口与会话边界见下表及[设置交互](../INFORMATION_ARCHITECTURE.md#设置顶部分类)。
-
-2026-11-08，`e9aee1ab` 加 `codex/pyinstaller-browser-trial` 工作区已试做 PyInstaller 目录包，保留系统浏览器使用方式与现有 Core 词典，使用者无需安装 Python／Node。macOS ARM64 已通过解压移位、隔离运行、合成 SDK 调用和备份恢复验证；仍为未发布实验，不替代正式源码 ZIP。实测尺寸、复现入口及限制见[试做验收](archived/PYINSTALLER_ACCEPTANCE.md)。
-
-2026-11-09，基于 `main 81975d00` 的 Windows 冻结包修复补齐 UTF-8 管道输出、SIGBREAK 停服、Windows ZIP、PowerShell／镜像构建说明和独立冻结包 CI。本批已完成本地验证，未推送；本地检查与 Windows 接力状态见[本批验收](WINDOWS_FROZEN_ACCEPTANCE.md)。
-
-2026-11-09，基于 `b64314f5` 的后续日志修复将 Windows 冻结入口日志设为纯文本；普通权限下的数据目录拒绝访问仍由 Windows 端复测定位，见[追加记录](WINDOWS_FROZEN_ACCEPTANCE.md#windows-控制台日志修复)。
-
-2026-11-08 开始准备 `v0.1.0-beta.2`，应用候选代码为 `ec60b484`，已纳入用户确认的细焦点框与占位提示调整。正式发行状态与附件见 [GitHub 发布记录](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.2)；候选与恢复验证见[beta.2 发布准备与验收](BETA_2_RELEASE_ACCEPTANCE.md)。
-
-2026-10-29 至 10-30 的复制、阅读设置及书签整合，见[复制数据库升级](archived/reading-practice/CONTEXT_COPY_DATABASE_ACCEPTANCE.md#现用库升级与主分支集成)与[书签集成记录](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md#2026-10-30-原目录集成)；现用库后续升级至 `0004_translation_reader_removal` 的数据与凭据核对见[翻译修复验收](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md#现用库与原目录交付)。浏览器检查的执行范围及未重跑项保留在原记录，后续安排见[实际阅读评测计划](reading-practice/PLAN.md)。
+产品规则见 [PRD](../PRD.md)与[领域术语](../GLOSSARY.md)，实现机制见[架构](../ARCHITECTURE.md)，具体交互见[阅读与导航](../INFORMATION_ARCHITECTURE.md)。后续安排从 [EPUB 阶段](epub-reading/README.md)和[阅读评测计划](reading-practice/PLAN.md)进入；历次实施起点、修复经过和检查结果由[验收索引](README.md#archived)承接。
 
 ## 1. 当前实现、差额与验收依据
 
-2026-11-09，基于 `main 61c153c6` 实现首次数据选择、跨程序更新的位置记忆、故障恢复和设置中的实际位置查看，并补齐冻结入口交互失败暂停及中文权限提示。现有数据兼容、限定候选重试与验证范围见[本批验收](DATA_LOCATION_ACCEPTANCE.md)；扫描和搬迁未实现，本批未推送。
-
-2026-11-10，基于 `main b52b1661` 的 `codex/simplify-data-location` 工作区将 Windows 数据位置记忆改为与其他平台一致的独立 JSON，移除注册表读写；实际启动成功后尝试保存位置，失败仅警告，本次仍可使用。无记录时沿用既有配置与固定旧库位置，不扫描磁盘；记录损坏、不可读或已记路径丢失仍进入恢复。旧注册表中的自定义库须重新选择，已有库不要求 `app.toml`。验证范围见[本轮记录](DATA_LOCATION_ACCEPTANCE.md#2026-11-10-位置记录简化)。
-
-| 能力 | 当前能力与边界 | 验收依据 |
+| 能力 | 当前状态与边界 | 规范与验收入口 |
 | --- | --- | --- |
-| 阅读与片段全局导航 | `main fa284419` 起点的全局导航改动已在本地提交并合入 `main`：首页统一回 `/`（当前素材库），阅读器顶栏与片段工具栏提供全局设置；设置返回直接来处并保留父链，片段本次设置往返保留讨论草稿、讲解与滚动，返回重新核验可用性，隐藏页面不抢导航或自动发起新调用。刷新与退出该范围后释放；原书仍沿用十分钟保活。尚未推送或发布 | [本轮验收](reading-practice/FOCUSED_NAVIGATION_ACCEPTANCE.md)、[页面契约](../INFORMATION_ARCHITECTURE.md#设置顶部分类) |
-| 设置返回与原地模型配置 | 阅读进入翻译／词典设置显示可关闭的书名返回提示与页头入口，分类与服务管理间保留来处及提示关闭状态；沿用有界阅读保活和返回复核，保留翻译查看目标及语境草稿。讨论与 AI 讲解原地复用模型服务配置，保留本页输入；缺模型意图恢复后需明确继续，不自动调用或改默认值。无新增迁移或依赖，真实模型与实体触屏未测 | [返回链浏览器回归](../../frontend/browser-tests/settings-return.tsx)、[模型配置浏览器回归](../../frontend/browser-tests/model-setup.tsx)、[页面契约](../INFORMATION_ARCHITECTURE.md#设置顶部分类) |
-| 编辑与删除确认 | Analysis 改名后写生效；Source 只提交改动字段并提供普通放弃提醒；Source／Segment／Analysis／书籍删除保留初次影响及对象身份，不再提交前复核计数 | [减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md) |
-| 翻译写入口收缩 | 独立 adopt 与单版删除退出；现行片段原子创建、Adoption 收据与历史读取、整组删除及任务门禁保留 | [减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md) |
-| Windows 实验性支持 | Windows CI 已通过。原生 PowerShell 源码启动、共享进程锁、备份恢复、词典占用文件回收与测试隔离；开发模式重载／退出等待后端清理，旧单索引可跨重启回收。继承用户目录权限，不新增 ACL；Windows 11 实机待验 | [Windows 验收与清单](WINDOWS_ACCEPTANCE.md)、[Windows CI](archived/WINDOWS_CI_ACCEPTANCE.md#2026-11-01-windows-ci)、[开发指南](../DEVELOPMENT.md#windows-自动验证) |
-| 首个公开 beta 与数据恢复 | 文档已审阅，首个公开测试版定为 `v0.1.0-beta.1`，从标签重新生成源码包；实际包验证结果与附件见发布记录。原生 v1 备份保留主库、凭据和词典，恢复到新目录；支持的旧数据走正常迁移 | [发行约定与历史演练](BETA_SOURCE_CANDIDATE.md)、[发布记录](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.1)、[升级与备份](../UPGRADING.md) |
-| EPUB 与片段即时查词 | 片段工具栏可查原文、语境与讲解，和 EPUB 共用查词方式、辅助选项及词卡模块，保留旧浏览器偏好。片段接入验证见[本轮验收](reading-practice/SEGMENT_DICTIONARY_ACCEPTANCE.md)。设置可并存多部 format 3 词条词典、选用其中一本，兼容旧明镜索引；可删除安装项，当前项须明确替代，最后一本删除后恢复留白空状态。支持正文及卡内查词、按原文范围分页、桌面多层展开与窄屏错层、卡内 Shift 悬浮、拖动卡头和焦点词卡翻页、原处记录及返回。词头可显示基于真实命中的六形、音便与实际接续拆分；说明与释义一起滚动，合成浏览器回归覆盖长接续、拖动缩窗及窄屏父卡。提供“自动扩展查词”和“辅助排序”，默认开启、独立保存，基本词形还原始终保留。真实词典既有兼容性用隔离库验证，新增说明的真实词典试读及实体触屏待验 | [首轮试读记录](archived/epub-reading/DICTIONARY_PLAN.md)、[活用拆分与布局验收](archived/reading-practice/DICTIONARY_INFLECTION_ACCEPTANCE.md)、[查词选项验收](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)、[操作步骤](../USAGE.md#即时查词) |
-| 维护优化与学习闭环复验 | 公共检查与私有证据分开核验，局部清理、阅读记录呈现状态及测试支持归属已收口；干净检出使用合成 EPUB、临时库和人工讲解，重启后找回同一修订并返回正确原句，未使用日常数据或真实模型 | [分批验证与闭环复验](archived/MAINTENANCE_OPTIMIZATION.md)、[复验步骤](../DEVELOPMENT.md#真实学习闭环验收) |
-| 片段讲解入口与回复反馈 | 可复制完整提示词到外部 AI、从片段直达所属来源；普通问答和快捷生成讲解共享活动与耗时。未实测真实模型的响应节奏 | [使用步骤](../USAGE.md#ai-讨论与编写讲解)、[页面契约](../INFORMATION_ARCHITECTURE.md#讲解浏览人工保存与按需讨论)、[浏览器回归](../../frontend/browser-tests/workbench-render.tsx) |
-| 片段目录出处与删除 | 概览／列表统一具体出处与时间，列表和详情共用删除确认及初次影响展示；讲解删除文字使用危险操作色；无数据库迁移 | [本轮验收](archived/SEGMENT_CATALOG_ACCEPTANCE.md) |
-| 阅读器配色 token 收拢 | 保存提示保留紧凑布局并复用蓝色；工具、浮层、书签及图片查看器按语义归并原值，译文焦点和朗读滑块跟随 Reader 作用域；多套配色入口尚未实现 | [本轮验收](archived/reading-practice/READER_COLOR_TOKENS_ACCEPTANCE.md)、[颜色约定](../DESIGN_SYSTEM.md#阅读器的强调色与标记) |
-| 阅读浮窗与共享不透明度 | 词卡、紧凑片段／翻译和候选列表共用 20%–100% 不透明度，默认 72%，兼容旧词卡值；片段突出原句、自身译文与讲解篇名，翻译紧凑模式隐藏历史与设置；更多菜单明确清除此处全部翻译，保留已存片段与快照；无新增迁移 | [本轮验收与截图](archived/reading-practice/READER_POPOVER_ACCEPTANCE.md)、[页面契约](../INFORMATION_ARCHITECTURE.md#原处预览与记录浮窗)、[删除回归](../../backend/tests/test_translation_removal.py) |
-| 阅读翻译动画、共享缓存与删除 | 展开复用锚点并统一零态启动；Query 与图片共用 64 MiB／512 项估算保留预算，活跃工作集单列；按确切出处删除已有阅读历史和标记，停止重译，保留片段、讲解与关联快照；新增 0004 增量迁移 | [本轮验收](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md)、[PRD 4.8](../PRD.md#48-阅读翻译与设备朗读) |
-| 带上下文复制 | 选区复制目标、语境及可选出处；默认值独立保存数据库，整组有效时开关／重置立即、数字结束编辑后自动保存；后写生效，无复制专用冲突或离开流程，保留失败输入及重试；不创建学习内容 | [本轮减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)、[首版验收](archived/reading-practice/CONTEXT_COPY_ACCEPTANCE.md) |
-| 阅读设置四组与偏好自动保存 | 常用项直达，低频控件与说明折叠；复制摘要取成功保存值，错误收起后可见；分组恢复只影响自身，复制自动保存、不阻挡离开；片段草稿保护独立保留，不新增迁移 | [现行交互](../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)、[本轮减负验收](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md) |
-| 位置书签 | 附近提醒可仍然添加；单行成功摘要、限行卡片、章内进度、整卡详情与选中态、添加时间、快捷删除及独立跳转，共用删除确认；新摘要优先自然边界，旧摘要保持；删除书籍后保留并隐藏，不向重导材料换绑，本轮无数据库迁移 | [交互改进验收](archived/reading-practice/BOOKMARK_REFINEMENT_ACCEPTANCE.md)、[首版验收](archived/reading-practice/BOOKMARKS_ACCEPTANCE.md)、[PRD 4.9](../PRD.md#49-阅读摘录书签与记录检索) |
-| 本书搜索 | 已合入本地 `main`，尚未推送或发布。提供独立入口、原文／片段／最新阅读译文／书签分组、内容与章节组合筛选、空词资料浏览、有界分页及会话列表恢复。复用精确定位与资料预览，保留失配内容只读入口和删除门禁。工程验收与隔离真实 API 人工复核已完成，实体触屏和真实大型书库性能待验证 | [本书搜索验收](reading-practice/BOOK_SEARCH_ACCEPTANCE.md)、[交互契约](../INFORMATION_ARCHITECTURE.md#书内搜索与图库) |
-| 测试清理与入口回归 | 清理旧分支与重复断言，保留业务保护；Reader 恢复默认、迟到注音与缓存回收通过真实入口回归，浏览器筛选空集明确失败 | [验收与变异检查](archived/TEST_CLEANUP_ACCEPTANCE.md) |
-| 来源与片段 | Source／Segment 手动录入、语境、编辑、逻辑删除与持久化；片段原文在首次 AI 任务受理、讲解成功保存或精确出处创建后锁定，共用原文保护规则 | [第一阶段](archived/STAGE_1_SOURCE_SEGMENT.md)、[2B](archived/STAGE_2B_ASYNC_QA.md)、[A2 验收](archived/text-study/A2_ACCEPTANCE.md)、[统一Agent验收](archived/AGENT_CONTEXT_ACCEPTANCE.md) |
-| 路由代码按需加载 | 默认素材库同步加载，其他页面按路由加载；阅读与片段路径共用稳定会话宿主，保留真实 URL、iframe 身份、精确返回与草稿；尾斜杠直达及地址切换有回归覆盖。原冷加载比较绑定当时版本，整合后未重测 | [路由加载验收与整合复核](archived/ROUTE_LOADING_ACCEPTANCE.md#主分支整合复核2026-10-27) |
-| 数据库迁移基线 | `0001_schema_baseline` 保留原有 28 表；0002 新增复制设置表，0003 新增位置书签表，0004 新增阅读翻译删除字段；空库、旧数据保留、重复升级与回滚均有验证，现用库完整性、外键、原 30 表数据与凭据校验通过 | [架构](../ARCHITECTURE.md#3-领域模型)、[升级边界](../UPGRADING.md#当前迁移基线)、[基线历史验收](archived/DATABASE_MIGRATION_ACCEPTANCE.md)、[本轮升级验收](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md#现用库与原目录交付) |
-| 设置与模型接入 | 学习背景、讲解预设、模型用途与新对话权限自动保存，成功提示短暂显示；服务连接与密钥独立提交，统一模型登记，验证记录支持筛选与展开详情；翻译设置自动保存及冲突对照，保留草稿保护 | [2A](archived/STAGE_2A_MODEL_SETTINGS.md)、[设置分类验收](archived/settings-refresh/ACCEPTANCE.md)、[二级切换验证](archived/SETTINGS_MODELS_ACCEPTANCE.md)、[交互整理验收](archived/settings-refresh/POLISH_ACCEPTANCE.md) |
-| 阅读翻译与设备朗读 | 选区翻译、持久找回、原子采用、版本冲突保护；本章记录分片段／翻译，同出处成功译文归并标记、重叠入口合并，后台完成自动刷新；译文下方提供朗读、重译及删除，本章两类记录均可定位原文，重译期间保留旧译文，可回看相邻版本，宽屏拖动、窄屏停靠；设备支持时可暂停／继续，结束后原条保留并切换重播，声音语速就地调整；真实模型质量与设备声音待实测，外部 TTS 后置 | [历史方案](archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md)、[验收与限制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)、[译文操作行回归](../../frontend/browser-tests/translation-toolbar.tsx)、[标题栏与拖动验收](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#选区译文标题栏工具与拖动2026-10-24)、[播放器联合验收](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#提交前修复与联合验收2026-10-24) |
-| 正文划选保存译文与临时定位高亮 | 翻译详情移除新建及独立采用入口；正文草稿按确切位置及整体边缘空白规则匹配成功译文，一次预填并保护编辑／清空与冻结提交；原子创建采用收据；搜索及返回原处临时强调共用生命周期与淡出 | [联合验收与限制](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#本章记录与学习片段联合验收2026-10-24)、[PRD 4.8](../PRD.md#48-阅读翻译与设备朗读) |
-| 翻译会话状态归属 | 同目标双入口共用草稿和固定请求，历史选择分别保存；集中生成门禁、原请求核实与 Reader 生命周期；最近翻译视图及旧任务重做分支已移除 | [状态归属重构验收](archived/TRANSLATION_SESSION_REFACTOR_ACCEPTANCE.md)、[后续入口调整](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md#手动试用调整与注音调查2026-10-24) |
-| 片段讨论 | 持久线程、后台工具循环、冻结输入、停止、重启恢复与线程权限；上下文首轮完整提供、变化时追加模块完整值，保留旧注入；画像等模块独立版本化；材料出处派生字符串及状态随片段上下文冻结，材料变化后更新；普通要求写入消息正文，旧记录可恢复，审核反馈独立保留；「创建 AI 讲解」新建普通对话并明确请求创建保存独立讲解，普通提问默认不保存；读取工具覆盖当前 Segment 的讲解，聊天历史限于本线程 | [2B](archived/STAGE_2B_ASYNC_QA.md)、[2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[界面调整验收](archived/text-study/SEGMENT_UI_ACCEPTANCE.md)、[上下文注入验收](archived/AGENT_CONTEXT_ACCEPTANCE.md) |
-| 持久讲解 | 直接编写／粘贴 Markdown 保存，统一记录用户保存；当前全文修订、冲突保稿与同请求核实；多份 Analysis、不可变 Revision／Section；Agent完整提供Markdown后本地保存，取消内部写作分支；块编辑与审核沿用原规则 | [2C](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[A2 验收](archived/text-study/A2_ACCEPTANCE.md)、[统一Agent验收](archived/AGENT_CONTEXT_ACCEPTANCE.md) |
-| 片段阅读与导航 | 窄工具栏／中央阅读／右侧讨论，进入隐藏全局导航；出处分书名／章名与定位入口，后台核对保持布局；原文／语境／当前译文及只读关联记录集中，朗读仅目标；完整资料浮层与讲解身份保留；纯回看不挂载讨论，激活后保活，窄屏切换保留草稿与阅读位置；确切修订、来处返回和人工编辑保护沿用原规则 | [阅读导航](archived/READING_NAVIGATION_ACCEPTANCE.md)、[架构重构](archived/ARCHITECTURE_REFACTOR_ACCEPTANCE.md)、[A1 验收](archived/text-study/A1_ACCEPTANCE.md)、[专注布局](archived/segment-layout/ACCEPTANCE.md)、[资料界面调整](archived/text-study/SEGMENT_UI_ACCEPTANCE.md)、[内容聚合验收](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#片段内容聚合2026-10-24)、[讲解头部验收](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#讲解标题与工具栏2026-10-24)、[创建与导航](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#列表创建与文档导航2026-10-24) |
-| 素材库与阅读管理 | 跨 Source 书籍目录、搜索／筛选／排序／分页、书卡大小与状态菜单、空库整区导入；书籍为唯一可选类型，漫画、有声书和视频为禁用占位；阅读三态和最近打开持久化，封面按规则版本 2 回退与缓存 | [前端调整](archived/frontend-refresh/ACCEPTANCE.md)、[素材库 A.1](archived/library-a1/ACCEPTANCE.md) |
-| 导入来源表单 | 添加书籍与新建来源完整视图切换，创建后自动选择来源并保留文件；单组操作、中文文案与表单提交保护 | [导入来源表单调整](archived/library-a1/ACCEPTANCE.md#2026-10-19-导入来源表单调整) |
-| EPUB 导入书卡反馈 | 提交立即关闭弹窗，当前标签页内以准备书卡承接导入；来源概览与书籍网格共享状态，成功提供入口且不抢导航，失败可重试或移除提示 | [验收与限制](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md#2026-10-26-提交前-cr-修复) |
-| 书籍管理 | 用户使用验收待进行。紧凑菜单与阅读状态二级入口、真实详情、书名与封面原子编辑／恢复、草稿／冲突保护及安全返回；公共默认外壳已统一并清理旧样式；移动仍禁用，不替换 EPUB；独立删除见下行 | [现行契约](../ARCHITECTURE.md#311-目录与材料使用状态)、[验收记录](archived/book-management/ACCEPTANCE.md) |
-| 材料独立删除 | 默认保留学习积累，可勾选清理精确出处属于本书的片段及其讲解、讨论和任务。确认展示影响数量，删除事务按实际关联处理，失败整体回滚。已通过工程验证，用户使用验收待进行 | [产品规则](../PRD.md#f2-source-与片段)、[本轮验收](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)、[默认删除历史验收](archived/MATERIAL_DELETION_ACCEPTANCE.md) |
-| 来源删除资源清理 | 来源删除与单本删除共用材料清理，在同一事务清空全部下属材料原书与派生数据，包括已软删材料遗留资源；学习内容仍按既有规则软删除，保留材料身份、历史出处与书签；失败整体回滚，不追溯清理此前已删除来源 | [产品规则](../PRD.md#f2-source-与片段)、[验收记录](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md) |
-| EPUB 编译包存储与编译器 | 完整资源 HTML 仅为编译临时态；最终资源保留正文、样式及定位，章节 HTML 与原图按 v2 图片池格式保存；无旧格式读取、回退或转换工具；有界编译及展开预算保留，原 EPUB 与历史备份保留 | [格式与不变式](../ARCHITECTURE.md#31-实体)、[开发库边界](../UPGRADING.md#epub-存储格式与开发库重建)、[验收与测量](archived/EPUB_STORAGE_ACCEPTANCE.md) |
-| 来源空间 S2 | 三栏及概览／素材／片段／讲解四视图、有界概览、来源分页、确切修订直达、视图／窗口／来处恢复；来源栏可调宽并保存偏好，片段／讲解列表搜索、排序与空态已打磨；工程验收完成，用户使用验收待进行 | [S2 工程验收](archived/sources-s2/ACCEPTANCE.md) |
-| EPUB 导入与恢复 | 来源下导入、原书与不可变编译包托管、同源同字节复用、目录组章与连续图文、横竖排／字号／行距、持久位置与重排恢复；Source 删除后材料不可读并清理托管原书与派生数据 | [切片 1](archived/epub-reading/SLICE_1_ACCEPTANCE.md)、[定位试验](archived/epub-reading/SLICE_0_ACCEPTANCE.md)、[来源删除清理](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md) |
-| 阅读器 R1.1 | 独立阅读空间、专注／主题／字体／宽度／原书 ruby、书内字面搜索、插图库／大图和会话跳转原点；左右工具面板独立，保留正文交互及关闭层级；基于 `main b48fe34d` 的横排修复已通过本地验收，稳定滚动条槽消除占宽滚动条导致的章末裁剪 | [R1.1 工程验收](archived/reader-r1/ACCEPTANCE.md)、[交互优化](archived/reader-r1/INTERACTION_POLISH.md)、[章末裁剪验收](archived/reading-practice/READER_SCROLLBAR_ACCEPTANCE.md) |
-| 独立图片查看器 | 正文与图库共用查看器，按入口返回；居中图片与虚化背景、缩放拖动、复制图片、原图下载及在图库中查看当前出现项；真实触屏和系统剪贴板未验 | [验收与提交前修复](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27)、[交互契约](../INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[使用指南](../USAGE.md#目录搜索与书签) |
-| 图片加载与定位优化 | 正文图先显示，后台按出现身份定位；阅读会话有界复用元数据与图片字节 | [测量与验证](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md) |
-| 阅读会话复用 | 同标签页片段往返复用最近一本书的正文与 iframe，返回重新核验并刷新学习状态；暂离十分钟或离开适用范围释放，仍按片段精确出处定位；测量未显示离线可读时间稳定下降 | [测量与验收](archived/text-study/READER_SESSION_ACCEPTANCE.md)、[宿主调整](archived/text-study/READER_SESSION_ACCEPTANCE.md#2026-10-25-阅读会话宿主局部调整) |
-| 阅读页进入效果 | 动画手感待用户试用。保留书卡按压，真实正文轻淡入、标题轻位移，加载提示延迟显示；不改变会话租期与恢复核验 | [试用记录](archived/text-study/READER_SESSION_ACCEPTANCE.md#2026-10-25-阅读页进入动画试用) |
-| 阅读器既有主题适配 | Reader 独立白／黑纸面；确认框、作者样式覆盖、讲解预览、错误提示、目录选中进度及辅助文字可读性 | [既有验收](archived/READER_THEME_ACCEPTANCE.md) |
-| 整站基础颜色模式 | 保留浅色视觉，应用浅／深／跟随系统、即时本地保存与跨标签同步；公共语义颜色与阅读器独立纸面，配色更新不重建正文或清空选区 | [整站主题验收](archived/APPLICATION_THEME_ACCEPTANCE.md)、[设计系统](../DESIGN_SYSTEM.md) |
-| 阅读工具栏不透明度 | 上下栏统一不透明度、轻微模糊、跨书偏好与恢复默认；兼容旧透明度值；横排顶部透文及章末滚动留白、竖排每列避让底栏 | [原透明度与遮挡验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-15-工具栏背景透明度)、[本轮修复验收](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27) |
-| 阅读滚动交互 | 正文外留白可滚动、竖排手势轴统一；阅读键平滑滚动并遵循减少动态效果偏好，位置恢复保持即时 | [滚动与切章提交复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
-| 阅读方向切换修复 | 清除旧页边标记保留的非阅读轴偏移，横竖切换保持正文和锚点可见 | [复现与验证](archived/READER_LAYOUT_SWITCH_ACCEPTANCE.md) |
-| 跳转链与继续阅读 | 连续查阅保留首次原点，持续阅读后下一次跳转更新原点；旧返回入口保留，失败请求不消耗阅读信号 | [跳转链验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-跳转链与继续阅读) |
-| 章节位置记忆 | 各章最后位置持久化、目录恢复、当前章不跳；保留恢复锚点，内容末端进入可读区域即 100%、回看可下降；图文混排按图片前正文显示进度，空白尾片段不阻断采样 | [章节位置验收](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)、[章末进度与真实书复核](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-真实书复核与口径调整)、[提交前复核](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md#2026-10-16-提交前复核) |
-| 底部相邻章节导航 | 上一章／目录／下一章、首末边界与加载锁；复用章节记忆和返回链，保留工具面板与查询；窄屏进度移到顶部；章末入口未增加 | [相邻切章验收](archived/reader-r1/INTERACTION_POLISH.md#2026-10-16-底部相邻章节导航)、[提交复核](archived/reader-r1/INTERACTION_POLISH.md#2026-10-17-滚动与相邻切章提交前复核) |
-| 阅读跳转协调 | 导航意图、目标校验、原点与相邻锁集中到同一 module；请求与正文呈现分别隔离迟到结果，返回提示显示原点章节与章内进度 | [本轮验收](archived/READER_NAVIGATION_REFACTOR_ACCEPTANCE.md) |
-| Reader 呈现协调 | 已加载目标携带 Chapter／part；正文呈现、重排、代次与回执、暂离保存集中管理，保留未呈现目标与章首意图 | [实施与验收](archived/READER_PRESENTATION_REFACTOR_ACCEPTANCE.md) |
-| 全量注音 | 导入完整分词后可读，旧书补算，持久代次／失败保留／幂等重建；原书／全量与展示／按需／隐藏两维设置，原书 ruby 优先；位置与原生选区恢复通过提交前回归 | [全量注音验收](archived/full-ruby/ACCEPTANCE.md) |
-| 阅读器正文复制 | 从当前正文投影提取所选字符，去除原书与自动注音，保留换行；纯文本复制不改变选区或注音显示 | [复制验收](archived/text-study/READER_COPY_ACCEPTANCE.md) |
-| EPUB 学习衔接 | 原生选区保存与完整回读；自动语境保守整理后计预算，只读出处显示当前材料及逻辑章位置；正文细线、真实留白页边入口与固定完整本章列表，两项显示偏好独立；保存表单支持双侧清空与显式重新摘录；材料对话和 Occurrence 继续后置 | [C1 验收](archived/text-study/C1_ACCEPTANCE.md)、[C2 验收](archived/text-study/C2_ACCEPTANCE.md)、[原阅读标记验收](archived/text-study/READER_MARKS_ACCEPTANCE.md)、[阅读体验记录](archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md)、[保存表单验收](archived/text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md) |
-| 阅读器原处预览 | 单击可见标记直接紧凑回看，多片段先选，读取已有译文及多篇讲解；完整侧栏返回预览保留选择与手动位置；列表返回位于标题左侧，打开片段进入独立页面，保存信息折叠；单条页边入口直达并可返回关联组，数字入口先列出记录 | [原处预览验收](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md)、[记录浮窗回归](../../frontend/browser-tests/chapter-records.tsx)、[页边入口回归](../../frontend/browser-tests/margin-record-targets.tsx) |
-| 文本分析与书籍统计 | 普通文本输入、完整分析资产读取与 EPUB 章节适配分开；详情独立展示词次／词种／汉字及覆盖曲线，有界缓存且不触发阅读打开或分词准备 | [B1 验收](archived/text-study/B1_ACCEPTANCE.md)、[B2 验收](archived/text-study/B2_ACCEPTANCE.md) |
-| 材料词汇与统计自动更新 | 详情统计自动观察当前代次；独立词表支持词性、词频、词形／读音及出现位置，按确切版本／代次分页读取；原文核验后临时定位，返回保留条件；无词典释义、永久词条或迁移 | [本轮验收](archived/reading-practice/VOCABULARY_ACCEPTANCE.md)、[页面契约](../INFORMATION_ARCHITECTURE.md#材料词汇页) |
-| 学习条目与积累库 | 未实现。尚无 Occurrence 持久化、候选工具、整理操作或积累库页面；生产字段、定位、anchor 与恢复契约待落实 | [PRD F5／F6](../PRD.md#f5-学习条目创建与整理)、[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md) |
+| 本地运行与发行 | 源码启动、备份恢复及数据位置选择已实现；跨程序更新记住学习库，记忆写入失败不阻断本次使用，损坏或失效位置进入恢复。PyInstaller 目录包仍为实验，不替代正式源码 ZIP；没有目录扫描或搬迁 | [使用指南](../USAGE.md)、[升级与备份](../UPGRADING.md)、[源码包验收](BETA_2_RELEASE_ACCEPTANCE.md)、[目录包试做](archived/PYINSTALLER_ACCEPTANCE.md)、[数据位置验收](archived/DATA_LOCATION_ACCEPTANCE.md) |
+| Windows 支持 | 实验性支持 PowerShell 源码运行与原生冻结包。已有源码 CI 和特定提交的冻结包构建、原目录及 ZIP 冒烟证据，Windows 11 实机与最新数据位置流程仍待复验 | [当前清单](WINDOWS_ACCEPTANCE.md)、[源码 CI](archived/WINDOWS_CI_ACCEPTANCE.md)、[冻结包验收](archived/WINDOWS_FROZEN_ACCEPTANCE.md) |
+| 来源、素材库与书籍管理 | Source／Segment 手动录入、语境与编辑；跨来源书籍目录及来源概览、素材、片段、讲解视图；书籍导入反馈、封面与元信息编辑、阅读状态和最近打开已实现。移动书籍、替换 EPUB 及其他媒体入口未开放 | [来源空间验收](archived/sources-s2/ACCEPTANCE.md)、[书籍管理验收](archived/book-management/ACCEPTANCE.md)、[导入反馈](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md) |
+| EPUB 阅读与恢复 | 托管原书及不可变编译包，支持目录、连续图文、横竖排、章节位置、相邻切章、跳转返回和图片查看。阅读会话往返保留正文与 iframe，返回重新核验；位置写入、重排与迟到响应隔离已覆盖 | [阅读器验收](archived/reader-r1/ACCEPTANCE.md)、[交互复核](archived/reader-r1/INTERACTION_POLISH.md)、[章节位置](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)、[呈现协调](archived/READER_PRESENTATION_REFACTOR_ACCEPTANCE.md)、[章末裁剪](archived/reading-practice/READER_SCROLLBAR_ACCEPTANCE.md) |
+| 注音、文本统计与词汇 | 注音范围可选原书或全量，全量仅补未被原书 ruby 覆盖的汉字；分词资产、失败保留、代次更新、位置与选区恢复已实现。书籍详情提供文本统计，材料词表支持筛选、分页与返回原文，尚无积累库 | [全量注音](archived/full-ruby/ACCEPTANCE.md)、[文本分析](archived/text-study/B1_ACCEPTANCE.md)、[统计](archived/text-study/B2_ACCEPTANCE.md)、[材料词汇](archived/reading-practice/VOCABULARY_ACCEPTANCE.md) |
+| 本书搜索 | 原文、片段、最新阅读译文和书签分组检索，支持章节与内容组合筛选、空词浏览、分页及会话恢复。结果复用精确定位和只读预览，按类型核验，保留失配与删除门禁 | [搜索交互](../INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[搜索验收](archived/reading-practice/BOOK_SEARCH_ACCEPTANCE.md)、[按类预览复核](archived/REVIEW_FOLLOWUP_20261113.md#搜索结果预览) |
+| 复制与书签 | 正文复制排除注音；带上下文复制的默认配置自动保存。位置书签可浏览、删除和返回；材料删除后保留并隐藏，不向重导材料换绑 | [正文复制](archived/text-study/READER_COPY_ACCEPTANCE.md)、[上下文复制](archived/reading-practice/CONTEXT_COPY_ACCEPTANCE.md)、[书签验收](archived/reading-practice/BOOKMARK_REFINEMENT_ACCEPTANCE.md)、[偏好保护取舍](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md) |
+| 选区学习与原处回看 | 选区可保存为带精确出处的片段，支持语境预装、编辑保护和返回原句；正文标记、页边入口、本章记录及紧凑／完整预览读取已有译文与讲解 | [C1](archived/text-study/C1_ACCEPTANCE.md)、[C2](archived/text-study/C2_ACCEPTANCE.md)、[原处预览](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md)、[记录浮窗回归](../../frontend/browser-tests/chapter-records.tsx)、[页边入口回归](../../frontend/browser-tests/margin-record-targets.tsx) |
+| 持久讲解与片段讨论 | 人工 Markdown 保存和 AI 工具保存共用内容保护；支持多份 Analysis、不可变修订、全文修订、块编辑与审核。讨论按需启动，提供持久线程、冻结上下文、预算、停止及恢复；创建 AI 讲解进入普通对话，普通提问默认不保存讲解 | [人工资料](archived/text-study/A2_ACCEPTANCE.md)、[工具与修订](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[统一讨论验收](archived/AGENT_CONTEXT_ACCEPTANCE.md)、[上下文预算](archived/REVIEW_FOLLOWUP_20261113.md#聊天上下文预算)、[回复反馈回归](../../frontend/browser-tests/workbench-render.tsx) |
+| 阅读翻译与设备朗读 | 选区翻译、历史版本、片段原子采用及整组删除已实现；同目标入口共用草稿与请求，原处和本章记录可回看。设备朗读支持声音、语速及重播；独立采用、单版删除入口已退出，外部 TTS 后置 | [翻译与朗读验收](archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)、[会话状态](archived/TRANSLATION_SESSION_REFACTOR_ACCEPTANCE.md)、[缓存与删除](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md)、[译文操作行回归](../../frontend/browser-tests/translation-toolbar.tsx) |
+| 即时查词 | EPUB、片段原文／语境／讲解共用词卡与偏好；多部词典安装、选择和删除，兼容旧索引。已支持词形还原、扩展、排序、卡内查词与活用说明 | [片段接入](reading-practice/SEGMENT_DICTIONARY_ACCEPTANCE.md)、[活用说明](archived/reading-practice/DICTIONARY_INFLECTION_ACCEPTANCE.md)、[辅助选项](reading-practice/DICTIONARY_OPTIONS_ACCEPTANCE.md)、[操作与兼容](../USAGE.md#即时查词) |
+| 导航、设置与呈现 | 阅读／片段可进入全局设置并保留适用范围内的草稿和阅读会话；讨论内可配置模型，恢复配置后显式继续。阅读设置分组、应用主题、独立纸面和共享浮窗已实现；多套阅读配色尚未开放 | [全局导航验收](archived/reading-practice/FOCUSED_NAVIGATION_ACCEPTANCE.md)、[设置返回回归](../../frontend/browser-tests/settings-return.tsx)、[模型配置回归](../../frontend/browser-tests/model-setup.tsx)、[设置验收](archived/settings-refresh/POLISH_ACCEPTANCE.md)、[交互契约](../INFORMATION_ARCHITECTURE.md#阅读设置分组与会话)、[设计系统](../DESIGN_SYSTEM.md) |
+| 编辑与删除保护 | 片段原文按受理、保存和精确出处规则固定；长内容继续保留冲突与失败输入保护。轻量改名、复制偏好和删除复核已按风险减负。删书默认保留学习积累，可选择清理本书精确关联内容；来源删除清理下属托管资源，失败整体回滚 | [保护取舍](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md)、[可选清理验收](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)、[来源清理验收](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md)、[PRD F2](../PRD.md#f2-source-与片段) |
+| 数据存储与升级 | 迁移支持空库重建与已支持旧库的增量升级，迁移入口使用数据库排他锁；备份包含主库、凭据及词典。EPUB 使用 v2 图片池编译格式，没有旧格式读取、回退或转换工具 | [迁移链及旧库边界](../UPGRADING.md)、[迁移保护验收](archived/REVIEW_FOLLOWUP_20261113.md#迁移入口保护)、[EPUB 存储验收](archived/EPUB_STORAGE_ACCEPTANCE.md)、[现用库升级核对](archived/reading-practice/TRANSLATION_RELIABILITY_ACCEPTANCE.md#现用库与原目录交付) |
+| 工程与维护验证 | 已有离线 API、纯逻辑和真实组件浏览器回归；公共文档与私有证据分别检查。合成学习闭环覆盖重启后找回修订并返回原句，近期测试收敛保留行为保障 | [学习闭环复验](archived/MAINTENANCE_OPTIMIZATION.md)、[测试收敛](archived/TEST_CLEANUP_ACCEPTANCE.md#2026-11-13-维护审计后的断言收敛)、[开发检查入口](../DEVELOPMENT.md) |
 
-**当前限制：** 接入类型为普通可重排 EPUB；封面缓存支持有界静态 PNG／JPEG。原书 ruby 控制使用书中已有注音。2026-10-04 切片 1 用户试读确认 Yomitan 配合正常；R1.1 的扩展、实体触屏、Safari／Firefox 等验证缺口见[工程验收](archived/reader-r1/ACCEPTANCE.md#明确未验证与限制)。
+### 验证限制
 
-**设备待核实：** Chrome 中多种音色修改语速并从头重播后，用户听感仍无变化；目前仅验证参数传递，根因与实际变速效果未确认，见[调查记录](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#chrome-语速问题调查)。
-
-**实现占位：** Analysis 删除影响响应的 `occurrence_count` 默认为 `0`，服务尚未查询条目引用。字段与实现见[响应模型](../../backend/src/app/analysis_schemas.py)和[讲解服务](../../backend/src/app/services/analyses.py)。
-
-历史计划、原始验收与提交前复核按主题从[交接索引](README.md#archived)查找；各记录维护当时的代码、环境、检查结果、浏览器观察和未验证项。
-
-当前界面约定见[阅读与导航](../INFORMATION_ARCHITECTURE.md)，执行机制与迁移链见[架构](../ARCHITECTURE.md)，旧库及旧备份的处理边界见 [升级与备份指南](../UPGRADING.md#旧开发数据库与备份)。阶段记录中的旧迁移编号、回填和数据保留结论继续作为历史事实保留。
+- **内容与格式**：支持普通可重排 EPUB；兼容的固定图片 spine 页仅保留图像，不恢复固定几何；封面缓存限有界静态 PNG／JPEG。具体格式边界见[架构](../ARCHITECTURE.md#31-实体)。
+- **用户使用与设备**：书籍管理、可选清理学习积累和来源空间仍待用户使用验收；阅读页入场手感待试。Windows 实机、普通权限下数据目录访问与最新位置恢复流程见[Windows 清单](WINDOWS_ACCEPTANCE.md)。实体触屏、Safari／Firefox、浏览器扩展及系统剪贴板的已测范围见[阅读器限制](archived/reader-r1/ACCEPTANCE.md#明确未验证与限制)和[图片查看器验收](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27)。早期 Yomitan 试读结果不代表后续阅读器已完整验证。
+- **真实内容与模型**：新增活用说明的真实词典试读、原地模型配置的真实接入、讨论回复节奏、真实翻译质量及资源预算、设备声音仍需按[EPUB 后续安排](epub-reading/README.md#阅读辅助后续安排)和原验收补测。Chrome 语速调整目前仅确认参数传递，用户听感未变化的根因与实际效果仍未确认，见[调查记录](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#chrome-语速问题调查)。
+- **规模与测量**：本书搜索的真实大型书库性能待验证；会话复用未显示离线可读时间稳定下降，整合后的生产冷加载未重测。原测量仅适用于当时版本与环境，见[搜索计划](reading-practice/PLAN.md)、[会话测量](archived/text-study/READER_SESSION_ACCEPTANCE.md)及[冷加载验收](archived/ROUTE_LOADING_ACCEPTANCE.md)。
 
 ## 2. 尚未落实的契约与目标差额
 
-以下汇总尚未落实的契约与目标差额。人工资料、文本统计及 C1／C2 精确出处的能力和证据见上表；切片依赖及实施依据见[文本处理与学习资料计划](archived/text-study/PLAN.md)。材料对话及从讨论形成讲解继续按 EPUB 阶段安排推进，Occurrence 与积累库保留首轮目标。
+人工资料、文本统计和 C1／C2 已交付；材料对话、从讨论形成讲解及 Occurrence 链路仍按阶段安排推进。
 
 | 缺口 | 负责规范 | 实施前需要明确或补齐的内容 |
 | --- | --- | --- |
-| 保存片段时的模型预选 | [PRD F1](../PRD.md#f1-设置) | F1 仍规定保存片段时可预选之后解析生成的模型，而同节已改为创建普通讲解对话、采用明确选择或新对话默认模型，不再使用旧解析默认值。预选的适用对象、保存位置与后续普通对话的继承关系尚未收口；需先对齐产品契约，再确定实现，不能因旧生成分支停用而取消该要求 |
-| EPUB 学习衔接 | [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)、[阶段安排](epub-reading/README.md) | C1／C2 已落实选区目标、可配置语境预装与精确返回；材料线程、引用、权限与费用，以及从讨论整理讲解的目标及部分成功反馈继续在对应切片收口 |
-| Occurrence 生产契约 | [术语与知识表示](../GLOSSARY.md#4-知识表示与提取边界已对齐)、[PRD F5](../PRD.md#f5-学习条目创建与整理)、`TBD-02/03` | 带版本的字段与语义、类型边界、不连续 Surface／重复文字定位、anchor 规则和多个 Section 的确切引用；A0 不作为生产定案 |
-| 条目读取与候选写入 | [PRD F5](../PRD.md#f5-学习条目创建与整理)、[F9](../PRD.md#f9-agent-工具权限与审核)、[架构 4.4–4.5](../ARCHITECTURE.md#44-可选批量提取未来模块servicesextractionpy尚不存在) | 将已确认读取、候选创建／修改及用户整理边界落实为 API、工具和执行校验；不能从 Analysis 工具签名推断候选协议 |
-| 组合操作与恢复 | [PRD F8](../PRD.md#f8-状态与诊断)、`TBD-16/17`、[架构执行契约](../ARCHITECTURE.md#45-讨论与成果保存analysis已实现occurrence待设计) | Occurrence 的逐项结果、幂等身份、保存核实、局部修复与统一预算协调，以及混合方案的审核呈现；Analysis 已落实部分沿用现有机制 |
-| 积累阅读与删除关联 | [PRD F6](../PRD.md#f6-知识库)、[F2](../PRD.md#f2-source-与片段)、[阅读基线](../GLOSSARY.md#5-阅读再理解与主动学习阅读基线已确认) | 条目列表、筛选／搜索、anchor 分组、原句和确切来源 Section 阅读；接上真实删除影响与引用范围 |
+| 保存片段时的模型预选 | [PRD F1](../PRD.md#f1-设置) | 保存片段预选模型与普通讲解对话默认模型之间的适用对象、保存位置和继承关系尚未收口；先对齐产品契约，不能因旧生成分支停用而取消预选要求 |
+| EPUB 学习衔接 | [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)、[阶段安排](epub-reading/README.md) | 材料线程、消息引用、读取权限与费用，以及从讨论整理讲解的目标和部分成功反馈 |
+| Occurrence 生产契约 | [术语](../GLOSSARY.md#4-知识表示与提取边界已对齐)、[PRD F5](../PRD.md#f5-学习条目创建与整理)、`TBD-02/03` | 持久字段与类型边界、不连续 Surface／重复文字定位、anchor 及多个 Section 的确切引用；[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md)不作为生产定案 |
+| 条目读取与候选写入 | [PRD F5](../PRD.md#f5-学习条目创建与整理)、[F9](../PRD.md#f9-agent-工具权限与审核) | 尚无 Occurrence 持久化、读取／候选工具或用户整理操作；将已确认边界落实为接口和执行校验 |
+| 组合操作与恢复 | [PRD F8](../PRD.md#f8-状态与诊断)、[架构](../ARCHITECTURE.md#45-讨论与成果保存analysis已实现occurrence待设计)、`TBD-16/17` | Occurrence 的逐项结果、幂等身份、保存核实、局部修复、统一预算与混合方案审核；Analysis 已实现部分沿用现有机制 |
+| 积累阅读与删除关联 | [PRD F6](../PRD.md#f6-知识库)、[F2](../PRD.md#f2-source-与片段) | 尚无积累库页面、条目检索、anchor 分组与整理；需接通原句、确切来源 Section 和真实删除影响。当前 Analysis 删除影响中的 `occurrence_count` 固定为 `0`，尚未查询条目引用 |
 
-讨论不依赖已有 Analysis，保存讲解不依赖条目收录；创建条目则依赖持久、自足讲解和确切原文定位，见 [PRD 4.3](../PRD.md#43-语境与学习条目边界)。当前按 [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)先推进 EPUB；已有手动片段学习继续独立使用，KnowledgePoint 归属与主动学习仍不在本阶段范围。
+讨论不要求先有 Analysis；创建条目依赖持久、自足讲解和确切原文定位。手动片段学习继续独立可用，KnowledgePoint 归属与主动学习不在当前阶段范围。
 
 ## 3. 验收与交接
 
-- 选定实施任务后，将对应用户行为连通前端、API 与持久化。产品验收依据为 [PRD 第 8 节](../PRD.md#8-成功标准)，技术覆盖见 [架构第 8 节](../ARCHITECTURE.md#8-测试策略)，工程检查、迁移、API 生成和浏览器要求遵循 [AGENTS](../../AGENTS.md)。
-- Occurrence 落地时补齐原文定位与历史引用、跨片段隔离、用户整理后的状态竞争、软删除／迟到结果、再次整理和部分成功恢复的验证；这些是现有目标的验收缺口，非新增规则。
-- 离线样本须标明 fixture／模拟结果并保留来源，不冒充真实 API 录制。机械校验、真实模型接入、教学内容质量及实际学习体验分别记录；测试仍禁止真实网络与模型调用。
-- 切片完成后把具体实现和决定写回负责文档，任务及验收记录移入归档，在[交接索引](README.md)保留证据与限制，并更新本文件的现状差额。实验、旧任务书和架构占位不能自行补全未决决定。
+实施任务需连通前端、接口与持久化，并按 [PRD 成功标准](../PRD.md#8-成功标准)、[架构测试策略](../ARCHITECTURE.md#8-测试策略)和 [AGENTS](../../AGENTS.md)验证。Occurrence 落地时补齐原文定位、历史引用、跨片段隔离、状态竞争、软删除与迟到结果、再次整理及部分成功恢复。
+
+离线 fixture、真实模型接入、教学内容质量与实际学习体验分别记录；测试禁止真实网络与模型调用。完成后将规则写回负责规范、证据归档并更新本基线；旧方案和实验不能补定未决事项。

@@ -1,6 +1,6 @@
 # Windows 实验性支持验收
 
-本清单供 Windows 11 x64、PowerShell、Chrome 与 Edge 实机验收使用。Windows 支持已于 `92a14e0` 合入主分支；[第七轮 Windows CI](https://github.com/5945ggh/folio-j/actions/runs/41295576476)通过了中文路径安装、启停和备份恢复。该轮记录有一项来源待定位的 aiosqlite 线程警告。该记录验证源码运行，Windows 冻结包及本批修复须另行验收。用户报告的 `e9b8eb16` 原始目录包与 ZIP 解压包均在临时绕过后通过冒烟；它不能作为本批未修改冒烟或完整实机流程通过的证据。Windows 11 实机清单待验。测试按本机单用户使用，文件沿用所在目录的继承权限，不设置 Windows ACL，也不提供系统用户之间的隔离保证。
+本清单供 Windows 11 x64、PowerShell、Chrome 与 Edge 实机验收使用。当前交付与验证范围见[实施基线](MVP_IMPLEMENTATION_BASELINE.md)，既有结果见[源码 CI](archived/WINDOWS_CI_ACCEPTANCE.md)、[冻结包验收](archived/WINDOWS_FROZEN_ACCEPTANCE.md)和[数据位置验收](archived/DATA_LOCATION_ACCEPTANCE.md)。测试按本机单用户使用，文件沿用所在目录的继承权限，不设置 Windows ACL，也不提供系统用户之间的隔离保证。
 
 操作说明见[使用指南](../USAGE.md)，备份结构及升级步骤见[升级与备份](../UPGRADING.md)。本清单只使用独立测试资料和数据目录。核心项目无需模型、密钥或真实网络模型调用。
 
@@ -27,6 +27,7 @@ $winProgram = Join-Path $winRoot '程序 中文 路径'
 $winData = Join-Path $winRoot '学习 数据'
 New-Item -ItemType Directory -Path $winProgram, $winData | Out-Null
 $env:FOLIO_J_DATABASE_PATH = Join-Path $winData 'app.db'
+$env:XDG_CONFIG_HOME = Join-Path $winRoot '位置 记录'
 $winRoot
 # 将程序文件放好后继续；以下命令均在程序根目录执行。
 Set-Location $winProgram
@@ -49,11 +50,11 @@ dev_port = 5188
 
 ### 冻结包重建与检查
 
-重建使用[开发指南的 PowerShell 步骤](../DEVELOPMENT.md#windows-原生构建)：从最新已提交 `main` 的 Git bundle 新建或快进仓库，使用独立 `UV_PROJECT_ENVIRONMENT`、锁定生产依赖和 `packaging` 组；国内镜像备用保留 hash 且不改默认源与锁文件。记录实际提交号及 `BUILD.json` 的 dirty 状态。以下检查不需要 just：
+按[开发指南的 PowerShell 步骤](../DEVELOPMENT.md#windows-原生构建)从包含待验改动的已提交 `main` 建立干净检出。使用新试用版本和输出目录，核对 `BUILD.json` 的提交号与 `dirty` 状态，并按[最终 ZIP 解压验证](../DEVELOPMENT.md#最终-zip-解压验证)记录新 ZIP 的 SHA-256。以下检查无需 just。
 
 #### 首次选择、记住位置与恢复
 
-以下使用普通用户与合成学习资料。第一次选择测试不设置 `FOLIO_J_DATABASE_PATH`；已有日常库时先记下实际路径并保留备份，使用 `start --choose-data` 重开选择页，不删除既有数据或位置记录来模拟首次安装。各平台统一使用 `~/.config/folio-j/data-location.json`，兼容绝对路径的 `XDG_CONFIG_HOME`，Windows 不再读写注册表。可把 `XDG_CONFIG_HOME` 指向独立临时测试目录，避免改写日常位置记录；测试结束移除该临时环境变量。旧 Windows 注册表中的自定义库需手动重新选择一次。
+用普通用户另开一个专用 PowerShell，在另一份完整、未配置的测试程序目录执行首次选择。将 `USERPROFILE` 与 `XDG_CONFIG_HOME` 分别指向空的临时主目录与配置目录，并清除当前终端的 `FOLIO_J_DATABASE_PATH`。这样可避开准备阶段固定的程序路径、日常主目录中的旧配置与默认库。首次选择验证后关闭该终端，回到准备阶段的专用终端继续。现行位置记录和旧注册表自定义库的重选方式见[应用配置](../USAGE.md#配置优先级与高级选项)。
 
 - [ ] 真正的新安装首次打开显示默认用户目录与绝对路径输入，点击确认前不创建默认库。可在其他磁盘的独立测试目录创建学习库；设置中的数据位置与所选位置一致。
 - [ ] 选择后可在独立配置目录找到 JSON 记录，数据库路径正确。无记录时仅沿用旧配置、程序目录 `data/app.db` 或默认 `~/Folio-J-Data/app.db`；没有显式路径配置且固定位置均无库时显示选择页，不扫描其他目录。已有库旁无 `app.toml` 也可通过身份检查并打开。
@@ -73,7 +74,7 @@ dev_port = 5188
 - [ ] 在 PowerShell 设置 `[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)`，执行 `$winPathOutput = .\Folio-J.exe data-path | Out-String`，核对 `$winPathOutput` 中的中文、空格、emoji 和罕字未丢失或替换；测试结束恢复终端原编码或关闭专用终端。
 - [ ] 运行 `.\Folio-J.exe start`，在 Chrome／Edge 完成下面“阅读、词典与人工资料”检查。停止并重启后保留内容；按一次及连续两次 Ctrl-C 均能退出并释放端口。`start --no-browser` 不自动打开浏览器。
 - [ ] 分别从默认控制台和 Windows Terminal 启动，访问页面后日志显示可读的 `INFO`、请求路径及 `200 OK`，不出现 `ESC[32m`、`ESC[1m` 等控制码；Windows 冻结入口使用纯文本日志。
-- [ ] 停止后执行 `.\Folio-J.exe backup $winBackup` 和 `.\Folio-J.exe restore $winBackup $winRestore`（先按下方定义两个新目录变量），按“备份、恢复与版本替换”核对结果；将数据路径指向恢复目录后重启。
+- [ ] 完成后面的“阅读、词典与人工资料”后，再按[备份、恢复与版本替换](#备份恢复与版本替换)验证已有资料。
 - [ ] 将完整程序目录换到另一位置，保留独立数据路径；先 `data-path` 再 `start`，书籍、词典、片段与讲解仍可用。只搬可执行文件、遗漏 `_internal` 不属于有效升级方式。
 
 冻结包完成后可跳过下面源码安装与源码开发模式项目，继续共用浏览器和备份清单。仅运行已构建的冻结包无需 Python、Node.js、uv 或 pnpm。
@@ -116,11 +117,16 @@ uv run --project backend --no-dev python scripts/run.py start
 
 ### 备份、恢复与版本替换
 
-先停止应用，保留刚才的 EPUB、词典、片段与讲解。以下源路径仍为 `$env:FOLIO_J_DATABASE_PATH`。
+完成阅读与资料检查后停止应用，保留刚才的 EPUB、词典、片段与讲解。先定义两个尚不存在的目标目录，再按运行方式选择下面一组命令。
 
 ```powershell
 $winBackup = Join-Path $winRoot '备份 01'
 $winRestore = Join-Path $winRoot '恢复 数据 01'
+```
+
+源码版的源库仍由 `$env:FOLIO_J_DATABASE_PATH` 指定：
+
+```powershell
 just data-path
 just backup $winBackup
 just restore $winBackup $winRestore
@@ -133,6 +139,16 @@ just start
 ```
 
 没有 just 时，最后两步沿用前面直接查看配置与启动的命令。
+
+冻结包使用以下命令，移除临时路径覆盖后，在选择页打开 `$winRestore` 中的已有库：
+
+```powershell
+.\Folio-J.exe data-path
+.\Folio-J.exe backup $winBackup
+.\Folio-J.exe restore $winBackup $winRestore
+Remove-Item Env:FOLIO_J_DATABASE_PATH
+.\Folio-J.exe start --choose-data
+```
 
 - [ ] 应用运行时尝试备份，明确拒绝；停止后备份和恢复成功，恢复路径不同于源库。恢复后核对书籍、阅读位置、书签、词典安装／选择、片段和讲解；原库仍在原处。
 - [ ] 停止服务后，重复向已有备份目录备份、向已有恢复目录恢复，均拒绝覆盖；对测试目录里预建的空目录也应拒绝。
@@ -162,7 +178,8 @@ just start
 | 临时目录与端口 | 程序／源数据／恢复数据绝对路径；API／前端端口 |
 | 本机自动验证 | 填写 Windows 实际命令、环境、原始目录与 ZIP 解压包各自的冒烟结果、跳过项及 Windows CI 链接 |
 | 核心与设备结果 | 按上面各项记录结果；Windows 实机：尚未运行 |
+| 下载与签名 | 如经实际下载，记录 Defender／SmartScreen 的拦截或提示，以及签名状态 |
 | 跨系统与模型 | 对端系统／版本及恢复结果；可选模型测试是否执行与费用范围 |
 | 问题与材料 | 复现步骤、退出码、脱敏日志和截图位置；后续复测结果 |
 
-结束时停止测试服务，保留需要的验收记录、源码和临时数据；在专用终端退出前可用 `Remove-Item Env:FOLIO_J_DATABASE_PATH` 清除覆盖。需要长期保留的资料移到自行管理的位置，临时目录可能被系统清理。
+结束时停止测试服务，保留需要的验收记录、源码和临时数据。关闭专用终端即可清除本次环境变量。需要长期保留的资料移到自行管理的位置，临时目录可能被系统清理。

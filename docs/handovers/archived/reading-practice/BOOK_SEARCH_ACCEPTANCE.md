@@ -1,6 +1,6 @@
 # 本书搜索实现与验收
 
-> 2026-11-11；实施起点为 `main f1ec22a9`，分支为 `codex/book-search`。本记录对应该基线上的本地实现，尚未推送或发布。最终全量检查、11 个浏览器场景及隔离真实 API 人工复核均已通过。现行范围见 [PRD 4.9](../../PRD.md#49-阅读摘录书签与记录检索)，交互见[书内搜索与图库](../../INFORMATION_ARCHITECTURE.md#书内搜索与图库)，当前交付见[实施基线](../MVP_IMPLEMENTATION_BASELINE.md)。
+> 2026-11-11；实施起点为 `main f1ec22a9`，分支为 `codex/book-search`。本记录对应该基线上的本地实现，尚未推送或发布。最终全量检查、11 个浏览器场景及隔离真实 API 人工复核均已通过。现行范围见 [PRD 4.9](../../../PRD.md#49-阅读摘录书签与记录检索)，交互见[书内搜索与图库](../../../INFORMATION_ARCHITECTURE.md#书内搜索与图库)，当前交付见[实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。
 
 ## 实现范围
 
@@ -24,11 +24,11 @@
 | `just build` | 最终生产构建通过 |
 | 文档与差异检查 | `just check-docs` 与 `git diff --check` 通过 |
 
-后端回归入口为[资料搜索测试](../../../backend/tests/test_material_record_search.py)、[原文章节过滤测试](../../../backend/tests/test_reader_search_chapters.py)及[阅读只读查询测试](../../../backend/tests/test_reader_queries.py)。测试禁止真实网络与模型调用；全量测试中既有网络隔离自测需要本机 socketpair 回退连接，获准解除沙箱端口限制后执行。
+后端回归入口为[资料搜索测试](../../../../backend/tests/test_material_record_search.py)、[原文章节过滤测试](../../../../backend/tests/test_reader_search_chapters.py)及[阅读只读查询测试](../../../../backend/tests/test_reader_queries.py)。测试禁止真实网络与模型调用；全量测试中既有网络隔离自测需要本机 socketpair 回退连接，获准解除沙箱端口限制后执行。
 
 ## 浏览器行为回归
 
-[搜索浏览器用例](../../../frontend/browser-tests/reader-search.tsx)挂载真实 MaterialReader 与 iframe，所有 API 为本地合成响应，浏览器脚本阻止外部网络。三场景均覆盖：
+[搜索浏览器用例](../../../../frontend/browser-tests/reader-search.tsx)挂载真实 MaterialReader 与 iframe，所有 API 为本地合成响应，浏览器脚本阻止外部网络。三场景均覆盖：
 
 - 独立入口、空关键词只读取三类资料，输入法组合期间不发中间查询，旧关键词迟到响应不覆盖新查询。
 - 内容筛选、章节组合勾选与全选／半选／空选；空选明确空态且无无过滤请求，Escape 只关闭章节 popover。

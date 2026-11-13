@@ -4,7 +4,7 @@
 
 ## 范围与取舍
 
-片段工具栏顶部增加首页，底部增加独立的全局设置齿轮；阅读器顶栏提供相同入口，保留 Aa 阅读设置。首页统一指向 `/`，当前落点为素材库。完整设置使用原独立页面，页头与悬浮提示返回直接来处，分类和服务导航继续保留原书及目录父链。现行交互见[阅读与导航](../../INFORMATION_ARCHITECTURE.md#设置顶部分类)。
+片段工具栏顶部增加首页，底部增加独立的全局设置齿轮；阅读器顶栏提供相同入口，保留 Aa 阅读设置。首页统一指向 `/`，当前落点为素材库。完整设置使用原独立页面，页头与悬浮提示返回直接来处，分类和服务导航继续保留原书及目录父链。现行交互见[阅读与导航](../../../INFORMATION_ARCHITECTURE.md#设置顶部分类)。
 
 片段仅在本次明确的设置往返中保留一个实例及讨论输入，退出该路径范围、换片段或刷新后释放。这里按路径退出释放，避免配置较久后因固定租期丢草稿；关联原书继续沿用十分钟阅读保活。状态只在内存，未增加存储格式、依赖、迁移、API 或 TBD 决策。
 
@@ -39,7 +39,7 @@
 
 已查看 1280×900 与 320×900 的片段、阅读器共四张截图：桌面首页和设置分处工具栏上下，窄屏顶部保留五个片段入口，阅读器首页、返回与齿轮可见，没有横向溢出或导航遮挡。截图位于本机临时目录 `/private/tmp/folio-j-focused-navigation`，不作为仓库资产。
 
-测试实现见[全局导航回归](../../../frontend/browser-tests/focused-navigation.tsx)、[工作台活动回归](../../../frontend/browser-tests/workbench-activity.tsx)与[设置路由保护回归](../../../frontend/browser-tests/route-loading.tsx)。新增测试文件的 API 运行时导入在 harness 安装 fetch 替身后执行，避免模块提前捕获真实 fetch。
+测试实现见[全局导航回归](../../../../frontend/browser-tests/focused-navigation.tsx)、[工作台活动回归](../../../../frontend/browser-tests/workbench-activity.tsx)与[设置路由保护回归](../../../../frontend/browser-tests/route-loading.tsx)。新增测试文件的 API 运行时导入在 harness 安装 fetch 替身后执行，避免模块提前捕获真实 fetch。
 
 ## 首轮验证边界
 
@@ -91,4 +91,6 @@
 
 已先备份原有历史、已跟踪差异及未跟踪文件，再按用户授权整理为两个独立提交：`148156ca` 修复设置离开时重复继续导航的竞态；「补齐阅读专注页全局导航并保留设置往返草稿」收口其余实现、测试与配套文档。两个提交从 `main fa284419` 起点快进合入本地 `main`，没有改写已推送历史。
 
-本轮没有推送远端或发布版本。原有 `prototypes/bookshop-card/` 与 `prototypes/promo-scenes/` 保持未提交，未纳入本轮提交。工程与浏览器结果沿用上节最终验收，整理过程中仅更新提交状态文档，补跑文档链接及差异检查。独立竞态修复见[修复验收](SETTINGS_LEAVE_ACCEPTANCE.md)。
+本轮没有推送远端或发布版本。原有 `prototypes/bookshop-card/` 与 `prototypes/promo-scenes/` 保持未提交，未纳入本轮提交。工程与浏览器结果沿用上节最终验收，整理过程中仅更新提交状态文档，补跑文档链接及差异检查。独立竞态修复见[修复验收](../../reading-practice/SETTINGS_LEAVE_ACCEPTANCE.md)。
+
+当前交付见[实施基线](../../MVP_IMPLEMENTATION_BASELINE.md)。
