@@ -1,0 +1,46 @@
+README.md
+  s_8978bef28ae97b::t_60eeba51c1d531 39,41-42,44,46,48-50,52-53,55,57,59,65,79,86
+  s_8978bef28ae97b::t_29eec0d7bcc2f5 25,100
+docs/UPGRADING.md
+  s_8978bef28ae97b::t_60eeba51c1d531 92-99,105-106
+  s_8978bef28ae97b::t_243ad71d816cfb 72
+  s_8978bef28ae97b::t_f948dbe02e75a4 73
+  s_8978bef28ae97b::t_b2c1f286841092 89-91
+  s_8978bef28ae97b::t_cb76e61d438268 8-11,13-16,20,27,33,38-41,44-45,50,57,61,63-64,68,79,84,88,108,110,113-116,119,122-130
+docs/DEVELOPMENT.md
+  s_8978bef28ae97b::t_60eeba51c1d531 178
+scripts/package_frozen.py
+  s_8978bef28ae97b::t_4ebba979cf624f 190-192
+scripts/frozen/README.md
+  s_8978bef28ae97b::t_4ebba979cf624f 1,3,5,7,9,11-14,16-19,21,23-25
+  s_8978bef28ae97b::t_3571567a698502 26-28
+  s_4a62f1a9a5987c::t_9dedce968b37c4 29-62,66
+scripts/release/README.md
+  s_8978bef28ae97b::t_60eeba51c1d531 1,3-5,9,11,16,20,23,26,33,36,40,47-49
+  s_8978bef28ae97b::t_644d711e879d11 50-52
+  s_8978bef28ae97b::t_65c508c2a269af 53-57,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b87f77dbfda7ab01f740538cded5f4a13f044f82",
+  "prompts": {},
+  "sessions": {
+    "s_4a62f1a9a5987c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1df36-8b7b-7cd2-ab30-328a7a19c859",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_8978bef28ae97b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1df28-bb63-7d10-ab6d-5ecb3f21778f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
