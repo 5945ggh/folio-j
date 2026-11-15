@@ -1,0 +1,96 @@
+frontend/src/segments/layout.css
+  s_d77ff7f0d9fc47::t_f3d8f2f5edeb3d 49-52
+frontend/src/materials/study-overlays.css
+  s_d77ff7f0d9fc47::t_01472cc850bd32 1-11
+frontend/src/selection/SelectionActions.tsx
+  s_d77ff7f0d9fc47::t_a89f975006a8f6 1-52,56-63,65-73,75-85,87-103,105-122,124-133
+  s_d77ff7f0d9fc47::t_581bdf9b2ba057 53-55
+  s_d77ff7f0d9fc47::t_401f9c2163fc00 64,74,86,104,123
+frontend/src/SegmentPage.tsx
+  s_d77ff7f0d9fc47::t_f1327076b718a3 64
+  s_d77ff7f0d9fc47::t_f3d8f2f5edeb3d 390,823
+frontend/src/segments/SegmentSelectionToolbar.tsx
+  s_d77ff7f0d9fc47::t_43debe0651e870 2,72,75-85
+  s_d77ff7f0d9fc47::t_f455843d7bafe1 58-59,61-62
+  s_d77ff7f0d9fc47::t_f1327076b718a3 53-57,60,65,68-69
+  s_d77ff7f0d9fc47::t_acce74a42c20e5 8-10,12-17,21-23,64,66-67
+  s_d77ff7f0d9fc47::t_cca3b872a614f9 1,3-7,11,18-20,24-52,63,70-71,73-74,86-87
+docs/USAGE.md
+  s_d77ff7f0d9fc47::t_59296c20902d46 47
+  s_d77ff7f0d9fc47::t_08e0e7ed17b2cd 42,82
+frontend/src/segments/original-card.css
+  s_d77ff7f0d9fc47::t_f3d8f2f5edeb3d 182-187
+docs/PRD.md
+  s_d77ff7f0d9fc47::t_08e0e7ed17b2cd 263
+docs/ARCHITECTURE.md
+  s_d77ff7f0d9fc47::t_1aa0ec588d6904 536
+frontend/scripts/test-browser.mjs
+  s_d77ff7f0d9fc47::t_70a7000a9ecf51 141-146
+frontend/src/segments/OriginalCard.tsx
+  s_d77ff7f0d9fc47::t_f3d8f2f5edeb3d 7,12,32-36,88,210-212,228
+frontend/src/segments/SegmentFrame.tsx
+  s_d77ff7f0d9fc47::t_f3d8f2f5edeb3d 5
+docs/INFORMATION_ARCHITECTURE.md
+  s_d77ff7f0d9fc47::t_08e0e7ed17b2cd 250
+  s_d77ff7f0d9fc47::t_59296c20902d46 248
+frontend/src/segments/SegmentReadingTools.tsx
+  s_d77ff7f0d9fc47::t_f3d8f2f5edeb3d 236-237
+  s_d77ff7f0d9fc47::t_3de6b6dc891cc7 1-25,29-31,34-235,251-253,255-264,266-272
+  s_d77ff7f0d9fc47::t_f1327076b718a3 26-28,32-33,254
+  s_d77ff7f0d9fc47::t_17f8c99ed55c0f 238-250,265
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_d77ff7f0d9fc47::t_51f52e88318d4d 3
+  s_d77ff7f0d9fc47::t_229f94e84ebc30 20
+  s_d77ff7f0d9fc47::t_0957173fce8582 21
+frontend/src/segments/segment-dictionary.css
+  s_d77ff7f0d9fc47::t_43debe0651e870 27
+docs/DESIGN_SYSTEM.md
+  s_d77ff7f0d9fc47::t_59296c20902d46 67
+frontend/browser-tests/segment-selection-speech.ts
+  s_d77ff7f0d9fc47::t_aa627966e60b64 1-33,42-45,47-57,61-64,79-80,85-91,93-94,99-105,110-113,140,146-161,164-169,171,173-208,215-216,221-222,231-243,253,260-262,264-265,269,276-286,289-290,292-294,299,303-312
+  s_d77ff7f0d9fc47::t_1256ed91834b59 121
+  s_d77ff7f0d9fc47::t_e7ed2d30ccc2d9 162-163
+  s_d77ff7f0d9fc47::t_8793445c7a0e75 249-252
+  s_d77ff7f0d9fc47::t_ed1436666fcd1b 170,172,263,267
+  s_d77ff7f0d9fc47::t_41a83183ec13dd 34-39,41,58-60,65-78,95-98,106-109,141-143,145,209-214,217-220,266,268,270-275,287-288,300-302
+  s_d77ff7f0d9fc47::t_65d5dee6ffd4b2 81-84,92,223-230,244-247,291,295-298
+  s_d77ff7f0d9fc47::t_dc5bb68cec3bf5 40,46,144,248,256-259
+  s_d77ff7f0d9fc47::t_6e6f1fba893146 114-120,122-139,254-255
+frontend/src/segments/segment-speech.css
+  s_d77ff7f0d9fc47::t_f455843d7bafe1 22
+  s_d77ff7f0d9fc47::t_f1327076b718a3 20-21,23-25
+docs/handovers/reading-practice/SEGMENT_DICTIONARY_ACCEPTANCE.md
+  s_d77ff7f0d9fc47::t_8acfe11a092bd4 50-52,54-58,60-61
+  s_d77ff7f0d9fc47::t_b3bebf237691c2 59
+  s_d77ff7f0d9fc47::t_1aa0ec588d6904 53
+  s_d77ff7f0d9fc47::t_fbdf5ae34bcb5d 62-67
+frontend/src/materials/StudyOverlays.tsx
+  s_d77ff7f0d9fc47::t_9fcef8e04888b9 2,8-9,11-15,18-22,24,64,66,68-75
+  s_d77ff7f0d9fc47::t_581bdf9b2ba057 1
+frontend/src/selection/selection-actions.css
+  s_d77ff7f0d9fc47::t_ef2f498322ae6c 48-51
+  s_d77ff7f0d9fc47::t_401f9c2163fc00 20,31-33,35,40,43,47,53,56,83
+  s_d77ff7f0d9fc47::t_0a6939270678b9 1-19,21-30,34,36-39,41-42,44-46,52,54-55,57-82,84-87
+frontend/browser-tests/segment-dictionary.tsx
+  s_d77ff7f0d9fc47::t_ce2457722c1f73 6,8-11,27-28,36-40,72,222-232,255-273,277-301,403,449,456,574,590,697
+  s_d77ff7f0d9fc47::t_a412778a0c0078 58-59
+  s_d77ff7f0d9fc47::t_41a83183ec13dd 73-76,274-276
+frontend/src/materials/reader-popover.css
+  s_d77ff7f0d9fc47::t_01472cc850bd32 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "502f92457f9d7475e6acf577d1b01a4b2b26c956",
+  "prompts": {},
+  "sessions": {
+    "s_d77ff7f0d9fc47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1dab0-94ab-7d83-aa75-6a8641c37e17",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
