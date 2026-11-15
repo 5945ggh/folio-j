@@ -175,7 +175,7 @@ python3 scripts/package_release.py --ref HEAD --version 0.1.0+candidate.1 --outp
 
 ## 实验目录包
 
-目录包在构建机器上预构建前端、捆绑 Python 与生产依赖，使用者直接启动本机服务并在系统浏览器中使用，无需安装 Python 或 Node.js。目前是本机试做，不替代公开 beta 的源码 ZIP；跨系统与架构需要分别构建和验证。
+目录包在构建机器上预构建前端、捆绑 Python 与生产依赖，使用者直接启动本机服务并在系统浏览器中使用，无需安装 Python 或 Node.js。它可作为公开 beta 的实验性附件，与源码 ZIP 一同提供；各版本实际提供的产物以发行页为准，跨系统与架构需要分别构建和验证。
 
 先构建同一工作区的前端，再用独立环境安装锁定的生产依赖与 `packaging` 组。输出目录必须尚不存在。POSIX shell：
 

@@ -18,8 +18,7 @@
     "scripts/windows_process.py",
     "scripts/windows_reload.py",
     "docs/USAGE.md",
-    "docs/UPGRADING.md",
-    "docs/handovers/WINDOWS_ACCEPTANCE.md"
+    "docs/UPGRADING.md"
   ],
   "directories": [
     "backend/src/app",

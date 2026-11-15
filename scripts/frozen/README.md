@@ -1,21 +1,66 @@
-# Folio-J 实验目录包
+# Folio-J 免安装目录包（实验性）
 
-本包在本机运行服务，使用系统浏览器阅读。无需另外安装 Python、Node.js、uv 或 pnpm。请完整保留目录结构，不要只复制可执行文件。
+本发行包已内置运行环境与前端页面，无需另外安装 Python、Node.js、`uv` 或 `pnpm`，直接启动即可在系统浏览器中使用。
 
-在终端进入本目录，运行 `./Folio-J data-path` 核对数据位置（不会创建数据库），再运行 `./Folio-J start`。Windows PowerShell 使用 `.\Folio-J.exe data-path` 和 `.\Folio-J.exe start`。启动后会打开系统浏览器；使用 `start --no-browser` 可自行打开终端显示的地址。在终端按 `Ctrl-C` 停止服务。
+> **注意**：请先将压缩包完整解压到独立目录再运行，不要在压缩包内直接启动，也不要单独移动可执行文件（须完整保留同级目录结构）。本包为实验性构建，尚未做正式发行签名与公证。
 
-新安装首次启动会打开数据位置页，可使用默认 `~/Folio-J-Data`、填写其他绝对目录创建新数据，或打开已有学习库。确认前不创建默认目录，启动成功后尝试记住位置，保存失败会警告，本次仍可使用，下次可能需要重选；旧数据库和配置继续可用。数据不可访问或启动失败时保留恢复页，可重试原位置或重新选择，不会自动改用空库。当前路径可在“设置 → 数据位置”查看。拒绝访问也可能来自安全软件对进程的拦截，不表示必须以管理员身份使用。
+## 快速开始
 
-如需重新打开选择页，先停止服务，再运行 `./Folio-J start --choose-data`（Windows 为 `.\Folio-J.exe start --choose-data`）。这只选择位置，不搬迁数据；备份恢复到新位置后，用“打开已有数据”选择恢复库。`FOLIO_J_DATABASE_PATH` 仍具有最高优先级，选择其他位置前须先修改或移除它。升级时解压到新程序目录即可继续使用已记住的库，启动沿用 Alembic 迁移，不会自动清空数据库。
+在终端进入解压后的 `Folio-J` 目录，运行启动命令：
 
-位置记录与学习库分开：各平台均为 `~/.config/folio-j/data-location.json`（设置绝对路径的 `XDG_CONFIG_HOME` 时使用该目录）。Windows 不再读写旧注册表位置，自定义库需通过选择页重新打开。旧 `~/Folio-J-Data/app.toml` 继续配置端口等参数；数据库路径优先级为环境变量、已记住位置、程序配置、旧用户配置、旧程序库及默认位置。无记录时只检查这些配置和固定位置，不扫描磁盘；已有库无需同目录有 `app.toml`，仍会校验数据库身份。
+```sh
+# macOS / Linux
+./Folio-J start
+```
 
-冻结程序在交互控制台中失败退出时会等待回车，便于读取错误。正常停服与管道调用不等待；反馈前请去除日志中的私人路径和内容。
+```powershell
+# Windows PowerShell
+.\Folio-J.exe start
+```
 
-备份前先停止服务。运行 `./Folio-J backup /绝对路径/新备份目录`；恢复使用 `./Folio-J restore /绝对路径/备份目录 /绝对路径/新恢复目录`。目标目录必须尚不存在。备份可能包含模型凭据，请保存在私人目录。Windows 示例：`.\Folio-J.exe backup C:\私人备份\备份01`、`.\Folio-J.exe restore C:\私人备份\备份01 C:\私人数据\恢复01`；路径含空格时加双引号。恢复后重开选择页，用“打开已有数据”选择新恢复目录，再在设置中核对路径。
+启动后会自动打开系统浏览器（默认地址为 `http://127.0.0.1:8010`）。首次启动时，按页面提示选择数据存放位置（默认为 `~/Folio-J-Data`），或选择打开已有学习库即可进入应用。在终端按 `Ctrl-C` 可停止服务。
 
-这是按构建机器的平台与架构生成的实验包；Windows 使用 ZIP，其他平台使用 tar.gz。解压到独立程序目录后再运行，不从压缩包内部直接启动。各系统与设备的验收范围以对应版本的发布说明为准；本包未做正式发行签名与公证。`RELEASE.json` 记录版本与代码基准，`BUILD.json` 记录工作区状态、运行时与词典版本；现有数据升级前请先备份。
+- 从 [GitHub 发行页](https://github.com/5945ggh/folio-j/releases)下载 EPUB 样书，或导入自己的书籍。
+- 阅读、查词和配置模型见[使用指南](docs/USAGE.md)。
+- 更新版本、备份和迁移数据见[升级与备份](docs/UPGRADING.md)。
+
+**常用命令与参数**：
+
+- **查看当前生效的数据路径**（不会创建数据库）：`./Folio-J data-path`（Windows 为 `.\Folio-J.exe data-path`）
+- **仅启动服务、不自动打开浏览器**：`./Folio-J start --no-browser`
+- **重新选择数据位置**：先停止服务，再运行 `./Folio-J start --choose-data`（只切换读取位置，不会搬迁已有数据文件）
+
+## 数据位置与版本升级
+
+- **数据与程序分离**：学习数据保存在你选定的数据目录中，位置记录单独保存在 `~/.config/folio-j/data-location.json`（若设置了 `XDG_CONFIG_HOME` 则位于该目录下）。
+- **升级方式**：更新前请先备份数据。将新版解压到新文件夹后直接启动，程序会自动沿用已记住的数据位置并完成数据库升级，不会清空已有内容（旧版 Windows 若曾通过注册表记住自定义路径，首次启动新版时在页面重新选择原库即可）。
+- **故障保护**：当原数据目录暂时无法访问（如外接硬盘未连接或被安全软件拦截）时，启动后会停留在恢复页面供你检查并重试，不会悄悄新建空库。
+- **高级配置**：如需修改端口或通过环境变量 `FOLIO_J_DATABASE_PATH` 临时指定数据库，可参考包内的 `config/app.example.toml` 或在 `~/Folio-J-Data/app.toml` 中配置（环境变量优先级最高，设置后需先移除才能在页面切换其他位置）。
+
+## 备份与恢复
+
+操作前请先按 `Ctrl-C` 停止正在运行的 Folio-J。备份与恢复的目标文件夹均须尚不存在：
+
+```sh
+# macOS / Linux
+./Folio-J backup "$HOME/folio-backup-01"
+./Folio-J restore "$HOME/folio-backup-01" "$HOME/folio-restored-01"
+```
+
+```powershell
+# Windows PowerShell（路径含空格时请加双引号）
+.\Folio-J.exe backup "$HOME/folio-backup-01"
+.\Folio-J.exe restore "$HOME/folio-backup-01" "$HOME/folio-restored-01"
+```
+
+- **凭据安全**：如果配置过模型服务，备份中可能包含未加密的 API 密钥，请妥善保存在个人私有目录。
+- **启用恢复库**：执行 `restore` 后，运行 `./Folio-J start --choose-data`（Windows 为 `.\Folio-J.exe start --choose-data`），在页面选择「打开已有数据」并填入新恢复的目录，进入「设置 → 数据位置」确认即可。
+
+## 排障与版本信息
+
+- 程序在交互终端中异常退出时会等待按回车键，方便查看报错信息；提交反馈前请留意隐去日志中的私人路径与内容。
+- 包内 `RELEASE.json` 记录版本号与代码提交号，`BUILD.json` 记录构建环境与内置分词词典版本。
 
 ## 许可证
 
-Folio-J 采用 AGPL-3.0-or-later。完整条款见 [LICENSE](LICENSE)，授权范围与源代码获取说明见 [COPYING.md](COPYING.md)。随包依赖的声明见 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt)。
+Folio-J 采用 AGPL-3.0-or-later。完整条款见 [LICENSE](LICENSE)，授权范围与源代码获取说明见 [COPYING.md](COPYING.md)，随包依赖声明见 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt)。

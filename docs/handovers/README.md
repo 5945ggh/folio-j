@@ -8,6 +8,7 @@
 | --- | --- |
 | 首个公开 beta 的发行约定与演练 | [源码包与恢复演练](BETA_SOURCE_CANDIDATE.md)，含版本标识、发布记录入口及历史候选包验证范围 |
 | beta.2 怎样收口与验证 | [beta.2 发布准备与验收](BETA_2_RELEASE_ACCEPTANCE.md)，记录候选范围、遗留视觉分支、恢复验证和定版待办 |
+| beta.3 的源码包与样书怎样交付 | [beta.3 发布准备与验收](BETA_3_RELEASE_ACCEPTANCE.md)，记录候选验收、Windows 免安装包暂缓及正式发布入口 |
 | Windows 源码、冻结包及数据位置怎样验证 | [Windows 验收与实机清单](WINDOWS_ACCEPTANCE.md)，集中重建接力、首次选择、故障恢复、数据保护与阅读体验的待验步骤 |
 | 当前能力、实现差额与验证限制 | [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)，统一维护核对版本及验收入口 |
 | EPUB 学习衔接接下来做什么 | [阶段安排](epub-reading/README.md#下一阶段接力顺序)：材料对话、消息引用和从讨论形成讲解；[接手提示词](epub-reading/AGENT_PROMPT.md)引用本安排 |

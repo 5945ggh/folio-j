@@ -187,6 +187,9 @@ def build(version: str, output: Path) -> dict[str, Any]:
             json.dumps(identity, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
         shutil.copy2(ROOT / "scripts/frozen/README.md", bundle / "README.md")
+        (bundle / "docs").mkdir()
+        for name in ("USAGE.md", "UPGRADING.md"):
+            shutil.copy2(ROOT / "docs" / name, bundle / "docs" / name)
         for name in ("LICENSE", "COPYING.md"):
             shutil.copy2(ROOT / name, bundle / name)
         (bundle / "THIRD_PARTY_NOTICES.txt").write_text(

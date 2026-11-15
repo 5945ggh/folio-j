@@ -4,6 +4,8 @@
 
 产品规则见 [PRD](../PRD.md)与[领域术语](../GLOSSARY.md)，实现机制见[架构](../ARCHITECTURE.md)，具体交互见[阅读与导航](../INFORMATION_ARCHITECTURE.md)。后续安排从 [EPUB 阶段](epub-reading/README.md)和[阅读评测计划](reading-practice/PLAN.md)进入；历次实施起点、修复经过和检查结果由[验收索引](README.md#archived)承接。
 
+beta.3 发行范围为源码包与样书；11 月 16 日决定暂缓 Windows 免安装包，目录访问故障与选择交互留待独立修复。候选与验证见[发布准备](BETA_3_RELEASE_ACCEPTANCE.md)，正式附件见[发布记录](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.3)。
+
 ## 1. 当前实现、差额与验收依据
 
 | 能力 | 当前状态与边界 | 规范与验收入口 |
