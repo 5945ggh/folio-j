@@ -1,0 +1,55 @@
+frontend/browser-tests/reader-dictionary.tsx
+  s_488093a9ec7b8e::t_cfe7e7b4d853ee 742,752,761,769,774,779,784,790
+  s_488093a9ec7b8e::t_6c53657081eed3 731-735,740-741,743,748,762
+  s_488093a9ec7b8e::t_700a2f974aa8cc 736-739,766,776,787
+  s_488093a9ec7b8e::t_77491a3cdf0b8c 744-747
+  s_488093a9ec7b8e::t_f3eb87b64c3ca7 749-751
+  s_488093a9ec7b8e::t_3be76fdfb0ed27 753-755,758-760
+  s_488093a9ec7b8e::t_e580040ebb0372 763-765
+  s_488093a9ec7b8e::t_13544848929694 767-768
+  s_488093a9ec7b8e::t_0c086b02d7af25 770-773
+  s_488093a9ec7b8e::t_5dd509c428b3fc 775
+  s_488093a9ec7b8e::t_4230269c618258 777-778
+  s_488093a9ec7b8e::t_c9bc036d9c1f8d 780-783
+  s_488093a9ec7b8e::t_13ed523a2b475c 785-786
+  s_488093a9ec7b8e::t_59c024c8b30797 788-789
+  s_488093a9ec7b8e::t_93d9a610c09878 791-792
+  s_488093a9ec7b8e::t_a989ae26d7f204 466-470,756-757
+frontend/scripts/test-browser.mjs
+  s_488093a9ec7b8e::t_6c53657081eed3 117,119
+frontend/src/dictionary/dictionary.css
+  s_488093a9ec7b8e::t_b836fdda70a5ee 356,379-380,383-388,392-394,403
+docs/handovers/reading-practice/DICTIONARY_BASELINE_ACCEPTANCE.md
+  s_488093a9ec7b8e::t_52e1c0a5afbe13 39
+  s_488093a9ec7b8e::t_0815e71e5194b8 40-41
+  s_488093a9ec7b8e::t_eca1eb3be197dd 38
+  s_488093a9ec7b8e::t_d143434ce2e24a 32-37
+docs/INFORMATION_ARCHITECTURE.md
+  s_488093a9ec7b8e::t_e7d7b39afaad4a 317
+frontend/src/dictionary/Dictionary.tsx
+  s_a4bd63b6167720::t_52865c559dff18 411,431,443,466
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "83fc09b225764e6003a256d6652da2a26438932c",
+  "prompts": {},
+  "sessions": {
+    "s_488093a9ec7b8e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1da9f-5c81-7160-bf93-f2a4e804b677",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_a4bd63b6167720": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1daa6-87ef-70a3-aba8-1262db803dee",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
