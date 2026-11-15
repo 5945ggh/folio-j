@@ -353,7 +353,7 @@
 	align-items: center;
 	gap: 2px;
 }
-.dict-config .dict-option-help {
+.dict-config .dict-option-help[data-tooltip] {
 	position: static;
 	display: inline-grid;
 	place-items: center;
@@ -376,36 +376,31 @@
 	border-radius: 50%;
 	font: 9px / 1 system-ui;
 }
-.dict-config .dict-option-help::after {
+/* The shared Reader tooltip must not re-anchor this hint to the 18px button. */
+.dict-config .dict-option-help[data-tooltip]::after {
 	content: attr(data-tooltip);
 	position: absolute;
-	padding: 6px 9px;
-	border-radius: 6px;
-	font: 400 11px / 1.5 system-ui;
-	background: var(--reader-fg);
-	color: var(--reader-bg);
-	box-shadow: 0 2px 8px var(--reader-shadow);
-	pointer-events: none;
-	opacity: 0;
-	visibility: hidden;
-}
-.dict-config .dict-option-help:hover::after,
-.dict-config .dict-option-help:focus-visible::after {
-	opacity: 1;
-	visibility: visible;
-}
-.dict-config .dict-option-help::after {
 	left: 0;
 	bottom: calc(100% + 6px);
 	transform: none;
 	width: max-content;
 	max-width: 100%;
 	box-sizing: border-box;
+	padding: 6px 9px;
+	border-radius: 6px;
+	font: 400 11px / 1.5 system-ui;
 	white-space: normal;
+	overflow-wrap: anywhere;
 	text-align: left;
+	background: var(--reader-fg);
+	color: var(--reader-bg);
+	box-shadow: 0 2px 8px var(--reader-shadow);
+	pointer-events: none;
+	opacity: 0;
+	visibility: hidden;
 	z-index: 1;
 }
-.dict-config .dict-option-help:focus::after {
+.dict-config .dict-option-help[data-tooltip]:is(:hover, :focus)::after {
 	opacity: 1;
 	visibility: visible;
 	transition-delay: 0ms;

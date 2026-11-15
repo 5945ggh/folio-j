@@ -463,6 +463,11 @@ export async function readerDictionary(h: BrowserHarness) {
 		"folio-reader-ui-v1",
 		JSON.stringify({
 			focus: false,
+			theme: optionsScene
+				? params.get("theme") === "dark"
+					? "black"
+					: "white"
+				: "system",
 			dictionaryOpacity: 20,
 			marks: { studySegmentUnderlines: true, studySegmentMargins: false },
 		}),
@@ -723,7 +728,68 @@ export async function readerDictionary(h: BrowserHarness) {
 				"Scrolling must reach the last menu action",
 			);
 			menu.scrollTop = 0;
-			return "dictionary options: viewport scroll and accessible independent switches";
+			const context = document.createElement("canvas").getContext("2d");
+			check(context, "Tooltip text measurement needs a canvas");
+			const checkTooltip = async (help: HTMLButtonElement) => {
+				await h.until(() => {
+					const style = getComputedStyle(help, "::after");
+					return style.visibility === "visible" && style.opacity === "1";
+				}, "Help must display a fully visible tooltip");
+				const style = getComputedStyle(help, "::after");
+				const description = document
+					.getElementById(help.getAttribute("aria-describedby") ?? "")
+					?.textContent?.trim();
+				check(
+					description && style.content === JSON.stringify(description),
+					"Tooltip must show the full accessible description",
+				);
+				context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+				const width = parseFloat(style.width);
+				const height = parseFloat(style.height);
+				const textWidth =
+					width -
+					parseFloat(style.paddingLeft) -
+					parseFloat(style.paddingRight);
+				const textHeight =
+					height -
+					parseFloat(style.paddingTop) -
+					parseFloat(style.paddingBottom);
+				const lineHeight = parseFloat(style.lineHeight);
+				const neededLines = Math.ceil(
+					context.measureText(description).width / (textWidth + 1),
+				);
+				check(
+					textWidth > 0 && textHeight + 1 >= neededLines * lineHeight,
+					`The ${width}×${height} tooltip background must fit the complete description`,
+				);
+			};
+			for (const [label, beforeHelp] of [
+				["自动扩展查词", button("Shift 悬浮", menu)],
+				["辅助排序", option("自动扩展查词")],
+			] as const) {
+				const help = button(`${label}说明`, menu);
+				menu.scrollTop = 0;
+				const marker = help.getBoundingClientRect();
+				await pointer([
+					{
+						type: "mouseMoved",
+						x: marker.left + marker.width / 2,
+						y: marker.top + marker.height / 2,
+					},
+				]);
+				check(help.matches(":hover"), "Pointer must activate the help marker");
+				await checkTooltip(help);
+				await pointer([{ type: "mouseMoved", x: 1, y: 1 }]);
+				beforeHelp.focus({ preventScroll: true });
+				await browserKey("Tab");
+				check(
+					help.matches(":focus-visible") && !help.matches(":hover"),
+					"Tab must activate the help marker without pointer hover",
+				);
+				await checkTooltip(help);
+			}
+			if (params.has("capture")) await settle();
+			return "dictionary options: complete help descriptions on hover/Tab, viewport scroll and independent switches";
 		}
 		check(
 			!h.container.querySelector('.dict-config input[type="range"]'),

@@ -408,7 +408,7 @@ export function Dictionary({
 														className="dict-option-help"
 														aria-label="自动扩展查词说明"
 														aria-describedby={`${inputId}-dict-expand-help`}
-														data-tooltip="点在词语中间时，也会向前查找完整词语。"
+														data-tooltip="开启后，点在词语中间，也能查找包含该字的完整词语。"
 													>
 														<span aria-hidden="true">?</span>
 													</button>
@@ -428,7 +428,7 @@ export function Dictionary({
 												/>
 											</div>
 											<p id={`${inputId}-dict-expand-help`} className="sr-only">
-												点在词语中间时，也会向前查找完整词语。
+												开启后，点在词语中间，也能查找包含该字的完整词语。
 											</p>
 											<div className="dict-lookup-toggle">
 												<div className="dict-lookup-name">
@@ -440,7 +440,7 @@ export function Dictionary({
 														className="dict-option-help"
 														aria-label="辅助排序说明"
 														aria-describedby={`${inputId}-dict-ranking-help`}
-														data-tooltip="结合词形、读音和词性调整结果顺序。"
+														data-tooltip="开启后，结合原文的词形、读音和词性，优先显示更匹配的词条。"
 													>
 														<span aria-hidden="true">?</span>
 													</button>
@@ -463,7 +463,7 @@ export function Dictionary({
 												id={`${inputId}-dict-ranking-help`}
 												className="sr-only"
 											>
-												结合词形、读音和词性调整结果顺序。
+												开启后，结合原文的词形、读音和词性，优先显示更匹配的词条。
 											</p>
 											<p>基本词形还原始终开启。</p>
 										</div>
