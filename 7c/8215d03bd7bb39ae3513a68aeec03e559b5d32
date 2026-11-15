@@ -1,0 +1,49 @@
+docs/USAGE.md
+  s_488093a9ec7b8e::t_d6053d30aedb9c 42
+frontend/scripts/test-browser.mjs
+  s_488093a9ec7b8e::t_891c6b273c4bda 116-119
+frontend/src/dictionary/Dictionary.tsx
+  s_488093a9ec7b8e::t_18a662fe459669 188,205,224
+  s_488093a9ec7b8e::t_22374f4febad89 2-6,48-54,114-115,199-200,204,206-207,248-283,287,295-296
+  s_488093a9ec7b8e::t_d38d335826f9e4 539-561
+  s_488093a9ec7b8e::t_3ed84b9c9dc857 1
+docs/ARCHITECTURE.md
+  s_488093a9ec7b8e::t_d6053d30aedb9c 259-260
+docs/handovers/reading-practice/DICTIONARY_BASELINE_ACCEPTANCE.md
+  s_488093a9ec7b8e::t_561efe3adde5dc 45
+  s_488093a9ec7b8e::t_d6053d30aedb9c 42-44,46-47
+  s_488093a9ec7b8e::t_464eba112af232 48-51
+docs/PRD.md
+  s_488093a9ec7b8e::t_d6053d30aedb9c 200-201
+frontend/browser-tests/reader-dictionary.tsx
+  s_488093a9ec7b8e::t_8bdc3f1075edb0 17-18,210-225,290-297,327-367,498-503,714-716,721-726,729-732,739-742,749-752,756-759,766-769,771-774,776-779,781-784,787-790,793-796,798-801,803-806,810-816,826-829,843-846,849-850,862-865,867-870,874-877,2313-2319
+  s_488093a9ec7b8e::t_891c6b273c4bda 16,151,159,164-168,504,713,717-720,727-728,733-738,743-748,753-755,760-765,770,775,780,785-786,791-792,797,802,807-809,817-825,830-842,847-848,851-861,866,871-873,878-881,883-886
+  s_488093a9ec7b8e::t_e7effbc81d6630 882
+docs/INFORMATION_ARCHITECTURE.md
+  s_488093a9ec7b8e::t_d6053d30aedb9c 315,327
+  s_488093a9ec7b8e::t_3d12e8c8fc9448 328
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_488093a9ec7b8e::t_561efe3adde5dc 3,21
+frontend/src/materials/MaterialReader.tsx
+  s_488093a9ec7b8e::t_8552e2fb8d7f22 2681-2684
+frontend/src/materials/StudyOverlays.tsx
+  s_488093a9ec7b8e::t_58389f29a2f130 122,130-162,165-180,182-185,187,189-191,193,195-196,198
+frontend/src/materials/study-overlays.css
+  s_488093a9ec7b8e::t_5b8f1f4fe9c308 47-53,55-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7c8215d03bd7bb39ae3513a68aeec03e559b5d32",
+  "prompts": {},
+  "sessions": {
+    "s_488093a9ec7b8e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1da9f-5c81-7160-bf93-f2a4e804b677",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
