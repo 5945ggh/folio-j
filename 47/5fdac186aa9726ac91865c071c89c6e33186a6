@@ -1,0 +1,25 @@
+README.md
+  s_8978bef28ae97b::t_907c95bac3073b 39
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_8978bef28ae97b::t_907c95bac3073b 7
+docs/handovers/BETA_3_RELEASE_ACCEPTANCE.md
+  s_8978bef28ae97b::t_907c95bac3073b 3,9,38,40,42,44,48-50
+docs/handovers/README.md
+  s_8978bef28ae97b::t_907c95bac3073b 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "475fdac186aa9726ac91865c071c89c6e33186a6",
+  "prompts": {},
+  "sessions": {
+    "s_8978bef28ae97b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1df28-bb63-7d10-ab6d-5ecb3f21778f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
