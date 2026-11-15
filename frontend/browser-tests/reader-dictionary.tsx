@@ -13,6 +13,9 @@ export async function readerDictionary(h: BrowserHarness) {
 	const params = new URLSearchParams(location.search);
 	const optionsScene = params.get("scene") === "options";
 	const basicsScene = params.get("scene") === "basics";
+	const selectionLifecycle = params.get("scene") === "selection-lifecycle";
+	const selectionScene =
+		params.get("scene") === "selection" || selectionLifecycle;
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
 	const { SettingsPage } = await import("../src/settings/SettingsPage");
 	const { updateDictionaryLibrary } = await import(
@@ -145,6 +148,7 @@ export async function readerDictionary(h: BrowserHarness) {
 	const segmentReads: string[] = [];
 	const requests: Schema["DictionaryLookupRequest"][] = [];
 	let statusReads = 0;
+	let statusResponses = 0;
 	let lookupResponses = 0;
 	let activeDictionaryId: string | null = basicsScene ? null : "synthetic";
 	let activeDictionaryTitle: string | null = basicsScene
@@ -152,10 +156,16 @@ export async function readerDictionary(h: BrowserHarness) {
 		: "合成测试词典";
 	let hold = false;
 	const deferred: { release?: () => void } = {};
+	let releaseStatus: (() => void) | undefined;
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
 		if (path === "/api/dictionary" && request.method === "GET") {
 			statusReads++;
+			if (selectionLifecycle && statusReads === 1)
+				await new Promise<void>((resolve) => {
+					releaseStatus = resolve;
+				});
+			statusResponses++;
 			return Response.json({
 				ready: activeDictionaryId !== null,
 				dictionary_id: activeDictionaryId,
@@ -197,8 +207,22 @@ export async function readerDictionary(h: BrowserHarness) {
 				});
 			const identity = input.expected_dictionary_id;
 			const root = input.text.startsWith("猫");
-			const term = root ? "猫" : input.text.includes("散歩") ? "散歩" : "道";
-			const reading = root ? "ネコ" : term === "散歩" ? "サンポ" : "ミチ";
+			const selected =
+				selectionScene && input.selection_start != null
+					? Array.from(input.text)
+							.slice(input.selection_start, input.selection_end ?? undefined)
+							.join("")
+					: undefined;
+			const term =
+				selected ?? (root ? "猫" : input.text.includes("散歩") ? "散歩" : "道");
+			const reading =
+				term === "猫"
+					? "ネコ"
+					: term === "散歩"
+						? "サンポ"
+						: term === "歩く"
+							? "アルク"
+							: "ミチ";
 			const start = Array.from(
 				input.text.slice(0, input.text.indexOf(term)),
 			).length;
@@ -263,7 +287,14 @@ export async function readerDictionary(h: BrowserHarness) {
 				dictionary_id: identity,
 				term,
 				surface: term,
-				reading: root ? "ねこ" : term === "散歩" ? "さんぽ" : "みち",
+				reading:
+					term === "猫"
+						? "ねこ"
+						: term === "散歩"
+							? "さんぽ"
+							: term === "歩く"
+								? "あるく"
+								: "みち",
 				start,
 				end,
 				definitions: [
@@ -293,46 +324,47 @@ export async function readerDictionary(h: BrowserHarness) {
 			lookupResponses++;
 			return Response.json({
 				analyses: [analysis],
-				matches: root
-					? [
-							match,
-							{
-								...match,
-								id: "cat-alternate-reading",
-								reading: "マオ",
-								definitions: [
-									{
-										tag: "p",
-										lang: "ja",
-										role: "def2",
-										text: "別の読みの説明。",
-									},
-								],
-							},
-							{
-								...match,
-								id: "cat-particle",
-								term: "猫が",
-								surface: "猫が",
-								end: start + 2,
-								definitions: [
-									{
-										tag: "p",
-										lang: "ja",
-										role: "def2",
-										text: "散歩の短い説明。",
-									},
-								],
-							},
-							{
-								...match,
-								id: "cat-walk",
-								term: "猫が歩く",
-								surface: "猫が歩く",
-								end: start + 4,
-							},
-						]
-					: [match],
+				matches:
+					root && selected === undefined
+						? [
+								match,
+								{
+									...match,
+									id: "cat-alternate-reading",
+									reading: "マオ",
+									definitions: [
+										{
+											tag: "p",
+											lang: "ja",
+											role: "def2",
+											text: "別の読みの説明。",
+										},
+									],
+								},
+								{
+									...match,
+									id: "cat-particle",
+									term: "猫が",
+									surface: "猫が",
+									end: start + 2,
+									definitions: [
+										{
+											tag: "p",
+											lang: "ja",
+											role: "def2",
+											text: "散歩の短い説明。",
+										},
+									],
+								},
+								{
+									...match,
+									id: "cat-walk",
+									term: "猫が歩く",
+									surface: "猫が歩く",
+									end: start + 4,
+								},
+							]
+						: [match],
 			} satisfies Schema["DictionaryLookupResponse"]);
 		}
 		if (path.startsWith("/api/segments/")) {
@@ -463,12 +495,13 @@ export async function readerDictionary(h: BrowserHarness) {
 		"folio-reader-ui-v1",
 		JSON.stringify({
 			focus: false,
-			theme: optionsScene
-				? params.get("theme") === "dark"
-					? "black"
-					: "white"
-				: "system",
-			dictionaryOpacity: 20,
+			theme:
+				optionsScene || selectionScene
+					? params.get("theme") === "dark"
+						? "black"
+						: "white"
+					: "system",
+			dictionaryOpacity: selectionScene ? 72 : 20,
 			marks: { studySegmentUnderlines: true, studySegmentMargins: false },
 		}),
 	);
@@ -677,6 +710,180 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		await new Promise((resolve) => setTimeout(resolve, 200));
 		check(statusReads === 0, "Dictionary status is fetched only on demand");
+		if (selectionScene) {
+			const frame = h.container.querySelector<HTMLIFrameElement>(
+				"iframe.material-part",
+			);
+			const doc = frame?.contentDocument;
+			const first = doc?.querySelector('[data-locator-leaf="0"]');
+			const second = doc?.querySelector('[data-locator-leaf="1"]');
+			const selection = doc?.getSelection();
+			check(
+				frame && doc && first && second && selection,
+				"Selection fixture needs both original lines",
+			);
+			const toolbar = () =>
+				h.container.querySelector<HTMLElement>('[aria-label="选区操作"]');
+			const selectText = async (line: Element, start: number, end: number) => {
+				const node = line.firstChild;
+				check(
+					node?.nodeType === Node.TEXT_NODE,
+					"Selection needs original text",
+				);
+				const range = doc.createRange();
+				range.setStart(node, start);
+				range.setEnd(node, end);
+				selection.removeAllRanges();
+				selection.addRange(range);
+				doc.dispatchEvent(new Event("selectionchange"));
+				await h.until(
+					() => !!toolbar(),
+					"Native selection must open the toolbar",
+				);
+			};
+			const lookup = () => {
+				const tool = toolbar();
+				check(tool, "Selection toolbar must be open");
+				return button("查词", tool);
+			};
+			const card = (word: string) =>
+				h.container.querySelector(
+					`.dict-card[aria-label="词卡 · ${word}"] .dict-source`,
+				);
+			const checkRequest = (word: string) => {
+				const input = requests.at(-1);
+				check(
+					input?.text === word &&
+						input.selection_start === 0 &&
+						input.selection_end === Array.from(word).length &&
+						input.position == null,
+					"Manual lookup must submit exactly the selected text and range",
+				);
+			};
+			await selectText(first, 2, 4);
+			if (selectionLifecycle) {
+				lookup().click();
+				await h.until(
+					() => !!releaseStatus,
+					"First manual lookup must load dictionary status on demand",
+				);
+				await selectText(second, 3, 4);
+				check(
+					releaseStatus,
+					"Deferred dictionary status must be ready to release",
+				);
+				releaseStatus();
+				await h.until(
+					() => statusResponses === 1,
+					"Old status request must complete",
+				);
+				await settle();
+				check(
+					!requests.length && !h.container.querySelector(".dict-card"),
+					"Changing selection during status loading must retire the old lookup",
+				);
+				hold = true;
+				lookup().click();
+				await h.until(
+					() => !!deferred.release,
+					"New selection must reach the dictionary request",
+				);
+				checkRequest("道");
+				button("关闭当前词卡").click();
+				check(
+					deferred.release,
+					"Pending dictionary response must be ready to release",
+				);
+				deferred.release();
+				await h.until(
+					() => lookupResponses === 1,
+					"Closed card's response must complete",
+				);
+				await settle();
+				check(
+					!h.container.querySelector(".dict-deck"),
+					"A closed lookup must ignore its delayed response",
+				);
+				return "reader selection: changing selection discards pending status; closing card discards late lookup";
+			}
+			const tool = toolbar();
+			check(
+				tool,
+				"Manual lookup must be available before loading dictionary status",
+			);
+			const actions = [...tool.querySelectorAll("button")].map(
+				(item) => item.getAttribute("aria-label") ?? item.textContent?.trim(),
+			);
+			check(
+				actions.join("|") === "翻译|朗读|查词|带上下文复制|保存为学习片段",
+				"Selection actions must have the requested reading, copy and save order",
+			);
+			const copy = button("带上下文复制", tool);
+			const save = button("保存为学习片段", tool);
+			check(
+				[copy, save].every((item) => {
+					const divider = item.previousElementSibling;
+					return (
+						divider?.getAttribute("aria-hidden") === "true" &&
+						divider.getBoundingClientRect().width > 0
+					);
+				}),
+				"Visible dividers must separate the copy and save actions",
+			);
+			const lookupButton = lookup();
+			const neutral = getComputedStyle(button("翻译", tool)).backgroundColor;
+			check(
+				!lookupButton.querySelector("svg") &&
+					getComputedStyle(lookupButton).backgroundColor === neutral &&
+					getComputedStyle(save).backgroundColor !== neutral,
+				"Lookup must remain text-only and secondary while save stays emphasized",
+			);
+			const rect = lookupButton.getBoundingClientRect();
+			await clickAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+			await h.until(
+				() => !!card("歩く"),
+				"First manual lookup must open a card without opening dictionary settings",
+			);
+			checkRequest("歩く");
+			check(
+				statusReads > 0 &&
+					button("即时查词").getAttribute("aria-pressed") === "false" &&
+					!h.container.querySelector(".dict-config"),
+				"Manual lookup must leave automatic lookup off",
+			);
+			button("关闭当前词卡").click();
+			selection.removeAllRanges();
+			await glyphClick(first, 2, frame);
+			const point = glyphPoint(second, 3, frame);
+			await browserKey("Shift", "keyDown");
+			await pointer([{ type: "mouseMoved", ...point, modifiers: 8 }]);
+			await settle();
+			await browserKey("Shift", "keyUp");
+			check(
+				requests.length === 1 && !h.container.querySelector(".dict-card"),
+				"While mode is off, ordinary click and Shift hover must keep reading behavior",
+			);
+			button("即时查词").click();
+			await h.until(
+				() => !!h.container.querySelector(".dict-modes"),
+				"Lookup settings must open",
+			);
+			button("点击查词").click();
+			await selectText(second, 3, 4);
+			lookup().click();
+			await h.until(
+				() => !!card("道"),
+				"Manual lookup must still work in click mode",
+			);
+			checkRequest("道");
+			if (params.has("capture")) {
+				button("关闭当前词卡").click();
+				await selectText(first, 2, 4);
+				await pointer([{ type: "mouseMoved", x: 1, y: 1 }]);
+				await settle();
+			}
+			return "reader selection: first exact manual lookup while off; unchanged click/Shift mode, enabled-mode lookup and ordered toolbar";
+		}
 		button("即时查词").click();
 		await h.until(
 			() => !!h.container.querySelector(".dict-installed"),
@@ -2103,6 +2310,12 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		return `dictionary: real body→Japanese child→${window.innerWidth >= 740 ? "four desktop levels" : "compact stack"}→back→close; settings/gallery coexistence and active-layer Escape; saved mark + Shift click retain records; late response ignored`;
 	} finally {
-		if (!((optionsScene || basicsScene) && params.has("capture"))) dispose();
+		if (
+			!(
+				(optionsScene || basicsScene || selectionScene) &&
+				params.has("capture")
+			)
+		)
+			dispose();
 	}
 }

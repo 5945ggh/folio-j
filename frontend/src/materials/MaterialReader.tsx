@@ -2678,14 +2678,10 @@ function Reader({
 			)}
 			{selection && !studyTarget && (
 				<SelectionToolbar
-					onLookup={
-						dictionaryReady && dictionaryPreferences.mode !== "off"
-							? () => {
-									records.clearToolbar();
-									dictionary.current?.selection(selection);
-								}
-							: undefined
-					}
+					onLookup={() => {
+						records.clearToolbar();
+						dictionary.current?.selection(selection);
+					}}
 					anchor={selection.anchor}
 					copying={contextCopy.busy}
 					onCopy={() => {

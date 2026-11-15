@@ -1,4 +1,9 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	isCancelledError,
+	queryOptions,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import {
 	type ReactNode,
 	type Ref,
@@ -39,6 +44,13 @@ export type DictionaryControl = {
 	back: () => boolean;
 	isOpen: () => boolean;
 };
+
+const statusQuery = queryOptions({
+	queryKey: dictionaryKey,
+	queryFn: ({ signal }) => getDictionary(signal),
+	retry: false,
+	staleTime: 0,
+});
 
 export function Dictionary({
 	ref,
@@ -99,12 +111,9 @@ export function Dictionary({
 	options.current = { mode, autoExpand, assistedRanking };
 	const trigger = useRef<HTMLButtonElement>(null);
 	const status = useQuery({
-		queryKey: dictionaryKey,
-		queryFn: ({ signal }) => getDictionary(signal),
-		enabled: menu || mode !== "off",
+		...statusQuery,
+		enabled: menu || mode !== "off" || levels.length > 0,
 		refetchOnWindowFocus: true,
-		retry: false,
-		staleTime: 0,
 	});
 	const selection = status.isError
 		? undefined
@@ -176,7 +185,7 @@ export function Dictionary({
 		if (current.current.length) restoreFocus();
 		return close();
 	};
-	useEffect(
+	useLayoutEffect(
 		() => () => {
 			ticket.current++;
 			current.current[0]?.origin.clear?.();
@@ -187,12 +196,15 @@ export function Dictionary({
 		onActivate();
 		const getStatus = () =>
 			client.getQueryState<typeof status.data>(dictionaryKey);
-		const selected = getStatus();
-		const identity =
+		let selected = getStatus();
+		let identity =
 			selected?.status === "success"
 				? dictionaryIdentity(selected.data)
 				: undefined;
-		if (identity === undefined) {
+		const manual = parent < 0 && origin.input.selection_start != null;
+		// A manual selection can open a card while gesture-based lookup is off.
+		const prepare = manual && (mode === "off" || identity === undefined);
+		if (identity === undefined && !prepare) {
 			setMenu(true);
 			return;
 		}
@@ -205,12 +217,11 @@ export function Dictionary({
 		const snapshot = { mode, autoExpand, assistedRanking };
 		const input = {
 			...origin.input,
-			expected_dictionary_id: identity,
 			auto_expand: snapshot.autoExpand,
 			assisted_ranking: snapshot.assistedRanking,
 		};
 		const id = ++ticket.current;
-		setCardDictionary({ id: identity, title: selected?.data?.title ?? null });
+		if (prepare) setCardDictionary(undefined);
 		setNotice("");
 		setMenu(false);
 		const keep = current.current
@@ -234,13 +245,46 @@ export function Dictionary({
 				),
 			);
 		}
+		const isCurrentTicket = () =>
+			ticket.current === id &&
+			options.current.mode === snapshot.mode &&
+			options.current.autoExpand === snapshot.autoExpand &&
+			options.current.assistedRanking === snapshot.assistedRanking;
+		if (prepare) {
+			try {
+				await client.fetchQuery(statusQuery);
+			} catch (error) {
+				if (!isCurrentTicket()) return;
+				if (isCancelledError(error)) {
+					clearCards();
+					return;
+				}
+				publish([
+					{
+						...level,
+						pending: false,
+						message: error instanceof Error ? error.message : "读取词典失败。",
+					},
+				]);
+				return;
+			}
+			if (!isCurrentTicket()) return;
+			selected = getStatus();
+			identity =
+				selected?.status === "success"
+					? dictionaryIdentity(selected.data)
+					: undefined;
+		}
+		if (identity === undefined) {
+			publish([{ ...level, pending: false, message: "词典暂不可用。" }]);
+			return;
+		}
+		setCardDictionary({ id: identity, title: selected?.data?.title ?? null });
+		const request = { ...input, expected_dictionary_id: identity };
 		const isCurrent = () => {
 			const latest = getStatus();
 			return (
-				ticket.current === id &&
-				options.current.mode === snapshot.mode &&
-				options.current.autoExpand === snapshot.autoExpand &&
-				options.current.assistedRanking === snapshot.assistedRanking &&
+				isCurrentTicket() &&
 				latest?.status === "success" &&
 				dictionaryIdentity(latest.data) === identity
 			);
@@ -248,8 +292,8 @@ export function Dictionary({
 		let message = "";
 		try {
 			const result = await client.fetchQuery({
-				queryKey: ["dictionary", "lookup", identity, input],
-				queryFn: ({ signal }) => lookupDictionary(input, signal),
+				queryKey: ["dictionary", "lookup", identity, request],
+				queryFn: ({ signal }) => lookupDictionary(request, signal),
 				staleTime: 60_000,
 				gcTime: 90_000,
 				retry: false,
@@ -492,28 +536,29 @@ export function Dictionary({
 								{notice && <p role="status">{notice}</p>}
 							</section>
 						)}
-						{levels.length > 0 && cardDictionary?.id === selection && (
-							<DictionaryCards
-								behindPanel={behindPanel}
-								key={levels[0]?.id}
-								mode={mode}
-								levels={levels}
-								opacity={opacity}
-								title={
-									cardDictionary?.title ??
-									(selection === null ? "基础词卡" : "本机词典")
-								}
-								hasDictionary={selection !== null}
-								nested={(depth, origin) => void search(origin, depth)}
-								choose={backTo}
-								backTo={backTo}
-								close={finish}
-								onRecord={(record) => {
-									close();
-									record();
-								}}
-							/>
-						)}
+						{levels.length > 0 &&
+							(!cardDictionary || cardDictionary.id === selection) && (
+								<DictionaryCards
+									behindPanel={behindPanel}
+									key={levels[0]?.id}
+									mode={mode}
+									levels={levels}
+									opacity={opacity}
+									title={
+										cardDictionary?.title ??
+										(selection === null ? "基础词卡" : "本机词典")
+									}
+									hasDictionary={selection !== null}
+									nested={(depth, origin) => void search(origin, depth)}
+									choose={backTo}
+									backTo={backTo}
+									close={finish}
+									onRecord={(record) => {
+										close();
+										record();
+									}}
+								/>
+							)}
 					</>,
 					portal,
 				)}

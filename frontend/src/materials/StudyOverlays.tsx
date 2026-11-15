@@ -119,6 +119,7 @@ export function SelectionToolbar({
 	onSave: () => void;
 	onClose: () => void;
 }) {
+	const hasReadingTools = !!(onTranslate || onSpeak || onLookup);
 	return (
 		<AnchoredStudyTool
 			anchor={anchor}
@@ -126,61 +127,75 @@ export function SelectionToolbar({
 			role="toolbar"
 			onClose={onClose}
 		>
-			{onLookup && (
-				<button
-					type="button"
-					onMouseDown={(event) => event.preventDefault()}
-					onClick={onLookup}
-				>
-					查词
-				</button>
+			{hasReadingTools && (
+				<div className="reader-tool-group">
+					{onTranslate && (
+						<button
+							type="button"
+							onMouseDown={(event) => event.preventDefault()}
+							onClick={onTranslate}
+						>
+							<ToolIcon name="translate" />
+							翻译
+						</button>
+					)}
+					{onSpeak && (
+						<button
+							type="button"
+							onMouseDown={(event) => event.preventDefault()}
+							onClick={onSpeak}
+						>
+							<ToolIcon name="speak" />
+							朗读
+						</button>
+					)}
+					{onLookup && (
+						<button
+							type="button"
+							className="secondary"
+							onMouseDown={(event) => event.preventDefault()}
+							onClick={onLookup}
+						>
+							查词
+						</button>
+					)}
+				</div>
 			)}
 			{onCopy && (
-				<button
-					type="button"
-					aria-label="带上下文复制"
-					aria-busy={copying}
-					disabled={copying}
-					onMouseDown={(event) => event.preventDefault()}
-					onClick={onCopy}
-				>
-					<ToolIcon name="copy" />
-					带上下文复制
-				</button>
+				<div className="reader-tool-group">
+					{hasReadingTools && (
+						<span className="reader-tool-divider" aria-hidden="true" />
+					)}
+					<button
+						type="button"
+						aria-label="带上下文复制"
+						aria-busy={copying}
+						disabled={copying}
+						onMouseDown={(event) => event.preventDefault()}
+						onClick={onCopy}
+					>
+						<ToolIcon name="copy" />
+						带上下文复制
+					</button>
+				</div>
 			)}
-			{onTranslate && (
+			<div className="reader-tool-group">
+				{(hasReadingTools || onCopy) && (
+					<span className="reader-tool-divider" aria-hidden="true" />
+				)}
 				<button
+					id="reader-selection-save"
 					type="button"
+					className="primary"
+					aria-label="保存为学习片段"
+					data-tooltip="保存为学习片段"
 					onMouseDown={(event) => event.preventDefault()}
-					onClick={onTranslate}
+					onClick={onSave}
 				>
-					<ToolIcon name="translate" />
-					翻译
+					<ToolIcon name="save" />
+					保存
 				</button>
-			)}
-			{onSpeak && (
-				<button
-					type="button"
-					onMouseDown={(event) => event.preventDefault()}
-					onClick={onSpeak}
-				>
-					<ToolIcon name="speak" />
-					朗读
-				</button>
-			)}
-			<span className="reader-tool-divider" aria-hidden="true" />
-			<button
-				id="reader-selection-save"
-				type="button"
-				className="primary"
-				aria-label="保存为学习片段"
-				data-tooltip="保存为学习片段"
-				onMouseDown={(event) => event.preventDefault()}
-				onClick={onSave}
-			>
-				<ToolIcon name="save" />
-				保存
-			</button>
+			</div>
 		</AnchoredStudyTool>
 	);
 }
