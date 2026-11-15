@@ -1,0 +1,21 @@
+scripts/release/manifest.json
+  s_8978bef28ae97b::t_1ebfd59dc4b437 21
+scripts/release/README.md
+  s_8978bef28ae97b::t_1ebfd59dc4b437 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f92c3fbbc0ff819faa65b839417cfadd6292a3b5",
+  "prompts": {},
+  "sessions": {
+    "s_8978bef28ae97b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1df28-bb63-7d10-ab6d-5ecb3f21778f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
