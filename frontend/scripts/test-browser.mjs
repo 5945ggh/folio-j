@@ -138,6 +138,12 @@ const scenarios = selectBrowserScenarios(
 		[1280, 900, "?suite=segment-dictionary&scene=lifecycle"],
 		[1280, 900, "?suite=segment-dictionary&scene=dialog"],
 		[390, 900, "?suite=segment-dictionary&scene=dialog"],
+		[1280, 900, "?suite=segment-dictionary&scene=speech&theme=light"],
+		[
+			390,
+			900,
+			"?suite=segment-dictionary&scene=speech&theme=dark&dictionary=failed",
+		],
 		[1280, 900, "?suite=reader-context-copy"],
 		[1280, 900, "?suite=reader-context-copy&direction=vertical-rl"],
 		[320, 900, "?suite=reader-context-copy"],

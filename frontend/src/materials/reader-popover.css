@@ -8,7 +8,7 @@
 }
 
 .reader-r1 .reader-popover:not(.embedded),
-.reader-r1 .reader-study-tool.toolbar {
+.reader-r1 .selection-actions {
 	background: color-mix(
 		in srgb,
 		var(--reader-bg) var(--reader-popover-opacity, var(--dict-opacity, 72%)),

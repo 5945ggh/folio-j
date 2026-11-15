@@ -60,8 +60,8 @@ import { changedSegmentFields, segmentEditFields } from "./segments/edit";
 import { NewAnalysisActions } from "./segments/NewAnalysisActions";
 import { OriginalCard } from "./segments/OriginalCard";
 import { SegmentDeleteDialog } from "./segments/SegmentDeleteDialog";
-import { SegmentDictionary } from "./segments/SegmentDictionary";
 import { SegmentFrame } from "./segments/SegmentFrame";
+import { SegmentReadingTools } from "./segments/SegmentReadingTools";
 import { SpeechPlaybackBar, useStopSpeechOnLeave } from "./speech";
 
 const CONVERSATION_WIDTH_KEY = "folio-j:conversation-width";
@@ -387,7 +387,7 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 		};
 	}, [available, id]);
 	return (
-		<SegmentDictionary
+		<SegmentReadingTools
 			available={available}
 			resetKey={`${id}:${selectedAnalysis}:${selectedRevision}:${compact && chatOpen}:${editing}:${Boolean(analysisEditor)}:${deleting}`}
 			manageState={settingsReturnState(location)}
@@ -820,6 +820,6 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 					/>
 				)}
 			</SegmentFrame>
-		</SegmentDictionary>
+		</SegmentReadingTools>
 	);
 }

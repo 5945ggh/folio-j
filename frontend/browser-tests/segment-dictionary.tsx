@@ -3,7 +3,12 @@ import type { AnalysisDetail } from "../src/analysis/api";
 import type { components } from "../src/api/schema";
 import { startAppTheme } from "../src/theme/browser";
 import type { BrowserHarness } from "./harness";
+import { fakeSpeech } from "./reader-speech-fixture";
 import { materialSegment } from "./segment-materials";
+import {
+	checkSegmentSelectionSpeech,
+	segmentSelectionToolbar,
+} from "./segment-selection-speech";
 
 type Schema = components["schemas"];
 
@@ -19,6 +24,8 @@ export async function segmentDictionary(h: BrowserHarness) {
 	const capture = params.has("capture");
 	const scene = params.get("scene");
 	const retained = scene === "lifecycle";
+	const failedDictionary = params.get("dictionary") === "failed";
+	const speech = fakeSpeech();
 	const { SegmentSessionHost } = await import(
 		"../src/segments/SegmentSessionHost"
 	);
@@ -26,7 +33,11 @@ export async function segmentDictionary(h: BrowserHarness) {
 		...materialSegment,
 		text: "猫が歩く。",
 		context_before:
-			scene === "dialog" ? "コーヒーを飲んだ。".repeat(20) : "静かな朝。",
+			scene === "speech"
+				? "コーヒーを飲んだ。".repeat(64)
+				: scene === "dialog"
+					? "コーヒーを飲んだ。".repeat(20)
+					: "静かな朝。",
 		context_after: "道を走る。",
 		material_provenance: null,
 	};
@@ -44,7 +55,8 @@ export async function segmentDictionary(h: BrowserHarness) {
 		created_at: segment.created_at,
 		updated_at: segment.updated_at,
 		source_md:
-			"猫と**散歩**する。\n\n道を歩く。\n\n*猫*[犬](https://example.invalid)**鳥**\n\n😀か**\u3099猫**が歩く。\n\n中国语译文不应扩大原文范围。",
+			"猫と**散歩**する。\n\n道を歩く。\n\n*猫*[犬](https://example.invalid)**鳥**\n\n😀か**\u3099猫**が歩く。\n\n中国语译文不应扩大原文范围。" +
+			(scene === "speech" ? "\n\n本を読んで言葉を学ぶ。".repeat(24) : ""),
 		warnings: [],
 		sections: [],
 	};
@@ -57,6 +69,11 @@ export async function segmentDictionary(h: BrowserHarness) {
 		const path = new URL(request.url).pathname;
 		if (path === "/api/dictionary" && request.method === "GET") {
 			statusReads++;
+			if (failedDictionary)
+				return Response.json(
+					{ detail: "片段合成词典暂不可用" },
+					{ status: 503 },
+				);
 			return Response.json({
 				ready: true,
 				dictionary_id: "segment-synthetic",
@@ -202,6 +219,17 @@ export async function segmentDictionary(h: BrowserHarness) {
 			),
 			"Segment left toolbar must own the dictionary trigger",
 		);
+		if (scene === "speech")
+			return await checkSegmentSelectionSpeech(h, {
+				speech,
+				original: segment.text,
+				before: segment.context_before,
+				after: segment.context_after,
+				requests,
+				failedDictionary,
+				preview,
+				capture,
+			});
 		button("即时查词").click();
 		await h.until(
 			() => !!h.container.querySelector(".dict-modes"),
@@ -224,6 +252,53 @@ export async function segmentDictionary(h: BrowserHarness) {
 			() => !h.container.querySelector(".dict-config"),
 			"Choosing click lookup must close settings",
 		);
+		if (scene === "card" && !preview) {
+			const trigger = button("即时查词");
+			const probe = document.createElement("span");
+			probe.style.cssText =
+				"display:none;color:var(--color-accent);background-color:var(--color-surface-active)";
+			trigger.after(probe);
+			const matchesAccent = (active: boolean) => {
+				const actual = getComputedStyle(trigger);
+				const accent = getComputedStyle(probe);
+				return (
+					trigger.getAttribute("aria-pressed") === String(active) &&
+					(actual.color === accent.color) === active &&
+					(actual.backgroundColor === accent.backgroundColor) === active
+				);
+			};
+			const verifyBothThemes = async (active: boolean, mode: string) => {
+				for (const appearance of ["light", "dark"] as const) {
+					startAppTheme().select(appearance);
+					await h.until(
+						() =>
+							!h.container.querySelector(".dict-config") &&
+							matchesAccent(active),
+						`Closed Segment settings must leave the dictionary tool ${active ? "blue" : "neutral"} in ${mode} mode (${appearance}, ${innerWidth}px)`,
+					);
+				}
+			};
+			const chooseMode = async (mode: string) => {
+				trigger.click();
+				await h.until(
+					() => !!h.container.querySelector(".dict-modes"),
+					"Dictionary settings must reopen to switch modes",
+				);
+				button(mode).click();
+			};
+			await verifyBothThemes(true, "click");
+			await chooseMode("Shift 悬浮");
+			await verifyBothThemes(true, "Shift");
+			await chooseMode("关闭");
+			await verifyBothThemes(false, "off");
+			await chooseMode("点击查词");
+			await h.until(
+				() => !h.container.querySelector(".dict-config"),
+				"Click mode must be restored for the card test",
+			);
+			startAppTheme().select(theme === "dark" ? "dark" : "light");
+			probe.remove();
+		}
 		await settle();
 		if (preview)
 			return "segment dictionary preview: real page and synthetic local dictionary";
@@ -325,7 +400,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 				"Dialog word-card selection must expose nested lookup",
 			);
 			check(
-				!h.container.querySelector(".segment-dictionary-selection"),
+				!h.container.querySelector(segmentSelectionToolbar),
 				"Dialog word-card selection must not expose the material selection action",
 			);
 			button("查选中文字").click();
@@ -371,14 +446,14 @@ export async function segmentDictionary(h: BrowserHarness) {
 				},
 			]);
 			await h.until(
-				() => !!h.container.querySelector(".segment-dictionary-selection"),
+				() => !!h.container.querySelector(segmentSelectionToolbar),
 				"Complete context selection must expose explicit lookup",
 			);
 			check(
 				requests.length === beforeDrag,
 				"Material drag must keep native selection without querying",
 			);
-			checkTopLayer(".segment-dictionary-selection");
+			checkTopLayer(segmentSelectionToolbar);
 			const selected = document.getSelection()?.toString();
 			button("查所选文字").click();
 			await resolved("complete context selection");
@@ -496,7 +571,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 		);
 		if (scene === "card") {
 			await settle();
-			return `segment dictionary card: ${innerWidth}px, ${theme}; original glyph and shared word card`;
+			return `segment dictionary card: ${innerWidth}px, ${theme}; original glyph and shared word card, click/Shift/off toolbar colors in both themes`;
 		}
 		if (retained) {
 			const parent = find('.dict-card[data-depth="0"]');
@@ -512,7 +587,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 			);
 			await settle();
 			check(
-				!h.container.querySelector(".segment-dictionary-selection"),
+				!h.container.querySelector(segmentSelectionToolbar),
 				"Selecting definitions must not expose the Segment selection toolbar",
 			);
 			button("查选中文字").click();
@@ -619,7 +694,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 		);
 		const selectedText = document.getSelection()?.toString() ?? "";
 		await h.until(
-			() => !!h.container.querySelector(".segment-dictionary-selection"),
+			() => !!h.container.querySelector(segmentSelectionToolbar),
 			"Native Segment selection must expose explicit lookup",
 		);
 		button("查所选文字").click();

@@ -179,6 +179,12 @@
 	justify-content: flex-end;
 	border-top: 1px solid var(--border);
 }
+.app-shell.segment-study-shell .segment-material-speech:not(:empty) {
+	display: flex;
+	flex-shrink: 0;
+	justify-content: center;
+	padding-inline: 18px;
+}
 @media (max-width: 720px) {
 	.app-shell.segment-study-shell .segment-original-card {
 		padding: 18px;

@@ -24,16 +24,8 @@
 	transform: none;
 	max-height: calc(100dvh - 176px);
 }
-.segment-dictionary-selection {
-	position: fixed;
+.selection-actions.segment-selection-toolbar {
 	z-index: 51;
-	padding: 7px 12px;
-	border: 1px solid var(--color-border);
-	border-radius: 7px;
-	background: var(--color-surface);
-	color: var(--color-text);
-	box-shadow: 0 3px 16px var(--color-shadow);
-	font-size: 13px;
 }
 ::highlight(folio-segment-word) {
 	background: var(--color-selection);

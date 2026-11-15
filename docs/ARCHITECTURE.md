@@ -533,7 +533,7 @@ update_analysis_preamble(analysis_id, base_revision_id, body)
 
 ### 4.8 阅读翻译与设备朗读
 
-设备朗读由前端共享控制器管理目标快照与偏好，播放器及声音浮层供 Reader 和 Segment 复用。暂停／继续调用设备适配器并复用当前 utterance；取消、换目标、重播及离页递增代次隔离迟到事件。浏览器取消可能保留全局暂停状态，适配器取消后及新 utterance 入队后检查并恢复，避免重播挂起；偏好只用于下次新播放，恢复当前 utterance 不重新解析。纯逻辑和假设备测试覆盖该状态协调，实际设备表现以实测为准。
+设备朗读由前端共享控制器管理目标快照与偏好，播放器及声音浮层供 Reader 和 Segment 复用。片段页由 `segments/SegmentReadingTools.tsx` 协调可见正文中的选区操作与词卡，`SegmentSelectionToolbar.tsx` 捕获文本并负责片段浮层定位，动作呈现复用 Reader 同样使用的 `selection/SelectionActions.tsx`；选区捕获不读取查词就绪状态，查询长度限制只应用于查词动作。资料弹窗与页面复用同一朗读控制器，播放条随可操作的阅读表面切换。暂停／继续调用设备适配器并复用当前 utterance；取消、换目标、重播及离页递增代次隔离迟到事件。浏览器取消可能保留全局暂停状态，适配器取消后及新 utterance 入队后检查并恢复，避免重播挂起；偏好只用于下次新播放，恢复当前 utterance 不重新解析。纯逻辑和假设备测试覆盖该状态协调，实际设备表现以实测为准。
 
 产品行为由 [PRD 4.8](PRD.md#48-阅读翻译与设备朗读)维护。translation_settings、translation_tasks、translation_results、translation_adoptions 四表由初始基线直接建立，不改变 Provider、模型或 Segment 身份。空库与重复升级检查覆盖 ORM 一致性；现行迁移链见第 3 节，历史增量迁移的记录见对应阶段验收。
 

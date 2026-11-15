@@ -1,51 +1,27 @@
-import {
-	type ReactNode,
-	useEffect,
-	useLayoutEffect,
-	useRef,
-	useState,
-} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { SelectionActions } from "../selection/SelectionActions";
 import type { ScreenAnchor } from "./reader-study";
 import { studyOverlayPosition } from "./study-overlays";
 import "./study-overlays.css";
 import "./reader-popover.css";
 
-function ToolIcon({ name }: { name: "translate" | "speak" | "save" | "copy" }) {
-	const path = {
-		copy: "M9 8h11v13H9zM5 16H3V3h11v2",
-		translate: "m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1m10 20-5-10-5 10M14 18h6",
-		speak:
-			"M11 5 6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14",
-		save: "M6 4h12v16l-6-4-6 4z",
-	}[name];
-	return (
-		<svg
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.5"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<path d={path} />
-		</svg>
-	);
-}
-
-function AnchoredStudyTool({
+export function SelectionToolbar({
+	onLookup,
 	anchor,
-	label,
-	role,
-	children,
+	onSave,
+	onTranslate,
+	onSpeak,
+	onCopy,
+	copying = false,
 	onClose,
-	fixed = false,
 }: {
-	fixed?: boolean;
+	onLookup?: () => void;
+	onTranslate?: () => void;
+	onSpeak?: () => void;
+	onCopy?: () => void;
+	copying?: boolean;
 	anchor: ScreenAnchor;
-	label: string;
-	role: "toolbar" | "dialog";
-	children: ReactNode;
+	onSave: () => void;
 	onClose: () => void;
 }) {
 	const element = useRef<HTMLDivElement>(null);
@@ -85,118 +61,18 @@ function AnchoredStudyTool({
 		};
 	}, [anchor]);
 	return (
-		// biome-ignore lint/a11y/useAriaPropsSupportedByRole: both permitted roles support an accessible label.
-		<div
+		<SelectionActions
 			ref={element}
-			className={`reader-study-tool ${role}${fixed ? " fixed" : ""}`}
-			style={fixed ? undefined : position}
-			role={role}
-			aria-label={label}
-			aria-modal={role === "dialog" ? false : undefined}
+			style={position}
 			data-reader-tool=""
-		>
-			{children}
-		</div>
-	);
-}
-
-export function SelectionToolbar({
-	onLookup,
-	anchor,
-	onSave,
-	onTranslate,
-	onSpeak,
-	onCopy,
-	copying = false,
-	onClose,
-}: {
-	onLookup?: () => void;
-	onTranslate?: () => void;
-	onSpeak?: () => void;
-	onCopy?: () => void;
-	copying?: boolean;
-	anchor: ScreenAnchor;
-	onSave: () => void;
-	onClose: () => void;
-}) {
-	const hasReadingTools = !!(onTranslate || onSpeak || onLookup);
-	return (
-		<AnchoredStudyTool
-			anchor={anchor}
-			label="选区操作"
-			role="toolbar"
-			onClose={onClose}
-		>
-			{hasReadingTools && (
-				<div className="reader-tool-group">
-					{onTranslate && (
-						<button
-							type="button"
-							onMouseDown={(event) => event.preventDefault()}
-							onClick={onTranslate}
-						>
-							<ToolIcon name="translate" />
-							翻译
-						</button>
-					)}
-					{onSpeak && (
-						<button
-							type="button"
-							onMouseDown={(event) => event.preventDefault()}
-							onClick={onSpeak}
-						>
-							<ToolIcon name="speak" />
-							朗读
-						</button>
-					)}
-					{onLookup && (
-						<button
-							type="button"
-							className="secondary"
-							onMouseDown={(event) => event.preventDefault()}
-							onClick={onLookup}
-						>
-							查词
-						</button>
-					)}
-				</div>
-			)}
-			{onCopy && (
-				<div className="reader-tool-group">
-					{hasReadingTools && (
-						<span className="reader-tool-divider" aria-hidden="true" />
-					)}
-					<button
-						type="button"
-						aria-label="带上下文复制"
-						aria-busy={copying}
-						disabled={copying}
-						onMouseDown={(event) => event.preventDefault()}
-						onClick={onCopy}
-					>
-						<ToolIcon name="copy" />
-						带上下文复制
-					</button>
-				</div>
-			)}
-			<div className="reader-tool-group">
-				{(hasReadingTools || onCopy) && (
-					<span className="reader-tool-divider" aria-hidden="true" />
-				)}
-				<button
-					id="reader-selection-save"
-					type="button"
-					className="primary"
-					aria-label="保存为学习片段"
-					data-tooltip="保存为学习片段"
-					onMouseDown={(event) => event.preventDefault()}
-					onClick={onSave}
-				>
-					<ToolIcon name="save" />
-					保存
-				</button>
-			</div>
-		</AnchoredStudyTool>
+			onTranslate={onTranslate}
+			onSpeak={onSpeak}
+			onLookup={onLookup}
+			onCopy={onCopy}
+			copying={copying}
+			onSave={onSave}
+			saveButtonId="reader-selection-save"
+		/>
 	);
 }
 

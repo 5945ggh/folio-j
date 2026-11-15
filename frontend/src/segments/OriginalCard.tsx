@@ -4,12 +4,12 @@ import type { Segment } from "../content";
 import { LookupText } from "../dictionary/LookupText";
 import { SegmentMaterialOrigin } from "../materials/SegmentMaterialOrigin";
 import { ConfirmDialog, dateLabel } from "../Shared";
-import { SpeechControls } from "../speech";
+import { SpeechControls, SpeechPlaybackBar } from "../speech";
 import {
 	SegmentCurrentTranslation,
 	SegmentTranslations,
 } from "../translation/SegmentTranslations";
-import { SegmentDictionaryDialogLayer } from "./SegmentDictionary";
+import { SegmentReadingDialogLayer } from "./SegmentReadingTools";
 import { SegmentShare, type ShareSourceQuery } from "./SegmentShare";
 import "./material-fields.css";
 import "./original-card.css";
@@ -29,7 +29,11 @@ function Field({
 		<section className="segment-material-field">
 			<h4>{label}</h4>
 			<LookupText
-				className="segment-material-field-text"
+				className={
+					lookup
+						? "segment-material-field-text segment-selection-text"
+						: "segment-material-field-text"
+				}
 				contentKey={value}
 				lang={lang}
 				enabled={lookup}
@@ -81,7 +85,7 @@ export function OriginalCard({
 					/>
 				</header>
 				<LookupText
-					className="segment-context-preview"
+					className="segment-context-preview segment-selection-text"
 					lang="ja"
 					contentKey={`${segment.context_before}\n${segment.text}\n${segment.context_after}`}
 				>
@@ -203,6 +207,9 @@ export function OriginalCard({
 								{dateLabel(segment.created_at)} 保存
 							</p>
 						</section>
+						<div className="segment-material-speech">
+							<SpeechPlaybackBar />
+						</div>
 						<footer className="segment-material-actions">
 							<button
 								type="button"
@@ -218,7 +225,7 @@ export function OriginalCard({
 								完成
 							</button>
 						</footer>
-						<SegmentDictionaryDialogLayer />
+						<SegmentReadingDialogLayer />
 					</ConfirmDialog>,
 					overlayHost,
 				)}

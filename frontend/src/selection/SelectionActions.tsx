@@ -1,0 +1,133 @@
+import type { ComponentProps } from "react";
+import "./selection-actions.css";
+
+function ToolIcon({ name }: { name: "translate" | "speak" | "save" | "copy" }) {
+	const path = {
+		copy: "M9 8h11v13H9zM5 16H3V3h11v2",
+		translate: "m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1m10 20-5-10-5 10M14 18h6",
+		speak:
+			"M11 5 6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14",
+		save: "M6 4h12v16l-6-4-6 4z",
+	}[name];
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<path d={path} />
+		</svg>
+	);
+}
+
+/** The host measures and positions this toolbar independently of its actions. */
+export function SelectionActions({
+	className,
+	onTranslate,
+	onSpeak,
+	onLookup,
+	lookupLabel,
+	onCopy,
+	copying = false,
+	onSave,
+	saveButtonId,
+	...root
+}: Pick<ComponentProps<"div">, "className" | "ref" | "style"> & {
+	onTranslate?: () => void;
+	onSpeak?: () => void;
+	onLookup?: () => void;
+	lookupLabel?: string;
+	onCopy?: () => void;
+	copying?: boolean;
+	onSave?: () => void;
+	saveButtonId?: string;
+}) {
+	const hasReadingTools = !!(onTranslate || onSpeak || onLookup);
+	return (
+		<div
+			{...root}
+			className={
+				className ? `selection-actions ${className}` : "selection-actions"
+			}
+			role="toolbar"
+			aria-label="选区操作"
+		>
+			{hasReadingTools && (
+				<div className="selection-action-group">
+					{onTranslate && (
+						<button
+							type="button"
+							onPointerDown={(event) => event.preventDefault()}
+							onClick={onTranslate}
+						>
+							<ToolIcon name="translate" />
+							翻译
+						</button>
+					)}
+					{onSpeak && (
+						<button
+							type="button"
+							onPointerDown={(event) => event.preventDefault()}
+							onClick={onSpeak}
+						>
+							<ToolIcon name="speak" />
+							朗读
+						</button>
+					)}
+					{onLookup && (
+						<button
+							type="button"
+							className="secondary"
+							aria-label={lookupLabel}
+							onPointerDown={(event) => event.preventDefault()}
+							onClick={onLookup}
+						>
+							查词
+						</button>
+					)}
+				</div>
+			)}
+			{onCopy && (
+				<div className="selection-action-group">
+					{hasReadingTools && (
+						<span className="selection-action-divider" aria-hidden="true" />
+					)}
+					<button
+						type="button"
+						aria-label="带上下文复制"
+						aria-busy={copying}
+						disabled={copying}
+						onPointerDown={(event) => event.preventDefault()}
+						onClick={onCopy}
+					>
+						<ToolIcon name="copy" />
+						带上下文复制
+					</button>
+				</div>
+			)}
+			{onSave && (
+				<div className="selection-action-group">
+					{(hasReadingTools || onCopy) && (
+						<span className="selection-action-divider" aria-hidden="true" />
+					)}
+					<button
+						id={saveButtonId}
+						type="button"
+						className="primary"
+						aria-label="保存为学习片段"
+						data-tooltip="保存为学习片段"
+						onPointerDown={(event) => event.preventDefault()}
+						onClick={onSave}
+					>
+						<ToolIcon name="save" />
+						保存
+					</button>
+				</div>
+			)}
+		</div>
+	);
+}

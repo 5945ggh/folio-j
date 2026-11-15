@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { ReturnDestination } from "../navigation";
 import { SettingsLink } from "../settings/SettingsNavigation";
-import { SegmentDictionaryTool } from "./SegmentDictionary";
+import { SegmentDictionaryTool } from "./SegmentReadingTools";
 
 function ToolIcon({
 	name,

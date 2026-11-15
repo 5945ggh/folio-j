@@ -15,6 +15,11 @@ import type { DictionaryPassage } from "../dictionary/dictionary-passage";
 import { LookupTextContext } from "../dictionary/LookupText";
 import { useDictionaryPreferences } from "../dictionary/use-dictionary-preferences";
 import type { ReturnDestination } from "../navigation";
+import {
+	readSegmentSelection,
+	SegmentSelectionToolbar,
+	type SelectedText,
+} from "./SegmentSelectionToolbar";
 import "./segment-dictionary.css";
 
 const ToolContext = createContext<ReactNode>(null);
@@ -22,8 +27,8 @@ const DialogLayerContext = createContext<
 	((element: HTMLDivElement | null) => void) | undefined
 >(undefined);
 
-/** Only the complete, read-only material dialog opts into lookup. */
-export function SegmentDictionaryDialogLayer() {
+/** The complete material dialog hosts reading tools above its backdrop. */
+export function SegmentReadingDialogLayer() {
 	const mount = useContext(DialogLayerContext);
 	return <div className="segment-dictionary-layer" ref={mount} />;
 }
@@ -32,10 +37,8 @@ export function SegmentDictionaryTool() {
 	return useContext(ToolContext);
 }
 
-type SelectedText = { text: string; range: Range };
-
-/** Segment-specific lifecycle and placement around the shared lookup module. */
-export function SegmentDictionary({
+/** Scope dictionary cards and selection actions to the visible reading surface. */
+export function SegmentReadingTools({
 	children,
 	available,
 	resetKey,
@@ -56,6 +59,7 @@ export function SegmentDictionary({
 	const [lookupEpoch, setLookupEpoch] = useState(0);
 	const onClear = useCallback(() => setLookupEpoch((epoch) => epoch + 1), []);
 	const [selected, setSelected] = useState<SelectedText | null>(null);
+	const dismissSelection = useCallback(() => setSelected(null), []);
 	const clear = useCallback(() => {
 		control.current?.close();
 		setSelected(null);
@@ -98,17 +102,21 @@ export function SegmentDictionary({
 	// pending lookups as well as visible cards.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: resetKey identifies the rendered reading context.
 	useLayoutEffect(() => {
-		control.current?.close();
-		setSelected(null);
+		clear();
 		onClear();
-	}, [available, resetKey, preferences.mode, onClear]);
+	}, [available, resetKey, clear, onClear]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Changing lookup mode closes its settings and cards, including across tabs.
+	useLayoutEffect(() => {
+		control.current?.close();
+		onClear();
+	}, [preferences.mode, onClear]);
 	useEffect(() => {
 		if (!available) return;
 		const outside = (event: PointerEvent) => {
 			if (!(event.target instanceof Element)) return;
 			if (
 				event.target.closest(
-					".dict-card,.dict-config,.dict-trigger,.segment-dictionary-selection",
+					".dict-card,.dict-config,.dict-trigger,.segment-selection-toolbar",
 				)
 			)
 				return;
@@ -138,28 +146,11 @@ export function SegmentDictionary({
 			} else setSelected(null);
 		};
 		const selection = () => {
-			const current = document.getSelection();
-			const range = current?.rangeCount ? current.getRangeAt(0) : null;
-			const element = range?.startContainer.parentElement?.closest(
-				"[data-dictionary-text]",
-			);
-			const text = (current?.toString() ?? "").normalize("NFC");
+			const dialog = dialogPortal?.closest("dialog") ?? null;
 			setSelected(
-				ready &&
-					!current?.isCollapsed &&
-					range &&
-					element &&
-					scope.current?.contains(element) &&
-					(element.closest(".segment-reader") ||
-						dialogPortal?.closest("dialog")?.contains(element)) &&
-					!element.closest(".dict-card,.dict-config,[inert]") &&
-					(!element.closest("dialog") ||
-						dialogPortal?.closest("dialog")?.contains(element)) &&
-					element.contains(range.endContainer) &&
-					text.trim() &&
-					Array.from(text).length <= 512
-					? { text, range: range.cloneRange() }
-					: null,
+				readSegmentSelection(
+					dialog ?? scope.current?.querySelector(".segment-reader") ?? null,
+				),
 			);
 		};
 		const modal = (event: Event) => {
@@ -178,7 +169,7 @@ export function SegmentDictionary({
 			document.removeEventListener("selectionchange", selection);
 			document.removeEventListener("toggle", modal, true);
 		};
-	}, [available, ready, clear, dialogPortal]);
+	}, [available, clear, dialogPortal]);
 	const context = useMemo(
 		() => ({
 			mode: preferences.mode,
@@ -204,7 +195,7 @@ export function SegmentDictionary({
 				updatePreferences({ assistedRanking })
 			}
 			onReady={setReady}
-			onActivate={() => setSelected(null)}
+			onActivate={dismissSelection}
 			behindPanel={false}
 			opacity={100}
 			restoreFocus={restoreFocus}
@@ -241,8 +232,22 @@ export function SegmentDictionary({
 			<span aria-hidden="true">辞</span>
 		</button>
 	);
-	const box = selected?.range.getBoundingClientRect();
 	const surfacePortal = dialogPortal ?? portal;
+	const lookupText = selected?.text.normalize("NFC") ?? "";
+	const lookupLength = Array.from(lookupText).length;
+	const lookupSelection =
+		selected && lookupLength <= 512
+			? () => {
+					control.current?.lookup({
+						input: {
+							text: lookupText,
+							selection_start: 0,
+							selection_end: lookupLength,
+						},
+						anchor: selected.anchor,
+					});
+				}
+			: undefined;
 	return (
 		<div className="segment-dictionary-scope" ref={scope}>
 			<LookupTextContext value={context}>
@@ -253,34 +258,13 @@ export function SegmentDictionary({
 			<div className="segment-dictionary-layer" ref={setPortal} />
 			{available &&
 				selected &&
-				box &&
 				surfacePortal &&
 				createPortal(
-					<button
-						type="button"
-						className="segment-dictionary-selection"
-						style={{
-							left: Math.max(8, Math.min(window.innerWidth - 108, box.left)),
-							top: Math.max(
-								8,
-								Math.min(window.innerHeight - 44, box.bottom + 6),
-							),
-						}}
-						onPointerDown={(event) => event.preventDefault()}
-						onClick={() => {
-							control.current?.lookup({
-								input: {
-									text: selected.text,
-									selection_start: 0,
-									selection_end: Array.from(selected.text).length,
-								},
-								anchor: box,
-							});
-							setSelected(null);
-						}}
-					>
-						查所选文字
-					</button>,
+					<SegmentSelectionToolbar
+						selection={selected}
+						onLookup={lookupSelection}
+						onDismiss={dismissSelection}
+					/>,
 					surfacePortal,
 				)}
 		</div>

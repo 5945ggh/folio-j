@@ -17,6 +17,12 @@
 	display: none;
 }
 
+/* The dialog has its own controls; keep the reading and discussion space reserved. */
+.app-shell.segment-study-shell:has(.segment-material-dialog[open])
+.segment-speech-dock {
+	visibility: hidden;
+}
+
 .app-shell.segment-study-shell .segment-speech-dock > .device-speech-bar {
 	margin: 0;
 	box-shadow: 0 3px 14px light-dark(#00000014, var(--color-shadow));
