@@ -1,0 +1,123 @@
+frontend/browser-tests/dictionary-settings.tsx
+  s_488093a9ec7b8e::t_e817ece84c760f 599,601
+frontend/scripts/test-browser.mjs
+  s_488093a9ec7b8e::t_69cefa52141c1c 120-121
+  s_488093a9ec7b8e::t_e817ece84c760f 115
+backend/src/app/services/dictionary_lookup.py
+  s_488093a9ec7b8e::t_c0d7e70704b29e 556-557,559-560
+  s_488093a9ec7b8e::t_0b54a1132a97c0 9,23-24,173-210,263
+  s_488093a9ec7b8e::t_baad9e6ff04d25 106-108
+  s_488093a9ec7b8e::t_b2df465a311e0a 105
+  s_488093a9ec7b8e::t_b7372a02d5bb8e 456-458
+  s_488093a9ec7b8e::t_f2b1722ddbdcde 6,41,433-438,441-447,463-474,478-514,519,553-555,561-564,576,578,580-581,596
+  s_488093a9ec7b8e::t_a8a77fa4f9aaab 439-440,448-455,459-462,475-477,558
+  s_488093a9ec7b8e::t_45142565404ae2 572-574,579
+frontend/browser-tests/dictionary-inflection-layout.tsx
+  s_488093a9ec7b8e::t_69cefa52141c1c 50-68,153-154,212-226,350-353
+  s_488093a9ec7b8e::t_b168ac90c0a8be 5-8
+  s_488093a9ec7b8e::t_409591fcc2d5ab 69-73,80,311-327
+frontend/src/dictionary/dictionary-pages.ts
+  s_488093a9ec7b8e::t_5e86fe11644111 37
+  s_488093a9ec7b8e::t_83f9fe07445de4 1-4,11,15-18,32-36,38-45
+  s_488093a9ec7b8e::t_8271c39ce540e3 46
+docs/handovers/reading-practice/DICTIONARY_BASELINE_ACCEPTANCE.md
+  s_488093a9ec7b8e::t_56b341ef6dd12f 14-27
+  s_488093a9ec7b8e::t_bdde9d04527bb9 2,4-6,8-12,28-30
+  s_488093a9ec7b8e::t_35c93bcf3e909d 13
+  s_488093a9ec7b8e::t_badf0044b583c8 1,3,31
+  s_488093a9ec7b8e::t_5fa13afe886501 7
+frontend/src/dictionary/dictionary-reading.ts
+  s_488093a9ec7b8e::t_c16c0cf367153c 1-3,116-118,124-134,139-147,149-181
+  s_488093a9ec7b8e::t_3b2069b70af4cc 4-115,119-123,135-138,148
+docs/ARCHITECTURE.md
+  s_488093a9ec7b8e::t_e4f200c8ebf2df 254-255
+  s_488093a9ec7b8e::t_5f18f4d4e2864a 253
+README.md
+  s_488093a9ec7b8e::t_bdde9d04527bb9 21
+frontend/src/settings/DictionarySettings.tsx
+  s_488093a9ec7b8e::t_90ea5b008af993 315,389
+frontend/src/api/schema.d.ts
+  s_488093a9ec7b8e::t_9b84b566f03151 1923
+  s_488093a9ec7b8e::t_bdde9d04527bb9 1921-1922,1924,1939-1940,2030-2067
+frontend/src/dictionary/dictionary.css
+  s_488093a9ec7b8e::t_4a4dc5c4c78833 266-267
+  s_488093a9ec7b8e::t_ee93db37cea902 264
+  s_488093a9ec7b8e::t_90ea5b008af993 248-263,265,268
+frontend/browser-tests/reader-dictionary.tsx
+  s_488093a9ec7b8e::t_3b2069b70af4cc 150-152,215-225,228-229,235-254,256-259,743-746,1914-1917,1960-1963,1965-1968,1971-1974,1978-1980
+  s_488093a9ec7b8e::t_e817ece84c760f 1895-1896
+  s_488093a9ec7b8e::t_c36d139d4f3e7c 15,149,198,201,209-214,226-227,230-234,255,260,263,268,295,336,593-597,741-742,747-760,1911,1913,1918-1919,1921-1924,1931-1932,1935-1936,1939-1945,1952-1959,1964,1969-1970,1975-1977,1981-1983,2040
+frontend/src/dictionary/DictionaryCards.tsx
+  s_488093a9ec7b8e::t_90ea5b008af993 94-100,102,588,600,618
+  s_488093a9ec7b8e::t_3b2069b70af4cc 13-17,124,126-131,133-161,184-188,398-400
+  s_488093a9ec7b8e::t_b168ac90c0a8be 122-123
+  s_488093a9ec7b8e::t_e817ece84c760f 163-164,182,189
+  s_488093a9ec7b8e::t_84492f66aa61bf 27,109-118,125,132,162,165-172,178-181,183,190-195,202,214,340,364,382,397,401,523,585-587,617,619
+  s_488093a9ec7b8e::t_ee93db37cea902 173,177
+  s_488093a9ec7b8e::t_ac2692923adeb3 119-121
+  s_488093a9ec7b8e::t_c208388f705f1a 174-176
+docs/INFORMATION_ARCHITECTURE.md
+  s_488093a9ec7b8e::t_7a6ac261956fc5 323
+  s_488093a9ec7b8e::t_5fa13afe886501 319
+  s_488093a9ec7b8e::t_e4f200c8ebf2df 114
+  s_488093a9ec7b8e::t_033ca2242482bd 320
+backend/tests/test_dictionary_store.py
+  s_488093a9ec7b8e::t_3b662323baf568 225-227
+docs/USAGE.md
+  s_488093a9ec7b8e::t_e4f200c8ebf2df 41
+  s_488093a9ec7b8e::t_0df8f16254340a 44
+docs/PRD.md
+  s_488093a9ec7b8e::t_e4f200c8ebf2df 194-195
+  s_488093a9ec7b8e::t_65955cbd6bb2f3 196
+backend/tests/test_dictionary_library.py
+  s_488093a9ec7b8e::t_3b662323baf568 60-62,335-339
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_488093a9ec7b8e::t_badf0044b583c8 3,21
+frontend/src/dictionary/dictionary-pages.test.ts
+  s_488093a9ec7b8e::t_1b3c03b2914c6d 33,35-54,57-58,63
+  s_488093a9ec7b8e::t_089354631c7fab 34,55-56
+  s_488093a9ec7b8e::t_3b2069b70af4cc 3-6,59-62
+  s_488093a9ec7b8e::t_7621dfab0f16ef 64
+frontend/src/dictionary/dictionary-reading.test.ts
+  s_488093a9ec7b8e::t_1b3c03b2914c6d 1-23
+backend/openapi.json
+  s_488093a9ec7b8e::t_9b84b566f03151 1173
+  s_488093a9ec7b8e::t_bdde9d04527bb9 1235-1241,1657-1750
+frontend/src/dictionary/dictionary-api.ts
+  s_488093a9ec7b8e::t_83f9fe07445de4 9-10,15-16,19-21
+  s_488093a9ec7b8e::t_3b2069b70af4cc 17-18
+  s_488093a9ec7b8e::t_9d8398bc05c7fe 22
+backend/src/app/dictionary_schemas.py
+  s_488093a9ec7b8e::t_b2df465a311e0a 186-188
+  s_488093a9ec7b8e::t_0fbcb7d818b6c5 96-99,101,161-181
+  s_488093a9ec7b8e::t_eb2a46157fc13c 100
+  s_488093a9ec7b8e::t_0fd5e1c9858acf 182-183
+backend/tests/test_dictionary_lookup.py
+  s_488093a9ec7b8e::t_b7372a02d5bb8e 570-574
+  s_488093a9ec7b8e::t_bcc63a662b7219 16,430,569
+frontend/src/dictionary/Dictionary.tsx
+  s_488093a9ec7b8e::t_b1551fe7fd871c 23,90-93,112,137,139-140,190-191,195,199,208,213,237-247,251,257,260-262,265,267,374,472-477,495
+  s_488093a9ec7b8e::t_3b2069b70af4cc 109-111,188-189,192-194,258,378-380,496-516
+frontend/src/dictionary/dictionary-inflection.ts
+  s_488093a9ec7b8e::t_83f9fe07445de4 14-16
+backend/tests/test_dictionary_source_analysis.py
+  s_488093a9ec7b8e::t_b7372a02d5bb8e 29-32,79-84,102-103
+  s_488093a9ec7b8e::t_b2df465a311e0a 7,11-16,129-141
+  s_488093a9ec7b8e::t_d7548c81e5f2b5 1-6,8-10,17-28,33-78,85-101,104-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "27f80440a03fb08e4ca38c68d9937a04f584fb29",
+  "prompts": {},
+  "sessions": {
+    "s_488093a9ec7b8e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1da9f-5c81-7160-bf93-f2a4e804b677",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
