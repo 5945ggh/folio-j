@@ -11,7 +11,9 @@ const forms: Record<NonNullable<Part["form"]>, string> = {
 };
 
 /** Use actual source components; the headword already identifies the first component's base. */
-export function dictionaryInflection(entry: DictionaryMatch): string {
+export function dictionaryInflection(
+	entry: Pick<DictionaryMatch, "inflection">,
+): string {
 	return (entry.inflection ?? [])
 		.map((part, index) => {
 			const detail = [

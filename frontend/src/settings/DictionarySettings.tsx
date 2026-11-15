@@ -312,7 +312,7 @@ export function DictionarySettings() {
 					<div className="dictionary-empty settings-group">
 						<DictionaryGlyph />
 						<strong>还没有安装词典</strong>
-						<p>导入第一本后，就可以在书中开启即时查词。</p>
+						<p>导入词典，在基础词卡中查看释义与例句。</p>
 						{importButton}
 						<p className="dictionary-format">
 							支持 Yomitan format 3 词条词典
@@ -386,7 +386,7 @@ export function DictionarySettings() {
 							</NativeSelect>
 						</label>
 					) : replacements.length === 0 ? (
-						<p>这是最后一本词典，删除后将不能即时查词。</p>
+						<p>删除最后一本词典后，即时查词仍可显示基础词卡。</p>
 					) : null}
 					{change.isError && change.variables.kind === "delete" && (
 						<>

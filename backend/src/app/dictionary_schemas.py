@@ -93,7 +93,12 @@ class DictionaryTokenHint(StrictInput):
 
 
 class DictionaryLookupRequest(StrictInput):
-    expected_dictionary_id: str | None = Field(default=None, min_length=1, max_length=64)
+    expected_dictionary_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=64,
+        description="Omit to use the current dictionary. Send null to require its absence.",
+    )
     auto_expand: bool = True
     assisted_ranking: bool = True
     text: str = Field(min_length=1, max_length=8192)
@@ -153,5 +158,31 @@ class DictionaryMatch(BaseModel):
     )
 
 
+class DictionarySourceComponent(BaseModel):
+    """One complete tokenizer component of the original lookup text."""
+
+    start: int
+    end: int
+    surface: str
+    reading: str
+    dictionary_form: str
+    pos: list[str] = Field(min_length=6, max_length=6)
+    is_oov: bool
+
+
+class DictionarySourceAnalysis(BaseModel):
+    """Source evidence for one lookup span, independent of dictionary entries."""
+
+    start: int
+    end: int
+    surface: str
+    reading: str
+    components: list[DictionarySourceComponent]
+    inflection: list[DictionaryInflectionPart]
+
+
 class DictionaryLookupResponse(BaseModel):
     matches: list[DictionaryMatch]
+    analyses: list[DictionarySourceAnalysis] = Field(
+        default_factory=lambda: list[DictionarySourceAnalysis]()
+    )

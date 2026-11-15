@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import threading
 import unicodedata
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING, cast
@@ -18,6 +20,8 @@ from app.dictionary_schemas import (
     DictionaryLookupResponse,
     DictionaryMatch,
     DictionaryNode,
+    DictionarySourceAnalysis,
+    DictionarySourceComponent,
     DictionaryTokenHint,
 )
 from app.nlp.contracts import MaterialReadingToken
@@ -34,6 +38,7 @@ TOKEN_CONTEXT = 96
 MAX_CARDS = 40
 MAX_TOKEN_COMPOUND = 8
 _BREAKS = frozenset('。！？!?、，,；;：:「」『』【】（）()[]{}"“”')
+_KANA_READING = re.compile(r"[ぁ-ゖァ-ヺーゝゞヽヾ\u3099\u309a]+")
 _ANALYZER_LOCK = threading.Lock()
 _lexicon: dictionary.Dictionary | None = None
 
@@ -97,6 +102,10 @@ def _complete_tokens(request: DictionaryLookupRequest) -> list[MaterialReadingTo
     assert point is not None
     first = max(0, point - MAX_WORD_LENGTH + 1)
     last = min(len(request.text), point + MAX_WORD_LENGTH)
+    if request.selection_end is not None:
+        last = min(
+            len(request.text), max(last, min(request.selection_end + 1, point + TOKEN_CONTEXT))
+        )
     hints = sorted(
         (hint for hint in request.tokens if hint.end > first and hint.start < last),
         key=lambda hint: (hint.start, hint.end),
@@ -161,7 +170,44 @@ def _covers(request: DictionaryLookupRequest, start: int, end: int) -> bool:
     return start <= request.position < end and (request.auto_expand or start == request.position)
 
 
-def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
+def _token_ends(
+    text: str, tokens: Sequence[MaterialReadingToken], index: int
+) -> list[tuple[int, int]]:
+    token = tokens[index]
+    ends = [(token.end, index + 1)]
+    previous = token.end
+    for stop, following in enumerate(
+        tokens[index + 1 : index + MAX_TOKEN_COMPOUND], start=index + 2
+    ):
+        auxiliary = (
+            following.pos[0] == "助動詞"
+            or (
+                following.pos[:2] == ["助詞", "接続助詞"]
+                and following.surface in {"て", "で"}
+                and token.pos[0] in {"動詞", "形容詞"}
+            )
+            or (
+                token.pos[0] == "形容詞"
+                and following.pos[:2] == ["形容詞", "非自立可能"]
+                and following.dictionary_form == "ない"
+            )
+            or (
+                following.pos[:2] == ["動詞", "非自立可能"]
+                and text[previous - 1 : previous] in {"て", "で"}
+                and following.dictionary_form
+                in {"いる", "おる", "ある", "しまう", "みる", "いく", "くる"}
+            )
+        )
+        if following.start != previous or not auxiliary:
+            break
+        ends.append((following.end, stop))
+        previous = following.end
+    return ends
+
+
+def _candidates(
+    request: DictionaryLookupRequest, tokens: Sequence[MaterialReadingToken]
+) -> list[_Candidate]:
     text = request.text
     candidates: set[_Candidate] = set()
 
@@ -204,7 +250,6 @@ def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
                     )
                 )
 
-    tokens = _tokens(request)
     for index, token in enumerate(tokens):
         if not _word_text(token.surface):
             continue
@@ -215,34 +260,7 @@ def _candidates(request: DictionaryLookupRequest) -> list[_Candidate]:
         }
         # Token-boundary compounds complement literal character spans. The last lexical
         # token supplies its lemma; auxiliary suffixes retain their actual source extent.
-        ends = [(token.end, index + 1)]
-        previous = token.end
-        for stop, following in enumerate(
-            tokens[index + 1 : index + MAX_TOKEN_COMPOUND], start=index + 2
-        ):
-            auxiliary = (
-                following.pos[0] == "助動詞"
-                or (
-                    following.pos[:2] == ["助詞", "接続助詞"]
-                    and following.surface in {"て", "で"}
-                    and token.pos[0] in {"動詞", "形容詞"}
-                )
-                or (
-                    token.pos[0] == "形容詞"
-                    and following.pos[:2] == ["形容詞", "非自立可能"]
-                    and following.dictionary_form == "ない"
-                )
-                or (
-                    following.pos[:2] == ["動詞", "非自立可能"]
-                    and text[previous - 1 : previous] in {"て", "で"}
-                    and following.dictionary_form
-                    in {"いる", "おる", "ある", "しまう", "みる", "いく", "くる"}
-                )
-            )
-            if following.start != previous or not auxiliary:
-                break
-            ends.append((following.end, stop))
-            previous = following.end
+        ends = _token_ends(text, tokens, index)
         for first in tokens[max(0, index - MAX_TOKEN_COMPOUND + 1) : index + 1]:
             start = first.start
             if not _word_text(text[start : token.end]):
@@ -412,10 +430,93 @@ def _matched_inflection(
     return []
 
 
+def _source_ranges(
+    request: DictionaryLookupRequest, tokens: Sequence[MaterialReadingToken]
+) -> list[tuple[int, int]]:
+    if request.selection_start is not None:
+        assert request.selection_end is not None
+        return [(request.selection_start, request.selection_end)]
+    covering_token: tuple[int, int] | None = None
+    longest_chain: tuple[int, int] | None = None
+    for index, token in enumerate(tokens):
+        if not _word_text(token.surface) or (
+            token.pos[0] in {"空白", "記号", "補助記号"}
+            and not any(character.isalpha() for character in token.surface)
+        ):
+            continue
+        if token.end - token.start <= MAX_WORD_LENGTH and _covers(request, token.start, token.end):
+            covering_token = (token.start, token.end)
+        if token.pos[0] not in {"動詞", "形容詞", "助動詞"} or token.is_oov:
+            continue
+        for end, stop in reversed(_token_ends(request.text, tokens, index)[1:]):
+            if (
+                end - token.start <= MAX_WORD_LENGTH
+                and _covers(request, token.start, end)
+                and all(not part.is_oov for part in tokens[index:stop])
+                and (
+                    longest_chain is None or end - token.start > longest_chain[1] - longest_chain[0]
+                )
+            ):
+                longest_chain = (token.start, end)
+                break
+    return [span for span in (longest_chain, covering_token) if span is not None]
+
+
+def _source_analysis(
+    text: str, tokens: Sequence[MaterialReadingToken], start: int, end: int
+) -> DictionarySourceAnalysis:
+    components = [
+        DictionarySourceComponent(
+            start=token.start,
+            end=token.end,
+            surface=token.surface,
+            reading=token.reading
+            if not token.is_oov and _KANA_READING.fullmatch(token.reading)
+            else "",
+            dictionary_form=token.dictionary_form
+            if not token.is_oov and token.dictionary_form != "*"
+            else "",
+            pos=token.pos,
+            is_oov=token.is_oov,
+        )
+        for token in tokens
+        if start <= token.start and token.end <= end and token.surface.strip()
+    ]
+    complete = sum(part.end - part.start for part in components) == end - start
+    reading = ""
+    if complete and all(part.reading for part in components):
+        reading = "".join(part.reading for part in components)
+
+    # Attach a connected, fully observed inflection ending at the range boundary.
+    # A compound's preceding components retain their own original forms.
+    parts: tuple[DictionaryInflectionPart, ...] = ()
+    if complete and all(not part.is_oov for part in components):
+        for index, token in enumerate(tokens):
+            if not start <= token.start < end or token.pos[0] not in {"動詞", "形容詞", "助動詞"}:
+                continue
+            for stop_end, stop in _token_ends(text, tokens, index):
+                if stop_end == end:
+                    following = tokens[stop] if stop < len(tokens) else None
+                    parts = inflection_parts(text, "", tokens[index:stop], following)
+                    break
+            if parts:
+                break
+
+    return DictionarySourceAnalysis(
+        start=start,
+        end=end,
+        surface=text[start:end],
+        reading=reading,
+        components=components,
+        inflection=list(parts),
+    )
+
+
 def _assemble(
     entries: list[DictionaryEntry],
     ordered: list[tuple[DictionaryEntry, _Candidate]],
     request: DictionaryLookupRequest,
+    tokens: Sequence[MaterialReadingToken],
 ) -> DictionaryLookupResponse:
     groups: dict[tuple[str, str, int], list[DictionaryEntry]] = {}
     seen_entries: set[tuple[str, int]] = set()
@@ -449,7 +550,18 @@ def _assemble(
                 inflection=_matched_inflection(entry, candidate),
             )
         )
-    return DictionaryLookupResponse(matches=matches)
+    ranges = list(dict.fromkeys((match.start, match.end) for match in matches))
+    if not ranges:
+        ranges = _source_ranges(request, tokens)
+    if request.selection_end is not None and request.selection_start is not None:
+        # The final token of a clipped analysis window might be incomplete.
+        boundary = request.selection_start + TOKEN_CONTEXT
+        if request.selection_end >= boundary and boundary < len(request.text):
+            tokens = [token for token in tokens if token.end < boundary]
+    return DictionaryLookupResponse(
+        matches=matches,
+        analyses=[_source_analysis(request.text, tokens, start, end) for start, end in ranges],
+    )
 
 
 async def lookup(
@@ -457,11 +569,16 @@ async def lookup(
 ) -> DictionaryLookupResponse:
     """Recall covering source spans, rank actual hits, then expand complete sequence cards."""
     async with store.snapshot() as snapshot:
-        if request.expected_dictionary_id is not None:
+        check_identity = "expected_dictionary_id" in request.model_fields_set
+        expected = request.expected_dictionary_id
+        if check_identity:
             status = await snapshot.status()
-            if not status.ready or status.dictionary_id != request.expected_dictionary_id:
+            if status.dictionary_id != expected or status.ready != (expected is not None):
                 raise HTTPException(status_code=409, detail="当前词典已改变，请重新查词")
-        candidates = await asyncio.to_thread(_candidates, request)
+        tokens = await asyncio.to_thread(_tokens, request)
+        if check_identity and expected is None:
+            return await asyncio.to_thread(_assemble, [], [], request, tokens)
+        candidates = await asyncio.to_thread(_candidates, request, tokens)
         keys = sorted({c.key for c in candidates})
         entries = await snapshot.find_terms(keys)
         ordered = await asyncio.to_thread(
@@ -476,4 +593,4 @@ async def lookup(
         selected_groups = {_group(entry) for entry, _ in ordered}
         selected = [entry for entry in entries if _group(entry) in selected_groups] + siblings
         loaded = await snapshot.load_definitions(selected)
-    return await asyncio.to_thread(_assemble, loaded, ordered, request)
+    return await asyncio.to_thread(_assemble, loaded, ordered, request, tokens)

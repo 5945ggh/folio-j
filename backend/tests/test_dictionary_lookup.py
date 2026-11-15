@@ -13,6 +13,7 @@ from app.services.dictionary_lookup import (
     MAX_WORD_LENGTH,
     _candidates,  # pyright: ignore[reportPrivateUsage]
     _key,  # pyright: ignore[reportPrivateUsage]
+    _tokens,  # pyright: ignore[reportPrivateUsage]
     lookup,
 )
 from app.services.dictionary_store import DictionaryEntry, DictionaryStore
@@ -426,7 +427,7 @@ async def test_stale_hints_fall_back_and_unicode_offsets_use_original_codepoints
 def test_recall_is_bounded_even_with_long_text_and_many_hints() -> None:
     text = "あ" * 8192
     request = DictionaryLookupRequest(text=text, position=4096)
-    candidates = _candidates(request)
+    candidates = _candidates(request, _tokens(request))
     assert all(c.end - c.start <= MAX_WORD_LENGTH and c.start <= 4096 < c.end for c in candidates)
     assert len({c.key for c in candidates}) <= 64
     assert len(candidates) < 2000
@@ -565,6 +566,12 @@ async def test_complete_aligned_hints_avoid_retokenization(monkeypatch: pytest.M
         cast(DictionaryStore, MemoryStore([entry("食べる")])), complete_inflection_request()
     )
     assert [p.form for p in result.matches[0].inflection] == ["continuative", "continuative", None]
+    assert result.analyses[0].reading == "タベマシタ"
+    assert [part.dictionary_form for part in result.analyses[0].components] == [
+        "食べる",
+        "ます",
+        "た",
+    ]
 
 
 @pytest.mark.asyncio

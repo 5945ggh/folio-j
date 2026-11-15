@@ -222,9 +222,9 @@ async def test_api_isolated_by_database_path_read_only_lookup_and_restart(tmp_pa
         assert (await client.get("/api/dictionary")).json() == imported.json()
     async with chat_client(tmp_path / "other.db") as (client, _):
         assert (await client.get("/api/dictionary")).json()["ready"] is False
-        assert (
-            await client.post("/api/dictionary/lookup", json={"text": "雨", "position": 0})
-        ).json() == {"matches": []}
+        result = await client.post("/api/dictionary/lookup", json={"text": "雨", "position": 0})
+        assert result.json()["matches"] == []
+        assert result.json()["analyses"][0]["reading"] == "アメ"
 
 
 @pytest.mark.asyncio

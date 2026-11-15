@@ -1170,6 +1170,7 @@
                 "type": "null"
               }
             ],
+            "description": "Omit to use the current dictionary. Send null to require its absence.",
             "title": "Expected Dictionary Id"
           },
           "position": {
@@ -1231,6 +1232,13 @@
       },
       "DictionaryLookupResponse": {
         "properties": {
+          "analyses": {
+            "items": {
+              "$ref": "#/components/schemas/DictionarySourceAnalysis"
+            },
+            "title": "Analyses",
+            "type": "array"
+          },
           "matches": {
             "items": {
               "$ref": "#/components/schemas/DictionaryMatch"
@@ -1645,6 +1653,100 @@
           "dictionary_id"
         ],
         "title": "DictionarySelection",
+        "type": "object"
+      },
+      "DictionarySourceAnalysis": {
+        "description": "Source evidence for one lookup span, independent of dictionary entries.",
+        "properties": {
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/DictionarySourceComponent"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "inflection": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryInflectionPart"
+            },
+            "title": "Inflection",
+            "type": "array"
+          },
+          "reading": {
+            "title": "Reading",
+            "type": "string"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          },
+          "surface": {
+            "title": "Surface",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "surface",
+          "reading",
+          "components",
+          "inflection"
+        ],
+        "title": "DictionarySourceAnalysis",
+        "type": "object"
+      },
+      "DictionarySourceComponent": {
+        "description": "One complete tokenizer component of the original lookup text.",
+        "properties": {
+          "dictionary_form": {
+            "title": "Dictionary Form",
+            "type": "string"
+          },
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "is_oov": {
+            "title": "Is Oov",
+            "type": "boolean"
+          },
+          "pos": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "minItems": 6,
+            "title": "Pos",
+            "type": "array"
+          },
+          "reading": {
+            "title": "Reading",
+            "type": "string"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          },
+          "surface": {
+            "title": "Surface",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "surface",
+          "reading",
+          "dictionary_form",
+          "pos",
+          "is_oov"
+        ],
+        "title": "DictionarySourceComponent",
         "type": "object"
       },
       "DictionaryStatus": {

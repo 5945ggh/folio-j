@@ -2,7 +2,10 @@ import {
 	DictionaryCards,
 	type LookupLevel,
 } from "../src/dictionary/DictionaryCards";
-import type { DictionaryMatch } from "../src/dictionary/dictionary-api";
+import type {
+	DictionaryMatch,
+	DictionarySourceAnalysis,
+} from "../src/dictionary/dictionary-api";
 import { dictionaryPages } from "../src/dictionary/dictionary-pages";
 import { dictionaryPassage } from "../src/dictionary/dictionary-passage";
 import "../src/materials/reader-r1.css";
@@ -44,14 +47,37 @@ const entry: DictionaryMatch = {
 	],
 };
 
-function level(id: number, entries: DictionaryMatch[] = [entry]): LookupLevel {
+const source: DictionarySourceAnalysis = {
+	start: 0,
+	end: entry.end,
+	surface,
+	reading: "タベサセラレテイナカッタ",
+	components: [
+		{
+			start: 0,
+			end: 2,
+			surface: "食べ",
+			reading: "タベ",
+			dictionary_form: "食べる",
+			pos: ["動詞", "一般", "*", "*", "下一段-バ行", "未然形-一般"],
+			is_oov: false,
+		},
+	],
+	inflection: entry.inflection ?? [],
+};
+
+function level(
+	id: number,
+	entries: DictionaryMatch[] = [entry],
+	analyses?: DictionarySourceAnalysis[],
+): LookupLevel {
 	return {
 		id,
 		origin: {
 			input: { text: surface, position: 0 },
 			anchor: { left: 260, right: 280, top: 90, bottom: 112 },
 		},
-		pages: dictionaryPages(entries),
+		pages: dictionaryPages(entries, analyses),
 		index: 0,
 		pending: false,
 		message: "",
@@ -124,6 +150,8 @@ export async function dictionaryInflectionLayout(h: BrowserHarness) {
 		passageFixture.remove();
 	}
 	const initial = { width: innerWidth, height: innerHeight };
+	const params = new URLSearchParams(location.search);
+	const basicsScene = params.get("scene") === "basics";
 	let dispose = () => {};
 	const mount = async (levels: LookupLevel[]) => {
 		dispose();
@@ -181,6 +209,21 @@ export async function dictionaryInflectionLayout(h: BrowserHarness) {
 		}
 	};
 	try {
+		if (basicsScene) {
+			await mount([level(1, [], [source])]);
+			const card = element<HTMLElement>(".dict-card");
+			const romaji = element<HTMLElement>(".dict-romaji");
+			const romanBounds = romaji.getBoundingClientRect();
+			const cardBounds = card.getBoundingClientRect();
+			check(
+				romanBounds.left >= cardBounds.left &&
+					romanBounds.right <= cardBounds.right &&
+					parseFloat(getComputedStyle(romaji).letterSpacing) > 0 &&
+					romaji.textContent === "tabesaserareteinakatta",
+				"Long romanization must stay inside the card and use spaced letters",
+			);
+			return `dictionary basics: ${innerWidth}px, long conjugated surface and romanization`;
+		}
 		await resize(1280, 900);
 		await mount([level(1)]);
 		const card = element<HTMLElement>(".dict-card");
@@ -265,6 +308,23 @@ export async function dictionaryInflectionLayout(h: BrowserHarness) {
 			!sections[2]?.querySelector(".dict-inflection"),
 			"An entry without evidence must not reserve a line",
 		);
+		await mount([level(5, [entry, second], [source])]);
+		const details = element<HTMLElement>(".dict-source");
+		check(
+			details.textContent?.includes("たべさせられていなかった") &&
+				details.textContent.includes("tabesaserareteinakatta") &&
+				details.textContent.includes("原形 食べる") &&
+				details.textContent.includes("下一段・バ行"),
+			"Shared source details must distinguish surface reading from the original form and display conjugation type",
+		);
+		const explanations = [...h.container.querySelectorAll(".dict-inflection")];
+		check(
+			explanations.length === 2 &&
+				explanations[0]?.textContent === description &&
+				!explanations[0].closest(".dict-entry") &&
+				explanations[1]?.closest(".dict-entry"),
+			"The same explanation must appear once, and distinct entry evidence remains near its entry",
+		);
 
 		await resize(390, 900);
 		await mount([level(3), level(4)]);
@@ -287,7 +347,9 @@ export async function dictionaryInflectionLayout(h: BrowserHarness) {
 		);
 		return "dictionary inflection: trusted 350px drag + 1280×320 resize retain scrollable explanation/definition; separate entry evidence; collapsed narrow parent hides explanation";
 	} finally {
-		dispose();
-		await resize(initial.width, initial.height);
+		if (!(basicsScene && params.has("capture"))) {
+			dispose();
+			await resize(initial.width, initial.height);
+		}
 	}
 }

@@ -1918,7 +1918,10 @@ export interface components {
              * @default true
              */
             auto_expand: boolean;
-            /** Expected Dictionary Id */
+            /**
+             * Expected Dictionary Id
+             * @description Omit to use the current dictionary. Send null to require its absence.
+             */
             expected_dictionary_id?: string | null;
             /** Position */
             position?: number | null;
@@ -1933,6 +1936,8 @@ export interface components {
         };
         /** DictionaryLookupResponse */
         DictionaryLookupResponse: {
+            /** Analyses */
+            analyses?: components["schemas"]["DictionarySourceAnalysis"][];
             /** Matches */
             matches: components["schemas"]["DictionaryMatch"][];
         };
@@ -2021,6 +2026,44 @@ export interface components {
         DictionarySelection: {
             /** Dictionary Id */
             dictionary_id: string;
+        };
+        /**
+         * DictionarySourceAnalysis
+         * @description Source evidence for one lookup span, independent of dictionary entries.
+         */
+        DictionarySourceAnalysis: {
+            /** Components */
+            components: components["schemas"]["DictionarySourceComponent"][];
+            /** End */
+            end: number;
+            /** Inflection */
+            inflection: components["schemas"]["DictionaryInflectionPart"][];
+            /** Reading */
+            reading: string;
+            /** Start */
+            start: number;
+            /** Surface */
+            surface: string;
+        };
+        /**
+         * DictionarySourceComponent
+         * @description One complete tokenizer component of the original lookup text.
+         */
+        DictionarySourceComponent: {
+            /** Dictionary Form */
+            dictionary_form: string;
+            /** End */
+            end: number;
+            /** Is Oov */
+            is_oov: boolean;
+            /** Pos */
+            pos: string[];
+            /** Reading */
+            reading: string;
+            /** Start */
+            start: number;
+            /** Surface */
+            surface: string;
         };
         /** DictionaryStatus */
         DictionaryStatus: {

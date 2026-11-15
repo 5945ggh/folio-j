@@ -245,6 +245,27 @@
 	flex: none;
 	gap: 1px;
 }
+.dict-source {
+	margin: 0 17px 8px;
+	color: var(--reader-muted);
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+.dict-source-line {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0 10px;
+	margin: 0;
+}
+.dict-source-line span[lang="ja"] {
+	color: var(--reader-fg);
+}
+.dict-source-line .dict-romaji {
+	font-size: inherit;
+	margin-inline-start: 9px;
+	letter-spacing: 0.05em;
+}
 .dict-inflection {
 	margin: 0 17px 7px;
 	font:

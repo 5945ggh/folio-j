@@ -596,9 +596,9 @@ export async function dictionarySettings(h: BrowserHarness) {
 		await openDelete(meikyo);
 		check(
 			find<HTMLElement>(".dictionary-delete-dialog").textContent?.includes(
-				"删除后将不能即时查词",
+				"即时查词仍可显示基础词卡",
 			) && !h.container.querySelector(".dictionary-delete-dialog select"),
-			"Deleting the final dictionary must explain loss of instant lookup",
+			"Deleting the final dictionary must explain continued basic lookup",
 		);
 		confirmDelete().click();
 		await h.until(

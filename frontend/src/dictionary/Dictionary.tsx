@@ -20,7 +20,7 @@ import {
 	type LookupOrigin,
 } from "./DictionaryCards";
 import {
-	type DictionaryStatus,
+	dictionaryIdentity,
 	dictionaryKey,
 	getDictionary,
 	lookupDictionary,
@@ -87,7 +87,10 @@ export function Dictionary({
 	cleared.current = onClear;
 	const [menu, setMenu] = useState(false);
 	const [levels, setLevels] = useState<LookupLevel[]>([]);
-	const [cardDictionary, setCardDictionary] = useState<DictionaryStatus>();
+	const [cardDictionary, setCardDictionary] = useState<{
+		id: string | null;
+		title: string | null;
+	}>();
 	const [notice, setNotice] = useState("");
 	const current = useRef(levels);
 	const ticket = useRef(0);
@@ -103,7 +106,10 @@ export function Dictionary({
 		retry: false,
 		staleTime: 0,
 	});
-	const ready = status.data?.ready === true;
+	const selection = status.isError
+		? undefined
+		: dictionaryIdentity(status.data);
+	const ready = selection !== undefined;
 	useEffect(() => onReady(ready), [onReady, ready]);
 	const publish = useCallback((next: LookupLevel[]) => {
 		current.current = next;
@@ -128,11 +134,10 @@ export function Dictionary({
 			clearCards();
 		}
 	}, [mode, autoExpand, assistedRanking, clearCards]);
-	const selection = status.data?.dictionary_id;
-	useEffect(() => {
+	useLayoutEffect(() => {
 		// A visible card and its nested lookup stack belong to one dictionary.
-		if (cardDictionary?.dictionary_id !== selection) clearCards();
-	}, [selection, cardDictionary?.dictionary_id, clearCards]);
+		if (cardDictionary && cardDictionary.id !== selection) clearCards();
+	}, [selection, cardDictionary, clearCards]);
 	useEffect(() => subscribeDictionaryLibrary(client), [client]);
 	const close = () => {
 		if (menu) setMenu(false);
@@ -180,16 +185,18 @@ export function Dictionary({
 	);
 	const search = async (origin: LookupOrigin, parent: number) => {
 		onActivate();
-		const selected = client.getQueryData<DictionaryStatus>(dictionaryKey);
-		if (!selected?.ready || !selected.dictionary_id) {
-			setNotice("请先在设置中选择可用词典。");
+		const getStatus = () =>
+			client.getQueryState<typeof status.data>(dictionaryKey);
+		const selected = getStatus();
+		const identity =
+			selected?.status === "success"
+				? dictionaryIdentity(selected.data)
+				: undefined;
+		if (identity === undefined) {
 			setMenu(true);
 			return;
 		}
-		if (
-			parent >= 0 &&
-			cardDictionary?.dictionary_id !== selected.dictionary_id
-		) {
+		if (parent >= 0 && cardDictionary?.id !== identity) {
 			clearCards();
 			setNotice("当前词典已变化，请重新点击原文查词。");
 			setMenu(true);
@@ -198,12 +205,12 @@ export function Dictionary({
 		const snapshot = { mode, autoExpand, assistedRanking };
 		const input = {
 			...origin.input,
-			expected_dictionary_id: selected.dictionary_id,
+			expected_dictionary_id: identity,
 			auto_expand: snapshot.autoExpand,
 			assisted_ranking: snapshot.assistedRanking,
 		};
 		const id = ++ticket.current;
-		setCardDictionary(selected);
+		setCardDictionary({ id: identity, title: selected?.data?.title ?? null });
 		setNotice("");
 		setMenu(false);
 		const keep = current.current
@@ -227,40 +234,37 @@ export function Dictionary({
 				),
 			);
 		}
+		const isCurrent = () => {
+			const latest = getStatus();
+			return (
+				ticket.current === id &&
+				options.current.mode === snapshot.mode &&
+				options.current.autoExpand === snapshot.autoExpand &&
+				options.current.assistedRanking === snapshot.assistedRanking &&
+				latest?.status === "success" &&
+				dictionaryIdentity(latest.data) === identity
+			);
+		};
 		let message = "";
 		try {
 			const result = await client.fetchQuery({
-				queryKey: ["dictionary", "lookup", selected.dictionary_id, input],
+				queryKey: ["dictionary", "lookup", identity, input],
 				queryFn: ({ signal }) => lookupDictionary(input, signal),
 				staleTime: 60_000,
 				gcTime: 90_000,
 				retry: false,
 			});
-			if (
-				ticket.current !== id ||
-				options.current.mode !== snapshot.mode ||
-				options.current.autoExpand !== snapshot.autoExpand ||
-				options.current.assistedRanking !== snapshot.assistedRanking ||
-				client.getQueryData<DictionaryStatus>(dictionaryKey)?.dictionary_id !==
-					selected.dictionary_id
-			)
-				return;
-			if (
-				result.matches.some(
-					(match) => match.dictionary_id !== selected.dictionary_id,
-				)
-			)
+			if (!isCurrent()) return;
+			if (result.matches.some((match) => match.dictionary_id !== identity))
 				throw new RequestError("当前词典已变化。", 409);
-			if (result.matches.length) {
-				publish([
-					...keep,
-					{ ...level, pages: dictionaryPages(result.matches), pending: false },
-				]);
+			const pages = dictionaryPages(result.matches, result.analyses);
+			if (pages.length) {
+				publish([...keep, { ...level, pages, pending: false }]);
 				return;
 			}
-			message = "这部词典里没有找到这个词。";
+			message = "未找到可显示的词形信息。";
 		} catch (error) {
-			if (ticket.current !== id) return;
+			if (!isCurrent()) return;
 			if (error instanceof RequestError && error.status === 409) {
 				clearCards();
 				setNotice("当前词典已变化，请重新点击原文查词。");
@@ -367,11 +371,13 @@ export function Dictionary({
 											重试
 										</button>
 									</p>
-								) : status.data?.ready ? (
+								) : ready ? (
 									<>
 										<p className="dict-installed">
 											<span aria-hidden="true">辞</span>
-											{status.data.title}
+											{selection === null
+												? "未安装词典 · 可查看基础词卡"
+												: status.data?.title}
 										</p>
 										<fieldset className="dict-modes" aria-label="查词方式">
 											{(
@@ -463,7 +469,12 @@ export function Dictionary({
 										</div>
 									</>
 								) : (
-									<p>在设置中导入并选择词典，即可点读正文和词卡。</p>
+									<p role="status">
+										词典暂不可用。{" "}
+										<button type="button" onClick={() => void status.refetch()}>
+											重试
+										</button>
+									</p>
 								)}
 								<Link
 									className="dict-import"
@@ -481,25 +492,28 @@ export function Dictionary({
 								{notice && <p role="status">{notice}</p>}
 							</section>
 						)}
-						{levels.length > 0 &&
-							cardDictionary?.dictionary_id === selection && (
-								<DictionaryCards
-									behindPanel={behindPanel}
-									key={levels[0]?.id}
-									mode={mode}
-									levels={levels}
-									opacity={opacity}
-									title={cardDictionary?.title ?? "本机词典"}
-									nested={(depth, origin) => void search(origin, depth)}
-									choose={backTo}
-									backTo={backTo}
-									close={finish}
-									onRecord={(record) => {
-										close();
-										record();
-									}}
-								/>
-							)}
+						{levels.length > 0 && cardDictionary?.id === selection && (
+							<DictionaryCards
+								behindPanel={behindPanel}
+								key={levels[0]?.id}
+								mode={mode}
+								levels={levels}
+								opacity={opacity}
+								title={
+									cardDictionary?.title ??
+									(selection === null ? "基础词卡" : "本机词典")
+								}
+								hasDictionary={selection !== null}
+								nested={(depth, origin) => void search(origin, depth)}
+								choose={backTo}
+								backTo={backTo}
+								close={finish}
+								onRecord={(record) => {
+									close();
+									record();
+								}}
+							/>
+						)}
 					</>,
 					portal,
 				)}

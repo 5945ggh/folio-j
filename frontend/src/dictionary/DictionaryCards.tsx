@@ -10,7 +10,11 @@ import {
 import type { ReaderCardPosition } from "../materials/reader-card-drag";
 import { useReaderCardDrag } from "../materials/use-reader-card-drag";
 import { DictionaryDefinitions } from "./DictionaryDefinitions";
-import type { DictionaryMatch, DictionaryRequest } from "./dictionary-api";
+import type {
+	DictionaryMatch,
+	DictionaryRequest,
+	DictionarySourceAnalysis,
+} from "./dictionary-api";
 import { dictionaryInflection } from "./dictionary-inflection";
 import {
 	compactDictionaryLayout,
@@ -20,6 +24,7 @@ import {
 } from "./dictionary-layout";
 import type { DictionaryPage } from "./dictionary-pages";
 import type { DictionaryPassage } from "./dictionary-passage";
+import { dictionaryReading } from "./dictionary-reading";
 import type { DictionaryMode } from "./preferences";
 import type { DictionaryAnchor as ScreenAnchor } from "./types";
 
@@ -86,13 +91,106 @@ function ReturnIcon() {
 	);
 }
 
-function Inflection({ entry }: { entry: DictionaryMatch }) {
+function Inflection({
+	entry,
+	omit,
+}: {
+	entry: Pick<DictionaryMatch, "inflection">;
+	omit?: string;
+}) {
 	const description = dictionaryInflection(entry);
-	return description ? (
+	return description && description !== omit ? (
 		<p className="dict-inflection" lang="zh">
 			{description}
 		</p>
 	) : null;
+}
+
+function SourceDetails({
+	analysis,
+	titleWord,
+}: {
+	analysis: DictionarySourceAnalysis;
+	titleWord: string | undefined;
+}) {
+	const reading = dictionaryReading(analysis.reading);
+	const head = analysis.components[0];
+	const firstPart = analysis.inflection[0];
+	const hasInflectionHead =
+		!!head &&
+		firstPart?.surface === head.surface &&
+		analysis.inflection.map((part) => part.surface).join("") ===
+			analysis.surface;
+	const lexicalComponents = hasInflectionHead ? [head] : analysis.components;
+	const forms = lexicalComponents
+		.filter(
+			(item) =>
+				!item.is_oov &&
+				item.dictionary_form &&
+				item.dictionary_form !== item.surface,
+		)
+		.map((item) => item.dictionary_form);
+	const conjugations = [
+		...new Set(
+			lexicalComponents
+				.filter((item) => !item.is_oov && item.pos[4] && item.pos[4] !== "*")
+				.map((item) => item.pos[4]?.replaceAll("-", "・")),
+		),
+	];
+	const partsOfSpeech = [
+		...new Set(
+			lexicalComponents
+				.filter((item) => !item.is_oov && item.pos[0] !== "補助記号")
+				.flatMap(({ pos }) => {
+					const [part, detail, subcategory] = pos;
+					if (!part || part === "*") return [];
+					if (
+						detail === "固有名詞" &&
+						subcategory &&
+						subcategory !== "*" &&
+						subcategory !== "一般"
+					)
+						return [`${detail}（${subcategory}）`];
+					return [
+						detail && !["一般", "普通名詞", "*"].includes(detail)
+							? `${part}（${detail}）`
+							: part,
+					];
+				}),
+		),
+	];
+	const showSurface = analysis.surface !== titleWord;
+	const labels = [...partsOfSpeech, ...conjugations];
+	if (!(showSurface || reading || forms.length || labels.length)) return null;
+	return (
+		<div className="dict-source">
+			{(showSurface || reading) && (
+				<p className="dict-source-line">
+					{showSurface && <span lang="ja">{analysis.surface}</span>}
+					{reading && (
+						<span>
+							读音 <span lang="ja">{reading.kana}</span>
+							{reading.romaji && (
+								<small className="dict-romaji" lang="ja-Latn">
+									{reading.romaji}
+								</small>
+							)}
+						</span>
+					)}
+				</p>
+			)}
+			{(forms.length > 0 || labels.length > 0) && (
+				<p className="dict-source-line">
+					{forms.length > 0 && (
+						<span>
+							原形 <span lang="ja">{forms.join(" ＋ ")}</span>
+						</span>
+					)}
+					{labels.length > 0 && <span lang="ja">{labels.join(" · ")}</span>}
+				</p>
+			)}
+		</div>
+	);
 }
 
 export function DictionaryCards({
@@ -101,6 +199,7 @@ export function DictionaryCards({
 	mode,
 	opacity,
 	title,
+	hasDictionary = true,
 	nested,
 	choose,
 	backTo,
@@ -112,6 +211,7 @@ export function DictionaryCards({
 	mode: DictionaryMode;
 	opacity: number;
 	title: string;
+	hasDictionary?: boolean;
 	nested: (depth: number, origin: LookupOrigin) => void;
 	choose: (depth: number, index: number) => void;
 	backTo: (depth: number) => void;
@@ -237,6 +337,7 @@ export function DictionaryCards({
 					level={level}
 					depth={depth}
 					title={title}
+					hasDictionary={hasDictionary}
 					hidden={compact && depth < levels.length - 1 - ancestors}
 					compact={compact}
 					viewport={viewport}
@@ -260,6 +361,7 @@ function WordCard({
 	level,
 	depth,
 	title,
+	hasDictionary,
 	child,
 	hidden,
 	compact,
@@ -277,6 +379,7 @@ function WordCard({
 	focusOnMount: boolean;
 	depth: number;
 	title: string;
+	hasDictionary: boolean;
 	child?: LookupLevel;
 	compact: boolean;
 	viewport: { width: number; height: number };
@@ -291,7 +394,11 @@ function WordCard({
 	const page = level.pages[level.index];
 	const primary = page?.entries[0];
 	const multiple = !!page && page.entries.length > 1;
-	const titleWord = multiple ? page.surface : primary?.term;
+	const titleWord = multiple ? page.surface : (primary?.term ?? page?.surface);
+	const commonInflection = page?.analysis
+		? dictionaryInflection(page.analysis)
+		: "";
+	const noEntries = !!page && page.entries.length === 0;
 	const card = useRef<HTMLElement>(null);
 	const [firstHeight, setFirstHeight] = useState<number | null>(null);
 	// Measure once when this lookup resolves. Paging changes only the scrollable contents.
@@ -413,7 +520,7 @@ function WordCard({
 						<span className="dict-seal" aria-hidden="true">
 							辞
 						</span>
-						{title}
+						{noEntries ? "基础词卡" : title}
 					</div>
 					<h2 lang="ja" tabIndex={-1}>
 						{titleWord ?? glyph}
@@ -475,6 +582,10 @@ function WordCard({
 				</button>
 			)}
 			<div className="dict-scroll" ref={scroll}>
+				{page?.analysis && (
+					<SourceDetails analysis={page.analysis} titleWord={titleWord} />
+				)}
+				{page?.analysis && <Inflection entry={page.analysis} />}
 				{page?.entries.map((entry, i) => (
 					<section className="dict-entry" key={entry.id}>
 						{multiple && (
@@ -486,7 +597,7 @@ function WordCard({
 								)}
 							</h3>
 						)}
-						<Inflection entry={entry} />
+						<Inflection entry={entry} omit={commonInflection} />
 						<DictionaryDefinitions
 							nodes={entry.definitions}
 							mode={mode}
@@ -503,6 +614,9 @@ function WordCard({
 						/>
 					</section>
 				))}
+				{noEntries && hasDictionary && (
+					<p className="dict-message">当前词典未找到释义。</p>
+				)}
 			</div>
 			{level.pending && (
 				<p className="dict-message" role="status">

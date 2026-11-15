@@ -57,9 +57,9 @@ async def test_library_api_installs_once_and_persists_explicit_selection(tmp_pat
         assert selected.status_code == 200, selected.text
         assert selected.json()["active_dictionary_id"] == second_id
         assert (await client.get("/api/dictionary")).json()["dictionary_id"] == second_id
-        assert (await client.post("/api/dictionary/lookup", json={"text": "雨"})).json() == {
-            "matches": []
-        }
+        no_entry = await client.post("/api/dictionary/lookup", json={"text": "雨"})
+        assert no_entry.json()["matches"] == []
+        assert no_entry.json()["analyses"][0]["reading"] == "アメ"
         assert (await client.post("/api/dictionary/lookup", json={"text": "猫"})).json()["matches"]
     async with chat_client(database) as (client, _):
         assert (await client.get("/api/dictionary/library")).json() == selected.json()
@@ -332,9 +332,11 @@ async def test_delete_api_requires_explicit_replacement_and_clears_last_dictiona
         last = await client.delete(f"/api/dictionary/library/{second_id}")
         assert last.json() == {"dictionaries": [], "active_dictionary_id": None}
         assert (await client.get("/api/dictionary")).json()["ready"] is False
-        assert (await client.post("/api/dictionary/lookup", json={"text": "猫"})).json() == {
-            "matches": []
-        }
+        no_dictionary = await client.post(
+            "/api/dictionary/lookup", json={"text": "猫", "expected_dictionary_id": None}
+        )
+        assert no_dictionary.json()["matches"] == []
+        assert no_dictionary.json()["analyses"][0]["reading"] == "ネコ"
         assert (await client.delete(f"/api/dictionary/library/{second_id}")).status_code == 404
 
 

@@ -6,9 +6,19 @@ import { requireData } from "../content";
 export type DictionaryRequest =
 	components["schemas"]["DictionaryLookupRequest"];
 export type DictionaryMatch = components["schemas"]["DictionaryMatch"];
+export type DictionarySourceAnalysis =
+	components["schemas"]["DictionarySourceAnalysis"];
 export type DictionaryNode = DictionaryMatch["definitions"][number];
 export type DictionaryLibrary = components["schemas"]["DictionaryLibrary"];
 export type DictionaryStatus = components["schemas"]["DictionaryStatus"];
+
+/** Undefined means the lookup identity has not been established. */
+export function dictionaryIdentity(status: DictionaryStatus | undefined) {
+	if (status?.ready === true && status.dictionary_id)
+		return status.dictionary_id;
+	if (status?.ready === false && status.dictionary_id === null) return null;
+	return undefined;
+}
 
 export const dictionaryKey = ["dictionary", "installed"] as const;
 export const dictionaryLibraryKey = ["dictionary", "library"] as const;

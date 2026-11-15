@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { DictionaryMatch } from "./dictionary-api.ts";
+import type {
+	DictionaryMatch,
+	DictionarySourceAnalysis,
+} from "./dictionary-api.ts";
 import { dictionaryPages } from "./dictionary-pages.ts";
 
 test("pages preserve ranked entries and distinguish equal spellings at different positions", () => {
@@ -26,4 +29,36 @@ test("pages preserve ranked entries and distinguish equal spellings at different
 			[0, 2, ["second"]],
 		],
 	);
+});
+
+test("a longer source analysis cannot displace or add pages to dictionary matches", () => {
+	const source = (start: number): DictionarySourceAnalysis => ({
+		start,
+		end: start + 1,
+		surface: "人",
+		reading: "ヒト",
+		components: [],
+		inflection: [],
+	});
+	const match: DictionaryMatch = {
+		id: "one",
+		dictionary_id: "one",
+		start: 3,
+		end: 4,
+		term: "人",
+		surface: "人",
+		reading: "じん",
+		definitions: [],
+	};
+	const first = source(0);
+	const second = source(3);
+	const longer = { ...first, end: 4, surface: "人人人人" };
+	assert.deepEqual(dictionaryPages([match], [longer, first, second]), [
+		{ start: 3, end: 4, surface: "人", entries: [match], analysis: second },
+	]);
+	assert.deepEqual(
+		dictionaryPages([], [first, second]).map((page) => page.analysis),
+		[first, second],
+	);
+	assert.deepEqual(dictionaryPages([], []), []);
 });

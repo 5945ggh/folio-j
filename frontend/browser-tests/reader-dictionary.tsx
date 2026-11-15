@@ -12,6 +12,7 @@ const stamp = "2026-10-31T00:00:00Z";
 export async function readerDictionary(h: BrowserHarness) {
 	const params = new URLSearchParams(location.search);
 	const optionsScene = params.get("scene") === "options";
+	const basicsScene = params.get("scene") === "basics";
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
 	const { SettingsPage } = await import("../src/settings/SettingsPage");
 	const { updateDictionaryLibrary } = await import(
@@ -145,8 +146,10 @@ export async function readerDictionary(h: BrowserHarness) {
 	const requests: Schema["DictionaryLookupRequest"][] = [];
 	let statusReads = 0;
 	let lookupResponses = 0;
-	let activeDictionaryId: string | null = "synthetic";
-	let activeDictionaryTitle: string | null = "合成测试词典";
+	let activeDictionaryId: string | null = basicsScene ? null : "synthetic";
+	let activeDictionaryTitle: string | null = basicsScene
+		? null
+		: "合成测试词典";
 	let hold = false;
 	const deferred: { release?: () => void } = {};
 	h.mock(async (request) => {
@@ -179,7 +182,6 @@ export async function readerDictionary(h: BrowserHarness) {
 			const input: Schema["DictionaryLookupRequest"] = await request.json();
 			check(
 				"expected_dictionary_id" in input &&
-					typeof input.expected_dictionary_id === "string" &&
 					input.expected_dictionary_id === activeDictionaryId,
 				"Every lookup must freeze the active dictionary identity",
 			);
@@ -193,8 +195,10 @@ export async function readerDictionary(h: BrowserHarness) {
 				await new Promise<void>((resolve) => {
 					deferred.release = resolve;
 				});
+			const identity = input.expected_dictionary_id;
 			const root = input.text.startsWith("猫");
 			const term = root ? "猫" : input.text.includes("散歩") ? "散歩" : "道";
+			const reading = root ? "ネコ" : term === "散歩" ? "サンポ" : "ミチ";
 			const start = Array.from(
 				input.text.slice(0, input.text.indexOf(term)),
 			).length;
@@ -202,14 +206,66 @@ export async function readerDictionary(h: BrowserHarness) {
 				start >= 0 && input.text.includes(term),
 				"Mock lookup must find exact Japanese surface",
 			);
+			const end = start + Array.from(term).length;
+			const analysis: Schema["DictionarySourceAnalysis"] = {
+				start,
+				end,
+				surface: term,
+				reading,
+				components: [
+					{
+						start,
+						end,
+						surface: term,
+						reading,
+						dictionary_form: term,
+						pos: ["名詞", "普通名詞", "一般", "*", "*", "*"],
+						is_oov: false,
+					},
+				],
+				inflection: [],
+			};
+			const walking =
+				input.position === 5 && input.text.startsWith("静かな道を歩く");
+			if (identity === null || walking) {
+				lookupResponses++;
+				if (walking)
+					return Response.json({
+						matches: [],
+						analyses: [
+							{
+								start: 5,
+								end: 7,
+								surface: "歩く",
+								reading: "アルク",
+								components: [
+									{
+										start: 5,
+										end: 7,
+										surface: "歩く",
+										reading: "アルク",
+										dictionary_form: "歩く",
+										pos: ["動詞", "一般", "*", "*", "五段-カ行", "終止形-一般"],
+										is_oov: false,
+									},
+								],
+								inflection: [],
+							},
+						],
+					} satisfies Schema["DictionaryLookupResponse"]);
+				return Response.json({
+					matches: [],
+					analyses: [analysis],
+				} satisfies Schema["DictionaryLookupResponse"]);
+			}
 			const match: Schema["DictionaryMatch"] = {
 				id: term,
-				dictionary_id: input.expected_dictionary_id,
+				dictionary_id: identity,
 				term,
 				surface: term,
 				reading: root ? "ねこ" : term === "散歩" ? "さんぽ" : "みち",
 				start,
-				end: start + Array.from(term).length,
+				end,
 				definitions: [
 					{
 						tag: "p",
@@ -236,6 +292,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			};
 			lookupResponses++;
 			return Response.json({
+				analyses: [analysis],
 				matches: root
 					? [
 							match,
@@ -276,7 +333,7 @@ export async function readerDictionary(h: BrowserHarness) {
 							},
 						]
 					: [match],
-			});
+			} satisfies Schema["DictionaryLookupResponse"]);
 		}
 		if (path.startsWith("/api/segments/")) {
 			const item = saved.find(
@@ -533,6 +590,11 @@ export async function readerDictionary(h: BrowserHarness) {
 				card.textContent.includes("マオ"),
 			"Different entries and readings for one range must appear together on its page",
 		);
+		check(
+			card.querySelectorAll(".dict-source").length === 1 &&
+				card.querySelector(".dict-source")?.textContent?.includes("neko"),
+			"A range with several headwords must show its own reading and romanization once",
+		);
 		const highlightedOriginal = () => {
 			const frame = h.container.querySelector<HTMLIFrameElement>(
 				"iframe.material-part",
@@ -676,6 +738,26 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		check(frame && leaf, "Loaded reader original must remain mounted");
 		await glyphClick(leaf, 0, frame);
+		if (basicsScene) {
+			await h.until(
+				() =>
+					h.container
+						.querySelector(".dict-source")
+						?.textContent?.includes("neko") === true,
+				"A first-time reader can enable lookup and see surface reading and romanization without a dictionary",
+			);
+			const card = h.container.querySelector<HTMLElement>(".dict-card");
+			check(
+				card?.getAttribute("aria-label") === "词卡 · 猫" &&
+					card.textContent?.includes("基础词卡") &&
+					card.querySelector(".dict-source")?.textContent?.includes("名詞") &&
+					!card.querySelector(".dict-entry") &&
+					requests[0]?.expected_dictionary_id === null,
+				"An empty library must show a real source-analysis page with no dictionary entries",
+			);
+			checkCardInViewport(card);
+			return "reader basics: enable lookup with no local dictionary, then view reading, romaji and POS";
+		}
 		await h.until(
 			() =>
 				!!h.container.querySelector(
@@ -1810,8 +1892,8 @@ export async function readerDictionary(h: BrowserHarness) {
 				() =>
 					statusReads > beforeDeletion &&
 					!h.container.querySelector(".dict-deck") &&
-					button("即时查词").getAttribute("aria-pressed") === "false",
-				"Deleting the last dictionary in another tab must clear cards and disable reader lookup",
+					button("即时查词").getAttribute("aria-pressed") === "true",
+				"Deleting the last dictionary must clear cards and keep basic lookup enabled",
 			);
 			check(deferred.release, "The last dictionary must have a held response");
 			const beforeEmptyResponse = lookupResponses;
@@ -1826,34 +1908,79 @@ export async function readerDictionary(h: BrowserHarness) {
 				!h.container.querySelector(".dict-deck"),
 				"A late response after the last dictionary is deleted must not restore cards",
 			);
-			const beforeDisabledLookup = requests.length;
+			const beforeBasicLookup = requests.length;
 			await glyphClick(nextLeaf, 3, frame);
-			await settle();
+			await h.until(
+				() =>
+					h.container
+						.querySelector(".dict-source")
+						?.textContent?.includes("michi") === true,
+				"After deletion, the same lookup still displays source information",
+			);
 			check(
-				requests.length === beforeDisabledLookup &&
-					!h.container.querySelector(".dict-deck"),
-				"Reader body clicks must not query a deleted dictionary while none is ready",
+				requests.length === beforeBasicLookup + 1 &&
+					requests.at(-1)?.expected_dictionary_id === null &&
+					!h.container.querySelector(".dict-entry"),
+				"The no-dictionary result must use a separate query identity and omit entry markup",
 			);
 			button("即时查词").click();
 			await h.until(
 				() =>
 					h.container
 						.querySelector(".dict-config")
-						?.textContent?.includes("在设置中导入并选择词典") === true,
-				"An empty library must show the dictionary setup guidance",
+						?.textContent?.includes("可查看基础词卡") === true,
+				"An empty library must describe the available basic cards",
 			);
 			check(
-				!h.container.querySelector(".dict-modes"),
-				"An empty library must not expose lookup modes as ready",
+				!!h.container.querySelector(".dict-modes"),
+				"An empty library must expose lookup modes as ready",
 			);
 			button("关闭查词设置").click();
-			// Restore an installed dictionary for the existing settings-return regression.
+			hold = true;
+			const emptyRelease = deferred.release;
+			await glyphClick(nextLeaf, 5, frame);
+			await h.until(
+				() => !!deferred.release && deferred.release !== emptyRelease,
+				"An empty-library query must still be in flight when a dictionary is installed",
+			);
 			activeDictionaryId = replacement.dictionary_id;
 			activeDictionaryTitle = replacement.title;
 			await updateDictionaryLibrary(readerClient, {
 				dictionaries: [replacement],
 				active_dictionary_id: activeDictionaryId,
 			});
+			await h.until(
+				() => !h.container.querySelector(".dict-deck"),
+				"Installing a dictionary must retire the basic card stack and its pending request",
+			);
+			check(deferred.release, "The no-dictionary request must be held");
+			const beforeLateBasic = lookupResponses;
+			deferred.release();
+			hold = false;
+			await h.until(
+				() => lookupResponses === beforeLateBasic + 1,
+				"Complete the no-dictionary request after installing a dictionary",
+			);
+			await settle();
+			check(
+				!h.container.querySelector(".dict-deck"),
+				"A late basic result must not restore cards after installation",
+			);
+			await glyphClick(nextLeaf, 5, frame);
+			await h.until(
+				() =>
+					h.container
+						.querySelector(".dict-card")
+						?.textContent?.includes("当前词典未找到释义。") === true,
+				"An installed dictionary miss must still show source analysis",
+			);
+			check(
+				h.container
+					.querySelector(".dict-source")
+					?.textContent?.includes("aruku") &&
+					!h.container.querySelector(".dict-entry"),
+				"A dictionary miss must show surface reading without fake definitions",
+			);
 		}
 		dispose();
 		dispose = await h.mount(<Outlet />, "/", "/materials/dictionary", [
@@ -1910,6 +2037,6 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		return `dictionary: real body→Japanese child→${window.innerWidth >= 740 ? "four desktop levels" : "compact stack"}→back→close; settings/gallery coexistence and active-layer Escape; saved mark + Shift click retain records; late response ignored`;
 	} finally {
-		if (!(optionsScene && params.has("capture"))) dispose();
+		if (!((optionsScene || basicsScene) && params.has("capture"))) dispose();
 	}
 }
