@@ -26,6 +26,6 @@
 | 当前内容如何找到、打开、参照与返回，界面怎样操作和呈现 | [INFORMATION_ARCHITECTURE.md](INFORMATION_ARCHITECTURE.md) | 页面职责、路由、焦点与快捷键、临时 UI 状态及具体表现参数 |
 | 选了哪些技术、为什么 | [TECH_STACK.md](TECH_STACK.md) | 选型、采用状态、分发及明确不选的方案；执行细节引用架构 |
 | 已做到哪里、首轮还缺什么 | [MVP 实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md) | 当前交付与提交状态、实现差额、未落实契约与验收入口 |
-| 当时做过什么、证据和限制是什么 | [阶段归档](handovers/README.md#archived)、[研究材料](../references/README.md) | 已完成阶段的计划、接口快照与原始验收；实验依据不覆盖现行规范 |
+| 当时为什么这样决定、证据和限制是什么 | [阶段归档](handovers/README.md#archived)、[研究材料](../references/README.md)、[检索与 Git 追溯](DEVELOPMENT.md#检索实现规范与历史决定) | 原始方案、验收与提交取舍；历史依据按当时范围理解，现行规则查负责规范 |
 
 产品决定由 PRD 维护，当前交付状态由实施基线维护，阶段资料与历史证据从 [handovers/](handovers/README.md)查找。文档维护流程与写作规则见 [AGENTS 的文档维护入口](../AGENTS.md#文档维护)。

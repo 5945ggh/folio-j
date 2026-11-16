@@ -246,7 +246,7 @@ JSON 文档树及教学 payload 的生产用途留待主动学习交互确定，
 
 ### 4.8 阅读翻译与设备朗读
 
-翻译与设备朗读辅助当前阅读，不要求先创建学习片段或获得完整解析。范围与取舍依据见[阅读辅助原方案](handovers/archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md)，后续入口调整见[验收记录](handovers/archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)；交付状态由实施基线维护，待验证与后续接入见[阅读辅助后续安排](handovers/epub-reading/README.md#阅读辅助后续安排)。
+翻译与设备朗读辅助当前阅读，不要求先创建学习片段或获得完整解析。范围与取舍依据见[阅读辅助原方案](handovers/archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md)，后续入口调整见[验收记录](handovers/archived/text-study/TRANSLATION_AND_SPEECH_ACCEPTANCE.md)，独立采用与单版删除接口退出见[退出验收](handovers/archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md#自用-api-调整)；交付状态由实施基线维护，待验证与后续接入见[阅读辅助后续安排](handovers/epub-reading/README.md#阅读辅助后续安排)。
 
 - 首轮翻译仅作用于 EPUB 中有确切出处的同章连续选区，沿用第 4.7 节的支持范围。显式触发后固定原文、出处、语境和实际配置；先采用 LLM adapter，允许以后接入专用服务。Segment 直接生成译文、批量／整章翻译及材料对话后置。
 - 默认日译简体中文，前文最多 3 句／200 个 Unicode 码点，后文为 0，偏好独立于 Segment 语境及讲解语言。本次语境可检查、编辑、清空或扩大，只翻译目标；补全句子须用户选择，不自动扩大目标或发送全书／其他讨论历史。
@@ -273,6 +273,8 @@ JSON 文档树及教学 payload 的生产用途留待主动学习交互确定，
 **带上下文复制。** 阅读选区提供独立操作，将目标原文、相邻语境及可选出处组合为供外部 AI 提问使用的文本。目标保持确切选区，语境沿用第 4.7 节的句界、同章范围、整理和双预算规则。默认前后文各最多 2 句／100 个 Unicode 码点；附带出处默认开启。两侧句数和字符上限独立可调，任一预算为零时该侧为空。复制偏好作为个人默认值保存在数据库，适用于连接同一后端的各浏览器和全部材料，与翻译及片段语境偏好独立。旧浏览器配置直接忽略。
 
 整组值有效时，出处开关立即保存，数字输入在结束编辑时自动保存；复制使用最后成功保存的配置。同一窗口按提交顺序保存，迟到回执不覆盖后续输入；保存失败保留当前输入并提供重试，收起分组后仍能发现失败。多窗口修改同组偏好时，后一次成功保存生效。复制偏好不阻挡切章、换书、站内离开或关页；已提交请求在站内离开后继续完成，不承诺关页保存或离页后恢复输入。片段草稿的离开保护独立保留。
+
+复制偏好撤销 CAS 与离开拦截、保留串行保存与迟到隔离的取舍及验证见[保护减负验收](handovers/archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md#范围与提交)。
 
 恢复复制默认值后自动保存；排版、注音与阅读界面分别恢复自身字段。设置未成功读取时，阅读和普通复制仍可用，带上下文复制明确提示并允许重试。
 

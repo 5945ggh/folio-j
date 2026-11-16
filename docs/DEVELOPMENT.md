@@ -1,6 +1,6 @@
 # 开发指南
 
-本文维护本地开发环境、工程命令与仓库快照。首次试用见[项目首页](../README.md#快速开始)，应用配置见[使用指南](USAGE.md)，已有数据库的处理见[升级与备份](UPGRADING.md)。
+本文维护本地开发环境、工程命令、检索方法与仓库快照。首次试用见[项目首页](../README.md#快速开始)，应用配置见[使用指南](USAGE.md)，已有数据库的处理见[升级与备份](UPGRADING.md)。
 
 参与开发前先读 [AGENTS.md](../AGENTS.md)。产品行为以 [PRD](PRD.md) 为准，当前实现与缺口见 [MVP 实施基线](handovers/MVP_IMPLEMENTATION_BASELINE.md)。
 
@@ -49,6 +49,32 @@ just check-assets # 验证保留的实验和静态原型
 仓库与源码发行包的 `just migrate` 共用 `app.launcher migrate`，先取得与后台服务、备份一致的数据库排他锁，再执行 Alembic；数据库正在使用时拒绝迁移。日常迁移使用该入口，直接运行 Alembic CLI 不提供这层进程保护。
 
 后端 schema 变化后运行 `just gen-api`，将 OpenAPI 与前端生成类型一并提交；不要手改生成类型。工程约束、测试规则及提交要求由 [AGENTS.md](../AGENTS.md) 维护。
+
+## 检索实现、规范与历史决定
+
+从[文档导航](README.md)定位负责规范，先查标题与关键词，再读取对应段落。确认现在如何工作时查生产代码、prompt 和测试；追问为什么这样选择时，沿规范或[阶段索引](handovers/README.md#archived)进入原始方案与验收，再按其中的提交号查看 Git 决策记录。
+
+```sh
+rg -n '关键词' backend/src frontend/src backend/prompts  # 定位生产实现
+rg -n '^#{1,4} |关键词' docs/PRD.md                      # 定位相关章节
+rg -n '关键词' docs                                     # 查现行文档及活动资料
+rg -n '关键词' docs/handovers/archived                   # 显式查历史
+rg -n '关键词' references prototypes                    # 显式查研究或实验
+rg --no-ignore-dot -n '关键词' docs                      # 必要时连同归档查找
+```
+
+[.rgignore](../.rgignore) 仅配置 ripgrep 的检索排除项；依赖、构建、缓存与临时产物沿用 `.gitignore`，不重复维护。显式指定被排除目录仍可搜索；`--no-ignore-dot` 可取消 `.rgignore`／`.ignore` 规则，继续遵循 `.gitignore`。普通 `grep`、`git grep` 与编辑器索引需各自限定范围，不能假定它们读取 `.rgignore`。文件读取、文档链接检查和 Git 跟踪不受此检索配置影响。
+
+提交中的 `Constraint`、`Rejected` 等 Lore trailers 保留当时的约束与取舍，`Tested`／`Not-tested` 说明验证范围。先按问题关键词或文件查最多十条提交摘要，再读取命中提交的完整说明；需要更早记录时扩大数量或限定日期：
+
+```sh
+git log -n 10 --oneline --grep='单版删除'
+git log -n 10 --oneline --grep='^Rejected:.*物理滚动极限'
+git log -n 10 --oneline -- docs/PRD.md
+git show --no-patch --format=full 7f8aabc3
+```
+
+没有命中时改用领域词、旧接口名或文件历史；一次关键词无结果不表示没有决定。源码 ZIP 不含 Git 历史，浅克隆也可能缺少旧提交，此时先使用仓库保留的方案与验收链接。历史结论按当时版本和范围理解，是否仍适用回到现行规范核对。
 
 ## 文档与检查基准
 
