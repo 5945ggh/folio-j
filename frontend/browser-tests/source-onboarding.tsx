@@ -10,6 +10,10 @@ export async function sourceOnboarding(h: BrowserHarness): Promise<string> {
 	const { container, until, inputValue, mount, mock } = h;
 	const check: BrowserHarness["check"] = h.check;
 	let sources: Source[] = [];
+	let releaseEntryRead: (() => void) | undefined;
+	const entryRead = new Promise<void>((resolve) => {
+		releaseEntryRead = resolve;
+	});
 	let created: { title: string; description: string; note: string } | null =
 		null;
 	const createdRequest = () => created;
@@ -17,13 +21,15 @@ export async function sourceOnboarding(h: BrowserHarness): Promise<string> {
 		const url = new URL(request.url);
 		if (request.method === "GET" && url.pathname === "/api/sources")
 			return Response.json(sources);
-		if (request.method === "GET" && url.pathname === "/api/catalog/sources")
+		if (request.method === "GET" && url.pathname === "/api/catalog/sources") {
+			if (url.searchParams.get("page_size") === "1") await entryRead;
 			return Response.json({
 				items: sources,
 				total: sources.length,
 				page: 1,
 				page_size: Number(url.searchParams.get("page_size") ?? 50),
 			});
+		}
 		if (request.method === "GET" && url.pathname === "/api/materials")
 			return Response.json({
 				items: [],
@@ -77,6 +83,19 @@ export async function sourceOnboarding(h: BrowserHarness): Promise<string> {
 	localStorage.clear();
 	const disposeSources = await mount(<SourceIndex />, "*", "/sources");
 	try {
+		if (innerWidth <= 900) {
+			await until(
+				() => !!container.querySelector("#source-drawer-trigger"),
+				"Source switching must remain available while the entry is loading",
+			);
+			action("切换来源").click();
+			await until(
+				() => !!container.querySelector("dialog.s2-source-drawer[open]"),
+				"The directory drawer must open during entry loading",
+			);
+		}
+		check(releaseEntryRead, "Source entry read must be releasable");
+		releaseEntryRead();
 		await until(
 			() => !!container.querySelector(".s2-welcome"),
 			"Zero-source source space must explain its starting point",
@@ -84,10 +103,24 @@ export async function sourceOnboarding(h: BrowserHarness): Promise<string> {
 		const welcome = container.querySelector<HTMLElement>(".s2-welcome");
 		check(welcome, "Missing zero-source welcome");
 		check(
+			!container.querySelector("#source-drawer-trigger"),
+			"Confirmed zero-source welcome must omit the source switch",
+		);
+		check(
 			welcome.textContent?.includes("创建来源后") ?? false,
 			"Zero-source welcome must point at source creation",
 		);
 		const welcomeCreate = action("新建来源", welcome);
+		if (innerWidth <= 900) {
+			check(
+				!openDialog(),
+				"Confirmed zero sources must close the pending drawer",
+			);
+			check(
+				document.activeElement === welcomeCreate,
+				"Closing a drawer whose trigger disappeared must focus source creation",
+			);
+		}
 		welcomeCreate.click();
 		await until(
 			() => !!container.querySelector("#create-source-title"),

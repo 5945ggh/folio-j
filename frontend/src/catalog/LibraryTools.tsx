@@ -2,11 +2,24 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { NativeSelect } from "../NativeSelect";
 import { statusLabels, Tabs } from "./Controls";
 import { SearchInput } from "./SearchInput";
-import type { CatalogState } from "./state";
+import {
+	type CatalogState,
+	isDefaultCatalogSort,
+	sortDirectionArrow,
+	sortFieldLabel,
+} from "./state";
 export function Icon({
 	name,
 }: {
-	name: "search" | "filter" | "sort" | "size" | "plus" | "more" | "book";
+	name:
+		| "search"
+		| "filter"
+		| "sort"
+		| "size"
+		| "plus"
+		| "more"
+		| "book"
+		| "edit";
 }) {
 	const paths = {
 		search: "M21 21l-5-5M19 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0",
@@ -16,6 +29,7 @@ export function Icon({
 		plus: "M12 4v16M4 12h16",
 		more: "M5 12h.01M12 12h.01M19 12h.01",
 		book: "M12 5v16M12 5C8 2 4 3 2 4v16c4-2 7-1 10 1 3-2 6-3 10-1V4c-2-1-6-2-10 1",
+		edit: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z",
 	};
 	return (
 		<svg
@@ -34,10 +48,14 @@ export function Icon({
 export function Tool({
 	label,
 	name,
+	buttonTitle,
+	active = false,
 	children,
 }: {
 	label: string;
 	name: "search" | "filter" | "sort" | "size";
+	buttonTitle?: string;
+	active?: boolean;
 	children: ReactNode;
 }) {
 	const id = useId();
@@ -51,7 +69,7 @@ export function Tool({
 				ref={trigger}
 				className="library-icon"
 				aria-label={label}
-				title={label}
+				title={buttonTitle ?? label}
 				aria-expanded={open}
 				aria-controls={id}
 				popoverTarget={id}
@@ -64,6 +82,9 @@ export function Tool({
 				}}
 			>
 				<Icon name={name} />
+				{active && (
+					<span className="library-tool-indicator" aria-hidden="true" />
+				)}
 			</button>
 			<div
 				id={id}
@@ -192,7 +213,12 @@ export function LibraryTools({
 								</NativeSelect>
 							</label>
 						</Tool>
-						<Tool name="sort" label="排序">
+						<Tool
+							name="sort"
+							label="排序"
+							buttonTitle={`排序 · ${sortFieldLabel("books", state.sort)} ${sortDirectionArrow(state.order)}`}
+							active={!isDefaultCatalogSort("books", state.sort, state.order)}
+						>
 							<label>
 								排序依据
 								<NativeSelect

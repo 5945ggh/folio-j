@@ -3,16 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import type { Source } from "../content";
 import { dateLabel, InlineError } from "../Shared";
-import {
-	type AnalysisQuery,
-	type Book,
-	type BookQuery,
-	catalogAnalyses,
-	catalogBooks,
-	catalogKeys,
-	catalogSegments,
-	type SegmentQuery,
-} from "./api";
+import { type Book, sourceOverviewQueries } from "./api";
 import { BookDeleteDialog } from "./BookDeleteDialog";
 import { BookEditDialog } from "./BookEditDialog";
 import { BookCard } from "./Books";
@@ -23,18 +14,6 @@ import { Icon } from "./LibraryTools";
 import { SegmentMetadata } from "./SegmentMetadata";
 import { analysisDestination } from "./state";
 
-const analysesQuery: AnalysisQuery = {
-	sort: "updated_at",
-	order: "desc",
-	page: 1,
-	page_size: 2,
-};
-const segmentsQuery: SegmentQuery = {
-	sort: "created_at",
-	order: "desc",
-	page: 1,
-	page_size: 3,
-};
 function Retry({ error, retry }: { error: Error; retry: () => void }) {
 	return (
 		<>
@@ -62,26 +41,10 @@ export function SourceOverview({
 	const [deleting, setDeleting] = useState<Book | null>(null);
 	const focusAfterEdit = useRef(false);
 	const client = useQueryClient();
-	const bookQuery: BookQuery = {
-		source_id: source.id,
-		type: "book",
-		sort: "title",
-		order: "asc",
-		page: 1,
-		page_size: 3,
-	};
-	const analyses = useQuery({
-		queryKey: catalogKeys.analyses(source.id, analysesQuery),
-		queryFn: () => catalogAnalyses(source.id, analysesQuery),
-	});
-	const segments = useQuery({
-		queryKey: catalogKeys.segments(source.id, segmentsQuery),
-		queryFn: () => catalogSegments(source.id, segmentsQuery),
-	});
-	const books = useQuery({
-		queryKey: catalogKeys.books(bookQuery),
-		queryFn: () => catalogBooks(bookQuery),
-	});
+	const overview = sourceOverviewQueries(source.id);
+	const analyses = useQuery(overview.analyses);
+	const segments = useQuery(overview.segments);
+	const books = useQuery(overview.books);
 	const renderedBooks = books.isSuccess ? books.data.items : [];
 	const imports = useImportTasks(
 		renderedBooks,
@@ -94,7 +57,7 @@ export function SourceOverview({
 			deleting !== null ||
 			!focusAfterEdit.current ||
 			books.isFetching ||
-			books.data !== client.getQueryData(catalogKeys.books(bookQuery))
+			books.data !== client.getQueryData(overview.books.queryKey)
 		)
 			return;
 		focusAfterEdit.current = false;

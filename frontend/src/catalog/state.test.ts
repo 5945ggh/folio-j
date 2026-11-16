@@ -4,8 +4,13 @@ import { returnDestination } from "../navigation.ts";
 import {
 	analysisDestination,
 	catalogScrollSearch,
+	isDefaultCatalogSort,
 	lastCatalogPage,
+	nextSourceNavigationIndex,
 	readCatalogState,
+	sortDirectionArrow,
+	sortDirectionLabel,
+	sortFieldLabel,
 	sourceEntrySearch,
 	sourceListSearch,
 	sourceOverviewDestination,
@@ -311,4 +316,29 @@ test("学习来处链去除同路由环，限制深度，并逐层拒绝未知�
 		if (at && typeof at === "object" && "to" in at && at.to === "") break;
 	}
 	assert.ok(hops <= 4);
+});
+
+test("排序展示口径与来源目录键盘索引", () => {
+	assert.equal(sortFieldLabel("sources", "title"), "名称");
+	assert.equal(sortFieldLabel("sources", "created_at"), "创建时间");
+	assert.equal(sortFieldLabel("books", "title"), "标题");
+	assert.equal(sortFieldLabel("books", "created_at"), "添加时间");
+	assert.equal(sortFieldLabel("segments", "created_at"), "创建时间");
+	assert.equal(sortDirectionArrow("asc"), "↑");
+	assert.equal(sortDirectionArrow("desc"), "↓");
+	assert.equal(sortDirectionLabel("asc"), "升序");
+	assert.equal(sortDirectionLabel("desc"), "降序");
+	assert.equal(isDefaultCatalogSort("sources", "title", "asc"), true);
+	assert.equal(isDefaultCatalogSort("sources", "title", "desc"), false);
+	assert.equal(isDefaultCatalogSort("segments", "created_at", "desc"), true);
+	assert.equal(isDefaultCatalogSort("segments", "updated_at", "desc"), false);
+
+	assert.equal(nextSourceNavigationIndex(0, 0, "ArrowDown"), null);
+	assert.equal(nextSourceNavigationIndex(3, -1, "ArrowDown"), null);
+	assert.equal(nextSourceNavigationIndex(3, 0, "ArrowUp"), 0);
+	assert.equal(nextSourceNavigationIndex(3, 0, "ArrowDown"), 1);
+	assert.equal(nextSourceNavigationIndex(3, 2, "ArrowDown"), 2);
+	assert.equal(nextSourceNavigationIndex(3, 1, "Home"), 0);
+	assert.equal(nextSourceNavigationIndex(3, 1, "End"), 2);
+	assert.equal(nextSourceNavigationIndex(3, 1, "Enter"), null);
 });

@@ -10,6 +10,66 @@ export type CatalogSort =
 	| "created_at"
 	| "updated_at"
 	| "last_opened_at";
+
+const bookSortLabels: Record<CatalogSort, string> = {
+	title: "标题",
+	created_at: "添加时间",
+	updated_at: "更新时间",
+	last_opened_at: "最近打开",
+};
+
+export function defaultCatalogSort(kind: CatalogKind): {
+	sort: CatalogSort;
+	order: "asc" | "desc";
+} {
+	return kind === "segments"
+		? { sort: "created_at", order: "desc" }
+		: { sort: "title", order: "asc" };
+}
+
+export function isDefaultCatalogSort(
+	kind: CatalogKind,
+	sort: CatalogSort,
+	order: "asc" | "desc",
+): boolean {
+	const defaults = defaultCatalogSort(kind);
+	return sort === defaults.sort && order === defaults.order;
+}
+
+export function sortFieldLabel(kind: CatalogKind, field: CatalogSort): string {
+	if (kind === "sources" && field === "title") return "名称";
+	if (kind !== "books" && field === "created_at") return "创建时间";
+	return bookSortLabels[field];
+}
+
+export function sortDirectionArrow(order: "asc" | "desc"): string {
+	return order === "desc" ? "↓" : "↑";
+}
+
+export function sortDirectionLabel(order: "asc" | "desc"): string {
+	return order === "desc" ? "降序" : "升序";
+}
+
+export function nextSourceNavigationIndex(
+	count: number,
+	current: number,
+	key: string,
+): number | null {
+	if (count <= 0 || current < 0 || current >= count) return null;
+	switch (key) {
+		case "ArrowDown":
+			return Math.min(count - 1, current + 1);
+		case "ArrowUp":
+			return Math.max(0, current - 1);
+		case "Home":
+			return 0;
+		case "End":
+			return count - 1;
+		default:
+			return null;
+	}
+}
+
 export type CatalogState = {
 	q: string;
 	source_id: string;
@@ -26,10 +86,7 @@ export function readCatalogState(
 ): CatalogState {
 	const params = new URLSearchParams(search);
 	const saved = new URLSearchParams(preference);
-	const defaults =
-		kind === "segments"
-			? { sort: "created_at", order: "desc" }
-			: { sort: "title", order: "asc" };
+	const defaults = defaultCatalogSort(kind);
 	const sort =
 		params.get(`${prefix}sort`) ?? saved.get("sort") ?? defaults.sort;
 	const order =

@@ -40,7 +40,7 @@ export function useCatalogState(kind: CatalogKind, scope: string, prefix = "") {
 				`sort-${scope}`,
 				new URLSearchParams({ sort: next.sort, order: next.order }).toString(),
 			);
-		setParams(updateCatalogSearch(params.toString(), patch, prefix), {
+		setParams((prev) => updateCatalogSearch(prev.toString(), patch, prefix), {
 			replace: true,
 			// Search acknowledgements must not arrive after the next native input.
 			flushSync: "q" in patch,

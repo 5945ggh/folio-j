@@ -1,14 +1,15 @@
 import { type KeyboardEvent, type ReactNode, useId, useRef } from "react";
 import { NativeSelect } from "../NativeSelect";
 import { SearchInput } from "./SearchInput";
-import { type CatalogKind, type CatalogState, sortFields } from "./state";
+import {
+	type CatalogKind,
+	type CatalogState,
+	sortDirectionArrow,
+	sortDirectionLabel,
+	sortFieldLabel,
+	sortFields,
+} from "./state";
 
-const sortLabels = {
-	title: "标题",
-	created_at: "添加时间",
-	updated_at: "更新时间",
-	last_opened_at: "最近打开",
-};
 export const statusLabels = {
 	not_started: "未开始",
 	in_progress: "进行中",
@@ -126,9 +127,7 @@ export function CatalogToolbar({
 				>
 					{sortFields[kind].map((field) => (
 						<option key={field} value={field}>
-							{kind !== "books" && field === "created_at"
-								? "创建时间"
-								: sortLabels[field]}
+							{sortFieldLabel(kind, field)}
 						</option>
 					))}
 				</NativeSelect>
@@ -229,33 +228,44 @@ export function CatalogToolbar({
 			)}
 			{sourceList ? (
 				<div className="source-list-sort-control">
-					<button
-						ref={sortTrigger}
-						type="button"
-						className="source-list-sort-trigger"
-						aria-label={`${listLabel}排序`}
-						popoverTarget={sortId}
-						onPointerDown={() => {
-							keyboardSort.current = false;
-						}}
-						onKeyDown={(event) => {
-							if (event.key === "Enter" || event.key === " ")
-								keyboardSort.current = true;
-						}}
-					>
-						<svg
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="1.6"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M7 21V3m-4 4 4-4 4 4M17 3v18m-4-4 4 4 4-4" />
-						</svg>
-						排序
-					</button>
+					{(() => {
+						const fieldLabel = sortFieldLabel(kind, state.sort);
+						const arrow = sortDirectionArrow(state.order);
+						const direction = sortDirectionLabel(state.order);
+						const description = `${listLabel}排序：${fieldLabel}（${direction}）`;
+						return (
+							<button
+								ref={sortTrigger}
+								type="button"
+								className="source-list-sort-trigger"
+								aria-label={description}
+								title={description}
+								popoverTarget={sortId}
+								onPointerDown={() => {
+									keyboardSort.current = false;
+								}}
+								onKeyDown={(event) => {
+									if (event.key === "Enter" || event.key === " ")
+										keyboardSort.current = true;
+								}}
+							>
+								<svg
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.6"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									aria-hidden="true"
+								>
+									<path d="M7 21V3m-4 4 4-4 4 4M17 3v18m-4-4 4 4 4-4" />
+								</svg>
+								<span className="source-list-sort-label">
+									排序 · {fieldLabel} {arrow}
+								</span>
+							</button>
+						);
+					})()}
 					<div
 						id={sortId}
 						popover="auto"

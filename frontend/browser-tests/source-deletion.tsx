@@ -1,4 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import {
+	type QueryClient,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { Outlet, useLocation } from "react-router";
 import type { components } from "../src/api/schema";
 import type { Source } from "../src/content";
@@ -19,7 +23,9 @@ const other: Source = { ...source, id: "remaining-source", title: "残る出典"
 
 export async function sourceDeletion(h: BrowserHarness, preview = false) {
 	const { SourceDetail, SourceIndex } = await import("../src/SourcePages");
-	const { catalogBooks, catalogKeys } = await import("../src/catalog/api");
+	const { catalogBooks, catalogKeys, sourceOverviewQueries } = await import(
+		"../src/catalog/api"
+	);
 	const { container, mock, mount, until } = h;
 	const check: BrowserHarness["check"] = h.check;
 	let removed = false,
@@ -28,6 +34,14 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 		deleteRequests = 0,
 		impactReads = 0;
 	let releaseDelete: ((response: Response) => void) | undefined;
+	let queryClient: QueryClient | undefined;
+	const remainingOverview = sourceOverviewQueries(other.id);
+	const remainingKeys = [
+		remainingOverview.analyses.queryKey,
+		remainingOverview.segments.queryKey,
+		remainingOverview.books.queryKey,
+	];
+	const overviewReads = { analyses: 0, segments: 0, materials: 0 };
 	const impact: components["schemas"]["SourceDeleteImpact"] = {
 		source_id: source.id,
 		title: source.title,
@@ -72,13 +86,20 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 			return Response.json(other);
 		if (request.method === "GET" && path === "/api/materials") {
 			if (!url.searchParams.has("source_id")) materialReads++;
+			if (url.searchParams.get("source_id") === other.id)
+				overviewReads.materials++;
 			return Response.json({ items: [], total: 0, page: 1, page_size: 3 });
 		}
 		if (
 			request.method === "GET" &&
 			/\/catalog\/(segments|analyses)$/.test(path)
-		)
+		) {
+			if (path === `/api/sources/${other.id}/catalog/analyses`)
+				overviewReads.analyses++;
+			if (path === `/api/sources/${other.id}/catalog/segments`)
+				overviewReads.segments++;
 			return Response.json({ items: [], total: 0, page: 1, page_size: 3 });
+		}
 		if (request.method === "DELETE" && path === `/api/sources/${source.id}`) {
 			deleteRequests++;
 			return new Promise<Response>((resolve) => {
@@ -91,6 +112,7 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 	});
 	function Routes() {
 		const location = useLocation();
+		queryClient = useQueryClient();
 		// An active material directory query must refresh after source deletion.
 		useQuery({
 			queryKey: catalogKeys.books({}),
@@ -179,11 +201,113 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 				directoryReads > 0,
 			"Source detail and both directories must load",
 		);
-		await trustedClick(button("来源的更多操作"));
+		const trigger = button("来源的更多操作");
+		await trustedClick(trigger);
 		await until(
 			() => !!container.querySelector(".s2-source-menu:popover-open"),
 			"Source menu must open",
 		);
+		if (!preview) {
+			const resize = (
+				window as Window & {
+					browserResize?: (width: number, height: number) => Promise<void>;
+				}
+			).browserResize;
+			check(
+				resize,
+				"Source menu regression requires browser viewport resizing",
+			);
+			const panel = container.querySelector<HTMLElement>(".s2-source-menu");
+			const scroller = trigger.closest<HTMLElement>(".source-detail-content");
+			check(panel && scroller, "Source menu and scroll area must exist");
+			const width = innerWidth;
+			const height = innerHeight;
+			const viewportGeometry = () => ({
+				anchor: trigger.getBoundingClientRect().toJSON(),
+				menu: panel.getBoundingClientRect().toJSON(),
+				style: panel.style.cssText,
+				open: panel.matches(":popover-open"),
+				scrollTop: scroller.scrollTop,
+			});
+			const anchored = () => {
+				const anchor = trigger.getBoundingClientRect();
+				const bounds = panel.getBoundingClientRect();
+				return (
+					panel.matches(":popover-open") &&
+					(Math.abs(bounds.top - anchor.bottom - 6) < 1 ||
+						Math.abs(anchor.top - bounds.bottom - 6) < 1) &&
+					Math.abs(bounds.right - anchor.right) < 1 &&
+					bounds.left >= 12 &&
+					bounds.bottom <= innerHeight - 12
+				);
+			};
+			await until(anchored, "Source menu must open beside its trigger");
+			await resize(width > 900 ? 390 : 1280, 420);
+			await until(anchored, "Open source menu must follow across breakpoints");
+			await resize(320, 360);
+			try {
+				await until(anchored, "Open source menu must fit a narrow window");
+			} catch (error) {
+				throw new Error(JSON.stringify(viewportGeometry()), { cause: error });
+			}
+			// Give this compact fixture the same scroll range as a populated overview.
+			scroller.style.paddingBottom = "240px";
+			scroller.scrollTop = 24;
+			await until(
+				() => scroller.scrollTop === 24 && anchored(),
+				"Open source menu must follow a trigger moving within the scroll area",
+			);
+			check(browserKey, "Source menu regression requires native Escape");
+			await browserKey("Escape");
+			await until(
+				() =>
+					!panel.matches(":popover-open") && document.activeElement === trigger,
+				"Escape must close the source menu and restore trigger focus",
+			);
+			await trustedClick(trigger);
+			await until(
+				anchored,
+				"Source menu must open beside an already scrolled trigger",
+			);
+			scroller.scrollTop = 180;
+			await until(
+				() => !panel.matches(":popover-open") && scroller.scrollTop === 180,
+				"Source menu must close when scrolling hides the trigger",
+			);
+			scroller.scrollTop = 0;
+			scroller.style.removeProperty("padding-bottom");
+			const sourceSwitch = button("切换来源");
+			await trustedClick(sourceSwitch);
+			await until(
+				() => !!container.querySelector("dialog.s2-source-drawer[open]"),
+				"Narrow source detail must still provide the directory drawer",
+			);
+			const drawer = container.querySelector("dialog.s2-source-drawer[open]");
+			check(drawer, "Expected an open source directory drawer");
+			await until(
+				() => !!drawer.querySelector(`a[data-source-id="${other.id}"]`),
+				"The remaining source must be available for prefetch",
+			);
+			drawer
+				.querySelector<HTMLAnchorElement>(`a[data-source-id="${other.id}"]`)
+				?.focus();
+			await until(
+				() =>
+					remainingKeys.every(
+						(key) => queryClient?.getQueryState(key)?.status === "success",
+					),
+				"The remaining source overview must be warm before deletion",
+			);
+			check(
+				Object.values(overviewReads).every((count) => count === 1),
+				"Each remaining source overview interface must receive one prefetch",
+			);
+			button("关闭", drawer).click();
+			await until(() => !drawer.isConnected, "Directory drawer must close");
+			await resize(width, height);
+			await trustedClick(trigger);
+			await until(anchored, "Source menu must reopen beside its trigger");
+		}
 		await trustedClick(button("删除来源及其内容…"));
 		await until(
 			() => !!dialog()?.textContent?.includes("4 份讲解"),
@@ -278,7 +402,15 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 				),
 			"Refreshed directory must remove deleted source and retain other sources",
 		);
-		return `source deletion: impact disclosure, direct deletion after count changes, duplicate/cancel/Escape guards, failed DELETE retry and directory refresh verified at ${innerWidth}px`;
+		await until(
+			() =>
+				Object.values(overviewReads).every((count) => count === 2) &&
+				remainingKeys.every(
+					(key) => queryClient?.getQueryState(key)?.fetchStatus === "idle",
+				),
+			"Deleting a source must invalidate the remaining source's prefetched overview and refresh it",
+		);
+		return `source deletion ${innerWidth}px: menu, confirmation and directory refresh verified; remaining overview GETs after deletion ${Object.values(overviewReads).join("/")} including one prefetch per interface`;
 	} finally {
 		if (!preview) dispose();
 	}

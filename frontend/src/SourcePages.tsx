@@ -1,8 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import {
+	type ReactNode,
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { api } from "./api/client";
-import { catalogKeys, catalogSources, type SourceQuery } from "./catalog/api";
+import {
+	catalogKeys,
+	catalogSources,
+	type SourceQuery,
+	seedSourceQueryData,
+} from "./catalog/api";
 import { readPreference, savePreference } from "./catalog/hooks";
 import { forgetSourceImports } from "./catalog/import-state";
 import { Icon } from "./catalog/LibraryTools";
@@ -29,16 +41,24 @@ import {
 import { SegmentForm, SourceForm } from "./Forms";
 import { ConfirmDialog, InlineError, Shell } from "./Shared";
 
+const sourceDrawerFocus = ["source-drawer-trigger", "source-welcome-create"];
+
 function SourceFrame({
 	children,
+	showSourceSwitch = true,
 }: {
 	children: ReactNode | ((startCreate: () => void) => ReactNode);
+	showSourceSwitch?: boolean;
 }) {
 	const client = useQueryClient();
 	const navigate = useNavigate();
 	const location = useLocation();
 	const [creating, setCreating] = useState(false);
 	const [drawer, setDrawer] = useState(false);
+	const [editingSource, setEditingSource] = useState<Source | null>(null);
+	useEffect(() => {
+		if (!showSourceSwitch) setDrawer(false);
+	}, [showSourceSwitch]);
 	const active = useRef(false);
 	const generation = useRef(0);
 	useEffect(
@@ -60,6 +80,7 @@ function SourceFrame({
 			return requireData(data, error, response.status);
 		},
 		onSuccess: (source, request) => {
+			client.setQueryData(queries.source(source.id), source);
 			void client.invalidateQueries({ queryKey: queries.sources });
 			void client.invalidateQueries({ queryKey: catalogKeys.all });
 			if (active.current && request.generation === generation.current) {
@@ -88,29 +109,35 @@ function SourceFrame({
 	}
 	return (
 		<Shell className="library-a1 sources-s2" fullWidth>
-			<SourceSpace directory={<SourceDirectory onCreate={startCreate} />}>
+			<SourceSpace
+				directory={
+					<SourceDirectory onCreate={startCreate} onEdit={setEditingSource} />
+				}
+			>
 				<div className="source-detail-content">
-					<button
-						id="source-drawer-trigger"
-						type="button"
-						className="button secondary s2-source-reveal"
-						onClick={(e) => {
-							e.currentTarget.focus();
-							setDrawer(true);
-						}}
-					>
-						切换来源
-					</button>
+					{showSourceSwitch && (
+						<button
+							id="source-drawer-trigger"
+							type="button"
+							className="button secondary s2-source-reveal"
+							onClick={(e) => {
+								e.currentTarget.focus();
+								setDrawer(true);
+							}}
+						>
+							切换来源
+						</button>
+					)}
 					{typeof children === "function" ? children(startCreate) : children}
 				</div>
 			</SourceSpace>
-			{drawer && (
+			{showSourceSwitch && drawer && (
 				<ConfirmDialog
 					titleId="source-drawer-title"
 					className="s2-source-drawer"
 					animateEntrance={false}
 					onClose={() => setDrawer(false)}
-					restoreFocusId="source-drawer-trigger"
+					restoreFocusId={sourceDrawerFocus}
 				>
 					<div className="section-heading">
 						<h2 id="source-drawer-title">来源目录</h2>
@@ -143,11 +170,19 @@ function SourceFrame({
 					/>
 				</ConfirmDialog>
 			)}
+			{editingSource && (
+				<SourceEditDialog
+					key={editingSource.id}
+					initial={editingSource}
+					onClose={() => setEditingSource(null)}
+				/>
+			)}
 		</Shell>
 	);
 }
 
 export function SourceIndex() {
+	const client = useQueryClient();
 	const navigate = useNavigate();
 	const location = useLocation();
 	const entrySearch = sourceEntrySearch(location.search);
@@ -180,13 +215,24 @@ export function SourceIndex() {
 		},
 	});
 	useEffect(() => {
-		if (target.isSuccess && !target.isFetching && target.data)
+		if (target.isSuccess && !target.isFetching && target.data) {
+			seedSourceQueryData(client, target.data);
 			navigate(sourceOverviewDestination(target.data.id, entrySearch), {
 				replace: true,
 			});
-	}, [target.data, target.isSuccess, target.isFetching, navigate, entrySearch]);
+		}
+	}, [
+		client,
+		target.data,
+		target.isSuccess,
+		target.isFetching,
+		navigate,
+		entrySearch,
+	]);
+	const noSources =
+		target.isSuccess && !target.isFetching && target.data === null;
 	return (
-		<SourceFrame>
+		<SourceFrame showSourceSwitch={!noSources}>
 			{(startCreate) =>
 				target.isPending || target.isFetching ? (
 					<p role="status">正在打开来源…</p>
@@ -210,6 +256,7 @@ export function SourceIndex() {
 						<p>创建来源后，便可以导入素材或手动添加片段。</p>
 						<div className="actions">
 							<button
+								id="source-welcome-create"
 								className="button primary"
 								type="button"
 								onClick={(event) => {
@@ -338,10 +385,73 @@ export function SourceDetail() {
 	const [info, setInfo] = useState(false);
 	const menuId = useId();
 	const menu = useRef<HTMLDivElement>(null);
+	const menuTrigger = useRef<HTMLButtonElement>(null);
 	const source = useQuery({
 		queryKey: queries.source(id),
 		queryFn: () => getSource(id),
 	});
+	const hasSource = source.isSuccess;
+	useLayoutEffect(() => {
+		if (!hasSource) return;
+		const panel = menu.current;
+		const button = menuTrigger.current;
+		const content = button?.closest(".source-detail-content");
+		if (!panel || !button || !content) return;
+
+		const positionMenu = () => {
+			if (!panel.matches(":popover-open")) return;
+			const anchor = button.getBoundingClientRect();
+			const scrollArea = content.getBoundingClientRect();
+			if (
+				anchor.bottom <= Math.max(0, scrollArea.top) ||
+				anchor.top >= Math.min(innerHeight, scrollArea.bottom)
+			) {
+				panel.hidePopover();
+				return;
+			}
+			panel.style.right = `${Math.max(12, Math.min(innerWidth - anchor.right, innerWidth - panel.offsetWidth - 12))}px`;
+			const panelHeight = panel.offsetHeight;
+			const below = anchor.bottom + 6;
+			const above = anchor.top - panelHeight - 6;
+			const bottomLimit = innerHeight - panelHeight - 12;
+			const placeAbove = below > bottomLimit && above >= 12;
+			panel.style.top = placeAbove
+				? "auto"
+				: `${Math.max(12, Math.min(below, bottomLimit))}px`;
+			panel.style.bottom = placeAbove
+				? `${innerHeight - anchor.top + 6}px`
+				: "auto";
+		};
+		const layout = new ResizeObserver(positionMenu);
+		const stopTracking = () => {
+			layout.disconnect();
+			content.removeEventListener("scroll", positionMenu);
+			window.removeEventListener("scroll", positionMenu);
+			window.removeEventListener("resize", positionMenu);
+		};
+		const onToggle = () => {
+			if (!panel.matches(":popover-open")) {
+				stopTracking();
+				return;
+			}
+			positionMenu();
+			if (!panel.matches(":popover-open")) return;
+			layout.observe(content);
+			layout.observe(button);
+			content.addEventListener("scroll", positionMenu, { passive: true });
+			window.addEventListener("scroll", positionMenu, { passive: true });
+			window.addEventListener("resize", positionMenu);
+			panel.querySelector<HTMLButtonElement>("button")?.focus({
+				preventScroll: true,
+			});
+		};
+
+		panel.addEventListener("toggle", onToggle);
+		return () => {
+			panel.removeEventListener("toggle", onToggle);
+			stopTracking();
+		};
+	}, [hasSource]);
 	useEffect(() => {
 		if (source.isSuccess) savePreference("last-source", id);
 	}, [id, source.isSuccess]);
@@ -417,6 +527,7 @@ export function SourceDetail() {
 						</div>
 						<button
 							id="source-menu-trigger"
+							ref={menuTrigger}
 							className="library-icon"
 							type="button"
 							aria-label="来源的更多操作"
@@ -432,12 +543,6 @@ export function SourceDetail() {
 							className="library-popover s2-source-menu popover-motion"
 							role="menu"
 							popover="auto"
-							onToggle={(e) => {
-								if (e.newState === "open")
-									e.currentTarget
-										.querySelector<HTMLButtonElement>("button")
-										?.focus();
-							}}
 							onKeyDown={(e) => {
 								const buttons = Array.from(
 									e.currentTarget.querySelectorAll<HTMLButtonElement>("button"),

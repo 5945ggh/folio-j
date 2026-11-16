@@ -73,7 +73,8 @@ export async function overviewImportRegression(
 			/\/catalog\/(analyses|segments)$/.test(url.pathname)
 		) {
 			const segments =
-				learning && url.pathname.endsWith("/segments")
+				learning &&
+				url.pathname === `/api/sources/${source.id}/catalog/segments`
 					? [
 							{
 								id: "segment",
@@ -310,6 +311,8 @@ export async function overviewImportRegression(
 		const hidden = await start("プレビュー外.epub");
 		await pending("プレビュー外");
 		items.push(book("preview-two", "二冊目"), book("preview-three", "三冊目"));
+		// Include the learning fixture in the snapshot loaded by import invalidation.
+		learning = true;
 		complete(hidden, book("outside-preview", "プレビュー外"));
 		await until(
 			() =>
@@ -322,11 +325,10 @@ export async function overviewImportRegression(
 			card("プレビュー外")?.getAttribute("aria-busy") === "false",
 			"Successful temporary card must stop preparing",
 		);
-		learning = true;
 		action("其他来源").click();
 		await until(
-			() => !!container.querySelector(".overview-learning"),
-			"Existing learning content must activate reference sidebar",
+			() => !!container.querySelector(".source-welcome"),
+			"The other source must remain empty",
 		);
 		action("原来源").click();
 		await until(

@@ -48,6 +48,7 @@ import { segmentShareRegression } from "./segment-share";
 import { settingsModels } from "./settings-models";
 import { settingsReturn } from "./settings-return";
 import { sourceDeletion } from "./source-deletion";
+import { sourceDirectoryRegression } from "./source-directory";
 import { sourceEditDelete } from "./source-edit-delete";
 import { sourceOnboarding } from "./source-onboarding";
 import { themeRegression } from "./theme";
@@ -450,6 +451,7 @@ try {
 		["reader-image-performance", readerImages],
 		["catalog-overview", overviewImportRegression],
 		["source-deletion", sourceDeletion],
+		["source-directory", sourceDirectoryRegression],
 		["source-edit-delete", sourceEditDelete],
 		["source-onboarding", sourceOnboarding],
 		["catalog-reuse", reusedImportRegression],

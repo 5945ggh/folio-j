@@ -278,7 +278,7 @@
 }
 .source-list-toolbar {
 	display: grid;
-	grid-template-columns: minmax(0, 280px) 72px minmax(0, 1fr) 96px;
+	grid-template-columns: minmax(0, 280px) auto minmax(0, 1fr) 96px;
 	align-items: center;
 	gap: 8px;
 	margin: 0 0 24px;
@@ -309,20 +309,28 @@
 .source-list-sort-control {
 	grid-column: 2;
 	grid-row: 1;
+	min-width: 0;
 }
 .source-list-sort-trigger {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 7px;
-	width: 72px;
+	gap: 6px;
+	width: auto;
+	max-width: 100%;
 	height: 34px;
-	padding: 6px 8px;
+	padding: 6px 10px;
 	border: 0;
 	border-radius: 6px;
 	background: transparent;
 	color: var(--color-text-secondary);
 	font-size: 13px;
+	white-space: nowrap;
+}
+.source-list-sort-label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .source-list-sort-trigger:hover {
 	background: var(--color-surface-hover);

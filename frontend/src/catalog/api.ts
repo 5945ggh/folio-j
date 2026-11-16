@@ -1,6 +1,7 @@
+import { type QueryClient, queryOptions } from "@tanstack/react-query";
 import { api } from "../api/client";
 import type { components, paths } from "../api/schema";
-import { requireData } from "../content";
+import { getSource, queries, requireData, type Source } from "../content";
 import { matchesStatistics } from "./statistics";
 export type Book = components["schemas"]["MaterialCatalogItem"];
 export type Usage = components["schemas"]["MaterialUsageResponse"];
@@ -51,6 +52,76 @@ export async function catalogAnalyses(id: string, query: AnalysisQuery) {
 		{ params: { path: { source_id: id }, query } },
 	);
 	return requireData(data, error, response.status);
+}
+
+const overviewAnalysesQuery: AnalysisQuery = {
+	sort: "updated_at",
+	order: "desc",
+	page: 1,
+	page_size: 2,
+};
+
+const overviewSegmentsQuery: SegmentQuery = {
+	sort: "created_at",
+	order: "desc",
+	page: 1,
+	page_size: 3,
+};
+
+const overviewStaleTime = 15_000;
+
+export function sourceOverviewQueries(sourceId: string) {
+	const bookQuery: BookQuery = {
+		source_id: sourceId,
+		type: "book",
+		sort: "title",
+		order: "asc",
+		page: 1,
+		page_size: 3,
+	};
+	return {
+		analyses: queryOptions({
+			queryKey: catalogKeys.analyses(sourceId, overviewAnalysesQuery),
+			queryFn: () => catalogAnalyses(sourceId, overviewAnalysesQuery),
+			staleTime: overviewStaleTime,
+		}),
+		segments: queryOptions({
+			queryKey: catalogKeys.segments(sourceId, overviewSegmentsQuery),
+			queryFn: () => catalogSegments(sourceId, overviewSegmentsQuery),
+			staleTime: overviewStaleTime,
+		}),
+		books: queryOptions({
+			queryKey: catalogKeys.books(bookQuery),
+			queryFn: () => catalogBooks(bookQuery),
+			staleTime: overviewStaleTime,
+		}),
+	};
+}
+
+export function seedSourceQueryData(client: QueryClient, source: Source) {
+	if (client.getQueryData(queries.source(source.id))) return;
+	client.setQueryData(queries.source(source.id), {
+		id: source.id,
+		title: source.title,
+		description: source.description,
+		note: source.note,
+		segment_count: source.segment_count,
+		created_at: source.created_at,
+		updated_at: source.updated_at,
+	} satisfies Source);
+}
+
+export function prefetchSourceOverview(client: QueryClient, source: Source) {
+	const overview = sourceOverviewQueries(source.id);
+	seedSourceQueryData(client, source);
+	void client.prefetchQuery({
+		queryKey: queries.source(source.id),
+		queryFn: () => getSource(source.id),
+		staleTime: 15_000,
+	});
+	void client.prefetchQuery(overview.analyses);
+	void client.prefetchQuery(overview.segments);
+	void client.prefetchQuery(overview.books);
 }
 export async function updateUsage(
 	id: string,

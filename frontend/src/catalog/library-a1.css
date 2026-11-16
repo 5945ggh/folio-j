@@ -37,7 +37,12 @@
 	border-radius: 20px;
 	background: var(--color-surface-subtle);
 }
+.library-tool {
+	position: relative;
+	display: inline-flex;
+}
 .library-icon {
+	position: relative;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -50,6 +55,17 @@
 	color: var(--color-text-secondary);
 	flex: none;
 	cursor: pointer;
+}
+.library-tool-indicator {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--color-accent-solid);
+	box-shadow: 0 0 0 1.5px var(--color-surface-subtle);
+	pointer-events: none;
 }
 .library-icon:hover {
 	background: var(--color-surface-hover);

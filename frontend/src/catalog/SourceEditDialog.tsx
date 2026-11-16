@@ -16,9 +16,11 @@ import { changedSourceFields } from "./source-edit";
 export function SourceEditDialog({
 	initial,
 	onClose,
+	restoreFocusId = "source-menu-trigger",
 }: {
 	initial: Source;
 	onClose: () => void;
+	restoreFocusId?: string;
 }) {
 	const client = useQueryClient();
 	const [base] = useState<SourceFields>(() => ({
@@ -90,7 +92,7 @@ export function SourceEditDialog({
 		<ConfirmDialog
 			titleId="edit-source-title"
 			onClose={requestClose}
-			restoreFocusId="source-menu-trigger"
+			restoreFocusId={restoreFocusId}
 		>
 			<h2 id="edit-source-title">编辑来源</h2>
 			<SourceForm
