@@ -1,0 +1,39 @@
+docs/handovers/epub-reading/AGENT_PROMPT.md
+  s_1cb03fa10e46c2::t_a2c29b3d9e2fd5 3,17
+docs/GLOSSARY.md
+  s_1cb03fa10e46c2::t_07b66b7c922276 42
+  s_1cb03fa10e46c2::t_a2c29b3d9e2fd5 40-41
+docs/DEVELOPMENT.md
+  s_1cb03fa10e46c2::t_091b524b9c1daf 68,71-73
+  s_1cb03fa10e46c2::t_40a5e446fef7fc 3,53-67,69-70,74-77
+  s_1cb03fa10e46c2::t_36edca4be0894a 78
+docs/PRD.md
+  s_1cb03fa10e46c2::t_a2c29b3d9e2fd5 249,277
+  s_1cb03fa10e46c2::t_f4b0cca39da6ec 278
+AGENTS.md
+  s_1cb03fa10e46c2::t_40a5e446fef7fc 20,26,34,38
+docs/handovers/README.md
+  s_1cb03fa10e46c2::t_e625af30bfee36 54
+docs/handovers/archived/text-study/TRANSLATION_AND_SPEECH_PLAN.md
+  s_1cb03fa10e46c2::t_e625af30bfee36 3
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_1cb03fa10e46c2::t_e625af30bfee36 22
+docs/README.md
+  s_1cb03fa10e46c2::t_a2c29b3d9e2fd5 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b28bf70f1eccc95aa4f36613e18f680141953f43",
+  "prompts": {},
+  "sessions": {
+    "s_1cb03fa10e46c2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e52d-930b-7800-a883-72eafe9fccc7",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
