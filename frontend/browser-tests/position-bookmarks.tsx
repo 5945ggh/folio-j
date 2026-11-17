@@ -1089,12 +1089,15 @@ export async function positionBookmarks(h: BrowserHarness) {
 				draftBeforeRefresh,
 			"Closing an unavailable bookmark detail must preserve its local note draft",
 		);
-		const tabs = [
-			...container.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
-		];
+		const dialog = find<HTMLElement>('[role="dialog"]:not([inert])');
+		const directoryTab = button("目录", dialog);
+		const bookmarksTab = button("书签", dialog);
+		const tabs = [...dialog.querySelectorAll('[role="tab"]')];
 		check(
-			tabs.map((tab) => tab.textContent?.trim()).join("|") === "目录|书签|搜索",
-			"Navigation must expose directory, bookmark and search tabs in order",
+			tabs.length === 2 &&
+				tabs.includes(directoryTab) &&
+				tabs.includes(bookmarksTab),
+			"Book navigation must provide directory and bookmark tabs",
 		);
 		check(
 			tabs.every(
@@ -1103,28 +1106,27 @@ export async function positionBookmarks(h: BrowserHarness) {
 			),
 			"Navigation tabs must name actual panels",
 		);
-		const dialog = find<HTMLElement>('[role="dialog"]:not([inert])');
 		check(
 			!!document.getElementById(dialog.getAttribute("aria-labelledby") ?? ""),
 			"Navigation dialog must have an accessible title",
 		);
-		button("书签", dialog).focus();
-		button("书签", dialog).dispatchEvent(
+		bookmarksTab.focus();
+		bookmarksTab.dispatchEvent(
 			new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
 		);
 		await until(
 			() =>
-				button("搜索", dialog).getAttribute("aria-selected") === "true" &&
-				document.activeElement === button("搜索", dialog),
-			"Right arrow must focus and activate the next navigation tab",
+				directoryTab.getAttribute("aria-selected") === "true" &&
+				document.activeElement === directoryTab,
+			"Right arrow from bookmarks must focus and activate the directory tab",
 		);
-		button("搜索", dialog).dispatchEvent(
+		directoryTab.dispatchEvent(
 			new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }),
 		);
 		await until(
 			() =>
-				button("书签", dialog).getAttribute("aria-selected") === "true" &&
-				document.activeElement === button("书签", dialog),
+				bookmarksTab.getAttribute("aria-selected") === "true" &&
+				document.activeElement === bookmarksTab,
 			"Left arrow must return focus and activation to bookmarks",
 		);
 		check(
