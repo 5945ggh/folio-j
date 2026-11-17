@@ -1,0 +1,19 @@
+frontend/browser-tests/position-bookmarks.tsx
+  s_bc53d989c91d2b::t_6a188c05ea7e04 1092-1095,1097-1100,1113-1114,1119-1121,1123,1128-1129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b89189abffbe2217a82a0a1c3bfdd9724622e4a8",
+  "prompts": {},
+  "sessions": {
+    "s_bc53d989c91d2b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e702-ba2f-7e41-89db-b6e7ecf05d30",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
