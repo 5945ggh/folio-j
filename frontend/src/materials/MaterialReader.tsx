@@ -1696,7 +1696,9 @@ function Reader({
 				)
 			)
 				return;
-			const vertical = latest.current.settings.writing_mode === "vertical-rl";
+			const settings = latest.current.settings;
+			const vertical = settings.writing_mode === "vertical-rl";
+			const lineStep = settings.font_size * settings.line_height * 1.5;
 			const root = container.current;
 			if (!root) return;
 			const page = vertical
@@ -1706,10 +1708,10 @@ function Reader({
 			if (event.key === "PageDown" || event.key === " ")
 				step = page * 0.85 * (event.shiftKey ? -1 : 1);
 			else if (event.key === "PageUp") step = -page * 0.85;
-			else if (vertical && event.key === "ArrowLeft") step = 80;
-			else if (vertical && event.key === "ArrowRight") step = -80;
-			else if (!vertical && event.key === "ArrowDown") step = 80;
-			else if (!vertical && event.key === "ArrowUp") step = -80;
+			else if (vertical && event.key === "ArrowLeft") step = lineStep;
+			else if (vertical && event.key === "ArrowRight") step = -lineStep;
+			else if (!vertical && event.key === "ArrowDown") step = lineStep;
+			else if (!vertical && event.key === "ArrowUp") step = -lineStep;
 			if (step) {
 				recordReadingInput(event);
 				event.preventDefault();

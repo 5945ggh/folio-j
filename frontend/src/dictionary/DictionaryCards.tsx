@@ -34,9 +34,11 @@ export type LookupOrigin = {
 		"auto_expand" | "assisted_ranking" | "expected_dictionary_id"
 	>;
 	anchor: ScreenAnchor;
+	hover?: boolean;
 	parentBoxes?: ScreenAnchor[];
 	record?: () => void;
 	highlight?: (start: number, end: number) => void;
+	unhighlight?: () => void;
 	clear?: () => void;
 	passage?: DictionaryPassage;
 };
@@ -47,6 +49,7 @@ export type LookupLevel = {
 	index: number;
 	pending: boolean;
 	message: string;
+	refresh?: "pending" | "retry";
 };
 function excerpt(level: LookupLevel) {
 	const match = level.pages[level.index];
@@ -204,6 +207,7 @@ export function DictionaryCards({
 	choose,
 	backTo,
 	close,
+	retry,
 	onRecord,
 }: {
 	levels: LookupLevel[];
@@ -216,6 +220,7 @@ export function DictionaryCards({
 	choose: (depth: number, index: number) => void;
 	backTo: (depth: number) => void;
 	close: () => void;
+	retry: () => void;
 	onRecord: (record: () => void) => void;
 }) {
 	const [viewport, setViewport] = useState(() => ({
@@ -231,7 +236,8 @@ export function DictionaryCards({
 	useLayoutEffect(() => {
 		const root = levels[0];
 		const match = root?.pages[root.index];
-		if (match) root.origin.highlight?.(match.start, match.end);
+		if (match && root.refresh !== "pending")
+			root.origin.highlight?.(match.start, match.end);
 		const ranges = levels.slice(1).flatMap((item) => {
 			const active = item.pages[item.index];
 			const range =
@@ -250,11 +256,20 @@ export function DictionaryCards({
 	const compact = viewport.width < compactDictionaryWidth;
 	const manuallyPlacedStack = compact && stackPoint !== null;
 	useLayoutEffect(() => {
+		const node = deck.current;
 		if (!manuallyPlacedStack || levels.length < 2) {
+			if (manuallyPlacedStack && levels[0]?.refresh === "pending" && node) {
+				// Refresh keeps the on-screen position before releasing space reserved for children.
+				const { left, top } = node.getBoundingClientRect();
+				setStackPoint((point) =>
+					point && (point.left !== left || point.top !== top)
+						? { left, top }
+						: point,
+				);
+			}
 			setMinimumStackHeight(120);
 			return;
 		}
-		const node = deck.current;
 		if (!node) return;
 		const measure = () => {
 			const foreground = node.querySelector<HTMLElement>(
@@ -332,7 +347,7 @@ export function DictionaryCards({
 		>
 			{levels.map((level, depth) => (
 				<WordCard
-					focusOnMount={!behindPanel}
+					focusOnMount={!behindPanel && !level.origin.hover}
 					key={level.id}
 					level={level}
 					depth={depth}
@@ -349,12 +364,15 @@ export function DictionaryCards({
 					choose={choose}
 					backTo={backTo}
 					close={close}
+					retry={retry}
 					onRecord={onRecord}
 				/>
 			))}
 		</section>
 	);
 }
+
+const estimatedCardHeight = 360;
 
 function WordCard({
 	focusOnMount,
@@ -373,6 +391,7 @@ function WordCard({
 	choose,
 	backTo,
 	close,
+	retry,
 	onRecord,
 }: {
 	level: LookupLevel;
@@ -389,7 +408,7 @@ function WordCard({
 	hidden: boolean;
 } & Pick<
 	Parameters<typeof DictionaryCards>[0],
-	"nested" | "choose" | "backTo" | "close" | "onRecord"
+	"nested" | "choose" | "backTo" | "close" | "retry" | "onRecord"
 >) {
 	const page = level.pages[level.index];
 	const primary = page?.entries[0];
@@ -400,17 +419,20 @@ function WordCard({
 		: "";
 	const noEntries = !!page && page.entries.length === 0;
 	const card = useRef<HTMLElement>(null);
-	const [firstHeight, setFirstHeight] = useState<number | null>(null);
-	// Measure once when this lookup resolves. Paging changes only the scrollable contents.
+	const [placementHeight, setPlacementHeight] = useState<number | null>(null);
+	const refreshing = level.refresh === "pending";
+	// Freeze the height used for placement when a refresh supersedes the initial lookup.
 	useLayoutEffect(() => {
-		if (!compact && firstHeight === null && !level.pending && card.current)
-			setFirstHeight(
+		if (compact || placementHeight !== null || !card.current) return;
+		if (refreshing) setPlacementHeight(estimatedCardHeight);
+		else if (!level.pending)
+			setPlacementHeight(
 				card.current.offsetHeight +
 					(scroll.current
 						? scroll.current.scrollHeight - scroll.current.clientHeight
 						: 0),
 			);
-	}, [compact, firstHeight, level.pending]);
+	}, [compact, placementHeight, refreshing, level.pending]);
 	const [manual, setManual] = useState<ReaderCardPosition | null>(null);
 	const automatic = compact
 		? undefined
@@ -419,7 +441,7 @@ function WordCard({
 				level.origin.parentBoxes ?? [],
 				viewport.width,
 				viewport.height,
-				firstHeight ?? 360,
+				placementHeight ?? estimatedCardHeight,
 			);
 	const position =
 		manual && automatic
@@ -447,6 +469,11 @@ function WordCard({
 	}, []);
 	const scroll = useRef<HTMLDivElement>(null);
 	const [selection, setSelection] = useState<Range | null>(null);
+	useLayoutEffect(() => {
+		if (!refreshing) return;
+		if (scroll.current) scroll.current.scrollTop = 0;
+		setSelection(null);
+	}, [refreshing]);
 	useEffect(() => {
 		const changed = () => {
 			const selected = document.getSelection();
@@ -475,6 +502,7 @@ function WordCard({
 	};
 	const turnPage = (event: KeyboardEvent<HTMLElement>) => {
 		if (
+			refreshing ||
 			(event.key !== "ArrowLeft" && event.key !== "ArrowRight") ||
 			event.target !== document.activeElement ||
 			event.defaultPrevented ||
@@ -504,6 +532,8 @@ function WordCard({
 			data-dragging={drag.dragging || undefined}
 			style={position}
 			data-depth={depth}
+			data-hover={level.origin.hover || undefined}
+			data-refreshing={refreshing || undefined}
 			data-parent={!!child}
 			hidden={hidden}
 			aria-label={`词卡 · ${titleWord ?? glyph}`}
@@ -601,13 +631,15 @@ function WordCard({
 						<DictionaryDefinitions
 							nodes={entry.definitions}
 							mode={mode}
-							enabled={!hidden && !(compact && child)}
+							enabled={!refreshing && !hidden && !(compact && child)}
+							resetKey={refreshing}
 							child={child}
 							pending={level.pending}
-							onLookup={(passage) =>
+							onLookup={(passage, hover) =>
 								nested(depth, {
 									input: { text: passage.text, position: passage.offset },
 									anchor: passage.anchor,
+									hover,
 									passage,
 								})
 							}
@@ -624,9 +656,14 @@ function WordCard({
 				</p>
 			)}
 			{level.message && (
-				<p className="dict-message" role="status">
-					{level.message}
-				</p>
+				<div className="dict-message">
+					<span role="status">{level.message}</span>
+					{level.refresh === "retry" && (
+						<button type="button" onClick={retry}>
+							重试查词
+						</button>
+					)}
+				</div>
 			)}
 			{(level.origin.record || selection) && (
 				<footer className="dict-foot">

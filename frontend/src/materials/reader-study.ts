@@ -49,8 +49,10 @@ export type ReaderLookupHit = {
 	tokens: ReadingsToken[];
 	anchor: ScreenAnchor;
 	studyHit: StudyMarkHit | null;
+	hover: boolean;
 	/** Coordinates are relative to text, as returned by dictionary lookup. */
 	highlight: (start: number, end: number) => void;
+	unhighlight: () => void;
 	clearHighlight: () => void;
 };
 export type StudyBinding = {
@@ -559,8 +561,9 @@ export class ReaderStudy {
 		if (!part || !resource) return false;
 		const local = rawBoundary(projection.raw, hit.rawStart);
 		const key = `${frame.index}:${local}`;
+		const hover = event.type === "pointermove";
 		if (
-			event.type === "pointermove" &&
+			hover &&
 			(key === this.hoverKey ||
 				(this.lookupCoverage?.frame === frame.index &&
 					local >= this.lookupCoverage.start &&
@@ -601,6 +604,12 @@ export class ReaderStudy {
 			tokens,
 			anchor: screenAnchor(frame.element, hit.rect),
 			studyHit,
+			hover,
+			unhighlight: () => {
+				if (ticket !== this.lookupTicket) return;
+				this.lookupCoverage = null;
+				this.clearLookupHighlights();
+			},
 			clearHighlight: () => {
 				if (ticket === this.lookupTicket) this.dismissLookup(false);
 			},

@@ -167,6 +167,7 @@ export async function dictionaryInflectionLayout(h: BrowserHarness) {
 					choose={() => {}}
 					backTo={() => {}}
 					close={() => {}}
+					retry={() => {}}
 					onRecord={() => {}}
 				/>
 			</div>,

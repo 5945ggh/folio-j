@@ -215,6 +215,12 @@
 		sans-serif;
 	animation: dict-appear 130ms ease-out;
 }
+.dict-card[data-hover="true"] {
+	animation: none;
+}
+.dict-card[data-refreshing="true"] :is(.dict-scroll, .dict-pager) {
+	visibility: hidden;
+}
 .dict-deck[data-compact="false"] .dict-card {
 	position: absolute;
 }

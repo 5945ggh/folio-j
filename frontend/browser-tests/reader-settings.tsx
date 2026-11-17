@@ -603,6 +603,72 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			);
 			return `reader settings preview ${innerWidth}px/${vertical ? "vertical" : "horizontal"}/${dark ? "dark" : "light"}`;
 		}
+		for (const [fontSize, spacing, distance] of [
+			[12, 1, 18],
+			[40, 3, 180],
+			[26, 2, 78],
+		] as const) {
+			h.inputValue(
+				find<HTMLInputElement>('input[aria-label="字号"]'),
+				String(fontSize),
+			);
+			await h.until(
+				() => positions.get(materialId)?.settings?.font_size === fontSize,
+				"Changed font size must finish layout and position saving",
+			);
+			h.inputValue(lineHeight, String(spacing));
+			await h.until(
+				() => positions.get(materialId)?.settings?.line_height === spacing,
+				"Changed line height must finish layout and position saving",
+			);
+			const root = viewport();
+			const start = vertical ? root.scrollLeft : root.scrollTop;
+			const source = frame().contentDocument?.body;
+			check(source, "Keyboard reading needs a live source document");
+			for (const [key, target] of [
+				[
+					vertical ? "ArrowLeft" : "ArrowDown",
+					start + (vertical ? -distance : distance),
+				],
+				[vertical ? "ArrowRight" : "ArrowUp", start],
+			] as const) {
+				const event = new KeyboardEvent("keydown", {
+					key,
+					bubbles: true,
+					cancelable: true,
+				});
+				source.dispatchEvent(event);
+				check(
+					event.defaultPrevented,
+					"Reading-axis keys must consume native scrolling",
+				);
+				await h.until(
+					() =>
+						Math.abs((vertical ? root.scrollLeft : root.scrollTop) - target) <
+						1,
+					`Arrow scrolling must follow live ${fontSize}px/${spacing} typography in both directions`,
+				);
+			}
+			for (const event of [
+				new KeyboardEvent("keydown", {
+					key: vertical ? "ArrowDown" : "ArrowLeft",
+					bubbles: true,
+					cancelable: true,
+				}),
+				new KeyboardEvent("keydown", {
+					key: vertical ? "ArrowLeft" : "ArrowDown",
+					shiftKey: true,
+					bubbles: true,
+					cancelable: true,
+				}),
+			]) {
+				source.dispatchEvent(event);
+				check(
+					!event.defaultPrevented,
+					"Other-axis arrows and native selection keys must stay native",
+				);
+			}
+		}
 		await edit("7");
 		const beforeResetUi = localStorage.getItem(uiKey);
 		button("重置排版").click();
@@ -1038,7 +1104,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			() => route === "/settings/appearance",
 			"Retired Reader draft must not block unrelated settings",
 		);
-		return `reader settings: ${innerWidth}px/${vertical ? "vertical" : "horizontal"}/${dark ? "dark" : "light"}; real ReaderSessionHost + DataRouter; named settings entries and toolbar focus, shared popover opacity, collapsed focus, isolated resets/source position; panel/tool/chapter/scroll input retention; blur/reset autosave, invalid inputs, editable pending receipts, Segment-only guard, unblocked routes and shared serial PUTs surviving departure; ${requests.length} mocked requests`;
+		return `reader settings: ${innerWidth}px/${vertical ? "vertical" : "horizontal"}/${dark ? "dark" : "light"}; real ReaderSessionHost + DataRouter; named settings entries and toolbar focus, shared popover opacity, collapsed focus, isolated resets/source position; typography-scaled bidirectional arrow scrolling at 12/40/26px; panel/tool/chapter/scroll input retention; blur/reset autosave, invalid inputs, editable pending receipts, Segment-only guard, unblocked routes and shared serial PUTs surviving departure; ${requests.length} mocked requests`;
 	} finally {
 		if (!preview) dispose();
 	}

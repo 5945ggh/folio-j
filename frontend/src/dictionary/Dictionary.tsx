@@ -9,6 +9,7 @@ import {
 	type Ref,
 	useCallback,
 	useEffect,
+	useEffectEvent,
 	useId,
 	useImperativeHandle,
 	useLayoutEffect,
@@ -148,17 +149,6 @@ export function Dictionary({
 		return true;
 	}, [publish]);
 	useLayoutEffect(() => {
-		if (
-			appliedOptions.current.mode !== mode ||
-			appliedOptions.current.autoExpand !== autoExpand ||
-			appliedOptions.current.assistedRanking !== assistedRanking
-		) {
-			// Option changes invalidate every level, including in-flight nested requests.
-			appliedOptions.current = { mode, autoExpand, assistedRanking };
-			clearCards();
-		}
-	}, [mode, autoExpand, assistedRanking, clearCards]);
-	useLayoutEffect(() => {
 		// A visible card and its nested lookup stack belong to one dictionary.
 		if (cardDictionary && cardDictionary.id !== selection) clearCards();
 	}, [selection, cardDictionary, clearCards]);
@@ -207,8 +197,12 @@ export function Dictionary({
 		},
 		[],
 	);
-	const search = async (origin: LookupOrigin, parent: number) => {
-		onActivate();
+	const search = async (
+		origin: LookupOrigin,
+		parent: number,
+		refresh?: LookupLevel,
+	) => {
+		if (!refresh) onActivate();
 		const getStatus = () =>
 			client.getQueryState<typeof status.data>(dictionaryKey);
 		let selected = getStatus();
@@ -218,15 +212,22 @@ export function Dictionary({
 				: undefined;
 		const manual = parent < 0 && origin.input.selection_start != null;
 		// A manual selection can open a card while gesture-based lookup is off.
-		const prepare = manual && (mode === "off" || identity === undefined);
+		const prepare =
+			manual && (identity === undefined || (!refresh && mode === "off"));
 		if (identity === undefined && !prepare) {
-			setMenu(true);
+			if (refresh) clearCards();
+			else setMenu(true);
 			return;
 		}
-		if (parent >= 0 && cardDictionary?.id !== identity) {
+		if (
+			(parent >= 0 || (refresh && cardDictionary)) &&
+			cardDictionary?.id !== identity
+		) {
 			clearCards();
-			setNotice("当前词典已变化，请重新点击原文查词。");
-			setMenu(true);
+			if (!refresh) {
+				setNotice("当前词典已变化，请重新点击原文查词。");
+				setMenu(true);
+			}
 			return;
 		}
 		const snapshot = { mode, autoExpand, assistedRanking };
@@ -235,23 +236,33 @@ export function Dictionary({
 			auto_expand: snapshot.autoExpand,
 			assisted_ranking: snapshot.assistedRanking,
 		};
-		const id = ++ticket.current;
+		const requestTicket = ++ticket.current;
 		if (prepare) setCardDictionary(undefined);
 		setNotice("");
-		setMenu(false);
+		if (!refresh) setMenu(false);
 		const keep = current.current
 			.slice(0, parent + 1)
 			.map((item) => ({ ...item, pending: false, message: "" }));
-		const level = {
-			id,
+		const level: LookupLevel = {
+			id: refresh?.id ?? requestTicket,
 			origin,
-			pages: [],
-			index: 0,
+			pages: refresh?.pages ?? [],
+			index: refresh?.index ?? 0,
 			pending: true,
 			message: "",
+			refresh: refresh ? "pending" : undefined,
 		};
+		const emptyResult = (message: string): LookupLevel => ({
+			...level,
+			pages: [],
+			index: 0,
+			pending: false,
+			message,
+			refresh: refresh ? "retry" : undefined,
+		});
 		if (parent < 0) {
-			current.current[0]?.origin.clear?.();
+			if (refresh) origin.unhighlight?.();
+			else current.current[0]?.origin.clear?.();
 			publish([level]);
 		} else {
 			publish(
@@ -261,7 +272,7 @@ export function Dictionary({
 			);
 		}
 		const isCurrentTicket = () =>
-			ticket.current === id &&
+			ticket.current === requestTicket &&
 			options.current.mode === snapshot.mode &&
 			options.current.autoExpand === snapshot.autoExpand &&
 			options.current.assistedRanking === snapshot.assistedRanking;
@@ -275,11 +286,9 @@ export function Dictionary({
 					return;
 				}
 				publish([
-					{
-						...level,
-						pending: false,
-						message: error instanceof Error ? error.message : "读取词典失败。",
-					},
+					emptyResult(
+						error instanceof Error ? error.message : "读取词典失败。",
+					),
 				]);
 				return;
 			}
@@ -291,7 +300,7 @@ export function Dictionary({
 					: undefined;
 		}
 		if (identity === undefined) {
-			publish([{ ...level, pending: false, message: "词典暂不可用。" }]);
+			publish([emptyResult("词典暂不可用。")]);
 			return;
 		}
 		setCardDictionary({ id: identity, title: selected?.data?.title ?? null });
@@ -318,7 +327,10 @@ export function Dictionary({
 				throw new RequestError("当前词典已变化。", 409);
 			const pages = dictionaryPages(result.matches, result.analyses);
 			if (pages.length) {
-				publish([...keep, { ...level, pages, pending: false }]);
+				publish([
+					...keep,
+					{ ...level, pages, index: 0, pending: false, refresh: undefined },
+				]);
 				return;
 			}
 			message = "未找到可显示的词形信息。";
@@ -336,10 +348,25 @@ export function Dictionary({
 		}
 		publish(
 			parent < 0
-				? [{ ...level, pending: false, message }]
+				? [emptyResult(message)]
 				: keep.map((item, i) => (i === parent ? { ...item, message } : item)),
 		);
 	};
+	const refreshRoot = () => {
+		const root = current.current[0];
+		if (root) void search(root.origin, -1, root);
+	};
+	const refreshForOptions = useEffectEvent(refreshRoot);
+	useLayoutEffect(() => {
+		const previous = appliedOptions.current;
+		appliedOptions.current = { mode, autoExpand, assistedRanking };
+		if (previous.mode !== mode) clearCards();
+		else if (
+			previous.autoExpand !== autoExpand ||
+			previous.assistedRanking !== assistedRanking
+		)
+			refreshForOptions();
+	}, [mode, autoExpand, assistedRanking, clearCards]);
 	useImperativeHandle(ref, () => ({
 		lookup(origin) {
 			if (!origin) {
@@ -495,10 +522,9 @@ export function Dictionary({
 													aria-describedby={`${inputId}-dict-expand-help`}
 													aria-checked={autoExpand}
 													checked={autoExpand}
-													onChange={(event) => {
-														clearCards();
-														onAutoExpand(event.target.checked);
-													}}
+													onChange={(event) =>
+														onAutoExpand(event.target.checked)
+													}
 												/>
 											</div>
 											<p id={`${inputId}-dict-expand-help`} className="sr-only">
@@ -527,10 +553,9 @@ export function Dictionary({
 													aria-describedby={`${inputId}-dict-ranking-help`}
 													aria-checked={assistedRanking}
 													checked={assistedRanking}
-													onChange={(event) => {
-														clearCards();
-														onAssistedRanking(event.target.checked);
-													}}
+													onChange={(event) =>
+														onAssistedRanking(event.target.checked)
+													}
 												/>
 											</div>
 											<p
@@ -583,6 +608,7 @@ export function Dictionary({
 									choose={backTo}
 									backTo={backTo}
 									close={finish}
+									retry={refreshRoot}
 									onRecord={(record) => {
 										close();
 										record();

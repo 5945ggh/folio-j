@@ -65,6 +65,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 	let responses = 0;
 	let hold = false;
 	let release: (() => void) | undefined;
+	let failNextLookup = false;
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
 		if (path === "/api/dictionary" && request.method === "GET") {
@@ -91,6 +92,10 @@ export async function segmentDictionary(h: BrowserHarness) {
 				"Segment lookup must freeze the shared dictionary and options",
 			);
 			requests.push(input);
+			if (failNextLookup) {
+				failNextLookup = false;
+				return Response.json({ detail: "合成刷新暂不可用" }, { status: 503 });
+			}
 			if (hold)
 				await new Promise<void>((resolve) => {
 					release = resolve;
@@ -119,7 +124,16 @@ export async function segmentDictionary(h: BrowserHarness) {
 				end: start + Array.from(term).length,
 				definitions: [
 					{ tag: "p", lang: "ja", role: "def2", text: "道を歩くこと。" },
-					{ tag: "p", lang: "zh", role: "dfcn", text: "片段离线查词释义。" },
+					{
+						tag: "p",
+						lang: "zh",
+						role: "dfcn",
+						text:
+							input.text === segment.context_after &&
+							input.selection_start == null
+								? `${input.auto_expand ? "扩展" : "原位"}匹配，${input.assisted_ranking ? "辅助排序" : "词典顺序"}。`
+								: "片段离线查词释义。",
+					},
 				],
 			};
 			responses++;
@@ -721,6 +735,10 @@ export async function segmentDictionary(h: BrowserHarness) {
 				requests.at(-1)?.selection_end === Array.from(selectedText).length,
 			"Explicit selected-text lookup must carry only the native selected range",
 		);
+		check(
+			find(".dict-card").contains(document.activeElement),
+			"Explicit Segment selection lookup must focus the word card",
+		);
 		document.getSelection()?.removeAllRanges();
 		await key("Escape");
 		await click(find(".analysis-markdown strong"), 1);
@@ -762,6 +780,8 @@ export async function segmentDictionary(h: BrowserHarness) {
 		button("关闭查词设置").click();
 		const hoverAt = point(find(".analysis-markdown p:nth-child(2)"));
 		const beforeHover = requests.length;
+		const trigger = button("即时查词");
+		trigger.focus({ preventScroll: true });
 		await pointer([{ type: "mouseMoved", ...hoverAt }]);
 		await settle();
 		check(
@@ -770,10 +790,22 @@ export async function segmentDictionary(h: BrowserHarness) {
 		);
 		await key("Shift", "keyDown");
 		await resolved("Shift hover");
+		if (innerWidth >= 740) {
+			const nextWord = point(find(".analysis-markdown p:nth-child(1) strong"));
+			await pointer([{ type: "mouseMoved", ...nextWord, modifiers: 8 }]);
+			await h.until(
+				() =>
+					!!h.container.querySelector(
+						'.dict-card[aria-label="词卡 · 散歩"] .dict-definitions',
+					),
+				"Moving across words with Shift held must replace the current hover result",
+			);
+		}
 		await key("Shift", "keyUp");
 		check(
-			!!h.container.querySelector(".dict-deck"),
-			"Releasing Shift must retain the word card",
+			document.activeElement === trigger &&
+				getComputedStyle(find(".dict-card")).animationName === "none",
+			"Releasing Shift must retain the word card without moving focus or playing its entrance animation",
 		);
 		await key("Escape");
 		await settle();
@@ -795,37 +827,152 @@ export async function segmentDictionary(h: BrowserHarness) {
 			() => !!release && !!h.container.querySelector(".dict-deck"),
 			"Fresh context lookup must remain pending",
 		);
+		const pendingRoot = find(".dict-card");
+		const initialRequest = requests.at(-1);
+		const releaseInitial = release;
+		check(
+			releaseInitial && initialRequest?.text === segment.context_after,
+			"Pending lookup must retain the selected context as its target",
+		);
 		button("即时查词").click();
 		await h.until(
 			() => !!h.container.querySelector(".dict-config"),
 			"Pending lookup must permit settings",
 		);
-		find<HTMLInputElement>('input[aria-label="自动扩展查词"]').click();
+		const expansion = find<HTMLInputElement>(
+			'input[aria-label="自动扩展查词"]',
+		);
+		const ranking = find<HTMLInputElement>('input[aria-label="辅助排序"]');
+		expansion.focus();
+		expansion.click();
+		await h.until(
+			() => !!release && release !== releaseInitial,
+			"Changing expansion must refresh a lookup that has never resolved",
+		);
+		const releaseExpansion = release;
+		check(
+			releaseExpansion &&
+				find(".dict-card") === pendingRoot &&
+				document.activeElement === expansion &&
+				requests.at(-1)?.auto_expand === false &&
+				requests.at(-1)?.assisted_ranking === true,
+			"The pending root and focused switch must survive the first refresh",
+		);
+		hold = false;
+		ranking.focus();
+		ranking.click();
+		const latestResult = () =>
+			pendingRoot.textContent?.includes("原位匹配，词典顺序。");
+		await h.until(
+			() => latestResult() === true,
+			"Second change must resolve with both new options while previous requests are pending",
+		);
+		const latestRequest = requests.at(-1);
+		check(
+			latestRequest?.text === initialRequest.text &&
+				latestRequest?.position === initialRequest.position &&
+				latestRequest?.auto_expand === false &&
+				latestRequest?.assisted_ranking === false &&
+				document.activeElement === ranking,
+			"Latest options must reuse the original context, glyph and settings focus",
+		);
+		const beforeResponse = responses;
+		releaseExpansion();
+		releaseInitial();
+		await h.until(
+			() => responses === beforeResponse + 2,
+			"Both superseded requests must complete after the newest response",
+		);
+		await settle();
+		check(
+			find(".dict-card") === pendingRoot &&
+				latestResult() &&
+				document.activeElement === ranking &&
+				[...(CSS.highlights.get("folio-segment-word") ?? [])]
+					.map((range) => range.toString())
+					.join("") === "道",
+			"Late results must preserve the newest card, exact highlight and menu focus",
+		);
+		hold = true;
+		expansion.click();
+		await h.until(
+			() => !!release && release !== releaseExpansion,
+			"Another option change must leave a refresh in flight",
+		);
+		const releaseAfterClose = release;
+		check(releaseAfterClose, "The last refresh must be releasable");
+		button("关闭当前词卡").click();
 		await h.until(
 			() => !h.container.querySelector(".dict-deck"),
-			"Option changes must clear pending cards",
+			"Closing a refreshing root must dismiss it",
 		);
-		check(release, "Pending local response must be releasable");
-		const beforeResponse = responses;
-		release();
+		const beforeClosedResponse = responses;
+		releaseAfterClose();
 		hold = false;
 		await h.until(
-			() => responses > beforeResponse,
-			"Held response must complete",
+			() => responses === beforeClosedResponse + 1,
+			"Refresh must complete after closing the root",
 		);
 		await settle();
 		check(
 			!h.container.querySelector(".dict-deck") &&
-				!!h.container.querySelector(".dict-config"),
-			"Late old-option result must not restore a card or close settings",
+				!CSS.highlights.has("folio-segment-word"),
+			"A closed refreshing root and its highlight must stay dismissed",
 		);
+		await click(original);
+		await resolved("before failed refresh");
+		const retryRoot = find(".dict-card");
+		button("即时查词").click();
+		await h.until(
+			() => !!h.container.querySelector(".dict-config"),
+			"Options must reopen above the root before retry testing",
+		);
+		const retryOption = find<HTMLInputElement>(
+			'input[aria-label="自动扩展查词"]',
+		);
+		retryOption.focus();
+		failNextLookup = true;
+		retryOption.click();
+		await h.until(
+			() => retryRoot.textContent?.includes("合成刷新暂不可用") === true,
+			"Failed refresh must report the error inside the retained root",
+		);
+		check(
+			find(".dict-card") === retryRoot &&
+				!CSS.highlights.has("folio-segment-word") &&
+				document.activeElement === retryOption,
+			"Refresh errors must keep the root and focused settings and clear its old highlight",
+		);
+		const failedRequest = requests.at(-1);
+		const beforeRetry = requests.length;
+		button("重试查词").click();
+		await resolved("retried refresh");
+		check(
+			requests.length === beforeRetry + 1 &&
+				JSON.stringify(requests.at(-1)) === JSON.stringify(failedRequest) &&
+				find(".dict-card") === retryRoot &&
+				document.activeElement === retryOption &&
+				[...(CSS.highlights.get("folio-segment-word") ?? [])].some(
+					(range) => range.toString() === "猫",
+				),
+			"Retry must use the current options, recover the highlight and retain the root and menu focus",
+		);
+		const beforeModeChange = requests.length;
+		button("Shift 悬浮").click();
+		await h.until(
+			() => !h.container.querySelector(".dict-deck"),
+			"Switching lookup mode must still clear the deck",
+		);
+		check(
+			requests.length === beforeModeChange &&
+				!CSS.highlights.has("folio-segment-word") &&
+				!!h.container.querySelector(".dict-config"),
+			"A mode change must clear the highlight and keep settings open without refreshing",
+		);
+		button("点击查词").click();
 		button("关闭查词设置").click();
 		await click(original);
-		await resolved("new options");
-		check(
-			requests.at(-1)?.auto_expand === false,
-			"Next Segment lookup must use changed shared options",
-		);
+		await resolved("before analysis change");
 		button("返回讲解列表").click();
 		await h.until(
 			() => !h.container.querySelector(".dict-deck"),

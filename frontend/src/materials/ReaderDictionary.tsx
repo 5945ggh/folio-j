@@ -41,8 +41,10 @@ export function ReaderDictionary({
 								tokens: hit.tokens,
 							},
 							anchor: hit.anchor,
+							hover: hit.hover,
 							record: studyHit ? () => onRecord(studyHit) : undefined,
 							highlight: hit.highlight,
+							unhighlight: hit.unhighlight,
 							clear: hit.clearHighlight,
 						}
 					: null,

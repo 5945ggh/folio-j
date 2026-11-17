@@ -84,18 +84,21 @@ export function SegmentReadingTools({
 			?.querySelector<HTMLElement>(".segment-reader")
 			?.focus({ preventScroll: true });
 	}, [dialogPortal]);
-	const lookup = useCallback((passage: DictionaryPassage) => {
+	const lookup = useCallback((passage: DictionaryPassage, hover: boolean) => {
 		setSelected(null);
+		const unhighlight = () => CSS.highlights?.delete("folio-segment-word");
 		control.current?.lookup({
 			input: { text: passage.text, position: passage.offset },
 			anchor: passage.anchor,
 			passage,
+			hover,
 			highlight(start, end) {
 				const range = passage.range(start, end);
 				if (!range?.startContainer.isConnected) return;
 				CSS.highlights?.set("folio-segment-word", new Highlight(range));
 			},
-			clear: () => CSS.highlights?.delete("folio-segment-word"),
+			unhighlight,
+			clear: unhighlight,
 		});
 	}, []);
 	// Switching content, opening a modal, or hiding a retained page invalidates

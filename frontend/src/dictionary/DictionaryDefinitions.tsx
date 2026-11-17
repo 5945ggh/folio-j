@@ -103,7 +103,7 @@ export function DictionaryText({
 	enabled: boolean;
 	pending?: boolean;
 	child?: LookupLevel;
-	onLookup: (passage: DictionaryPassage) => void;
+	onLookup: (passage: DictionaryPassage, hover: boolean) => void;
 	className?: string;
 	lang?: string;
 	requireShift?: boolean;
@@ -167,7 +167,7 @@ export function DictionaryText({
 			)
 				return;
 			lastLookup.current = glyph;
-			latest.current.onLookup(passage);
+			latest.current.onLookup(passage, !explicit);
 		},
 		[alreadyOpen],
 	);
@@ -349,7 +349,7 @@ export function DictionaryText({
 		const passage = getPassage(event.clientX, event.clientY);
 		if (!passage) return;
 		if (mode === "hover") lookup(passage, true);
-		else onLookup(passage);
+		else onLookup(passage, false);
 	};
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: A pointer looks up a glyph; keyboard users can query an explicit selection.

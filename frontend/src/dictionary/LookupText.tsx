@@ -12,7 +12,7 @@ import type { DictionaryMode } from "./preferences";
 export const LookupTextContext = createContext<{
 	mode: DictionaryMode;
 	enabled: boolean;
-	onLookup: (passage: DictionaryPassage) => void;
+	onLookup: (passage: DictionaryPassage, hover: boolean) => void;
 	onContentChange: () => void;
 	lookupEpoch: number;
 } | null>(null);

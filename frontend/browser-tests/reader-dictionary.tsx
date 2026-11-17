@@ -215,8 +215,19 @@ export async function readerDictionary(h: BrowserHarness) {
 							.slice(input.selection_start, input.selection_end ?? undefined)
 							.join("")
 					: undefined;
+			const withinWord =
+				input.position === 4 && input.text.startsWith("静かな道を歩く");
 			const term =
-				selected ?? (root ? "猫" : input.text.includes("散歩") ? "散歩" : "道");
+				selected ??
+				(withinWord
+					? input.auto_expand
+						? "道を"
+						: "を"
+					: root
+						? "猫"
+						: input.text.includes("散歩")
+							? "散歩"
+							: "道");
 			const reading =
 				term === "猫"
 					? "ネコ"
@@ -311,9 +322,11 @@ export async function readerDictionary(h: BrowserHarness) {
 						lang: "zh",
 						role: "dfcn",
 						text:
-							input.expected_dictionary_id === "synthetic"
-								? "合成中文释义，用于检查排版。"
-								: "第二本词典的独立释义。",
+							withinWord && !input.assisted_ranking
+								? "按原始顺序显示的释义。"
+								: input.expected_dictionary_id === "synthetic"
+									? "合成中文释义，用于检查排版。"
+									: "第二本词典的独立释义。",
 					},
 					...Array.from({ length: 12 }, (): Schema["DictionaryNode"] => ({
 						tag: "p",
@@ -845,6 +858,10 @@ export async function readerDictionary(h: BrowserHarness) {
 			await h.until(
 				() => !!card("歩く"),
 				"First manual lookup must open a card without opening dictionary settings",
+			);
+			check(
+				card("歩く")?.closest(".dict-card")?.contains(document.activeElement),
+				"Explicit reader selection lookup must focus the word card",
 			);
 			checkRequest("歩く");
 			check(
@@ -1566,8 +1583,9 @@ export async function readerDictionary(h: BrowserHarness) {
 			await settle();
 			const shortBox = root.getBoundingClientRect();
 			await dragCard(root, 0, window.innerHeight - 10 - shortBox.bottom);
+			const shortPosition = root.getBoundingClientRect();
 			check(
-				root.getBoundingClientRect().bottom >= window.innerHeight - 15,
+				shortPosition.bottom >= window.innerHeight - 15,
 				"A short single card must remain draggable to the bottom edge",
 			);
 			const shortProse = root.querySelector<HTMLElement>(
@@ -1606,6 +1624,49 @@ export async function readerDictionary(h: BrowserHarness) {
 			);
 			checkCardInViewport(root);
 			checkCardInViewport(bottomChild);
+			const stackedTop = root.getBoundingClientRect().top;
+			check(
+				stackedTop < shortPosition.top - 5,
+				"The taller stack must move upward from the manually dragged bottom position",
+			);
+			button("即时查词").click();
+			await h.until(
+				() => !!h.container.querySelector(".dict-config"),
+				"Compact stack must allow lookup settings",
+			);
+			const previousRelease = deferred.release;
+			hold = true;
+			option("辅助排序").click();
+			await h.until(
+				() =>
+					!!deferred.release &&
+					deferred.release !== previousRelease &&
+					!bottomChild.isConnected,
+				"In-place refresh must drop the child while querying new options",
+			);
+			const retainsStackPosition = () =>
+				root.isConnected &&
+				Math.abs(root.getBoundingClientRect().top - stackedTop) <= 1;
+			check(
+				retainsStackPosition(),
+				"Compact root must keep its visible top while refreshing",
+			);
+			deferred.release?.();
+			hold = false;
+			await h.until(
+				() => root.getAttribute("aria-label") === "词卡 · 猫",
+				"Compact root must resolve to the first page of the refreshed results",
+			);
+			check(
+				retainsStackPosition(),
+				"Compact root must keep its visible top after refresh",
+			);
+			option("辅助排序").click();
+			await h.until(
+				() => option("辅助排序").checked,
+				"Restore assisted ranking after the compact refresh test",
+			);
+			button("关闭查词设置").click();
 		}
 		button("关闭当前词卡", root).click();
 		await h.until(
@@ -1652,6 +1713,74 @@ export async function readerDictionary(h: BrowserHarness) {
 		);
 		await checkPager(above);
 		button("关闭当前词卡", above).click();
+		if (innerWidth === 1280) {
+			const openOptions = async () => {
+				button("即时查词").click();
+				await h.until(
+					() => !!h.container.querySelector(".dict-config"),
+					"Bottom-anchor lookup must allow settings",
+				);
+			};
+			await openOptions();
+			option("自动扩展查词").click();
+			await h.until(
+				() => !option("自动扩展查词").checked,
+				"Use an uncached option combination",
+			);
+			button("关闭查词设置").click();
+			await h.until(
+				() => !h.container.querySelector(".dict-config"),
+				"Settings must close before the bottom lookup",
+			);
+			hold = true;
+			const previousRelease = deferred.release;
+			await glyphClick(bottomLeaf, 0, frame);
+			await h.until(
+				() => !!deferred.release && deferred.release !== previousRelease,
+				"First result below the viewport midpoint must remain pending",
+			);
+			const pending = h.container.querySelector<HTMLElement>(
+				'.dict-card[data-depth="0"]',
+			);
+			const releaseFirst = deferred.release;
+			check(
+				pending && releaseFirst,
+				"Bottom lookup must expose its pending card",
+			);
+			await settle();
+			const waitingTop = pending.getBoundingClientRect().top;
+			await openOptions();
+			option("辅助排序").click();
+			await h.until(
+				() => !!deferred.release && deferred.release !== releaseFirst,
+				"Pending card must query under the new ranking option",
+			);
+			check(deferred.release, "Refreshed response must be releasable");
+			deferred.release();
+			hold = false;
+			await h.until(
+				() => !!pending.querySelector(".dict-definitions"),
+				"Refreshed bottom lookup must render results in the same card",
+			);
+			check(
+				Math.abs(pending.getBoundingClientRect().top - waitingTop) <= 1,
+				"The first results of a refreshed lookup must keep the waiting card above its original glyph at the same position",
+			);
+			releaseFirst();
+			button("关闭当前词卡", pending).click();
+			await h.until(
+				() => !h.container.querySelector(".dict-config"),
+				"Closing the card must finish dismissing settings",
+			);
+			await openOptions();
+			option("自动扩展查词").click();
+			option("辅助排序").click();
+			await h.until(
+				() => option("自动扩展查词").checked && option("辅助排序").checked,
+				"Restore both lookup options",
+			);
+			button("关闭查词设置").click();
+		}
 		viewport.scrollTop = 0;
 		await settle();
 		// There are no margin entrances: dictionary mode must still retain access to this exact saved mark.
@@ -1713,10 +1842,23 @@ export async function readerDictionary(h: BrowserHarness) {
 			);
 			check(hoverRoot && hoverProse, "Shift hover needs Japanese root prose");
 			check(
-				hoverRoot.contains(document.activeElement),
-				"The opened word card must own focus before releasing Shift outside the iframe",
+				document.activeElement === frame &&
+					getComputedStyle(hoverRoot).animationName === "none",
+				"Hover lookup must keep iframe focus and skip the card entrance animation",
 			);
 			const beforeRelease = requests.length;
+			await pointer([
+				{ type: "mouseMoved", ...glyphPoint(leaf, 2, frame), modifiers: 8 },
+			]);
+			await browserKey("Shift", "keyUp");
+			await new Promise((resolve) => setTimeout(resolve, 400));
+			check(
+				requests.length === beforeRelease && hoverRoot.isConnected,
+				"Releasing Shift in the focused iframe must cancel the pending hover and retain the card",
+			);
+			hoverRoot.focus({ preventScroll: true });
+			await pointer([{ type: "mouseMoved", ...glyphPoint(leaf, 0, frame) }]);
+			await browserKey("Shift", "keyDown");
 			let releasedOutsideFrame = false;
 			const released = (event: KeyboardEvent) => {
 				if (event.key === "Shift" && event.isTrusted)
@@ -1785,9 +1927,11 @@ export async function readerDictionary(h: BrowserHarness) {
 				"Releasing Shift must preserve an already opened child",
 			);
 			check(
-				hoverChild.contains(document.activeElement),
-				"New child must receive keyboard focus",
+				document.activeElement === hoverRoot &&
+					getComputedStyle(hoverChild).animationName === "none",
+				"Nested hover must keep the parent focus and skip the child entrance animation",
 			);
+			hoverChild.focus({ preventScroll: true });
 			key(document.activeElement ?? document.body, "ArrowRight");
 			await settle();
 			check(
@@ -1824,6 +1968,12 @@ export async function readerDictionary(h: BrowserHarness) {
 				() => h.container.querySelectorAll(".dict-card").length === 2,
 				"Ordinary Japanese prose click must still open a child after releasing Shift",
 			);
+			check(
+				h.container
+					.querySelector('.dict-card[data-depth="1"]')
+					?.contains(document.activeElement),
+				"Clicking Japanese prose must focus its child card in Shift mode",
+			);
 			button("关闭当前词卡").click();
 		}
 
@@ -1842,6 +1992,37 @@ export async function readerDictionary(h: BrowserHarness) {
 			"Ordinary marked click must not start dictionary lookup in Shift mode",
 		);
 		button("关闭阅读记录").click();
+		const touchPoint = glyphPoint(leaf, 0);
+		const frameWindow = frame.contentWindow as
+			| (Window & typeof globalThis)
+			| null;
+		check(frameWindow, "Touch lookup needs a live iframe");
+		for (const type of ["pointerdown", "pointerup"])
+			leaf.dispatchEvent(
+				new frameWindow.PointerEvent(type, {
+					bubbles: true,
+					cancelable: true,
+					pointerType: "touch",
+					pointerId: 7,
+					isPrimary: true,
+					clientX: touchPoint.x,
+					clientY: touchPoint.y,
+				}),
+			);
+		await h.until(
+			() =>
+				!!h.container.querySelector(
+					'.dict-card[data-depth="0"] .dict-definitions',
+				),
+			"A touch tap in Shift mode must still open an original word card",
+		);
+		check(
+			h.container
+				.querySelector('.dict-card[data-depth="0"]')
+				?.contains(document.activeElement),
+			"A touch tap must focus its word card",
+		);
+		button("关闭当前词卡").click();
 		// Return to click mode before the pending-result regression below.
 		button("即时查词").click();
 		await h.until(
@@ -1851,13 +2032,17 @@ export async function readerDictionary(h: BrowserHarness) {
 		button("点击查词").click();
 		// A fresh body coordinate avoids the query cache; closing while it is pending must win.
 		hold = true;
+		const previousRelease = deferred.release;
 		const nextLeaf = frame.contentDocument?.querySelector(
 			'[data-locator-leaf="1"]',
 		);
 		check(nextLeaf, "Second original paragraph must be visible");
 		await glyphClick(nextLeaf, 3, frame);
 		await h.until(
-			() => !!deferred.release && !!h.container.querySelector(".dict-deck"),
+			() =>
+				!!deferred.release &&
+				deferred.release !== previousRelease &&
+				!!h.container.querySelector(".dict-deck"),
 			"Pending lookup must expose a closable card",
 		);
 		button("关闭当前词卡").click();
@@ -1938,53 +2123,96 @@ export async function readerDictionary(h: BrowserHarness) {
 		}
 		if (innerWidth === 1280) {
 			hold = false;
-			await glyphClick(nextLeaf, 3, frame);
+			await glyphClick(nextLeaf, 4, frame);
+			const expandedRoot = () =>
+				h.container.querySelector<HTMLElement>('.dict-card[data-depth="0"]');
+			const highlightedWord = () =>
+				[...(frameWindow.CSS.highlights.get("folio-dictionary") ?? [])]
+					.filter((range) => nextLeaf.contains(range.startContainer))
+					.map((range) => range.toString())
+					.join("");
 			await h.until(
-				() => !!h.container.querySelector(".dict-definitions"),
-				"Options regression needs a resolved root",
+				() =>
+					expandedRoot()?.getAttribute("aria-label") === "词卡 · 道を" &&
+					highlightedWord() === "道を",
+				"Options regression needs a resolved match extending before the tapped glyph",
+			);
+			const liveRoot = expandedRoot();
+			const originalRequest = requests.at(-1);
+			check(
+				liveRoot && originalRequest?.position === 4,
+				"Lookup must target を",
+			);
+			await settle();
+			await dragCard(liveRoot, 64, 38);
+			const dragged = liveRoot.getBoundingClientRect();
+			const keptPosition = () => {
+				const rect = liveRoot.getBoundingClientRect();
+				return (
+					Math.abs(rect.left - dragged.left) <= 1 &&
+					Math.abs(rect.top - dragged.top) <= 1
+				);
+			};
+			const rootProse = () => {
+				const prose = liveRoot.querySelector('[data-dict-role="def2"]');
+				check(prose, "Options regression needs nested Japanese prose");
+				return prose;
+			};
+			await glyphClick(rootProse());
+			await h.until(
+				() => h.container.querySelectorAll(".dict-card").length === 2,
+				"Options regression needs an open descendant",
 			);
 			button("即时查词").click();
 			await h.until(
 				() => !!h.container.querySelector(".dict-config"),
 				"Options must open above a live card",
 			);
-			const beforeOptionChange = requests.length;
-			option("自动扩展查词").click();
-			await h.until(
-				() => !h.container.querySelector(".dict-deck"),
-				"Changing an option must clear the whole deck",
-			);
-			check(
-				!option("自动扩展查词").checked &&
-					option("辅助排序").checked &&
-					requests.length === beforeOptionChange,
-				"Independent option change must retain menu, avoid automatic lookup and preserve the other option",
-			);
-			check(
-				!(
-					frame.contentWindow as (Window & { CSS: typeof CSS }) | null
-				)?.CSS.highlights.has("folio-dictionary"),
-				"Changing lookup options must clear the original highlight",
-			);
-			button("关闭查词设置").click();
-			await glyphClick(nextLeaf, 3, frame);
-			await h.until(
-				() => !!h.container.querySelector(".dict-definitions"),
-				"New options must resolve another lookup",
-			);
-			check(
-				requests.length === beforeOptionChange + 1 &&
-					requests.at(-1)?.auto_expand === false &&
-					requests.at(-1)?.assisted_ranking === true,
-				"New option combinations must bypass the old cache and freeze their request fields",
-			);
-			const prose = h.container.querySelector('[data-dict-role="def2"]');
-			check(prose, "Options regression needs nested Japanese prose");
-			hold = true;
+			const expansion = option("自动扩展查词");
+			expansion.focus();
+			const beforeExpansion = requests.length;
 			const previousRelease = deferred.release;
-			await glyphClick(prose, 2);
+			hold = true;
+			expansion.click();
 			await h.until(
 				() => !!deferred.release && deferred.release !== previousRelease,
+				"Turning off expansion must requery the current EPUB glyph",
+			);
+			const refreshedRequest = requests.at(-1);
+			check(
+				requests.length === beforeExpansion + 1 &&
+					refreshedRequest?.text === originalRequest.text &&
+					refreshedRequest?.position === originalRequest.position &&
+					refreshedRequest?.auto_expand === false &&
+					refreshedRequest?.assisted_ranking === true,
+				"Expansion refresh must keep the original text and glyph and freeze both options",
+			);
+			check(
+				expandedRoot() === liveRoot &&
+					keptPosition() &&
+					h.container.querySelectorAll(".dict-card").length === 1 &&
+					highlightedWord() === "" &&
+					document.activeElement === expansion,
+				"Expansion refresh must drop descendants and old highlighting while keeping the dragged root and focused setting",
+			);
+			deferred.release?.();
+			hold = false;
+			await h.until(
+				() =>
+					liveRoot.getAttribute("aria-label") === "词卡 · を" &&
+					highlightedWord() === "を",
+				"Refresh must replace the card and reapply highlighting at the original EPUB glyph",
+			);
+			check(
+				keptPosition() && document.activeElement === expansion,
+				"Resolved refresh must preserve card position and settings focus",
+			);
+			button("关闭查词设置").click();
+			hold = true;
+			const expansionRelease = deferred.release;
+			await glyphClick(rootProse(), 2);
+			await h.until(
+				() => !!deferred.release && deferred.release !== expansionRelease,
 				"Nested lookup must remain pending before cross-tab option changes",
 			);
 			check(
@@ -1992,11 +2220,17 @@ export async function readerDictionary(h: BrowserHarness) {
 					requests.at(-1)?.assisted_ranking === true,
 				"Nested lookup must inherit the active options",
 			);
+			const releaseChild = deferred.release;
+			check(releaseChild, "Nested lookup must have a delayed response");
 			button("即时查词").click();
 			await h.until(
 				() => !!h.container.querySelector(".dict-config"),
 				"Pending lookups must leave the option menu usable",
 			);
+			const ranking = option("辅助排序");
+			ranking.focus();
+			hold = false;
+			const beforeRanking = requests.length;
 			const stored = JSON.parse(
 				localStorage.getItem("folio-dictionary-preferences-v1") ?? "{}",
 			);
@@ -2010,39 +2244,38 @@ export async function readerDictionary(h: BrowserHarness) {
 					storageArea: localStorage,
 				}),
 			);
+			const rankedResult = () =>
+				liveRoot.textContent?.includes("按原始顺序显示的释义。");
 			await h.until(
-				() =>
-					!h.container.querySelector(".dict-deck") &&
-					!option("辅助排序").checked,
-				"Cross-tab preferences must clear the stack and synchronize switches",
+				() => rankedResult() === true && !ranking.checked,
+				"Cross-tab preferences must synchronize switches and refresh the current card",
 			);
-			check(deferred.release, "Nested lookup must have a delayed response");
+			const rankedRequest = requests.at(-1);
+			check(
+				requests.length === beforeRanking + 1 &&
+					rankedRequest?.text === originalRequest.text &&
+					rankedRequest?.position === originalRequest.position &&
+					rankedRequest?.auto_expand === false &&
+					rankedRequest?.assisted_ranking === false,
+				"Assisted ranking must independently refresh the same target with a separate cache key",
+			);
 			const beforeResponse = lookupResponses;
-			deferred.release();
-			hold = false;
+			releaseChild();
 			await h.until(
 				() => lookupResponses === beforeResponse + 1,
-				"Old option request must finish",
+				"Old nested request must finish after the refreshed root",
 			);
 			await settle();
 			check(
-				!h.container.querySelector(".dict-deck") &&
-					!!h.container.querySelector(".dict-config"),
-				"A late result must not restore cards or close the settings menu",
+				expandedRoot() === liveRoot &&
+					keptPosition() &&
+					rankedResult() &&
+					h.container.querySelectorAll(".dict-card").length === 1 &&
+					highlightedWord() === "を" &&
+					document.activeElement === ranking,
+				"A late nested response must preserve the refreshed root, highlight and focused settings",
 			);
 			button("关闭查词设置").click();
-			const beforeBothFalse = requests.length;
-			await glyphClick(nextLeaf, 3, frame);
-			await h.until(
-				() => !!h.container.querySelector(".dict-definitions"),
-				"Both-disabled lookup must resolve",
-			);
-			check(
-				requests.length === beforeBothFalse + 1 &&
-					requests.at(-1)?.auto_expand === false &&
-					requests.at(-1)?.assisted_ranking === false,
-				"Assisted ranking must independently partition the lookup cache",
-			);
 			const selectionProse = h.container.querySelector(
 				'[data-dict-role="def2"]',
 			);
@@ -2089,6 +2322,7 @@ export async function readerDictionary(h: BrowserHarness) {
 				"Restore ranking independently",
 			);
 			button("关闭查词设置").click();
+			button("关闭当前词卡", liveRoot).click();
 		}
 		if (innerWidth === 1280) {
 			hold = false;
