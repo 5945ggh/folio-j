@@ -1,0 +1,46 @@
+frontend/browser-tests/translation-drag.tsx
+  s_bc53d989c91d2b::t_53b5be07852988 1,129-159
+  s_bc53d989c91d2b::t_b91aa287e1b044 112
+frontend/src/materials/motion.ts
+  s_bc53d989c91d2b::t_e5b7d80084ec67 1-7,11,50-53,70,72,78-176
+frontend/scripts/test-browser.mjs
+  s_bc53d989c91d2b::t_53b5be07852988 115
+frontend/browser-tests/reader-dictionary.tsx
+  s_bc53d989c91d2b::t_b91aa287e1b044 898,900-901
+  s_bc53d989c91d2b::t_2995c80532b923 899,902
+  s_bc53d989c91d2b::t_53b5be07852988 4,16,499,894-897,903-919,1034-1048,1213-1218
+frontend/src/materials/MaterialReader.tsx
+  s_bc53d989c91d2b::t_e5b7d80084ec67 2090-2098
+frontend/src/materials/reader-bookmarks.css
+  s_0dd8e3971557cb::t_39eae754f21cb9 27-37,411
+frontend/src/materials/reader-popover.css
+  s_0dd8e3971557cb::t_60e3a56b4d1182 27-37
+frontend/src/materials/study-overlays.css
+  s_0dd8e3971557cb::t_3ca570896132b5 84-95
+frontend/src/translation/translation.css
+  s_0dd8e3971557cb::t_6dc7795322cd47 25-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "232e7904b7e898788592f92f1cb284a70ae09597",
+  "prompts": {},
+  "sessions": {
+    "s_0dd8e3971557cb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18636-9434-7732-b335-b34cadc06912",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_bc53d989c91d2b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e702-ba2f-7e41-89db-b6e7ecf05d30",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
