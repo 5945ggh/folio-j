@@ -1,6 +1,6 @@
 # C2 精确验收样例与实施门禁
 
-2026-10-22 建立的精确样例，继续维护工程句界与回归输入，不增加 Sentence 实体或改变出处身份。规则依据为 [PRD 4.7](../../PRD.md#47-当前-epub-阶段安排)，完整交互矩阵见 [TEST_MATRIX](TEST_MATRIX.md)。当时按先验收 C1、再独立审查本文件与固定数据、最后实现 C2 的门禁推进；该门禁已完成，实施结果见 [C2 验收](../archived/text-study/C2_ACCEPTANCE.md)。
+2026-10-22 建立的精确样例，继续维护工程句界与回归输入，不增加 Sentence 实体或改变出处身份。规则依据为 [选区与学习资料](../../PRD.md#选区与持久学习资料)及[相邻语境预装](../../PRD.md#相邻语境预装)，完整交互矩阵见 [TEST_MATRIX](TEST_MATRIX.md)。当时按先验收 C1、再独立审查本文件与固定数据、最后实现 C2 的门禁推进；该门禁已完成，实施结果见 [C2 验收](../archived/text-study/C2_ACCEPTANCE.md)。
 
 ## 句界规则 `context-sentences-v1`
 

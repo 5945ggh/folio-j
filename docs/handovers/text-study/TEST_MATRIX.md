@@ -47,7 +47,7 @@
 
 ## C2 自动预装语境固定验收场景
 
-C1／C2 的固定验收场景；原实施结果见 [C2 验收](../archived/text-study/C2_ACCEPTANCE.md)，后续调整见[阅读体验记录](../archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md)与[保存表单验收](../archived/text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md)。产品规则以 [PRD 4.7](../../PRD.md#47-当前-epub-阶段安排)为准；这里固定输入与观察项。未另说明时，自动预装开启，前／后各至多 3 句、200 Unicode 码点；`【】` 仅标记目标选区，不属于正文。
+C1／C2 的固定验收场景；原实施结果见 [C2 验收](../archived/text-study/C2_ACCEPTANCE.md)，后续调整见[阅读体验记录](../archived/text-study/READING_EXPERIENCE_ACCEPTANCE.md)与[保存表单验收](../archived/text-study/SEGMENT_SAVE_FORM_ACCEPTANCE.md)。产品规则以 [选区与学习资料](../../PRD.md#选区与持久学习资料)及[相邻语境预装](../../PRD.md#相邻语境预装)为准；这里固定输入与观察项。未另说明时，自动预装开启，前／后各至多 3 句、200 Unicode 码点；`【】` 仅标记目标选区，不属于正文。
 
 | 编号 | 固定输入／操作 | 应证明的结果 |
 | --- | --- | --- |

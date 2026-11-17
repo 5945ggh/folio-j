@@ -15,7 +15,7 @@ beta.3 发行范围为源码包与样书；11 月 16 日决定暂缓 Windows 免
 | 来源、素材库与书籍管理 | Source／Segment 手动录入、语境与编辑；跨来源书籍目录及来源概览、素材、片段、讲解视图；书籍导入反馈、封面与元信息编辑、阅读状态和最近打开已实现。移动书籍、替换 EPUB 及其他媒体入口未开放 | [来源空间验收](archived/sources-s2/ACCEPTANCE.md)、[书籍管理验收](archived/book-management/ACCEPTANCE.md)、[导入反馈](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md) |
 | EPUB 阅读与恢复 | 托管原书及不可变编译包，支持目录、连续图文、横竖排、章节位置、相邻切章、跳转返回和图片查看。阅读会话往返保留正文与 iframe，返回重新核验；位置写入、重排与迟到响应隔离已覆盖 | [阅读器验收](archived/reader-r1/ACCEPTANCE.md)、[交互复核](archived/reader-r1/INTERACTION_POLISH.md)、[章节位置](archived/epub-reading/CHAPTER_MEMORY_ACCEPTANCE.md)、[呈现协调](archived/READER_PRESENTATION_REFACTOR_ACCEPTANCE.md)、[章末裁剪](archived/reading-practice/READER_SCROLLBAR_ACCEPTANCE.md) |
 | 注音、文本统计与词汇 | 注音范围可选原书或全量，全量仅补未被原书 ruby 覆盖的汉字；分词资产、失败保留、代次更新、位置与选区恢复已实现。书籍详情提供文本统计，材料词表支持筛选、分页与返回原文，尚无积累库 | [全量注音](archived/full-ruby/ACCEPTANCE.md)、[文本分析](archived/text-study/B1_ACCEPTANCE.md)、[统计](archived/text-study/B2_ACCEPTANCE.md)、[材料词汇](archived/reading-practice/VOCABULARY_ACCEPTANCE.md) |
-| 本书搜索 | 原文、片段、最新阅读译文和书签分组检索，支持章节与内容组合筛选、空词浏览、分页及会话恢复。结果复用精确定位和只读预览，按类型核验，保留失配与删除门禁 | [搜索交互](../INFORMATION_ARCHITECTURE.md#书内搜索与图库)、[搜索验收](archived/reading-practice/BOOK_SEARCH_ACCEPTANCE.md)、[按类预览复核](archived/REVIEW_FOLLOWUP_20261113.md#搜索结果预览) |
+| 本书搜索 | 原文、片段、最新阅读译文和书签分组检索，支持章节与内容组合筛选、空词浏览、分页及会话恢复。结果复用精确定位和只读预览，按类型核验，保留失配与删除门禁 | [搜索交互](../INFORMATION_ARCHITECTURE.md#本书搜索)、[搜索验收](archived/reading-practice/BOOK_SEARCH_ACCEPTANCE.md)、[按类预览复核](archived/REVIEW_FOLLOWUP_20261113.md#搜索结果预览) |
 | 复制与书签 | 正文复制排除注音；带上下文复制的默认配置自动保存。位置书签可浏览、删除和返回；材料删除后保留并隐藏，不向重导材料换绑 | [正文复制](archived/text-study/READER_COPY_ACCEPTANCE.md)、[上下文复制](archived/reading-practice/CONTEXT_COPY_ACCEPTANCE.md)、[书签验收](archived/reading-practice/BOOKMARK_REFINEMENT_ACCEPTANCE.md)、[偏好保护取舍](archived/reading-practice/PROTECTION_SIMPLIFICATION_ACCEPTANCE.md) |
 | 选区学习与原处回看 | 选区可保存为带精确出处的片段，支持语境预装、编辑保护和返回原句；正文标记、页边入口、本章记录及紧凑／完整预览读取已有译文与讲解 | [C1](archived/text-study/C1_ACCEPTANCE.md)、[C2](archived/text-study/C2_ACCEPTANCE.md)、[原处预览](archived/text-study/INLINE_PREVIEW_ACCEPTANCE.md)、[记录浮窗回归](../../frontend/browser-tests/chapter-records.tsx)、[页边入口回归](../../frontend/browser-tests/margin-record-targets.tsx) |
 | 持久讲解与片段讨论 | 人工 Markdown 保存和 AI 工具保存共用内容保护；支持多份 Analysis、不可变修订、全文修订、块编辑与审核。讨论按需启动，提供持久线程、冻结上下文、预算、停止及恢复；创建 AI 讲解进入普通对话，普通提问默认不保存讲解 | [人工资料](archived/text-study/A2_ACCEPTANCE.md)、[工具与修订](archived/STAGE_2C_ANALYSIS_TOOLS.md)、[统一讨论验收](archived/AGENT_CONTEXT_ACCEPTANCE.md)、[上下文预算](archived/REVIEW_FOLLOWUP_20261113.md#聊天上下文预算)、[回复反馈回归](../../frontend/browser-tests/workbench-render.tsx) |
@@ -28,7 +28,7 @@ beta.3 发行范围为源码包与样书；11 月 16 日决定暂缓 Windows 免
 
 ### 验证限制
 
-- **内容与格式**：支持普通可重排 EPUB；兼容的固定图片 spine 页仅保留图像，不恢复固定几何；封面缓存限有界静态 PNG／JPEG。具体格式边界见[架构](../ARCHITECTURE.md#31-实体)。
+- **内容与格式**：支持普通可重排 EPUB；兼容的固定图片 spine 页仅保留图像，不恢复固定几何；封面缓存限有界静态 PNG／JPEG。具体边界见[EPUB 编译与存储格式](../ARCHITECTURE.md#epub-编译与存储格式)及[目录与材料使用状态中的封面规则](../ARCHITECTURE.md#311-目录与材料使用状态)。
 - **用户使用与设备**：书籍管理、可选清理学习积累和来源空间仍待用户使用验收；阅读页入场手感待试。Windows 实机、普通权限下数据目录访问与最新位置恢复流程见[Windows 清单](WINDOWS_ACCEPTANCE.md)。实体触屏、Safari／Firefox、浏览器扩展及系统剪贴板的已测范围见[阅读器限制](archived/reader-r1/ACCEPTANCE.md#明确未验证与限制)和[图片查看器验收](archived/epub-reading/IMAGE_VIEWER_PERFORMANCE_ACCEPTANCE.md#提交前-cr-修复2026-10-27)。早期 Yomitan 试读结果不代表后续阅读器已完整验证。
 - **真实内容与模型**：新增活用说明的真实词典试读、原地模型配置的真实接入、讨论回复节奏、真实翻译质量及资源预算、设备声音仍需按[EPUB 后续安排](epub-reading/README.md#阅读辅助后续安排)和原验收补测。Chrome 语速调整目前仅确认参数传递，用户听感未变化的根因与实际效果仍未确认，见[调查记录](archived/text-study/SEGMENT_UI_ACCEPTANCE.md#chrome-语速问题调查)。
 - **规模与测量**：本书搜索的真实大型书库性能待验证；会话复用未显示离线可读时间稳定下降，整合后的生产冷加载未重测。原测量仅适用于当时版本与环境，见[搜索计划](reading-practice/PLAN.md)、[会话测量](archived/text-study/READER_SESSION_ACCEPTANCE.md)及[冷加载验收](archived/ROUTE_LOADING_ACCEPTANCE.md)。
@@ -40,7 +40,7 @@ beta.3 发行范围为源码包与样书；11 月 16 日决定暂缓 Windows 免
 | 缺口 | 负责规范 | 实施前需要明确或补齐的内容 |
 | --- | --- | --- |
 | 保存片段时的模型预选 | [PRD F1](../PRD.md#f1-设置) | 保存片段预选模型与普通讲解对话默认模型之间的适用对象、保存位置和继承关系尚未收口；先对齐产品契约，不能因旧生成分支停用而取消预选要求 |
-| EPUB 学习衔接 | [PRD 4.7](../PRD.md#47-当前-epub-阶段安排)、[阶段安排](epub-reading/README.md) | 材料线程、消息引用、读取权限与费用，以及从讨论整理讲解的目标和部分成功反馈 |
+| EPUB 学习衔接 | [PRD 后续范围](../PRD.md#材料对话与讲解的后续范围)、[阶段安排](epub-reading/README.md) | 材料线程、消息引用、读取权限与费用，以及从讨论整理讲解的目标和部分成功反馈 |
 | Occurrence 生产契约 | [术语](../GLOSSARY.md#4-知识表示与提取边界已对齐)、[PRD F5](../PRD.md#f5-学习条目创建与整理)、`TBD-02/03` | 持久字段与类型边界、不连续 Surface／重复文字定位、anchor 及多个 Section 的确切引用；[A0 实验](../../references/occurrence_anchor_pilot/batch-01/report.md)不作为生产定案 |
 | 条目读取与候选写入 | [PRD F5](../PRD.md#f5-学习条目创建与整理)、[F9](../PRD.md#f9-agent-工具权限与审核) | 尚无 Occurrence 持久化、读取／候选工具或用户整理操作；将已确认边界落实为接口和执行校验 |
 | 组合操作与恢复 | [PRD F8](../PRD.md#f8-状态与诊断)、[架构](../ARCHITECTURE.md#45-讨论与成果保存analysis已实现occurrence待设计)、`TBD-16/17` | Occurrence 的逐项结果、幂等身份、保存核实、局部修复、统一预算与混合方案审核；Analysis 已实现部分沿用现有机制 |

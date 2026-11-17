@@ -35,9 +35,9 @@
 | 测试 | pytest、pytest-asyncio、hypothesis | 用 hypothesis 对规范化器做"可复原"的性质测试 |
 | 静态检查 | ruff（lint + format）、pyright（strict） | |
 
-分词结果使用 SQLite 中的压缩 JSON，复用标准库能力；版本、发布及定位隔离见[全量注音与分词资产](ARCHITECTURE.md#313-全量注音与分词资产)。
+分词结果使用 SQLite 中的压缩 JSON，复用标准库能力；版本、发布及定位隔离见[注音代次发布与呈现](ARCHITECTURE.md#注音代次发布与呈现)。
 
-EPUB 编译使用标准库 ZIP／XML／HTML 处理与 Pydantic 定义产物，不引入阅读器引擎。原 EPUB 与压缩编译包保存为 SQLite BLOB，避免外置文件的双提交；编译包使用标准库 zlib 与共享图片字符串池无损编码。编译、存储格式、安全预算及删除回收见[架构实体契约](ARCHITECTURE.md#31-实体)。
+EPUB 编译使用标准库 ZIP／XML／HTML 处理与 Pydantic 定义产物，不引入阅读器引擎。原 EPUB 与压缩编译包保存为 SQLite BLOB，避免外置文件的双提交；编译包使用标准库 zlib 与共享图片字符串池无损编码。编译、存储格式与安全预算见[EPUB 编译与存储格式](ARCHITECTURE.md#epub-编译与存储格式)，删除回收见[材料删除与来源清理](ARCHITECTURE.md#材料删除与来源清理)。
 
 封面使用标准库校验静态 PNG／JPEG 的头部与结构，不引入图像解码库；支持范围、候选回退与独立于正文图片的安全预算见[目录与材料使用状态](ARCHITECTURE.md#311-目录与材料使用状态)。
 
