@@ -24,6 +24,17 @@
 	backdrop-filter: none;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+	.reader-r1
+		:is(.reader-chapter-records, .translation-card).reader-popover:not(
+			.embedded
+		) {
+		transition:
+			background-color 180ms ease-out,
+			border-color 180ms ease-out;
+	}
+}
+
 .reader-r1 .reader-popover:not(.embedded):focus-within {
 	border-color: color-mix(in srgb, var(--reader-fg) 30%, var(--reader-bg));
 }

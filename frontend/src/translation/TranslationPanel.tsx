@@ -10,6 +10,7 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { chapterTranslationsKey } from "../materials/chapter-translations-query";
+import { useExpandFlipMotion } from "../materials/motion";
 import {
 	clampReaderCardPosition,
 	type ReaderCardBounds,
@@ -275,8 +276,11 @@ export function TranslationPanel({
 		speech.subscribe,
 		speech.getSnapshot,
 	);
-	const [position, setPosition] =
-		useState<ReturnType<typeof translationCardPosition>>();
+	const [layout, setLayout] = useState<{
+		position: ReturnType<typeof translationCardPosition>;
+		expanded: boolean;
+	}>();
+	const position = layout?.position;
 	const [manualPosition, setManualPosition] =
 		useState<ReaderCardPosition | null>(null);
 	const manual = useRef(manualPosition);
@@ -319,7 +323,10 @@ export function TranslationPanel({
 			const viewport = { width: innerWidth, height: innerHeight };
 			const size = { width: node.offsetWidth, height: node.scrollHeight + 2 };
 			if (expanded) {
-				setPosition(studySidebarPosition(viewport, size.width, bottomInset));
+				setLayout({
+					position: studySidebarPosition(viewport, size.width, bottomInset),
+					expanded: true,
+				});
 				return;
 			}
 			const available = translationCardPosition(
@@ -340,24 +347,26 @@ export function TranslationPanel({
 				height: renderedHeight,
 			};
 			setWide(innerWidth > 600);
-			setPosition(
-				manual.current && innerWidth > 600
-					? {
-							...clampReaderCardPosition(
-								manual.current,
-								manualBounds.current.bounds,
-								renderedHeight,
+			setLayout({
+				position:
+					manual.current && innerWidth > 600
+						? {
+								...clampReaderCardPosition(
+									manual.current,
+									manualBounds.current.bounds,
+									renderedHeight,
+								),
+								maxHeight: available.maxHeight,
+							}
+						: translationCardPosition(
+								anchor,
+								viewport,
+								size,
+								direction,
+								bottomInset,
 							),
-							maxHeight: available.maxHeight,
-						}
-					: translationCardPosition(
-							anchor,
-							viewport,
-							size,
-							direction,
-							bottomInset,
-						),
-			);
+				expanded: false,
+			});
 		};
 		measurePosition.current = measure;
 		measure();
@@ -376,6 +385,12 @@ export function TranslationPanel({
 		manual.current = manualPosition;
 		measurePosition.current?.();
 	}, [manualPosition]);
+	useExpandFlipMotion(
+		element,
+		expanded,
+		layout?.expanded === expanded,
+		visible && !embedded && !dragging,
+	);
 	const translations = useTranslationSessions(translationSessions);
 	const session = translations.forTarget(sourceId, target);
 	const state = useTranslationSession(session);

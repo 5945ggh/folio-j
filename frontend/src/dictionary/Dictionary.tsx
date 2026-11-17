@@ -18,6 +18,10 @@ import {
 import { createPortal } from "react-dom";
 import { Link } from "react-router";
 import { RequestError } from "../content";
+import {
+	DICTIONARY_POPOVER_MOTION_MS,
+	useReaderPresence,
+} from "../materials/motion";
 import type { ReturnDestination } from "../navigation";
 import {
 	DictionaryCards,
@@ -110,6 +114,17 @@ export function Dictionary({
 	const appliedOptions = useRef({ mode, autoExpand, assistedRanking });
 	options.current = { mode, autoExpand, assistedRanking };
 	const trigger = useRef<HTMLButtonElement>(null);
+	const config = useRef<HTMLElement>(null);
+	const menuPresence = useReaderPresence(
+		menu ? true : null,
+		DICTIONARY_POPOVER_MOTION_MS,
+	);
+	useEffect(() => {
+		if (!menu) return;
+		const node = config.current;
+		if (node && !node.contains(document.activeElement))
+			node.focus({ preventScroll: true });
+	}, [menu]);
 	const status = useQuery({
 		...statusQuery,
 		enabled: menu || mode !== "off" || levels.length > 0,
@@ -339,9 +354,8 @@ export function Dictionary({
 		isOpen: () => menu || current.current.length > 0,
 	}));
 	const setMode = (value: DictionaryMode) => {
-		close();
+		clearCards();
 		onMode(value);
-		trigger.current?.focus({ preventScroll: true });
 	};
 	const finish = () => {
 		close();
@@ -387,12 +401,28 @@ export function Dictionary({
 			{portal &&
 				createPortal(
 					<>
-						{menu && (
+						{menuPresence.value && (
 							<section
+								ref={config}
 								className="dict-config"
 								data-reader-tool=""
+								data-exiting={menuPresence.exiting}
+								inert={menuPresence.exiting}
+								aria-hidden={menuPresence.exiting || undefined}
 								role="dialog"
+								tabIndex={-1}
 								aria-label="即时查词设置"
+								onKeyDown={(event) => {
+									if (
+										event.key !== "Escape" ||
+										event.defaultPrevented ||
+										event.nativeEvent.isComposing
+									)
+										return;
+									event.preventDefault();
+									event.stopPropagation();
+									closeMenu();
+								}}
 							>
 								<header>
 									<div>

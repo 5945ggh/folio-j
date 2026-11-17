@@ -2087,9 +2087,15 @@ function Reader({
 			data-active-side={panels.activeSide}
 			data-panel-above-cards={panelAboveCards || undefined}
 			onFocusCapture={(event) => activateReaderTool(event.target)}
-			onPointerDownCapture={(event) =>
-				activateReaderTool(event.target as Element)
-			}
+			onPointerDownCapture={(event) => {
+				const target = event.target as Element;
+				if (
+					target.closest("[data-reader-tools], [data-reader-tool]") &&
+					!target.closest(".dict-deck, .dict-config, .dict-trigger")
+				)
+					dictionary.current?.dismissMenu();
+				activateReaderTool(target);
+			}}
 			style={
 				{
 					"--reader-width": `${bookUi.width}px`,

@@ -24,7 +24,17 @@
 	font-size: 13px;
 	max-height: calc(100dvh - 190px - var(--reader-speech-clearance, 0px));
 	overflow: auto;
-	transition: opacity 180ms ease;
+	opacity: 1;
+	translate: none;
+	transition:
+		opacity 180ms ease,
+		translate 180ms ease-out;
+}
+@starting-style {
+	.reader-bookmark-notice {
+		opacity: 0;
+		translate: 0 6px;
+	}
 }
 .reader-bookmark-notice > div {
 	flex: 1;
@@ -398,6 +408,7 @@
 }
 .reader-bookmark-notice[data-fading="true"] {
 	opacity: 0;
+	translate: 0 4px;
 }
 @media (prefers-reduced-motion: reduce) {
 	.reader-bookmark-notice,

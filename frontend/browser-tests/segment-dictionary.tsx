@@ -248,9 +248,16 @@ export async function segmentDictionary(h: BrowserHarness) {
 			return `segment dictionary settings: ${innerWidth}×${innerHeight}, ${theme}; scrollable options and management remain reachable`;
 		}
 		button("点击查词").click();
+		await settle();
+		check(
+			!!h.container.querySelector(".dict-config") &&
+				button("点击查词").getAttribute("aria-pressed") === "true",
+			"Choosing click lookup must retain dictionary settings for follow-up options",
+		);
+		button("关闭查词设置").click();
 		await h.until(
 			() => !h.container.querySelector(".dict-config"),
-			"Choosing click lookup must close settings",
+			"Closing settings must dismiss the menu",
 		);
 		if (scene === "card" && !preview) {
 			const trigger = button("即时查词");
@@ -285,6 +292,13 @@ export async function segmentDictionary(h: BrowserHarness) {
 					"Dictionary settings must reopen to switch modes",
 				);
 				button(mode).click();
+				await settle();
+				check(
+					!!h.container.querySelector(".dict-config") &&
+						button(mode).getAttribute("aria-pressed") === "true",
+					`Switching to ${mode} must keep settings open`,
+				);
+				button("关闭查词设置").click();
 			};
 			await verifyBothThemes(true, "click");
 			await chooseMode("Shift 悬浮");
@@ -479,6 +493,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 				"Material test must enable Shift lookup",
 			);
 			button("Shift 悬浮").click();
+			button("关闭查词设置").click();
 			await openMaterial();
 			const at = point(materialText(2));
 			await pointer([{ type: "mouseMoved", ...at }]);
@@ -611,6 +626,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 				"Retained-page test must choose Shift lookup",
 			);
 			button("Shift 悬浮").click();
+			button("关闭查词设置").click();
 			await settle();
 			const sameGlyph = point(original);
 			await pointer([{ type: "mouseMoved", ...sameGlyph }]);
@@ -743,6 +759,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 			"Mode settings must reopen",
 		);
 		button("Shift 悬浮").click();
+		button("关闭查词设置").click();
 		const hoverAt = point(find(".analysis-markdown p:nth-child(2)"));
 		const beforeHover = requests.length;
 		await pointer([{ type: "mouseMoved", ...hoverAt }]);
@@ -771,6 +788,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 			"Click mode must be available again",
 		);
 		button("点击查词").click();
+		button("关闭查词设置").click();
 		hold = true;
 		await click(find('[aria-label="已保存后文"] span'));
 		await h.until(

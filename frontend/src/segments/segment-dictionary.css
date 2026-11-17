@@ -24,6 +24,16 @@
 	transform: none;
 	max-height: calc(100dvh - 176px);
 }
+.segment-dictionary-scope .dict-config[data-exiting="true"] {
+	translate: -4px 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+	@starting-style {
+		.segment-dictionary-scope .dict-config {
+			translate: -6px 0;
+		}
+	}
+}
 .selection-actions.segment-selection-toolbar {
 	z-index: 51;
 }
@@ -35,5 +45,15 @@
 		top: 68px;
 		left: 12px;
 		max-height: calc(100dvh - 80px);
+	}
+	.segment-dictionary-scope .dict-config[data-exiting="true"] {
+		translate: 0 -4px;
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		@starting-style {
+			.segment-dictionary-scope .dict-config {
+				translate: 0 -6px;
+			}
+		}
 	}
 }

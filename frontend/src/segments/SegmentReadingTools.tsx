@@ -105,9 +105,9 @@ export function SegmentReadingTools({
 		clear();
 		onClear();
 	}, [available, resetKey, clear, onClear]);
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Changing lookup mode closes its settings and cards, including across tabs.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Changing lookup mode clears active cards without closing settings, including across tabs.
 	useLayoutEffect(() => {
-		control.current?.close();
+		control.current?.lookup(null);
 		onClear();
 	}, [preferences.mode, onClear]);
 	useEffect(() => {

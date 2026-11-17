@@ -1,3 +1,4 @@
+import { flushSync } from "react-dom";
 import type { BrowserHarness } from "./harness";
 
 export async function translationDragRegression(
@@ -108,7 +109,7 @@ export async function translationDragRegression(
 		expand,
 		"Compact translation has an independent reading expansion action",
 	);
-	expand.click();
+	flushSync(() => expand.click());
 	await h.until(
 		() =>
 			card.classList.contains("expanded") &&
@@ -125,6 +126,37 @@ export async function translationDragRegression(
 		(node) => node.textContent === "收起",
 	);
 	check(collapse, "Expanded translation can return to its compact position");
+	if (innerWidth > 600) {
+		const currentMotion = () =>
+			card
+				.getAnimations()
+				.find(
+					(animation) =>
+						!(animation instanceof CSSAnimation) &&
+						!(animation instanceof CSSTransition),
+				);
+		const reverse = (control: HTMLButtonElement, label: string) => {
+			const previous = currentMotion();
+			check(previous, `${label}: the initial motion must be active`);
+			previous.pause();
+			previous.currentTime = 30;
+			const before = card.getBoundingClientRect().left;
+			flushSync(() => control.click());
+			const next = currentMotion();
+			check(next && next !== previous, `${label}: a new motion must start`);
+			next.pause();
+			next.currentTime = 0;
+			const after = card.getBoundingClientRect().left;
+			check(
+				Math.abs(after - before) <= 1,
+				`${label}: the card must continue from the visible horizontal position (${before} to ${after})`,
+			);
+			return next;
+		};
+		reverse(collapse, "Collapse during expansion");
+		const expandedAgain = reverse(expand, "Expand during collapse");
+		expandedAgain.finish();
+	}
 	collapse.click();
 	await h.until(() => {
 		const after = card.getBoundingClientRect();

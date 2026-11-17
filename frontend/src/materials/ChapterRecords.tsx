@@ -21,6 +21,7 @@ import {
 } from "../translation/TranslationRemoval";
 import type { Chapter } from "./api";
 import type { ChapterTranslation } from "./chapter-translations-query";
+import { useExpandFlipMotion } from "./motion";
 import {
 	clampReaderCardPosition,
 	type ReaderCardBounds,
@@ -132,8 +133,11 @@ export function ChapterRecords(props: Props) {
 		speech.subscribe,
 		speech.getSnapshot,
 	);
-	const [position, setPosition] =
-		useState<ReturnType<typeof translationCardPosition>>();
+	const [layout, setLayout] = useState<{
+		position: ReturnType<typeof translationCardPosition>;
+		expanded: boolean;
+	}>();
+	const position = layout?.position;
 	const [localManualPosition, setLocalManualPosition] =
 		useState<ReaderCardPosition | null>(null);
 	const manualPosition =
@@ -215,7 +219,10 @@ export function ChapterRecords(props: Props) {
 				height: headerHeight + (body.current?.scrollHeight ?? 0),
 			};
 			if (expanded) {
-				setPosition(studySidebarPosition(viewport, size.width, bottomInset));
+				setLayout({
+					position: studySidebarPosition(viewport, size.width, bottomInset),
+					expanded: true,
+				});
 				return;
 			}
 			const available = translationCardPosition(
@@ -236,25 +243,27 @@ export function ChapterRecords(props: Props) {
 				height: renderedHeight,
 			};
 			setWide(innerWidth > 600);
-			setPosition(
-				manual.current && innerWidth > 600
-					? {
-							...clampReaderCardPosition(
-								manual.current,
-								manualBounds.current.bounds,
-								renderedHeight,
+			setLayout({
+				position:
+					manual.current && innerWidth > 600
+						? {
+								...clampReaderCardPosition(
+									manual.current,
+									manualBounds.current.bounds,
+									renderedHeight,
+								),
+								maxHeight: available.maxHeight,
+							}
+						: translationCardPosition(
+								fixed ? null : anchor,
+								viewport,
+								size,
+								direction,
+								bottomInset,
+								fixed ? "text" : anchorPlacement,
 							),
-							maxHeight: available.maxHeight,
-						}
-					: translationCardPosition(
-							fixed ? null : anchor,
-							viewport,
-							size,
-							direction,
-							bottomInset,
-							fixed ? "text" : anchorPlacement,
-						),
-			);
+				expanded: false,
+			});
 		};
 		measurePosition.current = measure;
 		measure();
@@ -284,6 +293,12 @@ export function ChapterRecords(props: Props) {
 		manual.current = manualPosition;
 		measurePosition.current?.();
 	}, [manualPosition]);
+	useExpandFlipMotion(
+		element,
+		expanded,
+		layout?.expanded === expanded,
+		!inactive && !dragging,
+	);
 	useEffect(() => {
 		if (tab !== "translation") return;
 		callbacks.current.onEmphasize(

@@ -112,6 +112,7 @@ const scenarios = selectBrowserScenarios(
 		[320, 900, "?suite=reader-settings"],
 		[320, 900, "?suite=reader-settings&direction=vertical-rl"],
 		[1280, 900, "?suite=reader-dictionary"],
+		[1280, 900, "?suite=reader-dictionary&scene=background-dismissal"],
 		[1280, 900, "?suite=reader-dictionary&scene=basics"],
 		[1280, 900, "?suite=reader-dictionary&scene=selection"],
 		[1280, 900, "?suite=reader-dictionary&scene=selection&theme=dark"],

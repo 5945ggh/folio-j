@@ -1,6 +1,7 @@
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { Outlet } from "react-router";
 import type { components } from "../src/api/schema";
+import { FOCUS_TIMING } from "../src/materials/focus";
 import type { BrowserHarness } from "./harness";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
 
@@ -12,6 +13,7 @@ const stamp = "2026-10-31T00:00:00Z";
 export async function readerDictionary(h: BrowserHarness) {
 	const params = new URLSearchParams(location.search);
 	const optionsScene = params.get("scene") === "options";
+	const backgroundDismissal = params.get("scene") === "background-dismissal";
 	const basicsScene = params.get("scene") === "basics";
 	const selectionLifecycle = params.get("scene") === "selection-lifecycle";
 	const selectionScene =
@@ -494,7 +496,7 @@ export async function readerDictionary(h: BrowserHarness) {
 	localStorage.setItem(
 		"folio-reader-ui-v1",
 		JSON.stringify({
-			focus: false,
+			focus: backgroundDismissal,
 			theme:
 				optionsScene || selectionScene
 					? params.get("theme") === "dark"
@@ -889,6 +891,32 @@ export async function readerDictionary(h: BrowserHarness) {
 			() => !!h.container.querySelector(".dict-installed"),
 			"Settings must read installed dictionary",
 		);
+		if (backgroundDismissal) {
+			const x = 8;
+			const y = innerHeight / 2;
+			const reader = document.elementFromPoint(x, y);
+			check(
+				reader instanceof HTMLElement && reader.matches(".reader-r1"),
+				"The tap must hit the reader gutter",
+			);
+			const toolsVisible = () => reader.dataset.toolsVisible === "true";
+			check(toolsVisible(), "Reading tools must start visible");
+			await clickAt(x, y);
+			await h.until(
+				() => !h.container.querySelector(".dict-config"),
+				"Tapping the reader gutter must close dictionary settings",
+			);
+			await new Promise((resolve) =>
+				setTimeout(resolve, FOCUS_TIMING.clickDelay + 16),
+			);
+			check(toolsVisible(), "The first tap must leave reading tools visible");
+			await clickAt(x, y);
+			await h.until(
+				() => !toolsVisible(),
+				"A second tap can hide reading tools after settings have closed",
+			);
+			return "reader gutter: the first tap dismisses dictionary settings, the next hides the toolbar";
+		}
 		const option = (label: string) => {
 			const control = h.container.querySelector<HTMLInputElement>(
 				`.dict-config input[aria-label="${label}"]`,
@@ -1003,6 +1031,21 @@ export async function readerDictionary(h: BrowserHarness) {
 			"Dictionary settings must leave shared opacity in reading settings",
 		);
 		button("点击查词").click();
+		await settle();
+		check(
+			!!h.container.querySelector(".dict-config") &&
+				button("点击查词").getAttribute("aria-pressed") === "true",
+			"Choosing lookup mode must keep dictionary settings open",
+		);
+		await browserKey("Escape");
+		await h.until(
+			() => !h.container.querySelector(".dict-config"),
+			"Escape must close dictionary settings",
+		);
+		check(
+			document.activeElement === button("即时查词"),
+			"Closing dictionary settings with Escape must restore focus to its trigger",
+		);
 		const frame = h.container.querySelector<HTMLIFrameElement>(
 			"iframe.material-part",
 		);
@@ -1166,6 +1209,12 @@ export async function readerDictionary(h: BrowserHarness) {
 		await h.until(
 			() => !!h.container.querySelector(".dict-config"),
 			"Open word card must allow dictionary settings",
+		);
+		check(
+			h.container
+				.querySelector(".dict-config")
+				?.contains(document.activeElement),
+			"Opening dictionary settings must place keyboard focus inside the menu",
 		);
 		const syncOpacity = (value: number) => {
 			const stored = JSON.parse(
