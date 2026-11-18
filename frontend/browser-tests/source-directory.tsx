@@ -1,7 +1,7 @@
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
-import type { CatalogSegment } from "../src/catalog/api";
 import type { Source } from "../src/content";
 import type { BrowserHarness } from "./harness";
+import { overviewItems, showsOverview } from "./source-overview-fixture";
 import "../src/catalog/source-content.css";
 import "../src/catalog/sources-s2.css";
 
@@ -19,41 +19,10 @@ function makeSource(id: string, title: string, segmentCount = 1): Source {
 	};
 }
 
-function makeSegment(
-	id: string,
-	sourceId: string,
-	text: string,
-): CatalogSegment {
-	return {
-		id,
-		source_id: sourceId,
-		text,
-		text_sha256: "a".repeat(64),
-		context_before: "",
-		context_after: "",
-		created_at: timestamp,
-		updated_at: timestamp,
-		text_locked_at: null,
-		revision: 1,
-		note: "",
-		source_ref: "",
-		transcription: "",
-		translation: "",
-		material_provenance: null,
-		provenance_summary: {
-			status: "none",
-			display: null,
-			title: null,
-			chapter_title: null,
-		},
-	};
-}
-
 export async function sourceDirectoryRegression(
 	h: BrowserHarness,
 ): Promise<string> {
 	const { SourceDetail } = await import("../src/SourcePages");
-	const { sourceOverviewQueries } = await import("../src/catalog/api");
 	const { container, until, inputValue, mount, mock } = h;
 	const check: BrowserHarness["check"] = h.check;
 
@@ -63,6 +32,9 @@ export async function sourceDirectoryRegression(
 		makeSource("src-c", "新聞記事"),
 	];
 	const overviewReads = new Map<string, number>();
+	const prefetched = overviewItems("src-c", "預読");
+	const refreshed = overviewItems("src-c", "更新");
+	let currentOverview = prefetched;
 	const patched: { id: string; title?: string }[] = [];
 	let queryClient: QueryClient | undefined;
 
@@ -102,6 +74,7 @@ export async function sourceDirectoryRegression(
 			if (request.method === "PATCH") {
 				const body = (await request.json()) as { title?: string };
 				patched.push({ id, title: body.title });
+				if (body.title === "新聞記事・刷新確認") currentOverview = refreshed;
 				sources = sources.map((item) =>
 					item.id === id && body.title ? { ...item, title: body.title } : item,
 				);
@@ -118,22 +91,25 @@ export async function sourceDirectoryRegression(
 				url.searchParams.get("page_size") === (kind === "segments" ? "3" : "2")
 			)
 				recordRead(kind, id);
-			if (kind === "segments") {
-				const item = makeSegment(`seg-${id}`, id, `例文（${id}）`);
-				return Response.json({
-					items: [item],
-					total: 1,
-					page: 1,
-					page_size: 50,
-				});
-			}
-			return Response.json({ items: [], total: 0, page: 1, page_size: 50 });
+			const items = id === "src-c" ? currentOverview : overviewItems(id, id);
+			return Response.json({
+				items: [kind === "segments" ? items.segment : items.analysis],
+				total: 1,
+				page: 1,
+				page_size: Number(url.searchParams.get("page_size")),
+			});
 		}
 		if (request.method === "GET" && path === "/api/materials") {
 			const id = url.searchParams.get("source_id") ?? "";
 			if (url.searchParams.get("page_size") === "3")
 				recordRead("materials", id);
-			return Response.json({ items: [], total: 0, page: 1, page_size: 3 });
+			const items = id === "src-c" ? [currentOverview.book] : [];
+			return Response.json({
+				items,
+				total: items.length,
+				page: 1,
+				page_size: 3,
+			});
 		}
 		throw new Error(
 			`Unexpected source directory request ${request.method} ${path}${url.search}`,
@@ -403,21 +379,6 @@ export async function sourceDirectoryRegression(
 			'a.s2-source-row[data-source-id="src-c"]',
 		);
 		check(rowC, "Source C must be available for the prefetch regression");
-		const overview = sourceOverviewQueries("src-c");
-		const keys = [
-			overview.analyses.queryKey,
-			overview.segments.queryKey,
-			overview.books.queryKey,
-		];
-		const settled = () =>
-			keys.every((key) => {
-				const state = queryClient?.getQueryState(key);
-				return (
-					state?.status === "success" &&
-					state.fetchStatus === "idle" &&
-					!state.isInvalidated
-				);
-			});
 		const counts = () =>
 			["analyses", "segments", "materials"].map(
 				(kind) => overviewReads.get(`${kind}:src-c`) ?? 0,
@@ -425,7 +386,9 @@ export async function sourceDirectoryRegression(
 		const beforePrefetch = counts();
 		rowC.focus();
 		await until(
-			settled,
+			() =>
+				counts().every((n, i) => n > (beforePrefetch[i] ?? 0)) &&
+				queryClient?.isFetching() === 0,
 			"The three overview prefetches must finish before navigation",
 		);
 		const prefetchedCounts = counts();
@@ -440,15 +403,8 @@ export async function sourceDirectoryRegression(
 			() =>
 				!!container.querySelector(
 					'a[aria-current="page"][data-source-id="src-c"]',
-				) &&
-				keys.every(
-					(key) =>
-						(queryClient
-							?.getQueryCache()
-							.find({ queryKey: key })
-							?.getObserversCount() ?? 0) > 0,
-				),
-			"Source C must mount all three overview queries",
+				) && showsOverview(container, prefetched),
+			"Source C must display the prefetched analysis, segment and book",
 		);
 		check(
 			counts().every((count, index) => count === prefetchedCounts[index]),
@@ -481,7 +437,7 @@ export async function sourceDirectoryRegression(
 			() =>
 				container.querySelector(".s2-source-heading h1")?.textContent ===
 					"新聞記事・刷新確認" &&
-				settled() &&
+				showsOverview(container, refreshed) &&
 				counts().every(
 					(count, index) => count === (prefetchedCounts[index] ?? 0) + 1,
 				),

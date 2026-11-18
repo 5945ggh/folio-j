@@ -7,6 +7,7 @@ import { Outlet, useLocation } from "react-router";
 import type { components } from "../src/api/schema";
 import type { Source } from "../src/content";
 import type { BrowserHarness } from "./harness";
+import { overviewItems, showsOverview } from "./source-overview-fixture";
 import "../src/catalog/source-content.css";
 import "../src/catalog/sources-s2.css";
 
@@ -23,9 +24,7 @@ const other: Source = { ...source, id: "remaining-source", title: "残る出典"
 
 export async function sourceDeletion(h: BrowserHarness, preview = false) {
 	const { SourceDetail, SourceIndex } = await import("../src/SourcePages");
-	const { catalogBooks, catalogKeys, sourceOverviewQueries } = await import(
-		"../src/catalog/api"
-	);
+	const { catalogBooks, catalogKeys } = await import("../src/catalog/api");
 	const { container, mock, mount, until } = h;
 	const check: BrowserHarness["check"] = h.check;
 	let removed = false,
@@ -35,12 +34,7 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 		impactReads = 0;
 	let releaseDelete: ((response: Response) => void) | undefined;
 	let queryClient: QueryClient | undefined;
-	const remainingOverview = sourceOverviewQueries(other.id);
-	const remainingKeys = [
-		remainingOverview.analyses.queryKey,
-		remainingOverview.segments.queryKey,
-		remainingOverview.books.queryKey,
-	];
+	const refreshed = overviewItems(other.id, "削除後");
 	const overviewReads = { analyses: 0, segments: 0, materials: 0 };
 	const impact: components["schemas"]["SourceDeleteImpact"] = {
 		source_id: source.id,
@@ -88,7 +82,16 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 			if (!url.searchParams.has("source_id")) materialReads++;
 			if (url.searchParams.get("source_id") === other.id)
 				overviewReads.materials++;
-			return Response.json({ items: [], total: 0, page: 1, page_size: 3 });
+			const items =
+				removed && url.searchParams.get("source_id") === other.id
+					? [refreshed.book]
+					: [];
+			return Response.json({
+				items,
+				total: items.length,
+				page: 1,
+				page_size: 3,
+			});
 		}
 		if (
 			request.method === "GET" &&
@@ -98,7 +101,20 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 				overviewReads.analyses++;
 			if (path === `/api/sources/${other.id}/catalog/segments`)
 				overviewReads.segments++;
-			return Response.json({ items: [], total: 0, page: 1, page_size: 3 });
+			const items =
+				removed && path.startsWith(`/api/sources/${other.id}/`)
+					? [
+							path.endsWith("/segments")
+								? refreshed.segment
+								: refreshed.analysis,
+						]
+					: [];
+			return Response.json({
+				items,
+				total: items.length,
+				page: 1,
+				page_size: 3,
+			});
 		}
 		if (request.method === "DELETE" && path === `/api/sources/${source.id}`) {
 			deleteRequests++;
@@ -293,9 +309,8 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 				?.focus();
 			await until(
 				() =>
-					remainingKeys.every(
-						(key) => queryClient?.getQueryState(key)?.status === "success",
-					),
+					Object.values(overviewReads).every((count) => count > 0) &&
+					queryClient?.isFetching() === 0,
 				"The remaining source overview must be warm before deletion",
 			);
 			check(
@@ -405,9 +420,7 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 		await until(
 			() =>
 				Object.values(overviewReads).every((count) => count === 2) &&
-				remainingKeys.every(
-					(key) => queryClient?.getQueryState(key)?.fetchStatus === "idle",
-				),
+				showsOverview(container, refreshed),
 			"Deleting a source must invalidate the remaining source's prefetched overview and refresh it",
 		);
 		return `source deletion ${innerWidth}px: menu, confirmation and directory refresh verified; remaining overview GETs after deletion ${Object.values(overviewReads).join("/")} including one prefetch per interface`;
