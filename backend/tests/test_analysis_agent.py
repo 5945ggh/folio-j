@@ -431,7 +431,8 @@ async def test_review_approve_reject_and_followup_are_exact_and_idempotent(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    async with chat_client(tmp_path / "agent.db") as (client, app):
+    database = tmp_path / "agent.db"
+    async with chat_client(database) as (client, app):
         seed = await seed_chat(client)
         _, detail = await saved_document(client, app, seed, monkeypatch)
         sid = next(row["uid"] for row in detail["sections"] if row["title"] == "语法")
@@ -443,7 +444,7 @@ async def test_review_approve_reject_and_followup_are_exact_and_idempotent(
             "title": "活用",
             "body": "过去式。",
         }
-        scripted_turn(
+        approval_calls = scripted_turn(
             monkeypatch,
             [
                 ("", [call("update_analysis_section", edit_args)], True),
@@ -475,12 +476,19 @@ async def test_review_approve_reject_and_followup_are_exact_and_idempotent(
         await runtime.execute_job(app, job["id"])
         complete = (await client.get(f"/api/jobs/{job['id']}")).json()
         assert complete["status"] == "succeeded"
-        assert complete["artifacts"][0]["revision_id"] != detail["revision_id"]
-        assert (await client.get(f"/api/analyses/{detail['id']}")).json()["run_id"] == pending[
-            "run_id"
-        ]
-
+        assert len(approval_calls) == 2
+        assert len(complete["artifacts"]) == 1
         current = (await client.get(f"/api/analyses/{detail['id']}")).json()
+        assert complete["artifacts"][0]["revision_id"] == current["revision_id"]
+        assert current["revision_id"] != detail["revision_id"]
+        assert current["run_id"] == pending["run_id"]
+        assert next(row["title"] for row in current["sections"] if row["uid"] == sid) == "活用"
+        with closing(sqlite3.connect(database)) as connection:
+            revisions = connection.execute(
+                "SELECT id FROM analysis_revisions WHERE analysis_id=?", (detail["id"],)
+            ).fetchall()
+        assert {row[0] for row in revisions} == {detail["revision_id"], current["revision_id"]}
+
         seed = await refreshed(client, seed)
         reject_args = {
             "analysis_id": detail["id"],
@@ -507,7 +515,11 @@ async def test_review_approve_reject_and_followup_are_exact_and_idempotent(
         )
         assert decision.status_code == 200
         await runtime.execute_job(app, rejected_job["id"])
-        assert json.loads(captured[-1]["messages"][-1]["content"])["status"] == "rejected"
+        rejected = (await client.get(f"/api/jobs/{rejected_job['id']}")).json()
+        assert rejected["artifacts"] == []
+        feedback = json.loads(captured[-1]["messages"][-1]["content"])
+        assert feedback["status"] == "rejected"
+        assert feedback["additional_instructions"] == "保留这一节"
         assert (await client.get(f"/api/analyses/{detail['id']}")).json()["revision_id"] == current[
             "revision_id"
         ]
