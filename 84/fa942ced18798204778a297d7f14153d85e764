@@ -1,0 +1,20 @@
+backend/tests/test_analysis_agent.py
+  s_d19dfcd7cba59c::t_8b6860f71f1eaf 482-483
+  s_d19dfcd7cba59c::t_78d2ec862ae8e6 434-435,447,479-480,484-491,518-522
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "84fa942ced18798204778a297d7f14153d85e764",
+  "prompts": {},
+  "sessions": {
+    "s_d19dfcd7cba59c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ed84-67f3-79d2-abd1-7cb588437f00",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
