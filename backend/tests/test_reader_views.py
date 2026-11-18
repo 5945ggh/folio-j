@@ -6,18 +6,19 @@ import hashlib
 import sqlite3
 import threading
 import zlib
-from collections.abc import AsyncGenerator, Callable, Sequence
-from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator, Callable, Generator, Sequence
+from contextlib import asynccontextmanager, closing, contextmanager
 from dataclasses import FrozenInstanceError, dataclass
 from pathlib import Path
 from typing import Any, cast
 
 import pytest
+from aiosqlite import Connection
 from fastapi import HTTPException
 from httpx import AsyncClient
 from sqlalchemy import event
-from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from sqlalchemy.pool import ConnectionPoolEntry
 from support_api import chat_client
 from support_epub import compiled
 
@@ -223,34 +224,58 @@ def paused_decode(monkeypatch: pytest.MonkeyPatch) -> tuple[threading.Event, thr
     return entered, release
 
 
+@contextmanager
+def observe_asset_reads(seed: Seed) -> Generator[set[str], None, None]:
+    with closing(sqlite3.connect(seed.database)) as connection:
+        bundle, readings = connection.execute(
+            "SELECT m.compiled_bundle, g.payload FROM materials m "
+            "JOIN material_readings_generations g ON g.material_id = m.id WHERE m.id = ?",
+            (seed.material_id,),
+        ).fetchone()
+    fields = {bundle: "compiled_bundle", readings: "readings payload"}
+    loaded: set[str] = set()
+
+    def observe_row(_cursor: sqlite3.Cursor, row: tuple[object, ...]) -> tuple[object, ...]:
+        for value in row:
+            if isinstance(value, bytes) and value in fields:
+                loaded.add(fields[value])
+        return row
+
+    with pytest.MonkeyPatch.context() as probe:
+
+        def observe_connection(
+            _connection: object, entry: ConnectionPoolEntry, _proxy: object
+        ) -> None:
+            driver = entry.driver_connection
+            assert isinstance(driver, Connection)
+            probe.setattr(driver, "row_factory", observe_row)
+
+        event.listen(seed.engine.sync_engine, "checkout", observe_connection)
+        try:
+            yield loaded
+        finally:
+            event.remove(seed.engine.sync_engine, "checkout", observe_connection)
+
+
 @pytest.mark.asyncio
 async def test_warm_views_and_position_cas_select_no_large_values_or_decode(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     async with seeded(tmp_path, monkeypatch) as seed:
         counts = count_decodes(monkeypatch)
-        initial = await seed.readings()
-        assert len(initial.resources) == 2  # Repeated spine resource ordering is preserved.
-        assert await seed.image() == (PNG, "image/png")
-        checked = await seed.views.validate_position(seed.material_id, seed.position())
-        assert checked.progress == pytest.approx(3 / len(TEXT))
-        with pytest.raises(FrozenInstanceError):
-            cast(Any, checked).progress = 0.1
-        before = counts.copy()
-        statements: list[str] = []
+        with observe_asset_reads(seed) as loaded:
+            initial = await seed.readings()
+            assert len(initial.resources) == 2  # Repeated spine resource ordering is preserved.
+            assert await seed.image() == (PNG, "image/png")
+            checked = await seed.views.validate_position(seed.material_id, seed.position())
+            assert checked.progress == pytest.approx(3 / len(TEXT))
+            with pytest.raises(FrozenInstanceError):
+                cast(Any, checked).progress = 0.1
+            assert counts == {"book": 1, "readings": 1}
+            # Verify the probe sees both fixture values during the cold load.
+            assert loaded == {"compiled_bundle", "readings payload"}
+            loaded.clear()
 
-        def sql(
-            _connection: Connection,
-            _cursor: object,
-            statement: str,
-            _parameters: object,
-            _context: object,
-            _many: bool,
-        ) -> None:
-            statements.append(statement.lower())
-
-        event.listen(seed.engine.sync_engine, "before_cursor_execute", sql)
-        try:
             await seed.readings("c2")
             assert await seed.image() == (PNG, "image/png")
             async with seed.factory() as session:
@@ -264,15 +289,8 @@ async def test_warm_views_and_position_cas_select_no_large_values_or_decode(
                         session, seed.material_id, seed.position(), reader_views=seed.views
                     )
             assert conflict.value.status_code == 409
-        finally:
-            event.remove(seed.engine.sync_engine, "before_cursor_execute", sql)
-        assert any("begin immediate" in statement for statement in statements)
-        for statement in statements:
-            if statement.lstrip().startswith("select"):
-                projection = statement.split("from", 1)[0]
-                assert "compiled_bundle" not in projection
-                assert "material_readings_generations.payload" not in projection
-        assert counts == before == {"book": 1, "readings": 1}
+            assert not loaded, f"Warm reads returned large database fields: {loaded}"
+            assert counts == {"book": 1, "readings": 1}
 
 
 @pytest.mark.asyncio
