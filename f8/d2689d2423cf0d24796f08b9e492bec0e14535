@@ -1,0 +1,23 @@
+frontend/browser-tests/source-overview-fixture.ts
+  s_d19dfcd7cba59c::t_10a354b65ae58a 1-74
+frontend/browser-tests/source-deletion.tsx
+  s_d19dfcd7cba59c::t_10a354b65ae58a 10,27,37,85-94,104-117,312-313,423
+frontend/browser-tests/source-directory.tsx
+  s_d19dfcd7cba59c::t_10a354b65ae58a 4,35-37,77,94-100,106-112,389-391,406-407,440
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f8d2689d2423cf0d24796f08b9e492bec0e14535",
+  "prompts": {},
+  "sessions": {
+    "s_d19dfcd7cba59c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ed84-67f3-79d2-abd1-7cb588437f00",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
