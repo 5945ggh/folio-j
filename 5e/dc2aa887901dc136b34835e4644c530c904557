@@ -1,0 +1,20 @@
+backend/tests/test_reader_views.py
+  s_d19dfcd7cba59c::t_4cc38d79fd1cb6 10,16,21,227,229-259,266-277,292-293
+  s_d19dfcd7cba59c::t_1f03f1efdf3615 9,228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5edc2aa887901dc136b34835e4644c530c904557",
+  "prompts": {},
+  "sessions": {
+    "s_d19dfcd7cba59c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ed84-67f3-79d2-abd1-7cb588437f00",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
