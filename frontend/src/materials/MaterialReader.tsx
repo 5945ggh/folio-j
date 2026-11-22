@@ -58,6 +58,7 @@ import {
 	materialKeys,
 	type Position,
 	prepareReadings,
+	type ReadingsResponse,
 	type ReadingsSummary,
 	readingsKey,
 	recordOpened,
@@ -272,7 +273,7 @@ function Reader({
 	const { active, activation } = useViewActivity();
 	const activeRef = useRef(active);
 	activeRef.current = active;
-	useStopSpeechOnLeave(book.id);
+	useStopSpeechOnLeave(book.id, active);
 	useMaterialTranslationActivity(book.id, active, activation);
 	const [translationTarget, setTranslationTarget] =
 		useState<StudyTarget | null>(null);
@@ -850,13 +851,14 @@ function Reader({
 		],
 		[marks.items, chapterTranslations.items],
 	);
+	const chapterReadingsKey = readingsKey(
+		book.id,
+		book.version_id,
+		chapterId,
+		readingGeneration,
+	);
 	const readings = useQuery({
-		queryKey: readingsKey(
-			book.id,
-			book.version_id,
-			chapterId,
-			readingGeneration,
-		),
+		queryKey: chapterReadingsKey,
 		queryFn: ({ signal }) =>
 			getReadings(
 				book.id,
@@ -1532,7 +1534,7 @@ function Reader({
 		presentation.current.load(index, element, token, {
 			chapter: chapter.data,
 			readingGeneration,
-			readings: readings.data,
+			readings: () => client.getQueryData<ReadingsResponse>(chapterReadingsKey),
 			current: () => latest.current,
 			root: () => container.current,
 			bindFocus: (doc, frame) => controller.current?.bindFrame(doc, frame),
@@ -1745,12 +1747,7 @@ function Reader({
 			readingsReady: readings.isSuccess,
 			loadReadings: () =>
 				client.fetchQuery({
-					queryKey: readingsKey(
-						book.id,
-						book.version_id,
-						chapterId,
-						readingGeneration,
-					),
+					queryKey: chapterReadingsKey,
 					queryFn: ({ signal }) =>
 						getReadings(
 							book.id,
@@ -1897,7 +1894,6 @@ function Reader({
 		navigationHighlight.current?.clear(true);
 		navigationHighlight.current?.dispose();
 		preferenceSubmission.current.suspend();
-		getSpeechController().stop();
 	}, [active]);
 	const previousSession = useRef(sessionToken);
 	useEffect(() => {

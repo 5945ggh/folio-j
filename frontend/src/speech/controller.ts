@@ -21,6 +21,7 @@ export type SpeechState = {
 		| "ended"
 		| "error";
 	target: SpeechTarget | null;
+	voiceListError: string | null;
 	error: string | null;
 };
 export interface SpeechAdapter {
@@ -133,6 +134,7 @@ export function createSpeechController(
 		preferences: readSpeechPreferences(storage),
 		status: "idle",
 		target: null,
+		voiceListError: null,
 		error: null,
 	};
 	let generation = 0;
@@ -149,13 +151,13 @@ export function createSpeechController(
 				.getVoices()
 				.filter((voice) => /^ja(?:[-_]|$)/i.test(voice.lang))
 				.sort((a, b) => Number(b.localService) - Number(a.localService));
-			update({ voices, error: null });
+			update({ voices, voiceListError: null });
 		} catch {
-			update({ error: "无法读取设备声音，请重新检测。" });
+			update({ voiceListError: "无法读取设备声音，请重新检测。" });
 		}
 	};
 	const save = (preferences: SpeechPreferences) => {
-		update({ preferences, error: null });
+		update({ preferences });
 		try {
 			storage?.setItem(SPEECH_STORAGE_KEY, JSON.stringify(preferences));
 		} catch {

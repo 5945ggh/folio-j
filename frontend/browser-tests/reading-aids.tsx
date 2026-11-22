@@ -223,7 +223,7 @@ export async function readingAidsRegression(
 					<button type="button" onClick={speech.end}>
 						模拟结束
 					</button>
-					<button type="button" onClick={speech.error}>
+					<button type="button" onClick={() => speech.error()}>
 						模拟失败
 					</button>
 				</header>
@@ -743,12 +743,13 @@ export async function readingAidsRegression(
 			() => speech.utterances.length === 3,
 			"Another read should start",
 		);
-		speech.error();
+		speech.error("synthesis-failed");
 		await h.until(
 			() =>
 				!!h.container.querySelector('.device-speech-bar[data-state="error"]'),
 			"Speech error must remain visible",
 		);
+		speech.setVoicesAvailable(true);
 		const errorBar = h.container.querySelector<HTMLElement>(
 			'.device-speech-bar[data-state="error"]',
 		);
@@ -769,8 +770,8 @@ export async function readingAidsRegression(
 		check(
 			h.container
 				.querySelector(".device-speech-popover:popover-open")
-				?.textContent?.includes("audio-busy"),
-			"Complete speech failure must be available in the open settings",
+				?.textContent?.includes("synthesis-failed"),
+			"The original playback diagnosis must survive voiceschanged and remain visible in settings",
 		);
 	} finally {
 		dispose();

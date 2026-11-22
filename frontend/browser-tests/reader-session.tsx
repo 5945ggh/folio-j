@@ -14,6 +14,7 @@ import {
 	readerSessionFixture,
 	readerSessionFixtureData,
 } from "./reader-session-fixture";
+import { fakeSpeech } from "./reader-speech-fixture";
 
 type Schema = components["schemas"];
 
@@ -60,6 +61,7 @@ export async function readerSession(
 	const preview = params.has("preview");
 	const vertical = params.get("direction") === "vertical-rl";
 	const check: BrowserHarness["check"] = h.check;
+	const speech = fakeSpeech();
 	const { MaterialReader } = realApp
 		? { MaterialReader: null }
 		: await import("../src/materials/MaterialReader");
@@ -948,6 +950,14 @@ export async function readerSession(
 				"Opening a different material must dispose the previous session",
 			);
 			const beforeExpiry = frames();
+			const { getSpeechController } = await import("../src/speech/browser");
+			const controller = getSpeechController();
+			controller.play({ id: "reader-selection", text: "選択された原文" });
+			speech.start();
+			check(
+				controller.getSnapshot().status === "speaking",
+				"Reader speech must start before leaving",
+			);
 			let expire: (() => void) | undefined;
 			const setTimeoutOriginal = window.setTimeout;
 			const dateNowOriginal = Date.now;
@@ -972,12 +982,37 @@ export async function readerSession(
 					"Pausing must schedule a bounded ten-minute expiry",
 				);
 				check(expire, "Retained reader must have an expiry callback");
+				await h.until(
+					() =>
+						controller.getSnapshot().target === null &&
+						controller.getSnapshot().status === "idle",
+					"Pausing the reader must dismiss its replay target before expiry",
+				);
+				const originalSpeech = () =>
+					h.container.querySelector<HTMLButtonElement>(
+						'#segment-original button[aria-label="朗读原文"]',
+					);
+				await h.until(
+					() => !!originalSpeech(),
+					"Real Segment original must expose speech",
+				);
+				originalSpeech()?.click();
+				speech.start();
+				const segmentPlaying = () =>
+					controller.getSnapshot().target?.id === "segment:saved" &&
+					controller.getSnapshot().status === "speaking";
+				check(segmentPlaying(), "The Segment must own the new playback");
+				const cancels = speech.cancellations;
 				const future = Date.now() + 10 * 60 * 1000 + 1;
 				Date.now = () => future;
 				expire();
 				await h.until(
 					() => beforeExpiry.every((frame) => !frame.isConnected),
 					"Expiry must dispose all paused iframe documents",
+				);
+				check(
+					segmentPlaying() && speech.cancellations === cancels,
+					"Evicting the paused reader must not cancel Segment speech",
 				);
 			} finally {
 				window.setTimeout = setTimeoutOriginal;

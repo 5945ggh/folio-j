@@ -89,7 +89,7 @@ test("声音列表迟到仅启用日语，自动优先本地声音", () => {
 	assert.equal(f.calls.length, 0);
 	f.voices([{ ...local, lang: "en-US" }, remote, local]);
 	assert.equal(f.controller.getSnapshot().voices.length, 2);
-	assert.equal(f.controller.getSnapshot().error, null);
+	assert.equal(speechUnavailableReason(f.controller.getSnapshot()), null);
 	assert.equal(selectedVoice(f.controller.getSnapshot()), local);
 	f.controller.play(target);
 	assert.equal(f.call(0).voice, local);
@@ -214,16 +214,34 @@ test("同步启动失败与声音读取失败准确反馈，可重新检测恢�
 			input.onStart();
 		},
 	});
-	assert.match(controller.getSnapshot().error ?? "", /无法读取/);
+	assert.match(controller.getSnapshot().voiceListError ?? "", /无法读取/);
 	broken = false;
 	controller.refresh();
-	assert.equal(controller.getSnapshot().error, null);
+	assert.equal(controller.getSnapshot().voiceListError, null);
 	controller.play(target);
 	assert.equal(controller.getSnapshot().status, "error");
 	assert.match(controller.getSnapshot().error ?? "", /未能启动/);
 	failSpeak = false;
 	controller.replay();
 	assert.equal(controller.getSnapshot().status, "speaking");
+});
+
+test("声音刷新和设置变更不清除播放诊断，重试或关闭才清除", () => {
+	const f = fixture();
+	f.controller.play(target);
+	f.call(0).onError("synthesis-failed");
+	const failure = f.controller.getSnapshot().error;
+	assert.match(failure ?? "", /synthesis-failed/);
+	f.voices([remote]);
+	f.controller.setRate(0.8);
+	assert.equal(f.controller.getSnapshot().error, failure);
+	assert.equal(f.controller.getSnapshot().status, "error");
+	assert.deepEqual(f.controller.getSnapshot().voices, [remote]);
+	f.controller.replay();
+	assert.equal(f.controller.getSnapshot().error, null);
+	f.call(1).onError("synthesis-failed");
+	f.controller.dismiss();
+	assert.equal(f.controller.getSnapshot().error, null);
 });
 
 test("首次无声音或不支持时固定失败目标，控制条能保留失败原因", () => {

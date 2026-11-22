@@ -59,7 +59,7 @@ export function fakeSpeech() {
 		start: () =>
 			latest()?.onstart?.(new Event("start") as SpeechSynthesisEvent),
 		end: () => latest()?.onend?.(new Event("end") as SpeechSynthesisEvent),
-		error: () =>
-			latest()?.onerror?.({ error: "audio-busy" } as SpeechSynthesisErrorEvent),
+		error: (error = "audio-busy") =>
+			latest()?.onerror?.({ error } as SpeechSynthesisErrorEvent),
 	};
 }

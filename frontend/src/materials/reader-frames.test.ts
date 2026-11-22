@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test, { type TestContext } from "node:test";
-import type { Chapter } from "./api.ts";
+import type { Chapter, ReadingsResponse } from "./api.ts";
 import { DEFAULT_BOOK_UI } from "./preferences.ts";
 import { ReaderFrames } from "./reader-frames.ts";
+import { ReaderStudy } from "./reader-study.ts";
 
 function documentFixture(text = "") {
 	let finishFonts: (() => void) | undefined;
@@ -504,6 +505,59 @@ function pointerdown(h: ReturnType<typeof documentFixture>, target: Node) {
 	Object.defineProperty(event, "target", { value: target });
 	h.event.dispatchEvent(event);
 }
+
+test("mounted lookup only reads matching material, version, generation and resource tokens", (t) => {
+	const { frames, element, context } = feedbackFixture(t);
+	const mount = t.mock.method(ReaderStudy.prototype, "mount");
+	const readings: ReadingsResponse = {
+		material_id: "m",
+		version_id: "v",
+		generation_id: "g",
+		resources: [
+			{
+				resource_id: "r",
+				text_sha256: "a".repeat(64),
+				tokens: [
+					{
+						start: 0,
+						end: 1,
+						surface: "甲",
+						reading: "コウ",
+						dictionary_form: "甲",
+						normalized_form: "甲",
+						pos: [],
+						is_oov: false,
+					},
+				],
+			},
+		],
+	};
+	let current: ReadingsResponse | undefined;
+	frames.load(0, element, 0, {
+		...context,
+		chapter: { ...context.chapter, material_id: "m", version_id: "v" },
+		readings: () => current,
+	});
+	const tokens = mount.mock.calls[0]?.arguments[0].tokens;
+	assert.ok(tokens);
+	assert.deepEqual(tokens(), []);
+	current = readings;
+	assert.deepEqual(tokens(), readings.resources[0]?.tokens);
+	for (const mismatch of [
+		{ material_id: "other" },
+		{ version_id: "other" },
+		{ generation_id: "other" },
+		{
+			resources: readings.resources.map((resource) => ({
+				...resource,
+				resource_id: "other",
+			})),
+		},
+	]) {
+		current = { ...readings, ...mismatch };
+		assert.deepEqual(tokens(), []);
+	}
+});
 
 test("navigation feedback clears across frames and releases the old document on replacement and teardown", (t) => {
 	const { frames, h, element, context } = feedbackFixture(t);

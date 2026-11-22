@@ -99,7 +99,7 @@ export async function readerClipboard(preview = false) {
 			frames.load(0, iframe, 1, {
 				chapter,
 				readingGeneration: "g1",
-				readings,
+				readings: () => readings,
 				current: () => ({ settings, theme: "white", bookUi: DEFAULT_BOOK_UI }),
 				generation: () => 1,
 				root: () => host,
@@ -228,7 +228,7 @@ export async function readerClipboard(preview = false) {
 				frames.load(0, iframe, 1, {
 					chapter,
 					readingGeneration: "g1",
-					readings,
+					readings: () => readings,
 					current: () => ({
 						settings,
 						theme: "white",

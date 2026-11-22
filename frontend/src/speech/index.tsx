@@ -117,6 +117,7 @@ function SpeechSettingsForm({
 	};
 	const selected = selectedVoice(state);
 	const unavailable = speechUnavailableReason(state);
+	const diagnostic = state.error ?? state.voiceListError ?? unavailable;
 	const previewing =
 		state.target?.id === "device-speech-preview" &&
 		(state.status === "starting" ||
@@ -257,13 +258,11 @@ function SpeechSettingsForm({
 					</button>
 				</div>
 			</details>
-			{(unavailable ||
-				state.error ||
+			{(diagnostic ||
 				preferenceHint ||
 				state.target?.id === "device-speech-preview") && (
 				<p className="device-speech-settings-status" role="status">
-					{unavailable ??
-						state.error ??
+					{diagnostic ??
 						(preferenceHint
 							? "已保存，将在下次播放或重播时使用。"
 							: statusLabels[state.status])}
@@ -374,7 +373,8 @@ export function SpeechControls({
 	const { state, controller } = useDeviceSpeech();
 	const reason = speechUnavailableReason(state);
 	const action = speechTargetAction(state, target);
-	const error = reason ?? (action !== "play" ? state.error : null);
+	const error =
+		(action !== "play" ? state.error : null) ?? state.voiceListError ?? reason;
 	const label =
 		action === "pause"
 			? "暂停朗读"
@@ -485,6 +485,7 @@ export function SpeechPlaybackBar() {
 	const unavailable = speechUnavailableReason(state);
 	const error =
 		state.error ??
+		state.voiceListError ??
 		unavailable ??
 		(state.status === "error" ? statusLabels.error : null);
 	const mode = error ? "error" : active ? "active" : "resting";

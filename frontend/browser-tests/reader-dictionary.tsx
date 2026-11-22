@@ -19,6 +19,7 @@ export async function readerDictionary(h: BrowserHarness) {
 	const selectionScene =
 		params.get("scene") === "selection" || selectionLifecycle;
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
+	const { readingsKey } = await import("../src/materials/api");
 	const { SettingsPage } = await import("../src/settings/SettingsPage");
 	const { updateDictionaryLibrary } = await import(
 		"../src/dictionary/dictionary-api"
@@ -148,6 +149,29 @@ export async function readerDictionary(h: BrowserHarness) {
 		},
 	];
 	const segmentReads: string[] = [];
+	const catReadings: Schema["MaterialReadingsResponse"] = {
+		material_id: book.id,
+		version_id: book.version_id,
+		generation_id: "g1",
+		resources: [
+			{
+				resource_id: "r",
+				text_sha256: hash,
+				tokens: [
+					{
+						start: 0,
+						end: 1,
+						surface: "猫",
+						reading: "ネコ",
+						normalized_form: "猫",
+						dictionary_form: "猫",
+						pos: ["名詞"],
+						is_oov: false,
+					},
+				],
+			},
+		],
+	};
 	const requests: Schema["DictionaryLookupRequest"][] = [];
 	let statusReads = 0;
 	let statusResponses = 0;
@@ -159,6 +183,7 @@ export async function readerDictionary(h: BrowserHarness) {
 	let hold = false;
 	const deferred: { release?: () => void } = {};
 	let releaseStatus: (() => void) | undefined;
+	let releaseReadings: (() => void) | undefined;
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
 		if (path === "/api/dictionary" && request.method === "GET") {
@@ -473,15 +498,17 @@ export async function readerDictionary(h: BrowserHarness) {
 				material_id: book.id,
 				version_id: "v1",
 				generation_id: "g1",
-				token_count: 0,
+				token_count: basicsScene ? 1 : 0,
 			});
-		if (path.endsWith("/readings"))
-			return Response.json({
-				material_id: book.id,
-				version_id: "v1",
-				generation_id: "g1",
-				resources: [],
-			});
+		if (path.endsWith("/readings")) {
+			if (basicsScene)
+				await new Promise<void>((resolve) => {
+					releaseReadings = resolve;
+				});
+			return Response.json(
+				basicsScene ? catReadings : { ...catReadings, resources: [] },
+			);
+		}
 		if (path.endsWith("/chapters/chapter")) return Response.json(chapter);
 		if (
 			path.endsWith("/chapters/chapter/segments") ||
@@ -1070,6 +1097,13 @@ export async function readerDictionary(h: BrowserHarness) {
 			'[data-locator-leaf="0"]',
 		);
 		check(frame && leaf, "Loaded reader original must remain mounted");
+		if (basicsScene) {
+			check(readerClient, "Reader must expose its real chapter cache");
+			readerClient.setQueryData(
+				readingsKey(book.id, book.version_id, "other-chapter", "g1"),
+				catReadings,
+			);
+		}
 		await glyphClick(leaf, 0, frame);
 		if (basicsScene) {
 			await h.until(
@@ -1089,7 +1123,29 @@ export async function readerDictionary(h: BrowserHarness) {
 				"An empty library must show a real source-analysis page with no dictionary entries",
 			);
 			checkCardInViewport(card);
-			return "reader basics: enable lookup with no local dictionary, then view reading, romaji and POS";
+			check(
+				requests[0]?.tokens?.length === 0 && releaseReadings,
+				"First lookup must work without borrowing the other chapter's tokens",
+			);
+			button("关闭当前词卡", card).click();
+			releaseReadings();
+			await h.until(
+				() =>
+					readerClient?.getQueryState(
+						readingsKey(book.id, book.version_id, chapter.id, "g1"),
+					)?.status === "success",
+				"Late chapter readings must reach the cache",
+			);
+			check(
+				frame.isConnected && frame.contentDocument === leaf.ownerDocument,
+				"Receiving tokens must preserve the mounted reader document",
+			);
+			await glyphClick(leaf, 0, frame);
+			await h.until(
+				() => requests[1]?.tokens?.[0]?.surface === "猫",
+				"Clicking the same glyph must send the newly arrived chapter token",
+			);
+			return "reader basics: lookup with no local dictionary, then use late chapter tokens in the same document";
 		}
 		await h.until(
 			() =>

@@ -84,7 +84,7 @@ type FrameContext = {
 	active?: () => boolean;
 	chapter: Chapter;
 	readingGeneration: string;
-	readings: ReadingsResponse | undefined;
+	readings?: () => ReadingsResponse | undefined;
 	current: () => {
 		settings: Settings;
 		theme: "white" | "black";
@@ -460,6 +460,19 @@ export class ReaderFrames {
 		if (!part) return;
 		const resource = data.resources.find((r) => r.id === part.resource_id);
 		if (!resource) return;
+		const resourceReadings = () => {
+			const readings = context.readings?.();
+			if (
+				!readings ||
+				readings.material_id !== data.material_id ||
+				readings.version_id !== data.version_id ||
+				readings.generation_id !== context.readingGeneration
+			)
+				return undefined;
+			return readings.resources.find(
+				(item) => item.resource_id === resource.id,
+			);
+		};
 		try {
 			this.inlineTranslation.clear(false);
 			this.flowMotion.clear();
@@ -470,14 +483,8 @@ export class ReaderFrames {
 				part.leaf_start,
 			);
 			if (context.current().bookUi.rubyScope === "all") {
-				const asset = context.readings?.resources.find(
-					(r) => r.resource_id === part.resource_id,
-				);
-				if (
-					!asset ||
-					context.readings?.generation_id !== context.readingGeneration
-				)
-					throw new Error("章节注音暂不可用，请重试。");
+				const asset = resourceReadings();
+				if (!asset) throw new Error("章节注音暂不可用，请重试。");
 				registerReaderFrameTargets(
 					doc,
 					applyAutomaticRuby(doc, projection, asset.tokens, part.start),
@@ -660,10 +667,7 @@ export class ReaderFrames {
 				valid: () => context.active?.() !== false && valid(),
 				projection: () => this.freshProjection(index, data),
 				viewport: context.root(),
-				tokens: () =>
-					context.readings?.resources.find(
-						(item) => item.resource_id === data.parts[index]?.resource_id,
-					)?.tokens ?? [],
+				tokens: () => resourceReadings()?.tokens ?? [],
 			});
 			void Promise.all([
 				doc.fonts.ready,
