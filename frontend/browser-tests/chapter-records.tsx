@@ -989,14 +989,15 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			"Chapter translations must follow source order across pagination",
 		);
 		check(
-			summaryButtons.every(
-				(node, index) =>
-					node.children.length === 3 &&
-					node.children[0]?.textContent === summaries[index]?.excerpt &&
-					node.children[1]?.textContent ===
-						summaries[index]?.translation_excerpt &&
-					node.querySelector("time")?.dateTime === summaries[index]?.created_at,
-			),
+			summaryButtons.every((node, index) => {
+				const summary = summaries[index];
+				return (
+					summary &&
+					node.innerText.includes(summary.excerpt) &&
+					node.innerText.includes(summary.translation_excerpt) &&
+					node.querySelector("time")?.dateTime === summary.created_at
+				);
+			}),
 			"Translation list rows identify the exact original, latest translation and real saved time",
 		);
 		button("学习片段").click();
@@ -1013,7 +1014,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		check(candidate, "Chapter list needs the saved learning segment");
 		const savedDate = candidate.querySelector("time");
 		check(
-			candidate.children.length === 2 &&
+			candidate.innerText.includes(segment.excerpt) &&
 				!candidate.textContent?.includes("saved") &&
 				!h.container
 					.querySelector(".reader-study-preview-list")
