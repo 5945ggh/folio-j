@@ -7,6 +7,7 @@ import { InlineError } from "../Shared";
 import { useAutosavingFields } from "../settings/AutosavingSettings";
 import { getProviders, getSettings, settingsKeys } from "../settings/api";
 import { SettingsLink as Link } from "../settings/SettingsNavigation";
+import { commitVersionedSettings } from "../settings/versioned-settings";
 import {
 	getTranslationSettings,
 	saveTranslationSettings,
@@ -176,14 +177,13 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 				before_characters: fields.before_characters,
 				after_characters: fields.after_characters,
 			});
-			acceptedRevision.current = result.revision;
-			await client.cancelQueries({ queryKey: translationSettingsKey });
-			accept(result);
-			client.setQueryData<TranslationSettings>(
+			const persisted = await commitVersionedSettings(
+				client,
 				translationSettingsKey,
-				(current) =>
-					current && current.revision > result.revision ? current : result,
+				result,
 			);
+			acceptedRevision.current = persisted.revision;
+			accept(persisted);
 		},
 		"请填写目标语言和有效的前后文范围。",
 		{

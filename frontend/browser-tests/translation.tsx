@@ -883,6 +883,11 @@ export async function translationRegression(h: BrowserHarness) {
 	let settingReads = 0;
 	let savedRevision = newer.revision;
 	const writeCount = () => writes.length;
+	let settingsClient!: ReturnType<typeof useQueryClient>;
+	function SettingsFixture() {
+		settingsClient = useQueryClient();
+		return <TranslationSettingsSection />;
+	}
 	let releaseModelSave = () => {};
 	const modelSave = new Promise<void>((resolve) => {
 		releaseModelSave = resolve;
@@ -923,10 +928,11 @@ export async function translationRegression(h: BrowserHarness) {
 			const body =
 				(await request.json()) as components["schemas"]["TranslationSettingsUpdate"];
 			writes.push(body);
+			const revision = writeCount() === 1 ? savedRevision : ++savedRevision;
 			if (writeCount() === 3) await modelSave;
 			return writeCount() === 1
 				? Response.json({ detail: "翻译设置已更新" }, { status: 409 })
-				: Response.json({ ...newer, ...body, revision: ++savedRevision });
+				: Response.json({ ...newer, ...body, revision });
 		}
 		throw new Error(
 			`Unexpected settings request ${request.method} ${url.pathname}`,
@@ -934,7 +940,7 @@ export async function translationRegression(h: BrowserHarness) {
 	});
 	cleanup = await mount(
 		<SettingsDraftProvider>
-			<TranslationSettingsSection />
+			<SettingsFixture />
 		</SettingsDraftProvider>,
 	);
 	try {
@@ -1045,13 +1051,19 @@ export async function translationRegression(h: BrowserHarness) {
 			writeCount() === 3,
 			"A newer edit should wait for the pending model save",
 		);
+		savedRevision = 7;
+		settingsClient.setQueryData(["translation-settings"], {
+			...newer,
+			model_id: "chat",
+			revision: savedRevision,
+		});
 		releaseModelSave();
 		await until(
 			() => writes[3]?.before_sentences === 6,
 			"Finished context edit must autosave",
 		);
 		check(
-			writes[3]?.expected_revision === 4 &&
+			writes[3]?.expected_revision === 7 &&
 				budget.value === "6" &&
 				writes[3]?.model_id === "chat",
 			"Later autosaves must use the last accepted revision",

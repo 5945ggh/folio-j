@@ -40,10 +40,11 @@ export function SettingsPage() {
 		!dictionary &&
 		!dataLocation;
 	const services = section === "providers";
+	const needsSettings = learning || permissions || section === "models";
 	const settings = useQuery({
 		queryKey: settingsKeys.settings,
 		queryFn: getSettings,
-		enabled: !appearance && !dictionary && !translation && !dataLocation,
+		enabled: needsSettings,
 	});
 	const providers = useQuery({
 		queryKey: settingsKeys.providers,
@@ -163,15 +164,12 @@ export function SettingsPage() {
 								</div>
 							)}
 							{models && <ModelSettingsNavigation services={services} />}
-							{!appearance &&
-								!translation &&
-								!services &&
-								settings.isPending && (
-									<p className="settings-loading" role="status">
-										正在加载设置…
-									</p>
-								)}
-							{!appearance && !translation && !services && settings.isError && (
+							{needsSettings && settings.isPending && (
+								<p className="settings-loading" role="status">
+									正在加载设置…
+								</p>
+							)}
+							{needsSettings && settings.isError && (
 								<section className="settings-state">
 									<InlineError error={settings.error} />
 									<button

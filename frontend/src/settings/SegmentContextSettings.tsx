@@ -74,7 +74,7 @@ function ContextForm({ settings }: { settings: SegmentContextSettings }) {
 					expected_revision: Math.max(revision, acceptedRevision.current),
 				});
 				await commitSegmentContextResponse(client, saved, (persisted) => {
-					acceptedRevision.current = saved.revision;
+					acceptedRevision.current = persisted.revision;
 					accept(persisted);
 				});
 			} catch (error) {

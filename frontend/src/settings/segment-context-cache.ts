@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { SegmentContextSettings } from "./segment-context-api";
+import { commitVersionedSettings } from "./versioned-settings.ts";
 
 export const segmentContextKey = ["segment-context-settings"] as const;
 
@@ -8,11 +9,5 @@ export async function commitSegmentContextResponse(
 	response: SegmentContextSettings,
 	accept: (persisted: SegmentContextSettings) => void,
 ) {
-	await client.cancelQueries({ queryKey: segmentContextKey });
-	const persisted = client.setQueryData<SegmentContextSettings>(
-		segmentContextKey,
-		(current) =>
-			current && current.revision > response.revision ? current : response,
-	);
-	if (persisted) accept(persisted);
+	accept(await commitVersionedSettings(client, segmentContextKey, response));
 }

@@ -63,6 +63,7 @@ export async function settingsModels(h: BrowserHarness) {
 	const registrations: ModelInput[] = [];
 	let failRegistration = true;
 	let verificationRequests = 0;
+	let settingsReads = 0;
 	let context: SegmentContextSettings = {
 		enabled: true,
 		before_sentences: 1,
@@ -101,8 +102,10 @@ export async function settingsModels(h: BrowserHarness) {
 			providers = [{ ...current, models: [...current.models, saved] }];
 			return Response.json(saved);
 		}
-		if (request.method === "GET" && path === "/api/settings")
+		if (request.method === "GET" && path === "/api/settings") {
+			settingsReads++;
 			return Response.json(persisted);
+		}
 		if (request.method === "GET" && path === "/api/providers")
 			return Response.json(providers);
 		if (request.method === "GET" && path === "/api/runs")
@@ -483,22 +486,33 @@ export async function settingsModels(h: BrowserHarness) {
 	for (const entry of [
 		"/settings?section=providers",
 		"/settings?section=history",
+		"/settings?section=speech",
 	]) {
+		const before = settingsReads;
 		dispose = await h.mount(<SettingsPage />, "/settings", entry);
 		try {
 			await h.until(
 				() =>
 					!!h.container.querySelector(
-						entry.includes("history")
-							? ".provider-run-history"
-							: ".provider-settings",
+						entry.includes("speech")
+							? ".device-speech-settings"
+							: entry.includes("history")
+								? ".provider-run-history"
+								: ".provider-settings",
 					),
 				`Direct entry ${entry} must load`,
 			);
 			check(
-				tab("服务管理").getAttribute("aria-current") === "page",
-				"Direct service/history entry must select service management",
+				settingsReads === before &&
+					!h.container.textContent?.includes("正在加载设置…") &&
+					!h.container.textContent?.includes("重试设置"),
+				`${entry} must not request or gate on general settings`,
 			);
+			if (!entry.includes("speech"))
+				check(
+					tab("服务管理").getAttribute("aria-current") === "page",
+					"Direct service/history entry must select service management",
+				);
 		} finally {
 			dispose();
 		}
