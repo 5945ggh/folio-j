@@ -18,6 +18,7 @@ import zlib
 from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import AsyncExitStack, asynccontextmanager, closing
 from dataclasses import dataclass, replace
+from glob import escape
 from pathlib import Path
 from typing import Literal, cast
 from uuid import uuid4
@@ -46,6 +47,7 @@ MAX_LOADED_DEFINITION_BYTES = 16 * 1024 * 1024
 MAX_INDEX_BYTES = 2 * 1024 * 1024 * 1024
 MAX_QUERY_RECORDS = 20_000
 BANK_NAME = re.compile(r"term_bank_(\d+)\.json\Z")
+STAGED_LIBRARY_INDEX = re.compile(r"([0-9a-f]{64}\.sqlite3)\.deleting-[0-9a-f]{32}")
 NodeTag = Literal["div", "p", "span", "ul", "ol", "li", "br", "ruby", "rt"]
 NodeRole = Literal["head", "def1", "def2", "dfcn", "exam", "exjp", "excn"]
 NODE_TAGS = {"div", "p", "span", "ul", "ol", "li", "br", "ruby", "rt"}
@@ -293,7 +295,7 @@ class DictionaryStore:
         self.library_path = path.with_name(path.name + ".library")
         self.catalog_path = self.library_path / "catalog.sqlite3"
         self._import_lock = asyncio.Lock()
-        self._deferred_deletions: set[Path] = set()
+        self._deferred_deletions: dict[Path, Path] = {}
 
     @asynccontextmanager
     async def _file_snapshot(self, path: Path) -> AsyncGenerator[DictionarySnapshot]:
@@ -339,15 +341,28 @@ class DictionaryStore:
     def readable_index_path(path: Path) -> Path:
         if path.exists():
             return path
-        return next(path.parent.glob(path.name + ".deleting-*"), path)
+        return next(path.parent.glob(escape(path.name) + ".deleting-*"), path)
 
     @staticmethod
     def _retained_paths(path: Path) -> list[Path]:
-        return list(path.parent.glob(path.name + ".deleting-*"))
+        return list(path.parent.glob(escape(path.name) + ".deleting-*"))
 
     @staticmethod
     def _deleting_path(path: Path) -> Path:
         return path.with_name(path.name + ".deleting-" + uuid4().hex)
+
+    def _staged_indexes(self) -> dict[Path, Path]:
+        """Map only names produced by deletion back to their catalog index paths."""
+        staged = {
+            path: self.path
+            for path in self._retained_paths(self.path)
+            if re.fullmatch(r"[0-9a-f]{32}", path.name.removeprefix(self.path.name + ".deleting-"))
+        }
+        for path in self.library_path.glob("*.sqlite3.deleting-*"):
+            match = STAGED_LIBRARY_INDEX.fullmatch(path.name)
+            if match is not None:
+                staged[path] = self.library_path / match[1]
+        return staged
 
     @asynccontextmanager
     async def _catalog_view(
@@ -439,27 +454,28 @@ class DictionaryStore:
         """Run under the catalog write lock so reimport cannot race file cleanup."""
         _, paths = await self._read_catalog(connection)
         referenced = set(paths.values())
-        candidates = set(self._deferred_deletions)
-        candidates.update(
-            path
-            for path in self.library_path.glob("*.sqlite3")
-            if re.fullmatch(r"[0-9a-f]{64}\.sqlite3", path.name)
-        )
+        candidates = self._deferred_deletions.copy()
+        for path in self.library_path.glob("*.sqlite3"):
+            if re.fullmatch(r"[0-9a-f]{64}\.sqlite3", path.name):
+                candidates[path] = path
         if self.path not in referenced:
             # A restart loses the in-memory queue for a busy legacy deletion.
             # Only recognize healthy old indexes; unknown damaged files stay intact.
             legacy = await self._legacy_status()
             if legacy.ready and legacy.dictionary_id:
-                candidates.add(self.path)
-        for path in candidates - referenced:
+                candidates[self.path] = self.path
+        candidates.update(await asyncio.to_thread(self._staged_indexes))
+        for path, catalog_path in candidates.items():
+            if path in referenced or catalog_path in referenced:
+                self._deferred_deletions.pop(path, None)
+                continue
             try:
                 await asyncio.to_thread(path.unlink, missing_ok=True)
             except OSError:
                 # Windows readers (or another local program) still hold the file.
-                self._deferred_deletions.add(path)
+                self._deferred_deletions[path] = catalog_path
             else:
-                self._deferred_deletions.discard(path)
-        self._deferred_deletions.difference_update(referenced)
+                self._deferred_deletions.pop(path, None)
 
     async def _cleanup_deferred_indexes(self) -> None:
         try:
@@ -717,7 +733,7 @@ class DictionaryStore:
         self, dictionary_id: str, replacement_dictionary_id: str | None
     ) -> DictionaryLibrary:
         staged: list[tuple[Path, Path]] = []
-        cleanup: set[Path] = set()
+        cleanup: dict[Path, Path] = {}
         async with aiosqlite.connect(self.catalog_path) as connection:
             await connection.execute("PRAGMA busy_timeout = 30000")
             await connection.execute("BEGIN EXCLUSIVE")
@@ -768,7 +784,8 @@ class DictionaryStore:
                 for path in paths:
                     # Old committed cleanup failures and interrupted staging use
                     # unique names. Only the current file participates in rollback.
-                    cleanup.update(await asyncio.to_thread(self._retained_paths, path))
+                    for retained in await asyncio.to_thread(self._retained_paths, path):
+                        cleanup[retained] = path
                     retained = self._deleting_path(path)
                     if await asyncio.to_thread(path.exists):
                         try:
@@ -777,10 +794,10 @@ class DictionaryStore:
                             # Windows cannot rename an open SQLite file. The
                             # committed catalog hides it; close/mutation retries
                             # cleanup while holding the catalog write lock.
-                            self._deferred_deletions.add(path)
+                            self._deferred_deletions[path] = path
                         else:
                             staged.append((path, retained))
-                            cleanup.add(retained)
+                            cleanup[retained] = path
                     else:
                         recovered = await asyncio.to_thread(self.readable_index_path, path)
                         if recovered != path:
@@ -796,13 +813,11 @@ class DictionaryStore:
                 finally:
                     await connection.rollback()
                 raise
-        for retained in cleanup:
+        for retained, original in cleanup.items():
             try:
                 await asyncio.to_thread(retained.unlink, missing_ok=True)
             except OSError:
-                # The committed library is authoritative. A later deletion of this
-                # identity retries cleanup; no learning data is involved.
-                pass
+                self._deferred_deletions[retained] = original
         if self._deferred_deletions:
             await self._cleanup_deferred_indexes()
         return library

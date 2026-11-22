@@ -452,14 +452,18 @@ async def test_cli_preserves_readable_dictionary_after_interrupted_delete_before
     assert expected_library.active_dictionary_id == identity
     before_database, before_catalog = _rows(database), _rows(store.catalog_path)
     # A killed deletion leaves the filesystem rename, while SQLite rolls back its catalog txn.
-    retained = source.with_name(source.name + ".deleting-interrupted-test")
+    retained = source.with_name(source.name + ".deleting-" + uuid4().hex)
     source.rename(retained)
+    assert identity is not None
+    await DictionaryStore(store.path).select(identity)
+    assert retained.is_file()
     assert (await store.status()).ready
     async with store.snapshot() as snapshot:
         assert [item.term for item in await snapshot.find_terms([term])] == [term]
 
     backup, restored = tmp_path / "backup", tmp_path / "restored"
     _success(backup_cli("create", backup))
+    assert not list(backup.rglob("*.deleting-*"))
     _success(backup_cli("restore", backup, restored))
     restored_store = DictionaryStore(restored / "app.db.dictionary.sqlite3")
     assert await restored_store.library() == expected_library
@@ -498,13 +502,18 @@ async def test_cli_does_not_revive_committed_dictionary_deletion_with_retained_c
         expected_library = await store.delete(identity)
     assert expected_library.dictionaries == []
     assert expected_library.active_dictionary_id is None
-    assert list(source.parent.glob(source.name + ".deleting-*"))
+    (retained,) = source.parent.glob(source.name + ".deleting-*")
     backup, restored = tmp_path / "backup", tmp_path / "restored"
     _success(backup_cli("create", backup))
+    assert not list(backup.rglob("*.deleting-*"))
+    assert retained.is_file()
     _success(backup_cli("restore", backup, restored))
     restored_store = DictionaryStore(restored / "app.db.dictionary.sqlite3")
     assert await restored_store.library() == expected_library
     assert not (await restored_store.status()).ready
+    restarted = DictionaryStore(store.path)
+    await restarted.import_library_stream(chunks(archive([record("雪")])))
+    assert not retained.exists()
 
 
 def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(

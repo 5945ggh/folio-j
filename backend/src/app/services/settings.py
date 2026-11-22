@@ -239,7 +239,7 @@ async def put_style(session: AsyncSession, style_id: str, data: StyleInput) -> S
 
 
 async def delete_style(session: AsyncSession, style_id: str) -> None:
-    _, _, defaults = await ensure_settings(session)
+    _, _, defaults = await ensure_settings(session, commit=False)
     row = await session.get(Style, style_id)
     if row is None:
         fail(404, "讲解预设不存在")
@@ -269,7 +269,7 @@ async def validate_defaults(session: AsyncSession, data: DefaultsInput | Default
 
 
 async def put_defaults(session: AsyncSession, data: DefaultsInput) -> DefaultsResponse:
-    _, _, defaults = await ensure_settings(session)
+    _, _, defaults = await ensure_settings(session, commit=False)
     await validate_defaults(session, data)
     for key, value in data.model_dump().items():
         setattr(defaults, key, value)

@@ -32,7 +32,7 @@ from app.platform_io import (
     publish_directory,
 )
 from app.resources import RESOURCE_ROOT
-from app.services.dictionary_store import DictionaryStore
+from app.services.dictionary_store import STAGED_LIBRARY_INDEX, DictionaryStore
 
 FIRST_SUPPORTED_REVISION = "0004_translation_reader_removal"
 COMPONENTS = {
@@ -287,15 +287,15 @@ def _snapshot(source: Path, target: Path) -> None:
     os.chmod(target, 0o600)
 
 
-def _copy_dictionary(source: Path, target: Path) -> None:
-    if source.is_file():
-        _snapshot(source, target)
-        return
+def _copy_dictionary_library(source: Path, target: Path) -> None:
+    """Defer managed staging files to the catalog-based recovery pass."""
     files, directories = _tree(source)
     target.mkdir(mode=0o700)
     for directory in sorted(directories, key=lambda name: len(Path(name).parts)):
         (target / directory).mkdir(mode=0o700)
     for name in sorted(files):
+        if "catalog.sqlite3" in files and STAGED_LIBRARY_INDEX.fullmatch(name):
+            continue
         item = source / name
         if name.endswith(("-wal", "-shm")):
             if not Path(str(item)[:-4]).is_file():
@@ -314,11 +314,11 @@ def _copy_dictionaries(index: Path, library: Path, staging: Path) -> None:
     if index.exists():
         if not index.is_file():
             raise BackupError("旧词典索引不是普通文件")
-        _copy_dictionary(index, target_index)
+        _snapshot(index, target_index)
     if library.exists():
         if not library.is_dir():
             raise BackupError("词典 library 不是目录")
-        _copy_dictionary(library, target_library)
+        _copy_dictionary_library(library, target_library)
     catalog = target_library / "catalog.sqlite3"
     if catalog.exists():
         with closing(_connect(catalog)) as connection:

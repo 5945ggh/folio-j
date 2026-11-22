@@ -6,6 +6,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from httpx import Response
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.ext.asyncio import AsyncSession
 from test_settings_api import (
     create_provider,
     settings_client,
@@ -13,6 +17,9 @@ from test_settings_api import (
 from test_settings_api import (
     offline_discovery as offline_discovery,
 )
+
+from app.services import settings as settings_service
+from app.settings_models import Defaults, Profile, Style
 
 PROFILE = {"native_language": "日本語", "explain_language": "中文", "level_note": "N2"}
 
@@ -76,6 +83,64 @@ async def test_concurrent_first_patches_preserve_both_groups(tmp_path: Path) -> 
         assert current["profile"] == PROFILE
         assert current["defaults"]["permission_mode"] == "full_access"
         assert len(current["styles"]) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "delete_first", [True, False], ids=["delete-then-patch", "put-then-delete"]
+)
+async def test_default_style_remains_valid_across_competing_writes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, delete_first: bool
+) -> None:
+    async with settings_client(tmp_path / "folio.db") as client:
+        defaults = (await client.get("/api/settings")).json()["defaults"]
+        created = await client.post(
+            "/api/settings/styles", json={"name": "细读", "body_md": "逐句"}
+        )
+        style_id = created.json()["id"]
+        style_url = f"/api/settings/styles/{style_id}"
+
+        async def competing_request() -> Response:
+            if delete_first:
+                return await client.patch(
+                    "/api/settings", json={"defaults": {"style_id": style_id}}
+                )
+            return await client.delete(style_url)
+
+        original_ensure = settings_service.ensure_settings
+
+        async def interleave(
+            session: AsyncSession, *, commit: bool = True
+        ) -> tuple[Profile, list[Style], Defaults]:
+            result = await original_ensure(session, commit=commit)
+            monkeypatch.setattr(settings_service, "ensure_settings", try_without_waiting)
+            with pytest.raises(OperationalError) as blocked:
+                await competing_request()
+            assert isinstance(blocked.value.orig, sqlite3.OperationalError)
+            assert blocked.value.orig.sqlite_errorcode == sqlite3.SQLITE_BUSY
+            return result
+
+        async def try_without_waiting(
+            session: AsyncSession, *, commit: bool = True
+        ) -> tuple[Profile, list[Style], Defaults]:
+            await session.execute(text("PRAGMA busy_timeout = 0"))
+            return await original_ensure(session, commit=commit)
+
+        monkeypatch.setattr(settings_service, "ensure_settings", interleave)
+        if delete_first:
+            assert (await client.delete(style_url)).status_code == 204
+        else:
+            saved = await client.put(
+                "/api/settings/defaults", json={**defaults, "style_id": style_id}
+            )
+            assert saved.status_code == 200, saved.text
+        monkeypatch.setattr(settings_service, "ensure_settings", original_ensure)
+        assert (await competing_request()).status_code == (422 if delete_first else 409)
+        current = (await client.get("/api/settings")).json()
+        assert current["defaults"]["style_id"] == (
+            defaults["style_id"] if delete_first else style_id
+        )
+        assert current["defaults"]["style_id"] in {item["id"] for item in current["styles"]}
 
 
 @pytest.mark.asyncio
