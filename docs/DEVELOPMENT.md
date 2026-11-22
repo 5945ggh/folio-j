@@ -203,11 +203,10 @@ python3 scripts/package_release.py --ref HEAD --version 0.1.0+candidate.1 --outp
 
 目录包在构建机器上预构建前端、捆绑 Python 与生产依赖，使用者直接启动本机服务并在系统浏览器中使用，无需安装 Python 或 Node.js。它可作为公开 beta 的实验性附件，与源码 ZIP 一同提供；各版本实际提供的产物以发行页为准，跨系统与架构需要分别构建和验证。
 
-先构建同一工作区的前端，再用独立环境安装锁定的生产依赖与 `packaging` 组。输出目录必须尚不存在。POSIX shell：
+先安装锁定的前端依赖，再用独立环境安装锁定的生产依赖与 `packaging` 组。打包器通过 `pnpm` 将当前工作区的前端构建到临时目录，并将该次产物打入目录包。输出目录必须尚不存在。POSIX shell：
 
 ```sh
 pnpm --dir frontend install --frozen-lockfile
-pnpm --dir frontend build
 UV_PROJECT_ENVIRONMENT="$PWD/.cache/frozen/venv" uv sync --project backend --locked --no-dev --group packaging
 .cache/frozen/venv/bin/python scripts/package_frozen.py --version 0.1.0-frozen-trial.4 --output dist/frozen-trial.4
 .cache/frozen/venv/bin/python scripts/smoke_frozen.py dist/frozen-trial.4/Folio-J
@@ -249,8 +248,6 @@ try {
     if (Test-Path $frozenOutput) { throw "输出目录已存在：$frozenOutput" }
     pnpm --dir frontend install --frozen-lockfile
     if ($LASTEXITCODE -ne 0) { throw '前端依赖安装失败' }
-    pnpm --dir frontend build
-    if ($LASTEXITCODE -ne 0) { throw '前端构建失败' }
     # 保持锁文件中的源配置，退出时恢复原覆盖。
     Remove-Item Env:UV_DEFAULT_INDEX -ErrorAction SilentlyContinue
     if ($frozenUseMirror) {
