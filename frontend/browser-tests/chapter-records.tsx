@@ -218,8 +218,15 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		}),
 	);
 	const speech = fakeSpeech();
+	const checkPlaybackLayout =
+		!preview &&
+		params.toString() === "suite=chapter-records" &&
+		innerWidth >= 1000;
+	if (checkPlaybackLayout)
+		Object.assign(window.speechSynthesis, { pause() {}, resume() {} });
 	speech.setVoicesAvailable(
-		preview && !!params.get("panel")?.endsWith("-speech-ended"),
+		checkPlaybackLayout ||
+			(preview && !!params.get("panel")?.endsWith("-speech-ended")),
 	);
 	const [{ MaterialReader }, { targetIdentity }] = await Promise.all([
 		import("../src/materials/MaterialReader"),
@@ -693,6 +700,48 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
 		);
 		containedPanel();
+		if (checkPlaybackLayout) {
+			const { getSpeechController } = await import("../src/speech/browser");
+			const playback = getSpeechController();
+			const observed: Element[] = [];
+			const observe = ResizeObserver.prototype.observe;
+			ResizeObserver.prototype.observe = function (element, options) {
+				if (element.matches(".device-speech-bar")) observed.push(element);
+				observe.call(this, element, options);
+			};
+			try {
+				playback.play({
+					id: "record-layout-check",
+					text: "朗読",
+					label: "阅读选区",
+				});
+				await h.until(
+					() => observed.length > 0,
+					"Record layout must observe the actual playback bar",
+				);
+				const subscriptions = observed.length;
+				speech.start();
+				playback.pause();
+				await h.until(
+					() =>
+						!!h.container.querySelector(
+							'.device-speech-bar button[aria-label="继续朗读"]',
+						),
+					"Playback must pause with the bar still mounted",
+				);
+				playback.resume();
+				playback.setRate(0.8);
+				await new Promise(requestAnimationFrame);
+				check(
+					observed.length === subscriptions,
+					"Pause, resume, and speed changes must keep the playback bar's layout observer",
+				);
+			} finally {
+				ResizeObserver.prototype.observe = observe;
+				playback.dismiss();
+				speech.setVoicesAvailable(false);
+			}
+		}
 		if (preview && previewPanel === "translation-removal") {
 			const target = results[1];
 			check(target, "Removal preview requires a saved target");

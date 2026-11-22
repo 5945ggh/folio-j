@@ -724,6 +724,37 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 			!panel()?.textContent?.includes("古い ·"),
 			"Late old response must not overwrite current search",
 		);
+		check(client, "Search must expose its query client");
+		const segmentKey = ["segment", "search-scope-check"];
+		const beforeRefresh = calls.length;
+		client.setQueryData(segmentKey, {
+			source_id: book.source_id,
+			material_provenance: { ...reference, material_id: "other-book" },
+		});
+		await client.invalidateQueries({ queryKey: segmentKey });
+		await settle();
+		check(
+			calls.length === beforeRefresh,
+			"Another book's segment must not refresh this book's searches",
+		);
+		for (const data of [
+			{ source_id: book.source_id, material_provenance: reference },
+			null,
+		]) {
+			const start = calls.length;
+			client.setQueryData(segmentKey, data);
+			await client.invalidateQueries({ queryKey: segmentKey });
+			await h.until(
+				() => calls.length > start,
+				"A changed segment from this book or with unknown ownership must refresh segment results",
+			);
+		}
+		check(
+			calls
+				.slice(beforeRefresh)
+				.every((url) => url.searchParams.get("kind") === "segment"),
+			"Segment changes must preserve original, translation, and bookmark results",
+		);
 		tool("本书搜索").click();
 		await h.until(() => !panel(), "Search must close");
 		tool("本书搜索").click();

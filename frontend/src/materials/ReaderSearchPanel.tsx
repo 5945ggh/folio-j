@@ -9,6 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import type { Segment } from "../content";
 import { useViewActivity } from "../navigation/view-activity";
 import type { Material } from "./api";
 import { restoreReaderPanelFocus } from "./motion";
@@ -351,17 +352,34 @@ export function ReaderSearchPanel(props: Props) {
 			client.getQueryCache().subscribe((event) => {
 				if (event.type !== "updated" || event.action.type !== "invalidate")
 					return;
-				const [kind, scope] = event.query.queryKey;
-				const relevant =
-					((kind === "material-chapter-segments" ||
-						kind === "material-chapter-translations") &&
-						scope === book.id) ||
-					(kind === "source-segments" && scope === book.source_id) ||
-					kind === "segment";
-				if (relevant)
-					void client.invalidateQueries({
-						queryKey: readerSearchKey(book.id, book.version_id),
-					});
+				const [kind, scope, version] = event.query.queryKey;
+				let category: "segment" | "translation";
+				if (
+					kind === "material-chapter-segments" ||
+					kind === "material-chapter-translations"
+				) {
+					if (scope !== book.id || version !== book.version_id) return;
+					category =
+						kind === "material-chapter-segments" ? "segment" : "translation";
+				} else if (kind === "source-segments" && scope === book.source_id) {
+					category = "segment";
+				} else if (kind === "segment") {
+					const segment = event.query.state.data as Segment | undefined;
+					if (segment?.source_id && segment.source_id !== book.source_id)
+						return;
+					const origin = segment?.material_provenance;
+					if (
+						origin === null ||
+						(origin &&
+							(origin.material_id !== book.id ||
+								origin.version_id !== book.version_id))
+					)
+						return;
+					category = "segment";
+				} else return;
+				void client.invalidateQueries({
+					queryKey: [...readerSearchKey(book.id, book.version_id), category],
+				});
 			}),
 		[client, book.id, book.source_id, book.version_id],
 	);

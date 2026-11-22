@@ -129,9 +129,8 @@ export function ChapterRecords(props: Props) {
 	callbacks.current = { onEmphasize, onClose };
 	const id = useId();
 	const speech = getSpeechController();
-	const speechState = useSyncExternalStore(
-		speech.subscribe,
-		speech.getSnapshot,
+	const hasPlayback = useSyncExternalStore(speech.subscribe, () =>
+		Boolean(speech.getSnapshot().target),
 	);
 	const [layout, setLayout] = useState<{
 		position: ReturnType<typeof translationCardPosition>;
@@ -202,7 +201,7 @@ export function ChapterRecords(props: Props) {
 	useLayoutEffect(() => {
 		const node = element.current;
 		if (!node || inactive) return;
-		const playback = speechState.target
+		const playback = hasPlayback
 			? node
 					.closest(".reader-r1")
 					?.querySelector<HTMLElement>(".device-speech-bar")
@@ -287,7 +286,7 @@ export function ChapterRecords(props: Props) {
 		inactive,
 		direction,
 		anchorPlacement,
-		speechState,
+		hasPlayback,
 	]);
 	useLayoutEffect(() => {
 		manual.current = manualPosition;

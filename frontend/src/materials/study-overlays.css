@@ -53,24 +53,6 @@
 	outline: 1px solid var(--reader-tool-focus);
 	outline-offset: -2px;
 }
-.reader-study-records {
-	max-height: min(340px, calc(100dvh - 170px));
-	overflow: auto;
-}
-.reader-study-records article {
-	padding: 8px 2px;
-	border-top: 1px solid var(--reader-line);
-}
-.reader-study-records p {
-	margin: 0 0 4px;
-	white-space: pre-wrap;
-	overflow-wrap: anywhere;
-	line-height: 1.8;
-}
-.reader-study-records button {
-	text-decoration: underline;
-	text-underline-offset: 3px;
-}
 .reader-study-notice {
 	top: 66px;
 	left: 50%;
@@ -132,19 +114,6 @@
 	font-size: 12px;
 	box-shadow: none;
 	cursor: pointer;
-}
-.reader-study-records small {
-	display: block;
-	color: var(--reader-muted);
-	overflow-wrap: anywhere;
-	font-size: 10px;
-}
-.reader-study-list-hint {
-	color: var(--reader-muted);
-	font-size: 11px;
-}
-.reader-study-records article:focus-within {
-	background: var(--reader-soft);
 }
 @media (max-width: 820px) {
 	.reader-r1 .reader-heading-actions button {
