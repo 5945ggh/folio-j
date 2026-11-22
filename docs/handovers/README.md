@@ -6,11 +6,8 @@
 
 | 要确认的问题 | 入口与职责 |
 | --- | --- |
-| 首个公开 beta 的发行约定与演练 | [源码包与恢复演练](BETA_SOURCE_CANDIDATE.md)，含版本标识、发布记录入口及历史候选包验证范围 |
-| beta.2 怎样收口与验证 | [beta.2 发布准备与验收](BETA_2_RELEASE_ACCEPTANCE.md)，记录候选范围、遗留视觉分支、恢复验证和定版待办 |
-| beta.3 的源码包与样书怎样交付 | [beta.3 发布准备与验收](BETA_3_RELEASE_ACCEPTANCE.md)，记录候选验收、Windows 免安装包暂缓及正式发布入口 |
-| Windows 源码、冻结包及数据位置怎样验证 | [Windows 验收与实机清单](WINDOWS_ACCEPTANCE.md)，集中重建接力、首次选择、故障恢复、数据保护与阅读体验的待验步骤 |
 | 当前能力、实现差额与验证限制 | [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)，统一维护核对版本及验收入口 |
+| Windows 源码、冻结包及数据位置怎样验证 | [Windows 验收与实机清单](WINDOWS_ACCEPTANCE.md)，集中重建接力、首次选择、故障恢复、数据保护与阅读体验的待验步骤 |
 | EPUB 学习衔接接下来做什么 | [阶段安排](epub-reading/README.md#下一阶段接力顺序)：材料对话、消息引用和从讨论形成讲解；[接手提示词](epub-reading/AGENT_PROMPT.md)引用本安排 |
 | 阅读实践还有哪些候选与验证事项 | [实际阅读评测计划](reading-practice/PLAN.md)，记录阅读体验候选、数据保护和后续验证条件 |
 | 删除书籍时怎样保留或一并清理学习积累 | [可选清理验收](reading-practice/BOOK_DELETE_LEARNING_ACCEPTANCE.md)，记录精确关联范围、事务回滚、缓存隔离与浏览器检查 |
@@ -57,6 +54,7 @@
 
 | 范围 | 计划、设计与验收证据 |
 | --- | --- |
+| beta 发行候选 | [beta.1 源码包与恢复演练](BETA_SOURCE_CANDIDATE.md)、[beta.2 发布准备与验收](BETA_2_RELEASE_ACCEPTANCE.md)、[beta.3 发布准备与验收](BETA_3_RELEASE_ACCEPTANCE.md) |
 | Windows 源码运行 | [本机与七轮 CI 记录](archived/WINDOWS_CI_ACCEPTANCE.md)；未完成的实机检查继续使用[活动清单](WINDOWS_ACCEPTANCE.md) |
 | 冻结包与数据位置 | [冻结包修复验收](archived/WINDOWS_FROZEN_ACCEPTANCE.md)、[数据位置验收](archived/DATA_LOCATION_ACCEPTANCE.md)；当前重建与实机步骤使用[活动清单](WINDOWS_ACCEPTANCE.md) |
 | 数据库与存储 | [开发期基线](archived/DATABASE_BASELINE_ACCEPTANCE.md)、[迁移基线整理](archived/DATABASE_MIGRATION_ACCEPTANCE.md)、[EPUB 编译存储](archived/EPUB_STORAGE_ACCEPTANCE.md)、[材料独立删除](archived/MATERIAL_DELETION_ACCEPTANCE.md)、[来源删除资源清理](archived/SOURCE_DELETION_CLEANUP_ACCEPTANCE.md)、[导入书卡反馈](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md) |

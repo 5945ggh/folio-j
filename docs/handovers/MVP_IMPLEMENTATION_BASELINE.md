@@ -1,10 +1,10 @@
 # 第一轮 MVP 实施基线
 
-> 状态核对：2026-11-17，以 `main b89189ab` 为起点，`codex/reader-lookup-continuity` 分支落实查词连续性与键盘滚动调整。本文件说明该开发快照的能力、缺口与验证范围；发布包的版本、附件和实际验收以 [beta.1](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.1)／[beta.2](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.2)发布记录为准。
+> 状态核对：2026-11-22，代码基准为本地 `main` 的 `ff268f0d`，已包含查词连续性与键盘滚动调整（`6e0de4c1`）。
 
 产品规则见 [PRD](../PRD.md)与[领域术语](../GLOSSARY.md)，实现机制见[架构](../ARCHITECTURE.md)，具体交互见[阅读与导航](../INFORMATION_ARCHITECTURE.md)。后续安排从 [EPUB 阶段](epub-reading/README.md)和[阅读评测计划](reading-practice/PLAN.md)进入；历次实施起点、修复经过和检查结果由[验收索引](README.md#archived)承接。
 
-beta.3 发行范围为源码包与样书；11 月 16 日决定暂缓 Windows 免安装包，目录访问故障与选择交互留待独立修复。候选与验证见[发布准备](BETA_3_RELEASE_ACCEPTANCE.md)，正式附件见[发布记录](https://github.com/5945ggh/folio-j/releases/tag/v0.1.0-beta.3)。
+beta.1 至 beta.3 的正式附件与各版实际验收范围统一见[发布记录](https://github.com/5945ggh/folio-j/releases)。beta.3 发布源码包与样书，暂缓 Windows 免安装包；原因及候选包验证见 [beta.3 发布准备与验收](BETA_3_RELEASE_ACCEPTANCE.md)。
 
 ## 1. 当前实现、差额与验收依据
 

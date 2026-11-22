@@ -88,9 +88,9 @@ Remove-Item Env:FOLIO_J_DATABASE_PATH
 3. **选择恢复库**：运行以下命令打开数据位置选择页，选择「打开已有数据」并填入刚恢复的目录（若此前设置了环境变量 `FOLIO_J_DATABASE_PATH`，请先移除该变量）：
 
    ```sh
-   # 源码版
+   # 源码发行包
    pnpm --dir frontend build
-   uv run --project backend python -m app.launcher start --choose-data
+   uv run --project backend --no-dev python -m app.launcher start --choose-data
 
    # macOS / Linux 免安装目录包（Windows 使用 .\Folio-J.exe start --choose-data）
    ./Folio-J start --choose-data

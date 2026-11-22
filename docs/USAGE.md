@@ -112,8 +112,8 @@
 如需主动重新选择数据位置（例如切换学习库，或打开刚恢复的备份库），请先停止服务，再加 `--choose-data` 参数启动（这只切换读取位置，不会搬迁已有文件）：
 
 ```sh
-# 源码版
-uv run --project backend python -m app.launcher start --choose-data
+# 源码发行包
+uv run --project backend --no-dev python -m app.launcher start --choose-data
 
 # 免安装目录包（Windows PowerShell 使用 .\Folio-J.exe start --choose-data）
 ./Folio-J start --choose-data
@@ -134,7 +134,7 @@ dev_port = 5187
 
 - `path` 需填写包含文件名的完整绝对路径（支持 `~/`）。
 - Windows 推荐写成正斜杠（如 `path = "C:/Users/你的用户名/Folio-J/app.db"`），或使用 TOML 单引号保留反斜杠（如 `path = 'D:\学习资料\app.db'`），避免在双引号中直接使用未转义的反斜杠。
-- 修改配置后，可运行 `just data-path`（未安装 `just` 时运行 `uv run --project backend python -m app.launcher data-path`）核对当前生效的数据库路径。
+- 修改配置后，可运行 `just data-path` 核对当前生效的数据库路径。使用源码发行包且未安装 `just` 时，运行 `uv run --project backend --no-dev python -m app.launcher data-path`。
 - **注意**：启动页已记住的位置优先于配置文件中的 `path`，且修改配置文件不会自动搬迁已有数据库文件。
 
 ### 配置优先级与高级选项
