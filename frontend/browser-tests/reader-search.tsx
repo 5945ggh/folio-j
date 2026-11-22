@@ -125,7 +125,11 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 			});
 		if (path === "/api/settings/context-copy")
 			return Response.json(defaultContextCopySettings);
-		if (path.endsWith("/search") || path.endsWith("/record-search")) {
+		if (
+			request.method === "GET" &&
+			(path === `/api/materials/${book.id}/search` ||
+				path === `/api/materials/${book.id}/record-search`)
+		) {
 			calls.push(url);
 			const q = url.searchParams.get("q") ?? "";
 			const kind = url.searchParams.get("kind");
@@ -218,7 +222,10 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 			return Response.json(savedTranslation);
 		if (path === "/api/translation-results/translation-normal")
 			return Response.json(normalTranslation);
-		if (path.endsWith(`/chapters/${chapter.id}/segments`)) {
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/chapters/${chapter.id}/segments`
+		) {
 			if (segmentRead === "error")
 				return Response.json({ detail: "章片段暂不可用" }, { status: 503 });
 			if (segmentRead === "pending") {
@@ -227,12 +234,15 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 				segmentPending = false;
 			}
 			return Response.json(
-				readerSessionFixtureData(path, {
+				readerSessionFixtureData(request.method, path, {
 					studyRecords: segmentRead !== "deleted",
 				}),
 			);
 		}
-		if (path.endsWith(`/chapters/${chapter.id}/translations`)) {
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/chapters/${chapter.id}/translations`
+		) {
 			if (scene === "translation-read-error" || translationReadFails)
 				return Response.json({ detail: "章译文暂不可用" }, { status: 503 });
 			if (scene === "translation-read-pending" || pendingTranslationRefresh) {
@@ -257,13 +267,19 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 				unavailable_count: 0,
 			} satisfies Schema["MaterialChapterTranslations"]);
 		}
-		if (path === `/api/materials/${book.id}/translations`)
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/translations`
+		)
 			return Response.json({
 				results: [normalTranslation],
 				tasks: [],
 				next_offset: null,
 			});
-		if (path.endsWith("/bookmarks/bookmark-saved")) {
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/bookmarks/bookmark-saved`
+		) {
 			bookmarkRequested = true;
 			await bookmarkGate;
 			return Response.json({
@@ -286,7 +302,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 				},
 			} satisfies Schema["BookmarkResponse"]);
 		}
-		if (path === `/api/materials/${book.id}`)
+		if (request.method === "GET" && path === `/api/materials/${book.id}`)
 			return Response.json({
 				...book,
 				reading_position: position,
@@ -300,9 +316,15 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 					},
 				],
 			} satisfies Schema["MaterialResponse"]);
-		if (path.endsWith(`/chapters/${otherChapter.id}`))
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/chapters/${otherChapter.id}`
+		)
 			return Response.json(otherChapter);
-		if (path.endsWith("/reading-position") && request.method === "PUT") {
+		if (
+			path === `/api/materials/${book.id}/reading-position` &&
+			request.method === "PUT"
+		) {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			positionWrites.push(update);
 			position = {
@@ -313,7 +335,9 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 			};
 			return Response.json(position);
 		}
-		const data = readerSessionFixtureData(path);
+		const data = readerSessionFixtureData(request.method, path, {
+			extraChapter: otherChapter,
+		});
 		if (data !== undefined) return Response.json(data);
 		throw new Error(`Unmocked search request ${request.method} ${path}`);
 	});

@@ -7,6 +7,7 @@ import { startAppTheme } from "../src/theme/browser";
 import { THEME_STORAGE_KEY, type ThemeMode } from "../src/theme/preference";
 import { background, color, luminance, over } from "./color-contrast";
 import type { BrowserHarness } from "./harness";
+import { readerBaseResponse } from "./reader-base-fixture";
 import { materialSegment } from "./segment-materials";
 import { makeThread, provider, settings } from "./workbench";
 
@@ -106,6 +107,13 @@ export async function appTheme(h: BrowserHarness, preview = false) {
 	const { App, appRoutes } = await import("../src/App");
 	const check: BrowserHarness["check"] = h.check;
 	const params = new URLSearchParams(location.search);
+	const readerBook = {
+		...book,
+		chapters: [
+			{ id: chapter.id, title: chapter.title, level: 0, part_count: 1 },
+		],
+		reading_position: null,
+	};
 	const completed: string[] = [];
 	const failures: string[] = [];
 	const verify = (condition: unknown, message: string) => {
@@ -123,7 +131,8 @@ export async function appTheme(h: BrowserHarness, preview = false) {
 		if (path === "/api/runs") return Response.json([]);
 		if (path === "/api/sources") return Response.json([source]);
 		if (path === "/api/catalog/sources") return page([source]);
-		if (path === "/api/sources/source") return Response.json(source);
+		if (request.method === "GET" && path === "/api/sources/source")
+			return Response.json(source);
 		if (path === "/api/materials") return page([book]);
 		if (path.endsWith("/catalog/segments")) return page([segment]);
 		if (path.endsWith("/catalog/analyses")) return page([analysis]);
@@ -166,49 +175,10 @@ export async function appTheme(h: BrowserHarness, preview = false) {
 				],
 				next_cursor: null,
 			});
-		if (path === "/api/materials/book" && request.method === "GET")
-			return Response.json({
-				...book,
-				chapters: [
-					{ id: chapter.id, title: chapter.title, level: 0, part_count: 1 },
-				],
-				reading_position: null,
-			});
-		if (path.endsWith("/opened") || path.endsWith("/usage"))
-			return Response.json({
-				material_id: book.id,
-				status: "in_progress",
-				revision: 1,
-				last_opened_at: timestamp,
-				updated_at: timestamp,
-			});
-		if (path.endsWith("/readings/prepare"))
-			return Response.json({
-				material_id: book.id,
-				version_id: book.version_id,
-				generation_id: "generation",
-				token_count: 0,
-			});
-		if (path.endsWith("/readings"))
-			return Response.json({
-				material_id: book.id,
-				version_id: book.version_id,
-				generation_id: "generation",
-				resources: [],
-			});
-		if (path.endsWith("/chapters/chapter")) return Response.json(chapter);
 		if (
-			path.endsWith("/chapters/chapter/segments") ||
-			path.endsWith("/chapters/chapter/translations")
-		)
-			return Response.json({
-				items: [],
-				next_cursor: null,
-				unavailable_count: 0,
-			});
-		if (path.endsWith("/translations"))
-			return Response.json({ results: [], tasks: [], next_offset: null });
-		if (path.endsWith("/reading-position") && request.method === "PUT") {
+			path === `/api/materials/${book.id}/reading-position` &&
+			request.method === "PUT"
+		) {
 			const body: Schema["ReadingPositionUpdate"] = await request.json();
 			return Response.json({
 				...body,
@@ -217,7 +187,7 @@ export async function appTheme(h: BrowserHarness, preview = false) {
 				updated_at: timestamp,
 			});
 		}
-		throw new Error(`Unmocked app theme ${request.method} ${path}`);
+		return readerBaseResponse(request.method, path, readerBook, [chapter]);
 	});
 	const find = <T extends Element = HTMLElement>(selector: string): T => {
 		const node = h.container.querySelector<T>(selector);

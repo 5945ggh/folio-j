@@ -146,14 +146,16 @@ export async function readerSession(
 			/^\/api\/materials\/([^/]+)/,
 		)?.[1];
 		const path = actualPath.replace(
-			"/api/materials/other",
+			/^\/api\/materials\/other(?=\/|$)/,
 			`/api/materials/${materialId}`,
 		);
 		check(
 			request.method === "GET" ||
 				(request.method === "POST" &&
-					(path.endsWith("/readings/prepare") || path.endsWith("/opened"))) ||
-				(request.method === "PUT" && path.endsWith("/reading-position")),
+					(path === `/api/materials/${materialId}/readings/prepare` ||
+						path === `/api/materials/${materialId}/opened`)) ||
+				(request.method === "PUT" &&
+					path === `/api/materials/${materialId}/reading-position`),
 			`Unexpected reader side effect ${request.method} ${actualPath}`,
 		);
 		const timing: RequestTiming = {
@@ -170,13 +172,13 @@ export async function readerSession(
 				return Response.json({ detail: "材料不存在" }, { status: 404 });
 			}
 		}
-		let data = readerSessionFixtureData(path, {
+		let data = readerSessionFixtureData(request.method, path, {
 			realApp: realApp || retained,
 			invalidProvenance,
 			addedStudyRecord,
 		});
-		if (path.endsWith("/opened")) opened++;
-		if (path.endsWith("/usage")) usageReads++;
+		if (path === `/api/materials/${materialId}/opened`) opened++;
+		if (path === `/api/materials/${materialId}/usage`) usageReads++;
 		if (path === `/api/materials/${materialId}` && request.method === "GET")
 			data = {
 				...book,
@@ -193,7 +195,7 @@ export async function readerSession(
 							}
 						: null),
 			} satisfies Schema["MaterialResponse"];
-		else if (path.endsWith("/search"))
+		else if (path === `/api/materials/${materialId}/search`)
 			data = {
 				material_id: materialId,
 				version_id: versionId,
@@ -203,7 +205,7 @@ export async function readerSession(
 				offset: 0,
 				limit: 50,
 			} satisfies Schema["MaterialSearchResponse"];
-		else if (path.endsWith("/record-search")) {
+		else if (path === `/api/materials/${materialId}/record-search`) {
 			const url = new URL(request.url);
 			const kind = url.searchParams.get("kind");
 			check(
@@ -220,7 +222,10 @@ export async function readerSession(
 				limit: 40,
 				items: [],
 			} satisfies Schema["MaterialRecordSearchResponse"];
-		} else if (path.endsWith("/reading-position") && request.method === "PUT") {
+		} else if (
+			path === `/api/materials/${materialId}/reading-position` &&
+			request.method === "PUT"
+		) {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			saved++;
 			data = {

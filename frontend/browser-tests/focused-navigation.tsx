@@ -73,8 +73,10 @@ export async function focusedNavigation(h: BrowserHarness) {
 		check(
 			request.method === "GET" ||
 				(request.method === "POST" &&
-					(path.endsWith("/readings/prepare") || path.endsWith("/opened"))) ||
-				(request.method === "PUT" && path.endsWith("/reading-position")),
+					(path === `/api/materials/${fixture.materialId}/readings/prepare` ||
+						path === `/api/materials/${fixture.materialId}/opened`)) ||
+				(request.method === "PUT" &&
+					path === `/api/materials/${fixture.materialId}/reading-position`),
 			`Navigation must not write content or invoke a model: ${request.method} ${path}`,
 		);
 		if (path === "/api/segments/saved") {
@@ -104,9 +106,15 @@ export async function focusedNavigation(h: BrowserHarness) {
 		if (path === "/api/sources") return Response.json([]);
 		if (path === "/api/materials")
 			return Response.json({ items: [], page: 1, page_size: 50, total: 0 });
-		if (path === `/api/materials/${fixture.materialId}`)
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${fixture.materialId}`
+		)
 			return Response.json({ ...fixture.book, reading_position: position });
-		if (path.endsWith("/reading-position")) {
+		if (
+			request.method === "PUT" &&
+			path === `/api/materials/${fixture.materialId}/reading-position`
+		) {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			position = {
 				...update,
@@ -142,6 +150,7 @@ export async function focusedNavigation(h: BrowserHarness) {
 		)
 			return Response.json({ items: [], next_cursor: null });
 		const data = readerSessionFixtureData(
+			request.method,
 			path.replace("/api/segments/other", "/api/segments/saved"),
 		);
 		check(
@@ -633,7 +642,7 @@ export async function focusedNavigation(h: BrowserHarness) {
 		);
 		check(releaseStaleRead, "Test must control the obsolete Segment response");
 		releaseStaleRead(
-			Response.json(readerSessionFixtureData("/api/segments/saved")),
+			Response.json(readerSessionFixtureData("GET", "/api/segments/saved")),
 		);
 		staleRead = undefined;
 		await new Promise<void>((resolve) =>
@@ -688,7 +697,7 @@ export async function focusedNavigation(h: BrowserHarness) {
 	} finally {
 		releaseSegment?.();
 		releaseStaleRead?.(
-			Response.json(readerSessionFixtureData("/api/segments/saved")),
+			Response.json(readerSessionFixtureData("GET", "/api/segments/saved")),
 		);
 		if (!capture) dispose();
 	}
@@ -767,6 +776,7 @@ async function segmentNoticeMetadata(
 	);
 	const segment: Schema["SegmentResponse"] = {
 		...(readerSessionFixtureData(
+			"GET",
 			"/api/segments/saved",
 		) as Schema["SegmentResponse"]),
 		id: "notice",
@@ -803,7 +813,10 @@ async function segmentNoticeMetadata(
 				: Response.json(segment);
 		if (path === "/api/sources/source")
 			return Response.json({
-				...(readerSessionFixtureData(path) as Schema["SourceResponse"]),
+				...(readerSessionFixtureData(
+					request.method,
+					path,
+				) as Schema["SourceResponse"]),
 				title: sourceTitle,
 			});
 		if (

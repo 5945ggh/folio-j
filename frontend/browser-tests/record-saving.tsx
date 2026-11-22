@@ -2,6 +2,7 @@ import type { components } from "../src/api/schema";
 import { projectPart } from "../src/materials/dom";
 import { captureNativeSelection } from "../src/materials/reader-selection";
 import type { BrowserHarness } from "./harness";
+import { readerBaseResponse } from "./reader-base-fixture";
 
 type Schema = components["schemas"];
 const stamp = "2026-10-24T00:00:00Z";
@@ -217,48 +218,10 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 		h.mock(async (request) => {
 			const url = new URL(request.url),
 				path = url.pathname;
-			if (path === `/api/materials/${book.id}` && request.method === "GET")
-				return Response.json(book);
-			if (path.endsWith("/opened") || path.endsWith("/usage"))
-				return Response.json({
-					material_id: book.id,
-					status: "in_progress",
-					revision: 1,
-					last_opened_at: stamp,
-					updated_at: stamp,
-				});
-			if (path === "/api/sources/source")
-				return Response.json({
-					id: "source",
-					title: "离线来源",
-					description: "",
-					note: "",
-					segment_count: 0,
-					created_at: stamp,
-					updated_at: stamp,
-				});
-			if (path.endsWith("/readings/prepare"))
-				return Response.json({
-					material_id: book.id,
-					version_id: "v1",
-					generation_id: "generation",
-					token_count: 0,
-				});
-			if (path.endsWith("/readings"))
-				return Response.json({
-					material_id: book.id,
-					version_id: "v1",
-					generation_id: "generation",
-					resources: [],
-				});
-			if (path.endsWith("/chapters/chapter")) return Response.json(chapter);
-			if (path.endsWith("/chapters/chapter/segments"))
-				return Response.json({
-					items: [],
-					next_cursor: null,
-					unavailable_count: 0,
-				});
-			if (path.endsWith("/chapters/chapter/translations")) {
+			if (
+				request.method === "GET" &&
+				path === `/api/materials/${book.id}/chapters/chapter/translations`
+			) {
 				if (scenario === "chapter-history-failure")
 					return Response.json({ detail: "离线列表失败" }, { status: 503 });
 				return Response.json({
@@ -278,7 +241,10 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 					unavailable_count: 0,
 				});
 			}
-			if (path.endsWith("/reading-position") && request.method === "PUT") {
+			if (
+				path === `/api/materials/${book.id}/reading-position` &&
+				request.method === "PUT"
+			) {
 				const update: Schema["ReadingPositionUpdate"] = await request.json();
 				return Response.json({
 					...update,
@@ -316,6 +282,10 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 					generated++;
 					throw new Error("Existing translations must not generate");
 				}
+				check(
+					request.method === "GET",
+					`Unexpected translation read ${request.method}`,
+				);
 				return Response.json({
 					results: [latest, historical],
 					tasks: [],
@@ -363,7 +333,7 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 					context_after: body.context_after ?? "",
 				});
 			}
-			throw new Error(`Unexpected record-saving ${request.method} ${path}`);
+			return readerBaseResponse(request.method, path, book, [chapter]);
 		});
 		const dispose = await h.mount(
 			<MaterialReader />,

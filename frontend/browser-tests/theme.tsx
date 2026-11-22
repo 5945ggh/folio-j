@@ -8,6 +8,7 @@ import type { StudyTarget } from "../src/materials/study-api";
 import { startAppTheme } from "../src/theme/browser";
 import { background, color, computed, luminance, over } from "./color-contrast";
 import type { BrowserHarness } from "./harness";
+import { readerBaseResponse } from "./reader-base-fixture";
 import "../src/materials/reader-r1.css";
 import "../src/materials/reader-refresh.css";
 
@@ -598,55 +599,15 @@ export async function themeRegression(h: BrowserHarness) {
 		let opened = false;
 		h.mock(async (request) => {
 			const path = new URL(request.url).pathname;
-			if (path === "/api/materials/theme" && request.method === "GET")
-				return Response.json(book);
-			if (path === "/api/sources/source")
-				return Response.json({
-					id: "source",
-					title: "主题回归",
-					description: "",
-					note: "",
-					segment_count: 1,
-					created_at: timestamp,
-					updated_at: timestamp,
-				});
-			if (path.endsWith("/opened") || path.endsWith("/usage")) {
-				if (path.endsWith("/opened")) opened = true;
-				return Response.json({
-					material_id: book.id,
-					status: "in_progress",
-					revision: 1,
-					last_opened_at: timestamp,
-					updated_at: timestamp,
-				});
-			}
-			if (path.endsWith("/readings/prepare"))
-				return Response.json({
-					material_id: book.id,
-					version_id: "v1",
-					generation_id: "generation",
-					token_count: 0,
-				});
-			if (path.endsWith("/readings"))
-				return Response.json({
-					material_id: book.id,
-					version_id: "v1",
-					generation_id: "generation",
-					resources: [],
-				});
-			if (path.endsWith("/chapters/chapter")) return Response.json(chapter);
 			if (
-				path.endsWith("/chapters/chapter/segments") ||
-				path.endsWith("/chapters/chapter/translations")
+				request.method === "POST" &&
+				path === `/api/materials/${book.id}/opened`
 			)
-				return Response.json({
-					items: [],
-					next_cursor: null,
-					unavailable_count: 0,
-				});
-			if (path.endsWith("/translations"))
-				return Response.json({ results: [], tasks: [], next_offset: null });
-			if (path.endsWith("/reading-position") && request.method === "PUT") {
+				opened = true;
+			if (
+				path === `/api/materials/${book.id}/reading-position` &&
+				request.method === "PUT"
+			) {
 				const body: Schema["ReadingPositionUpdate"] = await request.json();
 				return Response.json({
 					...body,
@@ -655,7 +616,10 @@ export async function themeRegression(h: BrowserHarness) {
 					updated_at: timestamp,
 				});
 			}
-			throw new Error(`Unexpected Reader request ${request.method} ${path}`);
+			return readerBaseResponse(request.method, path, book, [chapter], {
+				sourceTitle: "主题回归",
+				segmentCount: 1,
+			});
 		});
 		const dispose = await h.mount(
 			<MaterialReader />,

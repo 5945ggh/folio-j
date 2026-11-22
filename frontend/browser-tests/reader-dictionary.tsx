@@ -3,6 +3,7 @@ import { Outlet } from "react-router";
 import type { components } from "../src/api/schema";
 import { FOCUS_TIMING } from "../src/materials/focus";
 import type { BrowserHarness } from "./harness";
+import { readerBaseResponse } from "./reader-base-fixture";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
 
 type Schema = components["schemas"];
@@ -407,7 +408,7 @@ export async function readerDictionary(h: BrowserHarness) {
 						: [match],
 			} satisfies Schema["DictionaryLookupResponse"]);
 		}
-		if (path.startsWith("/api/segments/")) {
+		if (request.method === "GET" && path.startsWith("/api/segments/")) {
 			const item = saved.find(
 				(candidate) =>
 					path === `/api/segments/${candidate.segment_id}` ||
@@ -436,15 +437,21 @@ export async function readerDictionary(h: BrowserHarness) {
 				updated_at: stamp,
 			});
 		}
-		if (path.endsWith("/chapters/chapter/segments"))
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/chapters/chapter/segments`
+		)
 			return Response.json({
 				items: saved,
 				next_cursor: null,
 				unavailable_count: 0,
 			});
-		if (path === "/api/settings/context-copy")
+		if (request.method === "GET" && path === "/api/settings/context-copy")
 			return Response.json(defaultContextCopySettings);
-		if (path.endsWith("/illustrations/locate"))
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/illustrations/locate`
+		)
 			return Response.json({
 				material_id: book.id,
 				version_id: "v1",
@@ -465,7 +472,10 @@ export async function readerDictionary(h: BrowserHarness) {
 					},
 				],
 			});
-		if (path.endsWith("/illustrations"))
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/illustrations`
+		)
 			return Response.json({
 				material_id: book.id,
 				version_id: "v1",
@@ -474,54 +484,20 @@ export async function readerDictionary(h: BrowserHarness) {
 				limit: 40,
 				items: [],
 			});
-		if (path === "/api/materials/dictionary") return Response.json(book);
-		if (path === "/api/sources/source")
-			return Response.json({
-				id: "source",
-				title: "离线来源",
-				description: "",
-				note: "",
-				segment_count: 0,
-				created_at: stamp,
-				updated_at: stamp,
-			});
-		if (path.endsWith("/opened") || path.endsWith("/usage"))
-			return Response.json({
-				material_id: book.id,
-				status: "in_progress",
-				revision: 1,
-				last_opened_at: stamp,
-				updated_at: stamp,
-			});
-		if (path.endsWith("/readings/prepare"))
-			return Response.json({
-				material_id: book.id,
-				version_id: "v1",
-				generation_id: "g1",
-				token_count: basicsScene ? 1 : 0,
-			});
-		if (path.endsWith("/readings")) {
-			if (basicsScene)
-				await new Promise<void>((resolve) => {
-					releaseReadings = resolve;
-				});
-			return Response.json(
-				basicsScene ? catReadings : { ...catReadings, resources: [] },
-			);
-		}
-		if (path.endsWith("/chapters/chapter")) return Response.json(chapter);
 		if (
-			path.endsWith("/chapters/chapter/segments") ||
-			path.endsWith("/chapters/chapter/translations")
-		)
-			return Response.json({
-				items: [],
-				next_cursor: null,
-				unavailable_count: 0,
+			basicsScene &&
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/readings`
+		) {
+			await new Promise<void>((resolve) => {
+				releaseReadings = resolve;
 			});
-		if (path.endsWith("/translations"))
-			return Response.json({ results: [], tasks: [], next_offset: null });
-		if (path.endsWith("/reading-position")) {
+			return Response.json(catReadings);
+		}
+		if (
+			request.method === "PUT" &&
+			path === `/api/materials/${book.id}/reading-position`
+		) {
 			const input: Schema["ReadingPositionUpdate"] = await request.json();
 			return Response.json({
 				...input,
@@ -530,7 +506,11 @@ export async function readerDictionary(h: BrowserHarness) {
 				updated_at: stamp,
 			});
 		}
-		throw new Error(`Unexpected dictionary ${request.method} ${path}`);
+		return readerBaseResponse(request.method, path, book, [chapter], {
+			sourceTitle: "离线来源",
+			generationId: catReadings.generation_id,
+			tokenCount: basicsScene ? 1 : 0,
+		});
 	});
 	localStorage.clear();
 	localStorage.setItem(

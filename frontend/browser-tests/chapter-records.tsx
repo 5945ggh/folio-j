@@ -8,6 +8,7 @@ import {
 	marginRecordFixture,
 	marginRecordTargets,
 } from "./margin-record-targets";
+import { readerBaseResponse } from "./reader-base-fixture";
 import { fakeSpeech } from "./reader-speech-fixture";
 import {
 	translationRemoval,
@@ -440,61 +441,19 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			if (hideFromRecent) evictedTaskReads++;
 			return Response.json(taskSnapshot());
 		}
-		if (path === "/api/materials/chapter-records" && request.method === "GET")
-			return Response.json(book);
-		if (path.endsWith("/opened") || path.endsWith("/usage"))
-			return Response.json({
-				material_id: book.id,
-				status: "in_progress",
-				revision: 1,
-				last_opened_at: timestamp,
-				updated_at: timestamp,
-			} satisfies Schema["MaterialUsageResponse"]);
-		if (path === "/api/sources/source")
-			return Response.json({
-				id: "source",
-				title: "Source",
-				description: "",
-				note: "",
-				segment_count: 1,
-				created_at: timestamp,
-				updated_at: timestamp,
-			});
-		if (path.endsWith("/readings/prepare"))
-			return Response.json({
-				material_id: book.id,
-				version_id: "v1",
-				generation_id: "generation",
-				token_count: 0,
-			});
-		if (path.endsWith("/readings"))
-			return Response.json({
-				material_id: book.id,
-				version_id: "v1",
-				generation_id: "generation",
-				resources: [],
-			});
-		if (path === "/api/materials/chapter-records/chapters/chapter")
-			return Response.json(inlineChapter);
-		if (path === "/api/materials/chapter-records/chapters/chapter-two")
-			return Response.json({
-				...inlineChapter,
-				id: "chapter-two",
-				title: "第二章",
-			});
-		if (/\/chapters\/chapter-two\/(segments|translations)$/.test(path))
-			return Response.json({
-				items: [],
-				next_cursor: null,
-				unavailable_count: 0,
-			});
-		if (path.endsWith("/chapters/chapter/segments"))
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/chapters/chapter/segments`
+		)
 			return Response.json({
 				items: marginFixture?.segments ?? [segment],
 				next_cursor: null,
 				unavailable_count: 0,
 			});
-		if (path.endsWith("/chapters/chapter/translations")) {
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/chapters/chapter/translations`
+		) {
 			check(
 				url.searchParams.get("version_id") === "v1",
 				"Chapter translations must bind immutable version",
@@ -510,7 +469,10 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				unavailable_count: 0,
 			});
 		}
-		if (path.endsWith("/reading-position") && request.method === "PUT") {
+		if (
+			path === `/api/materials/${book.id}/reading-position` &&
+			request.method === "PUT"
+		) {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			return Response.json({
 				...update,
@@ -591,7 +553,10 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				max_context_characters: 2000,
 				max_target_characters: 2000,
 			});
-		if (path === "/api/materials/chapter-records/translations") {
+		if (
+			request.method === "GET" &&
+			path === "/api/materials/chapter-records/translations"
+		) {
 			const identity = url.searchParams.get("identity_sha256");
 			if (!identity && acceptedTask && !generatedResult) pendingObserved = true;
 			const omitFromRecent = !identity && hideFromRecent;
@@ -618,8 +583,12 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			(item) => path === `/api/translation-results/${item.id}`,
 		);
 		if (result) return Response.json(result);
-		throw new Error(
-			`Unmocked chapter record request ${request.method} ${path}`,
+		return readerBaseResponse(
+			request.method,
+			path,
+			book,
+			[inlineChapter, { ...inlineChapter, id: "chapter-two", title: "第二章" }],
+			{ segmentCount: 1 },
 		);
 	});
 	let dispose = await h.mount(

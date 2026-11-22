@@ -101,7 +101,10 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 			}
 			return Response.json(translation);
 		}
-		if (path === `/api/materials/${fixture.materialId}`) {
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${fixture.materialId}`
+		) {
 			bookReads++;
 			return Response.json({
 				...fixture.book,
@@ -109,7 +112,10 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 				reading_position: position,
 			});
 		}
-		if (path.endsWith("/reading-position") && request.method === "PUT") {
+		if (
+			path === `/api/materials/${fixture.materialId}/reading-position` &&
+			request.method === "PUT"
+		) {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			position = {
 				...update,
@@ -119,7 +125,11 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 			};
 			return Response.json(position);
 		}
-		if (/\/chapters\/[^/]+\/translations$/.test(path))
+		if (
+			request.method === "GET" &&
+			path ===
+				`/api/materials/${fixture.materialId}/chapters/${fixture.chapterId}/translations`
+		)
 			return failTranslations
 				? Response.json({ detail: "记录暂时读取失败" }, { status: 503 })
 				: Response.json({
@@ -146,7 +156,9 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 			return Response.json(result);
 		if (path.endsWith(`/translation-results/${result.id}/segments`))
 			return Response.json({ segments: [], truncated: false });
-		const data = readerSessionFixtureData(path, { studyRecords: false });
+		const data = readerSessionFixtureData(request.method, path, {
+			studyRecords: false,
+		});
 		check(
 			data !== undefined,
 			`Unexpected settings-return request ${request.method} ${path}`,

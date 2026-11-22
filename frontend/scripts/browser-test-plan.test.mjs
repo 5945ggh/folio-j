@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { runBrowserSuite } from "../browser-tests/harness.ts";
+import { readerBaseResponse } from "../browser-tests/reader-base-fixture.ts";
 import {
 	assertBrowserResult,
 	browserScenarioUrl,
@@ -14,6 +15,28 @@ const scenes = [
 	[1280, 900, "?suite=reader-session&direction=vertical-rl"],
 	[320, 900, "?suite=chapter-records&theme=dark&detached"],
 ];
+
+test("reader fixture rejects wrong methods, books and chapters instead of returning empty success", async () => {
+	const book = { id: "book", version_id: "v1", source_id: "source" };
+	const respond = (method, path) =>
+		readerBaseResponse(method, `/api/materials/${path}`, book, [
+			{ id: "chapter" },
+		]);
+	assert.equal(
+		(await respond("POST", "book/readings/prepare").json()).material_id,
+		"book",
+	);
+	for (const [method, path] of [
+		["GET", "book/readings/prepare"],
+		["POST", "other/readings/prepare"],
+		["GET", "other/chapters/chapter/segments"],
+		["GET", "book/chapters/missing/translations"],
+		["POST", "book/chapters/chapter/segments"],
+		["GET", "book/opened"],
+		["POST", "book/usage"],
+	])
+		assert.throws(() => respond(method, path), /Unmocked reader request/);
+});
 
 test("suite and canonical query filters retain every matching viewport", () => {
 	assert.deepEqual(selectBrowserScenarios(scenes), scenes);

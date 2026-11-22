@@ -1,5 +1,6 @@
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
+import { readerBaseResponse } from "./reader-base-fixture";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
 
 type Schema = components["schemas"];
@@ -191,65 +192,12 @@ export async function readerScrollbar(h: BrowserHarness) {
 		};
 		h.mock(async (request) => {
 			const path = new URL(request.url).pathname;
-			if (request.method === "GET") {
-				if (path.endsWith("/usage"))
-					return Response.json({
-						material_id: id,
-						status: "in_progress",
-						revision: 1,
-						last_opened_at: timestamp,
-						updated_at: timestamp,
-					} satisfies Schema["MaterialUsageResponse"]);
-				if (path === "/api/settings/context-copy")
-					return Response.json(defaultContextCopySettings);
-				if (path.endsWith("/readings"))
-					return Response.json({
-						material_id: id,
-						version_id: "v1",
-						generation_id: "g",
-						resources: [],
-					} satisfies Schema["MaterialReadingsResponse"]);
-				if (path === `/api/materials/${id}`) return Response.json(book);
-				if (path === "/api/sources/source")
-					return Response.json({
-						id: "source",
-						title: "合成测试",
-						description: "",
-						note: "",
-						segment_count: 0,
-						created_at: timestamp,
-						updated_at: timestamp,
-					} satisfies Schema["SourceResponse"]);
-				if (path === `/api/materials/${id}/chapters/${chapter.id}`)
-					return Response.json(chapter);
-				if (
-					path.endsWith("/segments") ||
-					path.endsWith(`/chapters/${chapter.id}/translations`)
-				)
-					return Response.json({
-						items: [],
-						next_cursor: null,
-						unavailable_count: 0,
-					});
-				if (path.endsWith("/translations"))
-					return Response.json({ results: [], tasks: [], next_offset: null });
-			}
-			if (request.method === "POST" && path.endsWith("/readings/prepare"))
-				return Response.json({
-					material_id: id,
-					version_id: "v1",
-					generation_id: "g",
-					token_count: 0,
-				} satisfies Schema["MaterialReadingsSummary"]);
-			if (request.method === "POST" && path.endsWith("/opened"))
-				return Response.json({
-					material_id: id,
-					status: "in_progress",
-					revision: 1,
-					last_opened_at: timestamp,
-					updated_at: timestamp,
-				} satisfies Schema["MaterialUsageResponse"]);
-			if (request.method === "PUT" && path.endsWith("/reading-position")) {
+			if (request.method === "GET" && path === "/api/settings/context-copy")
+				return Response.json(defaultContextCopySettings);
+			if (
+				request.method === "PUT" &&
+				path === `/api/materials/${book.id}/reading-position`
+			) {
 				const update: Schema["ReadingPositionUpdate"] = await request.json();
 				saved.push(update);
 				return Response.json({
@@ -259,7 +207,10 @@ export async function readerScrollbar(h: BrowserHarness) {
 					updated_at: timestamp,
 				} satisfies Schema["ReadingPositionResponse"]);
 			}
-			throw new Error(`Unmocked scrollbar request ${request.method} ${path}`);
+			return readerBaseResponse(request.method, path, book, [chapter], {
+				sourceTitle: "合成测试",
+				generationId: "g",
+			});
 		});
 		const dispose = await h.mount(
 			<MaterialReader />,

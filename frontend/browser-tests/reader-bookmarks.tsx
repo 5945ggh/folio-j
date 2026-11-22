@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { components } from "../src/api/schema";
 import { FOCUS_TIMING } from "../src/materials/focus";
+import { readerBaseResponse } from "./reader-base-fixture";
 
 type Schema = components["schemas"];
 type Harness = {
@@ -160,66 +161,21 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 				settings,
 			},
 		};
-		const usage: Schema["MaterialUsageResponse"] = {
-			material_id: book.id,
-			status: "in_progress",
-			revision: 1,
-			last_opened_at: timestamp,
-			updated_at: timestamp,
-		};
+		const chapters = book.chapters.map(({ id }) => chapter(id, tail));
 		let opened = false;
 		let positionSaved = false;
 		mock(async (request) => {
 			const { pathname } = new URL(request.url);
-			if (request.method === "GET" && pathname === `/api/materials/${book.id}`)
-				return Response.json(book);
 			if (
-				request.method === "GET" &&
-				pathname === `/api/materials/${book.id}/translations`
-			)
-				return Response.json({ results: [], tasks: [], next_offset: null });
-			if (pathname === `/api/materials/${book.id}/opened`) opened = true;
-			if (
-				pathname === `/api/materials/${book.id}/usage` ||
+				request.method === "POST" &&
 				pathname === `/api/materials/${book.id}/opened`
 			)
-				return Response.json(usage);
-			if (pathname === "/api/sources/source")
-				return Response.json({
-					id: "source",
-					title: "Source",
-					description: "",
-					note: "",
-					segment_count: 4,
-					created_at: timestamp,
-					updated_at: timestamp,
-				} satisfies Schema["SourceResponse"]);
-			if (pathname.endsWith("/readings/prepare"))
-				return Response.json({
-					material_id: book.id,
-					version_id: "version",
-					generation_id: "generation",
-					token_count: 0,
-				} satisfies Schema["MaterialReadingsSummary"]);
-			if (pathname.endsWith("/readings"))
-				return Response.json({
-					material_id: book.id,
-					version_id: "version",
-					generation_id: "generation",
-					resources: [],
-				} satisfies Schema["MaterialReadingsResponse"]);
+				opened = true;
 			for (const id of ["chapter-one", "chapter-two"]) {
 				if (
-					pathname === `/api/materials/${book.id}/chapters/${id}/translations`
+					request.method === "GET" &&
+					pathname === `/api/materials/${book.id}/chapters/${id}/segments`
 				)
-					return Response.json({
-						items: [],
-						next_cursor: null,
-						unavailable_count: 0,
-					});
-				if (pathname === `/api/materials/${book.id}/chapters/${id}`)
-					return Response.json(chapter(id, tail));
-				if (pathname === `/api/materials/${book.id}/chapters/${id}/segments`)
 					return Response.json({
 						items:
 							id === "chapter-one"
@@ -231,7 +187,10 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 						unavailable_count: 0,
 					} satisfies Schema["MaterialChapterSegmentsResponse"]);
 			}
-			if (pathname.endsWith("/reading-position") && request.method === "PUT") {
+			if (
+				pathname === `/api/materials/${book.id}/reading-position` &&
+				request.method === "PUT"
+			) {
 				positionSaved = true;
 				const update: Schema["ReadingPositionUpdate"] = await request.json();
 				return Response.json({
@@ -267,7 +226,9 @@ export async function readerBookmarks(harness: Harness, narrow = false) {
 				)
 			)
 				return Response.json([]);
-			throw new Error(`Unmocked reader request ${request.method} ${pathname}`);
+			return readerBaseResponse(request.method, pathname, book, chapters, {
+				segmentCount: 4,
+			});
 		});
 		const dispose = await mount(
 			<MaterialReader />,

@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
+import { readerBaseResponse } from "./reader-base-fixture";
 
 type Schema = components["schemas"];
 const timestamp = "2026-10-27T00:00:00Z";
@@ -84,13 +85,6 @@ export async function readerImages(h: BrowserHarness) {
 			settings,
 		},
 	};
-	const usage: Schema["MaterialUsageResponse"] = {
-		material_id: book.id,
-		status: "in_progress",
-		revision: 1,
-		last_opened_at: timestamp,
-		updated_at: timestamp,
-	};
 	const items = Array.from({ length: 50 }, (_, ordinal) => ({
 		ordinal,
 		chapter_id: "chapter",
@@ -112,46 +106,15 @@ export async function readerImages(h: BrowserHarness) {
 	mock(async (request) => {
 		const url = new URL(request.url);
 		const path = url.pathname;
-		if (path === `/api/materials/${book.id}`) return Response.json(book);
-		if (path.endsWith("/opened")) opened = true;
-		if (path.endsWith("/opened") || path.endsWith("/usage"))
-			return Response.json(usage);
-		if (path === "/api/sources/source")
-			return Response.json({
-				id: "source",
-				title: "Source",
-				description: "",
-				note: "",
-				segment_count: 0,
-				created_at: timestamp,
-				updated_at: timestamp,
-			});
-		if (path.endsWith("/readings/prepare"))
-			return Response.json({
-				material_id: book.id,
-				version_id: "v1",
-				generation_id: "g",
-				token_count: 0,
-			});
-		if (path.endsWith("/readings"))
-			return Response.json({
-				material_id: book.id,
-				version_id: "v1",
-				generation_id: "g",
-				resources: [],
-			});
-		if (path.endsWith("/translations"))
-			return Response.json(
-				path.includes("/chapters/")
-					? { items: [], next_cursor: null, unavailable_count: 0 }
-					: { results: [], tasks: [], next_offset: null },
-			);
-		if (path.endsWith("/segments"))
-			return Response.json({ items: [], next_cursor: null });
-		if (path.endsWith("/chapters/chapter")) return Response.json(chapter);
 		if (
-			path.endsWith("/illustrations") ||
-			path.endsWith("/illustrations/locate")
+			request.method === "POST" &&
+			path === `/api/materials/${book.id}/opened`
+		)
+			opened = true;
+		if (
+			request.method === "GET" &&
+			(path === `/api/materials/${book.id}/illustrations` ||
+				path === `/api/materials/${book.id}/illustrations/locate`)
 		) {
 			illustrationRequests++;
 			if (measurement) await new Promise((resolve) => setTimeout(resolve, 150));
@@ -202,7 +165,10 @@ export async function readerImages(h: BrowserHarness) {
 				{ headers: { "Content-Type": "image/png" } },
 			);
 		}
-		if (path.endsWith("/reading-position") && request.method === "PUT") {
+		if (
+			path === `/api/materials/${book.id}/reading-position` &&
+			request.method === "PUT"
+		) {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			return Response.json({
 				...update,
@@ -211,7 +177,9 @@ export async function readerImages(h: BrowserHarness) {
 				updated_at: timestamp,
 			});
 		}
-		throw new Error(`Unmocked ${request.method} ${path}`);
+		return readerBaseResponse(request.method, path, book, [chapter], {
+			generationId: "g",
+		});
 	});
 	localStorage.clear();
 	const dispose = await mount(

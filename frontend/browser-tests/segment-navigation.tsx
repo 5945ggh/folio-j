@@ -68,8 +68,9 @@ export async function segmentNavigation(h: BrowserHarness) {
 		const url = new URL(request.url);
 		const path = url.pathname;
 		if (path === "/api/segments/saved") segmentReads++;
-		let data = readerSessionFixtureData(path, {
+		let data = readerSessionFixtureData(request.method, path, {
 			originChapter,
+			extraChapter: deferredChapter,
 			studyRecords: false,
 		});
 		if (path === `/api/materials/${book.id}` && request.method === "GET")
@@ -86,11 +87,17 @@ export async function segmentNavigation(h: BrowserHarness) {
 					},
 				],
 			} satisfies Schema["MaterialResponse"];
-		else if (path.endsWith(`/chapters/${deferredChapter.id}`)) {
+		else if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/chapters/${deferredChapter.id}`
+		) {
 			delayedRequests++;
 			await chapterGate;
 			data = deferredChapter;
-		} else if (path.endsWith("/reading-position") && request.method === "PUT") {
+		} else if (
+			path === `/api/materials/${book.id}/reading-position` &&
+			request.method === "PUT"
+		) {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			position = {
 				...update,
@@ -99,7 +106,7 @@ export async function segmentNavigation(h: BrowserHarness) {
 				updated_at: timestamp,
 			} satisfies Schema["ReadingPositionResponse"];
 			data = position;
-		} else if (path.endsWith("/search"))
+		} else if (path === `/api/materials/${book.id}/search`)
 			data = {
 				material_id: book.id,
 				version_id: book.version_id,
@@ -122,7 +129,7 @@ export async function segmentNavigation(h: BrowserHarness) {
 					},
 				],
 			} satisfies Schema["MaterialSearchResponse"];
-		else if (path.endsWith("/record-search")) {
+		else if (path === `/api/materials/${book.id}/record-search`) {
 			const kind = url.searchParams.get("kind");
 			check(
 				kind === "segment" || kind === "translation" || kind === "bookmark",

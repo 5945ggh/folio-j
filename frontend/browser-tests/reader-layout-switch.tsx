@@ -1,6 +1,7 @@
 import type { components } from "../src/api/schema";
 import { DEFAULT_READING_SETTINGS } from "../src/materials/reader-settings";
 import type { BrowserHarness } from "./harness";
+import { readerBaseResponse } from "./reader-base-fixture";
 
 type Schema = components["schemas"];
 const timestamp = "2026-10-29T00:00:00Z";
@@ -97,14 +98,7 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 	let opened = false;
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
-		check(
-			request.method === "GET" ||
-				(request.method === "POST" &&
-					(path.endsWith("/opened") || path.endsWith("/readings/prepare"))) ||
-				(request.method === "PUT" && path.endsWith("/reading-position")),
-			`Unexpected layout-switch side effect ${request.method} ${path}`,
-		);
-		if (path === `/api/materials/${materialId}`)
+		if (request.method === "GET" && path === `/api/materials/${materialId}`)
 			return Response.json({
 				...book,
 				reading_position: {
@@ -115,19 +109,10 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 					},
 				},
 			});
-		if (path === "/api/sources/source")
-			return Response.json({
-				id: "source",
-				title: "Source",
-				description: "",
-				note: "",
-				segment_count: 3,
-				created_at: timestamp,
-				updated_at: timestamp,
-			} satisfies Schema["SourceResponse"]);
-		if (path === `/api/materials/${materialId}/chapters/${chapterId}`)
-			return Response.json(chapter);
-		if (path.endsWith("/segments"))
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/chapters/${chapter.id}/segments`
+		)
 			return Response.json({
 				items: [20, 200, 350].map((index) => ({
 					segment_id: `saved-${index}`,
@@ -154,22 +139,10 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 				next_cursor: null,
 				unavailable_count: 0,
 			} satisfies Schema["MaterialChapterSegmentsResponse"]);
-		if (path.endsWith(`/chapters/${chapterId}/translations`))
-			return Response.json({
-				items: [],
-				next_cursor: null,
-				unavailable_count: 0,
-			});
-		if (path.endsWith("/translations"))
-			return Response.json({ results: [], tasks: [], next_offset: null });
-		if (path.endsWith("/readings/prepare"))
-			return Response.json({
-				material_id: materialId,
-				version_id: "v1",
-				generation_id: "generation",
-				token_count: paragraphs.length,
-			} satisfies Schema["MaterialReadingsSummary"]);
-		if (path.endsWith("/readings")) {
+		if (
+			request.method === "GET" &&
+			path === `/api/materials/${book.id}/readings`
+		) {
 			readingsRequested = true;
 			await readingsGate;
 			return Response.json({
@@ -194,17 +167,15 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 				],
 			} satisfies Schema["MaterialReadingsResponse"]);
 		}
-		if (path.endsWith("/opened") || path.endsWith("/usage")) {
-			if (path.endsWith("/opened")) opened = true;
-			return Response.json({
-				material_id: materialId,
-				status: "in_progress",
-				revision: 1,
-				last_opened_at: timestamp,
-				updated_at: timestamp,
-			} satisfies Schema["MaterialUsageResponse"]);
-		}
-		if (path.endsWith("/reading-position") && request.method === "PUT") {
+		if (
+			request.method === "POST" &&
+			path === `/api/materials/${book.id}/opened`
+		)
+			opened = true;
+		if (
+			path === `/api/materials/${book.id}/reading-position` &&
+			request.method === "PUT"
+		) {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			saved.push(update);
 			return Response.json({
@@ -214,7 +185,10 @@ export async function readerLayoutSwitch(h: BrowserHarness) {
 				updated_at: timestamp,
 			} satisfies Schema["ReadingPositionResponse"]);
 		}
-		throw new Error(`Unmocked layout-switch request ${request.method} ${path}`);
+		return readerBaseResponse(request.method, path, book, [chapter], {
+			segmentCount: 3,
+			tokenCount: paragraphs.length,
+		});
 	});
 	const dispose = await h.mount(
 		<MaterialReader />,

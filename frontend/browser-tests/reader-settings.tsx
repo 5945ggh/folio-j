@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
+import { readerBaseResponse } from "./reader-base-fixture";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
 
 type Schema = components["schemas"];
@@ -110,6 +111,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			writing_mode: vertical ? "vertical-rl" : "horizontal-tb",
 		},
 	};
+	const readerChapters = [chapter("first"), chapter("second")];
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
 		requests.push(`${request.method} ${path}`);
@@ -150,81 +152,29 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			request.method === "POST"
 		)
 			return Response.json({ segments: [], truncated: false });
-		check(
-			request.method === "GET" ||
-				(request.method === "POST" &&
-					/\/(opened|readings\/prepare)$/.test(path)) ||
-				(request.method === "PUT" && path.endsWith("/reading-position")),
-			`Unexpected learning/model side effect ${request.method} ${path}`,
-		);
-		const match = path.match(/^\/api\/materials\/([^/]+)(.*)$/),
-			id = match?.[1] ?? materialId,
-			suffix = match?.[2];
-		if (suffix === "")
-			return Response.json({
+		const id = path.split("/")[3] === "other" ? "other" : materialId;
+		const book: Schema["MaterialResponse"] = {
+			id,
+			source_id: "source",
+			title: "設定の本",
+			version_id: "v1",
+			contract_version: "1",
+			product_sha256: hash,
+			source_sha256: hash,
+			created_at: stamp,
+			warnings: [],
+			chapters: readerChapters.map(({ id, title }) => ({
 				id,
-				source_id: "source",
-				title: "設定の本",
-				version_id: "v1",
-				contract_version: "1",
-				product_sha256: hash,
-				source_sha256: hash,
-				created_at: stamp,
-				warnings: [],
-				chapters: ["first", "second"].map((chapterId) => ({
-					id: chapterId,
-					title: chapter(chapterId).title,
-					level: 0,
-					part_count: 1,
-				})),
-				reading_position: positions.get(id) ?? initialPosition,
-			} satisfies Schema["MaterialResponse"]);
-		if (path === "/api/sources/source")
-			return Response.json({
-				id: "source",
-				title: "离线来源",
-				description: "",
-				note: "",
-				segment_count: 0,
-				created_at: stamp,
-				updated_at: stamp,
-			});
-		if (suffix === "/opened" || suffix === "/usage")
-			return Response.json({
-				material_id: id,
-				status: "in_progress",
-				revision: 1,
-				last_opened_at: stamp,
-				updated_at: stamp,
-			});
-		if (suffix === "/readings/prepare")
-			return Response.json({
-				material_id: id,
-				version_id: "v1",
-				generation_id: "g1",
-				token_count: 0,
-			});
-		if (suffix === "/readings")
-			return Response.json({
-				material_id: id,
-				version_id: "v1",
-				generation_id: "g1",
-				resources: [],
-			});
-		if (suffix === "/chapters/first" || suffix === "/chapters/second")
-			return Response.json({
-				...chapter(suffix.endsWith("first") ? "first" : "second"),
-				material_id: id,
-			});
-		if (/\/chapters\/[^/]+\/(segments|translations)$/.test(path))
-			return Response.json({
-				items: [],
-				next_cursor: null,
-				unavailable_count: 0,
-			});
-		if (suffix === "/translations")
-			return Response.json({ results: [], tasks: [], next_offset: null });
-		if (suffix === "/reading-position") {
+				title,
+				level: 0,
+				part_count: 1,
+			})),
+			reading_position: positions.get(id) ?? initialPosition,
+		};
+		if (
+			request.method === "PUT" &&
+			path === `/api/materials/${id}/reading-position`
+		) {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			const saved = {
 				...update,
@@ -235,8 +185,12 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			positions.set(id, saved);
 			return Response.json(saved);
 		}
-		throw new Error(
-			`Unmocked reader settings request ${request.method} ${path}`,
+		return readerBaseResponse(
+			request.method,
+			path,
+			book,
+			readerChapters.map((chapter) => ({ ...chapter, material_id: id })),
+			{ sourceTitle: "离线来源", generationId: "g1" },
 		);
 	});
 	localStorage.clear();

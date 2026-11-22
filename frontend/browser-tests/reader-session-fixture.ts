@@ -1,4 +1,5 @@
 import type { components } from "../src/api/schema";
+import { readerBaseData } from "./reader-base-fixture";
 
 type Schema = components["schemas"];
 const timestamp = "2026-10-24T00:00:00Z";
@@ -134,25 +135,27 @@ export const readerSessionFixture = {
 
 /** Shared read-only API fixture; suites retain control of gates, writers and request counters. */
 export function readerSessionFixtureData(
+	method: string,
 	path: string,
 	options: {
 		realApp?: boolean;
 		invalidProvenance?: boolean;
 		originChapter?: string;
+		extraChapter?: Schema["MaterialChapterResponse"];
 		studyRecords?: boolean;
 		addedStudyRecord?: boolean;
 	} = {},
 ): unknown {
-	if (path === "/api/sources/source")
-		return {
-			id: "source",
-			title: "Source",
-			description: "",
-			note: "",
-			segment_count: 1,
-			created_at: timestamp,
-			updated_at: timestamp,
-		} satisfies Schema["SourceResponse"];
+	const base = `/api/materials/${materialId}`;
+	const chapters = options.extraChapter
+		? [chapter, options.extraChapter]
+		: [chapter];
+	const basic = () =>
+		readerBaseData(method, path, book, chapters, {
+			segmentCount: 1,
+			tokenCount: paragraphs.length,
+		});
+	if (method !== "GET") return basic();
 	if (options.realApp !== false && path === "/api/segments/saved")
 		return {
 			id: "saved",
@@ -177,7 +180,7 @@ export function readerSessionFixtureData(
 			path === "/api/segments/saved/translation-results")
 	)
 		return [];
-	if (path.endsWith("/material-provenance"))
+	if (path === "/api/segments/saved/material-provenance")
 		return {
 			segment_id: "saved",
 			status: options.invalidProvenance ? "snapshot_mismatch" : "resolved",
@@ -197,17 +200,8 @@ export function readerSessionFixtureData(
 				},
 			],
 		} satisfies Schema["SegmentProvenanceResponse"];
-	if (path.endsWith("/readings/prepare"))
-		return {
-			material_id: materialId,
-			version_id: versionId,
-			generation_id: "generation",
-			token_count: 400,
-		} satisfies Schema["MaterialReadingsSummary"];
-	if (path.endsWith("/readings")) return readings;
-	if (path === `/api/materials/${materialId}/chapters/${chapterId}`)
-		return chapter;
-	if (path.endsWith("/segments"))
+	if (path === `${base}/readings`) return readings;
+	if (path === `${base}/chapters/${chapterId}/segments`)
 		return {
 			items:
 				options.studyRecords === false
@@ -241,17 +235,5 @@ export function readerSessionFixtureData(
 			next_cursor: null,
 			unavailable_count: 0,
 		} satisfies Schema["MaterialChapterSegmentsResponse"];
-	if (/\/chapters\/[^/]+\/translations$/.test(path))
-		return { items: [], next_cursor: null, unavailable_count: 0 };
-	if (path.endsWith("/translations"))
-		return { results: [], tasks: [], next_offset: null };
-	if (path.endsWith("/usage") || path.endsWith("/opened"))
-		return {
-			material_id: materialId,
-			status: "in_progress",
-			revision: 1,
-			last_opened_at: timestamp,
-			updated_at: timestamp,
-		} satisfies Schema["MaterialUsageResponse"];
-	return undefined;
+	return basic();
 }

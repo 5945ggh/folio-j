@@ -2,6 +2,7 @@ import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
+import { readerBaseResponse } from "./reader-base-fixture";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
 
 type Schema = components["schemas"];
@@ -236,57 +237,15 @@ export async function positionBookmarks(h: BrowserHarness) {
 		const path = url.pathname;
 		if (path === "/api/settings/context-copy" && request.method === "GET")
 			return Response.json(defaultContextCopySettings);
-		if (path === `/api/materials/${materialId}`) return Response.json(book);
-		if (path === "/api/sources/source")
-			return Response.json({
-				id: "source",
-				title: "離線資料",
-				description: "",
-				note: "",
-				segment_count: 0,
-				created_at: timestamp,
-				updated_at: timestamp,
-			} satisfies Schema["SourceResponse"]);
-		if (path.endsWith("/opened") || path.endsWith("/usage")) {
-			if (path.endsWith("/opened")) opened++;
-			return Response.json({
-				material_id: materialId,
-				status: "in_progress",
-				revision: 1,
-				last_opened_at: timestamp,
-				updated_at: timestamp,
-			} satisfies Schema["MaterialUsageResponse"]);
-		}
-		if (path.endsWith("/readings/prepare"))
-			return Response.json({
-				material_id: materialId,
-				version_id: "v1",
-				generation_id: "g",
-				token_count: 0,
-			});
-		if (path.endsWith("/readings"))
-			return Response.json({
-				material_id: materialId,
-				version_id: "v1",
-				generation_id: "g",
-				resources: [],
-			});
-		const chapter = chapters.find(
-			(item) => path === `/api/materials/${materialId}/chapters/${item.id}`,
-		);
-		if (chapter) return Response.json(chapter);
 		if (
-			path.endsWith("/segments") ||
-			/\/chapters\/[^/]+\/translations$/.test(path)
+			request.method === "POST" &&
+			path === `/api/materials/${book.id}/opened`
 		)
-			return Response.json({
-				items: [],
-				next_cursor: null,
-				unavailable_count: 0,
-			});
-		if (path.endsWith("/translations"))
-			return Response.json({ results: [], tasks: [], next_offset: null });
-		if (path.endsWith("/reading-position") && request.method === "PUT") {
+			opened++;
+		if (
+			path === `/api/materials/${book.id}/reading-position` &&
+			request.method === "PUT"
+		) {
 			const update: Schema["ReadingPositionUpdate"] = await request.json();
 			writes.push(update);
 			return Response.json({
@@ -417,9 +376,10 @@ export async function positionBookmarks(h: BrowserHarness) {
 			singleReads++;
 			return Response.json({ detail: "书签已不存在" }, { status: 404 });
 		}
-		throw new Error(
-			`Unmocked position-bookmark request ${request.method} ${path}`,
-		);
+		return readerBaseResponse(request.method, path, book, chapters, {
+			sourceTitle: "離線資料",
+			generationId: "g",
+		});
 	});
 	let queryClient: QueryClient | undefined;
 	function ReaderScenario() {
