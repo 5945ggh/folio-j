@@ -264,9 +264,36 @@ export async function analysisReading(h: BrowserHarness) {
 		key(button("编写或粘贴讲解"), "Escape");
 		await until(
 			() =>
-				!container.querySelector(":popover-open") &&
+				trigger.getAttribute("aria-expanded") === "false" &&
 				document.activeElement === trigger,
 			"Escape must dismiss creation choices and restore their trigger",
+		);
+		key(trigger, "ArrowUp");
+		await until(
+			() => document.activeElement === button("复制讲解提示词"),
+			"ArrowUp on the creation trigger must focus the last action",
+		);
+		key(button("复制讲解提示词"), "ArrowDown");
+		check(
+			document.activeElement === button("编写或粘贴讲解"),
+			"ArrowDown must wrap to the first creation action",
+		);
+		key(button("编写或粘贴讲解"), "End");
+		check(
+			document.activeElement === button("复制讲解提示词"),
+			"End must focus the last creation action",
+		);
+		const { browserKey } = window as Window & {
+			browserKey?: (key: string) => Promise<void>;
+		};
+		check(browserKey, "Native Tab regression needs keyboard input");
+		await browserKey("Tab");
+		await until(
+			() =>
+				trigger.getAttribute("aria-expanded") === "false" &&
+				document.activeElement ===
+					container.querySelector(".analysis-list button"),
+			"Tab must dismiss creation choices and advance to the first analysis",
 		);
 		await open();
 		trigger.click();
@@ -491,6 +518,26 @@ export async function analysisReading(h: BrowserHarness) {
 			document.activeElement === button("版本信息"),
 			"Version menu Home must return to version information",
 		);
+		const scroller = trigger.closest<HTMLElement>(".analysis-panel");
+		const popup = container.querySelector<HTMLElement>(
+			".analysis-document-menu",
+		);
+		check(scroller && popup, "Document menu must belong to the reading panel");
+		scroller.style.cssText = "height: 200px; min-height: 0; overflow: auto";
+		scroller.scrollTop =
+			trigger.getBoundingClientRect().bottom -
+			scroller.getBoundingClientRect().top +
+			30;
+		const scrollTop = scroller.scrollTop;
+		await until(
+			() =>
+				scrollTop > 0 &&
+				Math.abs(
+					parseFloat(popup.style.top) -
+						Math.max(8, trigger.getBoundingClientRect().bottom + 6),
+				) < 1,
+			"Document menu must follow its trigger during panel scrolling",
+		);
 		key(button("版本信息"), "Escape");
 		await until(
 			() =>
@@ -498,6 +545,11 @@ export async function analysisReading(h: BrowserHarness) {
 				document.activeElement === trigger,
 			"Escape must close version menu and restore its trigger focus",
 		);
+		check(
+			scroller.scrollTop === scrollTop,
+			"Returning focus must not scroll the trigger back into view",
+		);
+		scroller.style.cssText = "";
 		key(trigger, "ArrowDown");
 		await until(
 			() => document.activeElement === button("版本信息"),

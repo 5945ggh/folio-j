@@ -84,23 +84,20 @@ export async function refreshAfterSegmentsDeletion(
 	const jobIds = new Set<string>();
 	for (const query of cached) {
 		const [kind, id] = query.queryKey;
+		const isAnalysis =
+			kind === "analyses" ||
+			kind === "analysis" ||
+			(kind === "catalog" && id === "analyses");
+		const isThread = kind === "chat-threads" || kind === "chat-thread";
+		if (!isAnalysis && !isThread) continue;
+		const ownsList =
+			(kind === "analyses" || kind === "chat-threads") &&
+			segmentIds.has(String(id));
 		for (const record of records(query.state.data)) {
-			if (
-				!segmentIds.has(String(record.segment_id)) &&
-				!(
-					(kind === "analyses" || kind === "chat-threads") &&
-					segmentIds.has(String(id))
-				)
-			)
-				continue;
+			if (!ownsList && !segmentIds.has(String(record.segment_id))) continue;
 			if (typeof record.id !== "string") continue;
-			if (
-				kind === "analyses" ||
-				kind === "analysis" ||
-				(kind === "catalog" && id === "analyses")
-			)
-				analysisIds.add(record.id);
-			if (kind === "chat-threads" || kind === "chat-thread") {
+			if (isAnalysis) analysisIds.add(record.id);
+			else {
 				threadIds.add(record.id);
 				if (typeof record.active_job_id === "string")
 					jobIds.add(record.active_job_id);
@@ -108,13 +105,13 @@ export async function refreshAfterSegmentsDeletion(
 		}
 	}
 	for (const query of cached) {
+		const [kind] = query.queryKey;
+		if (kind !== "chat-job" && kind !== "chat-request") continue;
 		for (const record of records(query.state.data))
 			if (
 				typeof record.thread_id === "string" &&
 				threadIds.has(record.thread_id) &&
-				typeof record.id === "string" &&
-				(query.queryKey[0] === "chat-job" ||
-					query.queryKey[0] === "chat-request")
+				typeof record.id === "string"
 			)
 				jobIds.add(record.id);
 	}
@@ -124,8 +121,6 @@ export async function refreshAfterSegmentsDeletion(
 		...cached
 			.filter(
 				({ queryKey: [kind], state }) =>
-					state.data === undefined &&
-					state.fetchStatus === "fetching" &&
 					[
 						"analysis",
 						"analysis-impact",
@@ -133,7 +128,9 @@ export async function refreshAfterSegmentsDeletion(
 						"chat-messages",
 						"chat-request",
 						"chat-job",
-					].includes(String(kind)),
+					].includes(String(kind)) &&
+					state.fetchStatus === "fetching" &&
+					state.data === undefined,
 			)
 			.map(({ queryKey }) => queryKey),
 		...ids.flatMap(segmentCacheKeys),

@@ -4,15 +4,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import {
-	type ReactNode,
-	useCallback,
-	useEffect,
-	useId,
-	useLayoutEffect,
-	useRef,
-	useState,
-} from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { ConfirmDialog, InlineError } from "../Shared";
 import { AnalysisRenameDialog } from "./AnalysisRenameDialog";
 import {
@@ -26,6 +18,7 @@ import {
 import { Markdown } from "./Markdown";
 import { analysisPresentation } from "./presentation";
 import { readingAnalysis } from "./state";
+import { useAnalysisActionMenu } from "./useAnalysisActionMenu";
 import "./reading.css";
 
 const pageSize = 100;
@@ -393,46 +386,9 @@ function DocumentActions({
 	onRename: () => void;
 	onDelete: () => void;
 }) {
-	const menuId = useId();
+	const { triggerProps, menuProps, closeMenu } = useAnalysisActionMenu();
 	const versionTitleId = useId();
-	const trigger = useRef<HTMLButtonElement>(null);
-	const menu = useRef<HTMLDivElement>(null);
-	const lastItemFirst = useRef(false);
-	const [menuOpen, setMenuOpen] = useState(false);
 	const [versionOpen, setVersionOpen] = useState(false);
-	const positionMenu = useCallback(() => {
-		const element = menu.current;
-		const box = trigger.current?.getBoundingClientRect();
-		if (!element || !box) return;
-		const bounds = element.getBoundingClientRect();
-		element.style.top = `${Math.max(8, Math.min(box.bottom + 6, window.innerHeight - bounds.height - 8))}px`;
-		element.style.right = `${Math.max(8, Math.min(window.innerWidth - bounds.width - 8, window.innerWidth - box.right))}px`;
-	}, []);
-	useLayoutEffect(() => {
-		if (!menuOpen) return;
-		positionMenu();
-		const controls = menu.current?.querySelectorAll<HTMLButtonElement>(
-			"button:not(:disabled)",
-		);
-		(lastItemFirst.current
-			? controls?.item(controls.length - 1)
-			: controls?.item(0)
-		)?.focus();
-		lastItemFirst.current = false;
-	}, [menuOpen, positionMenu]);
-	useEffect(() => {
-		if (!menuOpen) return;
-		window.addEventListener("resize", positionMenu);
-		window.addEventListener("scroll", positionMenu, true);
-		return () => {
-			window.removeEventListener("resize", positionMenu);
-			window.removeEventListener("scroll", positionMenu, true);
-		};
-	}, [menuOpen, positionMenu]);
-	const closeMenu = () => {
-		menu.current?.hidePopover();
-		trigger.current?.focus();
-	};
 	return (
 		<div className="analysis-document-actions">
 			{document.revision_id === document.current_revision_id && onEdit && (
@@ -448,70 +404,18 @@ function DocumentActions({
 			)}
 			<button
 				type="button"
-				ref={trigger}
+				{...triggerProps}
 				className="analysis-menu-trigger"
 				aria-label={`「${document.title}」的更多操作`}
 				title="更多操作"
-				aria-haspopup="menu"
-				aria-expanded={menuOpen}
-				popoverTarget={menuId}
-				onKeyDown={(event) => {
-					if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-					event.preventDefault();
-					lastItemFirst.current = event.key === "ArrowUp";
-					menu.current?.showPopover();
-				}}
 			>
 				<span aria-hidden="true">···</span>
 			</button>
 			<div
-				ref={menu}
-				id={menuId}
-				popover="auto"
-				className="analysis-document-menu popover-motion"
+				{...menuProps}
 				role="menu"
+				className="analysis-document-menu popover-motion"
 				aria-label={`「${document.title}」的更多操作`}
-				onToggle={(event) => {
-					setMenuOpen(event.newState === "open");
-					if (
-						event.newState === "closed" &&
-						(menu.current?.contains(globalThis.document.activeElement) ||
-							globalThis.document.activeElement === globalThis.document.body)
-					)
-						trigger.current?.focus();
-				}}
-				onKeyDown={(event) => {
-					if (event.key === "Escape" || event.key === "Tab") {
-						if (event.key === "Escape") {
-							event.preventDefault();
-							event.stopPropagation();
-						}
-						closeMenu();
-						return;
-					}
-					const controls = Array.from(
-						event.currentTarget.querySelectorAll<HTMLButtonElement>(
-							"button:not(:disabled)",
-						),
-					);
-					const index = controls.indexOf(
-						globalThis.document.activeElement as HTMLButtonElement,
-					);
-					const next =
-						event.key === "Home"
-							? 0
-							: event.key === "End"
-								? controls.length - 1
-								: event.key === "ArrowDown"
-									? (index + 1) % controls.length
-									: event.key === "ArrowUp"
-										? (index - 1 + controls.length) % controls.length
-										: null;
-					if (next !== null) {
-						event.preventDefault();
-						controls[next]?.focus();
-					}
-				}}
 			>
 				<button
 					type="button"

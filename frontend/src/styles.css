@@ -960,72 +960,6 @@ a {
 .analysis-panel {
 	min-height: 240px;
 }
-.analysis-toolbar {
-	display: flex;
-	align-items: end;
-	justify-content: space-between;
-	flex-wrap: wrap;
-	gap: 14px;
-	margin-bottom: 27px;
-}
-.analysis-picker-wrap {
-	display: grid;
-	gap: 7px;
-	min-width: min(100%, 280px);
-}
-.analysis-picker-wrap h2 {
-	margin: 0;
-	color: light-dark(#565b61, var(--color-text-secondary));
-	font-size: 16px;
-	font-weight: 580;
-}
-
-.analysis-list {
-	display: grid;
-	gap: 4px;
-	margin: -12px 0 24px;
-	padding: 5px;
-	border: 1px solid light-dark(#e4e7ea, var(--color-border));
-	border-radius: 6px;
-	background: var(--color-surface-subtle);
-}
-.analysis-list button {
-	display: grid;
-	gap: 5px;
-	width: 100%;
-	padding: 9px 11px;
-	border: 0;
-	border-radius: 4px;
-	background: transparent;
-	color: var(--workspace-content-text);
-	text-align: left;
-	cursor: pointer;
-}
-.analysis-list button:hover,
-.analysis-list button[aria-current="true"] {
-	background: var(--color-accent-soft);
-}
-.analysis-list strong {
-	font-size: 12px;
-	font-weight: 600;
-}
-.analysis-list small {
-	color: light-dark(#7a828b, var(--color-text-muted));
-	font-size: 10px;
-	line-height: 1.5;
-	overflow-wrap: anywhere;
-}
-.analysis-toolbar-actions {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 10px;
-}
-.analysis-toolbar .button {
-	min-height: 33px;
-	padding: 7px 11px;
-	font-size: 11px;
-}
 .analysis-quiet-button {
 	padding: 5px 0;
 	border: 0;
@@ -2182,16 +2116,6 @@ a {
 	.segment-analyses {
 		margin-top: 18px;
 		padding-top: 15px;
-	}
-	.analysis-toolbar {
-		gap: 8px;
-		margin-bottom: 16px;
-	}
-	.analysis-toolbar-actions {
-		gap: 8px;
-	}
-	.analysis-picker-wrap {
-		width: 100%;
 	}
 
 	.chat-pane-header {

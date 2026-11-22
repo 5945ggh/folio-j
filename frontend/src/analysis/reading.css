@@ -3,10 +3,27 @@
 }
 
 .app-shell.segment-study-shell .analysis-toolbar {
+	display: flex;
 	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 14px;
 	margin-bottom: 12px;
 	padding-bottom: 8px;
 	border-bottom: 1px solid var(--border);
+}
+
+.analysis-toolbar-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.analysis-toolbar .button {
+	min-height: 33px;
+	padding: 7px 11px;
+	font-size: 11px;
 }
 
 .app-shell.segment-study-shell .analysis-back-button {
@@ -36,13 +53,16 @@
 }
 
 .app-shell.segment-study-shell .analysis-picker-wrap {
-	width: auto;
+	display: grid;
+	gap: 7px;
 	min-width: 0;
 }
 
 .app-shell.segment-study-shell .analysis-picker-wrap h2 {
+	margin: 0;
 	color: var(--text, inherit);
 	font-size: 15px;
+	font-weight: 580;
 }
 
 .app-shell.segment-study-shell .analysis-quiet-button {
@@ -59,20 +79,27 @@
 }
 
 .app-shell.segment-study-shell .analysis-list {
-	gap: 0;
-	margin: 0 0 24px;
-	padding: 0;
-	border: 0;
-	border-radius: 0;
+	display: grid;
+	margin-bottom: 24px;
 	background: var(--surface);
 }
 
 .app-shell.segment-study-shell .analysis-list button {
+	display: grid;
 	gap: 8px;
+	width: 100%;
 	padding: 18px 10px;
+	border: 0;
 	border-bottom: 1px solid var(--border);
 	border-radius: 0;
+	background: transparent;
 	color: var(--text, inherit);
+	text-align: left;
+	cursor: pointer;
+}
+
+.app-shell.segment-study-shell .analysis-list button[aria-current="true"] {
+	background: var(--color-accent-soft);
 }
 
 .app-shell.segment-study-shell .analysis-list button:hover {
@@ -81,12 +108,14 @@
 
 .app-shell.segment-study-shell .analysis-list strong {
 	font-size: 16px;
+	font-weight: 600;
 }
 
 .app-shell.segment-study-shell .analysis-list small {
 	color: var(--muted);
 	font-size: 12px;
 	line-height: 1.7;
+	overflow-wrap: anywhere;
 }
 
 .app-shell.segment-study-shell .analysis-document-header {
@@ -345,6 +374,11 @@
 }
 
 @media (max-width: 560px) {
+	.app-shell.segment-study-shell .analysis-toolbar,
+	.analysis-toolbar-actions {
+		gap: 8px;
+	}
+
 	.app-shell.segment-study-shell .analysis-document-header {
 		gap: 8px;
 	}

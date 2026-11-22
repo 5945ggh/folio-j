@@ -11,6 +11,11 @@ const segment = {
 
 test("deletion retires late reads and related caches while retaining other learning content", async () => {
 	const client = new QueryClient();
+	client.setQueryData(["catalog", "sources"], {
+		get pages(): never {
+			throw new Error("Unrelated catalog pages must not be traversed");
+		},
+	});
 	client.setQueryData(["analyses", "segment"], {
 		items: [{ id: "analysis", segment_id: "segment" }],
 	});
@@ -53,7 +58,7 @@ test("deletion retires late reads and related caches while retaining other learn
 	});
 	const pending = client
 		.fetchQuery({
-			queryKey: ["analysis", "analysis", "late-revision"],
+			queryKey: ["analysis", "unknown-owner", "late-revision"],
 			queryFn: () => late,
 		})
 		.catch(() => undefined);
@@ -70,7 +75,7 @@ test("deletion retires late reads and related caches while retaining other learn
 		assert.equal(client.getQueryData([kind, "segment"]), undefined);
 	for (const key of [
 		["analysis", "analysis", "revision"],
-		["analysis", "analysis", "late-revision"],
+		["analysis", "unknown-owner", "late-revision"],
 		["analysis-impact", "analysis"],
 		["chat-thread", "thread"],
 		["chat-messages", "thread"],
@@ -156,6 +161,26 @@ test("deletion keeps active pagination, removes the row and waits for list refre
 		client.getQueryCache().find({ queryKey })?.getObserversCount(),
 		1,
 	);
+	unsubscribe();
+	client.clear();
+});
+
+test("failed refresh cannot restore a deleted row to an active list", async () => {
+	const client = new QueryClient();
+	const queryKey = ["source-segments", segment.source_id];
+	client.setQueryData(queryKey, { items: [segment, { id: "other" }] });
+	const observer = new QueryObserver(client, {
+		queryKey,
+		queryFn: async () => {
+			throw new Error("List refresh failed");
+		},
+		retry: false,
+		staleTime: Infinity,
+	});
+	const unsubscribe = observer.subscribe(() => {});
+	await refreshAfterSegmentDeletion(client, segment);
+	assert.equal(observer.getCurrentResult().isRefetchError, true);
+	assert.deepEqual(client.getQueryData(queryKey), { items: [{ id: "other" }] });
 	unsubscribe();
 	client.clear();
 });
