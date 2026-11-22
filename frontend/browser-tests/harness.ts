@@ -17,3 +17,21 @@ export type BrowserHarness = {
 	) => Promise<() => void>;
 	mock: (handler: (request: Request) => Promise<Response>) => void;
 };
+
+type BrowserCheck = () => Promise<string>;
+
+export async function runBrowserSuite(
+	suite: string | null,
+	namedSuites: ReadonlyMap<string, BrowserCheck>,
+	defaultChecks: readonly BrowserCheck[],
+): Promise<string[]> {
+	if (suite !== null) {
+		const run = namedSuites.get(suite);
+		if (!run)
+			throw new Error(`Unknown browser suite: ${JSON.stringify(suite)}`);
+		return [await run()];
+	}
+	const lines: string[] = [];
+	for (const run of defaultChecks) lines.push(await run());
+	return lines;
+}

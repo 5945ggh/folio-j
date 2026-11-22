@@ -5,6 +5,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 import {
+	assertBrowserResult,
+	browserScenarioUrl,
 	browserScreenshotName,
 	selectBrowserScenarios,
 } from "./browser-test-plan.mjs";
@@ -310,22 +312,8 @@ export default function ObservedMarkdown(props) {
 	console.log(`Browser regression page: ${url}`);
 	let completed = 0;
 	for (const [width, height, query] of scenarios) {
-		let testQuery = process.env.BROWSER_TEST_BASELINE
-			? `${query}&baseline`
-			: query;
-		if (process.env.BROWSER_TEST_PREVIEW) {
-			const preview = new URLSearchParams(testQuery);
-			preview.set("preview", "");
-			preview.set("path", process.env.BROWSER_TEST_PREVIEW);
-			if (process.env.BROWSER_TEST_PANEL)
-				preview.set("panel", process.env.BROWSER_TEST_PANEL);
-			if (process.env.BROWSER_TEST_THEME)
-				preview.set("mode", process.env.BROWSER_TEST_THEME);
-			testQuery = `?${preview}`;
-		} else if (process.env.BROWSER_TEST_SCREENSHOT_DIR) {
-			testQuery += "&capture";
-		}
-		const scene = `${width}x${height}${testQuery}`;
+		const destination = browserScenarioUrl(url, query, process.env);
+		const scene = `${width}x${height}${destination.search}`;
 		console.log(
 			`Browser scenario ${completed + 1}/${scenarios.length}: ${scene}`,
 		);
@@ -354,7 +342,7 @@ export default function ObservedMarkdown(props) {
 		let lastMethod = "launch";
 		let lastPageState;
 		let stoppedError;
-		const exceptions = [];
+		const exceptions = new Map();
 		const pending = new Map();
 		const rejectPending = (error) => {
 			stoppedError = error;
@@ -382,8 +370,10 @@ export default function ObservedMarkdown(props) {
 				const message = JSON.parse(incoming.slice(0, boundary));
 				incoming = incoming.slice(boundary + 1);
 				if (message.method === "Runtime.exceptionThrown") {
-					exceptions.push(message.params.exceptionDetails);
-					if (exceptions.length > 3) exceptions.shift();
+					const details = message.params.exceptionDetails;
+					exceptions.set(details.exceptionId, details);
+				} else if (message.method === "Runtime.exceptionRevoked") {
+					exceptions.delete(message.params.exceptionId);
 				}
 				if (
 					message.method === "Runtime.bindingCalled" &&
@@ -499,7 +489,7 @@ export default function ObservedMarkdown(props) {
 		const timeout = setTimeout(() => {
 			rejectPending(
 				new Error(
-					`Browser regression timed out in ${scene}; last command ${lastMethod}; page ${JSON.stringify(lastPageState)}; exceptions ${JSON.stringify(exceptions)}\n${stderr}`,
+					`Browser regression timed out in ${scene}; last command ${lastMethod}; page ${JSON.stringify(lastPageState)}; exceptions ${JSON.stringify([...exceptions.values()])}\n${stderr}`,
 				),
 			);
 			browser.kill();
@@ -564,7 +554,7 @@ export default function ObservedMarkdown(props) {
 				sessionId,
 			);
 			if (
-				["theme", "app-theme"].includes(new URLSearchParams(query).get("suite"))
+				["theme", "app-theme"].includes(destination.searchParams.get("suite"))
 			) {
 				await command(
 					"Emulation.setEmulatedMedia",
@@ -572,14 +562,14 @@ export default function ObservedMarkdown(props) {
 						features: [
 							{
 								name: "prefers-color-scheme",
-								value: new URLSearchParams(query).get("system") ?? "light",
+								value: destination.searchParams.get("system") ?? "light",
 							},
 						],
 					},
 					sessionId,
 				);
 			}
-			if (new URLSearchParams(query).has("reduced-motion")) {
+			if (destination.searchParams.has("reduced-motion")) {
 				await command(
 					"Emulation.setEmulatedMedia",
 					{ features: [{ name: "prefers-reduced-motion", value: "reduce" }] },
@@ -596,8 +586,7 @@ export default function ObservedMarkdown(props) {
 				},
 				sessionId,
 			);
-			const destination = `${url}${testQuery}`;
-			await command("Page.navigate", { url: destination }, sessionId);
+			await command("Page.navigate", { url: destination.href }, sessionId);
 			// Use actual rendering and scroll/ResizeObserver delivery, not virtual time.
 			// Probe from Node so waiting cannot remain bound to a discarded document.
 			let result;
@@ -613,12 +602,14 @@ export default function ObservedMarkdown(props) {
 				if (evaluated.exceptionDetails)
 					throw new Error(JSON.stringify(evaluated.exceptionDetails));
 				lastPageState = evaluated.result.value;
-				if (lastPageState?.href === destination && lastPageState.status)
+				if (lastPageState?.href === destination.href && lastPageState.status)
 					result = lastPageState;
 				else await new Promise((resolve) => setTimeout(resolve, 20));
 			}
-			if (result.status !== "passed") throw new Error(result.text);
-			if (process.env.BROWSER_TEST_SCREENSHOT_DIR) {
+			if (
+				result.status === "passed" &&
+				process.env.BROWSER_TEST_SCREENSHOT_DIR
+			) {
 				await command(
 					"Runtime.evaluate",
 					{ expression: "document.querySelector('#result').hidden = true" },
@@ -626,16 +617,21 @@ export default function ObservedMarkdown(props) {
 				);
 				const directory = path.resolve(process.env.BROWSER_TEST_SCREENSHOT_DIR);
 				await mkdir(directory, { recursive: true });
-				const filename = browserScreenshotName(width, height, testQuery);
+				const filename = browserScreenshotName(
+					width,
+					height,
+					destination.search,
+				);
 				const captured = await command(
 					"Page.captureScreenshot",
 					{ format: "png", captureBeyondViewport: false },
 					sessionId,
 				);
-				const destination = path.join(directory, filename);
-				await writeFile(destination, Buffer.from(captured.data, "base64"));
-				console.log(`Screenshot: ${destination}`);
+				const screenshot = path.join(directory, filename);
+				await writeFile(screenshot, Buffer.from(captured.data, "base64"));
+				console.log(`Screenshot: ${screenshot}`);
 			}
+			assertBrowserResult(scene, result, [...exceptions.values()]);
 			console.log(result.text);
 			completed++;
 		} finally {

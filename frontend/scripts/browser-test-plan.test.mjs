@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { runBrowserSuite } from "../browser-tests/harness.ts";
 import {
+	assertBrowserResult,
+	browserScenarioUrl,
 	browserScreenshotName,
 	selectBrowserScenarios,
 } from "./browser-test-plan.mjs";
@@ -81,4 +84,59 @@ test("screenshot names distinguish every scene flag and both viewport dimensions
 		browserScreenshotName(390, 900, "?theme=dark&suite=reader&capture"),
 		browserScreenshotName(390, 900, "?suite=reader&theme=dark"),
 	);
+});
+
+test("default and named screenshots keep the test page path and scene parameters", () => {
+	const base = "http://localhost/browser-tests/";
+	for (const query of ["", "?suite=reader-session&strict"]) {
+		const url = browserScenarioUrl(base, query, {
+			BROWSER_TEST_SCREENSHOT_DIR: "screenshots",
+		});
+		assert.equal(url.pathname, "/browser-tests/");
+		assert.deepEqual(
+			[...url.searchParams],
+			[...new URLSearchParams(query), ["capture", ""]],
+		);
+	}
+});
+
+test("only an absent suite runs the default checks, in order", async () => {
+	const calls = [];
+	const record = (name) => async () => {
+		calls.push(name);
+		return name;
+	};
+	const defaults = ["workbench", "cards", "context", "materials", "bookmarks"];
+	const named = new Map([["theme", record("theme")]]);
+	const run = (query) =>
+		runBrowserSuite(
+			new URLSearchParams(query).get("suite"),
+			named,
+			defaults.map(record),
+		);
+	assert.deepEqual(await run("?capture"), defaults);
+	assert.deepEqual(await run("?suite=theme"), ["theme"]);
+	await assert.rejects(run("?suite=typo"), /Unknown browser suite: "typo"/);
+	await assert.rejects(run("?suite="), /Unknown browser suite: ""/);
+	assert.deepEqual(calls, [...defaults, "theme"]);
+});
+
+test("uncaught page exceptions override PASS and retain their CDP details", () => {
+	const passed = { status: "passed", text: "PASS\nchecks completed" };
+	const details = {
+		text: "Uncaught",
+		exception: { description: "Error: before PASS" },
+		stackTrace: {
+			callFrames: [{ functionName: "throwBeforePass", lineNumber: 42 }],
+		},
+	};
+	assert.throws(
+		() => assertBrowserResult("600x900", passed, [details]),
+		(error) => {
+			assert.match(error.message, /Uncaught page exception\(s\) in 600x900/);
+			assert.ok(error.message.includes(JSON.stringify([details], null, 2)));
+			return true;
+		},
+	);
+	assert.doesNotThrow(() => assertBrowserResult("600x900", passed, []));
 });

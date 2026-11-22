@@ -19,6 +19,7 @@ import { dictionaryInflectionLayout } from "./dictionary-inflection-layout";
 import { dictionarySettings } from "./dictionary-settings";
 import { explanationRegression } from "./explanation";
 import { focusedNavigation } from "./focused-navigation";
+import { type BrowserHarness, runBrowserSuite } from "./harness";
 import { materialImport } from "./material-import";
 import { materialVocabulary } from "./material-vocabulary";
 import { modelSetup } from "./model-setup";
@@ -426,224 +427,84 @@ async function clearStudyContext() {
 }
 
 try {
-	const suite = new URLSearchParams(location.search).get("suite");
-	const standalone = new Map([
-		["native-select", nativeSelectRegression],
-		["material-vocabulary", materialVocabulary],
-		["settings-models", settingsModels],
-		["model-setup", modelSetup],
-		["settings-return", settingsReturn],
-		["focused-navigation", focusedNavigation],
-		["workbench-activity", workbenchActivityRegression],
-		["dictionary-settings", dictionarySettings],
-		["data-location", dataLocation],
-		["app-theme", appTheme],
-		["reader-images", readerImages],
-		["position-bookmarks", positionBookmarks],
-		["reader-layout-switch", readerLayoutSwitch],
-		["reader-scrollbar", readerScrollbar],
-		["reader-context-copy", readerContextCopy],
-		["reader-dictionary", readerDictionary],
-		["segment-dictionary", segmentDictionary],
-		["dictionary-inflection-layout", dictionaryInflectionLayout],
-		["reader-settings", readerSettings],
-		["reader-search", readerSearch],
-		["reader-image-performance", readerImages],
-		["catalog-overview", overviewImportRegression],
-		["source-deletion", sourceDeletion],
-		["source-directory", sourceDirectoryRegression],
-		["source-edit-delete", sourceEditDelete],
-		["source-onboarding", sourceOnboarding],
-		["catalog-reuse", reusedImportRegression],
-		["catalog-toolbar", catalogToolbarRegression],
-		["segment-catalog", segmentCatalog],
-		["record-saving", recordSaving],
-		["navigation-feedback", navigationFeedback],
-		["segment-navigation", segmentNavigation],
-		["route-motion", routeMotion],
-		["route-loading", routeLoading],
-	]).get(suite ?? "");
-	const lines = standalone
-		? [
-				await standalone(
-					{
-						container,
-						check,
-						until,
-						inputValue,
-						mount,
-						mock: (handler) => {
-							handleRequest = handler;
-						},
-					},
-					new URLSearchParams(location.search).has("preview"),
-				),
-			]
-		: suite === "theme"
-			? [
-					await themeRegression({
-						container,
-						check,
-						until,
-						inputValue,
-						mount,
-						mock: (handler) => {
-							handleRequest = handler;
-						},
-					}),
-				]
-			: suite === "chapter-records" ||
-					suite === "margin-record-targets" ||
-					suite === "inline-records" ||
-					suite === "translation-removal"
-				? [
-						await chapterRecords(
-							{
-								container,
-								check,
-								until,
-								inputValue,
-								mount,
-								mock: (handler) => {
-									handleRequest = handler;
-								},
-							},
-							new URLSearchParams(location.search).has("preview"),
-						),
-					]
-				: suite === "reader-clipboard"
-					? [
-							await readerClipboard(
-								new URLSearchParams(location.search).has("preview"),
-							),
-						]
-					: suite === "reading-aids"
-						? [
-								await readingAidsRegression(
-									{
-										container,
-										check,
-										until,
-										inputValue,
-										mount,
-										mock: (handler) => {
-											handleRequest = handler;
-										},
-									},
-									new URLSearchParams(location.search).has("preview"),
-								),
-							]
-						: suite === "translation"
-							? [
-									await translationRegression({
-										container,
-										check,
-										until,
-										inputValue,
-										mount,
-										mock: (handler) => {
-											handleRequest = handler;
-										},
-									}),
-								]
-							: suite === "explanation" ||
-									suite === "workbench-render" ||
-									suite === "workbench-history" ||
-									suite === "workbench" ||
-									suite === "segment-materials" ||
-									suite === "analysis-reading" ||
-									suite === "analysis-rename" ||
-									suite === "material-import" ||
-									suite === "segment-share"
-								? [
-										await (suite === "explanation"
-											? explanationRegression
-											: suite === "material-import"
-												? (h: Parameters<typeof materialImport>[0]) =>
-														materialImport(
-															h,
-															new URLSearchParams(location.search).get(
-																"preview",
-															) ||
-																new URLSearchParams(location.search).has(
-																	"preview",
-																),
-														)
-												: suite === "segment-share"
-													? segmentShareRegression
-													: suite === "analysis-rename"
-														? analysisRename
-														: suite === "analysis-reading"
-															? analysisReading
-															: suite === "segment-materials"
-																? segmentMaterials
-																: suite === "workbench-history"
-																	? workbenchHistory
-																	: suite === "workbench-render"
-																		? workbenchRender
-																		: workbenchRegression)({
-											container,
-											check,
-											until,
-											inputValue,
-											mount,
-											mock: (handler) => {
-												handleRequest = handler;
-											},
-										}),
-									]
-								: suite === "reader-bookmarks" || suite === "reader-session"
-									? [
-											await (suite === "reader-session"
-												? readerSession
-												: readerBookmarks)({
-												container,
-												check,
-												until,
-												inputValue,
-												mount,
-												mock: (handler) => {
-													handleRequest = handler;
-												},
-											}),
-										]
-									: [
-											await workbenchRegression({
-												container,
-												check,
-												until,
-												inputValue,
-												mount,
-												mock: (handler) => {
-													handleRequest = handler;
-												},
-											}),
-											await cardLayout(),
-											await clearStudyContext(),
-											await segmentMaterials({
-												container,
-												check,
-												until,
-												inputValue,
-												mount,
-												mock: (handler) => {
-													handleRequest = handler;
-												},
-											}),
-											await readerBookmarks(
-												{
-													container,
-													check,
-													until,
-													inputValue,
-													mount,
-													mock: (handler) => {
-														handleRequest = handler;
-													},
-												},
-												true,
-											),
-										];
+	const parameters = new URLSearchParams(location.search);
+	const preview = parameters.has("preview");
+	const harness: BrowserHarness = {
+		container,
+		check,
+		until,
+		inputValue,
+		mount,
+		mock: (handler) => {
+			handleRequest = handler;
+		},
+	};
+	const chapter = () => chapterRecords(harness, preview);
+	const namedSuites = new Map([
+		["native-select", () => nativeSelectRegression(harness, preview)],
+		["material-vocabulary", () => materialVocabulary(harness, preview)],
+		["settings-models", () => settingsModels(harness)],
+		["model-setup", () => modelSetup(harness)],
+		["settings-return", () => settingsReturn(harness)],
+		["focused-navigation", () => focusedNavigation(harness)],
+		["workbench-activity", () => workbenchActivityRegression(harness)],
+		["dictionary-settings", () => dictionarySettings(harness)],
+		["data-location", () => dataLocation(harness, preview)],
+		["app-theme", () => appTheme(harness, preview)],
+		["reader-images", () => readerImages(harness)],
+		["position-bookmarks", () => positionBookmarks(harness)],
+		["reader-layout-switch", () => readerLayoutSwitch(harness)],
+		["reader-scrollbar", () => readerScrollbar(harness)],
+		["reader-context-copy", () => readerContextCopy(harness, preview)],
+		["reader-dictionary", () => readerDictionary(harness)],
+		["segment-dictionary", () => segmentDictionary(harness)],
+		["dictionary-inflection-layout", () => dictionaryInflectionLayout(harness)],
+		["reader-settings", () => readerSettings(harness, preview)],
+		["reader-search", () => readerSearch(harness, preview)],
+		["reader-image-performance", () => readerImages(harness)],
+		["catalog-overview", () => overviewImportRegression(harness, preview)],
+		["source-deletion", () => sourceDeletion(harness, preview)],
+		["source-directory", () => sourceDirectoryRegression(harness)],
+		["source-edit-delete", () => sourceEditDelete(harness)],
+		["source-onboarding", () => sourceOnboarding(harness)],
+		["catalog-reuse", () => reusedImportRegression(harness, preview)],
+		["catalog-toolbar", () => catalogToolbarRegression(harness, preview)],
+		["segment-catalog", () => segmentCatalog(harness, preview)],
+		["record-saving", () => recordSaving(harness, preview)],
+		["navigation-feedback", () => navigationFeedback(harness, preview)],
+		["segment-navigation", () => segmentNavigation(harness)],
+		["route-motion", () => routeMotion(harness, preview)],
+		["route-loading", () => routeLoading(harness)],
+		["theme", () => themeRegression(harness)],
+		["chapter-records", chapter],
+		["margin-record-targets", chapter],
+		["inline-records", chapter],
+		["translation-removal", chapter],
+		["reader-clipboard", () => readerClipboard(preview)],
+		["reading-aids", () => readingAidsRegression(harness, preview)],
+		["translation", () => translationRegression(harness)],
+		["explanation", () => explanationRegression(harness)],
+		[
+			"material-import",
+			() => materialImport(harness, parameters.get("preview") || preview),
+		],
+		["segment-share", () => segmentShareRegression(harness)],
+		["analysis-rename", () => analysisRename(harness)],
+		["analysis-reading", () => analysisReading(harness)],
+		["segment-materials", () => segmentMaterials(harness)],
+		["workbench-history", () => workbenchHistory(harness)],
+		["workbench-render", () => workbenchRender(harness)],
+		["workbench", () => workbenchRegression(harness)],
+		["reader-session", () => readerSession(harness)],
+		["reader-bookmarks", () => readerBookmarks(harness)],
+	]);
+	const lines = await runBrowserSuite(parameters.get("suite"), namedSuites, [
+		() => workbenchRegression(harness),
+		cardLayout,
+		clearStudyContext,
+		() => segmentMaterials(harness),
+		() => readerBookmarks(harness, true),
+	]);
 	check(unexpectedRequests.length === 0, unexpectedRequests.join("\n"));
 	output.textContent = `PASS\n${lines.join("\n")}`;
 	output.dataset.status = "passed";
