@@ -28,7 +28,7 @@ export function SettingsReadingReturn() {
 function SegmentReturnIdentity({ segmentId }: { segmentId: string }) {
 	const segment = useQuery({
 		queryKey: queries.segment(segmentId),
-		queryFn: () => getSegment(segmentId),
+		queryFn: ({ signal }) => getSegment(segmentId, signal),
 		staleTime: Number.POSITIVE_INFINITY,
 		retry: false,
 	});

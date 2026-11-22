@@ -67,10 +67,10 @@ export async function getSource(id: string) {
 	});
 	return requireData(data, error, response.status);
 }
-export async function getSegment(id: string) {
+export async function getSegment(id: string, signal?: AbortSignal) {
 	const { data, error, response } = await api.GET(
 		"/api/segments/{segment_id}",
-		{ params: { path: { segment_id: id } } },
+		{ params: { path: { segment_id: id } }, signal },
 	);
 	return requireData(data, error, response.status);
 }

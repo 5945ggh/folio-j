@@ -13,6 +13,7 @@ import {
 	useCallback,
 	useEffect,
 	useId,
+	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
@@ -67,6 +68,7 @@ const ModelSetupDialog = lazy(() =>
 type Pending = PendingSubmission;
 type ExplanationInput = {
 	token: string;
+	epoch: number;
 	modelId: string;
 	segmentRevision: number;
 };
@@ -1005,6 +1007,7 @@ function ThreadPanel({
 
 export function Workbench({
 	active: viewActive = true,
+	discussionOpen = true,
 	headerAction,
 	segment,
 	explainToken,
@@ -1015,6 +1018,7 @@ export function Workbench({
 	onOpenArtifact,
 }: {
 	active?: boolean;
+	discussionOpen?: boolean;
 	headerAction?: ReactNode;
 	segment: Segment;
 	explainToken: string | null;
@@ -1061,8 +1065,14 @@ export function Workbench({
 	const [manualExplanationToken, setManualExplanationToken] = useState<
 		string | null
 	>(null);
-	const viewActiveRef = useRef(viewActive);
-	viewActiveRef.current = viewActive;
+	const navigationEpoch = useRef(0);
+	const shortcutEpoch = useRef(0);
+	useLayoutEffect(() => {
+		if (viewActive && discussionOpen)
+			return () => {
+				navigationEpoch.current++;
+			};
+	}, [viewActive, discussionOpen]);
 	useEffect(() => {
 		// Leaving to settings consumes only the not-yet-submitted automatic intent.
 		if (!viewActive && explainToken) setManualExplanationToken(explainToken);
@@ -1123,33 +1133,41 @@ export function Workbench({
 		selectedInfo.data,
 		segment.id,
 	]);
-	useEffect(() => {
+	useLayoutEffect(() => {
+		navigationEpoch.current++;
 		if (selectedThreadId) setSelected(selectedThreadId);
 		setView(selectedThreadId ? "detail" : "list");
 	}, [selectedThreadId]);
-	useEffect(() => {
-		if (explainToken) setView("detail");
+	useLayoutEffect(() => {
+		if (explainToken) {
+			shortcutEpoch.current = ++navigationEpoch.current;
+			setView("detail");
+		}
 	}, [explainToken]);
 	useEffect(() => {
 		if (defaults.data && firstModelId === null)
 			setFirstModelId(defaults.data.defaults.chat_model_id ?? "");
 	}, [defaults.data, firstModelId]);
+	function finishCreation(threadId: string, epoch: number) {
+		void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
+		if (epoch !== navigationEpoch.current) return;
+		setSelected(threadId);
+		onSelectThread(threadId);
+		setView("detail");
+	}
 	const create = useMutation({
 		mutationFn: ({
 			requestId,
 			modelId,
 		}: {
 			requestId: string;
+			epoch: number;
 			modelId?: string;
 		}) => createThread(segment.id, requestId, modelId),
-		onSuccess: (item) => {
+		onSuccess: (item, { epoch }) => {
 			setCreateKey(null);
-			if (viewActiveRef.current) {
-				setSelected(item.id);
-				onSelectThread(item.id);
-				setView("detail");
-			}
-			void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
+			client.setQueryData(chatKeys.thread(item.id), item);
+			finishCreation(item.id, epoch);
 		},
 		onError: (error) => {
 			if (!submissionMayHaveSucceeded(error)) setCreateKey(null);
@@ -1213,7 +1231,7 @@ export function Workbench({
 				[input.token]: { input, error, pending: false },
 			}));
 		},
-		onSuccess: ({ token, item, question, input, result }) => {
+		onSuccess: ({ token, item, question, input, result }, { epoch }) => {
 			setExplanationAttempts((old) => {
 				const next = { ...old };
 				delete next[token];
@@ -1253,12 +1271,7 @@ export function Workbench({
 							: new Error("提交失败"),
 				}));
 			}
-			if (viewActiveRef.current) {
-				setSelected(item.id);
-				onSelectThread(item.id);
-				setView("detail");
-			}
-			void client.invalidateQueries({ queryKey: chatKeys.threads(segment.id) });
+			finishCreation(item.id, epoch);
 		},
 	});
 	useEffect(() => {
@@ -1283,6 +1296,7 @@ export function Workbench({
 		handledExplanations.current.add(explainToken);
 		explain.mutate({
 			token: explainToken,
+			epoch: shortcutEpoch.current,
 			modelId: explanationModel,
 			segmentRevision: segment.revision,
 		});
@@ -1327,7 +1341,10 @@ export function Workbench({
 							onClick={() => {
 								const key = createKey ?? crypto.randomUUID();
 								setCreateKey(key);
-								create.mutate({ requestId: key });
+								create.mutate({
+									requestId: key,
+									epoch: ++navigationEpoch.current,
+								});
 							}}
 						>
 							<span aria-hidden="true">＋</span>
@@ -1346,6 +1363,7 @@ export function Workbench({
 							className="chat-thread"
 							onClick={() => {
 								setSelected(item.id);
+								navigationEpoch.current++;
 								onSelectThread(item.id);
 								setView("detail");
 							}}
@@ -1413,6 +1431,7 @@ export function Workbench({
 						data-tooltip="返回对话列表"
 						onClick={() => {
 							setView("list");
+							navigationEpoch.current++;
 							onSelectThread(null);
 						}}
 					>
@@ -1450,7 +1469,12 @@ export function Workbench({
 								<button
 									type="button"
 									className="button secondary"
-									onClick={() => explain.mutate(input)}
+									onClick={() =>
+										explain.mutate({
+											...input,
+											epoch: ++navigationEpoch.current,
+										})
+									}
 								>
 									重试新建讲解对话
 								</button>
@@ -1555,6 +1579,7 @@ export function Workbench({
 									handledExplanations.current.add(explainToken);
 									explain.mutate({
 										token: explainToken,
+										epoch: ++navigationEpoch.current,
 										modelId: firstModelId,
 										segmentRevision: segment.revision,
 									});

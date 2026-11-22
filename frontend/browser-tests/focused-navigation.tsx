@@ -962,17 +962,18 @@ function assertSegmentTools(h: BrowserHarness) {
 			".segment-tools .segment-tool",
 		),
 	];
-	const [home, back, discussion, more, settingsLink] = tools;
+	const [home, back, discussion, dictionary, more, settingsLink] = tools;
 	check(
-		tools.length === 5 &&
+		tools.length === 6 &&
 			home instanceof HTMLAnchorElement &&
 			home.getAttribute("href") === "/" &&
 			back instanceof HTMLAnchorElement &&
 			back.getAttribute("aria-label")?.startsWith("返回") &&
 			discussion?.id === "segment-discussion-toggle" &&
+			dictionary?.classList.contains("dict-trigger") &&
 			more?.id === "segment-more-trigger" &&
 			settingsLink?.getAttribute("aria-label") === "全局设置",
-		"Segment controls must keep Home, return, discussion, more and global settings in their intended order",
+		"Segment controls must keep Home, return, discussion, dictionary, more and global settings in order",
 	);
 	check(
 		tools.every((node) => !!node.querySelector('svg[aria-hidden="true"]')),
@@ -994,7 +995,9 @@ function assertSegmentTools(h: BrowserHarness) {
 			gaps[1] !== undefined &&
 			gaps[2] !== undefined &&
 			gaps[3] !== undefined &&
-			Math.max(gaps[0], gaps[3]) < Math.min(gaps[1], gaps[2]),
+			gaps[4] !== undefined &&
+			Math.max(gaps[0], gaps[4]) <
+				Math.min(gaps[1], horizontal ? gaps[2] : gaps[3]),
 		"Home/return and more/settings must form closer groups around the separate discussion control without overlaps",
 	);
 	check(

@@ -53,7 +53,7 @@ export function BookEditDialog({
 }) {
 	const details = useQuery({
 		queryKey: bookDetailsKey(id),
-		queryFn: () => getBookDetails(id),
+		queryFn: ({ signal }) => getBookDetails(id, signal),
 		staleTime: 0,
 	});
 	if (details.data)

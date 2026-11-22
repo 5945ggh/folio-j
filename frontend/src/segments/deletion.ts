@@ -1,6 +1,18 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import type { Segment } from "../content";
 
+export function segmentCacheKeys(id: string) {
+	return [
+		["segment", id],
+		["segments", id],
+		["segment-edit-current", id],
+		["segment-delete-impact", id],
+		["segment-translations", id],
+		["analyses", id],
+		["chat-threads", id],
+	];
+}
+
 function records(data: unknown): Record<string, unknown>[] {
 	if (Array.isArray(data)) return data.flatMap(records);
 	if (!data || typeof data !== "object") return [];
@@ -124,15 +136,7 @@ export async function refreshAfterSegmentsDeletion(
 					].includes(String(kind)),
 			)
 			.map(({ queryKey }) => queryKey),
-		...ids.flatMap((id) => [
-			["segment", id],
-			["segments", id],
-			["segment-edit-current", id],
-			["segment-delete-impact", id],
-			["segment-translations", id],
-			["analyses", id],
-			["chat-threads", id],
-		]),
+		...ids.flatMap(segmentCacheKeys),
 		...[...analysisIds].flatMap((id) => [
 			["analysis", id],
 			["analysis-impact", id],

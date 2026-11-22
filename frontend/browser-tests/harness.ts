@@ -20,6 +20,14 @@ export type BrowserHarness = {
 
 type BrowserCheck = () => Promise<string>;
 
+export function readGate() {
+	let release!: () => void;
+	const promise = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	return { promise, release };
+}
+
 export async function runBrowserSuite(
 	suite: string | null,
 	namedSuites: ReadonlyMap<string, BrowserCheck>,

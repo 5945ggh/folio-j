@@ -417,8 +417,16 @@ export default function ObservedMarkdown(props) {
 									type: eventType,
 									key,
 									code: key === "Shift" ? "ShiftLeft" : key,
-									windowsVirtualKeyCode:
-										key === "Escape" ? 27 : key === "Shift" ? 16 : 9,
+									windowsVirtualKeyCode: {
+										Escape: 27,
+										Shift: 16,
+										Tab: 9,
+										Enter: 13,
+									}[key],
+									text:
+										key === "Enter" && eventType === "keyDown"
+											? "\r"
+											: undefined,
 									modifiers: key === "Shift" && eventType === "keyDown" ? 8 : 0,
 								},
 								message.sessionId,

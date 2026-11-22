@@ -3,10 +3,10 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { Outlet, useLocation } from "react-router";
+import { Outlet, useLocation, useNavigate } from "react-router";
 import type { components } from "../src/api/schema";
 import type { Source } from "../src/content";
-import type { BrowserHarness } from "./harness";
+import { type BrowserHarness, readGate } from "./harness";
 import { overviewItems, showsOverview } from "./source-overview-fixture";
 import "../src/catalog/source-content.css";
 import "../src/catalog/sources-s2.css";
@@ -24,6 +24,10 @@ const other: Source = { ...source, id: "remaining-source", title: "残る出典"
 
 export async function sourceDeletion(h: BrowserHarness, preview = false) {
 	const { SourceDetail, SourceIndex } = await import("../src/SourcePages");
+	const { SegmentSessionHost } = await import(
+		"../src/segments/SegmentSessionHost"
+	);
+	const { BookDetailsPage } = await import("../src/catalog/BookDetailsPage");
 	const { catalogBooks, catalogKeys } = await import("../src/catalog/api");
 	const { container, mock, mount, until } = h;
 	const check: BrowserHarness["check"] = h.check;
@@ -35,6 +39,11 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 	let releaseDelete: ((response: Response) => void) | undefined;
 	let queryClient: QueryClient | undefined;
 	const refreshed = overviewItems(other.id, "削除後");
+	const deleted = overviewItems(source.id, "削除前");
+	const kept = overviewItems(other.id, "保存済");
+	let navigate!: ReturnType<typeof useNavigate>;
+	let impactGate: Promise<void> | undefined;
+	const returnRead = readGate();
 	const overviewReads = { analyses: 0, segments: 0, materials: 0 };
 	const impact: components["schemas"]["SourceDeleteImpact"] = {
 		source_id: source.id,
@@ -49,6 +58,28 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 	mock(async (request) => {
 		const url = new URL(request.url),
 			path = url.pathname;
+		for (const { segment, book } of [deleted, kept]) {
+			if (
+				path === `/api/segments/${segment.id}` ||
+				path === `/api/materials/${book.id}/details`
+			) {
+				if (removed) await returnRead.promise;
+				if (removed && segment.source_id === source.id)
+					return Response.json({ detail: "已删除" }, { status: 404 });
+				return Response.json(
+					path.includes("/segments/")
+						? segment
+						: { ...book, chapter_count: 1, original_title: book.title },
+				);
+			}
+			if (
+				path === `/api/segments/${segment.id}/analyses` ||
+				path === `/api/segments/${segment.id}/translation-results`
+			)
+				return Response.json([]);
+			if (path === `/api/materials/${book.id}/statistics`)
+				return Response.json({ detail: "统计暂不可用" }, { status: 503 });
+		}
 		if (request.method === "GET" && path === "/api/catalog/sources") {
 			directoryReads++;
 			const items = (removed ? [other] : [source, other]).map((item) => ({
@@ -70,6 +101,7 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 			path === `/api/sources/${source.id}/delete-impact`
 		) {
 			impactReads++;
+			await impactGate;
 			return Response.json({ ...impact });
 		}
 		if (request.method === "GET" && path === `/api/sources/${source.id}`)
@@ -128,6 +160,7 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 	});
 	function Routes() {
 		const location = useLocation();
+		navigate = useNavigate();
 		queryClient = useQueryClient();
 		// An active material directory query must refresh after source deletion.
 		useQuery({
@@ -160,7 +193,9 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 		return found;
 	}
 	const browserKey = (
-		window as Window & { browserKey?: (key: "Escape") => Promise<void> }
+		window as Window & {
+			browserKey?: (key: "Escape" | "Enter") => Promise<void>;
+		}
 	).browserKey;
 	async function trustedClick(node: HTMLElement) {
 		const pointer = (
@@ -205,11 +240,35 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 	}
 	localStorage.clear();
 	sessionStorage.clear();
-	const dispose = await mount(<Routes />, "/", `/sources/${source.id}`, [
-		{ path: "sources", element: <SourceIndex /> },
-		{ path: "sources/:id", element: <SourceDetail /> },
-	]);
+	const sourcePath = `/sources/${source.id}`;
+	const history = [
+		[`/segments/${kept.segment.id}`, kept.segment.text],
+		[`/materials/${kept.book.id}/details`, kept.book.title],
+		[`/segments/${deleted.segment.id}`, deleted.segment.text],
+		[`/materials/${deleted.book.id}/details`, deleted.book.title],
+	] as const;
+	const dispose = await mount(
+		<Routes />,
+		"/",
+		preview ? sourcePath : history[0][0],
+		[
+			{ path: "segments/:id", element: <SegmentSessionHost /> },
+			{ path: "materials/:id/details", element: <BookDetailsPage /> },
+			{ path: "sources", element: <SourceIndex /> },
+			{ path: "sources/:id", element: <SourceDetail /> },
+		],
+	);
 	try {
+		if (!preview) {
+			for (const [path, text] of history) {
+				if (path !== history[0][0]) await navigate(path);
+				await until(
+					() => !!container.textContent?.includes(text),
+					`Warm ${path}`,
+				);
+			}
+			await navigate(sourcePath);
+		}
 		await until(
 			() =>
 				!!container.querySelector("#source-menu-trigger") &&
@@ -353,6 +412,35 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 		);
 		if (preview)
 			return "source deletion: actual source detail confirmation preview";
+		check(
+			document.activeElement === button("取消", requiredDialog()),
+			"Deletion must focus cancel",
+		);
+		button("取消", requiredDialog()).click();
+		await until(() => !dialog(), "Cancel must close the preview");
+		const reread = readGate();
+		impactGate = reread.promise;
+		async function reopen() {
+			await trustedClick(trigger);
+			await trustedClick(button("删除来源及其内容…"));
+			await until(() => !!dialog(), "Deletion must reopen");
+		}
+		await reopen();
+		check(
+			button("确认删除").disabled &&
+				document.activeElement === button("取消", requiredDialog()),
+			"A cached impact must not enable delete or steal cancel focus during a reread",
+		);
+		check(browserKey, "Expected native keyboard input");
+		await browserKey("Enter");
+		await until(() => !dialog(), "Enter on reopen must cancel, not delete");
+		check(!deleteRequests, "Keyboard cancellation cannot delete a source");
+		reread.release();
+		await reopen();
+		await until(
+			() => !button("确认删除").disabled,
+			"Fresh impact unlocks explicit confirmation",
+		);
 		impact.analysis_count++;
 		const beforeImpact = impactReads;
 		const confirm = button("确认删除");
@@ -423,8 +511,26 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 				showsOverview(container, refreshed),
 			"Deleting a source must invalidate the remaining source's prefetched overview and refresh it",
 		);
-		return `source deletion ${innerWidth}px: menu, confirmation and directory refresh verified; remaining overview GETs after deletion ${Object.values(overviewReads).join("/")} including one prefetch per interface`;
+		for (const [path, text] of [...history].reverse()) {
+			await navigate(path === history[3][0] ? -2 : -1);
+			await until(
+				() => container.querySelector("[data-test-path]")?.textContent === path,
+				`Return to ${path}`,
+			);
+			if (path.includes(source.id))
+				check(
+					!container.textContent?.includes(text),
+					`Deleted detail flashed during return to ${path}`,
+				);
+			else
+				await until(
+					() => !!container.textContent?.includes(text),
+					`Unaffected detail must render from cache during its pending GET: ${path}`,
+				);
+		}
+		return `source deletion ${innerWidth}px: cancellation, fresh impact, scoped history and directory refresh verified`;
 	} finally {
+		returnRead.release();
 		if (!preview) dispose();
 	}
 }

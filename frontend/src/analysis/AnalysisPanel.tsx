@@ -351,7 +351,9 @@ export function AnalysisPanel({
 						<button
 							type="button"
 							className="button danger"
-							disabled={!impact.isSuccess || remove.isPending}
+							disabled={
+								!impact.isSuccess || impact.isFetching || remove.isPending
+							}
 							onClick={() => {
 								if (submittingDelete.current) return;
 								submittingDelete.current = true;
@@ -364,6 +366,7 @@ export function AnalysisPanel({
 							type="button"
 							className="button secondary"
 							disabled={remove.isPending}
+							data-dialog-cancel
 							onClick={() => {
 								if (!submittingDelete.current) setDeleting(null);
 							}}

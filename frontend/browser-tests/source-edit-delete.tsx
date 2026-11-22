@@ -8,7 +8,7 @@ import { Link, useLocation } from "react-router";
 import type { AnalysisDetail } from "../src/analysis/api";
 import type { Book } from "../src/catalog/api";
 import type { Source } from "../src/content";
-import type { BrowserHarness } from "./harness";
+import { type BrowserHarness, readGate } from "./harness";
 
 const source: Source = {
 	id: "editing-source",
@@ -543,6 +543,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 	};
 	let analysisReads = 0,
 		analysisDeletes = 0;
+	const reread = readGate();
 	releaseDelete = undefined;
 	mock(async (request) => {
 		const path = new URL(request.url).pathname;
@@ -560,6 +561,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 			path === `/api/analyses/${analysis.id}/delete-impact`
 		) {
 			analysisReads++;
+			if (analysisReads === 2) await reread.promise;
 			return Response.json({
 				analysis_id: analysis.id,
 				title: analysis.title,
@@ -613,6 +615,42 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		await until(
 			() => !!dialogText()?.includes("2 个修订"),
 			"Analysis impact loads",
+		);
+		check(
+			document.activeElement === button("取消", top()),
+			"Analysis deletion focuses cancel",
+		);
+		button("取消", top()).click();
+		await until(
+			() => !container.querySelector("dialog[open]"),
+			"Cancel closes analysis preview",
+		);
+		menu.click();
+		button("删除此讲解").click();
+		await until(() => analysisReads === 2, "Reopen starts a fresh impact read");
+		check(
+			button("确认删除").disabled &&
+				document.activeElement === button("取消", top()),
+			"Cached analysis impact must not unlock delete on reopen",
+		);
+		const key = (
+			window as Window & { browserKey?: (key: string) => Promise<void> }
+		).browserKey;
+		check(key, "Expected native keyboard input");
+		await key("Enter");
+		await until(
+			() => !container.querySelector("dialog[open]"),
+			"Enter must cancel on reopen",
+		);
+		check(!analysisDeletes, "Enter must not delete an analysis");
+		reread.release();
+		menu.click();
+		button("删除此讲解").click();
+		await until(
+			() =>
+				!!container.querySelector("dialog[open]") &&
+				!button("确认删除").disabled,
+			"Refreshed analysis impact enables explicit confirmation",
 		);
 		button("切换测试讲解").click();
 		await until(

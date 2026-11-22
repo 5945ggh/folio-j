@@ -541,7 +541,7 @@ function MaterialVocabulary({ id }: { id: string }) {
 	const location = useLocation();
 	const details = useQuery({
 		queryKey: bookDetailsKey(id),
-		queryFn: () => getBookDetails(id),
+		queryFn: ({ signal }) => getBookDetails(id, signal),
 	});
 	const back = returnDestination(location.state, {
 		to: `/materials/${id}/details`,

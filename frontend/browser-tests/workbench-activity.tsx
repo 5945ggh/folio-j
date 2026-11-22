@@ -5,7 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { useState } from "react";
 import type { Job, JobInput, listThreads, Thread } from "../src/chat/api";
-import type { BrowserHarness } from "./harness";
+import { type BrowserHarness, readGate } from "./harness";
 import { materialSegment } from "./segment-materials";
 import { makeJob, makeThread, provider, settings } from "./workbench";
 
@@ -22,6 +22,8 @@ export async function workbenchActivityRegression(h: BrowserHarness) {
 	const check: BrowserHarness["check"] = h.check;
 	let queryClient: QueryClient | undefined;
 	let scenario: "create" | "explanation" = "create";
+	const lateCreate = readGate();
+	const lateJob = readGate();
 	let releaseCreate = () => {};
 	const createGate = new Promise<void>((resolve) => {
 		releaseCreate = resolve;
@@ -59,6 +61,8 @@ export async function workbenchActivityRegression(h: BrowserHarness) {
 			if (request.method === "POST") {
 				createRequests++;
 				if (scenario === "create") await createGate;
+				if (scenario === "create" && createRequests === 2)
+					await lateCreate.promise;
 				threads = [createdThread, originalThread];
 				return Response.json(createdThread);
 			}
@@ -79,6 +83,7 @@ export async function workbenchActivityRegression(h: BrowserHarness) {
 			request.method === "POST"
 		) {
 			jobRequests++;
+			await lateJob.promise;
 			submittedInput = (await request.json()) as JobInput;
 			acceptedJob = {
 				...makeJob("succeeded"),
@@ -103,6 +108,7 @@ export async function workbenchActivityRegression(h: BrowserHarness) {
 	function Screen({ explanation = false }: { explanation?: boolean }) {
 		queryClient = useQueryClient();
 		const [active, setActive] = useState(true);
+		const [open, setOpen] = useState(true);
 		const [selected, setSelected] = useState<string | null>(null);
 		return (
 			<div style={{ height: "min(760px, 95dvh)", maxWidth: "720px" }}>
@@ -110,9 +116,13 @@ export async function workbenchActivityRegression(h: BrowserHarness) {
 					{active ? "暂离工作台" : "返回工作台"}
 				</button>
 				<output data-workbench-selection={selected ?? "list"} />
-				<div hidden={!active} data-workbench-active={String(active)}>
+				<button type="button" onClick={() => setOpen(!open)}>
+					{open ? "收起讨论" : "展开讨论"}
+				</button>
+				<div hidden={!active || !open} data-workbench-active={String(active)}>
 					<Workbench
 						active={active}
+						discussionOpen={open}
 						segment={materialSegment}
 						explainToken={explanation ? "resume-after-settings" : null}
 						selectedThreadId={selected}
@@ -196,6 +206,22 @@ export async function workbenchActivityRegression(h: BrowserHarness) {
 					?.textContent?.includes(createdThread.display_title),
 			"Returning must expose the saved new thread without selecting it",
 		);
+		action("新建对话").click();
+		await until(
+			() => createRequests === 2,
+			"A new creation must be in flight before folding",
+		);
+		action("收起讨论").click();
+		await settle();
+		lateCreate.release();
+		await until(
+			() => queryClient?.isMutating() === 0,
+			"Collapsed creation completes",
+		);
+		check(
+			selections.length === 0 && !!action("展开讨论"),
+			"A late creation cannot reopen or select a thread",
+		);
 	} finally {
 		releaseCreate();
 		dispose();
@@ -244,12 +270,24 @@ export async function workbenchActivityRegression(h: BrowserHarness) {
 			"Restoring activity must keep the unsubmitted explanation intent manual",
 		);
 		action("创建 AI 讲解").click();
+		await until(() => jobRequests === 1, "Explanation submission must start");
+		action("返回对话列表").click();
+		await settle();
+		container.querySelector<HTMLButtonElement>(".chat-thread")?.click();
 		await until(
-			() => jobRequests === 1 && !!container.querySelector(".chat-composer"),
+			() => selections.at(-1) === originalThread.id,
+			"Explicit thread selection takes precedence",
+		);
+		lateJob.release();
+		await until(
+			() =>
+				cachedThreads().some((item) => item.id === createdThread.id) &&
+				queryClient?.isMutating() === 0,
 			"Explicit continuation must submit the saved explanation intent once",
 		);
 		check(
-			createRequests === 1 &&
+			selections.at(-1) === originalThread.id &&
+				createRequests === 1 &&
 				promptRequests === 1 &&
 				submissions.join(",") === "resume-after-settings" &&
 				(submittedInput as JobInput | null)?.request_id ===

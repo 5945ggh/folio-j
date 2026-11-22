@@ -3,7 +3,7 @@ import { Loading, Shell } from "../Shared";
 
 /** Keep this boundary stable inside a retained view; navigation must not reset it. */
 export class PageBoundary extends Component<
-	{ children: ReactNode },
+	{ children: ReactNode; hideFallback?: boolean },
 	{ failed: boolean }
 > {
 	state = { failed: false };
@@ -14,7 +14,7 @@ export class PageBoundary extends Component<
 
 	render() {
 		if (this.state.failed)
-			return (
+			return this.props.hideFallback ? null : (
 				<Shell>
 					<div className="state-card" role="alert">
 						<h1>页面暂时无法打开</h1>
@@ -29,6 +29,10 @@ export class PageBoundary extends Component<
 					</div>
 				</Shell>
 			);
-		return <Suspense fallback={<Loading />}>{this.props.children}</Suspense>;
+		return (
+			<Suspense fallback={this.props.hideFallback ? null : <Loading />}>
+				{this.props.children}
+			</Suspense>
+		);
 	}
 }

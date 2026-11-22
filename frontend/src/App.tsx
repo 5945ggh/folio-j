@@ -63,7 +63,10 @@ export function App() {
 				</PageBoundary>
 			)}
 			{segmentRoute && (
-				<PageBoundary>
+				<PageBoundary
+					key={segmentRoute.segmentId}
+					hideFallback={segmentRoute.kind === "settings"}
+				>
 					<SegmentSessionHost />
 				</PageBoundary>
 			)}

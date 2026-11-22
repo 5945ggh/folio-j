@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router";
+import { PageBoundary } from "../navigation/PageBoundary";
 import {
 	advanceRetainedSession,
 	emptyRetainedSession,
@@ -42,7 +43,9 @@ export function SegmentSessionHost() {
 			aria-hidden={!state.active || undefined}
 		>
 			<ViewActivityProvider value={activity}>
-				<SegmentDetail entry={state.entry.value} />
+				<PageBoundary>
+					<SegmentDetail entry={state.entry.value} />
+				</PageBoundary>
 			</ViewActivityProvider>
 		</div>
 	);

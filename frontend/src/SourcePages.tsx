@@ -22,6 +22,7 @@ import { SourceDirectory } from "./catalog/SourceDirectory";
 import { SourceEditDialog } from "./catalog/SourceEditDialog";
 import { SourceSpace } from "./catalog/SourceSpace";
 import { SourceContent } from "./catalog/SourceViews";
+import { forgetSourceDetails } from "./catalog/source-deletion";
 import {
 	readCatalogState,
 	sourceEntrySearch,
@@ -333,7 +334,7 @@ function SourceDelete({
 				<button
 					className="button danger"
 					type="button"
-					disabled={!impact.isSuccess || remove.isPending}
+					disabled={!impact.isSuccess || impact.isFetching || remove.isPending}
 					onClick={() => {
 						if (submitting.current) return;
 						submitting.current = true;
@@ -346,6 +347,7 @@ function SourceDelete({
 					className="button secondary"
 					type="button"
 					disabled={remove.isPending}
+					data-dialog-cancel
 					onClick={cancel}
 				>
 					取消
@@ -655,10 +657,10 @@ export function SourceDetail() {
 						<SourceDelete
 							source={source.data}
 							close={() => setDeleting(false)}
-							deleted={() => {
+							deleted={async () => {
 								forgetSourceImports(client, id);
+								await forgetSourceDetails(client, id);
 								void client.invalidateQueries({ queryKey: queries.sources });
-								void client.invalidateQueries({ queryKey: queries.source(id) });
 								void client.invalidateQueries({ queryKey: catalogKeys.all });
 								void client.invalidateQueries({ queryKey: ["source-entry"] });
 								if (active.current) {

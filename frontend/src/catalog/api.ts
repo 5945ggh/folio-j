@@ -165,10 +165,10 @@ export async function getBookStatistics(
 export type BookMetadataUpdate =
 	components["schemas"]["MaterialMetadataUpdate"];
 export const bookDetailsKey = (id: string) => ["book-details", id] as const;
-export async function getBookDetails(id: string) {
+export async function getBookDetails(id: string, signal?: AbortSignal) {
 	const { data, error, response } = await api.GET(
 		"/api/materials/{material_id}/details",
-		{ params: { path: { material_id: id } } },
+		{ params: { path: { material_id: id } }, signal },
 	);
 	return requireData(data, error, response.status);
 }

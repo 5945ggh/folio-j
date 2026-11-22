@@ -22,7 +22,7 @@ function BookDetails({ id }: { id: string }) {
 	});
 	const details = useQuery({
 		queryKey: bookDetailsKey(id),
-		queryFn: () => getBookDetails(id),
+		queryFn: ({ signal }) => getBookDetails(id, signal),
 	});
 	const [editing, setEditing] = useState(false);
 	const [failedCover, setFailedCover] = useState<string | null>(null);

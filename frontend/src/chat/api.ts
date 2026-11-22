@@ -1,5 +1,5 @@
 import { api } from "../api/client";
-import type { components } from "../api/schema";
+import type { components, paths } from "../api/schema";
 import { requireData } from "../content";
 
 export type Thread = components["schemas"]["ThreadResponse"];
@@ -55,11 +55,7 @@ export async function getThread(threadId: string) {
 
 export async function patchThread(
 	threadId: string,
-	input: {
-		expected_revision: number;
-		model_id?: string | null;
-		permission_mode?: Thread["permission_mode"];
-	},
+	input: paths["/api/threads/{thread_id}"]["patch"]["requestBody"]["content"]["application/json"],
 ) {
 	const { data, error, response } = await api.PATCH(
 		"/api/threads/{thread_id}",

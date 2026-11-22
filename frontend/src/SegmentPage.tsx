@@ -260,7 +260,7 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 	>({});
 	const segment = useQuery({
 		queryKey: queries.segment(id),
-		queryFn: () => getSegment(id),
+		queryFn: ({ signal }) => getSegment(id, signal),
 		enabled: active,
 	});
 	useEffect(() => {
@@ -278,7 +278,7 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 			try {
 				await client.fetchQuery({
 					queryKey: queries.segment(id),
-					queryFn: () => getSegment(id),
+					queryFn: ({ signal }) => getSegment(id, signal),
 					staleTime: 0,
 					retry: false,
 				});
@@ -369,15 +369,18 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 		update.error instanceof RequestError && update.error.status === 409;
 	const conflictCurrent = useQuery({
 		queryKey: ["segment-edit-current", id, conflictReadVersion],
-		queryFn: async () => {
-			const fresh = await getSegment(id);
+		queryFn: async ({ signal }) => {
+			const fresh = await getSegment(id, signal);
+			signal.throwIfAborted();
 			client.setQueryData(queries.segment(id), fresh);
 			return fresh;
 		},
 		enabled: Boolean(editing) && editConflicted,
 		retry: false,
 	});
-	const current = segment.data;
+	const missing =
+		segment.error instanceof RequestError && segment.error.status === 404;
+	const current = missing ? undefined : segment.data;
 	const available = active && checked && segment.isSuccess;
 	activeId.current = available ? id : null;
 	useEffect(() => {
@@ -412,17 +415,9 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 					</p>
 				) : segment.isError ? (
 					<div className="segment-page-state" role="alert">
-						<h1>
-							{segment.error instanceof RequestError &&
-							segment.error.status === 404
-								? "找不到这条记录"
-								: "暂时无法加载"}
-						</h1>
+						<h1>{missing ? "找不到这条记录" : "暂时无法加载"}</h1>
 						<InlineError error={segment.error} />
-						{!(
-							segment.error instanceof RequestError &&
-							segment.error.status === 404
-						) && (
+						{!missing && (
 							<button
 								className="button secondary"
 								type="button"
@@ -637,6 +632,7 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 									<Workbench
 										key={current.id}
 										active={available}
+										discussionOpen={chatOpen}
 										headerAction={
 											<button
 												ref={discussionClose}

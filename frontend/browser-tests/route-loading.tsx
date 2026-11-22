@@ -1,4 +1,5 @@
 import { type ComponentType, lazy } from "react";
+import { useNavigate } from "react-router";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
 import { readerSession } from "./reader-session";
@@ -126,6 +127,14 @@ async function routeLoadingScenario(h: BrowserHarness) {
 			} satisfies Schema["SourceResponse"]);
 		if (path === "/api/segments/segment")
 			return Response.json({ ...materialSegment, material_provenance: null });
+		if (path === "/api/segments/broken")
+			return Response.json({
+				...materialSegment,
+				id: "broken",
+				material_provenance: null,
+				context_before: null,
+			});
+		if (path === "/api/segments/broken/analyses") return Response.json([]);
 		if (
 			path === "/api/segments/segment/analyses" ||
 			path === "/api/segments/segment/translation-results"
@@ -276,6 +285,48 @@ export async function routeLoading(h: BrowserHarness) {
 		);
 		// This separate scenario deliberately rejects a lazy import and exercises its error boundary.
 		await pageBoundaryFallbacks(h);
+		const { App, appRoutes } = await import("../src/App");
+		let navigate!: ReturnType<typeof useNavigate>;
+		function Screen() {
+			navigate = useNavigate();
+			return <App />;
+		}
+		const dispose = await h.mount(
+			<Screen />,
+			"/",
+			"/segments/broken",
+			appRoutes,
+		);
+		try {
+			await h.until(
+				() =>
+					!!h.container
+						.querySelector('[data-segment-session="active"] [role="alert"] h1')
+						?.textContent?.includes("页面暂时无法打开"),
+				"Segment render errors belong inside their retained instance",
+			);
+			await navigate("/settings?section=speech", {
+				state: { returnTo: { to: "/segments/broken", label: "片段" } },
+			});
+			await h.until(
+				() => !!h.container.querySelector(".device-speech-settings"),
+				"Associated settings must still open",
+			);
+			const failure = h.container.querySelector<HTMLElement>(
+				'[data-segment-session="paused"] [role="alert"]',
+			);
+			check(
+				failure && !failure.getClientRects().length,
+				"Associated settings must hide the failed segment shell",
+			);
+			await navigate("/segments/segment");
+			await h.until(
+				() => !!h.container.querySelector(".segment-original-focus"),
+				"A new segment must not inherit the previous error",
+			);
+		} finally {
+			dispose();
+		}
 		return result;
 	} finally {
 		console.error = original;
