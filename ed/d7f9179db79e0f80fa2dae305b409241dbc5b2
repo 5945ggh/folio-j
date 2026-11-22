@@ -1,0 +1,30 @@
+backend/tests/test_settings_patch.py
+  s_30fbaf937fee98::t_115d71d8411cff 9-12,21-23,88,92-96,100-104,108-111,115-122,126-132,136-139,143
+  s_30fbaf937fee98::t_d82ab373a6c40f 89-91,97-99,105-107,112-114,123-125,133-135,140-142
+  s_30fbaf937fee98::t_ddbb56b4da9aa9 144-145
+backend/src/app/services/dictionary_store.py
+  s_30fbaf937fee98::t_c5eee41ba751b9 298,344,348,354-366,457-460,466-471,476,478,736,787-788,797,800,816,820
+  s_30fbaf937fee98::t_dc629d0f867fe4 21,50
+backend/src/app/services/settings.py
+  s_30fbaf937fee98::t_d82ab373a6c40f 242,272
+backend/src/app/backup.py
+  s_30fbaf937fee98::t_9fd994cef26908 35,290-291,297-298,317,321
+backend/tests/test_backup.py
+  s_30fbaf937fee98::t_71762061c6cf0a 455,457-459,466,505,508-509,514-516
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "edd7f9179db79e0f80fa2dae305b409241dbc5b2",
+  "prompts": {},
+  "sessions": {
+    "s_30fbaf937fee98": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20297-947b-7583-b0cb-3ab84189223e",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
