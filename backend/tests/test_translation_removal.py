@@ -73,6 +73,28 @@ async def test_removal_hides_all_versions_only_at_exact_target_and_allows_explic
             task = (await client.get(f"/api/translation-tasks/{accepted.json()['id']}")).json()
             assert task["status"] == "succeeded", task
             tasks.append(task)
+        queries: list[str] = []
+
+        def capture(_conn: Any, _cursor: Any, sql: str, *_args: Any) -> None:
+            if sql.startswith("SELECT") and "translation_" in sql:
+                queries.append(sql)
+
+        engine = app.state.session_factory.kw["bind"].sync_engine
+        event.listen(engine, "before_cursor_execute", capture)
+        try:
+            for limit in (1, 3):
+                queries.clear()
+                page = (await client.get(path, params={"limit": limit})).json()
+                assert [row["id"] for row in page["results"]] == [
+                    row["result_id"] for row in reversed(tasks)
+                ][:limit]
+                assert len(queries) == 3
+            queries.clear()
+            impact = (await client.get(f"/api/materials/{material['id']}/delete-impact")).json()
+            assert impact["hidden_result_count"] == 3 and impact["retained_result_count"] == 0
+            assert len(queries) == 1
+        finally:
+            event.remove(engine, "before_cursor_execute", capture)
         before = counts(database)
         removed = await client.delete(removal_path(material, first))
         assert removed.status_code == 200, removed.text

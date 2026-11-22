@@ -874,6 +874,12 @@ async def catalog_provenance_summaries(
             )
         ).all()
     }
+    unchanged_products = {
+        material_id
+        for material_id, material in current_materials.items()
+        if (before := materials.get(material_id)) is not None
+        and material.identity() == before.identity()
+    }
     current_segments = (
         await session.scalars(
             select(Segment)
@@ -910,7 +916,7 @@ async def catalog_provenance_summaries(
             summary = SegmentProvenanceSummary(status="invalid_reference")
         elif current_summary.status != "snapshot_mismatch":
             summary = current_summary
-        elif material is None or before is None or material.identity() != before.identity():
+        elif material is None or before is None or origin.material_id not in unchanged_products:
             # Never attach a chapter derived from an obsolete immutable product.
             summary = current_summary.model_copy(update={"status": "version_unavailable"})
         elif segment.text != origin.text:

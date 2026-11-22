@@ -6,7 +6,7 @@ from functools import partial
 from typing import Any, cast
 
 from fastapi import FastAPI, HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
@@ -183,28 +183,33 @@ async def get_task(session: AsyncSession, task_id: str) -> TranslationTaskRespon
     return task_response(task)
 
 
-async def result_response(
-    session: AsyncSession, result: TranslationResult
-) -> TranslationResultResponse:
-    task = await session.get(TranslationTask, result.task_id)
-    assert task is not None
-    material = await visible_task(session, task)
-    payload = json.loads(task.payload)
-    adopted_segment_ids = list(
-        (
-            await session.scalars(
-                select(Segment.id)
-                .join(TranslationAdoption, TranslationAdoption.segment_id == Segment.id)
-                .where(
-                    TranslationAdoption.result_id == result.id,
-                    Segment.source_id == task.source_id,
-                    Segment.deleted_at.is_(None),
-                )
-                .distinct()
-                .order_by(Segment.created_at, Segment.id)
-            )
-        ).all()
+async def adopted_segments(
+    session: AsyncSession, result_ids: list[str], source_id: str
+) -> dict[str, list[str]]:
+    rows = await session.execute(
+        select(TranslationAdoption.result_id, Segment.id)
+        .join(Segment, Segment.id == TranslationAdoption.segment_id)
+        .where(
+            TranslationAdoption.result_id.in_(result_ids),
+            Segment.source_id == source_id,
+            Segment.deleted_at.is_(None),
+        )
+        .distinct()
+        .order_by(Segment.created_at, Segment.id)
     )
+    adopted: dict[str, list[str]] = {}
+    for result_id, segment_id in rows:
+        adopted.setdefault(result_id, []).append(segment_id)
+    return adopted
+
+
+def result_response(
+    result: TranslationResult,
+    task: TranslationTask,
+    material: Material,
+    adopted_segment_ids: list[str],
+) -> TranslationResultResponse:
+    payload = json.loads(task.payload)
     return TranslationResultResponse(
         id=result.id,
         task_id=task.id,
@@ -241,7 +246,11 @@ async def get_result(session: AsyncSession, result_id: str) -> TranslationResult
     result = await session.get(TranslationResult, result_id)
     if result is None:
         raise HTTPException(404, "译文不存在")
-    return await result_response(session, result)
+    task = await session.get(TranslationTask, result.task_id)
+    assert task is not None
+    material = await visible_task(session, task)
+    adopted = await adopted_segments(session, [result_id], task.source_id)
+    return result_response(result, task, material, adopted.get(result_id, []))
 
 
 async def history(
@@ -267,13 +276,27 @@ async def history(
             )
         ).all()
     )
+    page = rows[:limit]
+    result_ids = [task.result_id for task in page if task.result_id is not None]
     results: list[TranslationResultResponse] = []
-    for task in rows[:limit]:
-        if task.result_id:
-            results.append(await get_result(session, task.result_id))
+    if result_ids:
+        by_id = {
+            row.id: row
+            for row in await session.scalars(
+                select(TranslationResult).where(TranslationResult.id.in_(result_ids))
+            )
+        }
+        adopted = await adopted_segments(session, result_ids, material.source_id)
+        for task in page:
+            if task.result_id is None:
+                continue
+            result = by_id.get(task.result_id)
+            if result is None or result.task_id != task.id or task.source_id != material.source_id:
+                raise HTTPException(404, "译文不存在")
+            results.append(result_response(result, task, material, adopted.get(result.id, [])))
     return TranslationHistoryResponse(
         results=results,
-        tasks=[task_response(row) for row in rows[:limit]],
+        tasks=[task_response(row) for row in page],
         next_offset=offset + limit if len(rows) > limit else None,
     )
 
@@ -659,39 +682,46 @@ async def delete_impact(
     if material is None:
         raise HTTPException(404, "材料不存在")
     await require_source(session, material.source_id)
-    rows = (
-        await session.scalars(
-            select(TranslationTask).where(TranslationTask.material_id == material_id)
+    linked = func.count(Segment.id)
+    surviving = (
+        linked.filter(Segment.id.not_in(excluded_segment_ids)) if excluded_segment_ids else linked
+    )
+    rows = await session.execute(
+        select(
+            TranslationTask.status,
+            TranslationTask.result_id,
+            TranslationTask.reader_deleted_at,
+            linked,
+            surviving,
         )
-    ).all()
+        .outerjoin(TranslationAdoption, TranslationAdoption.result_id == TranslationTask.result_id)
+        .outerjoin(
+            Segment,
+            and_(
+                Segment.id == TranslationAdoption.segment_id,
+                Segment.deleted_at.is_(None),
+                Segment.source_id == TranslationTask.source_id,
+            ),
+        )
+        .where(TranslationTask.material_id == material_id)
+        .group_by(TranslationTask.id)
+    )
+    active = 0
     retained = 0
-    total = 0
-    excluded = set(excluded_segment_ids or [])
-    for task in rows:
-        if task.result_id is None:
+    hidden = 0
+    for status, result_id, reader_deleted_at, linked_count, surviving_count in rows:
+        active += int(status in ACTIVE)
+        if result_id is None or (reader_deleted_at is not None and not linked_count):
             continue
-        linked = list(
-            (
-                await session.scalars(
-                    select(TranslationAdoption.segment_id)
-                    .join(Segment, Segment.id == TranslationAdoption.segment_id)
-                    .where(
-                        TranslationAdoption.result_id == task.result_id,
-                        Segment.deleted_at.is_(None),
-                        Segment.source_id == task.source_id,
-                    )
-                )
-            ).all()
-        )
-        if not linked and task.reader_deleted_at is not None:
-            continue
-        total += 1
-        retained += int(any(segment_id not in excluded for segment_id in linked))
+        if surviving_count:
+            retained += 1
+        else:
+            hidden += 1
     return TranslationDeleteImpact(
         material_id=material_id,
-        hidden_result_count=total - retained,
+        hidden_result_count=hidden,
         retained_result_count=retained,
-        active_task_count=sum(row.status in ACTIVE for row in rows),
+        active_task_count=active,
     )
 
 
