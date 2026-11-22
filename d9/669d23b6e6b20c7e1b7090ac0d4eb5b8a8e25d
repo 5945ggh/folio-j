@@ -1,0 +1,23 @@
+frontend/src/materials/ruby-selection.test.ts
+  s_424ab1d25a167f::t_5524edcce1392a 6
+frontend/src/materials/ruby-test-dom.ts
+  s_424ab1d25a167f::t_5524edcce1392a 1-107
+frontend/src/materials/ruby-dom.test.ts
+  s_424ab1d25a167f::t_5524edcce1392a 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d9669d23b6e6b20c7e1b7090ac0d4eb5b8a8e25d",
+  "prompts": {},
+  "sessions": {
+    "s_424ab1d25a167f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a202cd-3808-7183-a011-9e63b354fc1b",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
