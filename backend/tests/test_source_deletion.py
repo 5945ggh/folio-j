@@ -3,7 +3,6 @@
 import asyncio
 import hashlib
 import sqlite3
-from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -13,8 +12,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from support_api import api_client
-from support_epub import compiled
-from test_database_contract import (
+from support_database import (
     JOB_ID,
     RUN_ID,
     SEGMENT_ID,
@@ -23,19 +21,13 @@ from test_database_contract import (
     insert_job,
     insert_run,
     rebuild_database,
+    table_snapshot,
 )
-from test_material_deletion import ASSET_TABLES, asset_snapshot, material_snapshot, seed_assets
+from support_epub import compiled
+from support_material_assets import ASSET_TABLES, asset_snapshot, material_snapshot, seed_assets
 
 from app.db import create_engine
 from app.services.sources import begin_write, soft_delete_discussions
-
-
-def table_snapshot(database: Path, tables: Sequence[str]) -> dict[str, list[tuple[Any, ...]]]:
-    with sqlite3.connect(database) as connection:
-        return {
-            table: connection.execute(f"SELECT * FROM {table} ORDER BY rowid").fetchall()
-            for table in tables
-        }
 
 
 def seed_learning_history(database: Path) -> None:

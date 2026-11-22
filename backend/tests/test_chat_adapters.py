@@ -5,7 +5,13 @@ from dataclasses import replace
 
 import httpx2 as httpx
 import pytest
-from test_settings_adapters import Protocol, completed_response, event, install_transport, snapshot
+from support_adapter_responses import (
+    Protocol,
+    completed_response,
+    event,
+    install_transport,
+    snapshot,
+)
 
 from app.llm import adapters
 

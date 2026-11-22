@@ -10,11 +10,11 @@ from httpx import Response
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
-from test_settings_api import (
+from support_settings import (
     create_provider,
     settings_client,
 )
-from test_settings_api import (
+from support_settings import (
     offline_discovery as offline_discovery,
 )
 

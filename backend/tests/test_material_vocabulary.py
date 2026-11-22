@@ -13,9 +13,7 @@ from typing import Any, NoReturn
 import pytest
 from support_api import chat_client
 from support_epub import compiled
-from test_material_statistics import seed
-from test_statistics import characters, source
-from test_vocabulary import vocabulary_sample
+from support_statistics import characters, seed, source, vocabulary_sample
 
 from app.epub_schemas import CompiledBook
 from app.nlp.contracts import DecodedReadings, TextResource

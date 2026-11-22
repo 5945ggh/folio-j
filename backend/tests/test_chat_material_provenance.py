@@ -6,17 +6,16 @@ import sqlite3
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any, NoReturn
-from uuid import uuid4
 
 import pytest
 from chat_tool_fixture import install_text_turn
-from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from support_api import accept, chat_client, question_payload, seed_chat
-from test_analysis_agent import refreshed
-from test_chat_prompt_scope import accepted_input
-from test_material_context_snapshot import snapshot_bytes, stored_origin
-from test_segment_provenance import compiled_provenance, create_segment, provenance, upload
+from support_api import accept, chat_client, question_payload, refreshed, seed_chat
+from support_chat_snapshots import accepted_input, snapshot_bytes, stored_origin
+from support_segment_provenance import (
+    compiled_provenance,
+    material_chat,
+)
 
 from app.jobs import runtime
 from app.llm import adapters
@@ -30,25 +29,6 @@ def offline_dependencies(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr("app.llm.adapters.discover_models", discover)
     monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
-
-
-async def material_chat(client: AsyncClient) -> dict[str, Any]:
-    seed = await seed_chat(client)
-    material = await upload(client, seed["source"]["id"])
-    created = await create_segment(
-        client,
-        seed["source"]["id"],
-        provenance(material),
-        source_ref="用户填写的出处补充",
-        note="不提供给模型的片段管理备注",
-    )
-    assert created.status_code == 201, created.text
-    segment = created.json()
-    response = await client.post(
-        f"/api/segments/{segment['id']}/threads", json={"request_id": str(uuid4())}
-    )
-    assert response.status_code == 201, response.text
-    return {**seed, "segment": segment, "thread": response.json(), "material": material}
 
 
 @pytest.mark.asyncio

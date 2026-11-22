@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import html
-import importlib.util
 import io
 import json
 import unicodedata
@@ -13,21 +12,17 @@ from pathlib import Path
 from typing import Any, Literal
 from zipfile import ZipFile, ZipInfo
 
+import make_epub_fixtures as fixtures
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from pydantic import ValidationError
+from support_epub import publication
 
 from app.epub_schemas import CompiledResource
 from app.services import epub
 
 ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location(
-    "epub_fixtures", ROOT / "scripts/make_epub_fixtures.py"
-)
-assert spec is not None and spec.loader is not None
-fixtures: Any = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(fixtures)
 
 
 class LocatorText(HTMLParser):
@@ -61,38 +56,6 @@ class LocatorText(HTMLParser):
 
     def normalized(self) -> str:
         return unicodedata.normalize("NFC", "".join(self.text))
-
-
-def publication(
-    tmp_path: Path, nav: str | None = None, ncx: str | None = None, body: str | None = None
-) -> bytes:
-    path = tmp_path / "book.epub"
-    fixtures.build_fixture(path)
-    with ZipFile(path) as archive:
-        files = {name: archive.read(name) for name in archive.namelist()}
-    manifest = ""
-    if nav is not None:
-        manifest += (
-            '<item id="nav" href="nav.xhtml" properties="nav" media-type="application/xhtml+xml"/>'
-        )
-        files["OEBPS/nav.xhtml"] = (
-            '<html xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol>'
-            + nav
-            + "</ol></nav></body></html>"
-        ).encode()
-    if ncx is not None:
-        manifest += '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
-        files["OEBPS/toc.ncx"] = ("<ncx><navMap>" + ncx + "</navMap></ncx>").encode()
-    files["OEBPS/package.opf"] = files["OEBPS/package.opf"].replace(
-        b"</manifest>", manifest.encode() + b"</manifest>"
-    )
-    if body is not None:
-        files["OEBPS/chapter1.xhtml"] = ("<html><body>" + body + "</body></html>").encode()
-    output = io.BytesIO()
-    with ZipFile(output, "w") as archive:
-        for name, data in files.items():
-            archive.writestr(name, data)
-    return output.getvalue()
 
 
 def resource_markup(book: epub.CompiledBook, spine_index: int) -> str:

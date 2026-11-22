@@ -9,11 +9,11 @@ from uuid import uuid4
 
 import httpx2 as model_httpx
 import pytest
-from httpx import AsyncClient
 from sqlalchemy import select
-from support_api import chat_client, seed_chat
-from test_segment_provenance import compiled_provenance, provenance, setup_material
-from test_settings_adapters import completed_response, install_transport
+from support_adapter_responses import completed_response, install_transport
+from support_api import chat_client
+from support_segment_provenance import compiled_provenance
+from support_translations import request, segment_request, setup
 
 from app.config import Settings, TranslationLimits
 from app.epub_schemas import CompiledBook
@@ -21,38 +21,6 @@ from app.llm.adapters import CallSnapshot, GenerateResult
 from app.services import translations
 from app.settings_models import Run
 from app.translation_models import TranslationResult
-
-
-async def setup(client: AsyncClient) -> tuple[str, dict[str, Any], dict[str, Any]]:
-    seed = await seed_chat(client)
-    settings = await client.put(
-        "/api/settings/translation", json={"expected_revision": 0, "model_id": seed["model"]["id"]}
-    )
-    assert settings.status_code == 200, settings.text
-    source_id, material = await setup_material(client)
-    return source_id, material, seed
-
-
-def request(source_id: str, material: dict[str, Any]) -> dict[str, Any]:
-    return dict(
-        request_id=str(uuid4()),
-        source_id=source_id,
-        material_provenance=provenance(material),
-        text="が𠮷",
-        context_before="前",
-        context_after="後",
-    )
-
-
-def segment_request(material: dict[str, Any], result_id: str, **fields: Any) -> dict[str, Any]:
-    return (
-        dict(
-            request_id=str(uuid4()),
-            material_provenance=provenance(material),
-            translation_result_id=result_id,
-        )
-        | fields
-    )
 
 
 def test_legacy_translation_write_routes_are_not_registered() -> None:

@@ -1,66 +1,14 @@
 """Offline full-book queries, codepoint ranges, image ownership and immutable state."""
 
 import base64
-import hashlib
 import sqlite3
 from pathlib import Path
 
 import pytest
 from support_api import api_client
-from support_epub import compiled
+from support_reader_books import PNG, query_book
 
-from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter
-
-PNG = b"\x89PNG\r\n\x1a\n" + b"synthetic-image"
-
-
-def query_book(_raw: bytes) -> CompiledBook:
-    book = compiled(b"")
-    text = "😀𠮷é" + "あ" * 65 + "[.*]Ａ"
-    encoded = base64.b64encode(PNG).decode()
-    image = f'<img data-epub-image="0" alt="絵 &amp; 図" src="data:image/png;base64,{encoded}">'
-    bad = '<img data-epub-image="1" src="data:image/png;base64,YmFk">'
-    foreign = '<img data-epub-image="2" src="https://example.com/no.png">'
-    svg = '<img data-epub-image="3" src="data:image/svg+xml;base64,PHN2Zz4=">'
-    resource = book.resources[0].model_copy(
-        update={
-            "text": text,
-            "html": image,
-            "text_sha256": hashlib.sha256(text.encode()).hexdigest(),
-        }
-    )
-
-    def part(spine: int, start: int, end: int, html: str) -> ChapterPart:
-        return ChapterPart(
-            resource_id="r1",
-            spine_index=spine,
-            start=start,
-            end=end,
-            html=html,
-            leaf_start=0,
-            leaf_end=1,
-        )
-
-    return book.model_copy(
-        update={
-            "resources": [resource],
-            "chapters": [
-                CompiledChapter(
-                    id="c1",
-                    title="最初",
-                    level=0,
-                    parts=[
-                        part(0, 0, 4, image),
-                        part(0, 4, len(text), bad + foreign + svg),
-                    ],
-                ),
-                CompiledChapter(
-                    id="c2", title="繰返", level=0, parts=[part(1, 0, len(text), image)]
-                ),
-                CompiledChapter(id="c3", title="画像のみ", level=0, parts=[part(2, 0, 0, image)]),
-            ],
-        }
-    )
+from app.epub_schemas import CompiledBook
 
 
 @pytest.mark.asyncio

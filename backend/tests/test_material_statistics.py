@@ -8,24 +8,13 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
 from support_api import chat_client
 from support_epub import compiled
+from support_statistics import seed
 
 from app.nlp.contracts import DecodedReadings, TextResource
 from app.nlp.statistics import LexicalStatistics, TextStatistics
 from app.services import statistics
-
-
-async def seed(client: AsyncClient, raw: bytes = b"book") -> tuple[str, dict[str, Any]]:
-    source = (await client.post("/api/sources", json={"title": "本棚"})).json()["id"]
-    result = await client.post(
-        f"/api/sources/{source}/materials",
-        content=raw,
-        headers={"content-type": "application/epub+zip"},
-    )
-    assert result.status_code == 200, result.text
-    return source, result.json()["material"]
 
 
 def durable_state(database: Path) -> list[tuple[Any, ...]]:

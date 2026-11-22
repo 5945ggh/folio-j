@@ -9,20 +9,12 @@ from typing import Any
 
 import pytest
 from chat_tool_fixture import install_text_turn
-from support_api import accept, chat_client, seed_chat
+from support_api import accept, chat_client, refreshed, seed_chat
+from support_chat_snapshots import accepted_input
 
 from app.jobs import runtime
 from app.llm import adapters
 from app.services import context
-
-
-def accepted_input(database: Path, job_id: str) -> dict[str, Any]:
-    with sqlite3.connect(database) as connection:
-        row = connection.execute(
-            "SELECT input_snapshot FROM chat_jobs WHERE id = ?", (job_id,)
-        ).fetchone()
-    assert row is not None
-    return json.loads(row[0])
 
 
 def declared_template_version(path: Path) -> str:
@@ -178,8 +170,6 @@ async def test_run_reuses_accepted_prompt_after_style_change(
 async def test_successful_turn_only_appends_changed_context_modules(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
 ) -> None:
-    from test_analysis_agent import refreshed
-
     async def generate(
         _snapshot: adapters.CallSnapshot,
         _key: str | None,
@@ -251,8 +241,6 @@ async def test_successful_turn_only_appends_changed_context_modules(
 async def test_failed_turn_does_not_advance_context_baseline(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from test_analysis_agent import refreshed
-
     succeed = True
 
     async def generate(

@@ -1,5 +1,6 @@
 """Shared isolated API clients and explicit offline chat fixtures."""
 
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -105,6 +106,14 @@ async def seed_chat(client: AsyncClient) -> dict[str, Any]:
     }
 
 
+async def refreshed(client: AsyncClient, seed: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **seed,
+        "thread": (await client.get(f"/api/threads/{seed['thread']['id']}")).json(),
+        "segment": (await client.get(f"/api/segments/{seed['segment']['id']}")).json(),
+    }
+
+
 def question_payload(seed: dict[str, Any], **changes: Any) -> dict[str, Any]:
     return {
         "request_id": str(uuid4()),
@@ -122,3 +131,15 @@ async def accept(client: AsyncClient, seed: dict[str, Any], **changes: Any) -> d
     )
     assert response.status_code == 202, response.text
     return response.json()
+
+
+async def wait_status(client: AsyncClient, path: str, expected: str) -> dict[str, Any]:
+    async with asyncio.timeout(5):
+        while True:
+            response = await client.get(path)
+            assert response.status_code == 200, response.text
+            result = response.json()
+            if result["status"] == expected:
+                return result
+            assert result["status"] not in {"failed", "interrupted"}, result
+            await asyncio.sleep(0.01)

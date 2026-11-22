@@ -6,78 +6,24 @@ import hashlib
 import json
 import sqlite3
 import threading
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
 import pytest
-from fastapi import FastAPI
 from sqlalchemy import event
 from support_api import chat_client
-from test_segment_provenance import compiled_provenance, provenance, setup_material, span
+from support_segment_provenance import compiled_provenance, provenance, setup_material, span
+from support_translations import seed_result
 
 from app.epub_schemas import CompiledBook
 from app.provenance_schemas import MaterialProvenance
 from app.services import chapter_translations, translations
-from app.services.material_provenance import identity_sha256, validate_reference
 from app.translation_models import TranslationResult, TranslationTask
 
 
 def endpoint(material: dict[str, Any], chapter: str = "c1") -> str:
     return f"/api/materials/{material['id']}/chapters/{chapter}/translations"
-
-
-async def seed_result(
-    app: FastAPI,
-    source: str,
-    reference: dict[str, Any],
-    ordinal: int,
-    *,
-    book: CompiledBook | None = None,
-    status: str = "succeeded",
-    timestamp: datetime | None = None,
-) -> str:
-    normalized, text, chapter, parts = validate_reference(
-        book or compiled_provenance(b""), MaterialProvenance.model_validate(reference)
-    )
-    result_id = f"{ordinal:026d}"
-    task_id = f"T{ordinal:025d}"
-    created = timestamp or datetime(2026, 1, 1, tzinfo=UTC) + timedelta(seconds=ordinal)
-    async with app.state.session_factory() as session:
-        session.add(
-            TranslationTask(
-                id=task_id,
-                request_id=str(uuid4()),
-                request_payload="{}",
-                source_id=source,
-                material_id=reference["material_id"],
-                identity_sha256=identity_sha256(normalized),
-                payload=json.dumps(
-                    {
-                        "material_provenance": normalized.model_dump(),
-                        "chapter_id": chapter,
-                        "parts": [part.model_dump() for part in parts],
-                        "text": text,
-                        "target_language": "简体中文",
-                    }
-                ),
-                status=status,
-                result_id=result_id,
-                created_at=created,
-            )
-        )
-        await session.flush()
-        session.add(
-            TranslationResult(
-                id=result_id,
-                task_id=task_id,
-                translation=f"译文{ordinal}",
-                created_at=created,
-            )
-        )
-        await session.commit()
-    return result_id
 
 
 def table_counts(database: Path) -> list[int]:

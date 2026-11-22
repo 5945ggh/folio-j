@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 from support_api import chat_client
-from test_dictionary_store import archive, chunks, installed_path, record
+from support_dictionary_store import archive, chunks, installed_path, record
 
 from app.dictionary_schemas import DictionaryNode
 from app.services import dictionary_store

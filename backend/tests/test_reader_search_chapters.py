@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 from support_api import api_client
-from test_reader_queries import query_book
-from test_segment_provenance import setup_material
+from support_reader_books import query_book
+from support_segment_provenance import setup_material
 
 
 @pytest.mark.asyncio

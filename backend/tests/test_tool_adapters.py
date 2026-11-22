@@ -2,16 +2,20 @@
 
 import json
 from dataclasses import replace
-from typing import Any, cast
+from typing import Any
 
 import httpx2 as httpx
 import pytest
-from test_settings_adapters import (
+from support_adapter_responses import (
     Protocol,
+    assert_no_credential,
+    chat_response,
     completed_response,
     event,
     install_transport,
+    response_with_call,
     snapshot,
+    tool_response,
 )
 
 from app.llm import adapters
@@ -34,71 +38,6 @@ TOOLS: list[dict[str, Any]] = [
 MESSAGES = [{"role": "system", "content": "固定前缀"}, {"role": "user", "content": "读取"}]
 
 
-def _chat_response(
-    *,
-    finish: str = "tool_calls",
-    text: str | None = None,
-    arguments: str = '{"id":"A"}',
-) -> dict[str, Any]:
-    message: dict[str, Any] = {
-        "role": "assistant",
-        "content": text,
-        "reasoning_content": "先检查身份",
-    }
-    if finish == "tool_calls":
-        message["tool_calls"] = [
-            {
-                "id": "call_1",
-                "type": "function",
-                "function": {"name": "read_analysis", "arguments": arguments},
-            }
-        ]
-    return {
-        "id": "chat_tools",
-        "object": "chat.completion",
-        "created": 1,
-        "model": "demo-model",
-        "choices": [{"index": 0, "finish_reason": finish, "message": message}],
-        "usage": {
-            "prompt_tokens": 5,
-            "completion_tokens": 3,
-            "total_tokens": 8,
-            "prompt_tokens_details": {"cached_tokens": 0},
-            "prompt_cache_hit_tokens": 0,
-            "prompt_cache_miss_tokens": 5,
-        },
-    }
-
-
-def _response_with_call(
-    *, status: str = "completed", arguments: str = '{"id":"A"}'
-) -> dict[str, Any]:
-    response = completed_response("准备读取", status)
-    old_output = response["output"]
-    assert isinstance(old_output, list)
-    response["output"] = [
-        {"id": "rs_1", "type": "reasoning", "summary": []},
-        {
-            "id": "fc_1",
-            "type": "function_call",
-            "status": "completed",
-            "call_id": "call_1",
-            "name": "read_analysis",
-            "arguments": arguments,
-        },
-        *old_output,
-    ]
-    response["usage"] = {
-        "input_tokens": 5,
-        "output_tokens": 3,
-        "total_tokens": 8,
-        "input_tokens_details": {"cached_tokens": 0},
-        "prompt_cache_hit_tokens": 0,
-        "prompt_cache_miss_tokens": 5,
-    }
-    return response
-
-
 @pytest.mark.asyncio
 @pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
 async def test_nonstream_tool_call_preserves_wire_history_and_cache_fields(
@@ -108,7 +47,7 @@ async def test_nonstream_tool_call_preserves_wire_history_and_cache_fields(
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        payload = _chat_response() if protocol == "chat_completions" else _response_with_call()
+        payload = chat_response() if protocol == "chat_completions" else response_with_call()
         return httpx.Response(200, json=payload)
 
     install_transport(monkeypatch, handler)
@@ -154,7 +93,7 @@ async def test_full_history_is_sent_after_tool_result(
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        payload = _chat_response() if protocol == "chat_completions" else _response_with_call()
+        payload = chat_response() if protocol == "chat_completions" else response_with_call()
         return httpx.Response(200, json=payload)
 
     install_transport(monkeypatch, handler)
@@ -271,7 +210,7 @@ async def test_chat_stream_merges_indexed_calls_and_replays_reasoning(
 async def test_responses_stream_retains_reasoning_and_terminal_calls(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    response = _response_with_call()
+    response = response_with_call()
     events = [
         {
             "type": "response.output_item.added",
@@ -394,7 +333,7 @@ async def test_tool_choice_none_and_no_call(
                     text=event(chunk) + "data: [DONE]\n\n",
                     headers={"content-type": "text/event-stream"},
                 )
-            return httpx.Response(200, json=_chat_response(finish="stop", text="## 标题\n正文"))
+            return httpx.Response(200, json=chat_response(finish="stop", text="## 标题\n正文"))
         response = completed_response("## 标题\n正文")
         if stream:
             return httpx.Response(
@@ -455,7 +394,7 @@ async def test_incomplete_tool_arguments_are_never_dispatched(
                 text=event(chunk) + "data: [DONE]\n\n",
                 headers={"content-type": "text/event-stream"},
             )
-        response = _response_with_call(status="incomplete", arguments='{"id":')
+        response = response_with_call(status="incomplete", arguments='{"id":')
         return httpx.Response(
             200,
             text=event({"type": "response.incomplete", "sequence_number": 1, "response": response}),
@@ -545,7 +484,7 @@ async def test_secret_is_redacted_in_nested_call_history_raw_and_progress(
                 headers={"content-type": "text/event-stream"},
             )
     else:
-        response = _response_with_call(arguments=arguments)
+        response = response_with_call(arguments=arguments)
         response["output"][2]["content"][0]["text"] = secret
 
         def handler(_request: httpx.Request) -> httpx.Response:
@@ -569,65 +508,6 @@ async def test_secret_is_redacted_in_nested_call_history_raw_and_progress(
     assert_no_credential(result.raw_response, secret)
     assert_no_credential(result.text, secret)
     assert_no_credential(progress, secret)
-
-
-def assert_no_credential(value: Any, secret: str) -> None:
-    """Inspect decoded fields, including JSON strings embedded in protocol objects."""
-    if isinstance(value, str):
-        assert secret not in value
-        assert json.dumps(secret, ensure_ascii=False)[1:-1] not in value
-        assert json.dumps(secret, ensure_ascii=True)[1:-1] not in value
-        try:
-            decoded = json.loads(value)
-        except ValueError:
-            return
-        assert_no_credential(decoded, secret)
-    elif isinstance(value, dict):
-        for key, item in cast(dict[Any, Any], value).items():
-            assert_no_credential(key, secret)
-            assert_no_credential(item, secret)
-    elif isinstance(value, list):
-        for item in cast(list[Any], value):
-            assert_no_credential(item, secret)
-
-
-def tool_response(
-    protocol: Protocol, stream: bool, arguments: str, *, completed: bool = True
-) -> httpx.Response:
-    """Build synthetic tool responses for SDK tests and durable redaction checks."""
-    if protocol == "chat_completions":
-        payload = _chat_response(arguments=arguments)
-        finish = "tool_calls" if completed else "length"
-        payload["choices"][0]["finish_reason"] = finish
-        if stream:
-            message = payload["choices"][0]["message"]
-            fragment = {"index": 0, **message["tool_calls"][0]}
-            payload["object"] = "chat.completion.chunk"
-            payload["choices"] = [
-                {"index": 0, "delta": {"tool_calls": [fragment]}, "finish_reason": finish}
-            ]
-            return httpx.Response(
-                200,
-                text=event(payload) + "data: [DONE]\n\n",
-                headers={"content-type": "text/event-stream"},
-            )
-    else:
-        payload = _response_with_call(
-            status="completed" if completed else "incomplete", arguments=arguments
-        )
-        if stream:
-            return httpx.Response(
-                200,
-                text=event(
-                    {
-                        "type": "response.completed" if completed else "response.incomplete",
-                        "sequence_number": 1,
-                        "response": payload,
-                    }
-                ),
-                headers={"content-type": "text/event-stream"},
-            )
-    return httpx.Response(200, json=payload)
 
 
 @pytest.mark.asyncio

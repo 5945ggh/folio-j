@@ -11,8 +11,8 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from support_api import chat_client
 from support_api import offline_chat_discovery as offline_chat_discovery
-from test_segment_provenance import compiled_provenance, provenance, span
-from test_translations import request, setup
+from support_segment_provenance import TEXTS, compiled_provenance, provenance, span
+from support_translations import request, setup
 
 from app.ids import new_ulid
 from app.llm.adapters import GenerateResult
@@ -198,8 +198,6 @@ async def test_selection_creation_links_actual_saved_fields_atomically(
 async def test_whitespace_match_preserves_original_selection_and_provenance(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from test_segment_provenance import TEXTS
-
     monkeypatch.setitem(TEXTS, "r1", " \u0085𠮷 文。\u3000")
     monkeypatch.setattr("app.services.materials.compile_epub_bytes", compiled_provenance)
 

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from support_api import api_client
 from support_epub import compiled
-from test_material_deletion import asset_snapshot, material_snapshot, seed_assets
+from support_material_assets import asset_snapshot, material_snapshot, seed_assets
 
 from app.nlp.contracts import TextResource
 from app.nlp.tokenization import GeneratedReadings

@@ -9,29 +9,13 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from support_api import api_client
+from support_covers import PNG, cover_book, cover_input, import_book, jpeg_fixture
 from support_epub import compiled
-from test_covers import PNG, cover_book, jpeg_fixture
 
 from app.services.covers import MAX_COVER_BYTES, CoverExtraction, inspect_cover
 from app.services.sources import begin_write
-
-
-async def import_book(client: AsyncClient, raw: bytes = b"book") -> tuple[str, str]:
-    source = (await client.post("/api/sources", json={"title": "来源"})).json()["id"]
-    response = await client.post(
-        f"/api/sources/{source}/materials",
-        content=raw,
-        headers={"content-type": "application/epub+zip"},
-    )
-    assert response.status_code == 200
-    return source, "/api/materials/" + response.json()["material"]["id"]
-
-
-def cover_input(image: bytes = PNG, media_type: str = "image/png") -> dict[str, str]:
-    return {"media_type": media_type, "data_base64": base64.b64encode(image).decode()}
 
 
 def immutable_snapshot(database: Path) -> dict[str, list[tuple[Any, ...]]]:

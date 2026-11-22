@@ -3,30 +3,13 @@
 import json
 import sqlite3
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import NoReturn
 from uuid import uuid4
 
 import pytest
 from support_api import accept, chat_client
-from test_segment_provenance import compiled_provenance, provenance, setup_material
-
-
-def snapshot_bytes(database: Path, job_id: str) -> bytes:
-    with sqlite3.connect(database) as connection:
-        row = connection.execute(
-            "SELECT CAST(input_snapshot AS BLOB) FROM chat_jobs WHERE id=?", (job_id,)
-        ).fetchone()
-    assert row is not None and isinstance(row[0], bytes)
-    return row[0]
-
-
-def stored_origin(database: Path, segment_id: str) -> tuple[Any, ...]:
-    with sqlite3.connect(database) as connection:
-        row = connection.execute(
-            "SELECT * FROM segment_material_provenance WHERE segment_id=?", (segment_id,)
-        ).fetchone()
-    assert row is not None
-    return row
+from support_chat_snapshots import snapshot_bytes, stored_origin
+from support_segment_provenance import compiled_provenance, provenance, setup_material
 
 
 @pytest.mark.asyncio

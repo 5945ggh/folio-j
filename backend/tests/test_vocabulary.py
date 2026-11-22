@@ -1,34 +1,10 @@
 """Hand-counted lexical browsing contracts over format-independent resources."""
 
 import pytest
-from test_statistics import characters, source, token
+from support_statistics import characters, source, token, vocabulary_sample
 
-from app.nlp.contracts import DecodedReadings, MaterialReadingToken, TextResource
 from app.nlp.statistics import compute_lexical
 from app.nlp.vocabulary import VocabularySort, compute_occurrences, compute_vocabulary
-
-
-def vocabulary_sample() -> tuple[list[TextResource], DecodedReadings]:
-    specifications = [
-        ("生", "生", "セイ", "名詞", False),
-        ("生", "生", "ナマ", "形状詞", True),
-        ("生きた", "生きる", "イキタ", "動詞", False),
-        ("生きる", "生きる", "イキル", "動詞", False),
-        ("猫", "*", "ネコ", "名詞", False),
-        ("猫", "", "ネコ", "名詞", False),
-        ("犬", "犬", "イヌ", "名詞", False),
-        ("。", "。", "。", "補助記号", False),
-    ]
-    inputs = [source("plain-text", " ".join(item[0] for item in specifications))]
-    decoded = characters(inputs)
-    records: list[MaterialReadingToken] = []
-    offset = 0
-    for surface, form, reading, pos, is_oov in specifications:
-        records.append(token(offset, surface, form=form, reading=reading, pos=pos, is_oov=is_oov))
-        offset += len(surface) + 1
-    records.append(token(len(inputs[0].text), "", form="幽霊", reading="ユウレイ"))
-    decoded.resources[0].tokens = records
-    return inputs, decoded
 
 
 def test_dictionary_form_merges_inflections_without_losing_lexical_variants() -> None:

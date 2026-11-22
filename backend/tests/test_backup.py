@@ -15,9 +15,9 @@ from uuid import uuid4
 import pytest
 from alembic.config import Config
 from support_api import accept, chat_client, seed_chat
+from support_dictionary_store import archive, chunks, record, seed_legacy
+from support_epub import publication
 from support_paths import symlink_or_skip
-from test_dictionary_store import archive, chunks, record, seed_legacy
-from test_epub_compiler import publication
 
 from alembic import command
 from app import backup as backup_module

@@ -1,65 +1,18 @@
 """Exercise actual SDK adapters through an in-memory HTTP transport."""
 
-import json
-from collections.abc import Callable, Mapping
-from typing import Any, Literal, cast
+from typing import cast
 
 import httpx2 as httpx
 import pytest
-from openai import AsyncOpenAI as SDKAsyncOpenAI
+from support_adapter_responses import (
+    Protocol,
+    completed_response,
+    event,
+    install_transport,
+    snapshot,
+)
 
 from app.llm import adapters
-
-Protocol = Literal["chat_completions", "responses"]
-
-
-def snapshot(protocol: Protocol, stream: bool) -> adapters.CallSnapshot:
-    return adapters.CallSnapshot(
-        base_url="http://model.invalid/v1",
-        model_id="demo-model",
-        protocol=protocol,
-        stream=stream,
-        prompt="固定短提示",
-        temperature=None,
-        max_output_tokens=None,
-        reasoning_effort=None,
-    )
-
-
-def install_transport(
-    monkeypatch: pytest.MonkeyPatch,
-    handler: Callable[[httpx.Request], httpx.Response],
-) -> None:
-    def client_factory(**options: Any) -> SDKAsyncOpenAI:
-        return SDKAsyncOpenAI(
-            **options, http_client=httpx.AsyncClient(transport=httpx.MockTransport(handler))
-        )
-
-    monkeypatch.setattr(adapters, "AsyncOpenAI", client_factory)
-
-
-def completed_response(text: str, status: str = "completed") -> dict[str, object]:
-    return {
-        "id": "resp_test",
-        "object": "response",
-        "created_at": 1,
-        "model": "demo-model",
-        "status": status,
-        "output": [
-            {
-                "id": "msg_test",
-                "type": "message",
-                "role": "assistant",
-                "status": "completed",
-                "content": [{"type": "output_text", "text": text, "annotations": []}],
-            }
-        ],
-        "usage": {"input_tokens": 3, "output_tokens": 2, "total_tokens": 5},
-    }
-
-
-def event(payload: Mapping[str, object]) -> str:
-    return "data: " + json.dumps(payload, ensure_ascii=False) + "\n\n"
 
 
 @pytest.mark.asyncio

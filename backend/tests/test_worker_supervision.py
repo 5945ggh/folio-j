@@ -12,12 +12,11 @@ import pytest
 from chat_tool_fixture import install_text_turn
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-from support_api import accept, api_client, chat_client, seed_chat
-from test_analysis_agent import DOCUMENT, call, refreshed, scripted_turn
-from test_segment_provenance import compiled_provenance
-from test_translations import request as translation_request
-from test_translations import setup as setup_translation
-from test_worker_dispatch import wait_status
+from support_analysis_agent import DOCUMENT, call, scripted_turn
+from support_api import accept, api_client, chat_client, refreshed, seed_chat, wait_status
+from support_segment_provenance import compiled_provenance
+from support_translations import request as translation_request
+from support_translations import setup as setup_translation
 
 from app.jobs import agent, runtime, supervision
 from app.jobs.supervision import BackgroundWorker, WorkerName, workers

@@ -1,15 +1,13 @@
 """API requests must reach background execution without manually invoking workers."""
 
-import asyncio
 import json
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
-from support_api import accept, api_client, seed_chat
-from test_manual_analyses import create_payload
+from support_analyses import create_payload
+from support_api import accept, api_client, seed_chat, wait_status
 
 from app.llm import adapters
 
@@ -20,18 +18,6 @@ def offline_discovery(monkeypatch: pytest.MonkeyPatch) -> None:
         return ["offline-model"]
 
     monkeypatch.setattr(adapters, "discover_models", discover)
-
-
-async def wait_status(client: AsyncClient, path: str, expected: str) -> dict[str, Any]:
-    async with asyncio.timeout(5):
-        while True:
-            response = await client.get(path)
-            assert response.status_code == 200, response.text
-            result = response.json()
-            if result["status"] == expected:
-                return result
-            assert result["status"] not in {"failed", "interrupted"}, result
-            await asyncio.sleep(0.01)
 
 
 @pytest.mark.asyncio

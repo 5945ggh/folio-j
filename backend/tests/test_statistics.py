@@ -1,16 +1,15 @@
 """Hand-counted text statistics, independent of EPUB and reader API schemas."""
 
-import hashlib
 import unicodedata
 
 import pytest
 from pydantic import ValidationError
+from support_statistics import characters, source, token
 
 from app.nlp.assets import decode
 from app.nlp.contracts import (
     DecodedReadings,
     MaterialReadingToken,
-    MaterialResourceReadings,
     TextResource,
 )
 from app.nlp.statistics import (
@@ -21,56 +20,6 @@ from app.nlp.statistics import (
     compute_text,
 )
 from app.nlp.tokenization import generate
-
-
-def source(resource_id: str, text: str) -> TextResource:
-    return TextResource(resource_id, text, hashlib.sha256(text.encode()).hexdigest())
-
-
-def token(
-    start: int,
-    surface: str,
-    *,
-    form: str | None = None,
-    pos: str = "名詞",
-    reading: str = "",
-    is_oov: bool = False,
-) -> MaterialReadingToken:
-    return MaterialReadingToken(
-        start=start,
-        end=start + len(surface),
-        surface=surface,
-        reading=reading,
-        dictionary_form=surface if form is None else form,
-        normalized_form=surface,
-        pos=[pos, "*", "*", "*", "*", "*"],
-        is_oov=is_oov,
-    )
-
-
-def characters(inputs: list[TextResource]) -> DecodedReadings:
-    return DecodedReadings(
-        configuration="{}",
-        resources=[
-            MaterialResourceReadings(
-                resource_id=resource.resource_id,
-                text_sha256=resource.text_sha256,
-                tokens=[
-                    token(
-                        offset,
-                        character,
-                        pos="空白"
-                        if character.isspace()
-                        else "補助記号"
-                        if character in "。！？"
-                        else "名詞",
-                    )
-                    for offset, character in enumerate(resource.text)
-                ],
-            )
-            for resource in inputs
-        ],
-    )
 
 
 def basic() -> tuple[list[TextResource], DecodedReadings]:

@@ -4,11 +4,11 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
-from test_settings_api import (
+from support_settings import (
     create_provider,
     settings_app_client,
 )
-from test_settings_api import (
+from support_settings import (
     offline_discovery as offline_discovery,
 )
 

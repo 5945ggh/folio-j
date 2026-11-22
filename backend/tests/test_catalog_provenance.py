@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 from support_api import api_client
-from test_segment_provenance import (
+from support_segment_provenance import (
     compiled_provenance,
     create_segment,
     provenance,

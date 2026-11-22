@@ -8,11 +8,11 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy import event
+from support_analyses import create_payload
 from support_api import chat_client
 from support_api import offline_chat_discovery as offline_chat_discovery
-from test_manual_analyses import create_payload
-from test_segment_provenance import compiled_provenance, provenance, span
-from test_translations import request, segment_request, setup
+from support_segment_provenance import compiled_provenance, provenance, span
+from support_translations import request, segment_request, setup
 
 from app.llm.adapters import GenerateResult
 from app.provenance_schemas import MaterialProvenance

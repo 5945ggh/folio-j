@@ -11,7 +11,9 @@ from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
-from support_api import accept, chat_client, question_payload, seed_chat
+from support_analysis_agent import DOCUMENT, DOCUMENT_BODY_MARKER, call, scripted_turn
+from support_api import accept, chat_client, question_payload, refreshed, seed_chat
+from support_chat_snapshots import accepted_input
 
 from app.analysis_schemas import SectionOperation
 from app.jobs import runtime
@@ -20,107 +22,6 @@ from app.models import Segment, Source
 from app.services import analyses, context
 from app.services.sources import begin_write
 from app.settings_models import Defaults, Profile, Style
-
-DOCUMENT_BODY_MARKER = "だった是过去式。"
-DOCUMENT = f"## 大意\n\n昨日は雨だった。\n\n## 语法\n\n{DOCUMENT_BODY_MARKER}\n"
-
-
-def call(name: str, args: dict[str, Any] | None = None, identity: str = "call_1") -> dict[str, str]:
-    return {"id": identity, "name": name, "arguments": json.dumps(args or {}, ensure_ascii=False)}
-
-
-def scripted_turn(
-    monkeypatch: pytest.MonkeyPatch,
-    script: list[tuple[str, list[dict[str, str]], bool]],
-) -> list[dict[str, Any]]:
-    captured: list[dict[str, Any]] = []
-
-    async def complete(
-        snapshot: adapters.CallSnapshot,
-        key: str | None,
-        *,
-        messages: list[dict[str, Any]],
-        tools: list[dict[str, Any]],
-        tool_choice: str = "auto",
-        on_progress: Callable[[str], Awaitable[None]] | None = None,
-        on_tool_name: Callable[[str], Awaitable[None]] | None = None,
-    ) -> adapters.ToolTurn:
-        assert key == "fictional-chat-secret"
-        assert script, "unexpected model call"
-        text, calls, completed = script.pop(0)
-        captured.append(
-            {
-                "snapshot": snapshot,
-                "messages": json.loads(json.dumps(messages)),
-                "tools": json.loads(json.dumps(tools)),
-                "tool_choice": tool_choice,
-            }
-        )
-        if on_progress and text:
-            await on_progress(text)
-        history: list[dict[str, Any]]
-        if snapshot.protocol == "chat_completions":
-            item: dict[str, Any] = {
-                "role": "assistant",
-                "content": text or None,
-                "reasoning_content": "real-reasoning",
-            }
-            if calls:
-                item["tool_calls"] = [
-                    {
-                        "id": entry["id"],
-                        "type": "function",
-                        "function": {
-                            "name": entry["name"],
-                            "arguments": entry["arguments"],
-                        },
-                    }
-                    for entry in calls
-                ]
-            history = [item]
-        else:
-            history = [
-                {"type": "reasoning", "id": f"r_{len(captured)}", "summary": []},
-                *(
-                    [
-                        {
-                            "type": "message",
-                            "role": "assistant",
-                            "content": [{"type": "output_text", "text": text}],
-                        }
-                    ]
-                    if text
-                    else []
-                ),
-                *[
-                    {
-                        "type": "function_call",
-                        "call_id": entry["id"],
-                        "name": entry["name"],
-                        "arguments": entry["arguments"],
-                    }
-                    for entry in calls
-                ],
-            ]
-        return adapters.ToolTurn(
-            text=text,
-            completed=completed,
-            calls=calls,
-            history_items=history if completed else [],
-            usage=None,
-            raw_response="{}",
-        )
-
-    monkeypatch.setattr(adapters, "complete_with_tools", complete)
-    return captured
-
-
-async def refreshed(client: AsyncClient, seed: dict[str, Any]) -> dict[str, Any]:
-    return {
-        **seed,
-        "thread": (await client.get(f"/api/threads/{seed['thread']['id']}")).json(),
-        "segment": (await client.get(f"/api/segments/{seed['segment']['id']}")).json(),
-    }
 
 
 async def saved_document(
@@ -1442,8 +1343,6 @@ async def test_chat_accepts_full_context_at_limit_and_rejects_one_character_more
 async def test_save_respects_actual_followup_context_budget_before_commit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, protocol: str, overflow: str
 ) -> None:
-    from test_chat_prompt_scope import accepted_input
-
     database = tmp_path / "save-budget.db"
     async with chat_client(database) as (client, app):
         seed = await seed_chat(client)

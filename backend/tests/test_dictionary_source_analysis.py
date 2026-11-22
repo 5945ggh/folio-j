@@ -5,8 +5,8 @@ from typing import cast
 
 import pytest
 from support_api import chat_client
-from test_dictionary_lookup import MemoryStore, entry
-from test_dictionary_store import archive, record
+from support_dictionary_lookup import MemoryStore, entry
+from support_dictionary_store import archive, record
 
 from app.dictionary_schemas import DictionaryLookupRequest, DictionaryTokenHint
 from app.services.dictionary_lookup import (

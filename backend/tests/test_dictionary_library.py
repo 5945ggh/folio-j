@@ -11,7 +11,7 @@ from typing import Any
 import pytest
 from fastapi import HTTPException
 from support_api import chat_client
-from test_dictionary_store import archive, chunks, record, seed_legacy
+from support_dictionary_store import archive, chunks, record, seed_legacy
 
 from app.dictionary_schemas import DictionaryLookupRequest
 from app.services import dictionary_store

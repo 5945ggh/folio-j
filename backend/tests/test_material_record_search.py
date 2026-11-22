@@ -10,15 +10,15 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 from support_api import chat_client
-from test_bookmarks import anchor, bookmark_book
-from test_chapter_translations import seed_result
-from test_segment_provenance import (
+from support_reader_books import anchor, bookmark_book
+from support_segment_provenance import (
     compiled_provenance,
     create_segment,
     provenance,
     setup_material,
     span,
 )
+from support_translations import seed_result
 
 from app.epub_schemas import CompiledBook
 from app.provenance_schemas import MaterialProvenance

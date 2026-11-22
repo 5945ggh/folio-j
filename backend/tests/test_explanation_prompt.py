@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 from support_api import accept, chat_client, seed_chat
-from test_segment_provenance import compiled_provenance, create_segment, provenance, upload
+from support_segment_provenance import compiled_provenance, create_segment, provenance, upload
 
 
 def database_dump(database: Path) -> list[str]:

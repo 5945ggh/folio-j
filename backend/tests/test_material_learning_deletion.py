@@ -14,10 +14,17 @@ from httpx import AsyncClient
 from sqlalchemy.exc import IntegrityError
 from support_api import accept, chat_client
 from support_api import offline_chat_discovery as offline_chat_discovery
-from test_chat_material_provenance import material_chat
-from test_material_deletion import ASSET_TABLES, seed_assets
-from test_segment_provenance import compiled_provenance, create_segment, provenance, span, upload
-from test_source_deletion import table_snapshot
+from support_database import table_snapshot
+from support_material_assets import ASSET_TABLES, seed_assets
+from support_segment_provenance import (
+    compiled_provenance,
+    create_segment,
+    material_chat,
+    provenance,
+    span,
+    upload,
+)
+from support_translations import request, segment_request, setup
 
 from app.ids import new_ulid
 from app.jobs import runtime
@@ -250,7 +257,6 @@ async def test_learning_deletion_failure_rolls_back_assets_jobs_and_learning(
         await manual_history(client, seed["segment"])
         await accept(client, seed)
         seed_assets(database, seed["material"]["id"])
-        from test_translations import request
 
         configured = await client.put(
             "/api/settings/translation",
@@ -364,8 +370,6 @@ async def test_impact_translation_adoptions_follow_selected_learning_scope(
     delete_learning_content: bool,
     reader_removed: bool,
 ) -> None:
-    from test_translations import request, segment_request, setup
-
     from app.services import translations
 
     async def generate(*_args: Any) -> adapters.GenerateResult:

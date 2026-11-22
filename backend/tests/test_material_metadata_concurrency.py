@@ -9,9 +9,8 @@ from pathlib import Path
 
 import pytest
 from support_api import api_client
+from support_covers import PNG, cover_input, import_book, jpeg_fixture
 from support_epub import compiled
-from test_covers import PNG, jpeg_fixture
-from test_material_metadata import cover_input, import_book
 
 from app.epub_schemas import CompiledBook
 from app.material_models import Material

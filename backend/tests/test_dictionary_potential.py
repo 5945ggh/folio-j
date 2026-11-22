@@ -3,7 +3,7 @@
 from typing import cast
 
 import pytest
-from test_dictionary_lookup import MemoryStore, entry, query, token
+from support_dictionary_lookup import MemoryStore, entry, query, token
 
 from app.dictionary_schemas import DictionaryLookupRequest, DictionaryTokenHint
 from app.services.dictionary_lookup import MAX_WORD_LENGTH, lookup

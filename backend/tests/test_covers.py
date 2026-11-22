@@ -1,50 +1,15 @@
 """Declared cover extraction stays bounded, local and rebuildable."""
 
-import base64
 import io
 import zipfile
 from pathlib import Path
 
 import pytest
 from support_api import api_client
+from support_covers import PNG, cover_book, jpeg_fixture
 from support_epub import compiled
 
 from app.services.covers import inspect_cover
-
-PNG = base64.b64decode(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
-)
-
-
-def cover_book(
-    *,
-    href: str = "cover.png",
-    data: bytes = PNG,
-    media_type: str = "image/png",
-    epub2: bool = False,
-    extra: dict[str, bytes] | None = None,
-) -> bytes:
-    memory = io.BytesIO()
-    metadata = '<meta name="cover" content="cover" />' if epub2 else ""
-    properties = "" if epub2 else ' properties="cover-image"'
-    package = (
-        f"<package><metadata>{metadata}</metadata><manifest>"
-        f'<item id="cover" href="{href}" media-type="{media_type}"{properties}/>'
-        "</manifest></package>"
-    )
-    files = {
-        "META-INF/container.xml": (
-            b'<container><rootfiles><rootfile full-path="book/package.opf"/>'
-            b"</rootfiles></container>"
-        ),
-        "book/package.opf": package.encode(),
-        "book/cover.png": data,
-        **(extra or {}),
-    }
-    with zipfile.ZipFile(memory, "w") as archive:
-        for path, value in files.items():
-            archive.writestr(path, value)
-    return memory.getvalue()
 
 
 @pytest.mark.parametrize("epub2", [False, True])
@@ -163,13 +128,6 @@ def test_corrupt_crc_animation_and_large_dimensions_fall_back() -> None:
         }
     )
     assert inspect_cover(entity).cover is None
-
-
-def jpeg_fixture() -> bytes:
-    """Original synthetic baseline JPEG marker stream, with one bounded scan."""
-    return bytes.fromhex(
-        "ffd8ffc00011080001000103011100021100031100ffda000c03010002000300003f001122ffd9"
-    )
 
 
 def test_jpeg_with_trailing_bytes_is_usable() -> None:
