@@ -373,8 +373,7 @@ export function SpeechControls({
 	const { state, controller } = useDeviceSpeech();
 	const reason = speechUnavailableReason(state);
 	const action = speechTargetAction(state, target);
-	const error =
-		(action !== "play" ? state.error : null) ?? state.voiceListError ?? reason;
+	const error = (action !== "play" ? state.error : null) ?? reason;
 	const label =
 		action === "pause"
 			? "暂停朗读"
@@ -485,7 +484,6 @@ export function SpeechPlaybackBar() {
 	const unavailable = speechUnavailableReason(state);
 	const error =
 		state.error ??
-		state.voiceListError ??
 		unavailable ??
 		(state.status === "error" ? statusLabels.error : null);
 	const mode = error ? "error" : active ? "active" : "resting";

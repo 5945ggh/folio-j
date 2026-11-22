@@ -2,6 +2,7 @@
 export function fakeSpeech() {
 	const utterances: SpeechSynthesisUtterance[] = [];
 	let cancellations = 0;
+	let voiceReadFails = false;
 	let voices = [
 		{
 			voiceURI: "fixture-local",
@@ -30,7 +31,10 @@ export function fakeSpeech() {
 	}
 	const synthesis = new EventTarget();
 	Object.assign(synthesis, {
-		getVoices: () => voices,
+		getVoices: () => {
+			if (voiceReadFails) throw new Error("Voice enumeration failed");
+			return voices;
+		},
 		cancel: () => {
 			cancellations++;
 		},
@@ -49,6 +53,10 @@ export function fakeSpeech() {
 	const latest = () => utterances.at(-1);
 	return {
 		utterances,
+		setVoiceReadFailure(failed: boolean) {
+			voiceReadFails = failed;
+			synthesis.dispatchEvent(new Event("voiceschanged"));
+		},
 		setVoicesAvailable(available: boolean) {
 			voices = available ? savedVoices : [];
 			synthesis.dispatchEvent(new Event("voiceschanged"));

@@ -573,6 +573,7 @@ export async function readingAidsRegression(
 			() => !initialActions.speech.disabled,
 			"Available voices must restore speech",
 		);
+		speech.setVoiceReadFailure(true);
 		button(h, "朗读原文").click();
 		await h.until(
 			() => speech.utterances.length > 0,
@@ -582,6 +583,13 @@ export async function readingAidsRegression(
 		await h.until(
 			() => h.container.textContent?.includes("正在朗读") ?? false,
 			"Start event must show active state",
+		);
+		check(
+			!!h.container.querySelector('.device-speech-bar[data-state="active"]') &&
+				!h.container.querySelector(
+					".device-speech-bar > .device-speech-message, .translation-result-actions .device-speech-message",
+				),
+			"Playback using cached voices must not report failure when voice enumeration fails",
 		);
 		const playingActions = checkTranslationResultActions(h);
 		check(
@@ -600,6 +608,15 @@ export async function readingAidsRegression(
 			".device-speech-popover:popover-open",
 		);
 		check(popover, "Missing sound popover");
+		check(
+			popover.textContent?.includes("无法读取设备声音，请重新检测。"),
+			"Voice enumeration failure must remain available as a settings diagnosis",
+		);
+		speech.setVoiceReadFailure(false);
+		await h.until(
+			() => !popover.textContent?.includes("无法读取设备声音"),
+			"Successful voice detection must clear its diagnosis during playback",
+		);
 		contained(h, popover, "Sound popover");
 		check(
 			contrast(popover) >= 4.5,
