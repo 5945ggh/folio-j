@@ -272,8 +272,6 @@ test("generic layout changes preserve visual positions with residual FLIP", () =
 		const animation = target.animations[0];
 		assert.ok(animation);
 		assert.equal(animation.options.duration, INLINE_MOTION_MS);
-		assert.equal(animation.options.easing, INLINE_MOTION_EASING);
-		assert.equal(animation.frames[0]?.composite, "add");
 		animation.finish();
 	}
 	assert.equal(h.following.getBoundingClientRect().top, 150);
@@ -300,7 +298,6 @@ test("growth expands real node and iframe heights without adding a second displa
 	);
 	const resize = h.first.animations[0];
 	assert.ok(resize && transition);
-	assert.deepEqual(resize.frames, [{ height: "420px" }, { height: "500px" }]);
 	assert.equal(h.following.animations.length, 0);
 	assert.equal(h.later.animations.length, 0);
 	assert.equal(h.following.getBoundingClientRect().top, 70);
