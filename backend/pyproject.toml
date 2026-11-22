@@ -43,6 +43,7 @@ dev-mode-exact = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["../scripts"]
 
 [tool.ruff]
 target-version = "py311"
@@ -53,6 +54,7 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 
 [tool.pyright]
 include = ["src", "tests", "alembic", "../scripts"]
+extraPaths = ["src", "../scripts"]
 typeCheckingMode = "strict"
 pythonVersion = "3.11"
 reportMissingTypeStubs = "none"

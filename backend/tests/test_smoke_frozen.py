@@ -1,18 +1,12 @@
 """Keep the frozen smoke strict about resources and independent runtime checks."""
 
-import importlib.util
 import os
 import shutil
 from pathlib import Path
-from types import ModuleType
 
 import pytest
-
-ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location("smoke_frozen", ROOT / "scripts/smoke_frozen.py")
-assert spec is not None and spec.loader is not None
-smoke: ModuleType = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(smoke)
+import smoke_frozen as smoke
+from smoke_application import Client
 
 
 def write(root: Path, name: str, content: bytes = b"resource") -> Path:
@@ -74,6 +68,7 @@ def test_child_isolation_removes_host_runtime_and_daily_data_configuration(
     for key, value in {
         "PATH": "/usr/local/bin:/usr/bin",
         "HOME": "/real/user",
+        "XDG_CONFIG_HOME": "/real/config",
         "PYTHONPATH": "/checkout/backend/src",
         "PYTHONHOME": "/real/python",
         "PYTHONIOENCODING": "cp936",
@@ -85,12 +80,12 @@ def test_child_isolation_removes_host_runtime_and_daily_data_configuration(
         system_root_key: "C:/Windows",
     }.items():
         monkeypatch.setenv(key, value)
-    database = tmp_path / "临时数据 data" / "app.db"
-    environment = smoke.isolated_environment(tmp_path, database)
-    assert environment["FOLIO_J_DATABASE_PATH"] == str(database)
+    environment = smoke.isolated_environment(tmp_path)
+    assert "FOLIO_J_DATABASE_PATH" not in environment
     assert environment["HOME"] == environment["USERPROFILE"]
     assert Path(environment["HOME"]).is_relative_to(tmp_path)
-    assert not database.exists()
+    for key in ("XDG_CONFIG_HOME", "APPDATA", "LOCALAPPDATA"):
+        assert Path(environment[key]).is_relative_to(Path(environment["HOME"]))
     # Windows normalizes os.environ keys to uppercase; plain dicts do not.
     normalized_environment = {key.upper(): value for key, value in environment.items()}
     assert normalized_environment["SYSTEMROOT"] == "C:/Windows"
@@ -167,7 +162,7 @@ def test_data_path_rejects_creation_even_when_reported_path_is_correct(tmp_path:
 def test_frontend_check_catches_packaging_errors(
     monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
-    client = smoke.Client(8010)
+    client = Client(8010)
     assets = '<script src="/assets/app.js"></script><link href="/assets/app.css">'
     if failure == "missing_js":
         assets = '<link href="/assets/app.css">'

@@ -5,81 +5,30 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import signal
 import socket
 import sqlite3
 import subprocess
 import tempfile
-import time
-import urllib.error
-import urllib.request
 from contextlib import closing
 from pathlib import Path
 from zipfile import ZipFile
+
+from smoke_application import application, check_first_run, user_environment
 
 
 def run(source: Path, environment: dict[str, str], *command: str) -> None:
     subprocess.run(list(command), cwd=source, env=environment, check=True, timeout=600)
 
 
-def check_application(source: Path, environment: dict[str, str], port: int) -> None:
-    """Exercise the actual launcher and its shutdown, without any model settings."""
-    python = (
-        source
-        / "backend/.venv"
-        / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+def source_environment(source: Path, home: Path) -> dict[str, str]:
+    environment = os.environ.copy()
+    environment.pop("FOLIO_J_DATABASE_PATH", None)
+    environment.update(
+        **user_environment(home),
+        UV_PROJECT_ENVIRONMENT=str(source / "backend/.venv"),
+        PYTHONIOENCODING="utf-8",
     )
-    launcher = subprocess.Popen(
-        [str(python), "-m", "app.launcher", "start", "--no-browser"],
-        cwd=source,
-        env=environment,
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
-        start_new_session=os.name == "posix",
-    )
-    # Ignore proxies even if the runner has global HTTP proxy configuration.
-    client = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    origin = f"http://127.0.0.1:{port}"
-    try:
-        deadline = time.monotonic() + 40
-        while True:
-            if launcher.poll() is not None:
-                raise RuntimeError(
-                    f"Application exited before readiness: {launcher.returncode}"
-                )
-            try:
-                with client.open(f"{origin}/api/health", timeout=1) as response:
-                    if response.status == 200:
-                        break
-            except (urllib.error.URLError, TimeoutError):
-                if time.monotonic() >= deadline:
-                    raise RuntimeError("Application did not become healthy") from None
-                time.sleep(0.2)
-        with client.open(origin, timeout=5) as response:
-            if b"<html" not in response.read():
-                raise RuntimeError("Built frontend was not served")
-    finally:
-        if launcher.poll() is None:
-            if os.name == "nt":
-                launcher.send_signal(signal.CTRL_BREAK_EVENT)
-            else:
-                os.killpg(launcher.pid, signal.SIGINT)
-            try:
-                launcher.wait(timeout=15)
-            except subprocess.TimeoutExpired:
-                if os.name == "nt":
-                    launcher.kill()
-                else:
-                    os.killpg(launcher.pid, signal.SIGKILL)
-                launcher.wait(timeout=5)
-                raise RuntimeError("Launcher did not stop after interrupt") from None
-        if launcher.returncode != 0:
-            raise RuntimeError(f"Launcher shutdown failed: {launcher.returncode}")
-    try:
-        client.open(f"{origin}/api/health", timeout=1).close()
-    except (urllib.error.URLError, TimeoutError):
-        pass
-    else:
-        raise RuntimeError("Application still responds after launcher shutdown")
+    return environment
 
 
 def smoke(archive: Path) -> None:
@@ -93,16 +42,12 @@ def smoke(archive: Path) -> None:
         source = directories[0]
         if (source / ".git").exists():
             raise ValueError("Source smoke must not rely on a Git checkout")
-        home = root / "临时用户 home"
-        home.mkdir()
         database = root / "原始数据 data" / "app.db"
-        environment = os.environ.copy()
-        environment.update(
-            HOME=str(home),
-            USERPROFILE=str(home),
-            FOLIO_J_DATABASE_PATH=str(database),
-            PYTHONIOENCODING="utf-8",
+        environment = source_environment(source, root / "临时用户 home")
+        python = Path(environment["UV_PROJECT_ENVIRONMENT"]) / (
+            "Scripts/python.exe" if os.name == "nt" else "bin/python"
         )
+        launcher = [str(python), "-m", "app.launcher"]
         # Reserve a free loopback port, then release it immediately before startup.
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
@@ -112,8 +57,13 @@ def smoke(archive: Path) -> None:
         )
         run(source, environment, "just", "setup")
         run(source, environment, "just", "build")
+        check_first_run(
+            launcher, source, environment, port, root / "首次选库 first library"
+        )
+        environment["FOLIO_J_DATABASE_PATH"] = str(database)
         run(source, environment, "just", "migrate")
-        check_application(source, environment, port)
+        with application(launcher, source, environment, port) as client:
+            client.frontend()
         # Existing schema data, rather than merely an empty-file round trip.
         with closing(sqlite3.connect(database)) as connection, connection:
             connection.execute(
@@ -147,7 +97,8 @@ def smoke(archive: Path) -> None:
             if row != ("Windows source smoke 日本語",):
                 raise RuntimeError("Restored data did not match")
         environment["FOLIO_J_DATABASE_PATH"] = str(restored / "app.db")
-        check_application(source, environment, port)
+        with application(launcher, source, environment, port) as client:
+            client.frontend()
         print(
             json.dumps(
                 {"source_smoke": "passed", "archive": str(archive)}, ensure_ascii=False

@@ -11,17 +11,13 @@ import argparse
 import io
 import json
 import os
-import re
 import shutil
-import signal
 import socket
 import sqlite3
 import subprocess
 import tempfile
 import threading
 import time
-import urllib.error
-import urllib.request
 from collections.abc import Generator
 from contextlib import closing, contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -29,6 +25,8 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 from zipfile import ZIP_DEFLATED, ZipFile
+
+from smoke_application import Client, application, check_first_run, user_environment
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 SYNTHETIC_MODEL = "frozen-smoke-model"
@@ -74,7 +72,7 @@ def check_resources(package: Path, repository: Path = REPOSITORY) -> None:
         raise RuntimeError("Missing frozen RELEASE.json")
 
 
-def isolated_environment(root: Path, database: Path) -> dict[str, str]:
+def isolated_environment(root: Path) -> dict[str, str]:
     # Whitelist OS essentials; never inherit Python/Node paths, credentials,
     # application overrides, proxy settings or the runner's real user directory.
     environment = {
@@ -85,18 +83,14 @@ def isolated_environment(root: Path, database: Path) -> dict[str, str]:
     home = root / "临时用户 home"
     temp = root / "临时文件 temp"
     empty_path = root / "无运行时 empty PATH"
-    for path in (home, temp, empty_path):
+    for path in (temp, empty_path):
         path.mkdir(exist_ok=True)
     environment.update(
-        HOME=str(home),
-        USERPROFILE=str(home),
-        APPDATA=str(home / "AppData/Roaming"),
-        LOCALAPPDATA=str(home / "AppData/Local"),
+        **user_environment(home),
         TMPDIR=str(temp),
         TMP=str(temp),
         TEMP=str(temp),
         PATH=str(empty_path),
-        FOLIO_J_DATABASE_PATH=str(database),
     )
     return environment
 
@@ -141,122 +135,6 @@ def check_data_path(output: str, database: Path) -> None:
             "data-path selected the wrong database or created it\n"
             f"Expected: {expected}\nReported: {reported!r}"
         )
-
-
-class Client:
-    def __init__(self, port: int) -> None:
-        self.origin = f"http://127.0.0.1:{port}"
-        self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-
-    def get(self, path: str) -> bytes:
-        with self.opener.open(self.origin + path, timeout=60) as response:
-            return response.read()
-
-    def json(
-        self,
-        path: str,
-        data: object = None,
-        *,
-        raw: bytes | None = None,
-        content_type: str = "application/json",
-    ) -> Any:
-        body = (
-            json.dumps(data, ensure_ascii=False).encode() if data is not None else raw
-        )
-        request = urllib.request.Request(
-            self.origin + path, data=body, headers={"Content-Type": content_type}
-        )
-        try:
-            with self.opener.open(request, timeout=90) as response:
-                return json.loads(response.read())
-        except urllib.error.HTTPError as exc:
-            raise RuntimeError(
-                f"{request.method} {path}: {exc.code} {exc.read()!r}"
-            ) from exc
-
-    def frontend(self) -> None:
-        html = self.get("/")
-        if b"<html" not in html or self.get("/settings") != html:
-            raise RuntimeError("Built SPA and history fallback were not served")
-        assets = re.findall(rb'(?:src|href)="([^"?#]+\.(?:js|css))"', html)
-        if not any(path.endswith(b".js") for path in assets) or not any(
-            path.endswith(b".css") for path in assets
-        ):
-            raise RuntimeError("Built frontend does not reference both JS and CSS")
-        for asset in assets:
-            path = asset.decode()
-            if not path.startswith("/") or path.startswith("//"):
-                raise RuntimeError(f"Frontend asset is not local: {path}")
-            body = self.get(path)
-            if not body or b"<html" in body[:100].lower():
-                raise RuntimeError(f"Missing frontend asset: {path}")
-
-
-@contextmanager
-def application(
-    binary: Path, cwd: Path, environment: dict[str, str], port: int
-) -> Generator[Client, None, None]:
-    client = Client(port)
-    with tempfile.TemporaryFile() as log:
-        process = subprocess.Popen(
-            [str(binary), "start", "--no-browser"],
-            cwd=cwd,
-            env=environment,
-            stdout=log,
-            stderr=subprocess.STDOUT,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
-            start_new_session=os.name == "posix",
-        )
-        try:
-            deadline = time.monotonic() + 60
-            while True:
-                if process.poll() is not None:
-                    raise RuntimeError(
-                        f"Application exited before readiness: {process.returncode}"
-                    )
-                try:
-                    client.json("/api/health")
-                    break
-                except (urllib.error.URLError, TimeoutError):
-                    if time.monotonic() >= deadline:
-                        raise RuntimeError(
-                            "Application did not become healthy"
-                        ) from None
-                    time.sleep(0.2)
-            client.frontend()
-            yield client
-        except BaseException:
-            log.seek(0)
-            print(log.read().decode("utf-8", errors="replace"), flush=True)
-            raise
-        finally:
-            if process.poll() is None:
-                if os.name == "nt":
-                    process.send_signal(signal.CTRL_BREAK_EVENT)
-                else:
-                    os.killpg(process.pid, signal.SIGINT)
-                try:
-                    process.wait(timeout=20)
-                except subprocess.TimeoutExpired:
-                    if os.name == "nt":
-                        process.kill()
-                    else:
-                        os.killpg(process.pid, signal.SIGKILL)
-                    process.wait(timeout=5)
-                    raise RuntimeError(
-                        "Frozen application did not stop after interrupt"
-                    ) from None
-            if process.returncode != 0:
-                log.seek(0)
-                raise RuntimeError(
-                    f"Frozen application shutdown failed: {process.returncode}\n"
-                    + log.read().decode("utf-8", errors="replace")
-                )
-    try:
-        client.get("/api/health")
-    except (urllib.error.URLError, TimeoutError):
-        return
-    raise RuntimeError("Application still responds after launcher shutdown")
 
 
 class SyntheticProvider:
@@ -554,13 +432,18 @@ def smoke(package: Path) -> None:
         cwd = root / "独立工作目录 unrelated cwd"
         cwd.mkdir()
         database = root / "原始数据 🗂 𠮷 original data" / "app.db"
-        environment = isolated_environment(root, database)
+        environment = isolated_environment(root)
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             port: int = listener.getsockname()[1]
         config = Path(environment["HOME"]) / "Folio-J-Data"
         config.mkdir()
         (config / "app.toml").write_text(f"[server]\nport = {port}\n", encoding="utf-8")
+        launcher = [str(binary)]
+        check_first_run(
+            launcher, cwd, environment, port, root / "首次选库 first library"
+        )
+        environment["FOLIO_J_DATABASE_PATH"] = str(database)
         check_data_path(command(binary, cwd, environment, "data-path"), database)
         command(binary, cwd, environment, "migrate")
         with closing(sqlite3.connect(database)) as connection:
@@ -571,13 +454,15 @@ def smoke(package: Path) -> None:
         fixture = (
             REPOSITORY / "backend/tests/fixtures/epub/synthetic-reading.epub"
         ).read_bytes()
-        with application(binary, cwd, environment, port) as client:
+        with application(launcher, cwd, environment, port) as client:
+            client.frontend()
             saved = seed(client, fixture)
             saved["runs"] = verify_sdk(client)
             check_saved(client, saved)
         check_database_runs(database, saved)
         # An ordinary restart protects the data before testing backup/restore.
-        with application(binary, cwd, environment, port) as client:
+        with application(launcher, cwd, environment, port) as client:
+            client.frontend()
             check_saved(client, saved)
         backup = root / "备份 🗂 𠮷 backup & $literal"
         restored = root / "恢复 🗂 𠮷 restored & $literal"
@@ -590,7 +475,8 @@ def smoke(package: Path) -> None:
         # Remove the original data so a restore cannot accidentally read it.
         shutil.rmtree(database.parent)
         environment["FOLIO_J_DATABASE_PATH"] = str(restored / "app.db")
-        with application(binary, cwd, environment, port) as client:
+        with application(launcher, cwd, environment, port) as client:
+            client.frontend()
             check_saved(client, saved)
         check_database_runs(restored / "app.db", saved)
         print(
