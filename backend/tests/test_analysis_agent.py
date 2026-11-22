@@ -537,22 +537,12 @@ async def test_legacy_and_protocol_switch_history_is_material_not_fake_assistant
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "line_ending,terminated",
-    [("\n", True), ("\r\n", True), ("\r", True), ("\n", False)],
-)
-async def test_reviewed_insert_preview_matches_saved_markdown_across_line_endings(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    line_ending: str,
-    terminated: bool,
+async def test_reviewed_insert_preview_matches_saved_revision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    source_md = DOCUMENT.replace("\n", line_ending)
-    if not terminated:
-        source_md = source_md.removesuffix(line_ending)
     async with chat_client(tmp_path / "preview-save.db") as (client, app):
         seed = await seed_chat(client)
-        _, document = await saved_document(client, app, seed, monkeypatch, source_md)
+        _, document = await saved_document(client, app, seed, monkeypatch)
         args = {
             "analysis_id": document["id"],
             "base_revision_id": document["revision_id"],
@@ -578,32 +568,25 @@ async def test_reviewed_insert_preview_matches_saved_markdown_across_line_ending
         assert approved.status_code == 200
         await runtime.execute_job(app, job["id"])
         saved = (await client.get(f"/api/analyses/{document['id']}")).json()
+        assert saved["parent_revision_id"] == document["revision_id"]
         assert (
             next(section["raw"] for section in saved["sections"] if section["title"] == "ば")
-            == (proposal["after"])
+            == proposal["after"]
             == "## ば\n\nば\n"
         )
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    ("source_md", "body", "expected"),
-    [(DOCUMENT, "", ""), ("仅有总述", "新的总述", "新的总述\n")],
-)
-async def test_reviewed_preamble_preview_matches_saved_empty_and_no_h2_documents(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    source_md: str,
-    body: str,
-    expected: str,
+async def test_reviewed_preamble_preview_matches_saved_revision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     async with chat_client(tmp_path / "preamble-preview.db") as (client, app):
         seed = await seed_chat(client)
-        _, document = await saved_document(client, app, seed, monkeypatch, source_md)
+        _, document = await saved_document(client, app, seed, monkeypatch, "仅有总述")
         args = {
             "analysis_id": document["id"],
             "base_revision_id": document["revision_id"],
-            "body": body,
+            "body": "新的总述",
         }
         scripted_turn(
             monkeypatch,
@@ -621,7 +604,8 @@ async def test_reviewed_preamble_preview_matches_saved_empty_and_no_h2_documents
         assert approved.status_code == 200
         await runtime.execute_job(app, job["id"])
         saved = (await client.get(f"/api/analyses/{document['id']}")).json()
-        assert saved["sections"][0]["raw"] == proposal["after"] == expected
+        assert saved["parent_revision_id"] == document["revision_id"]
+        assert saved["sections"][0]["raw"] == proposal["after"] == "新的总述\n"
 
 
 @pytest.mark.asyncio

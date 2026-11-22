@@ -10,7 +10,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from app.analysis_schemas import SectionInput, SectionOperation
+from app.analysis_schemas import AnalysisDetail, SectionInput, SectionOperation, SectionRead
 from app.db import Base, create_engine
 from app.models import Segment, Source
 from app.services.analyses import (
@@ -22,7 +22,7 @@ from app.services.analyses import (
     preview_operation,
     preview_section_replacement,
 )
-from app.services.normalizer import normalize
+from app.services.normalizer import NORMALIZER_VERSION, normalize
 from app.services.sources import begin_write, delete_segment
 
 
@@ -83,6 +83,87 @@ def test_join_revision_blocks_separates_unterminated_body_from_next_heading() ->
     assert result == "## A\n新正文无终止换行\n## B\n后文\n"
     assert [block.title for block in normalize(result).blocks] == [None, "A", "B"]
     assert original == "## A\n旧正文\n## B\n后文\n"
+
+
+def preview_detail(source_md: str) -> AnalysisDetail:
+    normalized = normalize(source_md)
+    timestamp = datetime(2026, 1, 1, tzinfo=UTC)
+    return AnalysisDetail(
+        id="analysis",
+        segment_id="segment",
+        title="讲解",
+        excerpt="",
+        current_revision_id="revision",
+        created_at=timestamp,
+        updated_at=timestamp,
+        revision_id="revision",
+        parent_revision_id=None,
+        origin="manual",
+        run_id=None,
+        source_md=source_md,
+        normalizer_version=NORMALIZER_VERSION,
+        warnings=list(normalized.warnings),
+        sections=[
+            SectionRead(
+                id=f"section-{index}",
+                uid=f"uid-{index}",
+                handle=f"s{index}",
+                kind=block.kind,
+                display_no=block.display_no,
+                title=block.title,
+                raw=block.raw,
+                start_line=block.start_line,
+                end_line=block.end_line,
+            )
+            for index, block in enumerate(normalized.blocks)
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("source_md", "separator"),
+    [
+        ("## 元\n本文\n", ""),
+        ("## 元\r\n本文\r\n", ""),
+        ("## 元\r本文\r", ""),
+        ("## 元\n本文", "\n"),
+    ],
+    ids=["lf", "crlf", "cr", "unterminated"],
+)
+def test_insert_preview_preserves_line_endings_and_separates_new_block(
+    source_md: str, separator: str
+) -> None:
+    detail = preview_detail(source_md)
+    preview = preview_operation(
+        detail,
+        SectionOperation(
+            kind="insert_sections",
+            after_sid=detail.sections[-1].uid,
+            sections=[SectionInput(title="  は\u3099  ", body="は\u3099")],
+        ),
+    )
+    assert preview.after == "## ば\n\nば\n"
+    assert preview.source_md == source_md + separator + "## ば\n\nば\n"
+
+
+@pytest.mark.parametrize(
+    ("source_md", "body", "expected_after", "expected_document"),
+    [
+        ("## A\n正文", "", "", "## A\n正文"),
+        ("旧总述\n## A\n正文", "", "", "## A\n正文"),
+        ("仅有总述", "新的总述", "新的总述\n", "新的总述\n"),
+        ("", "は\u3099", "ば\n", "ば\n"),
+    ],
+    ids=["already-empty", "clear-before-heading", "no-h2", "empty-document"],
+)
+def test_preamble_preview_renders_exact_block_and_document(
+    source_md: str, body: str, expected_after: str, expected_document: str
+) -> None:
+    preview = preview_operation(
+        preview_detail(source_md), SectionOperation(kind="update_preamble", body=body)
+    )
+    assert preview.after == expected_after
+    assert preview.source_md == expected_document
 
 
 @pytest.mark.asyncio
