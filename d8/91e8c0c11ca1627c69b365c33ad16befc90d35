@@ -1,0 +1,27 @@
+AGENTS.md
+  s_e24894f6e5b27e::t_ac95302ea6a1d5 56
+docs/UPGRADING.md
+  s_e24894f6e5b27e::t_c348a02fe8669d 91,93
+docs/USAGE.md
+  s_e24894f6e5b27e::t_9472ad45c60824 115-116,137
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_e24894f6e5b27e::t_2dbbb1874a017d 3,7
+docs/handovers/README.md
+  s_e24894f6e5b27e::t_0a463fa1d5897e 10,57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d891e8c0c11ca1627c69b365c33ad16befc90d35",
+  "prompts": {},
+  "sessions": {
+    "s_e24894f6e5b27e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a202e3-9a2d-7e93-bded-01b9e7178536",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
