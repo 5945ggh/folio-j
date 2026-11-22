@@ -5,7 +5,7 @@ import hashlib
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from fastapi import HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
@@ -45,6 +45,7 @@ from app.services.sources import (
     as_utc,
     begin_write,
     discussion_counts,
+    notify_content_deleted,
     require_source,
     soft_delete_segments,
     utc_now,
@@ -376,12 +377,12 @@ async def material_delete_impact(
 async def delete_material(
     session: AsyncSession,
     material_id: str,
-    dispatch_lock: asyncio.Lock,
+    application: FastAPI,
     *,
     delete_learning_content: bool = False,
-) -> tuple[MaterialDeleteResult, list[str]]:
+) -> MaterialDeleteResult:
     """Keep a tombstone and atomically remove assets and the selected learning content."""
-    async with dispatch_lock:
+    async with application.state.chat_dispatch_lock:
         try:
             await begin_write(session)
             await require_material_delete_target(session, material_id)
@@ -403,9 +404,8 @@ async def delete_material(
                 else []
             )
             await session.commit()
-            return MaterialDeleteResult(
-                material_id=material_id, deleted_segment_ids=deleted_ids
-            ), cancelled
         except BaseException:
             await session.rollback()
             raise
+    await notify_content_deleted(application, cancelled, translations_revoked=True)
+    return MaterialDeleteResult(material_id=material_id, deleted_segment_ids=deleted_ids)

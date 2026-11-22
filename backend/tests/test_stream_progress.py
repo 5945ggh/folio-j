@@ -125,7 +125,7 @@ async def test_failure_flushes_latest_buffer_and_fences_retained_callback(
     buffer_ready = asyncio.Event()
     if failure == "timeout":
         monkeypatch.setattr(agent, "CALL_SECONDS", 1)
-        original_authorized = vars(agent)["_authorized"]
+        original_authorized = runtime.call_authorized
         authorization_checks = 0
 
         async def authorize_after_buffer(app: Any, job_id: str, token: str) -> bool:
@@ -137,7 +137,7 @@ async def test_failure_flushes_latest_buffer_and_fences_retained_callback(
                 await asyncio.wait_for(buffer_ready.wait(), timeout=5)
             return await original_authorized(app, job_id, token)
 
-        monkeypatch.setattr(agent, "_authorized", authorize_after_buffer)
+        monkeypatch.setattr(runtime, "call_authorized", authorize_after_buffer)
     retained: list[Callable[[str], Awaitable[None]]] = []
     raw_latest = "第一段，未到250ms的最新残文 fictional-chat-secret"
     latest = raw_latest.replace("fictional-chat-secret", "[已隐藏凭据]")

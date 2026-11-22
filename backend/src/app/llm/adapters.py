@@ -4,12 +4,14 @@ import json
 import re
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any, Literal, cast
 
 from openai import AsyncOpenAI, omit
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai.types.responses import Response
 
+_TEXT_PROGRESS_INTERVAL_SECONDS = 0.25
 _JSON_STRING = re.compile(r'"(?:[^"\\]|\\.)*(?P<end>"|\\?$)', re.DOTALL)
 _JSON_ESCAPE = re.compile(r'\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}(?:\\u[0-9a-fA-F]{4})*)')
 
@@ -25,8 +27,6 @@ class CallSnapshot:
     max_output_tokens: int | None
     reasoning_effort: Literal["none", "low", "medium", "high"] | None
     messages: list[dict[str, Any]] | None = None
-    tools: list[dict[str, Any]] | None = None
-    tool_choice: str | None = None
     timeout_seconds: float | None = None
 
 
@@ -450,6 +450,30 @@ def _safe_progress(value: str, api_key: str | None) -> str:
     return safe
 
 
+class _TextProgress:
+    """Only assemble and publish aggregate text when a progress update is due."""
+
+    def __init__(self, api_key: str | None, publish: Callable[[str], Awaitable[None]]) -> None:
+        self.api_key = api_key
+        self.publish = publish
+        self.parts: list[str] = []
+        self.next_write = 0.0
+        self.pending = False
+
+    async def append(self, text: str) -> None:
+        self.parts.append(text)
+        self.pending = True
+        now = monotonic()
+        if now >= self.next_write:
+            self.next_write = now + _TEXT_PROGRESS_INTERVAL_SECONDS
+            await self.flush()
+
+    async def flush(self) -> None:
+        if self.pending:
+            self.pending = False
+            await self.publish(_safe_progress("".join(self.parts), self.api_key))
+
+
 def _responses_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [{"type": "function", **item["function"]} for item in tools]
 
@@ -500,8 +524,6 @@ def _role_messages(snapshot: CallSnapshot) -> list[dict[str, Any]]:
     """Keep the 2A fixed prompt path and preserve each 2B role boundary."""
     if snapshot.messages is None:
         return [{"role": "user", "content": snapshot.prompt}]
-    if snapshot.tools is not None:
-        return snapshot.messages
     if not snapshot.messages or any(
         item.get("role") not in {"system", "user", "assistant"}
         or not isinstance(item.get("content"), str)
@@ -529,10 +551,6 @@ async def _chat(
             reasoning_effort=snapshot.reasoning_effort
             if snapshot.reasoning_effort is not None
             else omit,
-            tools=cast(Any, snapshot.tools) if snapshot.tools is not None else omit,
-            tool_choice=cast(Any, snapshot.tool_choice)
-            if snapshot.tool_choice is not None
-            else omit,
             timeout=timeout,
             extra_headers=_headers(api_key),
         )
@@ -557,12 +575,10 @@ async def _chat(
         reasoning_effort=snapshot.reasoning_effort
         if snapshot.reasoning_effort is not None
         else omit,
-        tools=cast(Any, snapshot.tools) if snapshot.tools is not None else omit,
-        tool_choice=cast(Any, snapshot.tool_choice) if snapshot.tool_choice is not None else omit,
         timeout=timeout,
         extra_headers=_headers(api_key),
     )
-    parts: list[str] = []
+    progress = _TextProgress(api_key, on_progress)
     chunk_count = 0
     finish_reason: str | None = None
     usage: dict[str, int | None] | None = None
@@ -575,13 +591,15 @@ async def _chat(
                 continue
             choice = chunk.choices[0]
             if choice.delta.content:
-                parts.append(choice.delta.content)
-                await on_progress(_safe_progress("".join(parts), api_key))
+                await progress.append(choice.delta.content)
             if choice.finish_reason is not None:
                 finish_reason = choice.finish_reason
     finally:
-        await stream.close()
-    text = _safe("".join(parts), api_key)
+        try:
+            await stream.close()
+        finally:
+            await progress.flush()
+    text = _safe("".join(progress.parts), api_key)
     return GenerateResult(
         text=text,
         completed=bool(text.strip()) and finish_reason == "stop",
@@ -623,12 +641,6 @@ async def _responses(
             reasoning={"effort": snapshot.reasoning_effort}
             if snapshot.reasoning_effort is not None
             else omit,
-            tools=cast(Any, _responses_tools(snapshot.tools))
-            if snapshot.tools is not None
-            else omit,
-            tool_choice=cast(Any, snapshot.tool_choice)
-            if snapshot.tool_choice is not None
-            else omit,
             timeout=timeout,
             extra_headers=_headers(api_key),
         )
@@ -655,12 +667,10 @@ async def _responses(
         reasoning={"effort": snapshot.reasoning_effort}
         if snapshot.reasoning_effort is not None
         else omit,
-        tools=cast(Any, _responses_tools(snapshot.tools)) if snapshot.tools is not None else omit,
-        tool_choice=cast(Any, snapshot.tool_choice) if snapshot.tool_choice is not None else omit,
         timeout=timeout,
         extra_headers=_headers(api_key),
     )
-    parts: list[str] = []
+    progress = _TextProgress(api_key, on_progress)
     event_count = 0
     final_response: Response | None = None
     failed = False
@@ -668,16 +678,18 @@ async def _responses(
         async for event in stream:
             event_count += 1
             if event.type == "response.output_text.delta":
-                parts.append(event.delta)
-                await on_progress(_safe_progress("".join(parts), api_key))
+                await progress.append(event.delta)
             elif event.type == "response.completed":
                 final_response = event.response
             elif event.type in {"response.incomplete", "response.failed", "error"}:
                 failed = True
     finally:
-        await stream.close()
+        try:
+            await stream.close()
+        finally:
+            await progress.flush()
     final_text = final_response.output_text if final_response is not None else ""
-    text = _safe(final_text or "".join(parts), api_key)
+    text = _safe(final_text or "".join(progress.parts), api_key)
     return GenerateResult(
         text=text,
         completed=bool(text.strip())

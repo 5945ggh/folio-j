@@ -371,16 +371,10 @@ async def delete_material(
     request: Request,
     delete_learning_content: bool = False,
 ) -> MaterialDeleteResult | Response:
-    result, cancelled = await service.delete_material(
+    result = await service.delete_material(
         session,
         material_id,
-        request.app.state.chat_dispatch_lock,
+        request.app,
         delete_learning_content=delete_learning_content,
     )
-    from app.jobs.runtime import request_chat_cancel
-    from app.services.translations import cancel_revoked
-
-    await cancel_revoked(request.app)
-    for job_id in cancelled:
-        request_chat_cancel(request.app, job_id)
     return result if delete_learning_content else Response(status_code=204)

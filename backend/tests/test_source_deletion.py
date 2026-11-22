@@ -72,7 +72,7 @@ async def test_segment_deletion_interrupts_review_and_marks_all_runs_deleted(
             await begin_write(session)
             interrupted = await soft_delete_discussions(session, [SEGMENT_ID], datetime.now(UTC))
             await session.commit()
-        assert interrupted == [JOB_ID]
+        assert interrupted
         with sqlite3.connect(database) as connection:
             job = connection.execute(
                 "SELECT status,deleted_at FROM chat_jobs WHERE id=?", (JOB_ID,)

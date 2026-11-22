@@ -168,6 +168,8 @@ async def test_non_stream_text_and_usage(monkeypatch: pytest.MonkeyPatch, protoc
 async def test_stream_accumulates_visible_text_and_requires_terminal_event(
     monkeypatch: pytest.MonkeyPatch, protocol: str
 ) -> None:
+    clock = iter([0.0, 0.1, 0.25, 0.3])
+    monkeypatch.setattr(adapters, "monotonic", lambda: next(clock))
     if protocol == "chat_completions":
         chunks = [
             {
@@ -175,38 +177,32 @@ async def test_stream_accumulates_visible_text_and_requires_terminal_event(
                 "object": "chat.completion.chunk",
                 "created": 1,
                 "model": "demo-model",
-                "choices": [{"index": 0, "delta": {"content": "前"}, "finish_reason": None}],
-            },
-            {
-                "id": "chat_test",
-                "object": "chat.completion.chunk",
-                "created": 1,
-                "model": "demo-model",
-                "choices": [{"index": 0, "delta": {"content": "半"}, "finish_reason": "stop"}],
-            },
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {"content": part},
+                        "finish_reason": "stop" if part == "章" else None,
+                    }
+                ],
+            }
+            for part in "前半文章"
         ]
     else:
         chunks = [
             {
                 "type": "response.output_text.delta",
-                "sequence_number": 1,
+                "sequence_number": index,
                 "item_id": "msg_test",
                 "output_index": 0,
                 "content_index": 0,
-                "delta": "前",
-            },
-            {
-                "type": "response.output_text.delta",
-                "sequence_number": 2,
-                "item_id": "msg_test",
-                "output_index": 0,
-                "content_index": 0,
-                "delta": "半",
-            },
+                "delta": part,
+            }
+            for index, part in enumerate("前半文章", 1)
+        ] + [
             {
                 "type": "response.completed",
-                "sequence_number": 3,
-                "response": completed_response("前半"),
+                "sequence_number": 5,
+                "response": completed_response("前半文章"),
             },
         ]
 
@@ -224,8 +220,8 @@ async def test_stream_accumulates_visible_text_and_requires_terminal_event(
         snapshot(cast(Protocol, protocol), True), "fictional_test_key", on_progress
     )
     assert result.completed is True
-    assert result.text == "前半"
-    assert progress == ["前", "前半"]
+    assert result.text == "前半文章"
+    assert progress == ["前", "前半文", "前半文章"]
 
 
 @pytest.mark.asyncio

@@ -149,7 +149,6 @@ async def _claim(
             max_output_tokens=model["max_output_tokens"],
             reasoning_effort=model["reasoning_effort"],
             messages=messages,
-            tools=inputs["tools"],
             timeout_seconds=CALL_SECONDS,
         )
         return token, key, snapshot
@@ -177,17 +176,13 @@ async def execution_authorized(session: AsyncSession, job_id: str, token: str) -
     ) is not None
 
 
-async def _call_authorized(application: "FastAPI", job_id: str, token: str) -> bool:
+async def call_authorized(application: "FastAPI", job_id: str, token: str) -> bool:
     """Recheck the persisted claim before dispatch or progress persistence."""
     async with application.state.session_factory() as session:
         return await execution_authorized(session, job_id, token)
 
 
-async def call_authorized(application: "FastAPI", job_id: str, token: str) -> bool:
-    return await _call_authorized(application, job_id, token)
-
-
-async def _finalize_stop(application: "FastAPI", job_id: str) -> None:
+async def finalize_stop(application: "FastAPI", job_id: str) -> None:
     async with application.state.session_factory() as session:
         await session.execute(text("BEGIN IMMEDIATE"))
         job = await session.get(Job, job_id)
@@ -211,10 +206,6 @@ async def _finalize_stop(application: "FastAPI", job_id: str) -> None:
             assistant.status, assistant.updated_at = "interrupted", finished
         _release(thread, job)
         await session.commit()
-
-
-async def finalize_stop(application: "FastAPI", job_id: str) -> None:
-    await _finalize_stop(application, job_id)
 
 
 async def execute_job(application: "FastAPI", job_id: str) -> None:
@@ -258,11 +249,6 @@ def wake_chat_worker(application: "FastAPI") -> None:
     worker(application, "chat").wake()
 
 
-def request_chat_cancel(application: "FastAPI", _job_id: str) -> None:
-    """Stop is persisted by the service; wake the supervisor to observe it."""
-    wake_chat_worker(application)
-
-
 async def _scan(application: "FastAPI") -> None:
     async with application.state.session_factory() as session:
         queued = (
@@ -282,7 +268,7 @@ async def _scan(application: "FastAPI") -> None:
         )
     for job_id in stopping:
         if job_id not in background.tasks:
-            await _finalize_stop(application, job_id)
+            await finalize_stop(application, job_id)
 
 
 async def fail_job(application: "FastAPI", job_id: str) -> None:

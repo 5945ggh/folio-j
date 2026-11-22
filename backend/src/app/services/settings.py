@@ -810,6 +810,22 @@ def start_verification(application: "FastAPI", run_id: str) -> None:
     )
 
 
+async def update_current_verification_status(session: AsyncSession, row: Run) -> None:
+    model = await session.get(ProviderModel, row.provider_model_id)
+    provider = await session.get(Provider, row.provider_id)
+    if (
+        model is not None
+        and provider is not None
+        and provider.revision == row.provider_revision
+        and model.revision == row.model_revision
+        and await is_latest_verification(session, row)
+    ):
+        if row.stream:
+            model.stream_status = row.status
+        else:
+            model.text_status = row.status
+
+
 async def fail_verification(application: "FastAPI", run_id: str) -> None:
     async with application.state.session_factory() as session:
         await session.execute(text("BEGIN IMMEDIATE"))
@@ -817,19 +833,7 @@ async def fail_verification(application: "FastAPI", run_id: str) -> None:
         if row is None or row.purpose != "verification" or row.status not in ("queued", "running"):
             return
         row.status, row.error, row.finished_at = "failed", "后台验证异常，未自动重新调用", now()
-        model = await session.get(ProviderModel, row.provider_model_id)
-        provider = await session.get(Provider, row.provider_id)
-        if (
-            model is not None
-            and provider is not None
-            and provider.revision == row.provider_revision
-            and model.revision == row.model_revision
-            and await is_latest_verification(session, row)
-        ):
-            if row.stream:
-                model.stream_status = "failed"
-            else:
-                model.text_status = "failed"
+        await update_current_verification_status(session, row)
         await session.commit()
 
 
@@ -864,10 +868,12 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
 
         async def progress(text: str) -> None:
             async with factory() as progress_session:
-                current = await progress_session.get(Run, run_id)
-                if current is not None and current.status == "running":
-                    current.output_text = redact_credential(text, key) or ""
-                    await progress_session.commit()
+                await progress_session.execute(
+                    update(Run)
+                    .where(Run.id == run_id, Run.status == "running")
+                    .values(output_text=redact_credential(text, key) or "")
+                )
+                await progress_session.commit()
 
         try:
             key = read_credential(application.state.database_path, reference)
@@ -891,19 +897,7 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
                     raw_response,
                 )
                 row.finished_at = now()
-                model = await session.get(ProviderModel, row.provider_model_id)
-                provider = await session.get(Provider, row.provider_id)
-                if (
-                    model is not None
-                    and provider is not None
-                    and provider.revision == row.provider_revision
-                    and model.revision == row.model_revision
-                    and await is_latest_verification(session, row)
-                ):
-                    if row.stream:
-                        model.stream_status = "succeeded"
-                    else:
-                        model.text_status = "succeeded"
+                await update_current_verification_status(session, row)
                 await session.commit()
         except Exception as error:
             async with factory() as session:
@@ -918,17 +912,5 @@ async def execute_verification(application: "FastAPI", run_id: str) -> None:
                 )
                 row.raw_response = raw_response
                 row.usage = usage
-                model = await session.get(ProviderModel, row.provider_model_id)
-                provider = await session.get(Provider, row.provider_id)
-                if (
-                    model is not None
-                    and provider is not None
-                    and provider.revision == row.provider_revision
-                    and model.revision == row.model_revision
-                    and await is_latest_verification(session, row)
-                ):
-                    if row.stream:
-                        model.stream_status = "failed"
-                    else:
-                        model.text_status = "failed"
+                await update_current_verification_status(session, row)
                 await session.commit()

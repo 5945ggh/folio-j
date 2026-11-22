@@ -14,6 +14,7 @@ from sqlalchemy import case, func, select, text, update
 from app.analysis_schemas import SectionOperation
 from app.chat_models import ChatMessage, ChatThread, Job
 from app.ids import new_ulid
+from app.jobs import runtime
 from app.llm import adapters
 from app.llm.errors import describe_call_failure
 from app.services import analyses
@@ -59,12 +60,6 @@ def _redact_object(value: dict[str, Any], key: str | None) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(redact_credential(encoded, key) or encoded))
 
 
-async def _authorized(app: "FastAPI", job_id: str, token: str) -> bool:
-    from app.jobs.runtime import call_authorized
-
-    return await call_authorized(app, job_id, token)
-
-
 class _StreamProgress:
     """Keep the latest aggregate per invocation and bound durable progress writes."""
 
@@ -82,14 +77,12 @@ class _StreamProgress:
 
     async def tool_name(self, name: str) -> None:
         """Only publish a known activity, never partial tool arguments or reasoning."""
-        from app.jobs.runtime import execution_authorized
-
         if self.closed or self.writing_analysis or name != "save_analysis":
             return
         self.writing_analysis = True
         async with self.app.state.session_factory() as session:
             await session.execute(text("BEGIN IMMEDIATE"))
-            if not await execution_authorized(session, self.job_id, self.token):
+            if not await runtime.execution_authorized(session, self.job_id, self.token):
                 return
             await session.execute(
                 update(Job)
@@ -156,64 +149,55 @@ async def _invoke(
 ) -> adapters.ToolTurn:
     if not context_fits(messages, tools):
         raise ContextLimitError()
-    async with app.state.chat_dispatch_lock:
-        if not await _authorized(app, job_id, token):
-            from app.jobs.runtime import finalize_stop
+    entered = asyncio.Event()
+    progress = _StreamProgress(app, job_id, token, key)
 
-            await finalize_stop(app, job_id)
-            raise asyncio.CancelledError()
-        entered = asyncio.Event()
-        progress = _StreamProgress(app, job_id, token, key)
+    async def call() -> adapters.ToolTurn:
+        entered.set()
+        return await adapters.complete_with_tools(
+            snapshot,
+            key,
+            messages=messages,
+            tools=tools,
+            tool_choice=tool_choice,
+            on_progress=progress,
+            on_tool_name=progress.tool_name,
+        )
 
-        async def call() -> adapters.ToolTurn:
-            entered.set()
-            return await adapters.complete_with_tools(
-                snapshot,
-                key,
-                messages=messages,
-                tools=tools,
-                tool_choice=tool_choice,
-                on_progress=progress,
-                on_tool_name=progress.tool_name,
-            )
-
-        task = asyncio.create_task(call())
-        await entered.wait()
-    loop = asyncio.get_running_loop()
-    deadline = loop.time() + call_seconds
+    task: asyncio.Task[adapters.ToolTurn] | None = None
     try:
-        try:
-            while not task.done():
-                if not await _authorized(app, job_id, token):
-                    task.cancel()
-                    from app.jobs.runtime import finalize_stop
-
-                    await finalize_stop(app, job_id)
-                    raise asyncio.CancelledError()
-                if loop.time() >= deadline:
-                    task.cancel()
-                    raise TimeoutError()
-                await progress.flush_due()
-                await asyncio.wait({task}, timeout=0.05)
-            if not await _authorized(app, job_id, token):
-                from app.jobs.runtime import finalize_stop
-
-                await finalize_stop(app, job_id)
+        async with app.state.chat_dispatch_lock:
+            if not await runtime.call_authorized(app, job_id, token):
                 raise asyncio.CancelledError()
-            return task.result()
-        finally:
-            try:
-                await progress.close()
-            finally:
-                if not task.done():
-                    task.cancel()
-                    with suppress(BaseException):
-                        await task
+            task = asyncio.create_task(call())
+            await entered.wait()
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + call_seconds
+        while not task.done():
+            if not await runtime.call_authorized(app, job_id, token):
+                raise asyncio.CancelledError()
+            if loop.time() >= deadline:
+                task.cancel()
+                raise TimeoutError()
+            await progress.flush_due()
+            await asyncio.wait({task}, timeout=0.05)
+        if not await runtime.call_authorized(app, job_id, token):
+            raise asyncio.CancelledError()
+        return task.result()
     except asyncio.CancelledError:
-        from app.jobs.runtime import finalize_stop
-
-        await finalize_stop(app, job_id)
+        if task is not None:
+            task.cancel()
+        await runtime.finalize_stop(app, job_id)
         raise
+    finally:
+        try:
+            await progress.close()
+        finally:
+            if task is not None and not task.done():
+                if not task.cancelling():
+                    task.cancel()
+                with suppress(BaseException):
+                    await task
 
 
 async def _remaining_budget(app: "FastAPI", job_id: str) -> tuple[int, float]:
@@ -392,13 +376,11 @@ async def _terminate(
 async def _progress(
     app: "FastAPI", job_id: str, token: str, text_value: str, *, first_output: bool
 ) -> None:
-    from app.jobs.runtime import execution_authorized
-
     if len(text_value) > OUTPUT_CHAR_LIMIT:
         raise OutputLimitError()
     async with app.state.session_factory() as session:
         await session.execute(text("BEGIN IMMEDIATE"))
-        if not await execution_authorized(session, job_id, token):
+        if not await runtime.execution_authorized(session, job_id, token):
             return
         run_id = await session.scalar(
             select(Run.id)
@@ -469,7 +451,6 @@ async def _save_analysis(
 ) -> dict[str, Any]:
     """Save the tool's complete Markdown under the live job transaction."""
     from app.analysis_models import Analysis, AnalysisRevision
-    from app.jobs.runtime import execution_authorized
 
     if not context_fits(messages, tools):
         raise ContextLimitError()
@@ -492,7 +473,7 @@ async def _save_analysis(
         raise ValueError("保存内容包含当前模型凭据")
     async with app.state.session_factory() as session:
         await session.execute(text("BEGIN IMMEDIATE"))
-        if not await execution_authorized(session, job_id, token):
+        if not await runtime.execution_authorized(session, job_id, token):
             return {"error": "job_stopped"}
         job = await session.get(Job, job_id)
         assert job is not None

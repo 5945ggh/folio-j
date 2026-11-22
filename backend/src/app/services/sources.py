@@ -1,11 +1,10 @@
 """Source and Segment business operations."""
 
-import asyncio
 import hashlib
 import unicodedata
 from datetime import UTC, datetime
 
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 from pydantic import ValidationError
 from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -256,9 +255,9 @@ async def analysis_count_for_segments(session: AsyncSession, segment_ids: list[s
 
 async def soft_delete_discussions(
     session: AsyncSession, segment_ids: list[str], deleted: datetime
-) -> list[str]:
+) -> bool:
     if not segment_ids:
-        return []
+        return False
     thread_ids = list(
         (
             await session.scalars(
@@ -269,7 +268,7 @@ async def soft_delete_discussions(
         ).all()
     )
     if not thread_ids:
-        return []
+        return False
     active_ids = list(
         (
             await session.scalars(
@@ -327,12 +326,12 @@ async def soft_delete_discussions(
             updated_at=deleted,
         )
     )
-    return active_ids
+    return bool(active_ids)
 
 
 async def soft_delete_segments(
     session: AsyncSession, segment_ids: list[str], deleted: datetime
-) -> list[str]:
+) -> bool:
     """Delete learning content in the caller's transaction, without committing."""
     cancelled = await soft_delete_discussions(session, segment_ids, deleted)
     from app.services.analyses import soft_delete_for_segments
@@ -347,14 +346,26 @@ async def soft_delete_segments(
     return cancelled
 
 
-async def delete_source(
-    session: AsyncSession, source_id: str, dispatch_lock: asyncio.Lock
-) -> list[str]:
-    async with dispatch_lock:
-        return await _delete_source_committed(session, source_id)
+async def notify_content_deleted(
+    application: FastAPI, chats_interrupted: bool, *, translations_revoked: bool
+) -> None:
+    if translations_revoked:
+        from app.services.translations import cancel_revoked
+
+        await cancel_revoked(application)
+    if chats_interrupted:
+        from app.jobs.runtime import wake_chat_worker
+
+        wake_chat_worker(application)
 
 
-async def _delete_source_committed(session: AsyncSession, source_id: str) -> list[str]:
+async def delete_source(session: AsyncSession, source_id: str, application: FastAPI) -> None:
+    async with application.state.chat_dispatch_lock:
+        interrupted = await _delete_source_committed(session, source_id)
+    await notify_content_deleted(application, interrupted, translations_revoked=True)
+
+
+async def _delete_source_committed(session: AsyncSession, source_id: str) -> bool:
     try:
         await begin_write(session)
         source = await require_source(session, source_id)
@@ -463,14 +474,13 @@ async def update_segment(
         raise
 
 
-async def delete_segment(
-    session: AsyncSession, segment_id: str, dispatch_lock: asyncio.Lock
-) -> list[str]:
-    async with dispatch_lock:
-        return await _delete_segment_committed(session, segment_id)
+async def delete_segment(session: AsyncSession, segment_id: str, application: FastAPI) -> None:
+    async with application.state.chat_dispatch_lock:
+        interrupted = await _delete_segment_committed(session, segment_id)
+    await notify_content_deleted(application, interrupted, translations_revoked=False)
 
 
-async def _delete_segment_committed(session: AsyncSession, segment_id: str) -> list[str]:
+async def _delete_segment_committed(session: AsyncSession, segment_id: str) -> bool:
     try:
         await begin_write(session)
         await require_segment(session, segment_id)

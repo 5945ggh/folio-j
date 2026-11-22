@@ -5,6 +5,7 @@ import sqlite3
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -58,12 +59,6 @@ async def test_selected_book_deletes_exact_learning_scope_and_retries(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: str
 ) -> None:
     database = tmp_path / "exact.db"
-    cancellations: list[str] = []
-
-    def record_cancel(_app: Any, job: str) -> None:
-        cancellations.append(job)
-
-    monkeypatch.setattr("app.jobs.runtime.request_chat_cancel", record_cancel)
     async with chat_client(database) as (client, _app):
         seed = await material_chat(client)
         source_id = seed["source"]["id"]
@@ -134,6 +129,23 @@ async def test_selected_book_deletes_exact_learning_scope_and_retries(
                 "UPDATE materials SET compiled_bundle=X'0000' WHERE id=?", (material["id"],)
             )
         expected_ids = sorted([target, extra.json()["id"], late.json()["id"]])
+        thread = await client.post(
+            f"/api/segments/{extra.json()['id']}/threads", json={"request_id": str(uuid4())}
+        )
+        assert thread.status_code == 201
+        second_job = await accept(client, seed | {"segment": extra.json(), "thread": thread.json()})
+        observed: list[list[tuple[str, str | None]]] = []
+
+        def record_wake(_app: Any) -> None:
+            with sqlite3.connect(database) as connection:
+                observed.append(
+                    connection.execute(
+                        "SELECT status,execution_token FROM chat_jobs WHERE id IN (?,?)",
+                        (job["id"], second_job["id"]),
+                    ).fetchall()
+                )
+
+        monkeypatch.setattr(runtime, "wake_chat_worker", record_wake)
         for _ in range(2):
             deleted = await client.delete(url, params={"delete_learning_content": True})
             assert deleted.status_code == 200, deleted.text
@@ -141,7 +153,7 @@ async def test_selected_book_deletes_exact_learning_scope_and_retries(
                 "material_id": material["id"],
                 "deleted_segment_ids": expected_ids,
             }
-        assert cancellations == [job["id"]]
+        assert observed == [[("interrupted", None), ("interrupted", None)]]
         assert table_snapshot(database, tuple(immutable)) == immutable
         for endpoint in (
             f"segments/{target}",
@@ -233,12 +245,6 @@ async def test_learning_deletion_failure_rolls_back_assets_jobs_and_learning(
     failure: str,
 ) -> None:
     database = tmp_path / "rollback.db"
-    cancellations: list[str] = []
-
-    def record_cancel(_app: Any, job: str) -> None:
-        cancellations.append(job)
-
-    monkeypatch.setattr("app.jobs.runtime.request_chat_cancel", record_cancel)
     async with chat_client(database) as (client, _app):
         seed = await material_chat(client)
         await manual_history(client, seed["segment"])
@@ -284,16 +290,18 @@ async def test_learning_deletion_failure_rolls_back_assets_jobs_and_learning(
                 "BEGIN SELECT RAISE(ABORT, 'injected cleanup failure'); END"
             )
         url = f"/api/materials/{seed['material']['id']}"
+        wake = Mock()
+        monkeypatch.setattr(runtime, "wake_chat_worker", wake)
         with pytest.raises(IntegrityError, match="injected cleanup failure"):
             await client.delete(url, params={"delete_learning_content": True})
         assert table_snapshot(database, tables) == before
-        assert cancellations == []
+        wake.assert_not_called()
         with sqlite3.connect(database) as connection:
             connection.execute("DROP TRIGGER reject_cleanup")
         assert (
             await client.delete(url, params={"delete_learning_content": True})
         ).status_code == 200
-        assert len(cancellations) == 1
+        wake.assert_called_once_with(_app)
         with sqlite3.connect(database) as connection:
             assert connection.execute(
                 "SELECT status FROM translation_tasks WHERE id=?",

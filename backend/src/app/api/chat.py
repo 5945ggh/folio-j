@@ -110,12 +110,7 @@ async def get_job(job_id: str, session: Session) -> JobResponse:
 
 @router.post("/jobs/{job_id}/stop", response_model=JobResponse, operation_id="stopChatJob")
 async def stop_job(job_id: str, session: Session, request: Request) -> JobResponse:
-    response = await service.stop_job(session, job_id, request.app.state.chat_dispatch_lock)
-    if response.status == "stopping":
-        from app.jobs.runtime import request_chat_cancel
-
-        request_chat_cancel(request.app, job_id)
-    return response
+    return await service.stop_job(session, job_id, request.app)
 
 
 @router.post("/jobs/{job_id}/decision", response_model=JobResponse, operation_id="decideChatJob")

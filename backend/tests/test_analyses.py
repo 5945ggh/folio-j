@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -233,7 +233,9 @@ async def test_create_edit_and_read_old_revision(tmp_path: Path) -> None:
                 await get_analysis(session, created.id, edited.revision_id)
             ).source_md == edited.source_md
             await session.commit()
-            await delete_segment(session, "G" * 26, asyncio.Lock())
+            application = FastAPI()
+            application.state.chat_dispatch_lock = asyncio.Lock()
+            await delete_segment(session, "G" * 26, application)
             with pytest.raises(HTTPException) as deleted:
                 await get_analysis(session, created.id)
             assert deleted.value.status_code == 404

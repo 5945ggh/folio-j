@@ -1,12 +1,12 @@
 """Durable thread operations and atomic acceptance of one question."""
 
-import asyncio
 import base64
 import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, cast
 
+from fastapi import FastAPI
 from sqlalchemy import and_, case, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -632,9 +632,14 @@ async def get_job_by_request(session: AsyncSession, thread_id: str, request_id: 
     return await job_response(session, job)
 
 
-async def stop_job(session: AsyncSession, job_id: str, dispatch_lock: asyncio.Lock) -> JobResponse:
-    async with dispatch_lock:
-        return await _stop_job_committed(session, job_id)
+async def stop_job(session: AsyncSession, job_id: str, application: FastAPI) -> JobResponse:
+    async with application.state.chat_dispatch_lock:
+        response = await _stop_job_committed(session, job_id)
+    if response.status == "stopping":
+        from app.jobs.runtime import wake_chat_worker
+
+        wake_chat_worker(application)
+    return response
 
 
 async def _stop_job_committed(session: AsyncSession, job_id: str) -> JobResponse:

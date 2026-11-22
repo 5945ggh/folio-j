@@ -5,6 +5,7 @@ import json
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import httpx2 as model_httpx
@@ -158,8 +159,9 @@ async def test_incomplete_output_never_becomes_successful_history(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("external_cancel", [False, True])
 async def test_stop_fences_late_output_without_releasing_call_slot_early(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, external_cancel: bool
 ) -> None:
     started = asyncio.Event()
     release = asyncio.Event()
@@ -180,21 +182,39 @@ async def test_stop_fences_late_output_without_releasing_call_slot_early(
         return adapters.GenerateResult("旧任务迟到的完整回答", True, None, "{}")
 
     install_text_turn(monkeypatch, generate)
+    finalize = AsyncMock(wraps=runtime.finalize_stop)
+    monkeypatch.setattr(runtime, "finalize_stop", finalize)
+    polling = asyncio.Event()
+    if external_cancel:
+        check = runtime.call_authorized
+
+        async def pause_poll(application: Any, job_id: str, token: str) -> bool:
+            if started.is_set():
+                polling.set()
+                await release.wait()
+            return await check(application, job_id, token)
+
+        monkeypatch.setattr(runtime, "call_authorized", pause_poll)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)
         job = await accept(client, seed)
         task = asyncio.create_task(runtime.execute_job(app, job["id"]))
         try:
             await asyncio.wait_for(started.wait(), timeout=2)
+            if external_cancel:
+                await asyncio.wait_for(polling.wait(), timeout=2)
             before = (await client.get(f"/api/jobs/{job['id']}")).json()
             stopped = await client.post(f"/api/jobs/{job['id']}/stop")
             assert stopped.status_code == 200
+            if external_cancel:
+                task.cancel()
             final = await terminal(client, job["id"])
             assert final["status"] == "interrupted"
             assert app.state.verification_semaphore._value == 1
             next_job = await accept(client, await current_seed(client, seed), question="新的问题")
             release.set()
             await asyncio.wait_for(task, timeout=2)
+            finalize.assert_awaited_once_with(app, job["id"])
             late = (await client.get(f"/api/jobs/{job['id']}")).json()
             assert late == final
             assert late["assistant_message"]["content"] == before["assistant_message"]["content"]
@@ -314,7 +334,7 @@ async def test_stop_cannot_commit_between_dispatch_check_and_sdk_entry(
     finish_call = asyncio.Event()
     stop_committed = asyncio.Event()
     entries_after_stop: list[bool] = []
-    original_check = vars(runtime)["_call_authorized"]
+    original_check = runtime.call_authorized
     first_check = True
 
     async def delayed_check(application: Any, job_id: str, token: str) -> bool:
@@ -335,7 +355,7 @@ async def test_stop_cannot_commit_between_dispatch_check_and_sdk_entry(
         await finish_call.wait()
         return adapters.GenerateResult("成功", True, None, "{}")
 
-    monkeypatch.setattr(runtime, "_call_authorized", delayed_check)
+    monkeypatch.setattr(runtime, "call_authorized", delayed_check)
     install_text_turn(monkeypatch, generate)
     async with chat_client(tmp_path / "chat.db") as (client, app):
         seed = await seed_chat(client)

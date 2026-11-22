@@ -66,15 +66,7 @@ async def source_delete_impact(source_id: str, session: Session) -> SourceDelete
     operation_id="deleteSource",
 )
 async def delete_source(source_id: str, session: Session, request: Request) -> None:
-    cancelled = await service.delete_source(
-        session, source_id, request.app.state.chat_dispatch_lock
-    )
-    from app.jobs.runtime import request_chat_cancel
-    from app.services.translations import cancel_revoked
-
-    await cancel_revoked(request.app)
-    for job_id in cancelled:
-        request_chat_cancel(request.app, job_id)
+    await service.delete_source(session, source_id, request.app)
 
 
 @router.get(
@@ -134,13 +126,7 @@ async def segment_delete_impact(segment_id: str, session: Session) -> SegmentDel
     operation_id="deleteSegment",
 )
 async def delete_segment(segment_id: str, session: Session, request: Request) -> None:
-    cancelled = await service.delete_segment(
-        session, segment_id, request.app.state.chat_dispatch_lock
-    )
-    from app.jobs.runtime import request_chat_cancel
-
-    for job_id in cancelled:
-        request_chat_cancel(request.app, job_id)
+    await service.delete_segment(session, segment_id, request.app)
 
 
 @router.get(

@@ -80,5 +80,6 @@ async def test_conversation_roles_reach_both_protocols(
     assert len(requests) == 1
     body = json.loads(requests[0].content)
     assert body["messages" if protocol == "chat_completions" else "input"] == messages
+    assert "tools" not in body and "tool_choice" not in body
     assert "previous_response_id" not in body
     assert "authorization" not in requests[0].headers
