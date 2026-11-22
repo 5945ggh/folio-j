@@ -1,0 +1,23 @@
+backend/src/app/services/material_provenance.py
+  s_6c59ecddf76460::t_60afa9553019df 877-882,919
+backend/src/app/services/translations.py
+  s_6c59ecddf76460::t_51f6d05ce0d89e 9,186-210,249-253,279-280,282-296,299,685-695,697-704,706-714,716-719,722,724
+backend/tests/test_translation_removal.py
+  s_6c59ecddf76460::t_d61277869b640d 76-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0bf449ad93c2c26371cc191f0974a40cefe30dc1",
+  "prompts": {},
+  "sessions": {
+    "s_6c59ecddf76460": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a202b0-7867-7ac2-970f-dd34fd0ca18c",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}

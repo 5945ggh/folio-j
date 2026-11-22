@@ -1,0 +1,36 @@
+frontend/src/segments/deletion.test.ts
+  s_ef61bb182581fd::t_35788c9079328d 14-18,61,78,167-183
+  s_ef61bb182581fd::t_9e05799854b59e 184-186
+frontend/src/segments/NewAnalysisActions.tsx
+  s_ef61bb182581fd::t_0ad815c94c51f5 1-2,21,23,26,30,39,41,88
+frontend/src/analysis/reading.css
+  s_ef61bb182581fd::t_d80da521f49481 6,8-10,16-28,56-57,62,65,82-83,88,90,92,95,97-102,111,118,377-381
+frontend/src/analysis/useAnalysisActionMenu.ts
+  s_ef61bb182581fd::t_d80da521f49481 11-13,27,32,34-36,61-65,83-96
+  s_ef61bb182581fd::t_0ad815c94c51f5 1-10,14-26,28-31,33,37-60,66-79,81-82,97-119
+  s_ef61bb182581fd::t_524c04a3f18702 80
+frontend/src/analysis/AnalysisPanel.tsx
+  s_ef61bb182581fd::t_d80da521f49481 7
+  s_ef61bb182581fd::t_0ad815c94c51f5 21,389,407,415
+  s_ef61bb182581fd::t_f0772c94d37679 417
+frontend/src/segments/deletion.ts
+  s_ef61bb182581fd::t_35788c9079328d 87-95,97,99-100,108-109,114,131-133
+frontend/browser-tests/analysis-reading.tsx
+  s_ef61bb182581fd::t_bfcd0dc8320332 267,271-297,521-540,548-552
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7f81d7784e59d004b2f23b112012f222f7d09834",
+  "prompts": {},
+  "sessions": {
+    "s_ef61bb182581fd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a202b0-67ab-7640-ad36-fcac85ccf100",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
