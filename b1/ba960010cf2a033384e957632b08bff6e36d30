@@ -1,0 +1,30 @@
+scripts/package_release.py
+  s_a37d2771d15355::t_3d6becdc2685b7 63-93,140,152-174
+.github/workflows/windows.yml
+  s_a37d2771d15355::t_3d6becdc2685b7 42-46,74-89
+  s_a37d2771d15355::t_ca517219b6cd2d 90
+backend/tests/test_package_frozen.py
+  s_a37d2771d15355::t_6812ff36c51f30 7,11,24-32,36-63
+  s_a37d2771d15355::t_8144cea6c3d656 33-35,64-65
+scripts/package_frozen.py
+  s_a37d2771d15355::t_3d6becdc2685b7 90-92,108-113
+backend/tests/test_package_release.py
+  s_a37d2771d15355::t_6812ff36c51f30 141,143-162,165-190
+  s_a37d2771d15355::t_982076304a870a 10,142,163-164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b1ba960010cf2a033384e957632b08bff6e36d30",
+  "prompts": {},
+  "sessions": {
+    "s_a37d2771d15355": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a202e3-810b-7871-8fd1-53d672e99378",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
