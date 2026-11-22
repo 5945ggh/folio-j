@@ -16,6 +16,11 @@ import re
 from collections.abc import Iterator
 from html.parser import HTMLParser
 
+from fastapi import HTTPException, Response
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import defer
+
 from app.epub_schemas import ChapterPart, CompiledBook, CompiledChapter
 from app.epub_storage import decode as decode_epub
 from app.material_models import (
@@ -36,10 +41,6 @@ from app.services.epub import MAX_PRODUCT_BYTES
 from app.services.epub_readings import chapter_resources
 from app.services.position_progress import chapter_progress
 from app.services.sources import begin_write, utc_now
-from fastapi import HTTPException, Response
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import defer
 
 BASELINE_REVISION = "7747434d1a3622a65c583efa1eec4f7f4df5c7a2"
 
@@ -101,9 +102,7 @@ async def save_position(
         revision = position.revision if position else 0
         if data.expected_revision != revision:
             raise HTTPException(409, "阅读位置已更新，请重新读取")
-        anchor = PositionAnchor.model_validate(
-            data.model_dump(exclude={"expected_revision"})
-        )
+        anchor = PositionAnchor.model_validate(data.model_dump(exclude={"expected_revision"}))
         now = utc_now()
         if position is None:
             position = ReadingPosition(
@@ -117,9 +116,7 @@ async def save_position(
             position.revision += 1
             position.payload = anchor.model_dump_json()
             position.updated_at = now
-        chapter_position = await session.get(
-            ChapterReadingPosition, (material_id, data.chapter_id)
-        )
+        chapter_position = await session.get(ChapterReadingPosition, (material_id, data.chapter_id))
         if chapter_position is None:
             chapter_position = ChapterReadingPosition(
                 material_id=material_id, chapter_id=data.chapter_id
@@ -141,9 +138,7 @@ async def save_position(
         raise
 
 
-async def current(
-    session: AsyncSession, material: Material
-) -> MaterialReadingsGeneration | None:
+async def current(session: AsyncSession, material: Material) -> MaterialReadingsGeneration | None:
     asset = await session.scalar(
         select(MaterialReadingsGeneration)
         .join(
@@ -194,9 +189,7 @@ async def get_readings(
     )
 
 
-async def _material(
-    session: AsyncSession, material_id: str, version_id: str
-) -> Material:
+async def _material(session: AsyncSession, material_id: str, version_id: str) -> Material:
     material = await require_material(session, material_id)
     if material.version_id != version_id:
         raise HTTPException(409, "材料版本已变更，请重新打开")
@@ -259,11 +252,7 @@ def _content(material: Material, ordinal: int) -> tuple[bytes, str]:
             (mime == "image/png" and data.startswith(b"\x89PNG\r\n\x1a\n"))
             or (mime == "image/jpeg" and data.startswith(b"\xff\xd8\xff"))
             or (mime == "image/gif" and data.startswith((b"GIF87a", b"GIF89a")))
-            or (
-                mime == "image/webp"
-                and data.startswith(b"RIFF")
-                and data[8:12] == b"WEBP"
-            )
+            or (mime == "image/webp" and data.startswith(b"RIFF") and data[8:12] == b"WEBP")
         )
         if not valid or len(data) > MAX_PRODUCT_BYTES:
             raise HTTPException(422, "图片类型与内容不符")

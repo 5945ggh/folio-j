@@ -76,9 +76,7 @@ def contain_process_tree() -> None:
         if not handle:
             raise ctypes.WinError(ctypes.get_last_error())
         limits = _ExtendedLimits()
-        limits.BasicLimitInformation.LimitFlags = (
-            0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-        )
+        limits.BasicLimitInformation.LimitFlags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
         if not kernel.SetInformationJobObject(
             handle, 9, ctypes.byref(limits), ctypes.sizeof(limits)
         ):

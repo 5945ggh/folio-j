@@ -52,14 +52,10 @@ def smoke(archive: Path) -> None:
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             port = listener.getsockname()[1]
-        (source / "config/app.toml").write_text(
-            f"[server]\nport = {port}\n", encoding="utf-8"
-        )
+        (source / "config/app.toml").write_text(f"[server]\nport = {port}\n", encoding="utf-8")
         run(source, environment, "just", "setup")
         run(source, environment, "just", "build")
-        check_first_run(
-            launcher, source, environment, port, root / "首次选库 first library"
-        )
+        check_first_run(launcher, source, environment, port, root / "首次选库 first library")
         environment["FOLIO_J_DATABASE_PATH"] = str(database)
         run(source, environment, "just", "migrate")
         with application(launcher, source, environment, port) as client:
@@ -78,9 +74,7 @@ def smoke(archive: Path) -> None:
             ("backup", str(backup)),
             ("restore", str(backup), str(restored)),
         ]:
-            print(
-                f"Expect existing destination refusal: just {arguments[0]}", flush=True
-            )
+            print(f"Expect existing destination refusal: just {arguments[0]}", flush=True)
             rejected = subprocess.run(
                 ["just", *arguments],
                 cwd=source,
@@ -91,19 +85,13 @@ def smoke(archive: Path) -> None:
             if rejected.returncode == 0:
                 raise RuntimeError("Existing destination was accepted")
         with closing(sqlite3.connect(restored / "app.db")) as connection:
-            row = connection.execute(
-                "SELECT level_note FROM learner_profile WHERE id=1"
-            ).fetchone()
+            row = connection.execute("SELECT level_note FROM learner_profile WHERE id=1").fetchone()
             if row != ("Windows source smoke 日本語",):
                 raise RuntimeError("Restored data did not match")
         environment["FOLIO_J_DATABASE_PATH"] = str(restored / "app.db")
         with application(launcher, source, environment, port) as client:
             client.frontend()
-        print(
-            json.dumps(
-                {"source_smoke": "passed", "archive": str(archive)}, ensure_ascii=False
-            )
-        )
+        print(json.dumps({"source_smoke": "passed", "archive": str(archive)}, ensure_ascii=False))
 
 
 def main() -> None:

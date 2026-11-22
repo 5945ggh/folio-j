@@ -40,9 +40,7 @@ def executable(package: Path) -> Path:
     if package.is_file():
         candidate = package
     if not candidate.is_file() or not (candidate.parent / "_internal").is_dir():
-        raise ValueError(
-            f"Expected a frozen directory package with _internal: {package}"
-        )
+        raise ValueError(f"Expected a frozen directory package with _internal: {package}")
     return candidate.resolve()
 
 
@@ -124,9 +122,7 @@ def check_data_path(output: str, database: Path) -> None:
     """Match the settings' canonical path without allowing data-path to create it."""
     prefix = "下次迁移和启动使用的数据库："
     reported = [
-        line.removeprefix(prefix)
-        for line in output.splitlines()
-        if line.startswith(prefix)
+        line.removeprefix(prefix) for line in output.splitlines() if line.startswith(prefix)
     ]
     # Settings resolves paths, including Windows' short user-directory aliases.
     expected = str(database.resolve())
@@ -143,9 +139,7 @@ class SyntheticProvider:
     def __init__(self) -> None:
         self.requests: list[tuple[str, str, dict[str, Any]]] = []
 
-    def response(
-        self, method: str, path: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def response(self, method: str, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         self.requests.append((method, path, payload))
         if (method, path) == ("GET", "/v1/models"):
             return {"object": "list", "data": [{"id": SYNTHETIC_MODEL}]}
@@ -223,9 +217,7 @@ def synthetic_provider() -> Generator[tuple[str, SyntheticProvider], None, None]
         def handle_request(self) -> None:
             raw = self.rfile.read(int(self.headers.get("Content-Length", "0")))
             try:
-                result = provider.response(
-                    self.command, self.path, json.loads(raw) if raw else {}
-                )
+                result = provider.response(self.command, self.path, json.loads(raw) if raw else {})
                 body = json.dumps(result, ensure_ascii=False).encode()
                 self.send_response(200)
             except ValueError as exc:
@@ -300,8 +292,7 @@ def check_database_runs(database: Path, saved: dict[str, Any]) -> None:
     # /api/runs lists verification only; also reject any unexpected Run purpose
     # directly in the isolated database, including after backup restoration.
     expected = sorted(
-        (run["id"], "verification", "succeeded", SYNTHETIC_OUTPUT)
-        for run in saved["runs"]
+        (run["id"], "verification", "succeeded", SYNTHETIC_OUTPUT) for run in saved["runs"]
     )
     with closing(sqlite3.connect(database)) as connection:
         actual = connection.execute(
@@ -348,27 +339,16 @@ def seed(client: Client, fixture: bytes) -> dict[str, Any]:
     readings = client.json(
         f"/api/materials/{material_id}/readings?version_id={version_id}&chapter_id={chapter}"
     )
-    tokens = [
-        token for resource in readings["resources"] for token in resource["tokens"]
-    ]
+    tokens = [token for resource in readings["resources"] for token in resource["tokens"]]
     if not tokens or not any(token["reading"] for token in tokens):
         raise RuntimeError("No readings returned from the bundled tokenizer")
-    stats = client.json(
-        f"/api/materials/{material_id}/statistics?version_id={version_id}"
-    )
-    if (
-        stats["text"]["character_count"] <= 0
-        or stats["lexical"]["counted_token_count"] <= 0
-    ):
+    stats = client.json(f"/api/materials/{material_id}/statistics?version_id={version_id}")
+    if stats["text"]["character_count"] <= 0 or stats["lexical"]["counted_token_count"] <= 0:
         raise RuntimeError("Material statistics are empty")
-    segment = client.json(
-        f"/api/sources/{source['id']}/segments", {"text": "雨が降っている。"}
-    )
+    segment = client.json(f"/api/sources/{source['id']}/segments", {"text": "雨が降っている。"})
     prompt = client.json(f"/api/segments/{segment['id']}/explanation-prompt")["prompt"]
     if segment["text"] not in prompt:
-        raise RuntimeError(
-            "Bundled explanation templates did not render the target text"
-        )
+        raise RuntimeError("Bundled explanation templates did not render the target text")
     analysis = client.json(
         f"/api/segments/{segment['id']}/analyses",
         {
@@ -408,15 +388,11 @@ def check_saved(client: Client, saved: dict[str, Any]) -> None:
     if not lookup["matches"] or not all(
         match["dictionary_id"] == dictionary_id for match in lookup["matches"]
     ):
-        raise RuntimeError(
-            "Imported user dictionary is not usable after restart/restore"
-        )
+        raise RuntimeError("Imported user dictionary is not usable after restart/restore")
     actual = {run["id"]: run for run in client.json("/api/runs")}
     expected = {run["id"]: run for run in saved["runs"]}
     if actual != expected:
-        raise RuntimeError(
-            "Synthetic SDK Run history changed or unexpected Runs were created"
-        )
+        raise RuntimeError("Synthetic SDK Run history changed or unexpected Runs were created")
 
 
 def smoke(package: Path) -> None:
@@ -440,20 +416,14 @@ def smoke(package: Path) -> None:
         config.mkdir()
         (config / "app.toml").write_text(f"[server]\nport = {port}\n", encoding="utf-8")
         launcher = [str(binary)]
-        check_first_run(
-            launcher, cwd, environment, port, root / "首次选库 first library"
-        )
+        check_first_run(launcher, cwd, environment, port, root / "首次选库 first library")
         environment["FOLIO_J_DATABASE_PATH"] = str(database)
         check_data_path(command(binary, cwd, environment, "data-path"), database)
         command(binary, cwd, environment, "migrate")
         with closing(sqlite3.connect(database)) as connection:
-            if not connection.execute(
-                "SELECT version_num FROM alembic_version"
-            ).fetchone():
+            if not connection.execute("SELECT version_num FROM alembic_version").fetchone():
                 raise RuntimeError("Empty database was not migrated")
-        fixture = (
-            REPOSITORY / "backend/tests/fixtures/epub/synthetic-reading.epub"
-        ).read_bytes()
+        fixture = (REPOSITORY / "backend/tests/fixtures/epub/synthetic-reading.epub").read_bytes()
         with application(launcher, cwd, environment, port) as client:
             client.frontend()
             saved = seed(client, fixture)
@@ -469,9 +439,7 @@ def smoke(package: Path) -> None:
         command(binary, cwd, environment, "backup", str(backup))
         command(binary, cwd, environment, "restore", str(backup), str(restored))
         command(binary, cwd, environment, "backup", str(backup), reject=True)
-        command(
-            binary, cwd, environment, "restore", str(backup), str(restored), reject=True
-        )
+        command(binary, cwd, environment, "restore", str(backup), str(restored), reject=True)
         # Remove the original data so a restore cannot accidentally read it.
         shutil.rmtree(database.parent)
         environment["FOLIO_J_DATABASE_PATH"] = str(restored / "app.db")
@@ -479,18 +447,12 @@ def smoke(package: Path) -> None:
             client.frontend()
             check_saved(client, saved)
         check_database_runs(restored / "app.db", saved)
-        print(
-            json.dumps(
-                {"frozen_smoke": "passed", "package": str(package)}, ensure_ascii=False
-            )
-        )
+        print(json.dumps({"frozen_smoke": "passed", "package": str(package)}, ensure_ascii=False))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "package", type=Path, help="Directory package or executable path"
-    )
+    parser.add_argument("package", type=Path, help="Directory package or executable path")
     smoke(parser.parse_args().package.resolve())
 
 

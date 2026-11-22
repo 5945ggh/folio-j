@@ -40,9 +40,7 @@ def stop_processes(
         try:
             # The application holds its database lock until lifespan cleanup ends.
             # It may need longer than the frontend's bounded shutdown grace period.
-            process.wait(
-                timeout=None if os.name == "nt" and process is application else 5
-            )
+            process.wait(timeout=None if os.name == "nt" and process is application else 5)
         except subprocess.TimeoutExpired:
             if os.name == "posix":
                 try:

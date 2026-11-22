@@ -25,9 +25,7 @@ class Manifest(TypedDict):
 
 
 def git(repository: Path, *args: str) -> bytes:
-    result = subprocess.run(
-        ["git", "-C", str(repository), *args], capture_output=True, check=False
-    )
+    result = subprocess.run(["git", "-C", str(repository), *args], capture_output=True, check=False)
     if result.returncode:
         raise ValueError(result.stderr.decode(errors="replace").strip())
     return result.stdout
@@ -35,13 +33,7 @@ def git(repository: Path, *args: str) -> bytes:
 
 def safe_path(value: str) -> str:
     path = PurePosixPath(value)
-    if (
-        not value
-        or "\\" in value
-        or path.is_absolute()
-        or ".." in path.parts
-        or str(path) != value
-    ):
+    if not value or "\\" in value or path.is_absolute() or ".." in path.parts or str(path) != value:
         raise ValueError(f"发行清单路径无效：{value!r}")
     return value
 
@@ -68,12 +60,8 @@ def read_manifest(repository: Path, commit: str) -> Manifest:
     return cast(Manifest, data)
 
 
-def build_release(
-    repository: Path, ref: str, version: str | None, output: Path
-) -> tuple[str, str]:
-    commit = git(
-        repository, "rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}"
-    )
+def build_release(repository: Path, ref: str, version: str | None, output: Path) -> tuple[str, str]:
+    commit = git(repository, "rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}")
     commit_id = commit.decode().strip()
     if version is None:
         tag = ref.removeprefix("refs/tags/")
@@ -95,9 +83,7 @@ def build_release(
         raise ValueError("版本名只能包含字母、数字、点、加号、下划线和连字符。")
     manifest = read_manifest(repository, commit_id)
     tree: dict[str, tuple[str, str]] = {}
-    for entry in git(repository, "ls-tree", "-rz", "--full-tree", commit_id).split(
-        b"\0"
-    ):
+    for entry in git(repository, "ls-tree", "-rz", "--full-tree", commit_id).split(b"\0"):
         if not entry:
             continue
         metadata, raw_path = entry.split(b"\t", 1)
@@ -111,9 +97,7 @@ def build_release(
         if not matches:
             raise ValueError(f"发行目录不存在或为空：{directory}")
         for path in matches:
-            if not any(
-                fnmatch.fnmatchcase(path, pattern) for pattern in manifest["exclude"]
-            ):
+            if not any(fnmatch.fnmatchcase(path, pattern) for pattern in manifest["exclude"]):
                 selected[safe_path(path)] = path
     for source, destination in manifest["templates"].items():
         destination = safe_path(destination)
@@ -131,9 +115,7 @@ def build_release(
             raise ValueError(f"发行包不接收符号链接或特殊文件：{source}")
         payloads[destination] = (git(repository, "cat-file", "blob", oid), mode)
     payloads["RELEASE.json"] = (
-        (
-            json.dumps({"version": version, "commit": commit_id}, indent=2) + "\n"
-        ).encode(),
+        (json.dumps({"version": version, "commit": commit_id}, indent=2) + "\n").encode(),
         "100644",
     )
     prefix = f"Folio-J-{version}/"
@@ -165,9 +147,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ref", required=True, help="明确的 Git commit 或 tag")
     parser.add_argument("--version", help="候选提交的版本名；精确 tag 可省略")
-    parser.add_argument(
-        "--output", required=True, type=Path, help="尚不存在的 ZIP 路径"
-    )
+    parser.add_argument("--output", required=True, type=Path, help="尚不存在的 ZIP 路径")
     args = parser.parse_args()
     try:
         version, commit = build_release(ROOT, args.ref, args.version, args.output)

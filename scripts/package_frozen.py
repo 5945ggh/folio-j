@@ -28,17 +28,11 @@ def git(*arguments: str) -> str:
 
 def file_sizes(directory: Path) -> dict[str, int]:
     """Count regular files once; framework symlinks must not inflate the result."""
-    files = [
-        path
-        for path in directory.rglob("*")
-        if path.is_file() and not path.is_symlink()
-    ]
+    files = [path for path in directory.rglob("*") if path.is_file() and not path.is_symlink()]
     return {
         "files": len(files),
         "bytes": sum(path.stat().st_size for path in files),
-        "allocated_bytes": sum(
-            getattr(path.stat(), "st_blocks", 0) * 512 for path in files
-        ),
+        "allocated_bytes": sum(getattr(path.stat(), "st_blocks", 0) * 512 for path in files),
     }
 
 
@@ -63,15 +57,11 @@ def third_party_notices() -> str:
             if file.name.lower().startswith(("license", "copying", "notice")):
                 path = Path(str(distribution.locate_file(file)))
                 if path.is_file():
-                    sections.append(
-                        f"\n--- {file} ---\n{path.read_text(errors='replace')}\n"
-                    )
+                    sections.append(f"\n--- {file} ---\n{path.read_text(errors='replace')}\n")
     for name in ("LICENSE", "LICENSE.txt"):
         path = Path(sys.base_prefix) / name
         if path.is_file():
-            sections.append(
-                f"\n--- Python {name} ---\n{path.read_text(errors='replace')}\n"
-            )
+            sections.append(f"\n--- Python {name} ---\n{path.read_text(errors='replace')}\n")
     return "".join(sections)
 
 
@@ -118,8 +108,7 @@ def build(version: str, output: Path) -> dict[str, Any]:
         stage = Path(temporary)
         release = stage / "RELEASE.json"
         release.write_text(
-            json.dumps({key: identity[key] for key in ("version", "commit")}, indent=2)
-            + "\n",
+            json.dumps({key: identity[key] for key in ("version", "commit")}, indent=2) + "\n",
             encoding="utf-8",
         )
         migrations = stage / "alembic"
@@ -192,13 +181,9 @@ def build(version: str, output: Path) -> dict[str, Any]:
             shutil.copy2(ROOT / "docs" / name, bundle / "docs" / name)
         for name in ("LICENSE", "COPYING.md"):
             shutil.copy2(ROOT / name, bundle / name)
-        (bundle / "THIRD_PARTY_NOTICES.txt").write_text(
-            third_party_notices(), encoding="utf-8"
-        )
+        (bundle / "THIRD_PARTY_NOTICES.txt").write_text(third_party_notices(), encoding="utf-8")
         (bundle / "config").mkdir()
-        shutil.copy2(
-            ROOT / "config/app.example.toml", bundle / "config/app.example.toml"
-        )
+        shutil.copy2(ROOT / "config/app.example.toml", bundle / "config/app.example.toml")
         summary: dict[str, Any] = {"release": identity, "bundle": file_sizes(bundle)}
         summary["dictionary"] = file_sizes(bundle / "_internal/sudachidict_core")
         summary["frontend"] = file_sizes(bundle / "_internal/frontend/dist")

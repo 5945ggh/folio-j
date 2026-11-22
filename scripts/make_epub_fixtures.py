@@ -9,12 +9,16 @@ from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAPTER_ONE = (
-    '<h1>第一章</h1><p id="ruby-line"><ruby>漢字<rp>（</rp><rt>かんじ</rt><rp>）</rp></ruby> &amp; 本。</p>'
+    '<h1>第一章</h1><p id="ruby-line"><ruby>漢字<rp>（</rp><rt>かんじ</rt>'
+    "<rp>）</rp></ruby> &amp; 本。</p>"
     '<p id="duplicate-one">同じ言葉。</p><p id="duplicate-two">同じ言葉。</p>'
     '<p id="unicode"><span>か</span><em>\u3099</em>と𠮷、👩\u200d💻。</p>'
     '<p id="lines">前<br/>後</p><p>Ａ①</p><p><img src="images/pixel.png" alt="挿絵"/></p>'
 )
-CHAPTER_TWO = "<h1>第二章</h1><p>次の章でも<ruby>日本語<rt>にほんご</rt></ruby>を読む。</p><blockquote><p>引用の文章。</p></blockquote>"
+CHAPTER_TWO = (
+    "<h1>第二章</h1><p>次の章でも<ruby>日本語<rt>にほんご</rt></ruby>を読む。</p>"
+    "<blockquote><p>引用の文章。</p></blockquote>"
+)
 # A one-pixel PNG, generated fixture data rather than a publication asset.
 PNG = bytes.fromhex(
     "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000b49444154789c636000020000050001a5f645400000000049454e44ae426082"
@@ -54,9 +58,22 @@ def build_fixture(
 
     entries = {
         "mimetype": b"application/epub+zip",
-        "META-INF/container.xml": b'<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="OEBPS/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+        "META-INF/container.xml": (
+            b'<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">'
+            b'<rootfiles><rootfile full-path="OEBPS/package.opf" '
+            b'media-type="application/oebps-package+xml"/></rootfiles></container>'
+        ),
         "OEBPS/package.opf": (
-            f'<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="id">urn:folio-j:synthetic</dc:identifier><dc:title>日語定位合成樣書</dc:title><dc:language>ja</dc:language>{metadata}</metadata><manifest><item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/><item id="c2" href="chapter2.xhtml" media-type="application/xhtml+xml"/><item id="css" href="styles/book.css" media-type="text/css"/><item id="image" href="images/pixel.png" media-type="image/png"/></manifest><spine>{spine}</spine></package>'
+            '<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id">'
+            '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
+            '<dc:identifier id="id">urn:folio-j:synthetic</dc:identifier>'
+            "<dc:title>日語定位合成樣書</dc:title><dc:language>ja</dc:language>"
+            f"{metadata}</metadata><manifest>"
+            '<item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>'
+            '<item id="c2" href="chapter2.xhtml" media-type="application/xhtml+xml"/>'
+            '<item id="css" href="styles/book.css" media-type="text/css"/>'
+            '<item id="image" href="images/pixel.png" media-type="image/png"/>'
+            f"</manifest><spine>{spine}</spine></package>"
         ).encode(),
         "OEBPS/chapter1.xhtml": document("第一章", CHAPTER_ONE + attack),
         "OEBPS/chapter2.xhtml": document("第二章", CHAPTER_TWO),
@@ -78,9 +95,7 @@ def build_fixture(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--output", type=Path, default=ROOT / "backend/tests/fixtures/epub"
-    )
+    parser.add_argument("--output", type=Path, default=ROOT / "backend/tests/fixtures/epub")
     args = parser.parse_args()
     build_fixture(args.output / "synthetic-reading.epub")
     build_fixture(args.output / "synthetic-vertical.epub", vertical=True)

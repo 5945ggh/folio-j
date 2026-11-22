@@ -48,9 +48,13 @@ pythonpath = ["../scripts"]
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+src = [".", "src", "backend", "backend/src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/measure_reader_backend.py" = ["E402"]  # Load the measured checkout before imports.
 
 [tool.pyright]
 include = ["src", "tests", "alembic", "../scripts"]

@@ -33,6 +33,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Literal, Protocol, cast
 
+from sudachipy import Dictionary, SplitMode
+
 from app.dictionary_schemas import (
     DictionaryLookupRequest,
     DictionaryLookupResponse,
@@ -42,7 +44,6 @@ from app.dictionary_schemas import (
 from app.nlp.contracts import MaterialReadingToken
 from app.nlp.tokenization import Token, tokenize_chunk
 from app.services.dictionary_store import DictionaryEntry, DictionaryStore
-from sudachipy import Dictionary, SplitMode
 
 BASELINE_REF = "653a4d60adf6753bf091e709a4a3c6f3bffb658d"
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,9 +62,7 @@ class Candidate(Protocol):
 
 
 class LookupModule(Protocol):
-    complete_tokens: Callable[
-        [DictionaryLookupRequest], list[MaterialReadingToken] | None
-    ]
+    complete_tokens: Callable[[DictionaryLookupRequest], list[MaterialReadingToken] | None]
     hints: Callable[[DictionaryLookupRequest], list[DictionaryTokenHint]]
     candidates: Callable[[DictionaryLookupRequest], list[Candidate]]
     key: Callable[[str], str]
@@ -99,9 +98,7 @@ def analyze(
 
     def tokenize(mode: SplitMode) -> TokenChain:
         calls.tokenize += 1
-        return tuple(
-            tokenize_chunk(Pretokenized(list(tokenizer.tokenize(text, mode))), text, 0)
-        )
+        return tuple(tokenize_chunk(Pretokenized(list(tokenizer.tokenize(text, mode))), text, 0))
 
     if strategy == "A":
         return (tokenize(SplitMode.A),)
@@ -141,9 +138,7 @@ def analyze(
 
 
 def bounded_text(request: DictionaryLookupRequest) -> tuple[int, str]:
-    point = (
-        request.position if request.position is not None else request.selection_start
-    )
+    point = request.position if request.position is not None else request.selection_start
     assert point is not None
     start = max(0, point - CONTEXT)
     return start, request.text[start : point + CONTEXT]
@@ -197,11 +192,7 @@ def source(
         offset, text = bounded_text(request)
         local_chains = analysis(text)
         hints = {(hint.start, hint.end): hint for hint in service.hints(request)}
-        complete = (
-            service.complete_tokens(request)
-            if full_hints and strategy == "C+B/A"
-            else None
-        )
+        complete = service.complete_tokens(request) if full_hints and strategy == "C+B/A" else None
         result: list[list[MaterialReadingToken]] = []
         for local in local_chains:
             aligned: list[MaterialReadingToken] = []
@@ -218,9 +209,7 @@ def source(
                         normalized_form=hint.normalized_form or token.normalized_form,
                         pos=hint.pos if len(hint.pos) == 6 else token.pos,
                     )
-                aligned.append(
-                    token.model_copy(update=updates) if offset or hint else token
-                )
+                aligned.append(token.model_copy(update=updates) if offset or hint else token)
             if aligned not in result:
                 result.append(aligned)
         if full_hints and strategy == "C+B/A":
@@ -245,9 +234,7 @@ SAMPLES = (
     Sample("three-granularities", "明日、外国人参政権について考えよう。", "外国人", 2),
     Sample("literal-compound", "彼は国際連合大学で学ぶ。", "連合", 1),
     Sample("internal-reading", "人気者が現れた。", "人気"),
-    Sample(
-        "c-compound-inflection", "情報処理技術者試験に申し込んだ。", "申し込んだ", 4
-    ),
+    Sample("c-compound-inflection", "情報処理技術者試験に申し込んだ。", "申し込んだ", 4),
     Sample("a-inner-inflection", "情報処理技術者試験に申し込んだ。", "込んだ", 2),
     Sample("alternate-spelling", "想い出しました。", "想い出しました", 5),
     Sample("auxiliary", "この部屋は空いていない。", "空いていない", 5),
@@ -273,9 +260,7 @@ SAMPLES = (
     Sample("compound-c", "一段落して重箱読みを調べた。", "重箱読み", 2),
     Sample("compound-d", "日本酒をあたためた。", "日本酒", 2),
     Sample("masu", "国語辞典を買いました。", "買いました", 4),
-    Sample(
-        "bounding-left", "新聞の見出しを読んだ。" * 20 + "中国語を学んだ。", "中国語", 2
-    ),
+    Sample("bounding-left", "新聞の見出しを読んだ。" * 20 + "中国語を学んだ。", "中国語", 2),
     Sample(
         "max-context",
         "図書館の資料を見て古い地名を順番に書き写した。"
@@ -370,18 +355,14 @@ class MemoryStore:
 
     async def find_terms(self, keys: list[str]) -> list[DictionaryEntry]:
         found = {
-            entry.id: entry
-            for key in keys
-            for entry in self.terms.get(self.normalize(key), ())
+            entry.id: entry for key in keys for entry in self.terms.get(self.normalize(key), ())
         }
         return [found[identity] for identity in sorted(found)]
 
     async def get_sequences(self, keys: list[tuple[str, int]]) -> list[DictionaryEntry]:
         return [entry for key in keys for entry in self.sequences[key]]
 
-    async def load_definitions(
-        self, entries: list[DictionaryEntry]
-    ) -> list[DictionaryEntry]:
+    async def load_definitions(self, entries: list[DictionaryEntry]) -> list[DictionaryEntry]:
         return entries
 
 
@@ -396,8 +377,7 @@ def request_for(
         tokens = analyze(lexicon, "A", text, Calls())[0]
         request.tokens = [
             DictionaryTokenHint.model_validate(
-                token.model_dump()
-                | {"start": token.start + offset, "end": token.end + offset}
+                token.model_dump() | {"start": token.start + offset, "end": token.end + offset}
             )
             for token in tokens
             if token.start < token.end
@@ -447,9 +427,7 @@ def trial(lexicon: Dictionary, strategy: Strategy, *, full_hints: bool) -> Trial
     return Trial(cached, clear, calls, service, store)
 
 
-async def run_stage(
-    current: Trial, stage: str, request: DictionaryLookupRequest
-) -> object:
+async def run_stage(current: Trial, stage: str, request: DictionaryLookupRequest) -> object:
     if stage == "analysis":
         return current.analysis(bounded_text(request)[1])
     if stage == "candidates":
@@ -473,9 +451,7 @@ async def timings(
         if stage != "analysis":
             valid.pop("3 tokenize", None)
         for hit in (False, True):
-            measurements: dict[Strategy, list[tuple[int, int, int]]] = {
-                key: [] for key in valid
-            }
+            measurements: dict[Strategy, list[tuple[int, int, int]]] = {key: [] for key in valid}
             for current in valid.values():
                 current.clear_cache()
                 for request in requests:
@@ -580,8 +556,7 @@ async def outcomes(
             keys[strategy].append(len({item.key for item in found}))
             response = await current.service.lookup(current.store, request)
             assert all(
-                request.text[match.start : match.end] == match.surface
-                for match in response.matches
+                request.text[match.start : match.end] == match.surface for match in response.matches
             )
             samples[sample.name][strategy] = cards(response)
 
@@ -603,16 +578,9 @@ async def outcomes(
     assert spelling["C"] == spelling["C+B/A"]
     assert spelling["C"][0]["term"] == "思い出す"
     inner = samples["a-inner-inflection"]
-    assert any(
-        card["term"] == "込む" and card["surface"] == "込んだ" for card in inner["A"]
-    )
-    assert any(
-        card["term"] == "込む" and card["surface"] == "込んだ"
-        for card in inner["C+B/A"]
-    )
-    assert not any(
-        card["term"] == "込む" and card["surface"] == "込んだ" for card in inner["C"]
-    )
+    assert any(card["term"] == "込む" and card["surface"] == "込んだ" for card in inner["A"])
+    assert any(card["term"] == "込む" and card["surface"] == "込んだ" for card in inner["C+B/A"])
+    assert not any(card["term"] == "込む" and card["surface"] == "込んだ" for card in inner["C"])
     for sample in (
         "auxiliary",
         "kana",
@@ -627,18 +595,11 @@ async def outcomes(
         assert samples[sample]["C+B/A"][0] == samples[sample]["A"][0], sample
 
     return {
-        "candidates": {
-            strategy: distribution(values) for strategy, values in candidates.items()
-        },
+        "candidates": {strategy: distribution(values) for strategy, values in candidates.items()},
         "keys": {strategy: distribution(values) for strategy, values in keys.items()},
         "paired_delta_candidates_vs_a": {
             strategy: distribution(
-                [
-                    value - a
-                    for value, a in zip(
-                        candidates[strategy], candidates["A"], strict=True
-                    )
-                ]
+                [value - a for value, a in zip(candidates[strategy], candidates["A"], strict=True)]
             )
             for strategy in ("C", "C+B/A")
         },
@@ -656,12 +617,9 @@ async def main(repetitions: int) -> dict[str, object]:
             for strategy in (*STRATEGIES, "3 tokenize")
         }
         with_hints: dict[Strategy, Trial] = {
-            strategy: trial(lexicon, strategy, full_hints=True)
-            for strategy in STRATEGIES
+            strategy: trial(lexicon, strategy, full_hints=True) for strategy in STRATEGIES
         }
-        assert all(
-            with_hints["A"].service.complete_tokens(request) for request in hinted
-        )
+        assert all(with_hints["A"].service.complete_tokens(request) for request in hinted)
         counts = Calls()
         morphology_matches: dict[str, bool] = {}
         for sample, request in zip(SAMPLES, plain, strict=True):
@@ -682,9 +640,7 @@ async def main(repetitions: int) -> dict[str, object]:
             },
             "corpus": {
                 "samples": len(SAMPLES),
-                "distinct_bounded_texts": len(
-                    {bounded_text(request)[1] for request in plain}
-                ),
+                "distinct_bounded_texts": len({bounded_text(request)[1] for request in plain}),
                 "entries": len(ENTRIES),
                 "repetitions": repetitions,
                 "memory_repetitions": 1,
@@ -699,9 +655,7 @@ async def main(repetitions: int) -> dict[str, object]:
                 "morpheme_split_calls": counts.split,
                 "against_independent_tokenize_exact": morphology_matches,
             },
-            "timing_no_hints": await timings(
-                regular, plain, repetitions, full_hints=False
-            ),
+            "timing_no_hints": await timings(regular, plain, repetitions, full_hints=False),
             "timing_complete_a_hints": await timings(
                 with_hints, hinted, repetitions, full_hints=True
             ),

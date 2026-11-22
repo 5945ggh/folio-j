@@ -46,9 +46,7 @@ class Client:
         raw: bytes | None = None,
         content_type: str = "application/json",
     ) -> Any:
-        body = (
-            json.dumps(data, ensure_ascii=False).encode() if data is not None else raw
-        )
+        body = json.dumps(data, ensure_ascii=False).encode() if data is not None else raw
         request = urllib.request.Request(
             self.origin + path,
             data=body,
@@ -58,9 +56,7 @@ class Client:
             with self.opener.open(request, timeout=90) as response:
                 return json.loads(response.read())
         except urllib.error.HTTPError as exc:
-            raise RuntimeError(
-                f"{request.method} {path}: {exc.code} {exc.read()!r}"
-            ) from exc
+            raise RuntimeError(f"{request.method} {path}: {exc.code} {exc.read()!r}") from exc
 
     def frontend(self) -> None:
         html = self.get("/")
@@ -104,17 +100,13 @@ def application(
             deadline = time.monotonic() + 60
             while True:
                 if process.poll() is not None:
-                    raise RuntimeError(
-                        f"Application exited before readiness: {process.returncode}"
-                    )
+                    raise RuntimeError(f"Application exited before readiness: {process.returncode}")
                 try:
                     client.json("/_startup/state" if selecting else "/api/health")
                     break
                 except (urllib.error.URLError, TimeoutError):
                     if time.monotonic() >= deadline:
-                        raise RuntimeError(
-                            "Application did not become healthy"
-                        ) from None
+                        raise RuntimeError("Application did not become healthy") from None
                     time.sleep(0.2)
             yield client
         except BaseException:
@@ -135,9 +127,7 @@ def application(
                     else:
                         os.killpg(process.pid, signal.SIGKILL)
                     process.wait(timeout=5)
-                    raise RuntimeError(
-                        "Application did not stop after interrupt"
-                    ) from None
+                    raise RuntimeError("Application did not stop after interrupt") from None
             if process.returncode != 0:
                 log.seek(0)
                 raise RuntimeError(
@@ -179,11 +169,7 @@ def check_first_run(
                 "X-Folio-Startup-Token": token[1].decode(),
             },
         )
-        if (
-            not state["ready"]
-            or state["selected_path"] != str(database)
-            or not database.is_file()
-        ):
+        if not state["ready"] or state["selected_path"] != str(database) or not database.is_file():
             raise RuntimeError(f"Selection did not create the chosen database: {state}")
         source = client.json("/api/sources", {"title": "首次选库 smoke"})
     with application(launcher, cwd, environment, port) as client:

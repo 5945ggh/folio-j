@@ -40,6 +40,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend" / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
+from sqlalchemy import event
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
 from app import epub_storage
 from app.db import Base, create_engine
 from app.epub_schemas import (
@@ -67,8 +70,6 @@ from app.services import materials, reader_queries, readings
 from app.services.epub import compile_epub_bytes
 from app.services.epub_readings import chapter_resources, text_resources
 from app.services.sources import utc_now
-from sqlalchemy import event
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 baseline = importlib.import_module("reader_measurement_baseline")
 
@@ -102,10 +103,7 @@ def png(rng: random.Random, side: int) -> bytes:
 
     def chunk(kind: bytes, data: bytes) -> bytes:
         return (
-            struct.pack(">I", len(data))
-            + kind
-            + data
-            + struct.pack(">I", zlib.crc32(kind + data))
+            struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
         )
 
     pixels = b"".join(b"\0" + rng.randbytes(side * 3) for _ in range(side))
@@ -117,9 +115,7 @@ def png(rng: random.Random, side: int) -> bytes:
     )
 
 
-def synthetic(
-    name: str, scale: Scale
-) -> tuple[CompiledBook, GeneratedReadings, dict[str, object]]:
+def synthetic(name: str, scale: Scale) -> tuple[CompiledBook, GeneratedReadings, dict[str, object]]:
     rng = random.Random(SEED)
     resources: list[CompiledResource] = []
     chapters: list[CompiledChapter] = []
@@ -193,12 +189,8 @@ def synthetic(
         chapters=chapters,
         product_sha256="0" * 64,
     )
-    book = book.model_copy(
-        update={"product_sha256": digest(book.model_dump_json().encode())}
-    )
-    raw = DecodedReadings(
-        configuration="synthetic-complete-tokens-v1", resources=lexical
-    )
+    book = book.model_copy(update={"product_sha256": digest(book.model_dump_json().encode())})
+    raw = DecodedReadings(configuration="synthetic-complete-tokens-v1", resources=lexical)
     payload = raw.model_dump_json().encode()
     generated = GeneratedReadings(
         configuration=raw.configuration,
@@ -227,11 +219,7 @@ class Probe:
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def snapshot(self) -> dict[str, int | float]:
-        return {
-            key: value
-            for key, value in vars(self).items()
-            if isinstance(value, int | float)
-        }
+        return {key: value for key, value in vars(self).items() if isinstance(value, int | float)}
 
 
 ACTIVE: ContextVar[Probe | None] = ContextVar("reader_measurement", default=None)
@@ -262,8 +250,7 @@ def instrument_decoders():
                         setattr(
                             probe,
                             elapsed,
-                            getattr(probe, elapsed)
-                            + (time.perf_counter() - start) * 1000,
+                            getattr(probe, elapsed) + (time.perf_counter() - start) * 1000,
                         )
 
         for module in tuple(sys.modules.values()):
@@ -301,16 +288,10 @@ def select_chapter(
     book: CompiledBook,
     selection: Literal["first", "largest"],
 ) -> CompiledChapter:
-    candidates = [
-        chapter for chapter in book.chapters if chapter_codepoints(chapter) > 0
-    ]
+    candidates = [chapter for chapter in book.chapters if chapter_codepoints(chapter) > 0]
     if not candidates:
         raise ValueError("测量书籍需要至少一个含正文的章节")
-    return (
-        max(candidates, key=chapter_codepoints)
-        if selection == "largest"
-        else candidates[0]
-    )
+    return max(candidates, key=chapter_codepoints) if selection == "largest" else candidates[0]
 
 
 async def publish_fixture(
@@ -358,16 +339,12 @@ async def publish_fixture(
             )
         )
         await session.flush()
-        session.add(
-            MaterialReadingsCurrent(material_id=identifier, generation_id=identifier)
-        )
+        session.add(MaterialReadingsCurrent(material_id=identifier, generation_id=identifier))
         await session.commit()
     chapter = select_chapter(book, chapter_selection)
     part = next(p for p in chapter.parts if p.end > p.start)
     response_resources = chapter_resources(generated.payload, book, chapter.id)
-    image_count = sum(
-        p.html.count("data-epub-image=") for c in book.chapters for p in c.parts
-    )
+    image_count = sum(p.html.count("data-epub-image=") for c in book.chapters for p in c.parts)
     metadata.update(
         {
             "chapters": len(book.chapters),
@@ -381,16 +358,10 @@ async def publish_fixture(
             "image_count": image_count,
             "selected_chapter_id": chapter.id,
             "selected_chapter_codepoints": chapter_codepoints(chapter),
-            "selected_chapter_response_token_count": sum(
-                len(r.tokens) for r in response_resources
-            ),
+            "selected_chapter_response_token_count": sum(len(r.tokens) for r in response_resources),
         }
     )
-    ordinals = (
-        tuple(dict.fromkeys((0, image_count // 2, image_count - 1)))
-        if image_count
-        else ()
-    )
+    ordinals = tuple(dict.fromkeys((0, image_count // 2, image_count - 1))) if image_count else ()
     return Fixture(
         name,
         identifier,
@@ -447,8 +418,8 @@ async def measure(
     }
 
 
-async def benchmark(args: argparse.Namespace) -> dict[str, object]:
-    source_hashes = {
+def source_hashes() -> dict[str, str]:
+    return {
         str(path.relative_to(ROOT)): digest(path.read_bytes())
         for path in (
             Path(__file__).resolve(),
@@ -464,12 +435,14 @@ async def benchmark(args: argparse.Namespace) -> dict[str, object]:
         )
         if path.exists()
     }
+
+
+async def benchmark(args: argparse.Namespace) -> dict[str, object]:
+    hashes = await asyncio.to_thread(source_hashes)
     reset: Callable[[], object] | None = None
     if args.reset_hook:
         module, attribute = args.reset_hook.split(":", 1)
-        reset = cast(
-            Callable[[], object], getattr(importlib.import_module(module), attribute)
-        )
+        reset = cast(Callable[[], object], getattr(importlib.import_module(module), attribute))
     results: list[dict[str, object]] = []
     with tempfile.TemporaryDirectory(prefix="folio-reader-measure-") as directory:
         engine = create_engine(Path(directory) / "measurement.db")
@@ -495,9 +468,7 @@ async def benchmark(args: argparse.Namespace) -> dict[str, object]:
             projection = statement.lower().split("from", 1)[0]
             if "select" in projection:
                 probe.bundle_selects += int("materials.compiled_bundle" in projection)
-                probe.readings_selects += int(
-                    "material_readings_generations.payload" in projection
-                )
+                probe.readings_selects += int("material_readings_generations.payload" in projection)
 
         event.listen(engine.sync_engine, "before_cursor_execute", sql_probe)
         try:
@@ -517,7 +488,7 @@ async def benchmark(args: argparse.Namespace) -> dict[str, object]:
                 results.append(await run_fixture(factory, fixture, args, reset))
             if args.epub:
                 start = time.perf_counter()
-                raw = Path(args.epub).read_bytes()
+                raw = await asyncio.to_thread(Path(args.epub).read_bytes)
                 book = await asyncio.to_thread(compile_epub_bytes, raw)
                 generated = await asyncio.to_thread(generate, text_resources(book))
                 fixture = await publish_fixture(
@@ -547,7 +518,7 @@ async def benchmark(args: argparse.Namespace) -> dict[str, object]:
             "benchmark-local frozen position/readings/image service flows; shared current "
             "models/decoders/pure chapter/progress helpers; original position reads BLOB twice"
         ),
-        "source_sha256": source_hashes,
+        "source_sha256": hashes,
         "reset_hook": args.reset_hook,
         "scope": (
             "production services with ReaderViews"
@@ -555,14 +526,20 @@ async def benchmark(args: argparse.Namespace) -> dict[str, object]:
             else "benchmark-local service flows frozen from 7747434"
         )
         + "; excludes HTTP serialization, fixture construction, network/LLM",
-        "cold_definition": "new ReaderViews per case/group when enabled; OS/SQLite caches remain warm",
+        "cold_definition": (
+            "new ReaderViews per case/group when enabled; OS/SQLite caches remain warm"
+        ),
         "memory_definition": "separate tracemalloc pass; live response included, fixture excluded",
-        "warm_memory_definition": "new allocations only; previously retained cache allocations excluded",
+        "warm_memory_definition": (
+            "new allocations only; previously retained cache allocations excluded"
+        ),
         "retained_memory_definition": (
             "cold traced live bytes after releasing response and GC; includes runtime and "
             "other surviving request/infrastructure allocations, not an exact cache-size estimate"
         ),
-        "runtime_close_definition": "outside request latency/tracemalloc; RSS remains lifetime high-water",
+        "runtime_close_definition": (
+            "outside request latency/tracemalloc; RSS remains lifetime high-water"
+        ),
         "decoder_time_definition": "sum of per-call wall times; concurrent calls may overlap",
         "rss_high_water_bytes": rss_high_water_bytes(),
         "rss_definition": (
@@ -622,14 +599,10 @@ async def run_fixture(
 ) -> dict[str, object]:
     revision = 0
     cases: list[dict[str, object]] = []
-    operations = ["position", "readings"] + [
-        f"image:{i}" for i in fixture.image_ordinals
-    ]
+    operations = ["position", "readings"] + [f"image:{i}" for i in fixture.image_ordinals]
     for operation in operations:
 
-        async def invoke(
-            runtime: ReaderViews | None, operation: str = operation
-        ) -> object:
+        async def invoke(runtime: ReaderViews | None, operation: str = operation) -> object:
             nonlocal revision
             async with factory() as session:
                 if operation == "position":
@@ -643,9 +616,7 @@ async def run_fixture(
                         expected_revision=revision,
                     )
                     result = (
-                        await baseline.save_position(
-                            session, fixture.material_id, update
-                        )
+                        await baseline.save_position(session, fixture.material_id, update)
                         if runtime is None
                         else await materials.save_position(
                             session, fixture.material_id, update, reader_views=runtime
@@ -708,14 +679,9 @@ async def run_fixture(
             finally:
                 memory_close = await close_runtime(runtime)
             if operation == "readings":
-                expected_tokens = fixture.metadata[
-                    "selected_chapter_response_token_count"
-                ]
+                expected_tokens = fixture.metadata["selected_chapter_response_token_count"]
                 for sample in (cold, *warm, cold_memory, warm_memory):
-                    assert (
-                        sample["response_token_counts"]
-                        == [expected_tokens] * concurrency
-                    )
+                    assert sample["response_token_counts"] == [expected_tokens] * concurrency
             values = [cast(float, row["elapsed_ms"]) for row in warm]
             cases.append(
                 {
@@ -745,9 +711,7 @@ async def run_fixture(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument(
-        "--sizes", nargs="+", choices=tuple(SCALES), default=list(SCALES)
-    )
+    parser.add_argument("--sizes", nargs="+", choices=tuple(SCALES), default=list(SCALES))
     parser.add_argument("--repeats", type=int, choices=range(1, 21), default=3)
     parser.add_argument("--concurrency", type=int, choices=range(2, 9), default=4)
     parser.add_argument(

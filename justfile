@@ -49,8 +49,8 @@ build:
 
 # Python 与 TypeScript 的格式、静态检查。
 lint:
-    uv run --project backend ruff check backend scripts
-    uv run --project backend ruff format --check backend scripts
+    uv run --project backend ruff check --config backend/pyproject.toml backend scripts
+    uv run --project backend ruff format --config backend/pyproject.toml --check backend scripts
     uv run --project backend pyright --project backend
     pnpm --dir frontend lint
     pnpm --dir frontend typecheck
@@ -58,8 +58,8 @@ lint:
     node --check prototypes/epub-reading/locator.mjs
 
 format:
-    uv run --project backend ruff check --fix backend scripts
-    uv run --project backend ruff format backend scripts
+    uv run --project backend ruff check --config backend/pyproject.toml --fix backend scripts
+    uv run --project backend ruff format --config backend/pyproject.toml backend scripts
     pnpm --dir frontend format
 
 # 运行本地后端与前端纯逻辑测试，不访问真实网络或模型。

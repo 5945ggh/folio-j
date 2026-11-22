@@ -9,10 +9,11 @@ from multiprocessing.synchronize import Event
 from pathlib import Path
 from socket import socket
 
-from app.config import load_settings
 from uvicorn import Config, Server
 from uvicorn._subprocess import get_subprocess
 from uvicorn.supervisors.statreload import StatReload
+
+from app.config import load_settings
 
 
 class ReloadServer(Server):
@@ -52,9 +53,7 @@ class WindowsReload(StatReload):
         # this event. Only now may its successor receive a cleared stop request.
         self.stop_requested.clear()
         self.mtimes.clear()
-        self.process = get_subprocess(
-            config=self.config, target=self.target, sockets=self.sockets
-        )
+        self.process = get_subprocess(config=self.config, target=self.target, sockets=self.sockets)
         self.process.start()
 
     def shutdown(self) -> None:
