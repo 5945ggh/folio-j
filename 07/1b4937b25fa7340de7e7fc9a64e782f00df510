@@ -1,0 +1,29 @@
+frontend/scripts/browser-test-plan.mjs
+  s_bc415e02c16317::t_dd398e1bf25d37 39-65
+frontend/browser-tests/harness.ts
+  s_bc415e02c16317::t_237c841b178eba 20-37
+frontend/browser-tests/main.tsx
+  s_bc415e02c16317::t_237c841b178eba 487-490
+  s_bc415e02c16317::t_93bf7edf829a37 22,430-486,491-507
+frontend/scripts/test-browser.mjs
+  s_bc415e02c16317::t_dd398e1bf25d37 8-9,315-316,345,373-376,492,557,565,572,589,605,630-632,634
+  s_bc415e02c16317::t_237c841b178eba 609-612,620-624
+frontend/scripts/browser-test-plan.test.mjs
+  s_bc415e02c16317::t_237c841b178eba 3,5-6,88-142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "071b4937b25fa7340de7e7fc9a64e782f00df510",
+  "prompts": {},
+  "sessions": {
+    "s_bc415e02c16317": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20286-0418-7703-9af1-255d830e491e",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
