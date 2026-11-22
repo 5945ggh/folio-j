@@ -1,0 +1,67 @@
+frontend/browser-tests/reader-settings.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 5,114,155-166,168-177,188-193
+frontend/browser-tests/reader-base-fixture.ts
+  s_0645672be49b75::t_1ee9005bf842e6 13-19,21-25,27-41,44-60,64-68,73-75,77-78
+  s_0645672be49b75::t_1b16de6670c53f 1-12,20,26,42-43,61-63,69-72,76,79-80
+frontend/browser-tests/settings-return.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 104-107,115-118,128-132,159-161
+frontend/browser-tests/reader-session.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 149,155-158,175,180-181,198,208,225-228
+frontend/browser-tests/focused-navigation.tsx
+  s_0645672be49b75::t_521b72c3e56f34 114-117
+  s_0645672be49b75::t_1ee9005bf842e6 76-79,109-112,153,645,700,779,816-819
+frontend/browser-tests/reader-scrollbar.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 3,195-200,210-213
+frontend/scripts/browser-test-plan.test.mjs
+  s_0645672be49b75::t_1ee9005bf842e6 4,19-39
+  s_0645672be49b75::t_4c2545309b69b3 40
+frontend/browser-tests/reader-session-fixture.ts
+  s_0645672be49b75::t_1ee9005bf842e6 2,138,144,149-158,183,203-204,238
+frontend/browser-tests/record-saving.tsx
+  s_0645672be49b75::t_f9ed322a8079fd 336
+  s_0645672be49b75::t_1ee9005bf842e6 5,221-224,244-247,285-288
+frontend/browser-tests/reader-dictionary.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 6,440-443,451-454,475-478,487-493,495,498-500,509-513
+  s_0645672be49b75::t_f9ed322a8079fd 411,449
+frontend/browser-tests/reader-context-copy.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 3,134-136,145-148
+  s_0645672be49b75::t_f9ed322a8079fd 132
+frontend/browser-tests/reader-bookmarks.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 4,164,170,173,176-177,190-193,229-231
+frontend/browser-tests/position-bookmarks.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 5,241-242,244-248,379-381
+  s_0645672be49b75::t_6b28f1037b451a 382
+frontend/browser-tests/app-theme.tsx
+  s_0645672be49b75::t_f9ed322a8079fd 190
+  s_0645672be49b75::t_1ee9005bf842e6 10,110-116,134-135,179-181
+frontend/browser-tests/segment-navigation.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 71,73,90-93,97-100,109,132
+frontend/browser-tests/reader-search.tsx
+  s_0645672be49b75::t_521b72c3e56f34 129-131,270-273,279-282
+  s_0645672be49b75::t_1ee9005bf842e6 128,132,225-228,237,242-245,305,319-322,324-327,338-340
+frontend/browser-tests/chapter-records.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 11,444-447,453-456,472-475,556-559,586-591
+frontend/browser-tests/reader-images.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 4,110-117,168-171,180-182
+frontend/browser-tests/theme.tsx
+  s_0645672be49b75::t_1ee9005bf842e6 11,603-604,606-610,619-622
+frontend/browser-tests/reader-layout-switch.tsx
+  s_0645672be49b75::t_f9ed322a8079fd 101
+  s_0645672be49b75::t_1ee9005bf842e6 4,112-115,142-145,170-178,188-191
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "77370c07e530ad4fdb9947355df64804836109db",
+  "prompts": {},
+  "sessions": {
+    "s_0645672be49b75": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a202cd-33f2-7620-9099-7237da722b75",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
