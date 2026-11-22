@@ -87,10 +87,9 @@ def build(version: str, output: Path) -> dict[str, Any]:
         raise ValueError("版本名只能包含字母、数字、点、加号、下划线和连字符。")
     if output.exists():
         raise ValueError(f"输出目录已存在，请使用新目录：{output}")
-    importlib.metadata.version("pyinstaller")
-    frontend = ROOT / "frontend/dist"
-    if not (frontend / "index.html").is_file():
-        raise ValueError("缺少前端产物，请先运行 just build。")
+    pnpm = shutil.which("pnpm")
+    if pnpm is None:
+        raise FileNotFoundError("构建冻结包前端需要 pnpm。")
     output.parent.mkdir(parents=True, exist_ok=True)
     identity = {
         "version": version,
@@ -106,6 +105,12 @@ def build(version: str, output: Path) -> dict[str, Any]:
     }
     with tempfile.TemporaryDirectory(prefix="folio-j-frozen-") as temporary:
         stage = Path(temporary)
+        frontend = stage / "frontend"
+        subprocess.run(
+            [pnpm, "run", "build", "--outDir", str(frontend)], cwd=ROOT / "frontend", check=True
+        )
+        if not (frontend / "index.html").is_file():
+            raise ValueError("前端构建未生成 index.html。")
         release = stage / "RELEASE.json"
         release.write_text(
             json.dumps({key: identity[key] for key in ("version", "commit")}, indent=2) + "\n",

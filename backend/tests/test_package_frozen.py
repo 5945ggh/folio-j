@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import subprocess
 import tarfile
 from pathlib import Path
 from typing import Any
+from unittest.mock import Mock
 from zipfile import ZipFile
 
 import pytest
@@ -17,6 +19,48 @@ spec = importlib.util.spec_from_file_location("package_frozen", ROOT / "scripts/
 assert spec is not None and spec.loader is not None
 packager: Any = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(packager)
+
+
+@pytest.mark.parametrize("produces_index", [True, False], ids=["fresh", "missing"])
+def test_frozen_build_never_uses_existing_dist(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, produces_index: bool
+) -> None:
+    existing = tmp_path / "frontend/dist"
+    existing.mkdir(parents=True)
+    (existing / "index.html").write_text("stale")
+    (tmp_path / "backend/alembic").mkdir(parents=True)
+    monkeypatch.setattr(packager, "ROOT", tmp_path)
+    monkeypatch.setattr(packager, "git", Mock(return_value="fixture"))
+    monkeypatch.setattr(packager.importlib.metadata, "version", Mock(return_value="fixture"))
+    monkeypatch.setattr(packager.shutil, "which", Mock(return_value="pnpm"))
+
+    def run(arguments: list[str], *, cwd: Path, check: bool, **_kwargs: object) -> None:
+        assert check
+        if arguments[0] == "pnpm":
+            assert cwd == tmp_path / "frontend"
+            assert arguments[1:-1] == ["run", "build", "--outDir"]
+            frontend = Path(arguments[-1])
+            assert not frontend.exists()
+            if produces_index:
+                frontend.mkdir()
+                (frontend / "index.html").write_text("fresh")
+            return
+        assert produces_index and "PyInstaller" in arguments
+        suffix = f"{os.pathsep}frontend/dist"
+        (source,) = [Path(arg.removesuffix(suffix)) for arg in arguments if arg.endswith(suffix)]
+        assert (source / "index.html").read_text() == "fresh"
+        raise subprocess.CalledProcessError(1, "compiler fixture")
+
+    monkeypatch.setattr(packager.subprocess, "run", run)
+    output = tmp_path / "output"
+    if produces_index:
+        with pytest.raises(subprocess.CalledProcessError, match="compiler fixture"):
+            packager.build("trial", output)
+    else:
+        with pytest.raises(ValueError, match="index.html"):
+            packager.build("trial", output)
+    assert (existing / "index.html").read_text() == "stale"
+    assert not output.exists()
 
 
 def test_windows_zip_extracts_complete_directory_with_unicode_paths(

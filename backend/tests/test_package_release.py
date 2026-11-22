@@ -7,6 +7,7 @@ import json
 import subprocess
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 from zipfile import ZipFile
 
 import pytest
@@ -135,6 +136,56 @@ def test_commit_requires_explicit_version(repository: Path, tmp_path: Path) -> N
     with pytest.raises(ValueError):
         packager.build_release(repository, "HEAD", None, tmp_path / "source.zip")
     assert not (tmp_path / "source.zip").exists()
+
+
+def test_batch_preserves_blob_boundaries_zip_order_and_metadata(
+    repository: Path, tmp_path: Path
+) -> None:
+    nested = repository / "frontend/src"
+    (nested / "empty").touch()
+    binary = bytes(range(256)) * 10000
+    (nested / "executable").write_bytes(binary)
+    git(repository, "add", "frontend/src")
+    git(repository, "update-index", "--chmod=+x", "frontend/src/executable")
+    git(
+        repository,
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.org",
+        "commit",
+        "-m",
+        "blobs",
+    )
+    archive_path = tmp_path / "source.zip"
+    with patch.object(subprocess, "Popen", wraps=subprocess.Popen) as launch:
+        packager.build_release(repository, "HEAD", "binary", archive_path)
+    commands = [call.args[0] for call in launch.call_args_list]
+    assert [cmd[3:] for cmd in commands if "cat-file" in cmd] == [["cat-file", "--batch"]]
+    with ZipFile(archive_path) as archive:
+        assert archive.namelist() == sorted(archive.namelist())
+        assert all(member.date_time == (2020, 1, 1, 0, 0, 0) for member in archive.infolist())
+        prefix = "Folio-J-binary/frontend/src/"
+        assert archive.read(prefix + "empty") == b""
+        assert archive.read(prefix + "executable") == binary
+        assert archive.getinfo(prefix + "executable").external_attr >> 16 == 0o100755
+
+
+@pytest.mark.parametrize("wrong_type", [False, True], ids=["missing", "tree"])
+def test_invalid_git_object_identifies_file_without_publishing(
+    repository: Path, tmp_path: Path, wrong_type: bool
+) -> None:
+    oid = git(repository, "rev-parse", "HEAD:LICENSE")
+    if wrong_type:
+        git(repository, "update-ref", f"refs/replace/{oid}", "HEAD^{tree}")
+    else:
+        path = repository / ".git/objects" / oid[:2] / oid[2:]
+        path.chmod(0o600)
+        path.unlink()
+    before = set(tmp_path.iterdir())
+    with pytest.raises(ValueError, match=f"LICENSE.*{oid}.*{'tree' if wrong_type else 'missing'}"):
+        packager.build_release(repository, "HEAD", "candidate", tmp_path / "source.zip")
+    assert set(tmp_path.iterdir()) == before
 
 
 @pytest.mark.parametrize("bad_source", ["missing.md", "../outside.md", "/absolute.md"])

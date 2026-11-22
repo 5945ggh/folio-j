@@ -60,6 +60,37 @@ def read_manifest(repository: Path, commit: str) -> Manifest:
     return cast(Manifest, data)
 
 
+def zip_entry(name: str, mode: str) -> ZipInfo:
+    info = ZipInfo(name, date_time=(2020, 1, 1, 0, 0, 0))
+    info.create_system = 3
+    info.external_attr = int(mode, 8) << 16
+    info.compress_type = ZIP_DEFLATED
+    return info
+
+
+def write_blob(
+    batch: subprocess.Popen[bytes], archive: ZipFile, info: ZipInfo, source: str, oid: str
+) -> None:
+    assert batch.stdin is not None and batch.stdout is not None
+    encoded_oid = oid.encode("ascii")
+    batch.stdin.write(encoded_oid + b"\n")
+    batch.stdin.flush()
+    header = batch.stdout.readline().rstrip(b"\n")
+    fields = header.split()
+    if len(fields) != 3 or fields[:2] != [encoded_oid, b"blob"] or not fields[2].isdigit():
+        raise ValueError(f"无法读取发行文件 {source} 的 Git blob {oid}：{header!r}")
+    remaining = info.file_size = int(fields[2])
+    with archive.open(info, "w") as member:
+        while remaining:
+            chunk = batch.stdout.read(min(1024 * 1024, remaining))
+            if not chunk:
+                raise ValueError(f"发行文件 {source} 的 Git blob {oid} 内容不完整。")
+            member.write(chunk)
+            remaining -= len(chunk)
+    if batch.stdout.read(1) != b"\n":
+        raise ValueError(f"发行文件 {source} 的 Git blob {oid} 缺少结束符。")
+
+
 def build_release(repository: Path, ref: str, version: str | None, output: Path) -> tuple[str, str]:
     commit = git(repository, "rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}")
     commit_id = commit.decode().strip()
@@ -106,18 +137,7 @@ def build_release(repository: Path, ref: str, version: str | None, output: Path)
         selected[destination] = safe_path(source)
     if "RELEASE.json" in selected:
         raise ValueError("RELEASE.json 由打包器生成。")
-    payloads: dict[str, tuple[bytes, str]] = {}
-    for destination, source in sorted(selected.items()):
-        if source not in tree:
-            raise ValueError(f"指定提交缺少发行文件：{source}")
-        mode, oid = tree[source]
-        if mode not in {"100644", "100755"}:
-            raise ValueError(f"发行包不接收符号链接或特殊文件：{source}")
-        payloads[destination] = (git(repository, "cat-file", "blob", oid), mode)
-    payloads["RELEASE.json"] = (
-        (json.dumps({"version": version, "commit": commit_id}, indent=2) + "\n").encode(),
-        "100644",
-    )
+    release = (json.dumps({"version": version, "commit": commit_id}, indent=2) + "\n").encode()
     prefix = f"Folio-J-{version}/"
     temporary: Path | None = None
     try:
@@ -129,13 +149,29 @@ def build_release(repository: Path, ref: str, version: str | None, output: Path)
             delete=False,
         ) as stream:
             temporary = Path(stream.name)
-            with ZipFile(stream, "w", compression=ZIP_DEFLATED) as archive:
-                for name, (data, mode) in sorted(payloads.items()):
-                    info = ZipInfo(prefix + name, date_time=(2020, 1, 1, 0, 0, 0))
-                    info.create_system = 3
-                    info.external_attr = int(mode, 8) << 16
-                    info.compress_type = ZIP_DEFLATED
-                    archive.writestr(info, data)
+            with (
+                ZipFile(stream, "w") as archive,
+                subprocess.Popen(
+                    ["git", "-C", str(repository), "cat-file", "--batch"],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                ) as batch,
+            ):
+                for name in sorted([*selected, "RELEASE.json"]):
+                    if name == "RELEASE.json":
+                        archive.writestr(zip_entry(prefix + name, "100644"), release)
+                        continue
+                    source = selected[name]
+                    if source not in tree:
+                        raise ValueError(f"指定提交缺少发行文件：{source}")
+                    mode, oid = tree[source]
+                    if mode not in {"100644", "100755"}:
+                        raise ValueError(f"发行包不接收符号链接或特殊文件：{source}")
+                    write_blob(batch, archive, zip_entry(prefix + name, mode), source, oid)
+                assert batch.stdin is not None
+                batch.stdin.close()
+                if batch.wait():
+                    raise ValueError(f"git cat-file --batch 失败（退出码 {batch.returncode}）。")
         os.link(temporary, output)
     finally:
         if temporary is not None:
