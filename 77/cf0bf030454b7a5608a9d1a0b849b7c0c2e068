@@ -1,0 +1,36 @@
+scripts/smoke_frozen.py
+  s_04252eb8d2f7db::t_527f167244e49d 29-30,75,86,89,435,442-444
+  s_04252eb8d2f7db::t_9815b680503fa6 445-446,457-458,464-465,478-479
+backend/tests/test_smoke_first_run.py
+  s_04252eb8d2f7db::t_4b6d050870806e 11,15-17,54-74
+  s_04252eb8d2f7db::t_51a35b1654f473 18
+  s_04252eb8d2f7db::t_475ba0fd5fa6b3 1-9,13-14,19-53,75-127
+  s_04252eb8d2f7db::t_69bee081f2b199 10,12
+backend/tests/test_smoke_frozen.py
+  s_04252eb8d2f7db::t_475ba0fd5fa6b3 71,83-84,87-88
+  s_04252eb8d2f7db::t_d1c9eef08ccf4e 8-9,165
+scripts/smoke_application.py
+  s_04252eb8d2f7db::t_475ba0fd5fa6b3 53-55,85-90,155-159,177-180,182-186
+  s_04252eb8d2f7db::t_4b6d050870806e 161-162
+  s_04252eb8d2f7db::t_527f167244e49d 1-52,56-84,91-154,160,163-176,181,187-194
+backend/pyproject.toml
+  s_04252eb8d2f7db::t_2fe312fc388d3b 46,57
+scripts/smoke_source.py
+  s_04252eb8d2f7db::t_8b6ddf57fddd5c 16-17,23-29,31,46-48,50,60-63,65-66,100-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "77cf0bf030454b7a5608a9d1a0b849b7c0c2e068",
+  "prompts": {},
+  "sessions": {
+    "s_04252eb8d2f7db": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20285-fc92-7131-8497-05333cb0ee94",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
