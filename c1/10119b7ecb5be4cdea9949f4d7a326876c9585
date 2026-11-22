@@ -1,0 +1,24 @@
+frontend/browser-tests/position-bookmarks.tsx
+  s_0645672be49b75::t_4433062369a251 4,106,534-544,546-548,597-600,700-703,706-707,709,764-766,778-779,973-1020,1109-1112,1114-1138,1141-1142,1144-1154,1156,1159-1162,1164-1167,1169-1182,1185-1195,1198-1199,1201-1252,1288-1296,1320-1369,1371-1372,1374-1376,1394-1401,1439-1441,1531-1566,1596-1601,1603-1615
+  s_0645672be49b75::t_d8eb4c4e576248 1616-1623,1625
+frontend/browser-tests/chapter-records.tsx
+  s_0645672be49b75::t_3729da8334e21c 992-1000,1017
+frontend/scripts/test-browser.mjs
+  s_0645672be49b75::t_3e70e1f5bef93d 178,180
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c110119b7ecb5be4cdea9949f4d7a326876c9585",
+  "prompts": {},
+  "sessions": {
+    "s_0645672be49b75": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a202cd-33f2-7620-9099-7237da722b75",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
