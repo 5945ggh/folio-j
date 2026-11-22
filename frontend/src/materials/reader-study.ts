@@ -1,5 +1,9 @@
 import type { Chapter, ReadingsToken } from "./api.ts";
-import { type Projection, visibleContentRect } from "./dom.ts";
+import {
+	type Projection,
+	type VerifiedPartProjection,
+	visibleContentRect,
+} from "./dom.ts";
 import {
 	captureSelectionGuard,
 	distance,
@@ -17,7 +21,7 @@ import {
 import { rawBoundary } from "./position.ts";
 import { readerLookupWindow } from "./reader-lookup-window.ts";
 import { captureNativeSelection, referenceParts } from "./reader-selection.ts";
-import type { MaterialProvenance, StudyTarget } from "./study-api.ts";
+import type { MaterialProvenance } from "./study-api.ts";
 import { type StudyMarginEntry, studyMarginEntries } from "./study-margin.ts";
 import { textPointAt } from "./text-point.ts";
 import { readingViewport } from "./viewport.ts";
@@ -28,7 +32,10 @@ export type ScreenAnchor = {
 	right: number;
 	bottom: number;
 };
-export type StudySelection = { target: StudyTarget; anchor: ScreenAnchor };
+export type StudySelection = {
+	reference: MaterialProvenance;
+	anchor: ScreenAnchor;
+};
 export type StudyMarkKind = "segment" | "translation";
 export type StudyMark = (
 	| { segment_id: string }
@@ -72,13 +79,21 @@ type StudyFrame = {
 	element: HTMLIFrameElement;
 	chapter: Chapter;
 	valid: () => boolean;
-	projection: () => Projection;
+	projection: () => VerifiedPartProjection;
 	viewport?: HTMLElement | null;
 	tokens?: () => readonly ReadingsToken[];
 };
 type MountedFrame = StudyFrame & { dispose: () => void; cancel: () => void };
 type MarkTarget = { id: string; kind: StudyMarkKind };
 type MarkRanges = MarkTarget & { ranges: Range[] };
+function frameList<T>(map: Map<number, T[]>, index: number): T[] {
+	let list = map.get(index);
+	if (!list) {
+		list = [];
+		map.set(index, list);
+	}
+	return list;
+}
 function markTarget(mark: StudyMark): MarkTarget {
 	return "segment_id" in mark
 		? { id: mark.segment_id, kind: "segment" }
@@ -99,6 +114,30 @@ function screenAnchor(
 		top: top + rect.top,
 		bottom: top + rect.bottom,
 	};
+}
+function collectMarginRects(
+	frame: StudyFrame,
+	ranges: Range[],
+	rects: ScreenAnchor[],
+): void {
+	for (const range of ranges) {
+		for (const rect of range.getClientRects()) {
+			const visible = visibleContentRect(
+				frame.doc,
+				rect,
+				range.startContainer.parentElement,
+			);
+			if (!visible) continue;
+			const clipped = {
+				left: Math.max(0, visible.left),
+				right: Math.min(frame.element.clientWidth, visible.right),
+				top: Math.max(0, visible.top),
+				bottom: Math.min(frame.element.clientHeight, visible.bottom),
+			};
+			if (clipped.left < clipped.right && clipped.top < clipped.bottom)
+				rects.push(screenAnchor(frame.element, clipped));
+		}
+	}
 }
 function bounds(ranges: readonly Range[]): ScreenAnchor | null {
 	let result: ScreenAnchor | null = null;
@@ -215,6 +254,7 @@ export class ReaderStudy {
 	private lookupCoverage: { frame: number; start: number; end: number } | null =
 		null;
 	private readonly frames = new Map<number, MountedFrame>();
+	private readonly viewportFrames = new Map<HTMLElement, Set<MountedFrame>>();
 	private config: {
 		chapter: Chapter;
 		marks: readonly StudyMark[];
@@ -229,7 +269,29 @@ export class ReaderStudy {
 		HTMLElement,
 		{ left: number; top: number }
 	>();
-	private readonly restoredScrollEvents = new WeakSet<Event>();
+	private viewportScroll = (event: Event): void => {
+		const viewport = event.currentTarget as HTMLElement;
+		const expected = this.layoutScroll.get(viewport);
+		this.layoutScroll.delete(viewport);
+		if (
+			expected &&
+			viewport.scrollLeft === expected.left &&
+			viewport.scrollTop === expected.top
+		)
+			return;
+		let active = false;
+		for (const frame of this.viewportFrames.get(viewport) ?? []) {
+			if (!this.current(frame)) continue;
+			frame.cancel();
+			active = true;
+		}
+		if (active) this.dismissAfterScroll();
+	};
+	private dismissAfterScroll(): void {
+		this.dismissLookup();
+		this.binding?.onSelection(null);
+		this.dismissMarks();
+	}
 	/** Inline output changes geometry without dismissing a record the user just opened. */
 	preservePreviewDuringLayout(update: () => void): void {
 		const previous = this.preservingPreview;
@@ -366,6 +428,7 @@ export class ReaderStudy {
 			for (const frame of this.frames.values()) clearStudyHighlights(frame.doc);
 			return;
 		}
+		const activeSet = new Set(activeFrames);
 		const geometry: (MarkTarget & { rects: ScreenAnchor[] })[] = [];
 		const hitRanges = new Map<number, MarkRanges[]>();
 		const ranges = new Map<number, Range[]>(),
@@ -386,10 +449,10 @@ export class ReaderStudy {
 					config.chapter,
 					mark.material_provenance.ranges,
 				);
-				const planned: [number, Range[]][] = [];
+				const planned: [StudyFrame, Range[]][] = [];
 				for (const [index, intervals] of parts) {
 					const frame = this.frames.get(index);
-					if (!frame || !activeFrames.includes(frame))
+					if (!frame || !activeSet.has(frame))
 						throw new Error("标记正文尚未完整显示");
 					let projection = projections.get(index);
 					if (!projection) {
@@ -400,54 +463,34 @@ export class ReaderStudy {
 						projectedBaseRanges(frame.doc, projection, start, end),
 					);
 					prepareStudyUnderlines(frame.doc, projected, [], config.theme);
-					planned.push([index, projected]);
+					planned.push([frame, projected]);
 				}
-				for (const [index, projected] of planned) {
+				for (const [frame, projected] of planned) {
+					const index = frame.index;
 					if (config.visible || emphasized)
-						hitRanges.set(index, [
-							...(hitRanges.get(index) ?? []),
-							{ ...target, ranges: projected },
-						]);
+						frameList(hitRanges, index).push({ ...target, ranges: projected });
 					const paint = target.kind === "segment" ? ranges : translationRanges;
 					const active =
 						target.kind === "segment" ? emphasis : translationEmphasis;
-					paint.set(index, [...(paint.get(index) ?? []), ...projected]);
-					if (emphasized)
-						active.set(index, [...(active.get(index) ?? []), ...projected]);
+					const painted = frameList(paint, index);
+					const emphasizedRanges = emphasized ? frameList(active, index) : null;
+					for (const range of projected) {
+						painted.push(range);
+						emphasizedRanges?.push(range);
+					}
 				}
-				geometry.push({
-					...target,
-					rects: planned.flatMap(([index, projected]) => {
-						const frame = this.frames.get(index);
-						if (!frame) return [];
-						return projected.flatMap((range) =>
-							Array.from(range.getClientRects()).flatMap((rect) => {
-								const visible = visibleContentRect(
-									frame.doc,
-									rect,
-									range.startContainer.parentElement,
-								);
-								if (!visible) return [];
-								const clipped = {
-									left: Math.max(0, visible.left),
-									right: Math.min(frame.element.clientWidth, visible.right),
-									top: Math.max(0, visible.top),
-									bottom: Math.min(frame.element.clientHeight, visible.bottom),
-								};
-								return clipped.left < clipped.right &&
-									clipped.top < clipped.bottom
-									? [screenAnchor(frame.element, clipped)]
-									: [];
-							}),
-						);
-					}),
-				});
+				if (config.margins) {
+					const rects: ScreenAnchor[] = [];
+					for (const [frame, projected] of planned)
+						collectMarginRects(frame, projected, rects);
+					geometry.push({ ...target, rects });
+				}
 			} catch {
 				/* A partially available mark is never painted or made clickable. */
 			}
 		}
 		for (const frame of this.frames.values()) {
-			if (!activeFrames.includes(frame)) {
+			if (!activeSet.has(frame)) {
 				clearStudyHighlights(frame.doc);
 				continue;
 			}
@@ -555,11 +598,12 @@ export class ReaderStudy {
 		)
 			return false;
 		const part = frame.chapter.parts[frame.index];
-		const resource = frame.chapter.resources.find(
-			(item) => item.id === part?.resource_id,
+		if (!part) return false;
+		const local = rawBoundary(
+			projection.raw,
+			hit.rawStart,
+			projection.canonical,
 		);
-		if (!part || !resource) return false;
-		const local = rawBoundary(projection.raw, hit.rawStart);
 		const key = `${frame.index}:${local}`;
 		const hover = event.type === "pointermove";
 		if (
@@ -570,25 +614,21 @@ export class ReaderStudy {
 					local < this.lookupCoverage.end))
 		)
 			return true;
-		const source = Array.from(resource.text);
-		if (
-			projection.raw.normalize("NFC") !==
-			source.slice(part.start, part.end).join("")
-		)
-			return false;
 		// Preserve context on both sides so a click in the middle can find a compound.
 		const absolute = part.start + local;
 		const window = readerLookupWindow(projection, hit.node, local);
 		const start = part.start + window.start;
 		const end = part.start + window.end;
-		const text = source.slice(start, end).join("");
+		const text = projection.points.slice(window.start, window.end).join("");
 		const tokens = (frame.tokens?.() ?? [])
 			.filter(
 				(token) =>
 					token.start >= start &&
 					token.end <= end &&
 					token.end > token.start &&
-					source.slice(token.start, token.end).join("") === token.surface,
+					projection.points
+						.slice(token.start - part.start, token.end - part.start)
+						.join("") === token.surface,
 			)
 			.map((token) => ({
 				...token,
@@ -785,7 +825,7 @@ export class ReaderStudy {
 		);
 		return rect
 			? {
-					target: { reference, chapter: structuredClone(frame.chapter) },
+					reference,
 					anchor: screenAnchor(frame.element, rect),
 				}
 			: null;
@@ -845,7 +885,7 @@ export class ReaderStudy {
 				outerDocument.removeEventListener("keydown", outerModifiers, true);
 				outerDocument.removeEventListener("keyup", outerModifiers, true);
 				outerDocument.defaultView?.removeEventListener("blur", cancelHover);
-				input.viewport?.removeEventListener("scroll", scroll);
+				releaseViewport?.();
 				this.hits.delete(input.index);
 				this.dismissLookup();
 				clearStudyHighlights(input.doc, true);
@@ -1039,30 +1079,11 @@ export class ReaderStudy {
 				schedule();
 			}
 		};
-		const scroll = (event: Event) => {
+		const scroll = () => {
 			if (!this.current(frame)) return;
-			if (this.restoredScrollEvents.has(event)) return;
-			const viewport = input.viewport;
-			const expected = viewport ? this.layoutScroll.get(viewport) : undefined;
-			// Restoration can emit a scroll event even when its final pixel offset is
-			// unchanged. Native wheel/touch input and a different offset still dismiss.
-			if (
-				event.type === "scroll" &&
-				viewport &&
-				expected &&
-				viewport.scrollLeft === expected.left &&
-				viewport.scrollTop === expected.top
-			) {
-				this.layoutScroll.delete(viewport);
-				// Every mounted frame listens to the same viewport event.
-				this.restoredScrollEvents.add(event);
-				return;
-			}
-			if (viewport) this.layoutScroll.delete(viewport);
+			if (input.viewport) this.layoutScroll.delete(input.viewport);
 			cancel();
-			this.dismissLookup();
-			this.binding?.onSelection(null);
-			this.dismissMarks();
+			this.dismissAfterScroll();
 		};
 		const listeners: [string, EventListener][] = [
 			["pointerdown", down],
@@ -1082,6 +1103,7 @@ export class ReaderStudy {
 			["wheel", scroll],
 			["touchmove", scroll],
 		];
+		const releaseViewport = this.subscribeViewport(frame);
 		this.frames.set(input.index, frame);
 		for (const [type, listener] of listeners)
 			input.doc.addEventListener(type, listener, {
@@ -1090,8 +1112,27 @@ export class ReaderStudy {
 		outerDocument.addEventListener("keydown", outerModifiers, true);
 		outerDocument.addEventListener("keyup", outerModifiers, true);
 		outerDocument.defaultView?.addEventListener("blur", cancelHover);
-		input.viewport?.addEventListener("scroll", scroll, { passive: true });
 		this.refresh();
 		return frame.dispose;
+	}
+	private subscribeViewport(frame: MountedFrame) {
+		const viewport = frame.viewport;
+		if (!viewport) return;
+		let siblings = this.viewportFrames.get(viewport);
+		if (!siblings) {
+			siblings = new Set();
+			this.viewportFrames.set(viewport, siblings);
+			viewport.addEventListener("scroll", this.viewportScroll, {
+				passive: true,
+			});
+		}
+		siblings.add(frame);
+		return () => {
+			siblings.delete(frame);
+			if (siblings.size) return;
+			viewport.removeEventListener("scroll", this.viewportScroll);
+			this.viewportFrames.delete(viewport);
+			this.layoutScroll.delete(viewport);
+		};
 	}
 }

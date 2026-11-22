@@ -5,6 +5,7 @@ import {
 	type Projection,
 	projectPart,
 	readingContentEnd,
+	type VerifiedPartProjection,
 } from "./dom.ts";
 import { isReaderFrameTarget, registerReaderFrameTargets } from "./focus.ts";
 import {
@@ -236,7 +237,10 @@ export class ReaderFrames {
 	clearStudySelection(): boolean {
 		return this.study.clearSelection();
 	}
-	private freshProjection(index: number, chapter: Chapter): Projection {
+	private freshProjection(
+		index: number,
+		chapter: Chapter,
+	): VerifiedPartProjection {
 		const frame = this.frames.get(index),
 			part = chapter.parts[index];
 		const resource = chapter.resources.find(
@@ -258,12 +262,10 @@ export class ReaderFrames {
 			mountedPart?.end !== part.end
 		)
 			throw new Error("原文尚未完整显示，已保留定位目标，请重试。");
-		frame.projection = projectPart(
-			frame.doc,
-			Array.from(resource.text).slice(part.start, part.end).join(""),
-			part.leaf_start,
-		);
-		return frame.projection;
+		const points = Array.from(resource.text).slice(part.start, part.end);
+		const canonical = points.join("");
+		frame.projection = projectPart(frame.doc, canonical, part.leaf_start);
+		return { ...frame.projection, points, canonical };
 	}
 	private searchHighlightOpacity = 1;
 	private readonly frames = new Map<number, ReaderFrame>();
@@ -301,6 +303,16 @@ export class ReaderFrames {
 		versionId: string,
 		chapter: Chapter,
 	): StudyTarget {
+		return {
+			reference: this.captureStudyReference(materialId, versionId, chapter),
+			chapter: structuredClone(chapter),
+		};
+	}
+	captureStudyReference(
+		materialId: string,
+		versionId: string,
+		chapter: Chapter,
+	): MaterialProvenance {
 		this.finishInlineMotion();
 		const selected = [...this.frames].filter(([, frame]) => {
 			const selection = frame.doc.getSelection();
@@ -318,22 +330,14 @@ export class ReaderFrames {
 			(item) => item.id === part?.resource_id,
 		);
 		if (!part || !resource) throw new Error("当前章节资源不可用。");
-		frame.projection = projectPart(
+		return captureNativeSelection(
 			frame.doc,
-			Array.from(resource.text).slice(part.start, part.end).join(""),
-			part.leaf_start,
+			this.freshProjection(index, chapter),
+			part,
+			resource,
+			materialId,
+			versionId,
 		);
-		return {
-			reference: captureNativeSelection(
-				frame.doc,
-				frame.projection,
-				part,
-				resource,
-				materialId,
-				versionId,
-			),
-			chapter: structuredClone(chapter),
-		};
 	}
 	highlight(chapter: Chapter, ranges: readonly ReaderHighlightRange[]) {
 		const targets = referenceParts(chapter, ranges);

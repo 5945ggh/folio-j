@@ -1,5 +1,9 @@
 import { nearestLineBoundary, rawBoundary, rawOffset } from "./position.ts";
 export type Projection = ReturnType<typeof projectPart>;
+export type VerifiedPartProjection = Projection & {
+	canonical: string;
+	points: readonly string[];
+};
 
 /** Image anchors keep their own local fraction; display progress counts canonical text before them. */
 export function imageTextOffset(

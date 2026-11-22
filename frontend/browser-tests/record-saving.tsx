@@ -379,8 +379,7 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 			check(found && !found.disabled, `Missing enabled ${label} (${scenario})`);
 			return found;
 		};
-		const select = async (index = 0) => {
-			await new Promise((resolve) => setTimeout(resolve, 150));
+		const selectNative = (index: number) => {
 			const frame = h.container.querySelector<HTMLIFrameElement>(
 				"iframe.material-part",
 			);
@@ -406,6 +405,11 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 				book.id,
 				"v1",
 			);
+			return { doc, native };
+		};
+		const select = async (index = 0) => {
+			await new Promise((resolve) => setTimeout(resolve, 150));
+			const { doc, native } = selectNative(index);
 			doc.dispatchEvent(new Event("selectionchange"));
 			await h.until(
 				() => !!h.container.querySelector('[aria-label="选区操作"]'),
@@ -419,6 +423,23 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 			check(found, "Save dialog must expose translation field");
 			return found;
 		};
+		let chapterCopies = 0;
+		const copyCount = () => chapterCopies;
+		const clone = window.structuredClone;
+		if (scenario === "latest")
+			window.structuredClone = (value, options) => {
+				const input = value as
+					| (Partial<typeof chapter> & { chapter?: typeof chapter })
+					| null;
+				const source = input?.chapter ?? input;
+				if (
+					source?.id === chapter.id &&
+					source?.material_id === book.id &&
+					Array.isArray(source.parts)
+				)
+					chapterCopies++;
+				return clone(value, options);
+			};
 		try {
 			await h.until(
 				() =>
@@ -433,6 +454,10 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 			);
 			if (scenario === "latest") {
 				await select();
+				check(
+					copyCount() === 0,
+					"Showing the selection toolbar must not copy the chapter",
+				);
 				button(
 					"翻译",
 					h.container.querySelector('[aria-label="选区操作"]') ?? h.container,
@@ -442,6 +467,10 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 						h.container.querySelector(".translation-output")?.textContent ===
 						fullTranslation,
 					"Translate same original must display existing complete result",
+				);
+				check(
+					copyCount() === 1,
+					"Translation must share one verified chapter snapshot",
 				);
 				button("关闭翻译（任务继续）").click();
 			}
@@ -482,12 +511,18 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 						: scenario === "punctuation"
 							? 3
 							: 0;
-			await select(index);
+			await select(scenario === "other-place" ? 0 : index);
+			if (scenario === "other-place") selectNative(index);
 			button("保存为学习片段").click();
 			await h.until(
 				() => !!h.container.querySelector(".study-segment-panel textarea"),
 				"Selection save dialog must open",
 			);
+			if (scenario === "latest")
+				check(
+					copyCount() === 2,
+					"Saving a new selection must freeze just one new chapter snapshot",
+				);
 			const translationField = textarea().closest("label");
 			const titleNode = [...(translationField?.childNodes ?? [])].find(
 				(node) =>
@@ -644,6 +679,7 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 			);
 			completed.push(scenario);
 		} finally {
+			window.structuredClone = clone;
 			if (!preview) dispose();
 		}
 	}

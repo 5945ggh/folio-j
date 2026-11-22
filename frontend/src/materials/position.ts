@@ -1,4 +1,8 @@
-export function rawBoundary(raw: string, offset: number): number {
+export function rawBoundary(
+	raw: string,
+	offset: number,
+	canonical = raw.normalize("NFC"),
+): number {
 	if (!Number.isInteger(offset) || offset < 0 || offset > raw.length)
 		throw new Error("边界超出正文");
 	if (
@@ -8,8 +12,9 @@ export function rawBoundary(raw: string, offset: number): number {
 		/[\uDC00-\uDFFF]/.test(raw[offset] ?? "")
 	)
 		throw new Error("边界切开字符");
+	if (raw === canonical) return Array.from(raw.slice(0, offset)).length;
 	const before = raw.slice(0, offset).normalize("NFC");
-	if (before + raw.slice(offset).normalize("NFC") !== raw.normalize("NFC"))
+	if (before + raw.slice(offset).normalize("NFC") !== canonical)
 		throw new Error("边界切开 NFC 组合");
 	return [...before].length;
 }
@@ -194,20 +199,10 @@ export function anchorBeforeLayout<T>(
 }
 
 /** Canonical text position below 100%; an observed chapter end takes precedence. */
-export function chapterProgress(
+export function prepareChapterProgress(
 	parts: readonly { start: number; end: number; resource_id: string }[],
 	resources: readonly { id: string; text: string }[],
-	anchor: {
-		part_index: number;
-		kind: string;
-		offset?: number | null;
-		at_chapter_end?: boolean;
-	},
-	imageOffset = 0,
-): number | null {
-	const part = parts[anchor.part_index];
-	if (!part) return null;
-	if (anchor.at_chapter_end) return 1;
+) {
 	const hasText = parts.some((part) => {
 		const resource = resources.find((item) => item.id === part.resource_id);
 		return (
@@ -216,21 +211,37 @@ export function chapterProgress(
 				.length > 0
 		);
 	});
-	const total = parts.reduce((sum, part) => sum + part.end - part.start, 0);
-	if (!hasText || total <= 0) return null;
-	const before = parts
-		.slice(0, anchor.part_index)
-		.reduce((sum, item) => sum + item.end - item.start, 0);
-	const local =
-		anchor.kind === "text"
-			? Math.max(
-					0,
-					Math.min(
-						part.end - part.start,
-						(anchor.offset ?? part.start) - part.start,
-					),
-				)
-			: Math.max(0, Math.min(part.end - part.start, imageOffset));
-	// Reserve 100% for an observed chapter end, including chapters with trailing images.
-	return Math.min(0.99, scrollProgress(before + local, total));
+	let total = 0;
+	const offsets = parts.map((part) => {
+		const before = total;
+		total += part.end - part.start;
+		return before;
+	});
+	return (
+		anchor: {
+			part_index: number;
+			kind: string;
+			offset?: number | null;
+			at_chapter_end?: boolean;
+		},
+		imageOffset = 0,
+	): number | null => {
+		const part = parts[anchor.part_index],
+			before = offsets[anchor.part_index];
+		if (!part || before === undefined) return null;
+		if (anchor.at_chapter_end) return 1;
+		if (!hasText || total <= 0) return null;
+		const local =
+			anchor.kind === "text"
+				? Math.max(
+						0,
+						Math.min(
+							part.end - part.start,
+							(anchor.offset ?? part.start) - part.start,
+						),
+					)
+				: Math.max(0, Math.min(part.end - part.start, imageOffset));
+		// Reserve 100% for an observed chapter end, including chapters with trailing images.
+		return Math.min(0.99, scrollProgress(before + local, total));
+	};
 }

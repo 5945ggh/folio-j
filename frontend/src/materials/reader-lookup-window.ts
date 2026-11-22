@@ -1,4 +1,4 @@
-import type { Projection } from "./dom.ts";
+import type { VerifiedPartProjection } from "./dom.ts";
 import { rawBoundary } from "./position.ts";
 
 const PARAGRAPH =
@@ -7,11 +7,11 @@ const BREAK = /[\r\n\u2028\u2029]/u;
 
 /** A lookup cannot join separate paragraphs. Ruby and inline formatting stay in the canonical passage. */
 export function readerLookupWindow(
-	projection: Projection,
+	projection: VerifiedPartProjection,
 	node: Text,
 	offset: number,
 ) {
-	const text = Array.from(projection.raw.normalize("NFC"));
+	const text = projection.points;
 	if (!Number.isInteger(offset) || offset < 0 || offset >= text.length)
 		throw new Error("查词落点超出正文");
 	let first = 0,
@@ -24,8 +24,10 @@ export function readerLookupWindow(
 		const begin = entries[0],
 			end = entries.at(-1);
 		if (!begin || !end) throw new Error("查词段落不属于正文投影");
-		first = rawBoundary(projection.raw, begin.start);
-		last = rawBoundary(projection.raw, end.end);
+		if (begin.start !== 0)
+			first = rawBoundary(projection.raw, begin.start, projection.canonical);
+		if (end.end !== projection.raw.length)
+			last = rawBoundary(projection.raw, end.end, projection.canonical);
 	}
 	// Scan only the bounded neighborhood, never the remainder of a long passage.
 	let start = Math.max(first, offset - 256);

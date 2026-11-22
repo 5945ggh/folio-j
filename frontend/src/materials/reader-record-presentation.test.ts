@@ -191,7 +191,7 @@ function harness() {
 		select() {
 			nativeSelection = true;
 			const selection: StudySelection = {
-				target: { chapter, reference: reference(30) },
+				reference: reference(30),
 				anchor,
 			};
 			owner.selectionChanged(selection);

@@ -51,7 +51,7 @@ export function ReaderDictionary({
 			);
 		},
 		selection(value) {
-			const text = value.target.reference.ranges.map((r) => r.exact).join("");
+			const text = value.reference.ranges.map((r) => r.exact).join("");
 			control.current?.lookup({
 				input: {
 					text,

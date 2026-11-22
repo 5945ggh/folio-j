@@ -152,7 +152,11 @@ function harness(
 		element,
 		chapter,
 		valid: () => valid,
-		projection: () => projection,
+		projection: () => ({
+			...projection,
+			points: Array.from(projection.raw.normalize("NFC")),
+			canonical: projection.raw.normalize("NFC"),
+		}),
 		viewport,
 		tokens: () => tokens,
 	});
@@ -396,6 +400,8 @@ test("cross-spine translation coverage is subtracted only within each original f
 		valid: () => true,
 		projection: () => ({
 			raw: other.node.data,
+			points: Array.from(other.node.data),
+			canonical: other.node.data,
 			entries: [{ node: other.node, start: 0, end: 4 }],
 		}),
 	});
@@ -489,10 +495,10 @@ test("selection notification waits for drag/keyboard completion, keeps native se
 	h.event("pointerup");
 	t.mock.timers.tick(60);
 	const value = h.callbacks.selection.filter(Boolean).at(-1) as {
-		target: { reference: { ranges: { exact: string }[] } };
+		reference: { ranges: { exact: string }[] };
 		anchor: unknown;
 	};
-	assert.equal(value.target.reference.ranges[0]?.exact, "甲乙");
+	assert.equal(value.reference.ranges[0]?.exact, "甲乙");
 	assert.deepEqual(value.anchor, {
 		left: 100,
 		right: 120,
@@ -882,6 +888,8 @@ test("disposing an old frame twice cannot remove replacement mark hit data", () 
 		valid: () => true,
 		projection: () => ({
 			raw: h.node.data,
+			points: Array.from(h.node.data),
+			canonical: h.node.data,
 			entries: [{ node: h.node, start: 0, end: 4 }],
 		}),
 	});
@@ -903,6 +911,8 @@ test("an existing selection in another current frame is cleared without opening 
 		valid: () => true,
 		projection: () => ({
 			raw: other.node.data,
+			points: Array.from(other.node.data),
+			canonical: other.node.data,
 			entries: [{ node: other.node, start: 0, end: 4 }],
 		}),
 	});
@@ -1078,11 +1088,59 @@ test("ordinary scrolling does not measure or republish bookmark geometry", () =>
 		measures++;
 		return [{ left: 0, right: 40, top: 0, bottom: 20, width: 40, height: 20 }];
 	});
+	h.study.refresh();
+	assert.equal(measures, 0, "disabled margins must not measure mark ranges");
 	const publications = entries.length;
 	for (const type of ["wheel", "touchmove"]) h.event(type);
 	viewport.dispatchEvent(new Event("scroll"));
 	assert.equal(measures, 0);
 	assert.equal(entries.length, publications);
+});
+
+test("a shared viewport dismisses once and clears each mounted dictionary highlight once", (t) => {
+	const viewport = Object.assign(new EventTarget(), {
+		scrollLeft: 0,
+		scrollTop: 0,
+	}) as HTMLElement;
+	const first = harness(undefined, viewport);
+	const second = harness();
+	second.detach();
+	const detach = first.study.mount({
+		index: 1,
+		chapter: first.chapter,
+		doc: second.doc as unknown as Document,
+		element: second.element,
+		valid: () => true,
+		viewport,
+		projection: () => ({
+			...second.projection,
+			canonical: second.projection.raw,
+			points: Array.from(second.projection.raw),
+		}),
+	});
+	const closed: (ReaderLookupHit | null)[] = [];
+	first.study.bind({ ...first.binding, onLookup: (hit) => closed.push(hit) });
+	const deletes = [first, second].map((frame) =>
+		t.mock.method(frame.highlights, "delete"),
+	);
+	const previousSelections = first.callbacks.selection.length;
+	first.study.preservePreviewDuringLayout(() => {});
+	viewport.dispatchEvent(new Event("scroll"));
+	assert.equal(closed.length, 0);
+	viewport.scrollTop = 10;
+	viewport.dispatchEvent(new Event("scroll"));
+	assert.deepEqual(closed, [null]);
+	assert.equal(first.callbacks.selection.length, previousSelections + 1);
+	for (const deletion of deletes)
+		assert.deepEqual(
+			deletion.mock.calls.map((call) => call.arguments),
+			[["folio-dictionary"]],
+		);
+	detach();
+	first.detach();
+	const disposed = closed.length;
+	viewport.dispatchEvent(new Event("scroll"));
+	assert.equal(closed.length, disposed);
 });
 
 for (const collapsed of [false, true]) {
@@ -1308,9 +1366,15 @@ test("dictionary uses global NFC code points and keeps large passages within a b
 test("dictionary forwards only aligned canonical tokens and close invalidates pending highlights", (t) => {
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const h = harness();
+	const part = h.chapter.parts[0],
+		resource = h.chapter.resources[0];
+	assert.ok(part && resource);
+	resource.text = `𠮷前${resource.text}後`;
+	part.start = 2;
+	part.end = 6;
 	h.tokens.push({
-		start: 0,
-		end: 3,
+		start: 2,
+		end: 5,
 		surface: "甲乙丙",
 		reading: "コウオツヘイ",
 		dictionary_form: "甲乙丙",
@@ -1320,7 +1384,7 @@ test("dictionary forwards only aligned canonical tokens and close invalidates pe
 	});
 	h.tokens.push({
 		...(h.tokens[0] as ReadingsToken),
-		start: 1,
+		start: 3,
 		surface: "wrong",
 	});
 	let hit: ReaderLookupHit | null = null;
@@ -1336,6 +1400,9 @@ test("dictionary forwards only aligned canonical tokens and close invalidates pe
 	const first = hit as ReaderLookupHit | null;
 	assert.ok(first);
 	assert.equal(first.tokens.length, 1);
+	assert.equal(first.text, "甲乙丙丁");
+	assert.equal(first.tokens[0]?.start, 0);
+	assert.equal(first.tokens[0]?.end, 3);
 	assert.equal(first.tokens[0]?.dictionary_form, "甲乙丙");
 	first.highlight(0, 3);
 	assert.equal(h.highlights.has("folio-dictionary"), true);

@@ -70,7 +70,7 @@ export function StudySegmentPanel({
 }) {
 	const client = useQueryClient();
 	const titleId = useId();
-	const [snapshot] = useState(() => structuredClone(target));
+	const [snapshot] = useState(target);
 	const [targetKey] = useState(() => JSON.stringify(snapshot.reference));
 	const [draft, setDraft] = useState(() => createContextDraft(targetKey));
 	const draftRef = useRef(draft);

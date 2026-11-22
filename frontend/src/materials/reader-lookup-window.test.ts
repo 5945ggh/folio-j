@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Projection } from "./dom.ts";
 import { readerLookupWindow } from "./reader-lookup-window.ts";
 
 function passage(values: string[], blocks: number[] = []) {
@@ -19,7 +18,12 @@ function passage(values: string[], blocks: number[] = []) {
 	});
 	return {
 		nodes,
-		projection: { raw: values.join(""), entries } satisfies Projection,
+		projection: {
+			raw: values.join(""),
+			entries,
+			canonical: values.join("").normalize("NFC"),
+			points: Array.from(values.join("").normalize("NFC")),
+		},
 	};
 }
 

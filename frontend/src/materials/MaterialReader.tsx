@@ -90,11 +90,11 @@ import {
 	waitForPositionWrites,
 } from "./persistence";
 import {
-	chapterProgress,
 	imageAtReadingEdge,
 	imageCoordinate,
 	imageFraction,
 	PositionQueue,
+	prepareChapterProgress,
 } from "./position";
 import { ReaderPreferenceSubmission } from "./preference-submission";
 import {
@@ -281,24 +281,29 @@ function Reader({
 	const [translationAnchor, setTranslationAnchor] =
 		useState<ScreenAnchor | null>(null);
 	const client = useQueryClient();
-	const selectedTranslations = useRef(new TranslationPreferences());
-	const rememberTranslation = useCallback((result: TranslationResult) => {
-		selectedTranslations.current.remember(result);
-	}, []);
+	const [selectedTranslations] = useState(() => new TranslationPreferences());
+	const rememberTranslation = useCallback(
+		(result: TranslationResult) => {
+			selectedTranslations.remember(result);
+		},
+		[selectedTranslations],
+	);
 	const translationSessions = useTranslationSessions();
 	const readingGeneration = readingsSummary.generation_id;
 	const navigate = useNavigate();
-	const initialAnchor = initialVocabulary
-		? vocabularyReaderPosition(
-				initialVocabulary,
-				book.reading_position?.settings ?? defaults,
-			)
-		: initialOrigin
-			? originPosition(
-					initialOrigin,
+	const [initialAnchor] = useState(() =>
+		initialVocabulary
+			? vocabularyReaderPosition(
+					initialVocabulary,
 					book.reading_position?.settings ?? defaults,
 				)
-			: book.reading_position;
+			: initialOrigin
+				? originPosition(
+						initialOrigin,
+						book.reading_position?.settings ?? defaults,
+					)
+				: book.reading_position,
+	);
 	const [studyTarget, setStudyTarget] = useState<StudyTarget | null>(null);
 	const [selectionError, setSelectionError] = useState<Error | null>(null);
 	const [originError, setOriginError] = useState<Error | null>(null);
@@ -311,7 +316,7 @@ function Reader({
 		previewSerial,
 		previewEntrance,
 	} = recordState;
-	const frames = useRef(new ReaderFrames());
+	const [frames] = useState(() => new ReaderFrames());
 	const dictionary = useRef<DictionaryControl>(null);
 	const [dictionaryReady, setDictionaryReady] = useState(false);
 	const recordContext = useRef<ReaderRecordContext | null>(null);
@@ -327,7 +332,7 @@ function Reader({
 						alive: alive.current,
 					};
 				},
-				frames: frames.current,
+				frames,
 				closeStudyPanel: () =>
 					setPanels((current) =>
 						current.right === "study"
@@ -442,7 +447,7 @@ function Reader({
 	const { chapterId, settings, generation } = presentationState;
 	const contextCopy = useReaderContextCopy(
 		active && selection
-			? `${chapterId}:${generation}:${translationTargetKey(selection.target.reference)}`
+			? `${chapterId}:${generation}:${translationTargetKey(selection.reference)}`
 			: null,
 	);
 	const bookmarks = useReaderBookmarks(book.id, book.version_id);
@@ -507,7 +512,7 @@ function Reader({
 	const theme = resolveReaderTheme(ui.theme, systemDark);
 	useLayoutEffect(() => onThemeChange(theme), [theme, onThemeChange]);
 	const [storageFailed, setStorageFailed] = useState(false);
-	const jumpReading = useRef(new JumpReadingSession());
+	const [jumpReading] = useState(() => new JumpReadingSession());
 	const [directImage, setDirectImage] = useState<
 		| {
 				chapterId: string;
@@ -535,20 +540,18 @@ function Reader({
 		ordinal: number;
 		requestId: number;
 	}>();
-	const navigation = useRef(new ReaderNavigation(jumpReading.current));
-	const [navigationState, setNavigationState] = useState(
-		navigation.current.state,
-	);
+	const [navigation] = useState(() => new ReaderNavigation(jumpReading));
+	const [navigationState, setNavigationState] = useState(navigation.state);
 	const {
 		origin,
 		error: navigationError,
 		busy: chapterSwitchBusy,
 	} = navigationState;
 	const invalidateNavigation = useCallback(() => {
-		navigation.current.invalidate();
+		navigation.invalidate();
 		setPendingSearchRecord(null);
 		setSearchOpenError(null);
-	}, []);
+	}, [navigation]);
 	const viewerEscape = useRef<(() => void) | null>(null);
 	const registerViewerEscape = useCallback((close: (() => void) | null) => {
 		viewerEscape.current = close;
@@ -574,10 +577,10 @@ function Reader({
 		navigationHighlight.current = new NavigationHighlightLifetime(
 			() => {
 				highlight.current = null;
-				frames.current.clearSearchHighlights();
+				frames.clearSearchHighlights();
 			},
 			undefined,
-			{ opacity: (value) => frames.current.setSearchHighlightOpacity(value) },
+			{ opacity: (value) => frames.setSearchHighlightOpacity(value) },
 		);
 	}
 	useLayoutEffect(() => {
@@ -647,15 +650,15 @@ function Reader({
 				dictionary.current?.close();
 			}
 			records.panelSelected(next);
-			jumpReading.current.pause();
+			jumpReading.pause();
 			invalidateNavigation();
-			navigation.current.dismissError();
+			navigation.dismissError();
 			setPanels((current) =>
 				selectReaderPanel(current, next, toggle, latest.current.compactPanels),
 			);
 			controller.current?.show();
 		},
-		[invalidateNavigation, records],
+		[invalidateNavigation, records, jumpReading, navigation],
 	);
 	const closePanel = useCallback(
 		(side?: ReaderPanelSide, invalidate = true) => {
@@ -668,14 +671,14 @@ function Reader({
 			)
 				setTranslationOpen(false);
 			records.panelClosed(side);
-			jumpReading.current.pause();
+			jumpReading.pause();
 			if (invalidate) invalidateNavigation();
 			setPanels((current) =>
 				side ? closeReaderPanel(current, side) : EMPTY_READER_PANELS,
 			);
 			controller.current?.show();
 		},
-		[invalidateNavigation, records],
+		[invalidateNavigation, records, jumpReading],
 	);
 	useEffect(() => {
 		const escapeViewer = (event: KeyboardEvent) => {
@@ -792,13 +795,20 @@ function Reader({
 			},
 		});
 		controller.current = focus;
-		for (const frame of frames.current.values())
+		for (const frame of frames.values())
 			focus.bindFrame(frame.doc, frame.element);
 		return () => {
 			focus.dispose();
 			controller.current = null;
 		};
-	}, [active, closePanel, records, dismissReadingBackground, setUiPreference]);
+	}, [
+		active,
+		closePanel,
+		records,
+		dismissReadingBackground,
+		setUiPreference,
+		frames,
+	]);
 	useEffect(() => {
 		controller.current?.setFocus(ui.focus);
 	}, [ui.focus]);
@@ -827,6 +837,35 @@ function Reader({
 		staleTime: Number.POSITIVE_INFINITY,
 		enabled: active && !!chapterId,
 	});
+	const documents = useMemo(() => {
+		const data = chapter.data;
+		if (!data) return [];
+		const resources = new Map(
+			data.resources.map((resource) => [resource.id, resource]),
+		);
+		return data.parts.flatMap((part, index) => {
+			const resource = resources.get(part.resource_id);
+			return resource
+				? [
+						{
+							index,
+							key: `${data.id}-${part.spine_index}-${part.resource_id}-${part.start}`,
+							title: `${data.title} ${index + 1}`,
+							srcDoc: partDocument(part, resource, defaults),
+							register: (element: HTMLIFrameElement | null) =>
+								frames.register(index, element),
+						},
+					]
+				: [];
+		});
+	}, [chapter.data, frames]);
+	const progressAt = useMemo(
+		() =>
+			chapter.data
+				? prepareChapterProgress(chapter.data.parts, chapter.data.resources)
+				: null,
+		[chapter.data],
+	);
 	const marks = useChapterStudyMarks(
 		book.id,
 		book.version_id,
@@ -873,21 +912,22 @@ function Reader({
 	const viewportReady =
 		chapter.isSuccess && (bookUi.rubyScope !== "all" || readings.isSuccess);
 	const container = useRef<HTMLElement>(null);
-	const presentation = useRef(
-		new ReaderPresentation(presentationState, initialAnchor, {
-			frames: frames.current,
-			navigation: navigation.current,
-			reading: jumpReading.current,
-			writer: () => queue.current,
-			changed: setPresentationState,
-		}),
+	const [presentation] = useState(
+		() =>
+			new ReaderPresentation(presentationState, initialAnchor, {
+				frames,
+				navigation,
+				reading: jumpReading,
+				writer: () => queue.current,
+				changed: setPresentationState,
+			}),
 	);
 	const alive = useRef(true);
 	const inlineMutation = useRef(false);
 	useLayoutEffect(() => {
-		presentation.current.setActive(active, discard.current);
-		return () => presentation.current.setActive(false, discard.current);
-	}, [active, discard]);
+		presentation.setActive(active, discard.current);
+		return () => presentation.setActive(false, discard.current);
+	}, [active, discard, presentation]);
 	const recordStatus = {
 		segment: chapterRecordStatus(active, marks),
 		translation: chapterRecordStatus(active, chapterTranslations),
@@ -950,7 +990,7 @@ function Reader({
 	);
 	const closeMarkHit = useCallback(() => records.closePreview(), [records]);
 	useLayoutEffect(() => {
-		frames.current.bindStudy({
+		frames.bindStudy({
 			materialId: book.id,
 			versionId: book.version_id,
 			chapterId,
@@ -986,7 +1026,7 @@ function Reader({
 	const visibleHitItems = hitRecords.segments;
 	const forgetTranslation = useCallback<TranslationRemoved>(
 		(removed, reference) => {
-			selectedTranslations.current.forget(removed.identity_sha256);
+			selectedTranslations.forget(removed.identity_sha256);
 			records.translationRemoved(removed.identity_sha256);
 			if (
 				latest.current.translationTarget &&
@@ -1002,7 +1042,7 @@ function Reader({
 				);
 			}
 		},
-		[records],
+		[records, selectedTranslations],
 	);
 	const inlineResult = useQuery({
 		queryKey: ["translation-result", inlineRequest?.item.result_id],
@@ -1117,29 +1157,28 @@ function Reader({
 			(value) => value.chapter_id,
 		);
 	positionWriter.current = queue.current;
-	const chapterContentEnd = useCallback((vertical: boolean) => {
-		let end: number | null = null;
-		for (const frame of frames.current.values()) {
-			if (frame.contentEnd === null) continue;
-			const rect = frame.element.getBoundingClientRect();
-			const value = (vertical ? rect.left : rect.top) + frame.contentEnd;
-			end =
-				end === null
-					? value
-					: vertical
-						? Math.min(end, value)
-						: Math.max(end, value);
-		}
-		return end;
-	}, []);
+	const chapterContentEnd = useCallback(
+		(vertical: boolean) => {
+			let end: number | null = null;
+			for (const frame of frames.values()) {
+				if (frame.contentEnd === null) continue;
+				const rect = frame.element.getBoundingClientRect();
+				const value = (vertical ? rect.left : rect.top) + frame.contentEnd;
+				end =
+					end === null
+						? value
+						: vertical
+							? Math.min(end, value)
+							: Math.max(end, value);
+			}
+			return end;
+		},
+		[frames],
+	);
 	const capture = useCallback((): Position | null => {
 		const root = container.current;
-		if (!activeRef.current || frames.current.inlineMotionRunning) return null;
-		if (
-			!root ||
-			!chapter.data ||
-			!presentation.current.canSample(viewportSize(root))
-		)
+		if (!activeRef.current || frames.inlineMotionRunning) return null;
+		if (!root || !chapter.data || !presentation.canSample(viewportSize(root)))
 			return null;
 		const vertical = settings.writing_mode === "vertical-rl";
 		const viewport = readingViewport(root, getComputedStyle(root));
@@ -1150,7 +1189,7 @@ function Reader({
 			vertical,
 		);
 		let best: { index: number; frame: Frame; distance: number } | undefined;
-		for (const [index, frame] of frames.current) {
+		for (const [index, frame] of frames) {
 			const rect = frame.element.getBoundingClientRect();
 			const distance = readingFrameDistance(
 				rect,
@@ -1215,7 +1254,15 @@ function Reader({
 				image_progress: 0,
 			};
 		return null;
-	}, [book.version_id, chapterId, chapter.data, settings, chapterContentEnd]);
+	}, [
+		book.version_id,
+		chapterId,
+		chapter.data,
+		settings,
+		chapterContentEnd,
+		frames,
+		presentation,
+	]);
 	const sampleJumpReading = useCallback(() => {
 		const root = container.current;
 		if (
@@ -1223,21 +1270,21 @@ function Reader({
 			!root ||
 			document.hidden ||
 			!document.hasFocus() ||
-			navigation.current.state.returning ||
-			!presentation.current.canSample(viewportSize(root))
+			navigation.state.returning ||
+			!presentation.canSample(viewportSize(root))
 		) {
-			jumpReading.current.pause();
+			jumpReading.pause();
 			return false;
 		}
 		const vertical = latest.current.settings.writing_mode === "vertical-rl";
 		const view = readingViewport(root, getComputedStyle(root));
-		jumpReading.current.sample(
+		jumpReading.sample(
 			vertical ? -root.scrollLeft : root.scrollTop,
 			vertical ? view.width : view.height,
 			performance.now(),
 		);
 		return true;
-	}, []);
+	}, [jumpReading, navigation, presentation]);
 	const recordReadingInput = useCallback(
 		(event: Event) => {
 			if (!activeRef.current || !event.isTrusted || event.defaultPrevented)
@@ -1249,12 +1296,12 @@ function Reader({
 				!isReaderFrameTarget(target.ownerDocument, target)
 			)
 				return;
-			frames.current.finishInlineMotion();
+			frames.finishInlineMotion();
 			// Sample before granting input so a prior programmatic move cannot count.
 			navigationHighlight.current?.clear();
-			if (sampleJumpReading()) jumpReading.current.input(performance.now());
+			if (sampleJumpReading()) jumpReading.input(performance.now());
 		},
-		[sampleJumpReading],
+		[sampleJumpReading, frames, jumpReading],
 	);
 	const readWheel = useCallback(
 		(event: WheelEvent, outside = false) => {
@@ -1295,35 +1342,37 @@ function Reader({
 		return () => root.removeEventListener("wheel", wheel);
 	}, [readWheel]);
 	useEffect(() => {
-		const pause = () => jumpReading.current.pause();
+		const pause = () => jumpReading.pause();
 		document.addEventListener("visibilitychange", pause);
 		window.addEventListener("blur", pause);
 		return () => {
 			document.removeEventListener("visibilitychange", pause);
 			window.removeEventListener("blur", pause);
 		};
-	}, []);
+	}, [jumpReading]);
 	const observe = useCallback(() => {
 		const root = container.current;
-		if (!activeRef.current || !root || frames.current.inlineMotionRunning)
-			return;
-		const anchor = presentation.current.observe(viewportSize(root), capture);
-		if (anchor && chapter.data) {
+		if (!activeRef.current || !root || frames.inlineMotionRunning) return;
+		const anchor = presentation.observe(viewportSize(root), capture);
+		if (anchor && progressAt) {
 			sampleJumpReading();
-			const value = chapterProgress(
-				chapter.data.parts,
-				chapter.data.resources,
+			const value = progressAt(
 				anchor,
-				frames.current
-					.get(anchor.part_index)
-					?.imageOffsets.get(anchor.image_id ?? -1),
+				frames.get(anchor.part_index)?.imageOffsets.get(anchor.image_id ?? -1),
 			);
 			setProgress(value);
 			setChapterPositions((previous) =>
 				new Map(previous).set(anchor.chapter_id, { anchor, progress: value }),
 			);
-		} else jumpReading.current.pause();
-	}, [capture, chapter.data, sampleJumpReading]);
+		} else jumpReading.pause();
+	}, [
+		capture,
+		sampleJumpReading,
+		frames,
+		jumpReading,
+		progressAt,
+		presentation,
+	]);
 	const restore = useCallback(
 		(
 			anchor: Position | null,
@@ -1334,7 +1383,7 @@ function Reader({
 			if (!activeRef.current || !root || !data) return false;
 			if (highlight.current?.chapterId === chapterId) {
 				try {
-					frames.current.highlight(data, highlight.current.ranges);
+					frames.highlight(data, highlight.current.ranges);
 					setOriginError(null);
 				} catch (failure) {
 					setOriginError(
@@ -1343,7 +1392,7 @@ function Reader({
 					return false;
 				}
 			}
-			jumpReading.current.pause();
+			jumpReading.pause();
 			let located = false;
 			const vertical = settings.writing_mode === "vertical-rl";
 			// Margin markers can retain the previous layout's overflow until React
@@ -1357,7 +1406,7 @@ function Reader({
 				root.scrollTop = 0;
 				located = true;
 			} else if (anchor && anchor.chapter_id === chapterId) {
-				const frame = frames.current.get(anchor.part_index);
+				const frame = frames.get(anchor.part_index);
 				const part = data.parts[anchor.part_index];
 				if (frame && part && part.resource_id === anchor.resource_id) {
 					let rect: DOMRect | null = null;
@@ -1440,7 +1489,7 @@ function Reader({
 					setPresented(true);
 					if (located && highlight.current)
 						navigationHighlight.current?.presented();
-					frames.current.refreshStudyGeometry();
+					frames.refreshStudyGeometry();
 					if (!inlineMutation.current) observe();
 				},
 			};
@@ -1452,11 +1501,13 @@ function Reader({
 			settings.font_size,
 			observe,
 			chapterContentEnd,
+			frames,
+			jumpReading,
 		],
 	);
 	const reflowFrames = useCallback(() => {
-		if (activeRef.current) presentation.current.reflow();
-	}, []);
+		if (activeRef.current) presentation.reflow();
+	}, [presentation]);
 	const mutateInlineLayout = useCallback(
 		(update: () => void) => {
 			const root = container.current;
@@ -1466,11 +1517,11 @@ function Reader({
 				update();
 				return;
 			}
-			frames.current.preserveStudyPreviewDuringLayout(() => {
+			frames.preserveStudyPreviewDuringLayout(() => {
 				const anchor = capture();
 				const screenTop = () => {
 					if (!anchor) return null;
-					const frame = frames.current.get(anchor.part_index);
+					const frame = frames.get(anchor.part_index);
 					const part = data.parts[anchor.part_index];
 					if (!frame || !part) return null;
 					const rect =
@@ -1491,11 +1542,11 @@ function Reader({
 						: null;
 				};
 				const before = screenTop();
-				jumpReading.current.pause();
+				jumpReading.pause();
 				let applied = false;
 				inlineMutation.current = true;
 				try {
-					presentation.current.reflow(
+					presentation.reflow(
 						() => {
 							applied = true;
 							update();
@@ -1515,23 +1566,23 @@ function Reader({
 				observe();
 			});
 		},
-		[capture, chapter.data, observe],
+		[capture, chapter.data, observe, frames, jumpReading, presentation],
 	);
 	useEffect(() => {
 		alive.current = true;
-		presentation.current.mount();
+		presentation.mount();
 		const unregister = queue.current
 			? registerPositionWriter(book.id, queue.current)
 			: () => {};
 		return () => {
 			alive.current = false;
-			presentation.current.unmount(discard.current);
+			presentation.unmount(discard.current);
 			unregister();
 		};
-	}, [book.id, discard]);
+	}, [book.id, discard, presentation]);
 	const load = (index: number, element: HTMLIFrameElement, token: number) => {
 		if (!chapter.data) return;
-		presentation.current.load(index, element, token, {
+		presentation.load(index, element, token, {
 			chapter: chapter.data,
 			readingGeneration,
 			readings: () => client.getQueryData<ReadingsResponse>(chapterReadingsKey),
@@ -1543,7 +1594,7 @@ function Reader({
 			touch: recordReadingInput,
 			interaction: recordReadingInput,
 			image: (partIndex, imageId, source) => {
-				jumpReading.current.pause();
+				jumpReading.pause();
 				invalidateNavigation();
 				controller.current?.show();
 				setDirectImage({
@@ -1572,13 +1623,13 @@ function Reader({
 		const resize = () => {
 			if (!activeRef.current || root !== container.current || !alive.current)
 				return;
-			frames.current.finishInlineMotion();
+			frames.finishInlineMotion();
 			setTranslationAnchor(null);
 			const width = root.clientWidth,
 				height = root.clientHeight;
-			frames.current.invalidateStudyGeometry();
+			frames.invalidateStudyGeometry();
 			if (width === lastWidth && height === lastHeight) {
-				frames.current.refreshStudyGeometry();
+				frames.refreshStudyGeometry();
 				return;
 			}
 			lastWidth = width;
@@ -1595,7 +1646,7 @@ function Reader({
 	}, [active, reflowFrames, generation, viewportReady]);
 	useLayoutEffect(() => {
 		if (!active) return;
-		navigation.current.bind({
+		navigation.bind({
 			versionId: book.version_id,
 			chapterId,
 			chapters: book.chapters,
@@ -1605,16 +1656,14 @@ function Reader({
 				chapter.isError ||
 				(bookUi.rubyScope === "all" && readings.isError),
 			remembered: (id) => chapterPositions.get(id)?.anchor,
-			presentedAnchor: () => presentation.current.presentedAnchor(capture),
+			presentedAnchor: () => presentation.presentedAnchor(capture),
 			progressFor: (anchor) => {
 				const data = chapter.data;
-				if (data?.id !== anchor.chapter_id)
+				if (!progressAt || data?.id !== anchor.chapter_id)
 					return chapterPositions.get(anchor.chapter_id)?.progress ?? null;
-				return chapterProgress(
-					data.parts,
-					data.resources,
+				return progressAt(
 					anchor,
-					frames.current
+					frames
 						.get(anchor.part_index)
 						?.imageOffsets.get(anchor.image_id ?? -1),
 				);
@@ -1632,7 +1681,7 @@ function Reader({
 			},
 			present: (destination, complete) => {
 				if (!destination) {
-					presentation.current.present(null, complete, capture);
+					presentation.present(null, complete, capture);
 					return;
 				}
 				const { target, mark, part: targetPart, highlightRanges } = destination;
@@ -1656,8 +1705,8 @@ function Reader({
 				if (highlight.current) navigationHighlight.current?.replace();
 				else navigationHighlight.current?.clear(true);
 				setOriginError(null);
-				const previousChapter = presentation.current.state.chapterId;
-				presentation.current.present(destination, complete, capture);
+				const previousChapter = presentation.state.chapterId;
+				presentation.present(destination, complete, capture);
 				if (previousChapter !== target.chapter_id) setProgress(null);
 			},
 			closePanels: (side) => closePanel(side, false),
@@ -1734,14 +1783,16 @@ function Reader({
 	}, [active, readKey]);
 	const [rubyPreparing, setRubyPreparing] = useState(false);
 	const [rubyError, setRubyError] = useState<Error | null>(null);
-	const preferenceSubmission = useRef(new ReaderPreferenceSubmission());
+	const [preferenceSubmission] = useState(
+		() => new ReaderPreferenceSubmission(),
+	);
 	const change = (next: Settings) => {
 		setTranslationAnchor(null);
-		presentation.current.change(next, capture);
+		presentation.change(next, capture);
 	};
 	useLayoutEffect(() => {
 		if (!active) return;
-		preferenceSubmission.current.bind({
+		preferenceSubmission.bind({
 			chapter: chapterId,
 			current: bookUi,
 			readingsReady: readings.isSuccess,
@@ -1769,9 +1820,12 @@ function Reader({
 			},
 		});
 	});
-	useLayoutEffect(() => () => preferenceSubmission.current.suspend(), []);
+	useLayoutEffect(
+		() => () => preferenceSubmission.suspend(),
+		[preferenceSubmission],
+	);
 	const changeBookUi = (next: BookUiPreferences) =>
-		preferenceSubmission.current.submit(next);
+		preferenceSubmission.submit(next);
 	useLayoutEffect(() => {
 		if (!active || !viewportReady) return;
 		const root = container.current;
@@ -1779,7 +1833,7 @@ function Reader({
 		if (!root || !data) return;
 
 		try {
-			presentation.current.commit(
+			presentation.commit(
 				{
 					state: presentationState,
 					chapter: data,
@@ -1806,6 +1860,7 @@ function Reader({
 		readings.data,
 		capture,
 		restore,
+		presentation,
 	]);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: the record module reads these committed content and visibility values through current().
 	useLayoutEffect(() => {
@@ -1836,9 +1891,9 @@ function Reader({
 	]);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: wait for React to commit the updated margin coordinates.
 	useLayoutEffect(() => {
-		if (active) frames.current.inlineMarginsChanged();
+		if (active) frames.inlineMarginsChanged();
 	}, [active, marginEntries]);
-	const leave = () => presentation.current.checkpoint(capture);
+	const leave = () => presentation.checkpoint(capture);
 
 	const openStudySegment = (
 		id: string,
@@ -1861,7 +1916,7 @@ function Reader({
 	useLayoutEffect(() => {
 		if (!active || !chapter.data || !viewportReady) return;
 		try {
-			frames.current.setStudyMarks(
+			frames.setStudyMarks(
 				chapter.data,
 				recordMarks,
 				ui.marks.studySegmentUnderlines,
@@ -1893,14 +1948,14 @@ function Reader({
 		if (active) return;
 		navigationHighlight.current?.clear(true);
 		navigationHighlight.current?.dispose();
-		preferenceSubmission.current.suspend();
-	}, [active]);
+		preferenceSubmission.suspend();
+	}, [active, preferenceSubmission]);
 	const previousSession = useRef(sessionToken);
 	useEffect(() => {
 		if (!active || previousSession.current === sessionToken) return;
 		previousSession.current = sessionToken;
 		if (initialVocabulary) {
-			void navigation.current.navigate({
+			void navigation.navigate({
 				type: "position",
 				target: vocabularyReaderPosition(
 					initialVocabulary,
@@ -1911,12 +1966,12 @@ function Reader({
 			return;
 		}
 		if (!initialOrigin) return;
-		void navigation.current.navigate({
+		void navigation.navigate({
 			type: "position",
 			target: originPosition(initialOrigin, latest.current.settings),
 			highlightRanges: initialOrigin.material_provenance?.ranges,
 		});
-	}, [active, sessionToken, initialOrigin, initialVocabulary]);
+	}, [active, sessionToken, initialOrigin, initialVocabulary, navigation]);
 
 	const locateRecordOrigin = (
 		reference: MaterialProvenance,
@@ -1935,7 +1990,7 @@ function Reader({
 			setSelectionError(null);
 			closeMarkHit();
 			setTranslationOpen(false);
-			void navigation.current.navigate({
+			void navigation.navigate({
 				type: "position",
 				target,
 				highlightRanges: reference.ranges,
@@ -1972,7 +2027,7 @@ function Reader({
 		setSearchTranslationId(null);
 		if (hit.kind === "original") {
 			const item = hit.item;
-			const success = await navigation.current.navigate({
+			const success = await navigation.navigate({
 				type: "position",
 				target: {
 					version_id: book.version_id,
@@ -1991,7 +2046,7 @@ function Reader({
 			return;
 		}
 		const item = hit.item;
-		const navigationCurrent = navigation.current.currentRequest();
+		const navigationCurrent = navigation.currentRequest();
 		const bookmark = item.bookmark_id
 			? await client.fetchQuery({
 					queryKey: bookmarkKeys.item(book.id, item.bookmark_id),
@@ -2019,7 +2074,7 @@ function Reader({
 			}
 			throw new Error("该记录的原文位置已不可用，无法在阅读器中打开");
 		}
-		const success = await navigation.current.navigate({
+		const success = await navigation.navigate({
 			type: "position",
 			target: {
 				...(bookmark?.position ?? item.position),
@@ -2049,7 +2104,7 @@ function Reader({
 			setPendingSearchRecord({
 				chapterId: item.chapter_id ?? null,
 				target,
-				current: navigation.current.currentRequest(),
+				current: navigation.currentRequest(),
 			});
 		}
 		if (latest.current.compactPanels) closePanel("left", false);
@@ -2248,7 +2303,7 @@ function Reader({
 						onClick={() => {
 							setError(null);
 							setOriginError(null);
-							presentation.current.retry();
+							presentation.retry();
 						}}
 					>
 						重试精确定位
@@ -2260,10 +2315,7 @@ function Reader({
 					</button>
 				)}
 				{navigationError && (
-					<button
-						type="button"
-						onClick={() => navigation.current.dismissError()}
-					>
+					<button type="button" onClick={() => navigation.dismissError()}>
 						关闭定位提示
 					</button>
 				)}
@@ -2319,24 +2371,17 @@ function Reader({
 					className={`material-reading reader-viewport ${settings.writing_mode === "vertical-rl" ? "material-vertical" : ""}`}
 					aria-label={chapter.data.title}
 				>
-					{chapter.data.parts.map((part, index) => {
-						const resource = chapter.data.resources.find(
-							(r) => r.id === part.resource_id,
-						);
-						return resource ? (
-							<iframe
-								key={`${chapterId}-${part.spine_index}-${part.resource_id}-${part.start}`}
-								title={`${chapter.data.title} ${index + 1}`}
-								className="material-part"
-								sandbox="allow-same-origin"
-								srcDoc={partDocument(part, resource, defaults)}
-								ref={(element) => {
-									frames.current.register(index, element);
-								}}
-								onLoad={(e) => load(index, e.currentTarget, renderToken)}
-							/>
-						) : null;
-					})}
+					{documents.map(({ index, key, title, srcDoc, register }) => (
+						<iframe
+							key={key}
+							title={title}
+							className="material-part"
+							sandbox="allow-same-origin"
+							srcDoc={srcDoc}
+							ref={register}
+							onLoad={(event) => load(index, event.currentTarget, renderToken)}
+						/>
+					))}
 					{ui.marks.studySegmentMargins &&
 						!studyTarget &&
 						!translationOpen &&
@@ -2428,9 +2473,7 @@ function Reader({
 							className="reader-return-origin"
 							aria-label={returnLabel}
 							data-tooltip={returnLabel}
-							onClick={() =>
-								void navigation.current.navigate({ type: "return" })
-							}
+							onClick={() => void navigation.navigate({ type: "return" })}
 						>
 							↶
 						</button>
@@ -2450,7 +2493,7 @@ function Reader({
 							}
 							disabled={!adjacent.previous || chapterSwitchDisabled}
 							onClick={() =>
-								void navigation.current.navigate({
+								void navigation.navigate({
 									type: "adjacent",
 									direction: "previous",
 								})
@@ -2480,7 +2523,7 @@ function Reader({
 							}
 							disabled={!adjacent.next || chapterSwitchDisabled}
 							onClick={() =>
-								void navigation.current.navigate({
+								void navigation.navigate({
 									type: "adjacent",
 									direction: "next",
 								})
@@ -2506,10 +2549,10 @@ function Reader({
 						disabled={bookmarks.busy || chapterSwitchBusy || !presented}
 						onClick={() =>
 							bookmarks.add(() => {
-								if (navigation.current.state.busy) return null;
+								if (navigation.state.busy) return null;
 								const sampled = capture();
 								return sampled
-									? presentation.current.presentedAnchor(() => sampled)
+									? presentation.presentedAnchor(() => sampled)
 									: null;
 							})
 						}
@@ -2620,9 +2663,9 @@ function Reader({
 						}
 						expanded={panels.right === "study"}
 						onExpand={() => {
-							jumpReading.current.pause();
+							jumpReading.pause();
 							invalidateNavigation();
-							navigation.current.dismissError();
+							navigation.dismissError();
 							setPanels((current) => selectReaderPanel(current, "study"));
 							controller.current?.show();
 						}}
@@ -2663,7 +2706,7 @@ function Reader({
 					translationsReady={
 						!chapterTranslations.loading && !chapterTranslations.isError
 					}
-					preferredResultId={selectedTranslations.current.matching(
+					preferredResultId={selectedTranslations.matching(
 						studyTarget.reference,
 					)}
 					sourceId={book.source_id}
@@ -2672,7 +2715,7 @@ function Reader({
 					onSaved={(segment: Segment, kind) => {
 						setStudyTarget(null);
 						records.clearToolbar();
-						frames.current.clearStudySelection();
+						frames.clearStudySelection();
 						setSavedNotice({ id: segment.id, kind, serial: Date.now() });
 						void client.invalidateQueries({
 							queryKey: ["material-chapter-segments", book.id],
@@ -2693,10 +2736,10 @@ function Reader({
 							if (
 								!chapter.data ||
 								!container.current ||
-								!presentation.current.canSample(viewportSize(container.current))
+								!presentation.canSample(viewportSize(container.current))
 							)
 								throw new Error("正文仍在准备，请重新选择。");
-							const target = frames.current.captureStudyTarget(
+							const reference = frames.captureStudyReference(
 								book.id,
 								book.version_id,
 								chapter.data,
@@ -2716,7 +2759,7 @@ function Reader({
 							setCopySettingsError(null);
 							const content = buildContextCopy(
 								chapter.data,
-								target.reference,
+								reference,
 								savedCopySettings,
 								book.title,
 							);
@@ -2733,15 +2776,15 @@ function Reader({
 							if (
 								!chapter.data ||
 								!container.current ||
-								!presentation.current.canSample(viewportSize(container.current))
+								!presentation.canSample(viewportSize(container.current))
 							)
 								throw new Error("正文仍在准备，请重新选择。");
-							const target = frames.current.captureStudyTarget(
+							const target = frames.captureStudyTarget(
 								book.id,
 								book.version_id,
 								chapter.data,
 							);
-							setTranslationTarget(structuredClone(target));
+							setTranslationTarget(target);
 							void translationSessions
 								.forTarget(book.source_id, target)
 								.open({ kind: "selection", newSelection: true });
@@ -2761,14 +2804,14 @@ function Reader({
 					onSpeak={() => {
 						try {
 							if (!chapter.data) throw new Error("正文仍在准备，请重新选择。");
-							const target = frames.current.captureStudyTarget(
+							const reference = frames.captureStudyReference(
 								book.id,
 								book.version_id,
 								chapter.data,
 							);
 							getSpeechController().play({
-								id: translationTargetKey(target.reference),
-								text: targetText(target.reference),
+								id: translationTargetKey(reference),
+								text: targetText(reference),
 								label: "阅读选区",
 							});
 							records.clearToolbar();
@@ -2784,12 +2827,12 @@ function Reader({
 							if (
 								!chapter.data ||
 								!container.current ||
-								!presentation.current.canSample(viewportSize(container.current))
+								!presentation.canSample(viewportSize(container.current))
 							)
 								throw new Error("正文仍在准备，请重新选择。");
 							setTranslationOpen(false);
 							setStudyTarget(
-								frames.current.captureStudyTarget(
+								frames.captureStudyTarget(
 									book.id,
 									book.version_id,
 									chapter.data,
@@ -2865,9 +2908,9 @@ function Reader({
 								panels.activeSide !== "right")
 						}
 						onExpand={() => {
-							jumpReading.current.pause();
+							jumpReading.pause();
 							invalidateNavigation();
-							navigation.current.dismissError();
+							navigation.dismissError();
 							setPanels((current) => selectReaderPanel(current, "study"));
 							controller.current?.show();
 						}}
@@ -2971,7 +3014,7 @@ function Reader({
 					tab={leftView.value}
 					onTab={(tab) => selectPanel(tab)}
 					onChoose={(id) =>
-						void navigation.current.navigate({ type: "chapter", id }, "left")
+						void navigation.navigate({ type: "chapter", id }, "left")
 					}
 					settings={settings}
 					navigationError={navigationError}
@@ -2980,10 +3023,7 @@ function Reader({
 					}}
 					onClose={() => closePanel("left")}
 					onNavigate={(target, mark) =>
-						void navigation.current.navigate(
-							{ type: "position", target, mark },
-							"left",
-						)
+						void navigation.navigate({ type: "position", target, mark }, "left")
 					}
 				/>
 			)}
@@ -3020,7 +3060,7 @@ function Reader({
 						onNavigate={(target) => {
 							bookmarks.closeEditor();
 							setSearchBookmark(null);
-							void navigation.current.navigate({ type: "position", target });
+							void navigation.navigate({ type: "position", target });
 						}}
 					/>
 				)}
@@ -3053,10 +3093,7 @@ function Reader({
 					}}
 					onClose={() => closePanel("right")}
 					onNavigate={(target) =>
-						void navigation.current.navigate(
-							{ type: "position", target },
-							"right",
-						)
+						void navigation.navigate({ type: "position", target }, "right")
 					}
 				/>
 			)}
@@ -3081,7 +3118,7 @@ function Reader({
 						selectPanel("gallery");
 					}}
 					onNavigate={(target) => {
-						void navigation.current
+						void navigation
 							.navigate({ type: "position", target })
 							.then((success) => {
 								if (success) setDirectImage(undefined);
