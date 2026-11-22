@@ -1,0 +1,23 @@
+frontend/src/speech/index.tsx
+  s_0b944c41b4e85e::t_5720bb35e5d568 376
+frontend/browser-tests/reading-aids.tsx
+  s_0b944c41b4e85e::t_fb7d870f2ad459 576,587-593,611-619
+frontend/browser-tests/reader-speech-fixture.ts
+  s_0b944c41b4e85e::t_fb7d870f2ad459 5,34-37,56-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ffccf0e0bac2234583176d21b68c5954beaf9bb",
+  "prompts": {},
+  "sessions": {
+    "s_0b944c41b4e85e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20315-1094-7ae2-ba53-05e6bb5576b7",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
