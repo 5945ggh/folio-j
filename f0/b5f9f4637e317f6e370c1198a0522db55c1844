@@ -1,0 +1,47 @@
+frontend/browser-tests/reader-session.tsx
+  s_35e039331e61fb::t_47b83db5e5eb0d 957-960,985-1005,1013-1016
+  s_35e039331e61fb::t_535e235f895898 17,64,953-956
+frontend/browser-tests/reader-dictionary.tsx
+  s_35e039331e61fb::t_47b83db5e5eb0d 22,504-507,1126-1127,1129-1147
+  s_35e039331e61fb::t_648de81c492782 152-174,508-511,1100-1106,1128
+  s_35e039331e61fb::t_47d9006e86b3e1 186,501,503,1148
+frontend/src/materials/reader-frames.ts
+  s_35e039331e61fb::t_47b83db5e5eb0d 472-474
+  s_35e039331e61fb::t_9ee332cf13ae88 87,463-471,475,486-487,670
+frontend/src/materials/reader-frames.test.ts
+  s_35e039331e61fb::t_47b83db5e5eb0d 3,6,509-560
+  s_35e039331e61fb::t_e8e3eb1a59fb6c 561
+frontend/src/speech/index.tsx
+  s_35e039331e61fb::t_47b83db5e5eb0d 376-377
+  s_35e039331e61fb::t_f245c90d36fdef 120,261,265,488
+frontend/src/speech/controller.test.ts
+  s_35e039331e61fb::t_47b83db5e5eb0d 229-246
+  s_35e039331e61fb::t_62b78d47bb661a 92,217,220
+frontend/browser-tests/reading-aids.tsx
+  s_35e039331e61fb::t_fc71f282f90b6a 226
+  s_35e039331e61fb::t_af831d92f81b87 746,752,773-774
+frontend/browser-tests/reader-clipboard.ts
+  s_35e039331e61fb::t_a4deb7ef4282e9 102,231
+frontend/browser-tests/reader-speech-fixture.ts
+  s_35e039331e61fb::t_21aedb65a39421 62-63
+frontend/src/materials/MaterialReader.tsx
+  s_35e039331e61fb::t_352ff8d13641ab 61,276,854-859,861,1537,1750
+frontend/src/speech/controller.ts
+  s_35e039331e61fb::t_2f95ebc68d37e8 24,137,154,156,160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f0b5f9f4637e317f6e370c1198a0522db55c1844",
+  "prompts": {},
+  "sessions": {
+    "s_35e039331e61fb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20297-a7dc-7eb2-9c5e-636da9391a8f",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}

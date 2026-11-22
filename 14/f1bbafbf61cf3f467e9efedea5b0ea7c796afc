@@ -1,0 +1,36 @@
+frontend/browser-tests/translation.tsx
+  s_37b456df0c9eed::t_35c0b36339366a 887-890,943,1066
+  s_37b456df0c9eed::t_8de052b4ef4d5e 931,935,1054-1059
+  s_37b456df0c9eed::t_d9a2868e509cdc 886
+frontend/browser-tests/settings-models.tsx
+  s_37b456df0c9eed::t_8de052b4ef4d5e 497-501,506-509,511-515
+  s_37b456df0c9eed::t_35c0b36339366a 66,105-106,108,489,491
+frontend/src/settings/SegmentContextSettings.tsx
+  s_37b456df0c9eed::t_3c2f8002ad01b5 77
+frontend/src/settings/SettingsPage.tsx
+  s_37b456df0c9eed::t_d633b74d2f7196 43,47,167-172
+frontend/src/settings/context-copy-cache.ts
+  s_37b456df0c9eed::t_47bd00687b5992 3-6,10,17
+frontend/src/settings/segment-context-cache.ts
+  s_37b456df0c9eed::t_f80d1dd43e5a70 3,12
+frontend/src/settings/versioned-settings.ts
+  s_37b456df0c9eed::t_c4a342326deaa1 1-19
+frontend/src/translation/TranslationSettings.tsx
+  s_37b456df0c9eed::t_c063fd5c6ad123 10,180-181,183,185-186
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "14f1bbafbf61cf3f467e9efedea5b0ea7c796afc",
+  "prompts": {},
+  "sessions": {
+    "s_37b456df0c9eed": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20297-a23f-7293-bbda-d2d383ce3f90",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
