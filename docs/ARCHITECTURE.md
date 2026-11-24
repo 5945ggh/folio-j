@@ -67,7 +67,7 @@ flowchart LR
 
 Source、Material、Segment 使用 `deleted_at` 逻辑删除；删除来源在同一写事务中标记来源、所属材料及学习内容，并清理全部下属材料的托管副本与派生阅读数据，具体范围见第 3.1 节。独立材料删除保留 Material 身份墓碑并清理其托管副本及派生阅读数据，默认保留学习积累。显式选择一并删除时，同事务处理精确关联片段及其讲解、讨论和任务，具体规则见第 3.1 节。独立翻译任务按第 4.8 节撤销。接受问答、成功保存持久讲解或建立精确材料出处时，在对应短写事务中首次设置 `text_locked_at`；共同保护函数不提交事务、不递增片段记录 revision，也不重写已有锁定时间。原文编辑、来源／片段删除共用事务校验边界。
 
-数据库生命周期由应用 lifespan 管理。`0001_schema_baseline` 以固定 Alembic DDL 建立原有 28 张业务表，包括材料软删除与活跃材料部分唯一索引、精确出处、语境设置及翻译表；`0002_context_copy_settings` 新增独立复制设置表，`0003_material_bookmarks` 新增位置书签表，`0004_translation_reader_removal` 为翻译任务新增可空的阅读移除时间，当前 head 共 30 张业务表。空库顺序执行四份脚本，既有基线库只执行新增脚本；版本脚本不导入运行时 ORM，也不调用自动建表。旧开发阶段的回填、批量重建及中间 revision 已移除，历史编号与当时的数据保护事实保留在阶段验收中。
+数据库生命周期由应用 lifespan 管理。`0001_schema_baseline` 以固定 Alembic DDL 建立原有 28 张业务表，包括材料软删除与活跃材料部分唯一索引、精确出处、语境设置及翻译表；`0002_context_copy_settings` 新增独立复制设置表，`0003_material_bookmarks` 新增位置书签表，`0004_translation_reader_removal` 为翻译任务新增可空的阅读移除时间，随后 `0005_anki_settings` 新增 Anki 连接设置和个人导出配置表，当前 head 共 32 张业务表。空库顺序执行五份脚本，既有基线库只执行新增脚本；版本脚本不导入运行时 ORM，也不调用自动建表。旧开发阶段的回填、批量重建及中间 revision 已移除，历史编号与当时的数据保护事实保留在阶段验收中。
 
 迁移与应用读取同一配置的数据库路径，连接始终启用外键。迁移使用显式 `BEGIN IMMEDIATE` 与事务性 DDL，提交前执行全库 `foreign_key_check`；执行或校验失败会回滚 DDL、数据及版本记录。初始基线支持显式完整降级到 base，该操作删除全部应用表，包含自引用历史的降级回归已通过。`just dev`／`just start` 先执行迁移，不自动删库或修改版本标签。需保留日常数据或发布第一版后继续维护增量升级路径；旧开发库边界见[升级与备份](UPGRADING.md#当前迁移基线)，等价性及本机对齐证据见[迁移基线验收](handovers/archived/DATABASE_MIGRATION_ACCEPTANCE.md)。
 
@@ -697,6 +697,19 @@ C1 出处契约版本为 `1`，组装规则为 `concat-nfc-v1`；最多 64 段�
 `stale_text`、`stale_revision`、`idempotency_conflict` 返回 409，目标不可见返回 404 `not_found`，新请求无正文变化返回 422 `no_changes`；格式校验继续使用既有安全 422 响应。人工编辑不保留新旧块身份映射，旧 Revision／Section 不改写。响应不确定时重复提交冻结的同一请求即可核实，不新增任务或查询协议。
 
 Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未来资源方向；尚无`/occurrences`或`/runs/{id}/events`路由。其字段、组合操作和恢复机制须在对应切片确定，不从本节草图推定交付。
+
+### Anki 单向导出接口
+
+| 操作 | 接口及其副作用 |
+|---|---|
+| 离线设置 | `/api/settings/anki/connection` 读取／保存服务地址和私有密钥。GET 仅返回地址、是否配置密钥及设置 revision。更改地址时不会把旧密钥带往新目标。`/api/settings/anki/configurations` 支持个人配置的列表、创建、读取、更新和删除。允许暂不选卡组或笔记类型。 |
+| 可复用的配置 | `GET /api/anki/builtins` 离线返回内置类型及其模板、CSS 和独立的导出配置。个人配置按字段 ID 保存有序定义、取值来源及可空映射，不接受草稿值或附件。已选的外部目标绑定连接地址和 Anki profile。 |
+| 连接和选择目标 | `POST /api/anki/probe` 可测试尚未保存的连接设置，检查活动集合和基本文字导出能力。`GET /api/anki/catalog` 返回当前普通卡组、笔记类型和所处集合。`POST /api/anki/note-type-fields` 返回所选类型的字段及卡片模板名。外部 ID 在公开接口中使用十进制字符串。 |
+| 核对与发送 | `POST /api/anki/builtin-check` 按类型身份、版本及字段／模板判定是否存在且兼容。`POST /api/anki/export` 接收预期地址、profile、选定目标、字段映射及本次值。缺少内置类型时返回 `installation_required`，调用方经用户确认后显式设置 `install_builtin`。同名异构不覆盖。Anki 判定重复时返回 `duplicate`，只有显式 `allow_duplicate` 才允许本次重复。 |
+
+发送前校验实际目标、有效映射、必填值与已映射附件。正文按普通文本转义。附件接收文件名及 base64 数据，支持 MP3、PNG、JPEG、MP4，单件 11 MiB，每次合计 24 MiB，JSON 请求体上限 40 MiB。媒体写入使用内容摘要命名，并采用 Anki 返回的文件名。导出回执以 `status` 判断结果，必要时附失败阶段、已上传文件和可能的媒体残留。笔记写入结果不明返回 `unknown`。已经确认创建但未取得卡片详情时保留 Note ID，`card_ids` 可为 null。应用不自动重发写入，草稿、媒体和回执都不写入业务库。
+
+后端只对明确的操作调用 AnkiConnect，先探测 v1，识别旧协议后可使用 legacy v6。v1 写入携带集合 session，v6 在写入前重查活动 profile 与目标身份。v6 的核对与写入是两个外部操作，不能提供原子会话保证。取材沿用既有章节片段与翻译目录，按命中的确切出处读取各版译文。公开请求与响应见[生成的 OpenAPI](../backend/openapi.json)，内置资源见[随包的模板和配置](../backend/src/app/anki_builtin_types.json)。
 
 ## 6. 前端结构
 

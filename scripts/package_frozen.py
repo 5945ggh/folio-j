@@ -141,6 +141,8 @@ def build(version: str, output: Path) -> dict[str, Any]:
             str(ROOT / "backend/src"),
             "--collect-submodules",
             "app",
+            "--collect-data",
+            "app",
             "--collect-submodules",
             "sqlalchemy.dialects.sqlite",
             "--collect-data",

@@ -8,6 +8,7 @@ from sqlalchemy import Connection
 
 from alembic import context
 from app import analysis_models as _analysis_models
+from app import anki_settings_models as _anki_settings_models
 from app import chat_models as _chat_models
 from app import context_copy_models as _context_copy_models
 from app import material_models as _material_models
@@ -21,6 +22,7 @@ from app.db import create_engine
 _ = (
     _translation_models,
     _analysis_models,
+    _anki_settings_models,
     _chat_models,
     _settings_models,
     _material_models,

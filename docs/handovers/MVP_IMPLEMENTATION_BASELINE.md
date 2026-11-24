@@ -10,6 +10,7 @@ beta.1 至 beta.3 的正式附件与各版实际验收范围统一见[发布记�
 
 | 能力 | 当前状态与边界 | 规范与验收入口 |
 | --- | --- | --- |
+| Anki 单向导出 | 2026-11-24 后端增量已实现离线配置、类型与字段核验、附件和单次发送。v1 与本机插件的 v6 兼容端点已在临时集合中完成实机读写。生产阅读器和设置界面待设计定稿 | [后端交接与验收](anki/BACKEND_ACCEPTANCE.md)、[架构契约](../ARCHITECTURE.md#anki-单向导出接口) |
 | 本地运行与发行 | 源码启动、备份恢复及数据位置选择已实现；跨程序更新记住学习库，记忆写入失败不阻断本次使用，损坏或失效位置进入恢复。PyInstaller 目录包仍为实验，不替代正式源码 ZIP；没有目录扫描或搬迁 | [使用指南](../USAGE.md)、[升级与备份](../UPGRADING.md)、[源码包验收](BETA_2_RELEASE_ACCEPTANCE.md)、[目录包试做](archived/PYINSTALLER_ACCEPTANCE.md)、[数据位置验收](archived/DATA_LOCATION_ACCEPTANCE.md) |
 | Windows 支持 | 实验性支持 PowerShell 源码运行与原生冻结包。已有源码 CI 和特定提交的冻结包构建、原目录及 ZIP 冒烟证据，Windows 11 实机与最新数据位置流程仍待复验 | [当前清单](WINDOWS_ACCEPTANCE.md)、[源码 CI](archived/WINDOWS_CI_ACCEPTANCE.md)、[冻结包验收](archived/WINDOWS_FROZEN_ACCEPTANCE.md) |
 | 来源、素材库与书籍管理 | Source／Segment 手动录入、语境与编辑；跨来源书籍目录及来源概览、素材、片段、讲解视图；书籍导入反馈、封面与元信息编辑、阅读状态和最近打开已实现。移动书籍、替换 EPUB 及其他媒体入口未开放 | [来源空间验收](archived/sources-s2/ACCEPTANCE.md)、[书籍管理验收](archived/book-management/ACCEPTANCE.md)、[导入反馈](archived/EPUB_IMPORT_FEEDBACK_ACCEPTANCE.md) |

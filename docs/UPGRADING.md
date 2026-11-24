@@ -125,6 +125,6 @@ uv run --project backend --no-dev python -m app.backup restore "$HOME/folio-back
 
 ## 当前迁移基线
 
-- **受支持的数据库升级范围**：当前 Alembic 迁移链为 `0001_schema_baseline` 至 `0004_translation_reader_removal`。属于该迁移链的数据库可在备份后直接用新版启动升级。
+- **受支持的数据库升级范围**：当前 Alembic 迁移链为 `0001_schema_baseline` 至 `0005_anki_settings`。属于该迁移链的数据库可在备份后直接用新版启动升级。新增迁移只建立 Anki 设置与配置表。原生备份包含设置及其私有凭据，Anki 集合与媒体由 Anki 管理备份。
 - **受支持的备份恢复范围**：`restore` 命令支持含 `manifest.json` 的 v1 原生备份（数据库版本需在 `0004_translation_reader_removal` 及之后的已知迁移链内，且托管 EPUB 编译包为 `epub-reading-v2` / `FJEPUB v2`）。恢复时会先还原备份当时的版本，随后在启动时自动完成后续迁移。
 - **早期开发库与历史备份**：早于上述基线的开发期数据库（如 `0001_initial`）、旧版 EPUB 编译包或含 `backup-info.txt` 的早期手工备份，不支持直接自动转换，请使用当时对应的程序版本打开；仅重新导入同名 EPUB 不会恢复原有的书签、片段出处与讲解关联。

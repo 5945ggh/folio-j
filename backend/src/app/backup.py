@@ -190,6 +190,8 @@ def _check_database(path: Path, credentials: Path, expected_revision: str | None
             "SELECT DISTINCT json_extract(payload, '$.snapshot.credential_ref') "
             "FROM translation_tasks"
         )
+        if revision != FIRST_SUPPORTED_REVISION:
+            queries.append("SELECT credential_ref FROM anki_connection_settings")
         for query in queries:
             for (reference,) in connection.execute(query):
                 if reference is None:
@@ -197,7 +199,7 @@ def _check_database(path: Path, credentials: Path, expected_revision: str | None
                 if not isinstance(reference, str) or _relative(reference).name != reference:
                     raise BackupError("数据库含不安全凭据引用")
                 if not (credentials / reference).is_file():
-                    raise BackupError("数据库引用的模型凭据缺失")
+                    raise BackupError("数据库引用的凭据缺失")
         return revision
 
 

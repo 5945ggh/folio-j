@@ -125,6 +125,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/anki/builtin-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check Builtin */
+        post: operations["checkAnkiBuiltinNoteType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/anki/builtins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Builtins */
+        get: operations["getAnkiBuiltins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/anki/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catalog */
+        get: operations["getAnkiCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/anki/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export Note */
+        post: operations["exportAnkiNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/anki/note-type-fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fields */
+        post: operations["getAnkiNoteTypeFields"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/anki/probe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Probe */
+        post: operations["probeAnkiConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/catalog/sources": {
         parameters: {
             query?: never;
@@ -1092,6 +1194,61 @@ export interface paths {
         patch: operations["patchSettings"];
         trace?: never;
     };
+    "/api/settings/anki/configurations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Configurations */
+        get: operations["listAnkiConfigurations"];
+        put?: never;
+        /** Create Configuration */
+        post: operations["createAnkiConfiguration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/anki/configurations/{configuration_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Configuration */
+        get: operations["getAnkiConfiguration"];
+        /** Update Configuration */
+        put: operations["updateAnkiConfiguration"];
+        post?: never;
+        /** Delete Configuration */
+        delete: operations["deleteAnkiConfiguration"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/anki/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Connection */
+        get: operations["getAnkiConnection"];
+        /** Save Connection */
+        put: operations["saveAnkiConnection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings/context-copy": {
         parameters: {
             query?: never;
@@ -1640,6 +1797,319 @@ export interface components {
             /** Detail */
             detail: string;
         };
+        /** AnkiBuiltinCheckInput */
+        AnkiBuiltinCheckInput: {
+            builtin_type: components["schemas"]["AnkiBuiltinNoteTypeRef"];
+            /** Endpoint */
+            endpoint: string;
+            /** Note Type */
+            note_type?: string | null;
+            /** Profile */
+            profile: string;
+        };
+        /** AnkiBuiltinCheckResponse */
+        AnkiBuiltinCheckResponse: {
+            /** Message */
+            message?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "missing" | "compatible" | "incompatible" | "target_changed" | "failed";
+        };
+        /** AnkiBuiltinNoteTypeRef */
+        AnkiBuiltinNoteTypeRef: {
+            /** Id */
+            id: string;
+            /** Version */
+            version: number;
+        };
+        /** AnkiBuiltinNoteTypeTarget */
+        AnkiBuiltinNoteTypeTarget: {
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "builtin";
+            /** Name */
+            name?: string | null;
+            scope?: components["schemas"]["AnkiTargetScope"] | null;
+            /** Version */
+            version: number;
+        };
+        /** AnkiBuiltins */
+        AnkiBuiltins: {
+            /** Export Presets */
+            export_presets: components["schemas"]["AnkiExportPreset"][];
+            /** Note Types */
+            note_types: components["schemas"]["BuiltinNoteType"][];
+            /** Shared Css */
+            shared_css: string;
+        };
+        /** AnkiCatalog */
+        AnkiCatalog: {
+            /** Decks */
+            decks: components["schemas"]["AnkiCatalogItem"][];
+            /** Endpoint */
+            endpoint: string;
+            /** Note Types */
+            note_types: components["schemas"]["AnkiCatalogItem"][];
+            /** Profile */
+            profile: string;
+            /**
+             * Protocol
+             * @enum {string}
+             */
+            protocol: "v1" | "legacy";
+        };
+        /** AnkiCatalogItem */
+        AnkiCatalogItem: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** AnkiCollectionInfo */
+        AnkiCollectionInfo: {
+            /** Endpoint */
+            endpoint: string;
+            /** Profile */
+            profile: string;
+            /**
+             * Protocol
+             * @enum {string}
+             */
+            protocol: "v1" | "legacy";
+        };
+        /** AnkiConfigurationInput */
+        AnkiConfigurationInput: {
+            deck?: components["schemas"]["AnkiDeckTarget"] | null;
+            /** Fields */
+            fields: components["schemas"]["AnkiFieldDefinition"][];
+            /** Name */
+            name: string;
+            /** Note Type */
+            note_type?: (components["schemas"]["AnkiBuiltinNoteTypeTarget"] | components["schemas"]["AnkiExternalNoteTypeTarget"]) | null;
+        };
+        /** AnkiConfigurationResponse */
+        AnkiConfigurationResponse: {
+            deck?: components["schemas"]["AnkiDeckTarget"] | null;
+            /** Fields */
+            fields: components["schemas"]["AnkiFieldDefinition"][];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Note Type */
+            note_type?: (components["schemas"]["AnkiBuiltinNoteTypeTarget"] | components["schemas"]["AnkiExternalNoteTypeTarget"]) | null;
+        };
+        /** AnkiConnectionInput */
+        AnkiConnectionInput: {
+            /** Api Key */
+            api_key?: string | null;
+            /** Url */
+            url: string;
+        };
+        /** AnkiConnectionResponse */
+        AnkiConnectionResponse: {
+            /** Has Api Key */
+            has_api_key: boolean;
+            /** Revision */
+            revision: number;
+            /** Url */
+            url: string;
+        };
+        /** AnkiDeckTarget */
+        AnkiDeckTarget: {
+            /** Id */
+            id?: string | null;
+            /** Name */
+            name: string;
+            scope: components["schemas"]["AnkiTargetScope"];
+        };
+        /** AnkiExportAttachment */
+        AnkiExportAttachment: {
+            /** Data Base64 */
+            data_base64: string;
+            /** Name */
+            name: string;
+        };
+        /** AnkiExportField */
+        AnkiExportField: {
+            /** Id */
+            id: string;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /** Target Field */
+            target_field?: string | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "text" | "audio" | "image" | "video";
+            /** Value */
+            value?: string | components["schemas"]["AnkiExportAttachment"] | null;
+        };
+        /** AnkiExportInput */
+        AnkiExportInput: {
+            /**
+             * Allow Duplicate
+             * @default false
+             */
+            allow_duplicate: boolean;
+            builtin_type?: components["schemas"]["AnkiBuiltinNoteTypeRef"] | null;
+            /** Deck */
+            deck: string;
+            /** Deck Id */
+            deck_id?: string | null;
+            /** Endpoint */
+            endpoint: string;
+            /** Fields */
+            fields: components["schemas"]["AnkiExportField"][];
+            /**
+             * Install Builtin
+             * @default false
+             */
+            install_builtin: boolean;
+            /** Note Type */
+            note_type: string;
+            /** Note Type Id */
+            note_type_id?: string | null;
+            /** Profile */
+            profile: string;
+        };
+        /** AnkiExportPreset */
+        AnkiExportPreset: {
+            deck?: components["schemas"]["AnkiDeckTarget"] | null;
+            /** Fields */
+            fields: components["schemas"]["AnkiFieldDefinition"][];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            note_type_ref: components["schemas"]["AnkiBuiltinNoteTypeRef"];
+        };
+        /** AnkiExportResponse */
+        AnkiExportResponse: {
+            /** Card Ids */
+            card_ids?: string[] | null;
+            /** Field Id */
+            field_id?: string | null;
+            /**
+             * Media May Remain
+             * @default false
+             */
+            media_may_remain: boolean;
+            /** Message */
+            message?: string | null;
+            /** Note Id */
+            note_id?: string | null;
+            /** Stage */
+            stage?: ("target" | "validation" | "install_type" | "media" | "note") | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "created" | "invalid" | "duplicate" | "installation_required" | "incompatible_type" | "unknown" | "failed" | "target_changed";
+            /**
+             * Type Created
+             * @default false
+             */
+            type_created: boolean;
+            /** Uploaded Media */
+            uploaded_media?: string[];
+        };
+        /** AnkiExternalNoteTypeTarget */
+        AnkiExternalNoteTypeTarget: {
+            /** Id */
+            id?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "external";
+            /** Name */
+            name: string;
+            scope: components["schemas"]["AnkiTargetScope"];
+        };
+        /** AnkiFieldDefinition */
+        AnkiFieldDefinition: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /**
+             * Multiline
+             * @default false
+             */
+            multiline: boolean;
+            /**
+             * Presentation
+             * @default common
+             * @enum {string}
+             */
+            presentation: "common" | "summary" | "more";
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /**
+             * Source
+             * @default manual
+             * @enum {string}
+             */
+            source: "manual" | "selection" | "sentence" | "sourceMetadata";
+            /** Target Field */
+            target_field?: string | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "text" | "audio" | "image" | "video";
+        };
+        /** AnkiReadFailure */
+        AnkiReadFailure: {
+            /** Code */
+            code?: ("unreachable" | "authentication" | "no_collection" | "unsupported" | "stale_session" | "duplicate" | "invalid_note" | "target_missing" | "conflict" | "unknown_write" | "protocol_error") | null;
+            /** Detail */
+            detail: string;
+        };
+        /** AnkiTargetScope */
+        AnkiTargetScope: {
+            /** Profile */
+            profile: string;
+            /** Url */
+            url: string;
+        };
+        /** AnkiTypeFields */
+        AnkiTypeFields: {
+            /**
+             * Card Templates
+             * @description Anki 卡片模板名，依笔记类型中的顺序。
+             */
+            card_templates: string[];
+            /** Fields */
+            fields: string[];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** AnkiTypeLookup */
+        AnkiTypeLookup: {
+            /** Endpoint */
+            endpoint: string;
+            /** Note Type Id */
+            note_type_id: string;
+            /** Profile */
+            profile: string;
+        };
         /** ArtifactResponse */
         ArtifactResponse: {
             /** Analysis Id */
@@ -1719,6 +2189,28 @@ export interface components {
             total: number;
             /** Version Id */
             version_id: string;
+        };
+        /** BuiltinCardTemplate */
+        BuiltinCardTemplate: {
+            /** Back */
+            back: string;
+            /** Front */
+            front: string;
+            /** Name */
+            name: string;
+        };
+        /** BuiltinNoteType */
+        BuiltinNoteType: {
+            /** Card Templates */
+            card_templates: components["schemas"]["BuiltinCardTemplate"][];
+            /** Fields */
+            fields: string[];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Version */
+            version: number;
         };
         /** ChapterPart */
         ChapterPart: {
@@ -4548,6 +5040,313 @@ export interface operations {
             };
         };
     };
+    checkAnkiBuiltinNoteType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnkiBuiltinCheckInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiBuiltinCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getAnkiBuiltins: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiBuiltins"];
+                };
+            };
+        };
+    };
+    getAnkiCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiCatalog"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+        };
+    };
+    exportAnkiNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnkiExportInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiExportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getAnkiNoteTypeFields: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnkiTypeLookup"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiTypeFields"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+        };
+    };
+    probeAnkiConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AnkiConnectionInput"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiCollectionInfo"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiReadFailure"];
+                };
+            };
+        };
+    };
     getSourceCatalog: {
         parameters: {
             query?: {
@@ -6862,6 +7661,207 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listAnkiConfigurations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiConfigurationResponse"][];
+                };
+            };
+        };
+    };
+    createAnkiConfiguration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnkiConfigurationInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiConfigurationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getAnkiConfiguration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configuration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiConfigurationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    updateAnkiConfiguration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configuration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnkiConfigurationInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiConfigurationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deleteAnkiConfiguration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configuration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getAnkiConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiConnectionResponse"];
+                };
+            };
+        };
+    };
+    saveAnkiConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnkiConnectionInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnkiConnectionResponse"];
                 };
             };
             /** @description Validation Error */

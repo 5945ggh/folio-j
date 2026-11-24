@@ -24,6 +24,7 @@ from sqlalchemy import (
 from alembic import command
 from app import (
     analysis_models,
+    anki_settings_models,
     chat_models,
     context_copy_models,
     material_models,
@@ -36,6 +37,7 @@ from app.db import Base
 
 _ = (
     analysis_models,
+    anki_settings_models,
     chat_models,
     context_copy_models,
     material_models,
@@ -47,7 +49,8 @@ _ = (
 BASELINE = "0001_schema_baseline"
 COPY_SETTINGS = "0002_context_copy_settings"
 BOOKMARKS = "0003_material_bookmarks"
-HEAD = "0004_translation_reader_removal"
+TRANSLATION_REMOVAL = "0004_translation_reader_removal"
+HEAD = "0005_anki_settings"
 SCRIPTS = Path(__file__).resolve().parents[1] / "alembic"
 
 
@@ -143,14 +146,18 @@ def test_empty_database_rebuilds_current_schema(
     revisions = list(scripts.walk_revisions())
     assert [revision.revision for revision in revisions] == [
         HEAD,
+        TRANSLATION_REMOVAL,
         BOOKMARKS,
         COPY_SETTINGS,
         BASELINE,
     ]
-    assert revisions[0].down_revision == BOOKMARKS
-    assert revisions[1].down_revision == COPY_SETTINGS
-    assert revisions[2].down_revision == BASELINE
-    assert revisions[3].down_revision is None
+    assert [revision.down_revision for revision in revisions] == [
+        TRANSLATION_REMOVAL,
+        BOOKMARKS,
+        COPY_SETTINGS,
+        BASELINE,
+        None,
+    ]
     assert scripts.get_bases() == [BASELINE]
     assert scripts.get_heads() == [HEAD]
     command.upgrade(config, "head")
@@ -380,14 +387,14 @@ def test_bookmarks_upgrade_preserves_existing_settings_and_learning_data(
     with sqlite3.connect(database) as connection:
         connection.execute("INSERT INTO context_copy_settings VALUES (1,0,2,3,45,67,8)")
     before = _rows(database)
-    command.upgrade(config, "head")
+    command.upgrade(config, BOOKMARKS)
     after = _rows(database)
     assert after.pop("material_bookmarks") == []
-    assert after.pop("alembic_version") == [(HEAD,)]
+    assert after.pop("alembic_version") == [(BOOKMARKS,)]
     before.pop("alembic_version")
     assert after == before
     schema = _schema(database)
-    command.upgrade(config, "head")
+    command.upgrade(config, BOOKMARKS)
     assert _schema(database) == schema
     command.downgrade(config, COPY_SETTINGS)
     restored = _rows(database)
@@ -419,9 +426,9 @@ def test_translation_removal_upgrade_preserves_history_and_adds_nullable_tombsto
         )
     before = _rows(database)
     original_tasks = before["translation_tasks"]
-    command.upgrade(config, HEAD)
+    command.upgrade(config, TRANSLATION_REMOVAL)
     after = _rows(database)
-    assert after.pop("alembic_version") == [(HEAD,)]
+    assert after.pop("alembic_version") == [(TRANSLATION_REMOVAL,)]
     before.pop("alembic_version")
     assert after.pop("translation_tasks") == [(*before.pop("translation_tasks")[0], None)]
     assert after == before
@@ -432,3 +439,26 @@ def test_translation_removal_upgrade_preserves_history_and_adds_nullable_tombsto
     restored.pop("alembic_version")
     assert restored["translation_results"][0][2] == "残す訳"
     assert restored["translation_tasks"] == original_tasks
+
+
+def test_anki_settings_upgrade_adds_empty_tables_without_changing_existing_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "anki-upgrade.db"
+    config = _config(database, monkeypatch)
+    command.upgrade(config, TRANSLATION_REMOVAL)
+    _seed_history(database)
+    with sqlite3.connect(database) as connection:
+        connection.execute("INSERT INTO context_copy_settings VALUES (1,0,2,3,45,67,8)")
+    before, schema = _rows(database), _schema(database)
+
+    command.upgrade(config, HEAD)
+    after = _rows(database)
+    assert after.pop("anki_connection_settings") == []
+    assert after.pop("anki_export_configurations") == []
+    assert after == {**before, "alembic_version": [(HEAD,)]}
+    assert [entry for entry in _schema(database) if "anki_" not in entry[1]] == schema
+
+    command.downgrade(config, TRANSLATION_REMOVAL)
+    assert _rows(database) == before
+    assert _schema(database) == schema

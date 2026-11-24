@@ -355,6 +355,1038 @@
         "title": "AnalysisWriteErrorResponse",
         "type": "object"
       },
+      "AnkiBuiltinCheckInput": {
+        "additionalProperties": false,
+        "properties": {
+          "builtin_type": {
+            "$ref": "#/components/schemas/AnkiBuiltinNoteTypeRef"
+          },
+          "endpoint": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "note_type": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note Type"
+          },
+          "profile": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Profile",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint",
+          "profile",
+          "builtin_type"
+        ],
+        "title": "AnkiBuiltinCheckInput",
+        "type": "object"
+      },
+      "AnkiBuiltinCheckResponse": {
+        "properties": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "status": {
+            "enum": [
+              "missing",
+              "compatible",
+              "incompatible",
+              "target_changed",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "AnkiBuiltinCheckResponse",
+        "type": "object"
+      },
+      "AnkiBuiltinNoteTypeRef": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version"
+        ],
+        "title": "AnkiBuiltinNoteTypeRef",
+        "type": "object"
+      },
+      "AnkiBuiltinNoteTypeTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "builtin",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnkiTargetScope"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "kind"
+        ],
+        "title": "AnkiBuiltinNoteTypeTarget",
+        "type": "object"
+      },
+      "AnkiBuiltins": {
+        "additionalProperties": false,
+        "properties": {
+          "export_presets": {
+            "items": {
+              "$ref": "#/components/schemas/AnkiExportPreset"
+            },
+            "title": "Export Presets",
+            "type": "array"
+          },
+          "note_types": {
+            "items": {
+              "$ref": "#/components/schemas/BuiltinNoteType"
+            },
+            "title": "Note Types",
+            "type": "array"
+          },
+          "shared_css": {
+            "title": "Shared Css",
+            "type": "string"
+          }
+        },
+        "required": [
+          "shared_css",
+          "note_types",
+          "export_presets"
+        ],
+        "title": "AnkiBuiltins",
+        "type": "object"
+      },
+      "AnkiCatalog": {
+        "properties": {
+          "decks": {
+            "items": {
+              "$ref": "#/components/schemas/AnkiCatalogItem"
+            },
+            "title": "Decks",
+            "type": "array"
+          },
+          "endpoint": {
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "note_types": {
+            "items": {
+              "$ref": "#/components/schemas/AnkiCatalogItem"
+            },
+            "title": "Note Types",
+            "type": "array"
+          },
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "protocol": {
+            "enum": [
+              "v1",
+              "legacy"
+            ],
+            "title": "Protocol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint",
+          "protocol",
+          "profile",
+          "decks",
+          "note_types"
+        ],
+        "title": "AnkiCatalog",
+        "type": "object"
+      },
+      "AnkiCatalogItem": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "AnkiCatalogItem",
+        "type": "object"
+      },
+      "AnkiCollectionInfo": {
+        "properties": {
+          "endpoint": {
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "protocol": {
+            "enum": [
+              "v1",
+              "legacy"
+            ],
+            "title": "Protocol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint",
+          "protocol",
+          "profile"
+        ],
+        "title": "AnkiCollectionInfo",
+        "type": "object"
+      },
+      "AnkiConfigurationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "deck": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnkiDeckTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/AnkiFieldDefinition"
+            },
+            "maxItems": 64,
+            "title": "Fields",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "note_type": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "builtin": "#/components/schemas/AnkiBuiltinNoteTypeTarget",
+                    "external": "#/components/schemas/AnkiExternalNoteTypeTarget"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AnkiBuiltinNoteTypeTarget"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnkiExternalNoteTypeTarget"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note Type"
+          }
+        },
+        "required": [
+          "name",
+          "fields"
+        ],
+        "title": "AnkiConfigurationInput",
+        "type": "object"
+      },
+      "AnkiConfigurationResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "deck": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnkiDeckTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/AnkiFieldDefinition"
+            },
+            "maxItems": 64,
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "note_type": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "builtin": "#/components/schemas/AnkiBuiltinNoteTypeTarget",
+                    "external": "#/components/schemas/AnkiExternalNoteTypeTarget"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AnkiBuiltinNoteTypeTarget"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnkiExternalNoteTypeTarget"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note Type"
+          }
+        },
+        "required": [
+          "name",
+          "fields",
+          "id"
+        ],
+        "title": "AnkiConfigurationResponse",
+        "type": "object"
+      },
+      "AnkiConnectionInput": {
+        "additionalProperties": false,
+        "properties": {
+          "api_key": {
+            "anyOf": [
+              {
+                "format": "password",
+                "maxLength": 8192,
+                "type": "string",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          },
+          "url": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "AnkiConnectionInput",
+        "type": "object"
+      },
+      "AnkiConnectionResponse": {
+        "properties": {
+          "has_api_key": {
+            "title": "Has Api Key",
+            "type": "boolean"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "has_api_key",
+          "revision"
+        ],
+        "title": "AnkiConnectionResponse",
+        "type": "object"
+      },
+      "AnkiDeckTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/AnkiTargetScope"
+          }
+        },
+        "required": [
+          "name",
+          "scope"
+        ],
+        "title": "AnkiDeckTarget",
+        "type": "object"
+      },
+      "AnkiExportAttachment": {
+        "additionalProperties": false,
+        "properties": {
+          "data_base64": {
+            "maxLength": 15379116,
+            "minLength": 1,
+            "title": "Data Base64",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "data_base64"
+        ],
+        "title": "AnkiExportAttachment",
+        "type": "object"
+      },
+      "AnkiExportField": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "target_field": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Field"
+          },
+          "type": {
+            "enum": [
+              "text",
+              "audio",
+              "image",
+              "video"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "maxLength": 32768,
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/AnkiExportAttachment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ],
+        "title": "AnkiExportField",
+        "type": "object"
+      },
+      "AnkiExportInput": {
+        "additionalProperties": false,
+        "properties": {
+          "allow_duplicate": {
+            "default": false,
+            "title": "Allow Duplicate",
+            "type": "boolean"
+          },
+          "builtin_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnkiBuiltinNoteTypeRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deck": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Deck",
+            "type": "string"
+          },
+          "deck_id": {
+            "anyOf": [
+              {
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deck Id"
+          },
+          "endpoint": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/AnkiExportField"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Fields",
+            "type": "array"
+          },
+          "install_builtin": {
+            "default": false,
+            "title": "Install Builtin",
+            "type": "boolean"
+          },
+          "note_type": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Note Type",
+            "type": "string"
+          },
+          "note_type_id": {
+            "anyOf": [
+              {
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note Type Id"
+          },
+          "profile": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Profile",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint",
+          "profile",
+          "deck",
+          "note_type",
+          "fields"
+        ],
+        "title": "AnkiExportInput",
+        "type": "object"
+      },
+      "AnkiExportPreset": {
+        "additionalProperties": false,
+        "properties": {
+          "deck": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnkiDeckTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/AnkiFieldDefinition"
+            },
+            "maxItems": 64,
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "note_type_ref": {
+            "$ref": "#/components/schemas/AnkiBuiltinNoteTypeRef"
+          }
+        },
+        "required": [
+          "name",
+          "fields",
+          "id",
+          "note_type_ref"
+        ],
+        "title": "AnkiExportPreset",
+        "type": "object"
+      },
+      "AnkiExportResponse": {
+        "properties": {
+          "card_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Ids"
+          },
+          "field_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Id"
+          },
+          "media_may_remain": {
+            "default": false,
+            "title": "Media May Remain",
+            "type": "boolean"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "note_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note Id"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "enum": [
+                  "target",
+                  "validation",
+                  "install_type",
+                  "media",
+                  "note"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "status": {
+            "enum": [
+              "created",
+              "invalid",
+              "duplicate",
+              "installation_required",
+              "incompatible_type",
+              "unknown",
+              "failed",
+              "target_changed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "type_created": {
+            "default": false,
+            "title": "Type Created",
+            "type": "boolean"
+          },
+          "uploaded_media": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Uploaded Media",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "AnkiExportResponse",
+        "type": "object"
+      },
+      "AnkiExternalNoteTypeTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "kind": {
+            "const": "external",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/AnkiTargetScope"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "scope"
+        ],
+        "title": "AnkiExternalNoteTypeTarget",
+        "type": "object"
+      },
+      "AnkiFieldDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "multiline": {
+            "default": false,
+            "title": "Multiline",
+            "type": "boolean"
+          },
+          "presentation": {
+            "default": "common",
+            "enum": [
+              "common",
+              "summary",
+              "more"
+            ],
+            "title": "Presentation",
+            "type": "string"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "source": {
+            "default": "manual",
+            "enum": [
+              "manual",
+              "selection",
+              "sentence",
+              "sourceMetadata"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "target_field": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Field"
+          },
+          "type": {
+            "enum": [
+              "text",
+              "audio",
+              "image",
+              "video"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "type"
+        ],
+        "title": "AnkiFieldDefinition",
+        "type": "object"
+      },
+      "AnkiReadFailure": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "unreachable",
+                  "authentication",
+                  "no_collection",
+                  "unsupported",
+                  "stale_session",
+                  "duplicate",
+                  "invalid_note",
+                  "target_missing",
+                  "conflict",
+                  "unknown_write",
+                  "protocol_error"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "AnkiReadFailure",
+        "type": "object"
+      },
+      "AnkiTargetScope": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Profile",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "profile"
+        ],
+        "title": "AnkiTargetScope",
+        "type": "object"
+      },
+      "AnkiTypeFields": {
+        "properties": {
+          "card_templates": {
+            "description": "Anki 卡片模板名，依笔记类型中的顺序。",
+            "items": {
+              "type": "string"
+            },
+            "title": "Card Templates",
+            "type": "array"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "fields",
+          "card_templates"
+        ],
+        "title": "AnkiTypeFields",
+        "type": "object"
+      },
+      "AnkiTypeLookup": {
+        "additionalProperties": false,
+        "properties": {
+          "endpoint": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "note_type_id": {
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "title": "Note Type Id",
+            "type": "string"
+          },
+          "profile": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Profile",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint",
+          "profile",
+          "note_type_id"
+        ],
+        "title": "AnkiTypeLookup",
+        "type": "object"
+      },
       "ArtifactResponse": {
         "properties": {
           "analysis_id": {
@@ -542,6 +1574,70 @@
           "items"
         ],
         "title": "BookmarksResponse",
+        "type": "object"
+      },
+      "BuiltinCardTemplate": {
+        "additionalProperties": false,
+        "properties": {
+          "back": {
+            "title": "Back",
+            "type": "string"
+          },
+          "front": {
+            "title": "Front",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "front",
+          "back"
+        ],
+        "title": "BuiltinCardTemplate",
+        "type": "object"
+      },
+      "BuiltinNoteType": {
+        "additionalProperties": false,
+        "properties": {
+          "card_templates": {
+            "items": {
+              "$ref": "#/components/schemas/BuiltinCardTemplate"
+            },
+            "title": "Card Templates",
+            "type": "array"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "fields",
+          "card_templates"
+        ],
+        "title": "BuiltinNoteType",
         "type": "object"
       },
       "ChapterPart": {
@@ -8206,6 +9302,369 @@
         "summary": "Create Manual Analysis Revision"
       }
     },
+    "/api/anki/builtin-check": {
+      "post": {
+        "operationId": "checkAnkiBuiltinNoteType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnkiBuiltinCheckInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiBuiltinCheckResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check Builtin",
+        "tags": [
+          "Anki"
+        ]
+      }
+    },
+    "/api/anki/builtins": {
+      "get": {
+        "operationId": "getAnkiBuiltins",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiBuiltins"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Builtins",
+        "tags": [
+          "Anki"
+        ]
+      }
+    },
+    "/api/anki/catalog": {
+      "get": {
+        "operationId": "getAnkiCatalog",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiCatalog"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Catalog",
+        "tags": [
+          "Anki"
+        ]
+      }
+    },
+    "/api/anki/export": {
+      "post": {
+        "operationId": "exportAnkiNote",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnkiExportInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiExportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Note",
+        "tags": [
+          "Anki"
+        ]
+      }
+    },
+    "/api/anki/note-type-fields": {
+      "post": {
+        "operationId": "getAnkiNoteTypeFields",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnkiTypeLookup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiTypeFields"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Fields",
+        "tags": [
+          "Anki"
+        ]
+      }
+    },
+    "/api/anki/probe": {
+      "post": {
+        "operationId": "probeAnkiConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AnkiConnectionInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Data"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiCollectionInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiReadFailure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Probe",
+        "tags": [
+          "Anki"
+        ]
+      }
+    },
     "/api/catalog/sources": {
       "get": {
         "operationId": "getSourceCatalog",
@@ -11982,6 +13441,234 @@
           }
         },
         "summary": "Patch Settings"
+      }
+    },
+    "/api/settings/anki/configurations": {
+      "get": {
+        "operationId": "listAnkiConfigurations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AnkiConfigurationResponse"
+                  },
+                  "title": "Response Listankiconfigurations",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Configurations"
+      },
+      "post": {
+        "operationId": "createAnkiConfiguration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnkiConfigurationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiConfigurationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Configuration"
+      }
+    },
+    "/api/settings/anki/configurations/{configuration_id}": {
+      "delete": {
+        "operationId": "deleteAnkiConfiguration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "configuration_id",
+            "required": true,
+            "schema": {
+              "title": "Configuration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Configuration"
+      },
+      "get": {
+        "operationId": "getAnkiConfiguration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "configuration_id",
+            "required": true,
+            "schema": {
+              "title": "Configuration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiConfigurationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Configuration"
+      },
+      "put": {
+        "operationId": "updateAnkiConfiguration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "configuration_id",
+            "required": true,
+            "schema": {
+              "title": "Configuration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnkiConfigurationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiConfigurationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Configuration"
+      }
+    },
+    "/api/settings/anki/connection": {
+      "get": {
+        "operationId": "getAnkiConnection",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiConnectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Connection"
+      },
+      "put": {
+        "operationId": "saveAnkiConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnkiConnectionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnkiConnectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Connection"
       }
     },
     "/api/settings/context-copy": {

@@ -11,6 +11,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.api.analyses import router as analyses_router
+from app.api.anki import router as anki_router
+from app.api.anki_settings import router as anki_settings_router
 from app.api.bookmarks import router as bookmarks_router
 from app.api.dictionary import router as dictionary_router
 from app.api.health import router as health_router
@@ -25,6 +27,7 @@ from app.platform_io import FileLockError, exclusive_file_lock
 from app.resources import RESOURCE_ROOT
 from app.services import translations
 from app.services.analyses import AnalysisWriteError
+from app.services.anki_connect import AnkiConnectError, connection_error_message
 from app.services.chat import ChatError
 from app.services.dictionary_store import DictionaryStore
 from app.services.reader_views import ReaderViews
@@ -137,6 +140,22 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
             content={"detail": exc.detail, "code": exc.code},
         )
 
+    @application.exception_handler(AnkiConnectError)
+    async def anki_error(_request: Request, exc: AnkiConnectError) -> JSONResponse:
+        status = {
+            "unreachable": 503,
+            "authentication": 403,
+            "no_collection": 409,
+            "stale_session": 409,
+            "target_missing": 404,
+            "conflict": 409,
+        }.get(exc.code, 502)
+        return JSONResponse(
+            status_code=status, content={"code": exc.code, "detail": connection_error_message(exc)}
+        )
+
+    application.include_router(anki_settings_router)
+    application.include_router(anki_router)
     application.include_router(health_router)
     application.include_router(dictionary_router)
     from app.api.catalog import router as catalog_router

@@ -130,6 +130,7 @@ dependencies = [
     { name = "alembic" },
     { name = "editables" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "jinja2" },
     { name = "markdown-it-py" },
     { name = "openai" },
@@ -142,7 +143,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "hypothesis" },
     { name = "pyright" },
     { name = "pytest" },
@@ -159,6 +159,7 @@ requires-dist = [
     { name = "alembic" },
     { name = "editables", specifier = "~=0.3" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "markdown-it-py", specifier = ">=4.2.0" },
     { name = "openai", specifier = ">=3.19.2" },
@@ -171,7 +172,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx" },
     { name = "hypothesis", specifier = ">=6.168.2" },
     { name = "pyright" },
     { name = "pytest" },

@@ -152,13 +152,26 @@ async def test_cli_roundtrip_preserves_epub_bookmark_dictionary_credentials_and_
             json={"dictionary_id": installed.json()["dictionary_id"]},
         )
         assert selected.status_code == 200, selected.text
+        anki = await client.put(
+            "/api/settings/anki/connection",
+            json={"url": "http://127.0.0.1:8765", "api_key": "fictional-anki-secret"},
+        )
+        assert anki.status_code == 200, anki.text
+        preset = await client.post(
+            "/api/settings/anki/configurations", json={"name": "离线制卡", "fields": []}
+        )
+        assert preset.status_code == 201, preset.text
         job = await accept(client, seed)
     before = _rows(database)
     assert before["runs"] == []
     assert before["material_bookmarks"]
     with sqlite3.connect(database) as connection:
         credential_ref = connection.execute("SELECT credential_ref FROM providers").fetchone()
+        anki_ref = connection.execute(
+            "SELECT credential_ref FROM anki_connection_settings"
+        ).fetchone()
     assert credential_ref is not None
+    assert anki_ref is not None and anki_ref != credential_ref
     assert read_credential(database, credential_ref[0]) == "fictional-chat-secret"
 
     backup = tmp_path / "backup"
@@ -185,7 +198,9 @@ async def test_cli_roundtrip_preserves_epub_bookmark_dictionary_credentials_and_
     assert str(restored) in result.stdout
     assert _rows(restored) == before  # Includes queued job: CLI never starts recovery or models.
     assert read_credential(restored, credential_ref[0]) == "fictional-chat-secret"
+    assert read_credential(restored, anki_ref[0]) == "fictional-anki-secret"
     async with chat_client(restored) as (client, _):
+        assert (await client.get("/api/settings/anki/configurations")).json() == [preset.json()]
         assert (await client.get(url)).json() == material
         assert (await client.get(url + "/chapters/" + chapter["id"])).json() == chapter
         item = await client.get(url + "/bookmarks/" + bookmark.json()["id"])
@@ -195,6 +210,31 @@ async def test_cli_roundtrip_preserves_epub_bookmark_dictionary_credentials_and_
         assert lookup.json()["matches"]
         assert (await client.get(f"/api/jobs/{job['id']}")).status_code == 200
     assert _rows(restored)["runs"] == []
+
+
+def test_cli_accepts_0004_backup_and_rejects_missing_anki_credential(
+    tmp_path: Path, database: Path, backup_cli: Cli
+) -> None:
+    config = Config()
+    config.set_main_option("script_location", str(ROOT / "backend/alembic"))
+    command.downgrade(config, "0004_translation_reader_removal")
+    old_backup = tmp_path / "older-backup"
+    _success(backup_cli("create", old_backup))
+    restored = tmp_path / "restored-older"
+    _success(backup_cli("restore", old_backup, restored))
+    assert _rows(database) == _rows(restored / "app.db")
+
+    command.upgrade(config, "head")
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "INSERT INTO anki_connection_settings VALUES (1, ?, 'missing-test-reference', 1)",
+            ("http://127.0.0.1:8765",),
+        )
+    failed = tmp_path / "missing-credential"
+    result = backup_cli("create", failed)
+    _failure(result)
+    assert "凭据缺失" in result.stderr
+    assert not failed.exists()
 
 
 def test_cli_database_only_backup_has_optional_components_absent(
@@ -519,14 +559,14 @@ async def test_cli_does_not_revive_committed_dictionary_deletion_with_retained_c
 def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(
     tmp_path: Path, database: Path, backup_cli: Cli, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    baseline = "0004_translation_reader_removal"
-    successor = "0005_test_backup_upgrade"
+    baseline = "0005_anki_settings"
+    successor = "0006_test_backup_upgrade"
     installation = tmp_path / "new-installation"
     migrations = installation / "backend/alembic"
     shutil.copytree(
         ROOT / "backend/alembic", migrations, ignore=shutil.ignore_patterns("__pycache__")
     )
-    (migrations / "versions/0005_test_backup_upgrade.py").write_text(
+    (migrations / "versions/0006_test_backup_upgrade.py").write_text(
         "from alembic import op\n"
         "import sqlalchemy as sa\n"
         f"revision = {successor!r}\n"
