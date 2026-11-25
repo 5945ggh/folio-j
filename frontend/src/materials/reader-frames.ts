@@ -153,7 +153,7 @@ export class ReaderFrames {
 				reference.material_id !== chapter.material_id ||
 				reference.version_id !== chapter.version_id
 			)
-				throw new Error("出处身份失配。");
+				throw new Error("出处信息不匹配。");
 			const targets = referenceParts(chapter, reference.ranges);
 			let final: { index: number; end: number; projection: Projection } | null =
 				null;
@@ -261,7 +261,7 @@ export class ReaderFrames {
 			mountedPart?.start !== part.start ||
 			mountedPart?.end !== part.end
 		)
-			throw new Error("原文尚未完整显示，已保留定位目标，请重试。");
+			throw new Error("章节尚未加载完成，请稍后重试。");
 		const points = Array.from(resource.text).slice(part.start, part.end);
 		const canonical = points.join("");
 		frame.projection = projectPart(frame.doc, canonical, part.leaf_start);
@@ -319,17 +319,17 @@ export class ReaderFrames {
 			return selection && !selection.isCollapsed;
 		});
 		if (selected.length !== 1)
-			throw new Error("请在同一个正文区域内选择连续原文，不支持跨区域选择。");
+			throw new Error("请选择同一段落或连续区域内的原文。");
 		const chosen = selected[0];
 		if (!chosen) throw new Error("请选择原文。");
 		const [index, frame] = chosen;
 		if (!this.validity.get(index)?.())
-			throw new Error("原文显示已经改变，请重新选择。");
+			throw new Error("页面内容已变化，请重新选择。");
 		const part = chapter.parts[index];
 		const resource = chapter.resources.find(
 			(item) => item.id === part?.resource_id,
 		);
-		if (!part || !resource) throw new Error("当前章节资源不可用。");
+		if (!part || !resource) throw new Error("当前章节暂不可用。");
 		return captureNativeSelection(
 			frame.doc,
 			this.freshProjection(index, chapter),

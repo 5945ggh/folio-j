@@ -3,11 +3,11 @@ import test from "node:test";
 import { JumpReadingSession, returnOriginLabel } from "./return-origin.ts";
 
 test("return label names the destination and rounds its chapter progress", () => {
-	assert.equal(returnOriginLabel("第一章", 0.424), "返回“第一章 42%”");
-	assert.equal(returnOriginLabel("第一章", 0.426), "返回“第一章 43%”");
-	assert.equal(returnOriginLabel("第一章", 0), "返回“第一章 0%”");
-	assert.equal(returnOriginLabel("第一章", 1), "返回“第一章 100%”");
-	assert.equal(returnOriginLabel("挿絵", null), "返回“挿絵”");
+	assert.equal(returnOriginLabel("第一章", 0.424), "返回「第一章」（42%）");
+	assert.equal(returnOriginLabel("第一章", 0.426), "返回「第一章」（43%）");
+	assert.equal(returnOriginLabel("第一章", 0), "返回「第一章」（0%）");
+	assert.equal(returnOriginLabel("第一章", 1), "返回「第一章」（100%）");
+	assert.equal(returnOriginLabel("挿絵", null), "返回「挿絵」");
 });
 
 function move(

@@ -255,7 +255,7 @@ export async function settingsConnectionHistory(h: BrowserHarness) {
 					?.textContent?.includes("没有符合筛选条件的验证记录。") === true,
 			"An active status filter with no matches must show filtered-empty history",
 		);
-		button("清除筛选").click();
+		button("清空筛选").click();
 		await h.until(
 			() => !!document.querySelector(".run-summary") && status.value === "",
 			"Clearing active filters must restore scoped history",
@@ -284,7 +284,7 @@ export async function settingsConnectionHistory(h: BrowserHarness) {
 		);
 		const technical = [...detail.querySelectorAll("details")].find(
 			(node) =>
-				node.querySelector("summary")?.textContent?.trim() === "调用详情",
+				node.querySelector("summary")?.textContent?.trim() === "技术信息",
 		);
 		check(
 			technical && !technical.open,

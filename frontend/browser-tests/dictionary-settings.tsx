@@ -199,7 +199,7 @@ export async function dictionarySettings(h: BrowserHarness) {
 					button.textContent?.includes("导入词典"),
 				).length === 1 &&
 				empty.querySelector("#dictionary-import") &&
-				empty.textContent?.includes("Yomitan format 3"),
+				empty.textContent?.includes("Yomitan 第 3 版词条词典"),
 			"An empty library must show one import action and format guidance inside the card, without an installed count",
 		);
 		fit();
@@ -219,7 +219,7 @@ export async function dictionarySettings(h: BrowserHarness) {
 		);
 		check(
 			find<HTMLElement>(".dictionary-delete-dialog").textContent?.includes(
-				"之后可以重新导入",
+				"之后可随时重新导入",
 			),
 			"Delete confirmation must explain local removal and reimport",
 		);
@@ -602,7 +602,7 @@ export async function dictionarySettings(h: BrowserHarness) {
 		await openDelete(meikyo);
 		check(
 			find<HTMLElement>(".dictionary-delete-dialog").textContent?.includes(
-				"即时查词仍可显示基础词卡",
+				"查词将仅显示读音与词形",
 			) && !h.container.querySelector(".dictionary-delete-dialog select"),
 			"Deleting the final dictionary must explain continued basic lookup",
 		);

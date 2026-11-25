@@ -183,10 +183,10 @@ export function AnalysisEditor({
 			className="analysis-editor-dialog"
 			restoreFocusId={restoreFocusId}
 		>
-			<h2 id={titleId}>{base.analysis ? "编辑讲解全文" : "新建讲解"}</h2>
+			<h2 id={titleId}>{base.analysis ? "编辑讲解" : "新建讲解"}</h2>
 			{refreshError && (
 				<div className="analysis-editor-notice" role="alert">
-					片段重新读取失败，当前草稿与最初原文依据已保留。保存时仍会校验该依据。
+					片段加载失败，当前草稿已保留。保存时仍会校验原文。
 				</div>
 			)}
 			<form
@@ -237,7 +237,7 @@ export function AnalysisEditor({
 						onChange={(event) => updateDraft({ sourceMd: event.target.value })}
 						aria-invalid={Boolean(invalidSource && draft.sourceMd)}
 						spellCheck={false}
-						placeholder="输入讲解或粘贴外部 Markdown。"
+						placeholder="输入讲解或粘贴外部 Markdown"
 					/>
 				</label>
 				{invalidSource && draft.sourceMd && (
@@ -247,29 +247,29 @@ export function AnalysisEditor({
 				)}
 				{!base.segment.text_locked_at && (
 					<p className="analysis-editor-note">
-						首次保存讲解后，当前片段的目标原文将固定，不能再修改；附带资料仍可维护。
+						首次保存讲解后，当前片段的原文将被锁定，不能再修改；前后文和备注仍可编辑。
 					</p>
 				)}
 				{base.analysis && (
 					<p className="analysis-editor-note">
-						保存会产生新版本；历史版本与引用保留。
+						保存后会生成新版本，原有历史版本仍会保留。
 					</p>
 				)}
 				{uncertain && (
 					<div className="analysis-editor-notice" role="status">
-						上次保存结果尚未确认，输入已暂时固定。请核实本次保存，避免重复创建。
+						上次保存结果尚未确认，编辑已暂时锁定。请重试保存以确认结果，不会重复创建。
 					</div>
 				)}
 				{conflict && (
 					<div className="analysis-editor-notice" role="alert">
 						{failure === "stale_text"
-							? "目标原文已变化。"
+							? "原文已发生变化。"
 							: failure === "stale_revision"
 								? "讲解已被其他操作更新。"
 								: failure === "not_found"
-									? "片段或讲解已不可用。"
-									: "本次保存身份对应的内容不一致。"}
-						草稿已保留；可复制需要的内容，取消后重新打开当前资料。
+									? "片段或讲解已不存在。"
+									: "本次提交与原内容不一致。"}
+						草稿已保留，你可以先复制需要的内容，关闭后重新打开。
 					</div>
 				)}
 				<InlineError error={localError ?? save.error} />
@@ -281,10 +281,10 @@ export function AnalysisEditor({
 					>
 						{save.isPending
 							? uncertain
-								? "正在核实…"
+								? "正在确认…"
 								: "正在保存…"
 							: uncertain
-								? "核实本次保存"
+								? "重试保存"
 								: "保存讲解"}
 					</button>
 					<button
@@ -303,9 +303,9 @@ export function AnalysisEditor({
 					<h2 id={`${titleId}-discard`}>放弃本次编辑？</h2>
 					<p>
 						{save.isPending
-							? "正在保存或核实，请稍候。"
+							? "正在保存，请稍候。"
 							: uncertain
-								? "保存结果尚未确认，离开后讲解仍可能已经保存。可先继续核实；关闭页面后不保留本次草稿与核实请求。"
+								? "上次保存结果尚未确认，离开后讲解仍可能已经保存。关闭后本次草稿不会保留。"
 								: "当前讲解草稿尚未保存。"}
 					</p>
 					<div className="actions">
@@ -324,7 +324,7 @@ export function AnalysisEditor({
 							disabled={save.isPending}
 							onClick={discard}
 						>
-							放弃并离开
+							放弃修改
 						</button>
 					</div>
 				</ConfirmDialog>

@@ -3,7 +3,7 @@ import type { Bookmark } from "./bookmarks-api";
 export function bookmarkExcerpt(bookmark: Bookmark): string {
 	return (
 		bookmark.excerpt ||
-		(bookmark.position.kind === "image" ? "图片位置" : "此处暂无原文摘要")
+		(bookmark.position.kind === "image" ? "图片位置" : "（无文字摘要）")
 	);
 }
 export function BookmarkChapter({ bookmark }: { bookmark: Bookmark }) {
@@ -11,7 +11,7 @@ export function BookmarkChapter({ bookmark }: { bookmark: Bookmark }) {
 		<span className="reader-bookmark-chapter" lang="ja">
 			{bookmark.chapter_title}
 			{bookmark.chapter_progress != null && (
-				<span> · 章内约 {Math.round(bookmark.chapter_progress * 100)}%</span>
+				<span> · 本章约 {Math.round(bookmark.chapter_progress * 100)}%</span>
 			)}
 		</span>
 	);

@@ -15,7 +15,7 @@ export function DataLocationSettings() {
 		setCopying(true);
 		try {
 			await navigator.clipboard.writeText(path);
-			setCopyStatus(`已复制${label}。`);
+			setCopyStatus(`已复制${label}路径`);
 		} catch {
 			setCopyStatus("复制失败，请选择上方路径后手动复制。");
 		} finally {
@@ -25,15 +25,15 @@ export function DataLocationSettings() {
 	return (
 		<section aria-labelledby="data-location-heading">
 			<div className="settings-page-head">
-				<h2 id="data-location-heading">数据位置</h2>
-				<p>查看本次运行实际使用的数据位置。</p>
+				<h2 id="data-location-heading">数据目录</h2>
+				<p>查看当前应用存放本地数据的路径。</p>
 			</div>
 			<p className="settings-hint settings-section-note">
-				书籍、学习记录、词典等保存在这里。更新完整程序目录不会搬动这些数据。
+				书籍、学习记录和离线词典均保存在此处，升级应用不会移动这些文件。
 			</p>
 			{location.isPending && (
 				<p className="settings-loading" role="status">
-					正在读取数据位置…
+					正在加载数据目录…
 				</p>
 			)}
 			{location.isError ? (
@@ -45,7 +45,7 @@ export function DataLocationSettings() {
 						disabled={location.isFetching}
 						onClick={() => void location.refetch()}
 					>
-						重试读取数据位置
+						重试
 					</button>
 				</div>
 			) : location.data ? (
@@ -65,10 +65,11 @@ export function DataLocationSettings() {
 								<button
 									className="settings-button secondary"
 									type="button"
+									aria-label={`复制${label}路径`}
 									disabled={copying}
 									onClick={() => void copyPath(path, label)}
 								>
-									复制{label}路径
+									复制路径
 								</button>
 							</dd>
 						</div>

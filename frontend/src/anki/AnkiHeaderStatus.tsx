@@ -91,10 +91,10 @@ export function AnkiHeaderStatus({
 		externalStatus.state === "connected"
 			? `已连接 · ${externalStatus.info?.profile ?? ""}`
 			: externalStatus.state === "checking"
-				? "连接中…"
+				? "正在测试…"
 				: externalStatus.state === "error"
 					? "未连接"
-					: "未检查";
+					: "未测试";
 
 	return (
 		<div className="anki-topbar-wrap" ref={wrapRef}>
@@ -139,10 +139,10 @@ export function AnkiHeaderStatus({
 
 					<p className="anki-topbar-popover-meta">
 						{externalStatus.state === "connected" && externalStatus.info
-							? `地址：${externalStatus.info.endpoint}（协议 ${externalStatus.info.protocol}）`
+							? `AnkiConnect 地址：${externalStatus.info.endpoint}（Anki 用户：${externalStatus.info.profile}）`
 							: externalStatus.state === "error"
 								? externalStatus.message || "无法连接 AnkiConnect。"
-								: `当前配置地址：${connectionQuery.data?.url ?? "http://127.0.0.1:8765"}`}
+								: `AnkiConnect 地址：${connectionQuery.data?.url ?? "http://127.0.0.1:8765"}`}
 					</p>
 
 					<div className="anki-topbar-popover-actions">
@@ -153,7 +153,7 @@ export function AnkiHeaderStatus({
 							disabled={probeMutation.isPending}
 							onClick={() => probeMutation.mutate()}
 						>
-							{probeMutation.isPending ? "检查中…" : "测试连接"}
+							{probeMutation.isPending ? "正在测试…" : "测试连接"}
 						</button>
 						<Link
 							to="/settings?section=anki"

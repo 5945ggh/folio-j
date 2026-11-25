@@ -189,7 +189,7 @@ for (const change of [
 			assert.equal(keys, 1);
 			assert.throws(
 				() => frames.captureStudyTarget("m", "v", chapter),
-				/重新选择|连续原文/,
+				/重新选择|连续区域/,
 			);
 			h.fonts();
 			h.image.dispatchEvent(new Event("load"));
@@ -388,7 +388,7 @@ test("navigation highlights validate every current part and snapshot before pain
 				text_sha256: "a".repeat(64),
 			},
 		];
-		assert.throws(() => frames.highlight(chapter, ranges), /完整/);
+		assert.throws(() => frames.highlight(chapter, ranges), /尚未加载完成/);
 		assert.equal(highlights[0]?.has("folio-search"), false);
 		const [firstRange, secondRange] = ranges;
 		assert.ok(firstRange && secondRange);
@@ -399,7 +399,7 @@ test("navigation highlights validate every current part and snapshot before pain
 		frames.clearSearchHighlights();
 		assert.throws(
 			() => frames.highlight({ ...chapter, id: "other" }, ranges),
-			/完整/,
+			/尚未加载完成/,
 		);
 		assert.throws(
 			() =>
@@ -407,10 +407,10 @@ test("navigation highlights validate every current part and snapshot before pain
 					{ ...firstRange, exact: "錯" },
 					secondRange,
 				]),
-			/快照/,
+			/原文内容已变更/,
 		);
 		h2.textNode.data = "損壊";
-		assert.throws(() => frames.highlight(chapter, ranges), /投影/);
+		assert.throws(() => frames.highlight(chapter, ranges), /章节内容校验失败/);
 		for (const painted of highlights)
 			assert.equal(painted.has("folio-search"), false);
 		frames.clear();

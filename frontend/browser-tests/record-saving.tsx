@@ -442,7 +442,7 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 					copyCount() === 1,
 					"Translation must share one verified chapter snapshot",
 				);
-				button("关闭翻译（任务继续）").click();
+				button("关闭翻译").click();
 			}
 			if (["history", "chapter-history-failure"].includes(scenario)) {
 				await select();
@@ -471,7 +471,7 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 						wanted,
 					"Chosen full result must load",
 				);
-				button("关闭翻译（任务继续）").click();
+				button("关闭翻译").click();
 			}
 			const index =
 				scenario === "other-place"
@@ -532,7 +532,7 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 					}
 					releaseDetail?.();
 					await h.until(
-						() => !h.container.textContent?.includes("正在读取已存译文"),
+						() => !h.container.textContent?.includes("正在加载已存译文"),
 						"Late detail must settle",
 					);
 					check(
@@ -552,14 +552,15 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 					releaseSave?.();
 					await h.until(
 						() =>
-							h.container.textContent?.includes("保存结果尚未确认") === true,
+							h.container.textContent?.includes("暂未确认是否保存成功") ===
+							true,
 						"Lost response must expose verification retry",
 					);
 					check(
 						textarea().disabled && textarea().value === "首次提交固定值",
 						"Uncertain save must freeze first value despite late detail",
 					);
-					button("核实本次保存").click();
+					button("重试保存").click();
 				}
 			} else if (
 				["other-place", "internal-space", "punctuation"].includes(scenario)
@@ -586,12 +587,12 @@ export async function recordSaving(h: BrowserHarness, preview = false) {
 					"Reuse fixture must contain unsaved manual changes",
 				);
 				const choose = [...h.container.querySelectorAll("button")].find(
-					(node) => node.textContent?.startsWith("选用 "),
+					(node) => node.textContent?.startsWith("使用 "),
 				);
 				check(choose, "Same-source existing segment must be offered");
 				choose.click();
 				await h.until(
-					() => h.container.textContent?.includes("选用已有片段？") === true,
+					() => h.container.textContent?.includes("使用已有片段？") === true,
 					"Reuse must request abandoning draft before selecting existing segment",
 				);
 				button("选用并打开").click();

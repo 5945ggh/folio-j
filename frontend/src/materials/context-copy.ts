@@ -36,14 +36,14 @@ export function buildContextCopy(
 			chapter.title.trim(),
 		]
 			.filter(Boolean)
-			.join("／");
+			.join(" / ");
 		if (source) blocks.push(`出处：${source}`);
 	}
 	const target = reference.ranges
 		.map((range) => range.exact)
 		.join("")
 		.normalize("NFC");
-	blocks.push(`目标原文：\n${target}`);
+	blocks.push(`原文：\n${target}`);
 	if (context.before)
 		blocks.push(
 			`前文${context.beforeTruncated ? "（已截断）" : ""}：\n${context.before}`,

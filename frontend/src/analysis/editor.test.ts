@@ -110,7 +110,7 @@ test("no-op compares NFC without dropping Markdown whitespace; limits count Unic
 	);
 	assert.equal(minted, false);
 	assert.equal(sourceChanged(editing, "ばな\n"), true);
-	assert.equal(sourceError(" \n\t"), "讲解正文不能为空白。");
+	assert.equal(sourceError(" \n\t"), "请输入讲解正文。");
 	assert.equal(sourceError("𠮷".repeat(500_000)), null);
 	assert.ok(sourceError("𠮷".repeat(500_001)));
 	assert.equal(titleError("𠮷".repeat(200)), null);

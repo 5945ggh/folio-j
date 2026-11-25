@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { trimTrailingPunctuation } from "../content";
 import { NativeSelect } from "../NativeSelect";
 import { InlineError } from "../Shared";
 import { useSettingsDraft } from "../settings/SettingsForms";
@@ -141,7 +142,7 @@ export function AnkiPresetViewer({
 						<span className="anki-badge">系统预设</span>
 					</div>
 					<p className="anki-row-desc" style={{ margin: 0 }}>
-						系统预设为只读模板。你可以直接以此创建个人配置，绑定默认卡组并按需调整字段映射。
+						系统预设不可直接修改。你可以以此新建导出配置，设置默认卡组并按需调整字段映射。
 					</p>
 				</div>
 				<button
@@ -149,29 +150,28 @@ export function AnkiPresetViewer({
 					className="settings-button primary"
 					onClick={onCreatePersonal}
 				>
-					以此创建个人配置
+					以此新建配置
 				</button>
 			</div>
 
 			<section className="settings-section">
 				<div className="settings-section-heading">
-					<h3>笔记目标</h3>
+					<h3>目标设置</h3>
 				</div>
 				<div className="anki-card">
 					<div className="anki-card-row">
 						<div className="anki-row-meta">
 							<div className="anki-row-title">默认卡组</div>
 							<p className="anki-row-desc">
-								未预设卡组，使用时从当前 Anki 集合临时选择
+								未设置默认卡组，制卡时从当前 Anki 用户选择
 							</p>
 						</div>
 					</div>
 					<div className="anki-card-row">
 						<div className="anki-row-meta">
-							<div className="anki-row-title">随附笔记类型</div>
+							<div className="anki-row-title">笔记类型</div>
 							<p className="anki-row-desc">
-								{noteType?.name ?? preset.note_type_ref.id}（内置 v
-								{preset.note_type_ref.version} ·{" "}
+								{noteType?.name ?? "内置笔记类型"}（内置 ·{" "}
 								{noteType?.card_templates.length ?? 1} 个卡片模板 ·{" "}
 								{noteType?.fields.length ?? preset.fields.length} 个字段）
 							</p>
@@ -351,6 +351,12 @@ export function AnkiConfigurationEditor({
 		if (externalFieldsQuery.data) return externalFieldsQuery.data.fields;
 		return null;
 	}, [builtinNoteType, externalFieldsQuery.data]);
+	let unverifiedTargetLabel = "（尚未确认）";
+	if (draft.noteType?.kind === "external") {
+		if (catalogLoading || externalFieldsQuery.isFetching)
+			unverifiedTargetLabel = "（正在加载）";
+		else if (!catalog) unverifiedTargetLabel = "（未连接）";
+	}
 
 	const mappingIssues = useMemo(
 		() => validateFieldMappings(draft.fields, knownTargetFields),
@@ -431,7 +437,7 @@ export function AnkiConfigurationEditor({
 
 	useSettingsDraft({
 		id: `anki-config-${editorKey}`,
-		label: draft.name.trim() || "Anki 笔记配置",
+		label: draft.name.trim() || "Anki 导出配置",
 		dirty,
 		pending: saveMutation.isPending,
 		save: performSave,
@@ -448,6 +454,13 @@ export function AnkiConfigurationEditor({
 	}, [returnAfterSave, saveMutation.isPending, dirty, onSaved]);
 
 	const matchedDeck = resolveDeckInCatalog(draft.deck, catalog);
+	const unmatchedTargetLabel = catalogLoading
+		? "（正在加载）"
+		: catalog
+			? "（当前 Anki 中未找到）"
+			: "（未连接）";
+	const connectionError =
+		catalogError && trimTrailingPunctuation(catalogError.message);
 	const currentDeckValue = matchedDeck
 		? matchedDeck.id
 		: draft.deck
@@ -603,7 +616,7 @@ export function AnkiConfigurationEditor({
 						</span>
 					</div>
 					<p className="anki-row-desc" style={{ margin: 0 }}>
-						设置制作笔记时使用的卡组、笔记类型与字段映射。仅保存字段定义，不包含单次草稿内容。
+						设置制卡时使用的卡组、笔记类型与字段映射。
 					</p>
 				</div>
 				{mode === "edit" && onSaveAsCopy && (
@@ -612,7 +625,7 @@ export function AnkiConfigurationEditor({
 						className="settings-button secondary"
 						onClick={() => onSaveAsCopy(draft)}
 					>
-						另存为个人配置
+						另存为新配置
 					</button>
 				)}
 			</div>
@@ -621,10 +634,10 @@ export function AnkiConfigurationEditor({
 				<div className="anki-offline-banner" role="status">
 					<span>
 						{catalogLoading
-							? "正在读取 Anki 卡组与笔记类型…"
-							: catalogError
-								? `未连接 Anki（${catalogError.message}）。你仍可离线编辑配置并保存，已选外部目标将在恢复连接后核验。`
-								: "当前未连接 Anki。你仍可离线编辑并保存配置，外部卡组与笔记类型将在恢复连接后核验。"}
+							? "正在加载 Anki 卡组与笔记类型…"
+							: connectionError
+								? `未连接 Anki（${connectionError}），可离线编辑并保存配置。`
+								: "当前未连接 Anki，你仍可离线编辑并保存配置。"}
 					</span>
 					<button
 						type="button"
@@ -632,17 +645,17 @@ export function AnkiConfigurationEditor({
 						disabled={catalogLoading}
 						onClick={onRefreshCatalog}
 					>
-						{catalogLoading ? "刷新中…" : "重新读取目录"}
+						{catalogLoading ? "正在加载…" : "重新加载"}
 					</button>
 				</div>
 			)}
 
 			<section className="settings-section">
 				<div className="settings-section-heading">
-					<h3>笔记目标</h3>
+					<h3>目标设置</h3>
 					{catalog && (
 						<span className="anki-row-desc" style={{ margin: 0 }}>
-							当前集合：{catalog.profile}
+							当前 Anki 用户：{catalog.profile}
 						</span>
 					)}
 				</div>
@@ -658,7 +671,8 @@ export function AnkiConfigurationEditor({
 							<option value="">暂不设置默认卡组</option>
 							{draft.deck && !matchedDeck && (
 								<option value={`__saved__:${draft.deck.name}`}>
-									{draft.deck.name}（待核验）
+									{draft.deck.name}
+									{unmatchedTargetLabel}
 								</option>
 							)}
 							{catalog?.decks.map((deck) => (
@@ -683,11 +697,12 @@ export function AnkiConfigurationEditor({
 							{draft.noteType?.kind === "external" &&
 								!matchedExternalNoteType && (
 									<option value={currentNoteTypeValue}>
-										{draft.noteType.name}（待核验）
+										{draft.noteType.name}
+										{unmatchedTargetLabel}
 									</option>
 								)}
 							{latestBuiltinTypes.length > 0 && (
-								<optgroup label="Folio-J 内置类型">
+								<optgroup label="内置笔记类型">
 									{latestBuiltinTypes.map((item) => (
 										<option
 											key={item.id}
@@ -706,13 +721,13 @@ export function AnkiConfigurationEditor({
 								</optgroup>
 							)}
 							{catalog?.note_types.length ? (
-								<optgroup label={`Anki 现有类型（${catalog.profile}）`}>
+								<optgroup label={`Anki 已有类型（${catalog.profile}）`}>
 									{catalog.note_types.map((item) => (
 										<option key={item.id} value={`external:${item.id}`}>
 											{item.name}
 											{builtins?.note_types.some(
 												(type) => type.name === item.name,
-											) && "（按 Anki 现有模板）"}
+											) && "（使用 Anki 已有模板）"}
 										</option>
 									))}
 								</optgroup>
@@ -721,7 +736,7 @@ export function AnkiConfigurationEditor({
 					</div>
 				</div>
 				<p className="anki-row-desc" style={{ marginTop: 8 }}>
-					卡组和笔记类型可以暂不设置，实际发送到 Anki 时再确认。
+					默认卡组可留空，制卡时再选择；笔记类型需在此设置后才能发送。
 				</p>
 			</section>
 
@@ -758,6 +773,7 @@ export function AnkiConfigurationEditor({
 							issue={issueByFieldId.get(field.id)}
 							expanded={expandedFieldId === field.id}
 							knownTargetFields={knownTargetFields}
+							unverifiedTargetLabel={unverifiedTargetLabel}
 							onChange={(patch) => updateField(field.id, patch)}
 							onRemove={() => removeField(field.id)}
 							onMove={(direction) => moveField(index, direction)}
@@ -770,8 +786,7 @@ export function AnkiConfigurationEditor({
 					))}
 				</div>
 				<p className="anki-row-desc" style={{ marginTop: 10 }}>
-					必填字段缺少内容时会在制卡浮窗直接露出以便补全。未映射的字段不会发送到
-					Anki。
+					标记为必填的字段在发送前不能为空；未映射的字段不会发送到 Anki。
 				</p>
 			</section>
 

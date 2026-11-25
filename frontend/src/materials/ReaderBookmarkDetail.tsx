@@ -45,7 +45,7 @@ function BookmarkEditor({
 	const [reloaded, setReloaded] = useState(false);
 	const [error, setError] = useState<string | null>(
 		draft.conflict
-			? "此书签已在其他操作中更新，备注草稿已保留。请读取最新书签后确认保存。"
+			? "书签已在别处更新，请刷新后再保存（当前编辑内容已保留）。"
 			: null,
 	);
 	const textarea = useRef<HTMLTextAreaElement>(null);
@@ -70,8 +70,8 @@ function BookmarkEditor({
 			setConflict(isConflict(failure));
 			setError(
 				isConflict(failure)
-					? "此书签已在其他操作中更新，备注草稿已保留。请读取最新书签后确认保存。"
-					: `备注未保存：${failureMessage(failure)} 草稿已保留。`,
+					? "书签已在别处更新，请刷新后再保存（当前编辑内容已保留）。"
+					: `备注保存失败：${failureMessage(failure)}`,
 			);
 		},
 	});
@@ -84,8 +84,7 @@ function BookmarkEditor({
 			setError(null);
 			void bookmarks.invalidate();
 		},
-		onError: (failure) =>
-			setError(`无法读取最新书签：${failureMessage(failure)} 草稿已保留。`),
+		onError: (failure) => setError(`刷新书签失败：${failureMessage(failure)}`),
 	});
 	const tooLong = bookmarkNoteTooLong(draft.note);
 	const busy = save.isPending || reload.isPending;
@@ -103,22 +102,20 @@ function BookmarkEditor({
 					}
 				/>
 			</label>
-			<p className="reader-bookmark-hint">
-				可留空。草稿在本次会话保留，关闭详情后可继续编辑。
-			</p>
+			<p className="reader-bookmark-hint">选填，最多 5000 字。</p>
 			{tooLong && <p role="alert">备注不能超过 5000 个字符。</p>}
 			{error && <p role="alert">{error}</p>}
 			{conflict && (
 				<button type="button" disabled={busy} onClick={() => reload.mutate()}>
-					读取最新书签
+					刷新书签
 				</button>
 			)}
 			{(reloaded || draft.base.revision !== bookmark.revision) && !conflict && (
 				<details>
 					<summary>
 						{draft.base.revision < bookmark.revision
-							? "书签已有更新，草稿仍保留"
-							: "已读取最新备注，草稿仍保留"}
+							? "查看最新备注（当前编辑内容已保留）"
+							: "已刷新最新备注（当前编辑内容已保留）"}
 					</summary>
 					<p className="reader-bookmark-note">
 						{(draft.base.revision >= bookmark.revision
@@ -286,13 +283,13 @@ export function ReaderBookmarkDetail({
 			<div className="reader-bookmark-detail-content">
 				{!canLocate && (
 					<p className="reader-search-empty">
-						原文位置暂不可用，以下为已保存内容。
+						无法定位到原书位置，以下为已保存的内容。
 					</p>
 				)}
-				{!validation.isFetchedAfterMount && <p role="status">正在核验书签…</p>}
+				{!validation.isFetchedAfterMount && <p role="status">正在加载书签…</p>}
 				{validation.isError && (
 					<p role="alert">
-						无法读取书签，备注草稿已保留。
+						书签加载失败。
 						<button
 							type="button"
 							disabled={validation.isFetching}
@@ -300,7 +297,7 @@ export function ReaderBookmarkDetail({
 								void validation.refetch();
 							}}
 						>
-							重试读取书签
+							重试
 						</button>
 					</p>
 				)}

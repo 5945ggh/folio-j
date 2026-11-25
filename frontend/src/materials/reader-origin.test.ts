@@ -132,7 +132,7 @@ for (const item of cases.chapter_cases) {
 		}
 		assert.throws(
 			() => originPosition({ ...origin, parts: [] }, settings),
-			/完整/,
+			/出处定位信息无效/,
 		);
 	});
 }

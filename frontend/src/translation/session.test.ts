@@ -302,10 +302,10 @@ test("a posted or uncertain translation must be verified before removal", async 
 	for (let index = 0; index < 20 && !f.requests.length; index++)
 		await Promise.resolve();
 	assert.equal(f.requests.length, 1);
-	await assert.rejects(f.session.remove(), /先核实原提交/);
+	await assert.rejects(f.session.remove(), /先确认当前翻译请求状态/);
 	posted.reject(new Error("网络响应中断"));
 	assert.equal((await pending).kind, "uncertain");
-	await assert.rejects(f.session.remove(), /先核实原提交/);
+	await assert.rejects(f.session.remove(), /先确认当前翻译请求状态/);
 	f.adapter.submit = async (_id, input) =>
 		task(input.material_provenance, input.request_id);
 	assert.equal((await f.session.execute({ kind: "verify" })).kind, "accepted");

@@ -76,7 +76,7 @@ function BookDetails({ id }: { id: string }) {
 										setCoverAttempt((value) => value + 1);
 									}}
 								>
-									重试封面
+									重新加载封面
 								</button>
 							)}
 						</div>
@@ -111,7 +111,7 @@ function BookDetails({ id }: { id: string }) {
 						<dl className="book-details-fields">
 							<div>
 								<dt>原书名</dt>
-								<dd>{book.original_title || "未提供"}</dd>
+								<dd>{book.original_title || "—"}</dd>
 							</div>
 							<div>
 								<dt>所属来源</dt>

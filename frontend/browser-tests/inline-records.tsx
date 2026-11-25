@@ -377,7 +377,7 @@ export async function inlineRecords(
 					...h.container.querySelectorAll<HTMLButtonElement>(
 						".reader-study-margin",
 					),
-				].find((node) => node.getAttribute("aria-label") === "打开此处翻译");
+				].find((node) => node.getAttribute("aria-label") === "打开此处译文");
 				check(
 					marker,
 					"Inline-to-margin regression needs a single saved translation",
@@ -535,7 +535,7 @@ export async function inlineRecords(
 			direction === "vertical-rl"
 				? margins[0]
 				: margins.find(
-						(node) => node.getAttribute("aria-label") === "打开此处翻译",
+						(node) => node.getAttribute("aria-label") === "打开此处译文",
 					);
 		check(margin, "Fixture requires translation-only margin");
 		margin.click();

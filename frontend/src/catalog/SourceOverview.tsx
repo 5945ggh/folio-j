@@ -104,7 +104,7 @@ export function SourceOverview({
 					onShowInfo();
 				}}
 			>
-				来源信息
+				查看完整信息
 			</button>
 		</section>
 	);
@@ -139,9 +139,7 @@ export function SourceOverview({
 			) : books.isError ? (
 				<Retry error={books.error} retry={() => void books.refetch()} />
 			) : books.data.total === 0 && imports.length === 0 ? (
-				<p className="overview-empty-hint">
-					没有完整素材，也可以保留和阅读这里的片段。
-				</p>
+				<p className="overview-empty-hint">尚未导入书籍</p>
 			) : null}
 			<button
 				type="button"
@@ -164,7 +162,7 @@ export function SourceOverview({
 							<Icon name="book" />
 						</div>
 						<h2>从第一段内容开始</h2>
-						<p>可以直接添加日文片段，也可以先导入一个素材。</p>
+						<p>可以直接添加日文片段，也可以先导入一本书。</p>
 						<div className="actions">
 							<button
 								type="button"
@@ -184,7 +182,7 @@ export function SourceOverview({
 									setAdding(true);
 								}}
 							>
-								导入素材
+								导入书籍
 							</button>
 						</div>
 					</div>
@@ -196,7 +194,7 @@ export function SourceOverview({
 					<section className="sparse-learning">
 						<h2>片段与讲解</h2>
 						<p className="overview-empty-hint">
-							这里还没有保存的片段和讲解。阅读时可以按需留下内容。
+							还没有片段和讲解，阅读时可以随时摘录。
 						</p>
 						<button
 							type="button"
@@ -233,9 +231,7 @@ export function SourceOverview({
 									retry={() => void analyses.refetch()}
 								/>
 							) : analyses.data.total === 0 ? (
-								<p className="overview-empty-hint">
-									尚无已保存讲解。片段仍可直接阅读和讨论。
-								</p>
+								<p className="overview-empty-hint">暂无讲解</p>
 							) : (
 								analyses.data.items.map((analysis) => (
 									<Link
@@ -300,7 +296,7 @@ export function SourceOverview({
 											to={`/segments/${segment.id}?chat=1`}
 											state={{ returnTo }}
 										>
-											讨论
+											对话
 										</Link>
 									</article>
 								))

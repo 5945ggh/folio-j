@@ -35,7 +35,7 @@ export function ProviderSettings({ providers }: { providers: Provider[] }) {
 			<p className="settings-hint">
 				{providers.length} 个服务 ·{" "}
 				{providers.reduce((count, item) => count + item.models.length, 0)}{" "}
-				个已登记模型
+				个模型
 			</p>
 			<div className="provider-service-list">
 				{providers.map((item) => {
@@ -70,7 +70,7 @@ export function ProviderSettings({ providers }: { providers: Provider[] }) {
 					<div className="provider-empty">
 						<p>还没有模型服务。</p>
 						<p className="settings-hint">
-							添加 API 地址与凭据后，可以发现模型或手动登记模型 ID。
+							添加 API 地址和 API 密钥后，可获取模型列表或手动添加模型。
 						</p>
 					</div>
 				)}
@@ -180,8 +180,8 @@ function ProviderDetail({
 				</h2>
 				<p>
 					{model
-						? "删除此模型登记，保留历史验证记录。使用它的用途默认值将失效，需要重新选择；不会自动改用其他模型。"
-						: "此服务及其登记的模型将被删除。引用这些模型的讲解、讨论和条目整理默认值将失效，需要重新选择；不会自动改用其他模型。历史验证记录会保留。"}
+						? "删除该模型后，历史验证记录会保留。引用它的默认模型设置将失效，需要重新选择。"
+						: "将删除此服务及其所有模型，历史验证记录会保留。引用这些模型的默认模型设置将失效，需要重新选择。"}
 				</p>
 				<InlineError error={remove.error} />
 				<div className="settings-actions">
@@ -200,7 +200,7 @@ function ProviderDetail({
 						disabled={remove.isPending}
 						onClick={returnToDetail}
 					>
-						返回服务详情
+						取消
 					</button>
 				</div>
 			</ConfirmDialog>
@@ -293,11 +293,11 @@ function ProviderDetail({
 					</section>
 					<section aria-labelledby="provider-key-title">
 						<h3 className="provider-block-title" id="provider-key-title">
-							访问密钥
+							API 密钥
 						</h3>
 						<div className="settings-group provider-option-row">
 							<div>
-								<strong>API Key</strong>
+								<strong>密钥</strong>
 								<span className="settings-hint">
 									{provider.has_api_key ? "已配置" : "未配置"}
 								</span>
@@ -314,13 +314,13 @@ function ProviderDetail({
 					</section>
 					<section aria-labelledby="provider-management-title">
 						<h3 className="provider-block-title" id="provider-management-title">
-							服务管理
+							启用状态
 						</h3>
 						<label className="settings-group provider-option-row">
 							<span>
 								<strong>启用此服务</strong>
 								<small className="settings-hint">
-									停用后，此服务下的模型将无法用于新请求。
+									停用后，此服务下的模型将暂时不可用。
 								</small>
 							</span>
 							<input

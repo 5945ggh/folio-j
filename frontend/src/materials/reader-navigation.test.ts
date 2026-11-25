@@ -471,7 +471,7 @@ test("return failure retains the origin and a located retry consumes it", async 
 	f.complete(undefined, false);
 	assert.deepEqual(f.navigation.state.origin, origin);
 	assert.equal(f.navigation.state.returning, false);
-	assert.match(f.navigation.state.error?.message ?? "", /已保留返回点/);
+	assert.match(f.navigation.state.error?.message ?? "", /未能返回原位置/);
 	assert.equal(await f.navigate({ type: "return" }), true);
 	f.complete();
 	assert.equal(f.navigation.state.origin, null);

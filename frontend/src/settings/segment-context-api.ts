@@ -25,6 +25,6 @@ export async function saveSegmentContextSettings(
 		{ body },
 	);
 	if (response.status === 409)
-		throw new RequestError("语境设置已在其他页面更新。", 409);
+		throw new RequestError("前后文设置已在其他页面更新。", 409);
 	return requireData(data, error, response.status);
 }

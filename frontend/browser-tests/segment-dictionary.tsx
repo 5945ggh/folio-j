@@ -190,10 +190,8 @@ export async function segmentDictionary(h: BrowserHarness) {
 			{ path: "", element: <p>已离开片段</p> },
 		],
 	);
-	const button = (label: string) => {
-		const node = [
-			...h.container.querySelectorAll<HTMLButtonElement>("button"),
-		].find(
+	const button = (label: string, scope: ParentNode = h.container) => {
+		const node = [...scope.querySelectorAll<HTMLButtonElement>("button")].find(
 			(item) =>
 				(item.getAttribute("aria-label") ?? item.textContent?.trim()) === label,
 		);
@@ -315,7 +313,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 				button("关闭查词设置").click();
 			};
 			await verifyBothThemes(true, "click");
-			await chooseMode("Shift 悬浮");
+			await chooseMode("Shift 悬停");
 			await verifyBothThemes(true, "Shift");
 			await chooseMode("关闭");
 			await verifyBothThemes(false, "off");
@@ -483,7 +481,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 			);
 			checkTopLayer(segmentSelectionToolbar);
 			const selected = document.getSelection()?.toString();
-			button("查所选文字").click();
+			button("查词").click();
 			await resolved("complete context selection");
 			check(
 				requests.at(-1)?.text === selected &&
@@ -506,7 +504,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 				() => !!h.container.querySelector(".dict-modes"),
 				"Material test must enable Shift lookup",
 			);
-			button("Shift 悬浮").click();
+			button("Shift 悬停").click();
 			button("关闭查词设置").click();
 			await openMaterial();
 			const at = point(materialText(2));
@@ -573,7 +571,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 			await settle();
 			if (!preview && !capture) {
 				find<HTMLAnchorElement>(
-					'.segment-tools a[aria-label="首页（素材库）"]',
+					'.segment-tools a[aria-label="素材库"]',
 				).click();
 				await h.until(
 					() => h.container.textContent?.includes("已离开片段") === true,
@@ -639,7 +637,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 				() => !!h.container.querySelector(".dict-modes"),
 				"Retained-page test must choose Shift lookup",
 			);
-			button("Shift 悬浮").click();
+			button("Shift 悬停").click();
 			button("关闭查词设置").click();
 			await settle();
 			const sameGlyph = point(original);
@@ -727,7 +725,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 			() => !!h.container.querySelector(segmentSelectionToolbar),
 			"Native Segment selection must expose explicit lookup",
 		);
-		button("查所选文字").click();
+		button("查词").click();
 		await resolved("explicit selection");
 		check(
 			requests.at(-1)?.text === selectedText &&
@@ -776,7 +774,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 			() => !!h.container.querySelector(".dict-modes"),
 			"Mode settings must reopen",
 		);
-		button("Shift 悬浮").click();
+		button("Shift 悬停").click();
 		button("关闭查词设置").click();
 		const hoverAt = point(find(".analysis-markdown p:nth-child(2)"));
 		const beforeHover = requests.length;
@@ -945,7 +943,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 		);
 		const failedRequest = requests.at(-1);
 		const beforeRetry = requests.length;
-		button("重试查词").click();
+		button("重试", retryRoot).click();
 		await resolved("retried refresh");
 		check(
 			requests.length === beforeRetry + 1 &&
@@ -958,7 +956,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 			"Retry must use the current options, recover the highlight and retain the root and menu focus",
 		);
 		const beforeModeChange = requests.length;
-		button("Shift 悬浮").click();
+		button("Shift 悬停").click();
 		await h.until(
 			() => !h.container.querySelector(".dict-deck"),
 			"Switching lookup mode must still clear the deck",
@@ -1014,9 +1012,7 @@ export async function segmentDictionary(h: BrowserHarness) {
 		} else {
 			await click(find(".segment-original-focus"));
 			await resolved("before leave");
-			find<HTMLAnchorElement>(
-				'.segment-tools a[aria-label="首页（素材库）"]',
-			).click();
+			find<HTMLAnchorElement>('.segment-tools a[aria-label="素材库"]').click();
 			await h.until(
 				() => h.container.textContent?.includes("已离开片段") === true,
 				"Home navigation must leave the Segment",

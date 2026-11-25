@@ -347,18 +347,18 @@ function SourceSegments({
 						<Icon name="book" />
 					</div>
 					<h2>从第一段内容开始</h2>
-					<p>添加一段日文，开始阅读和讨论。</p>
+					<p>添加一段日文，开始阅读和对话。</p>
 					<div className="actions">{addButton}</div>
 				</div>
 			) : view === "no-results" ? (
 				<div className="source-list-no-results">
-					<p>没有找到匹配的片段。</p>
+					<p>没有找到匹配的片段</p>
 					<button
 						className="source-text-button"
 						type="button"
 						onClick={() => change({ q: "" })}
 					>
-						清除搜索
+						清空筛选
 					</button>
 				</div>
 			) : (
@@ -381,7 +381,7 @@ function SourceSegments({
 									to={`/segments/${segment.id}?chat=1`}
 									state={{ returnTo }}
 								>
-									讨论
+									对话
 								</Link>
 								<SegmentMenu
 									id={segment.id}
@@ -488,8 +488,8 @@ function SourceAnalyses({
 					<div className="source-welcome-icon">
 						<Icon name="book" />
 					</div>
-					<h2>还没有保存的讲解</h2>
-					<p>进入片段阅读或讨论，保存值得留用的讲解。</p>
+					<h2>还没有讲解</h2>
+					<p>进入片段阅读或对话，将有用的讲解保存下来。</p>
 					<div className="actions">
 						<button
 							className="button secondary"
@@ -502,13 +502,13 @@ function SourceAnalyses({
 				</div>
 			) : view === "no-results" ? (
 				<div className="source-list-no-results">
-					<p>没有找到匹配的讲解。</p>
+					<p>没有找到匹配的讲解</p>
 					<button
 						className="source-text-button"
 						type="button"
 						onClick={() => change({ q: "" })}
 					>
-						清除搜索
+						清空筛选
 					</button>
 				</div>
 			) : (

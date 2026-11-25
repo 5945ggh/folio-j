@@ -336,7 +336,7 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 	const update = useMutation({
 		mutationFn: async (fields: SegmentFields) => {
 			const initial = editSnapshot.current;
-			if (!initial) throw new Error("无法读取编辑依据，请重新打开片段编辑。");
+			if (!initial) throw new Error("编辑状态已失效，请关闭后重新打开。");
 			const body = changedSegmentFields(fields, initial);
 			if (Object.keys(body).length === 0) return initial;
 			const { data, error, response } = await api.PATCH(
@@ -411,11 +411,11 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 			>
 				{!checked ? (
 					<p className="segment-page-state" role="status">
-						正在读取片段…
+						正在加载片段…
 					</p>
 				) : segment.isError ? (
 					<div className="segment-page-state" role="alert">
-						<h1>{missing ? "找不到这条记录" : "暂时无法加载"}</h1>
+						<h1>{missing ? "找不到这个片段" : "暂时无法加载"}</h1>
 						<InlineError error={segment.error} />
 						{!missing && (
 							<button
@@ -638,9 +638,9 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 												ref={discussionClose}
 												className="chat-icon-button"
 												type="button"
-												aria-label={compact ? "返回阅读" : "收起讨论"}
-												title={compact ? "返回阅读" : "收起讨论"}
-												data-tooltip={compact ? "返回阅读" : "收起讨论"}
+												aria-label={compact ? "返回阅读" : "收起对话"}
+												title={compact ? "返回阅读" : "收起对话"}
+												data-tooltip={compact ? "返回阅读" : "收起对话"}
 												onClick={() => setChatOpen(false)}
 											>
 												<svg
@@ -727,7 +727,7 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 								<section aria-label="当前已保存内容">
 									<h3>当前已保存内容</h3>
 									{conflictCurrent.isFetching ? (
-										<p role="status">正在读取当前内容…</p>
+										<p role="status">正在加载最新内容…</p>
 									) : conflictCurrent.isError ? (
 										<>
 											<InlineError error={conflictCurrent.error} />
@@ -735,7 +735,7 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 												type="button"
 												onClick={() => void conflictCurrent.refetch()}
 											>
-												重试读取当前内容
+												重试
 											</button>
 										</>
 									) : conflictCurrent.data ? (
@@ -770,7 +770,7 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 													update.reset();
 												}}
 											>
-												已核对，允许按当前版本保存草稿
+												确认并继续保存
 											</button>
 										</>
 									) : null}
@@ -787,7 +787,7 @@ export function SegmentDetail({ entry }: { entry?: SegmentSessionEntry } = {}) {
 									update.error instanceof RequestError &&
 									update.error.status === 409
 										? new Error(
-												"片段已被其他操作更新，草稿已保留。请核对上方的当前内容，再明确重试保存。",
+												"片段已在别处更新，你的草稿已保留。请先对照上方最新内容，确认后再保存。",
 											)
 										: update.error
 								}

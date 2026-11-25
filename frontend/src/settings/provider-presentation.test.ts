@@ -37,7 +37,7 @@ test("provider summary requires both text capabilities and enabled configuration
 	);
 	assert.match(
 		summarizeProvider({ enabled: true, models: [ready] }).label,
-		/文本验证/,
+		/已验证/,
 	);
 });
 

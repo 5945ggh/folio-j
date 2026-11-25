@@ -91,12 +91,12 @@ export function SegmentFrame({
 				<Link
 					className="segment-tool"
 					to="/"
-					aria-label="首页（素材库）"
-					title="首页（素材库）"
+					aria-label="素材库"
+					title="素材库"
 				>
 					<ToolIcon name="home" />
-					<span className="segment-tool-mobile-label">首页</span>
-					<span className="segment-tool-label">首页（素材库）</span>
+					<span className="segment-tool-mobile-label">素材库</span>
+					<span className="segment-tool-label">素材库</span>
 				</Link>
 				<Link
 					className="segment-tool"
@@ -115,16 +115,16 @@ export function SegmentFrame({
 						className="segment-tool"
 						type="button"
 						disabled={!available}
-						aria-label={chatOpen ? "收起讨论" : "展开讨论"}
-						title={chatOpen ? "收起讨论" : "展开讨论"}
+						aria-label={chatOpen ? "收起对话" : "展开对话"}
+						title={chatOpen ? "收起对话" : "展开对话"}
 						aria-expanded={chatOpen && available}
 						aria-controls="segment-conversation"
 						onClick={onToggleDiscussion}
 					>
 						<ToolIcon name="chat" />
-						<span className="segment-tool-mobile-label">讨论</span>
+						<span className="segment-tool-mobile-label">对话</span>
 						<span className="segment-tool-label">
-							{chatOpen ? "收起讨论" : "展开讨论"}
+							{chatOpen ? "收起对话" : "展开对话"}
 						</span>
 					</button>
 				</div>

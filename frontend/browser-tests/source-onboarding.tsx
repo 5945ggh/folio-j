@@ -107,7 +107,8 @@ export async function sourceOnboarding(h: BrowserHarness): Promise<string> {
 			"Confirmed zero-source welcome must omit the source switch",
 		);
 		check(
-			welcome.textContent?.includes("创建来源后") ?? false,
+			welcome.textContent?.includes("创建后就可以导入书籍或添加日文片段") ??
+				false,
 			"Zero-source welcome must point at source creation",
 		);
 		const welcomeCreate = action("新建来源", welcome);
@@ -204,7 +205,7 @@ export async function sourceOnboarding(h: BrowserHarness): Promise<string> {
 			() => document.activeElement === name,
 			"New-source view must focus the source name",
 		);
-		action("返回添加书籍").click();
+		action("返回导入书籍").click();
 		await until(
 			() => document.activeElement === emptyAction,
 			"Returning without sources must focus the whole-region CTA",
@@ -223,7 +224,7 @@ export async function sourceOnboarding(h: BrowserHarness): Promise<string> {
 		action("创建来源").click();
 		await until(
 			() =>
-				container.querySelector("#import-title")?.textContent === "添加书籍",
+				container.querySelector("#import-title")?.textContent === "导入书籍",
 			"Creating a source must return to the import view",
 		);
 		const request = createdRequest();

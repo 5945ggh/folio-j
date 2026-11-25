@@ -142,7 +142,7 @@ export function BookCard({
 					type="button"
 					ref={trigger}
 					className="library-icon book-menu-trigger"
-					aria-label={`「${book.title}」的更多操作`}
+					aria-label={`《${book.title}》的更多操作`}
 					title="更多操作"
 					aria-haspopup="menu"
 					popoverTarget={menuId}
@@ -164,7 +164,7 @@ export function BookCard({
 				className="library-popover book-menu popover-motion"
 				role="menu"
 				aria-label={
-					menuPage === "status" ? "阅读状态" : `「${book.title}」的更多操作`
+					menuPage === "status" ? "阅读状态" : `《${book.title}》的更多操作`
 				}
 				onKeyDown={(event) => {
 					const page = bookMenuPageForKey(
@@ -260,7 +260,7 @@ export function BookCard({
 									menu.current?.hidePopover();
 								}}
 							>
-								重试封面
+								重新加载封面
 							</button>
 						)}
 						<hr />
@@ -291,9 +291,9 @@ export function BookCard({
 							}}
 						>
 							<span className="book-menu-arrow" aria-hidden="true">
-								‹
+								←
 							</span>
-							阅读状态
+							返回更多操作
 						</button>
 						<hr />
 						{Object.entries(statusLabels).map(([value, label]) => (
@@ -481,7 +481,7 @@ export function BookCatalog({
 					<BookGrid
 						books={renderedBooks}
 						imports={imports}
-						returnLabel={sourceId ? "来源书籍窗口" : "素材库"}
+						returnLabel={sourceId ? "全部书籍" : "素材库"}
 						onEdit={setEditing}
 						onDelete={setDeleting}
 					/>
@@ -505,24 +505,24 @@ export function BookCatalog({
 						id="library-empty-import"
 						type="button"
 						className="library-empty-import"
-						aria-label="导入 EPUB"
+						aria-label="导入书籍"
 						onClick={(event) => {
 							event.currentTarget.focus();
 							add();
 						}}
 					>
 						<Icon name="book" />
-						<span className="library-empty-title">留下一本好书</span>
-						<span>点击这片区域，导入 EPUB</span>
+						<span className="library-empty-title">导入第一本书</span>
+						<span>点击此处选择 EPUB 文件</span>
 					</button>
 				) : books.data.items.length === 0 ? (
 					<div className="empty-state">
 						<p>
 							{view === "out-of-page"
-								? "正在调整到有效页…"
+								? "正在加载…"
 								: filtered
 									? "没有找到匹配的书籍"
-									: "还没有书籍。添加 EPUB 后即可开始阅读。"}
+									: "还没有书籍，导入 EPUB 后即可开始阅读。"}
 						</p>
 						{filtered && (
 							<button
@@ -530,7 +530,7 @@ export function BookCatalog({
 								className="button secondary"
 								onClick={() => change({ q: "", status: "", source_id: "" })}
 							>
-								清空条件
+								清空筛选
 							</button>
 						)}
 					</div>

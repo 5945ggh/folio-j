@@ -70,7 +70,7 @@ async function pageBoundaryFallbacks(h: BrowserHarness) {
 		const alert = h.container.querySelector('[role="alert"]');
 		const reload = alert?.querySelector<HTMLButtonElement>("button");
 		check(
-			alert?.textContent?.includes("页面暂时无法打开") &&
+			alert?.textContent?.includes("页面出现异常") &&
 				reload?.textContent?.trim() === "重新加载" &&
 				!reload.disabled,
 			"PageBoundary must offer its generic error and enabled reload action",
@@ -175,7 +175,7 @@ async function routeLoadingScenario(h: BrowserHarness) {
 			() => composer.value === draft,
 			"Discussion must receive the draft",
 		);
-		click('button[aria-label="收起讨论"], button[aria-label="返回阅读"]');
+		click('button[aria-label="收起对话"], button[aria-label="返回阅读"]');
 		await h.until(
 			() => !!h.container.querySelector(".segment-shell.conversation-closed"),
 			"Hiding discussion must return to Segment reading",
@@ -302,7 +302,7 @@ export async function routeLoading(h: BrowserHarness) {
 				() =>
 					!!h.container
 						.querySelector('[data-segment-session="active"] [role="alert"] h1')
-						?.textContent?.includes("页面暂时无法打开"),
+						?.textContent?.includes("页面出现异常"),
 				"Segment render errors belong inside their retained instance",
 			);
 			await navigate("/settings?section=speech", {

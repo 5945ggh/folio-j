@@ -399,7 +399,7 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 		);
 		check(
 			button("选择模型").textContent?.includes("offline-model") &&
-				button("设置审核模式").textContent?.includes("审核模式"),
+				button("设置 AI 修改权限").textContent?.includes("修改前确认"),
 			"Current model and permission must remain visible before opening settings",
 		);
 		check(
@@ -452,9 +452,9 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 				"Disabled model choice must not patch thread",
 			);
 		}
-		await openSetting("设置审核模式", "审核模式");
+		await openSetting("设置 AI 修改权限", "AI 修改权限");
 		check(
-			!popover("审核模式").querySelector("select"),
+			!popover("AI 修改权限").querySelector("select"),
 			"Permission popover must show options directly without a nested select",
 		);
 		check(
@@ -467,7 +467,7 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 			!popover("模型设置").matches(":popover-open"),
 			"Switching to permissions must close the model popover",
 		);
-		await closeSetting("设置审核模式", "审核模式");
+		await closeSetting("设置 AI 修改权限", "AI 修改权限");
 		button("返回对话列表").click();
 		await until(
 			() => !find<HTMLElement>(".chat-list-view").hidden,
@@ -515,20 +515,20 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 			Number(patched.length) === 1,
 			"Selecting the current model must not patch thread again",
 		);
-		await openSetting("设置审核模式", "审核模式");
+		await openSetting("设置 AI 修改权限", "AI 修改权限");
 		permissionChoice("full_access").click();
 		await until(
 			() =>
 				patched.length === 2 &&
 				permissionChoice("full_access").checked &&
 				!permissionChoice("full_access").disabled &&
-				!popover("审核模式").matches(":popover-open"),
+				!popover("AI 修改权限").matches(":popover-open"),
 			"One permission click must persist selection and close its popover",
 		);
-		await openSetting("设置审核模式", "审核模式");
+		await openSetting("设置 AI 修改权限", "AI 修改权限");
 		permissionChoice("full_access").click();
 		await until(
-			() => !popover("审核模式").matches(":popover-open"),
+			() => !popover("AI 修改权限").matches(":popover-open"),
 			"Selecting current permissions must close its popover",
 		);
 		check(
@@ -612,12 +612,12 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 				"Model settings must include stream choice",
 			);
 			check(
-				popover("审核模式").contains(permissionChoice("review")),
+				popover("AI 修改权限").contains(permissionChoice("review")),
 				"Permission must have its own popover",
 			);
 			check(
 				button("选择模型").textContent?.includes("second-model") &&
-					button("设置审核模式").textContent?.includes("完全访问"),
+					button("设置 AI 修改权限").textContent?.includes("允许直接修改"),
 				"Independent buttons must expose current model and permission",
 			);
 			const reference = find<HTMLDetailsElement>(".chat-reference");
@@ -632,7 +632,7 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 			reference.open = false;
 
 			const assistant = find<HTMLElement>(
-				'.chat-message[aria-label="助手消息"]',
+				'.chat-message[aria-label="AI 回复"]',
 			);
 			const user = find<HTMLElement>('.chat-message[aria-label="你的消息"]');
 			check(
@@ -692,7 +692,7 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 			);
 			for (const [trigger, label] of [
 				["选择模型", "模型设置"],
-				["设置审核模式", "审核模式"],
+				["设置 AI 修改权限", "AI 修改权限"],
 			] as const) {
 				await openSetting(trigger, label);
 				await closeSetting(trigger, label);
@@ -713,15 +713,15 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 				}
 			}
 		}
-		button("停止本轮").click();
+		button("停止生成").click();
 		await until(
 			() =>
 				stopCount === 1 &&
-				container.textContent?.includes("正在停止本轮") === true,
+				container.textContent?.includes("正在停止生成…") === true,
 			"Stop must display stopping state",
 		);
 		check(
-			button("停止中…").disabled,
+			button("正在停止…").disabled,
 			"Stopping must disable repeated stop action",
 		);
 	} finally {
@@ -822,14 +822,13 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 				},
 			});
 			try {
-				button("复制助手消息").click();
+				button("复制回复").click();
 				await until(
 					() => copied === "助手的完整离线回答。",
 					"Copy must write full assistant text",
 				);
 				await until(
-					() =>
-						!!container.querySelector('button[aria-label="已复制助手消息"]'),
+					() => !!container.querySelector('button[aria-label="已复制回复"]'),
 					"Copy must announce success",
 				);
 				Object.defineProperty(navigator, "clipboard", {
@@ -840,11 +839,11 @@ export async function workbenchRegression(h: BrowserHarness, refreshed = true) {
 						},
 					},
 				});
-				button("已复制助手消息").click();
+				button("已复制回复").click();
 				await until(
 					() =>
 						container.textContent?.includes(
-							"复制失败，请选择回复文字复制。",
+							"无法自动复制到剪贴板，请手动选择文字复制。",
 						) === true,
 					"Clipboard failure must leave visible recovery guidance",
 				);

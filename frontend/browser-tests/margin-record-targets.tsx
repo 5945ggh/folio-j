@@ -136,8 +136,8 @@ export async function marginRecordTargets(
 		check(
 			button("学习片段").querySelector("span")?.textContent ===
 				String(segments.length) &&
-				button("翻译").querySelector("span")?.textContent ===
-					`${translations.length} 处`,
+				button("译文").querySelector("span")?.textContent ===
+					String(translations.length),
 			"Every margin entry must retain the entire transitive record group in both tabs",
 		);
 	};
@@ -154,7 +154,7 @@ export async function marginRecordTargets(
 		check(target, "Fixture requires a saved translation");
 		await h.until(
 			() =>
-				selectedTab("翻译") &&
+				selectedTab("译文") &&
 				h.container
 					.querySelector(".translation-output")
 					?.textContent?.includes(target.translation) === true,
@@ -212,7 +212,7 @@ export async function marginRecordTargets(
 		);
 	};
 	const list = async (kind: "segment" | "translation") => {
-		const label = kind === "segment" ? "学习片段" : "翻译";
+		const label = kind === "segment" ? "学习片段" : "译文";
 		await h.until(
 			() =>
 				selectedTab(label) &&
@@ -234,7 +234,7 @@ export async function marginRecordTargets(
 			margins().length === 7,
 		"Reader must finish restoring its position and paint seven real margin buttons",
 	);
-	const singlesTranslation = matchingMargins("打开此处翻译");
+	const singlesTranslation = matchingMargins("打开此处译文");
 	const singlesSegment = matchingMargins("打开此处学习片段");
 	const numeric = matchingMargins("查看此处 2 条记录");
 	check(
@@ -271,7 +271,7 @@ export async function marginRecordTargets(
 		await h.until(
 			() =>
 				h.container.querySelector(".reader-study-preview-hint")?.textContent ===
-				"已保存原文",
+				"暂无译文与讲解",
 			"Original-only segment must finish loading without an empty translation or explanation area",
 		);
 		return "original-only segment preview: short card, saved original and no empty sections";
@@ -341,7 +341,7 @@ export async function marginRecordTargets(
 			segments[0]?.segment_id,
 		"Returning from direct segment details must focus the clicked segment in its full associated list",
 	);
-	button("翻译").click();
+	button("译文").click();
 	await list("translation");
 	await close(firstSegment);
 	firstSegment.click();
@@ -363,7 +363,7 @@ export async function marginRecordTargets(
 				?.textContent === segments[1]?.excerpt,
 		"Selecting a segment from the alternate tab must open that exact item",
 	);
-	button("翻译").click();
+	button("译文").click();
 	await list("translation");
 	translationRows()[1]?.click();
 	await h.until(
@@ -381,7 +381,7 @@ export async function marginRecordTargets(
 				?.textContent === segments[1]?.excerpt,
 		"Switching tabs must preserve the explicitly selected segment",
 	);
-	button("翻译").click();
+	button("译文").click();
 	await h.until(
 		() =>
 			h.container
@@ -396,7 +396,7 @@ export async function marginRecordTargets(
 	await close(pureSegmentGroup);
 	mixedGroup.click();
 	await list("segment");
-	button("翻译").click();
+	button("译文").click();
 	await list("translation");
 	await close(mixedGroup);
 	return `margin record targets ${new URLSearchParams(location.search).get("direction") ?? "horizontal-tb"}: real physical buttons, exact translation and segment direct details, associated full-group return with row focus, pure translation/segment and mixed numeric initial tabs, same-button close and same-group target replacement/repositioning`;

@@ -83,13 +83,13 @@ test("copy summary reports the saved side as absent when either budget is zero",
 test("vertical typography summary does not imply stored width is active", () => {
 	assert.equal(
 		typographySummary(DEFAULT_READING_SETTINGS, DEFAULT_BOOK_UI),
-		"明朝体 · 行距 2.4 · 宽度 760",
+		"明朝体 · 行距 2.4 · 宽度 760 px",
 	);
 	assert.equal(
 		typographySummary(
 			{ ...DEFAULT_READING_SETTINGS, writing_mode: "vertical-rl" },
 			{ ...DEFAULT_BOOK_UI, font: "gothic", width: 1040 },
 		),
-		"黑体 · 行距 2.4 · 宽度仅用于横排",
+		"黑体 · 行距 2.4 · 仅横排可调宽度",
 	);
 });

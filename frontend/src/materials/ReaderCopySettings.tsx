@@ -129,11 +129,11 @@ export function ReaderCopySettings({
 		<section
 			className="reader-settings-group reader-copy-settings"
 			data-reader-settings-group="copy"
-			aria-label="带上下文复制"
+			aria-label="带前后文复制"
 		>
 			<ReaderSettingsReset
 				label="复制设置"
-				description="恢复复制默认值并自动保存。"
+				description="恢复默认复制设置。"
 				disabled={!fields}
 				onReset={() => editor.resetDefaults()}
 			/>
@@ -148,13 +148,13 @@ export function ReaderCopySettings({
 				<summary>
 					<span className="reader-settings-field-label">
 						<span className="reader-settings-disclosure-label">
-							带上下文复制
+							带前后文复制
 						</span>
 						<span
 							className="reader-settings-scope"
-							data-tooltip="保存后用于资料库中的所有书籍；连接同一资料库的浏览器共用。"
+							data-tooltip="对所有书籍生效，同步到素材库。"
 						>
-							所有书籍 · 资料库
+							所有书籍 · 同步
 						</span>
 					</span>
 					<span className="reader-settings-summary">
@@ -164,9 +164,7 @@ export function ReaderCopySettings({
 					</span>
 				</summary>
 				<div className="reader-settings-more">
-					<p>
-						有效设置自动保存，连接同一资料库的浏览器共用。复制使用最后成功保存的配置。
-					</p>
+					<p>修改后自动保存，对所有书籍生效。</p>
 					{fields && (
 						<form
 							onSubmit={(event) => {
@@ -181,10 +179,7 @@ export function ReaderCopySettings({
 									{field("before_characters", "前文字符上限")}
 									{field("after_characters", "后文字符上限")}
 								</div>
-								<p>
-									每侧同时受句数与字符上限约束；任一设为 0
-									时不附带该侧。选区原文始终完整保留。
-								</p>
+								<p>前后文分别受句数和字符上限限制，设为 0 则不附带该侧。</p>
 								<label className="reader-settings-toggle">
 									<span>附带出处</span>
 									<input
@@ -211,7 +206,7 @@ export function ReaderCopySettings({
 								>
 									<summary>格式示例</summary>
 									<div className="reader-settings-more">
-										<p>固定样例 · 使用当前输入</p>
+										<p>按当前设置预览</p>
 										{preview ? (
 											<pre>
 												{
@@ -224,7 +219,7 @@ export function ReaderCopySettings({
 												}
 											</pre>
 										) : (
-											<p>填写有效预算后显示格式示例。</p>
+											<p>输入有效数值后可预览格式。</p>
 										)}
 									</div>
 								</details>
@@ -236,7 +231,7 @@ export function ReaderCopySettings({
 			<div className="reader-copy-settings-feedback">
 				{fields && !editor.valid && (
 					<p className="reader-settings-error" role="alert">
-						复制预算需为 0–100000 的整数，修改已保留。
+						请输入 0–100000 之间的整数。
 					</p>
 				)}
 				{editor.pending ? (
@@ -246,22 +241,22 @@ export function ReaderCopySettings({
 				) : (
 					editor.dirty && (
 						<p className="reader-settings-status" role="status">
-							编辑结束后自动保存
+							输入完成后自动保存
 						</p>
 					)
 				)}
 				{editor.query.isPending && !fields && (
-					<p role="status">正在读取复制设置…</p>
+					<p role="status">正在加载复制设置…</p>
 				)}
 				{editor.query.isError && (
 					<div className="reader-settings-error" role="alert">
-						<p>读取复制设置失败，原文可继续阅读。</p>
+						<p>复制设置加载失败。</p>
 						<button
 							type="button"
 							disabled={editor.pending}
 							onClick={() => void editor.query.refetch()}
 						>
-							重新读取复制设置
+							重试
 						</button>
 					</div>
 				)}
@@ -271,7 +266,7 @@ export function ReaderCopySettings({
 						disabled={editor.pending || !editor.valid}
 						onClick={() => void editor.save()}
 					>
-						重试保存复制设置
+						重试保存
 					</button>
 				)}
 				{editor.notice && (

@@ -18,28 +18,28 @@ export function replyProgressLabel(
 	operation?: ReplyOperation,
 ): string {
 	if (!isTerminalJob(job)) {
-		if (operation === "decision") return "正在提交审核决定";
-		if (operation === "stop") return "正在提交停止请求";
+		if (operation === "decision") return "正在处理审核…";
+		if (operation === "stop") return "正在停止生成…";
 	}
 	if (updateFailed && !isTerminalJob(job)) return "状态暂未更新，正在重试";
 	switch (job.status) {
 		case "queued":
 			return "排队中";
 		case "waiting_review":
-			return "等待你审核修改";
+			return "等待确认修改";
 		case "stopping":
-			return "正在停止本轮";
+			return "正在停止生成…";
 		case "succeeded":
 			return "已完成";
 		case "failed":
-			return "本轮失败";
+			return "回复失败";
 		case "interrupted":
-			return "本轮已中断";
+			return "回复已中断";
 		case "running": {
 			// Older jobs may retain a completed tool step or text from an earlier
 			// invocation. Only the explicit current activity describes a stage.
 			const activity = activityLabels[job.active_step ?? ""];
-			if (!activity) return "正在处理本轮请求";
+			if (!activity) return "正在生成回复";
 			const calls =
 				job.runs?.filter((run) => run.purpose === "chat").length ?? 0;
 			return calls > 1 && job.active_step === "model_call"

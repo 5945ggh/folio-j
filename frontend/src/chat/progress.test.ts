@@ -20,12 +20,12 @@ test("仅以当前活动上报展示模型和工具阶段，历史或未知阶�
 		reading_analysis: "正在查阅讲解",
 		preparing_edit: "正在准备讲解修改",
 		applying_review: "正在保存已同意的修改",
-		tool_dispatch: "正在处理本轮请求",
-		answering: "正在处理本轮请求",
-		unknown: "正在处理本轮请求",
+		tool_dispatch: "正在生成回复",
+		answering: "正在生成回复",
+		unknown: "正在生成回复",
 	}))
 		assert.equal(replyProgressLabel({ ...running, active_step }), label);
-	assert.equal(replyProgressLabel(running), "正在处理本轮请求");
+	assert.equal(replyProgressLabel(running), "正在生成回复");
 	assert.equal(
 		replyProgressLabel({ ...running, active_step: "saving_analysis" }).includes(
 			"已保存",
@@ -37,11 +37,11 @@ test("仅以当前活动上报展示模型和工具阶段，历史或未知阶�
 test("审核、停止和终态优先于残留活动，查询失败不将旧活动说成当前", () => {
 	const labels = {
 		queued: "排队中",
-		waiting_review: "等待你审核修改",
-		stopping: "正在停止本轮",
+		waiting_review: "等待确认修改",
+		stopping: "正在停止生成…",
 		succeeded: "已完成",
-		failed: "本轮失败",
-		interrupted: "本轮已中断",
+		failed: "回复失败",
+		interrupted: "回复已中断",
 	} as const;
 	for (const [status, label] of Object.entries(labels))
 		assert.equal(
@@ -78,15 +78,15 @@ test("多轮等待只统计真实聊天 Run，工具阶段不显示旧轮次", (
 test("提交审核决定与停止请求期间显示真实提交动作，终态不回退", () => {
 	assert.equal(
 		replyProgressLabel({ status: "waiting_review" }, false, "decision"),
-		"正在提交审核决定",
+		"正在处理审核…",
 	);
 	assert.equal(
 		replyProgressLabel({ status: "running" }, false, "stop"),
-		"正在提交停止请求",
+		"正在停止生成…",
 	);
 	assert.equal(
 		replyProgressLabel({ status: "interrupted" }, false, "stop"),
-		"本轮已中断",
+		"回复已中断",
 	);
 });
 

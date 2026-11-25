@@ -13,7 +13,7 @@ export function segmentOriginParts(segment: OriginSegment): OriginPart[] {
 	const reference = segment.source_ref.trim();
 	const summary = segment.provenance_summary;
 	if (!segment.material_provenance && (!summary || summary.status === "none"))
-		return [{ kind: "reference", text: reference || "未保存出处" }];
+		return [{ kind: "reference", text: reference || "手动录入" }];
 	const title = summary?.title?.trim() ?? "";
 	let parts: OriginPart[];
 	switch (summary?.status) {
@@ -30,41 +30,41 @@ export function segmentOriginParts(segment: OriginSegment): OriginPart[] {
 			if (summary.chapter_percent != null)
 				parts.push({
 					kind: "position",
-					text: `章内约 ${summary.chapter_percent}%`,
+					text: `本章约 ${summary.chapter_percent}%`,
 				});
-			if (!parts.length) parts.push({ kind: "reference", text: "材料出处" });
+			if (!parts.length) parts.push({ kind: "reference", text: "书籍出处" });
 			break;
 		}
 		case "material_deleted":
 			parts = [
-				{ kind: "title", text: title || "原材料" },
-				{ kind: "state", text: "材料已删除" },
+				{ kind: "title", text: title || "原书" },
+				{ kind: "state", text: "原书已删除" },
 			];
 			break;
 		case "version_unavailable":
 			parts = [
-				{ kind: "title", text: title || "材料出处" },
-				{ kind: "state", text: "材料版本不可用" },
+				{ kind: "title", text: title || "书籍出处" },
+				{ kind: "state", text: "原书版本已变更" },
 			];
 			break;
 		case "snapshot_mismatch":
 			parts = [
-				{ kind: "title", text: title || "材料出处" },
-				{ kind: "state", text: "原文快照不一致" },
+				{ kind: "title", text: title || "书籍出处" },
+				{ kind: "state", text: "原文已变动，无法定位" },
 			];
 			break;
 		case "invalid_reference":
 			parts = [
-				{ kind: "title", text: title || "材料出处" },
-				{ kind: "state", text: "无法精确定位" },
+				{ kind: "title", text: title || "书籍出处" },
+				{ kind: "state", text: "无法定位到原文" },
 			];
 			break;
 		default:
-			parts = [{ kind: "state", text: "材料出处待核对" }];
+			parts = [{ kind: "state", text: "出处暂不可用" }];
 	}
 	const origin = parts.map((part) => part.text).join(" · ");
 	if (reference && reference !== title && reference !== origin)
-		parts.push({ kind: "supplement", text: `出处补充：${reference}` });
+		parts.push({ kind: "supplement", text: `补充：${reference}` });
 	return parts;
 }
 

@@ -613,7 +613,7 @@ async function translationRecoveryViewRegression(
 			...h.container.querySelectorAll<HTMLButtonElement>(
 				".translation-history-item",
 			),
-		].find((button) => button.textContent?.includes("failed"));
+		].find((button) => button.textContent?.endsWith(" · 失败"));
 		check(
 			failedChoice,
 			"Exact-source history must expose the failed task choice",
@@ -712,7 +712,7 @@ async function translationRecoveryViewRegression(
 	dispose = await h.mount(<UncertainFixture />);
 	const verify = () =>
 		[...h.container.querySelectorAll<HTMLButtonElement>("button")].find(
-			(button) => button.getAttribute("aria-label") === "核实原提交",
+			(button) => button.getAttribute("aria-label") === "重试确认",
 		);
 	try {
 		await h.until(
@@ -723,12 +723,14 @@ async function translationRecoveryViewRegression(
 		);
 		click("重新翻译");
 		await h.until(
-			() => h.container.textContent?.includes("提交响应尚未核实") ?? false,
+			() =>
+				h.container.textContent?.includes("暂未确认翻译请求是否发送成功") ??
+				false,
 			"Lost submission must expose verification",
 		);
 		const uncertainActions = checkTranslationResultActions(h);
 		check(
-			uncertainActions.regenerate.textContent?.trim() === "核实原提交" &&
+			uncertainActions.regenerate.textContent?.trim() === "重试确认" &&
 				!uncertainActions.regenerate.disabled &&
 				uncertainActions.remove.disabled,
 			"An uncertain submission must expose verification in the result actions and protect deletion until resolved",
@@ -765,7 +767,7 @@ async function translationRecoveryViewRegression(
 			() => activeHistoryReads > 0 && !!verify() && !verify()?.disabled,
 			"A newly observed active task must not hide uncertain submission verification",
 		);
-		click("核实原提交");
+		click("重试确认");
 		await h.until(
 			() => requests.length === 2,
 			"Verification must resend the original frozen request despite unavailable old result and active history",

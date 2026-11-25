@@ -111,7 +111,7 @@ export function SourceEditDialog({
 			/>
 			{(confirmDiscard || blocker.state === "blocked") && (
 				<ConfirmDialog titleId="source-discard-title" onClose={continueEditing}>
-					<h2 id="source-discard-title">放弃本次编辑？</h2>
+					<h2 id="source-discard-title">放弃未保存的修改？</h2>
 					<p>{save.isPending ? "正在保存，请稍候。" : "来源信息尚未保存。"}</p>
 					<div className="actions">
 						<button
@@ -132,7 +132,7 @@ export function SourceEditDialog({
 								onClose();
 							}}
 						>
-							放弃并离开
+							放弃修改
 						</button>
 					</div>
 				</ConfirmDialog>

@@ -16,8 +16,8 @@ export function DiscoveredModelList({
 			<div className="provider-section-heading">
 				<p className="settings-hint">
 					{ids.length
-						? `共 ${ids.length} 个模型，${discovery.available.length} 个可登记`
-						: "从服务获取可登记的模型 ID。"}
+						? `共 ${ids.length} 个模型，${discovery.available.length} 个可添加`
+						: "从服务获取可用模型列表。"}
 					{provider.last_discovered_at && (
 						<small className="provider-fetch-date">
 							最近获取{" "}
@@ -69,7 +69,7 @@ export function DiscoveredModelList({
 									}
 								/>
 								<span>{id}</span>
-								{registered && <small>已登记</small>}
+								{registered && <small>已添加</small>}
 							</label>
 						);
 					})}

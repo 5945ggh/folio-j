@@ -139,7 +139,7 @@ export function ImportCards({
 									</button>
 								)}
 								<button type="button" onClick={() => remove(task)}>
-									{ready ? "关闭提示" : "移除"}
+									{ready ? "知道了" : "移除"}
 								</button>
 							</div>
 						)}

@@ -253,7 +253,7 @@ export function LibraryTools({
 							<label className="library-size-field">
 								<span className="library-size-row">
 									宽度
-									<span className="library-size-value">{size}px</span>
+									<span className="library-size-value">{size} px</span>
 								</span>
 								<input
 									type="range"
@@ -273,8 +273,8 @@ export function LibraryTools({
 								id="library-add"
 								type="button"
 								className="library-icon"
-								title="添加书籍"
-								aria-label="添加书籍"
+								title="导入书籍"
+								aria-label="导入书籍"
 								onClick={(e) => {
 									e.currentTarget.focus();
 									add();
@@ -311,7 +311,7 @@ export function LibraryTools({
 						className="library-clear"
 						onClick={() => change({ q: "", status: "", source_id: "" })}
 					>
-						清空条件
+						清空筛选
 					</button>
 				</div>
 			)}

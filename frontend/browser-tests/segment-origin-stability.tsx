@@ -154,10 +154,10 @@ export async function segmentOriginStability(
 						? !!background()?.querySelector("a")
 						: background()?.textContent?.includes(
 								outcome === "error"
-									? "重试核对出处"
+									? "重试"
 									: outcome === "material_deleted"
-										? "原材料已删除"
-										: "快照不一致",
+										? "原书已删除"
+										: "原文内容已变更",
 							) === true,
 				"Origin revalidation must settle to its fresh state",
 			);
@@ -229,7 +229,7 @@ export async function segmentOriginStability(
 		await until(
 			() =>
 				!!initialRelease &&
-				container.textContent?.includes("正在核对材料出处") === true,
+				container.textContent?.includes("正在核对出处") === true,
 			"Uncached origin must show initial loading feedback",
 		);
 		assert(
@@ -240,7 +240,7 @@ export async function segmentOriginStability(
 			Response.json({ detail: "首次读取出处失败" }, { status: 500 }),
 		);
 		await until(
-			() => container.textContent?.includes("重试核对出处") === true,
+			() => container.textContent?.includes("重试") === true,
 			"Initial failed origin must offer retry",
 		);
 		assert(
@@ -249,7 +249,7 @@ export async function segmentOriginStability(
 		);
 		const retry = [
 			...container.querySelectorAll<HTMLButtonElement>("button"),
-		].find((button) => button.textContent?.trim() === "重试核对出处");
+		].find((button) => button.textContent?.trim() === "重试");
 		assert(retry, "Initial failed origin retry must be reachable");
 		retry.click();
 		await until(

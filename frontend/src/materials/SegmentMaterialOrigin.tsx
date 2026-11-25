@@ -36,7 +36,7 @@ export function SegmentMaterialOrigin({
 	return (
 		<section
 			className="segment-material-origin"
-			aria-label="材料出处"
+			aria-label="原文出处"
 			aria-live="polite"
 			aria-busy={origin.isFetching}
 		>
@@ -71,7 +71,7 @@ export function SegmentMaterialOrigin({
 				</div>
 			)}
 			{origin.isPending ? (
-				<p className="segment-material-origin-status">正在核对材料出处…</p>
+				<p className="segment-material-origin-status">正在核对出处…</p>
 			) : origin.isError ? (
 				<div className="segment-material-origin-status">
 					<InlineError error={origin.error} />
@@ -80,7 +80,7 @@ export function SegmentMaterialOrigin({
 						disabled={origin.isFetching}
 						onClick={() => void origin.refetch()}
 					>
-						重试核对出处
+						重试
 					</button>
 				</div>
 			) : failure ? (
@@ -89,7 +89,7 @@ export function SegmentMaterialOrigin({
 				<span
 					className="segment-material-origin-link"
 					aria-disabled="true"
-					title="正在核对材料出处"
+					title="正在核对出处"
 				>
 					在原文中定位 →
 				</span>

@@ -98,8 +98,8 @@ export const appRoutes = createRoutesFromElements(
 				<Shell>
 					<div className="state-card">
 						<h1>页面不存在</h1>
-						<Link className="button secondary" to="/sources">
-							返回来源目录
+						<Link className="button secondary" to="/materials">
+							返回素材库
 						</Link>
 					</div>
 				</Shell>

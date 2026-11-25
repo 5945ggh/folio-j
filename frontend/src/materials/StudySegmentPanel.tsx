@@ -310,7 +310,7 @@ export function StudySegmentPanel({
 					setPrefillError(
 						error instanceof Error
 							? error
-							: new Error("语境预装失败，可手动填写或仅保存目标。"),
+							: new Error("自动摘录前后文失败，可手动填写或直接保存。"),
 					);
 			})
 			.finally(() => {
@@ -412,18 +412,18 @@ export function StudySegmentPanel({
 				<blockquote lang="ja" className="study-target">
 					{targetText}
 				</blockquote>
-				{candidates.isPending && <p role="status">正在查找同一出处的片段…</p>}
+				{candidates.isPending && <p role="status">正在检查此处是否已有片段…</p>}
 				{candidates.isError && (
 					<div>
 						<InlineError error={candidates.error} />
 						<button type="button" onClick={() => void candidates.refetch()}>
-							重试查找已有片段
+							重试
 						</button>
 					</div>
 				)}
 				{!!candidates.data?.segments.length && (
 					<section className="study-matches">
-						<h3>同一出处的已有片段</h3>
+						<h3>此处已保存的片段</h3>
 						{candidates.data.segments.map((segment) => (
 							<button
 								key={segment.id}
@@ -431,10 +431,10 @@ export function StudySegmentPanel({
 								disabled={locked}
 								onClick={() => choose(segment)}
 							>
-								选用 {new Date(segment.created_at).toLocaleString()} 的片段
+								使用 {new Date(segment.created_at).toLocaleString()} 的片段
 							</button>
 						))}
-						{candidates.data.truncated && <p>这里只列出最近 20 个匹配项。</p>}
+						{candidates.data.truncated && <p>仅显示最近 20 条记录。</p>}
 					</section>
 				)}
 				<label className="study-translation-field">
@@ -454,24 +454,24 @@ export function StudySegmentPanel({
 				{detachedTranslation && (
 					<p role="status">
 						{detachedTranslation === "deleted"
-							? "原阅读翻译已删除，草稿文字仍保留，可独立保存为片段"
-							: "已解除译文关联，草稿文字仍保留，可独立保存为片段"}
+							? "原译文已删除，当前输入框中的内容已保留，仍可直接保存。"
+							: "已取消关联原译文，当前输入框中的内容已保留。"}
 					</p>
 				)}
-				{savedTranslation.isFetching && <p role="status">正在读取已存译文…</p>}
+				{savedTranslation.isFetching && <p role="status">正在加载已存译文…</p>}
 				{(savedTranslation.isError ||
 					savedTranslation.data?.material_deleted) && (
 					<div>
 						<InlineError error={savedTranslation.error} />
 						{savedTranslation.data?.material_deleted && (
-							<p>原阅读译文当前不可用，可重试读取或解除关联。</p>
+							<p>原译文暂不可用，可重试或直接保存当前内容。</p>
 						)}
 						<button
 							type="button"
 							disabled={locked}
 							onClick={() => void savedTranslation.refetch()}
 						>
-							重试读取译文
+							重试
 						</button>
 						{draft.translation.resultId && (
 							<button
@@ -482,7 +482,7 @@ export function StudySegmentPanel({
 									if (resultId) detachTranslation(resultId, "unavailable");
 								}}
 							>
-								保留草稿并解除译文关联
+								不再关联原译文
 							</button>
 						)}
 					</div>
@@ -589,7 +589,7 @@ export function StudySegmentPanel({
 							</>
 						) : (
 							<p>
-								{defaults.isPending ? "正在读取摘录设置…" : "摘录设置读取失败"}
+								{defaults.isPending ? "正在加载摘录设置…" : "摘录设置加载失败"}
 							</p>
 						)}
 					</details>
@@ -597,7 +597,7 @@ export function StudySegmentPanel({
 						<div>
 							<InlineError error={defaults.error} />
 							<button type="button" onClick={() => void defaults.refetch()}>
-								重试读取摘录设置
+								重试
 							</button>
 						</div>
 					)}
@@ -605,15 +605,13 @@ export function StudySegmentPanel({
 				{prefillError && (
 					<div>
 						<InlineError error={prefillError} />
-						<p className="study-hint">
-							目标和草稿已保留，可重试、手动填写或仅保存目标。
-						</p>
+						<p className="study-hint">可重试自动摘录、手动填写或直接保存。</p>
 					</div>
 				)}
 				{proposal && (
 					<section className="study-replacement">
-						<h3>新的语境摘录</h3>
-						<p>原草稿仍保留。确认后替换前后文。</p>
+						<h3>新的前后文摘录</h3>
+						<p>确认后将替换当前前后文内容。</p>
 						<pre lang="ja">
 							前文：{proposal.fill.before || "（空）"}
 							{"\n"}后文：{proposal.fill.after || "（空）"}
@@ -637,7 +635,7 @@ export function StudySegmentPanel({
 							使用新摘录
 						</button>
 						<button type="button" onClick={() => setProposal(null)}>
-							保留当前草稿
+							保留当前内容
 						</button>
 					</section>
 				)}
@@ -649,7 +647,7 @@ export function StudySegmentPanel({
 				)}
 				{uncertain && (
 					<p role="alert">
-						保存结果尚未确认，内容已保留。再次核实使用同一个请求，不会重复创建。
+						暂未确认是否保存成功，你的内容已保留。点击重试可安全确认（不会重复创建）。
 					</p>
 				)}
 			</div>
@@ -689,7 +687,7 @@ export function StudySegmentPanel({
 						}
 					}}
 				>
-					{save.isPending ? "保存中…" : uncertain ? "核实本次保存" : "保存片段"}
+					{save.isPending ? "保存中…" : uncertain ? "重试保存" : "保存片段"}
 				</button>
 			</footer>
 			{(confirmDiscard || blocker.state === "blocked") && (
@@ -701,11 +699,11 @@ export function StudySegmentPanel({
 							if (blocker.state === "blocked") blocker.reset();
 						}}
 					>
-						<h2 id={`${titleId}-discard`}>放弃本次草稿？</h2>
+						<h2 id={`${titleId}-discard`}>放弃未保存的修改？</h2>
 						<p>
 							{uncertain
-								? "保存结果尚未确认。放弃后可从来源检查片段是否已保存。"
-								: "未保存的译文或语境修改会丢失。"}
+								? "暂未确认是否保存成功。放弃后可在来源中检查该片段是否已保存。"
+								: "未保存的译文或前后文修改会丢失。"}
 						</p>
 						<div className="actions">
 							<button
@@ -723,7 +721,7 @@ export function StudySegmentPanel({
 								disabled={save.isPending || select.isPending}
 								onClick={discard}
 							>
-								放弃草稿
+								放弃修改
 							</button>
 						</div>
 					</ConfirmDialog>
@@ -735,8 +733,8 @@ export function StudySegmentPanel({
 						titleId={`${titleId}-reuse`}
 						onClose={() => setReuse(null)}
 					>
-						<h2 id={`${titleId}-reuse`}>选用已有片段？</h2>
-						<p>将保留已有片段的译文和语境，本次未保存的修改会被放弃。</p>
+						<h2 id={`${titleId}-reuse`}>使用已有片段？</h2>
+						<p>将保留已有片段的译文和前后文，本次未保存的修改会被放弃。</p>
 						<div className="actions">
 							<button
 								type="button"

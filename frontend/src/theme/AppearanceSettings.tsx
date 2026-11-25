@@ -12,7 +12,7 @@ export function AppearanceSettings() {
 				<label className="settings-preference-row">
 					<span className="settings-row-copy">
 						<strong>颜色模式</strong>
-						<small>仅保存在当前浏览器，选择后立即生效。</small>
+						<small>仅保存在当前浏览器。</small>
 					</span>
 					<NativeSelect
 						className="settings-control"
@@ -30,7 +30,7 @@ export function AppearanceSettings() {
 					</NativeSelect>
 				</label>
 				<p className="settings-appearance-note settings-hint">
-					阅读器的纸面颜色仍在阅读设置中单独选择。
+					阅读器的页面背景可在阅读设置中单独调整。
 				</p>
 			</div>
 			{theme.storageFailed && (

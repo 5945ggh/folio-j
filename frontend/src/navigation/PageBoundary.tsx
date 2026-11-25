@@ -17,8 +17,8 @@ export class PageBoundary extends Component<
 			return this.props.hideFallback ? null : (
 				<Shell>
 					<div className="state-card" role="alert">
-						<h1>页面暂时无法打开</h1>
-						<p>请重新加载页面后重试。</p>
+						<h1>页面出现异常</h1>
+						<p>请重新加载页面。</p>
 						<button
 							type="button"
 							className="button primary"

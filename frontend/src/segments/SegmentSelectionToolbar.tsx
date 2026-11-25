@@ -72,12 +72,12 @@ export function SegmentSelectionToolbar({
 		<SelectionActions
 			className="segment-selection-toolbar"
 			ref={toolbar}
-			lookupLabel="查所选文字"
+			lookupLabel="查词"
 			onLookup={onLookup}
 			onSpeak={() => {
 				getSpeechController().play({
 					id: "segment-selection",
-					label: "片段选区",
+					label: "选中文字",
 					text,
 				});
 				onDismiss();

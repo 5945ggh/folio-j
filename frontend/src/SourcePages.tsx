@@ -167,7 +167,7 @@ function SourceFrame({
 						onCancel={closeCreate}
 						pending={create.isPending}
 						error={create.error}
-						submitLabel="保存来源"
+						submitLabel="创建来源"
 					/>
 				</ConfirmDialog>
 			)}
@@ -253,8 +253,8 @@ export function SourceIndex() {
 						<div className="source-welcome-icon">
 							<Icon name="book" />
 						</div>
-						<h1>定义你的首个来源</h1>
-						<p>创建来源后，便可以导入素材或手动添加片段。</p>
+						<h1>创建第一个来源</h1>
+						<p>创建后就可以导入书籍或添加日文片段。</p>
 						<div className="actions">
 							<button
 								id="source-welcome-create"
@@ -292,7 +292,7 @@ function SourceDelete({
 	const remove = useMutation({
 		mutationFn: async () => {
 			if (!impact.data || impact.data.source_id !== source.id)
-				throw new Error("无法核对目标来源，请重新读取删除影响。");
+				throw new Error("无法确认要删除的来源，请刷新后重试。");
 			const { error, response } = await api.DELETE("/api/sources/{source_id}", {
 				params: { path: { source_id: source.id } },
 			});
@@ -311,22 +311,21 @@ function SourceDelete({
 			<p className="eyebrow">删除确认</p>
 			<h2 id="delete-title">删除「{source.title}」？</h2>
 			{impact.isPending ? (
-				<p>正在读取当前影响范围…</p>
+				<p>正在统计关联内容…</p>
 			) : impact.isError ? (
 				<InlineError error={impact.error} />
 			) : (
 				<p>
-					这会一并删除该来源下的{" "}
+					将一并删除该来源下的{" "}
 					<strong>{impact.data.segment_count} 个片段</strong>、
-					<strong>{impact.data.analysis_count} 份讲解（含全部修订）</strong>、
-					<strong>{impact.data.thread_count} 条讨论</strong>和{" "}
+					<strong>{impact.data.analysis_count} 份讲解（含历史版本）</strong>、
+					<strong>{impact.data.thread_count} 段对话</strong>和{" "}
 					<strong>{impact.data.message_count} 条消息</strong>。
 					{impact.data.active_job_count > 0 &&
-						`其中 ${impact.data.active_job_count} 个进行中的任务会被中断。`}
-					该来源下的 {impact.data.material_count}{" "}
-					份阅读材料将清除应用保存的原书和派生阅读数据，无法再打开阅读，清理不可撤销。
-					你导入时选择的本地 EPUB
-					文件不会被删除。删除后无法从页面恢复；其他来源不受影响。
+						`将停止 ${impact.data.active_job_count} 个对话任务。`}
+					{impact.data.material_count > 0 &&
+						`同时移除 ${impact.data.material_count} 本已导入的书籍及其阅读数据。这些书籍的翻译任务也会停止。`}
+					此操作无法撤销，不会影响你本地保存的 EPUB 文件。
 				</p>
 			)}
 			<InlineError error={remove.error} />
@@ -358,7 +357,7 @@ function SourceDelete({
 						type="button"
 						onClick={() => void impact.refetch()}
 					>
-						重试预览
+						重试
 					</button>
 				)}
 			</div>
@@ -615,10 +614,10 @@ export function SourceDetail() {
 							<h2 id="source-info-title">来源信息</h2>
 							<h3>{source.data.title}</h3>
 							<p className="s2-full-text">
-								{source.data.description || "尚无描述"}
+								{source.data.description || "暂无描述"}
 							</p>
 							<h3>来源备注</h3>
-							<p className="s2-full-text">{source.data.note || "尚无备注"}</p>
+							<p className="s2-full-text">{source.data.note || "暂无备注"}</p>
 							<button
 								className="button secondary"
 								type="button"

@@ -205,7 +205,7 @@ export async function reusedImportRegression(
 				`${label}: cached book must load before reimport`,
 			);
 			readingLink(`${label}: initial catalog`);
-			action(scoped ? "导入书籍" : "添加书籍").click();
+			action("导入书籍").click();
 			await until(
 				() => !!container.querySelector(".import-dialog[open]"),
 				`${label}: import picker must open`,

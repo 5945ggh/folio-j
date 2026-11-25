@@ -2,7 +2,7 @@ export function returnOriginLabel(
 	title: string,
 	progress: number | null,
 ): string {
-	return `返回“${title}${progress === null ? "" : ` ${Math.round(progress * 100)}%`}”`;
+	return `返回「${title}」${progress === null ? "" : `（${Math.round(progress * 100)}%）`}`;
 }
 
 export const JUMP_READING_POLICY = {

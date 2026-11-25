@@ -250,8 +250,10 @@ export function StudyPreview({
 			>
 				{!selected ? (
 					<>
-						{loading && <p role="status">正在读取本章片段…</p>}
-						{!loading && items.length === 0 && <p>此处暂无可定位片段。</p>}
+						{loading && <p role="status">正在加载本章片段…</p>}
+						{!loading && items.length === 0 && (
+							<p>{fixed ? "本章暂无学习片段" : "此处暂无学习片段"}</p>
+						)}
 						<div className="reader-study-preview-candidates">
 							{items.map((item) => (
 								<button
@@ -311,7 +313,7 @@ export function StudyPreview({
 							)}
 						</blockquote>
 						{saved && analyses.isSuccess && !translation && !analysis && (
-							<p className="reader-study-preview-hint">已保存原文</p>
+							<p className="reader-study-preview-hint">暂无译文与讲解</p>
 						)}
 						{translation && (
 							<section
@@ -321,23 +323,23 @@ export function StudyPreview({
 								<p>{translation}</p>
 							</section>
 						)}
-						{segment.isPending && <p role="status">正在读取片段…</p>}
+						{segment.isPending && <p role="status">正在加载片段…</p>}
 						{segment.isError && (
 							<PreviewError
 								error={segment.error}
 								onRetry={() => void segment.refetch()}
-								label="重试读取片段"
+								label="重试加载片段"
 							/>
 						)}
 						{segment.isSuccess && !saved && (
-							<p role="alert">片段资料不匹配，请重新打开。</p>
+							<p role="alert">片段内容已过期，请重新打开。</p>
 						)}
-						{analyses.isPending && <p role="status">正在读取讲解…</p>}
+						{analyses.isPending && <p role="status">正在加载讲解…</p>}
 						{analyses.isError && (
 							<PreviewError
 								error={analyses.error}
 								onRetry={() => void analyses.refetch()}
-								label="重试读取讲解列表"
+								label="重试加载讲解列表"
 							/>
 						)}
 						{analysis && (
@@ -384,16 +386,16 @@ export function StudyPreview({
 										<strong>{analysis.title}</strong>
 									)}
 								</div>
-								{detail.isPending && <p role="status">正在打开讲解正文…</p>}
+								{detail.isPending && <p role="status">正在加载讲解…</p>}
 								{detail.isError && (
 									<PreviewError
 										error={detail.error}
 										onRetry={() => void detail.refetch()}
-										label="重试打开讲解"
+										label="重试加载讲解"
 									/>
 								)}
 								{detail.isSuccess && !document && (
-									<p role="alert">讲解与当前片段或版本不匹配，请重新选择。</p>
+									<p role="alert">讲解内容已更新，请重新选择。</p>
 								)}
 								{presentation && (
 									<div
@@ -420,7 +422,7 @@ export function StudyPreview({
 						)}
 						{saved?.note.trim() && (
 							<p className="reader-study-preview-note">
-								<span>个人备注</span>
+								<span>备注</span>
 								{saved.note}
 							</p>
 						)}
@@ -430,7 +432,7 @@ export function StudyPreview({
 			{selected && (
 				<footer className="reader-study-preview-footer">
 					<details className="reader-study-preview-metadata">
-						<summary>保存信息</summary>
+						<summary>技术信息</summary>
 						<dl>
 							<dt>保存于</dt>
 							<dd>
@@ -452,7 +454,7 @@ export function StudyPreview({
 									<dd>{new Date(analysis.updated_at).toLocaleString()}</dd>
 									<dt>讲解 ID</dt>
 									<dd>{analysis.id}</dd>
-									<dt>修订 ID</dt>
+									<dt>版本 ID</dt>
 									<dd>{analysis.current_revision_id}</dd>
 								</>
 							)}
@@ -500,8 +502,8 @@ function PreviewError({
 	return (
 		<div className="reader-study-preview-error">
 			<p role="alert">{error.message}</p>
-			<button type="button" onClick={onRetry}>
-				{label}
+			<button type="button" onClick={onRetry} aria-label={label}>
+				重试
 			</button>
 		</div>
 	);

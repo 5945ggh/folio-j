@@ -132,7 +132,7 @@ test("rule summary displays selected analyzer versions without raw configuration
 				internal: "hidden",
 			}),
 		),
-		"Sudachi A · 分析器 0.6.11 · 词典 20260723",
+		"Sudachi A · SudachiPy 0.6.11 · 词典 20260723",
 	);
 	for (const value of [
 		null,
@@ -142,6 +142,6 @@ test("rule summary displays selected analyzer versions without raw configuration
 		"{}",
 		'{"analyzer":"unknown"}',
 	]) {
-		assert.equal(analysisConfigurationLabel(value), "分词版本信息不可用");
+		assert.equal(analysisConfigurationLabel(value), "暂无分词版本信息");
 	}
 });

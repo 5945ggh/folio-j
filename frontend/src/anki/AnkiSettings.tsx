@@ -108,7 +108,7 @@ export function AnkiSettings() {
 			void queryClient.invalidateQueries({ queryKey: ankiKeys.configurations });
 			queryClient.removeQueries({ queryKey: ankiKeys.configuration(id) });
 			setDeleting(null);
-			setListNotice("已删除个人配置。");
+			setListNotice("已删除导出配置");
 		},
 	});
 
@@ -119,7 +119,7 @@ export function AnkiSettings() {
 		if (builtinsQuery.isPending) {
 			return (
 				<p className="settings-loading" role="status">
-					正在加载内置预设…
+					正在加载系统预设…
 				</p>
 			);
 		}
@@ -217,7 +217,7 @@ export function AnkiSettings() {
 				onRefreshCatalog={() => void catalogQuery.refetch()}
 				onBack={openList}
 				onSaved={(saved) => {
-					setListNotice(`已保存配置「${saved.name}」。`);
+					setListNotice(`已保存配置「${saved.name}」`);
 					openList();
 				}}
 				onSaveAsCopy={
@@ -247,14 +247,14 @@ export function AnkiSettings() {
 		<div>
 			<div className="settings-page-head">
 				<h2>Anki</h2>
-				<p>连接本机 AnkiConnect，管理跨材料复用的笔记导出配置。</p>
+				<p>连接本机 AnkiConnect，管理跨素材复用的导出配置。</p>
 			</div>
 
 			<AnkiConnectionSettings />
 
 			<section className="settings-section">
 				<div className="settings-section-heading">
-					<h3>笔记配置</h3>
+					<h3>导出配置</h3>
 					<button
 						type="button"
 						className="settings-button secondary"
@@ -267,7 +267,7 @@ export function AnkiSettings() {
 							});
 						}}
 					>
-						+ 创建配置
+						+ 新建配置
 					</button>
 				</div>
 
@@ -307,7 +307,7 @@ export function AnkiSettings() {
 											<span className="anki-badge">系统预设</span>
 										</div>
 										<p className="anki-row-desc">
-											{noteType?.name ?? preset.note_type_ref.id} ·{" "}
+											{noteType?.name ?? "内置笔记类型"} ·{" "}
 											{preset.id === "export.vocabulary"
 												? "通过选区、词典和原句回忆词义"
 												: "以完整原句为中心整理理解与说明"}
@@ -356,7 +356,9 @@ export function AnkiSettings() {
 								config.deck?.name || "未选默认卡组",
 								noteType?.name ||
 									builtinType?.name ||
-									(noteType?.kind === "builtin" ? noteType.id : "未选笔记类型"),
+									(noteType?.kind === "builtin"
+										? "内置笔记类型"
+										: "未选笔记类型"),
 							];
 							return (
 								<div className="anki-card-row" key={config.id}>
@@ -381,7 +383,7 @@ export function AnkiSettings() {
 												})
 											}
 										>
-											编辑配置
+											编辑
 										</button>
 										<button
 											type="button"
@@ -414,7 +416,7 @@ export function AnkiSettings() {
 				)}
 
 				<p className="anki-row-desc" style={{ marginTop: 10 }}>
-					配置决定制卡浮窗显示的字段以及对应的卡组和笔记类型；单次填写内容与附件不会被持久化。
+					配置决定制卡浮窗显示的字段、目标卡组和笔记类型。
 				</p>
 			</section>
 

@@ -159,7 +159,7 @@ export async function getBookStatistics(
 	);
 	const result = requireData(data, error, response.status);
 	if (!matchesStatistics(result, id, versionId, generationId))
-		throw new Error("统计结果与当前书籍版本不一致，请重新加载。");
+		throw new Error("统计数据已过期，请重新加载。");
 	return result;
 }
 export type BookMetadataUpdate =

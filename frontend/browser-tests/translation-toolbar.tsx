@@ -371,7 +371,7 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 				"Active task shows a progress spinner",
 			);
 			if (!embedded) {
-				action("关闭翻译（任务继续）")?.click();
+				action("关闭翻译（后台继续）")?.click();
 				check(
 					closed === 1 && stops === 0,
 					"Closing the card must not stop its task",
@@ -414,7 +414,7 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 			const more = host.querySelector<HTMLDetailsElement>(".translation-more");
 			check(more, "Saved translation needs its more-actions disclosure");
 			more.open = true;
-			const removal = action("清除此处全部翻译");
+			const removal = action("删除该处翻译记录");
 			check(
 				removal && !removal.disabled,
 				"Retained output must allow deletion while the new result loads",
@@ -429,7 +429,7 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 				confirmation?.querySelector("blockquote.translation-removal-target")
 					?.textContent === "猫だ。" &&
 					confirmation.querySelector("h2")?.textContent ===
-						"清除此处全部翻译？",
+						"删除此处全部译文？",
 				"Pending confirmation must identify the exact source and the retained version selected for removal",
 			);
 			updateTask("succeeded", generated.id);
@@ -495,12 +495,12 @@ export async function translationToolbarRegression(h: BrowserHarness) {
 					confirmation?.querySelector("blockquote.translation-removal-target")
 						?.textContent === "猫だ。" &&
 					confirmation.querySelector("h2")?.textContent ===
-						"清除此处全部翻译？",
+						"删除此处全部译文？",
 				"Arriving retranslation must keep the open confirmation bound to the originally selected version",
 			);
 			const confirm = [
 				...(confirmation?.querySelectorAll<HTMLButtonElement>("button") ?? []),
-			].find((button) => button.textContent === "确认删除翻译");
+			].find((button) => button.textContent === "确认删除");
 			check(
 				confirm && !confirm.disabled,
 				"Preserved version confirmation must still allow its deletion command",

@@ -52,7 +52,8 @@ export async function dataLocation(h: BrowserHarness, preview = false) {
 	});
 	const button = (label: string) => {
 		const node = [...h.container.querySelectorAll("button")].find(
-			(node) => node.textContent?.trim() === label,
+			(node) =>
+				(node.getAttribute("aria-label") ?? node.textContent?.trim()) === label,
 		);
 		check(node && !node.disabled, `Missing enabled action ${label}`);
 		return node;
@@ -74,7 +75,7 @@ export async function dataLocation(h: BrowserHarness, preview = false) {
 			await h.until(
 				() =>
 					!!pending.release &&
-					h.container.textContent?.includes("正在读取数据位置") === true,
+					h.container.textContent?.includes("正在加载数据目录") === true,
 				"Pending location must show loading",
 			);
 			check(
@@ -151,7 +152,7 @@ export async function dataLocation(h: BrowserHarness, preview = false) {
 			"Read errors must not display a guessed path",
 		);
 		scenario = "success";
-		button("重试读取数据位置").click();
+		button("重试").click();
 		await h.until(
 			() => h.container.querySelectorAll(".data-location-path").length === 2,
 			"Explicit retry must recover the runtime paths",

@@ -31,7 +31,7 @@ export async function getVocabulary(
 		result.version_id !== query.version_id ||
 		(query.generation_id && result.generation_id !== query.generation_id)
 	)
-		throw new Error("词汇结果与当前材料版本不一致，请重新加载。");
+		throw new Error("词汇数据已过期，请重新加载。");
 	return result;
 }
 
@@ -55,6 +55,6 @@ export async function getVocabularyOccurrences(
 		result.word !== query.word ||
 		result.pos !== (query.pos || null)
 	)
-		throw new Error("出现位置与当前词汇不一致，请重新加载。");
+		throw new Error("出现位置数据已过期，请重新加载。");
 	return result;
 }

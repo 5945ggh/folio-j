@@ -391,7 +391,7 @@ export async function readingAidsRegression(
 				hit && back.contains(hit),
 				"Return-to-origin must remain clickable",
 			);
-			button(h, "声音与语速", bar).click();
+			button(h, "朗读设置", bar).click();
 			await h.until(
 				() =>
 					!!h.container.querySelector(".device-speech-popover:popover-open"),
@@ -402,7 +402,7 @@ export async function readingAidsRegression(
 			);
 			check(popover, "Short-screen sound settings must be open");
 			check(
-				popover.textContent?.includes("audio-busy"),
+				popover.textContent?.includes("音频设备正忙"),
 				"In-place settings must expose the complete error reason",
 			);
 			contained(h, popover, "Short-screen sound settings");
@@ -534,7 +534,7 @@ export async function readingAidsRegression(
 		);
 		check(
 			initialActions.speech.textContent?.trim() === "朗读原文" &&
-				initialActions.actions.textContent?.includes("声音不可用") &&
+				initialActions.actions.textContent?.includes("语音不可用") &&
 				!initialActions.regenerate.disabled &&
 				!initialActions.remove.disabled,
 			"Unavailable speech must preserve its label and independent translation/deletion actions",
@@ -597,7 +597,7 @@ export async function readingAidsRegression(
 				playingActions.regenerate.textContent?.trim() === "重新翻译",
 			"Active speech and retranslation must retain different action labels",
 		);
-		const settingsTrigger = button(h, "声音与语速");
+		const settingsTrigger = button(h, "朗读设置");
 		const beforeSettings = speech.cancellations;
 		settingsTrigger.click();
 		await h.until(
@@ -609,12 +609,12 @@ export async function readingAidsRegression(
 		);
 		check(popover, "Missing sound popover");
 		check(
-			popover.textContent?.includes("无法读取设备声音，请重新检测。"),
+			popover.textContent?.includes("无法获取语音列表，请重新检测。"),
 			"Voice enumeration failure must remain available as a settings diagnosis",
 		);
 		speech.setVoiceReadFailure(false);
 		await h.until(
-			() => !popover.textContent?.includes("无法读取设备声音"),
+			() => !popover.textContent?.includes("无法获取语音列表"),
 			"Successful voice detection must clear its diagnosis during playback",
 		);
 		contained(h, popover, "Sound popover");
@@ -691,7 +691,7 @@ export async function readingAidsRegression(
 			"Rate changes rewrote the active utterance",
 		);
 		const beforeClose = speech.cancellations;
-		button(h, "关闭翻译（任务继续）").click();
+		button(h, "关闭翻译").click();
 		await h.until(
 			() => !h.container.querySelector(".translation-card"),
 			"Close should hide translation",
@@ -723,7 +723,7 @@ export async function readingAidsRegression(
 					?.textContent?.includes(text),
 				"Completed/stopped playback lost its original summary",
 			);
-			button(h, "声音与语速", bar);
+			button(h, "朗读设置", bar);
 			contained(h, bar, "Resting playback bar");
 		};
 		assertStablePlayback();
@@ -779,7 +779,7 @@ export async function readingAidsRegression(
 			),
 			"Speech error is not announced",
 		);
-		button(h, "声音与语速", errorBar).click();
+		button(h, "朗读设置", errorBar).click();
 		await h.until(
 			() => !!h.container.querySelector(".device-speech-popover:popover-open"),
 			"Speech error settings must be reachable",
@@ -787,7 +787,7 @@ export async function readingAidsRegression(
 		check(
 			h.container
 				.querySelector(".device-speech-popover:popover-open")
-				?.textContent?.includes("synthesis-failed"),
+				?.textContent?.includes("语音合成失败"),
 			"The original playback diagnosis must survive voiceschanged and remain visible in settings",
 		);
 	} finally {

@@ -1,7 +1,7 @@
 import "./translation-settings.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { RequestError } from "../content";
+import { RequestError, trimTrailingPunctuation } from "../content";
 import { NativeSelect } from "../NativeSelect";
 import { InlineError } from "../Shared";
 import { useAutosavingFields } from "../settings/AutosavingSettings";
@@ -54,7 +54,7 @@ function ConflictReview({
 	const latest = read.data;
 	const differences = latest
 		? [
-				["译成", latest.target_language, fields.target_language],
+				["目标语言", latest.target_language, fields.target_language],
 				["翻译模型", modelLabel(latest.model_id), modelLabel(fields.model_id)],
 				...ranges.flatMap(({ label, sentences, characters }) => [
 					[
@@ -75,7 +75,10 @@ function ConflictReview({
 			className="settings-state translation-conflict"
 			aria-label="翻译设置冲突对照"
 		>
-			<p role="alert">{message}。你的修改仍保留在这里。</p>
+			<p role="alert">
+				{trimTrailingPunctuation(message) || "翻译设置已更新"}
+				。你的修改仍保留在这里。
+			</p>
 			{latest ? (
 				<>
 					{differences.length ? (
@@ -132,7 +135,7 @@ function ConflictReview({
 					onClick={() => read.mutate()}
 					disabled={read.isPending}
 				>
-					{read.isPending ? "正在读取…" : "查看差异"}
+					{read.isPending ? "正在加载…" : "查看差异"}
 				</button>
 			)}
 			<InlineError error={read.error} />
@@ -161,7 +164,7 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 	);
 	const modelLabel = (id: string | null) =>
 		models?.find((model) => model.id === id)?.label ??
-		(id ? `${id}（不可用）` : "未选择");
+		(id ? "已停用或已删除的模型" : "未选择");
 	const draft = useAutosavingFields(
 		"translation",
 		"翻译",
@@ -221,7 +224,7 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 				}}
 			>
 				<h2 id="translation-reading-heading" className="learning-group-title">
-					阅读翻译
+					翻译
 				</h2>
 				<p className="settings-hint settings-section-note">
 					在书中选中文字并翻译时，使用这里的语言和模型。
@@ -229,7 +232,7 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 				<div className="settings-group">
 					<label className="settings-preference-row">
 						<span className="settings-row-copy">
-							<strong>译成</strong>
+							<strong>目标语言</strong>
 						</span>
 						<input
 							className="settings-control"
@@ -266,7 +269,7 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 								{value.model_id &&
 									!models?.some((m) => m.id === value.model_id) && (
 										<option value={value.model_id}>
-											{providers.isPending ? "正在读取模型…" : "已选模型不可用"}
+											{providers.isPending ? "正在加载模型…" : "已选模型不可用"}
 										</option>
 									)}
 								{models?.map((m) => (
@@ -285,7 +288,7 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 										draft.select({ ...value, model_id: chatModel.id });
 									}}
 								>
-									选用当前讨论模型
+									选用当前对话模型
 								</button>
 							)}
 							{models && !models.some((m) => m.enabled) && (
@@ -293,7 +296,7 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 									className="translation-model-action"
 									to="/settings?section=providers"
 								>
-									前往服务管理
+									配置模型服务
 								</Link>
 							)}
 							<InlineError error={providers.error ?? settings.error} />
@@ -349,7 +352,8 @@ function SettingsForm({ initial }: { initial: TranslationSettings }) {
 					))}
 				</div>
 				<p className="settings-hint">
-					每侧达到任一上限就停止取文。填 0 会跳过该侧。字符数包含空白与标点。
+					前文和后文分别受句数和字符上限限制，设为 0
+					则不附带该侧（字符数包含空格和标点）。
 				</p>
 				{editingRange && draft.feedback}
 			</section>
@@ -380,7 +384,7 @@ export function TranslationSettingsSection() {
 							className="settings-button secondary"
 							onClick={() => void settings.refetch()}
 						>
-							重试翻译设置
+							重试
 						</button>
 					</div>
 				)

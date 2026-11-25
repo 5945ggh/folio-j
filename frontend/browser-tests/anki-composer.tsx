@@ -94,7 +94,7 @@ async function ankiVocabularyPresetRegression(h: BrowserHarness) {
 	const builtinOptions = (select: HTMLSelectElement | null) =>
 		Array.from(
 			select?.querySelectorAll<HTMLOptionElement>(
-				'optgroup[label="Folio-J 内置类型"] option',
+				'optgroup[label="内置笔记类型"] option',
 			) ?? [],
 		);
 	const disposeNewConfig = await h.mount(
@@ -115,7 +115,7 @@ async function ankiVocabularyPresetRegression(h: BrowserHarness) {
 			).length === 1 &&
 				select
 					?.querySelector('option[value="external:3"]')
-					?.textContent?.includes("按 Anki 现有模板"),
+					?.textContent?.includes("使用 Anki 已有模板"),
 			"新建仅列当前内置词汇版本，同名 Anki 现有类型有清楚标识",
 		);
 	} finally {
@@ -183,10 +183,10 @@ async function ankiVocabularyPresetRegression(h: BrowserHarness) {
 		await h.until(() => !nameInput(), "返回 Anki 设置列表");
 		click("查看");
 		await h.until(
-			() => h.container.textContent?.includes("以此创建个人配置") ?? false,
+			() => h.container.textContent?.includes("以此新建配置") ?? false,
 			"打开系统预设详情",
 		);
-		click("以此创建个人配置");
+		click("以此新建配置");
 		await h.until(
 			() => nameInput()?.value === `${vocabulary.name}（个人）`,
 			"预设创建使用预设字段",

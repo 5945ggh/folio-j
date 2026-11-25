@@ -23,7 +23,7 @@ export function AnalysisRenameDialog({
 	const submitting = useRef(false);
 	const [draft, setDraft] = useState(analysis.title);
 	const title = draft.normalize("NFC").trim();
-	const invalid = !title ? "名称不能为空白。" : titleError(draft);
+	const invalid = !title ? "标题不能为空。" : titleError(draft);
 	useEffect(() => {
 		input.current?.focus();
 		input.current?.select();
@@ -75,7 +75,7 @@ export function AnalysisRenameDialog({
 				}}
 			>
 				<label className="field">
-					名称
+					标题
 					<input
 						ref={input}
 						value={draft}
@@ -98,7 +98,7 @@ export function AnalysisRenameDialog({
 						className="button primary"
 						disabled={locked || Boolean(invalid)}
 					>
-						{save.isPending ? "保存中…" : "保存名称"}
+						{save.isPending ? "保存中…" : "保存标题"}
 					</button>
 					<button
 						type="button"

@@ -70,7 +70,7 @@ export function SourceForm({
 					/>
 				</label>
 				<label className="field full">
-					<span>管理备注</span>
+					<span>备注</span>
 					<textarea
 						rows={2}
 						disabled={pending}
@@ -78,7 +78,7 @@ export function SourceForm({
 						onChange={(event) =>
 							setFields({ ...fields, note: event.target.value })
 						}
-						placeholder="只供自己管理资料"
+						placeholder="选填，仅自己可见"
 					/>
 				</label>
 			</div>
@@ -138,7 +138,7 @@ export function SegmentForm({
 	return (
 		<form className="segment-data-form" onSubmit={submit}>
 			<fieldset className="segment-data-group">
-				<legend>原文与语境</legend>
+				<legend>原文与前后文</legend>
 				<details
 					className="segment-context-editor"
 					open={Boolean(initial?.context_before)}
@@ -159,12 +159,12 @@ export function SegmentForm({
 				{locked ? (
 					<div className="segment-fixed-original">
 						<div className="segment-fixed-heading">
-							<span>目标原文</span>
-							<small>已固定</small>
+							<span>原文</span>
+							<small>已锁定</small>
 						</div>
 						<section
 							className="segment-fixed-text"
-							aria-label="目标原文（已固定）"
+							aria-label="原文（已锁定）"
 							// biome-ignore lint/a11y/noNoninteractiveTabindex: The complete locked text remains keyboard-scrollable.
 							tabIndex={0}
 							lang="ja"
@@ -175,7 +175,7 @@ export function SegmentForm({
 				) : (
 					<label className="field">
 						<span>
-							目标原文 <strong aria-hidden="true">*</strong>
+							原文 <strong aria-hidden="true">*</strong>
 						</span>
 						<textarea
 							required
@@ -249,7 +249,7 @@ export function SegmentForm({
 					/>
 				</label>
 				<label className="field">
-					<span>个人管理备注</span>
+					<span>备注</span>
 					<textarea
 						rows={2}
 						maxLength={100000}

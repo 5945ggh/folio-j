@@ -112,13 +112,13 @@ export function SettingsPage() {
 						to="/settings?section=speech"
 						aria-current={speech ? "page" : undefined}
 					>
-						设备朗读
+						朗读设置
 					</Link>
 					<Link
 						to="/settings?section=data-location"
 						aria-current={dataLocation ? "page" : undefined}
 					>
-						数据位置
+						数据目录
 					</Link>
 					<Link
 						to="/settings?section=anki"
@@ -141,10 +141,10 @@ export function SettingsPage() {
 								className="settings-back-link"
 								to="/settings?section=providers"
 							>
-								← 返回服务管理
+								← 返回模型服务
 							</Link>
 							<div className="settings-page-head">
-								<h2>验证历史</h2>
+								<h2>验证记录</h2>
 								<p>查看模型连接验证的运行状态与结果。</p>
 							</div>
 							<RunHistory providers={providers.data} />
@@ -157,7 +157,7 @@ export function SettingsPage() {
 										{appearance
 											? "外观"
 											: speech
-												? "设备朗读"
+												? "朗读设置"
 												: permissions
 													? "对话与权限"
 													: "模型与服务"}
@@ -165,12 +165,12 @@ export function SettingsPage() {
 
 									<p>
 										{appearance
-											? "选择适合当前环境的颜色模式。"
+											? "设置应用界面的浅色或深色外观。"
 											: speech
-												? "选择当前浏览器提供的日语声音。"
+												? "选择当前浏览器提供的日语语音。"
 												: permissions
-													? "设置新对话使用工具时的默认权限。"
-													: "选择任务默认模型，管理接入的模型服务。"}
+													? "设置新对话中 AI 修改讲解时的默认权限。"
+													: "选择默认模型并管理模型服务。"}
 									</p>
 								</div>
 							)}
@@ -188,7 +188,7 @@ export function SettingsPage() {
 										type="button"
 										onClick={() => void settings.refetch()}
 									>
-										重试设置
+										重试
 									</button>
 								</section>
 							)}
@@ -216,7 +216,7 @@ export function SettingsPage() {
 												type="button"
 												onClick={() => void providers.refetch()}
 											>
-												重试模型服务
+												重试
 											</button>
 										</section>
 									)}
@@ -225,11 +225,8 @@ export function SettingsPage() {
 											<>
 												<ProviderSettings providers={providers.data} />
 												<div className="settings-tools-footer">
-													<span className="settings-hint">
-														验证按实际调用记录保留。
-													</span>
 													<Link to="/settings?section=history">
-														查看验证历史 →
+														查看验证记录 →
 													</Link>
 												</div>
 											</>
@@ -280,13 +277,13 @@ function ModelSettingsNavigation({ services }: { services: boolean }) {
 				to="/settings?section=models"
 				aria-current={!services ? "page" : undefined}
 			>
-				模型配置
+				默认模型
 			</Link>
 			<Link
 				to="/settings?section=providers"
 				aria-current={services ? "page" : undefined}
 			>
-				服务管理
+				模型服务
 			</Link>
 		</nav>
 	);

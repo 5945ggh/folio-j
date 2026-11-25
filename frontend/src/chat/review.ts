@@ -40,18 +40,18 @@ export function describeReview(
 	switch (kind) {
 		case "update_section":
 			return {
-				title: "修改讲解块",
-				target: section?.title ?? sid,
+				title: "修改小节",
+				target: section?.title ?? "未命名小节",
 				before: proposal.before || section?.raw || "（无）",
 				after: proposal.after || proposedSection(operation) || "（空内容）",
 			};
 		case "insert_sections":
 			return {
-				title: "插入讲解块",
+				title: "插入小节",
 				target: afterSid
-					? `位于“${anchor?.title ?? afterSid}”之后`
+					? `位于「${anchor?.title ?? "指定小节"}」之后`
 					: "位于文档开头",
-				before: proposal.before || "（此处尚无新内容）",
+				before: proposal.before || "（原位置为空）",
 				after:
 					proposal.after ||
 					(Array.isArray(operation.sections)
@@ -59,18 +59,18 @@ export function describeReview(
 								.map(proposedSection)
 								.filter(Boolean)
 								.join("\n\n")
-						: "（无法读取拟插入内容）"),
+						: "（无法预览拟插入内容）"),
 			};
 		case "delete_section":
 			return {
-				title: "删除讲解块",
-				target: section?.title ?? sid,
+				title: "删除小节",
+				target: section?.title ?? "未命名小节",
 				before: proposal.before || section?.raw || "（无）",
-				after: "（删除此块）",
+				after: "（删除此小节）",
 			};
 		case "update_preamble":
 			return {
-				title: "修改讲解开头",
+				title: "修改开头内容",
 				target: "文档开头",
 				before:
 					proposal.before ||

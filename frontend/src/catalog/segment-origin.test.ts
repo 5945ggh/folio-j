@@ -50,7 +50,7 @@ test("独立字段分组不切割名称内部的分隔符", () => {
 		[
 			{ kind: "title", text: title },
 			{ kind: "chapter", text: chapter },
-			{ kind: "position", text: "章内约 2%" },
+			{ kind: "position", text: "本章约 2%" },
 		],
 	);
 });
@@ -63,13 +63,13 @@ test("缺少章名时仍保留书名和整块位置", () => {
 				status: "resolved",
 				title: "雪国",
 				chapter_title: null,
-				display: "雪国 · 章内约 2%",
+				display: "雪国 · 本章约 2%",
 				chapter_percent: 2,
 			},
 		}),
 		[
 			{ kind: "title", text: "雪国" },
-			{ kind: "position", text: "章内约 2%" },
+			{ kind: "position", text: "本章约 2%" },
 		],
 	);
 });
@@ -96,37 +96,37 @@ test("未知显示格式整体保留，失效状态不提取旧章名或位置",
 		}),
 		[
 			{ kind: "title", text: "雪国" },
-			{ kind: "state", text: "材料已删除" },
+			{ kind: "state", text: "原书已删除" },
 		],
 	);
 });
 
-test("手动片段展示已填出处，空白时明确未保存出处", () => {
-	assert.equal(segmentOriginLabel(manual), "未保存出处");
+test("手动片段展示已填出处，空白时明确手动录入", () => {
+	assert.equal(segmentOriginLabel(manual), "手动录入");
 	assert.equal(
 		segmentOriginLabel({ ...manual, source_ref: "  第三集 05:30  " }),
 		"第三集 05:30",
 	);
 });
 
-test("具体材料位置优先，手填出处作为补充且不重复书名", () => {
-	assert.equal(segmentOriginLabel(material), "雪国 · 第一章 · 章内约 35%");
+test("具体书籍位置优先，手填出处作为补充且不重复书名", () => {
+	assert.equal(segmentOriginLabel(material), "雪国 · 第一章 · 本章约 35%");
 	assert.equal(
 		segmentOriginLabel({ ...material, source_ref: "文库版" }),
-		"雪国 · 第一章 · 章内约 35% · 出处补充：文库版",
+		"雪国 · 第一章 · 本章约 35% · 补充：文库版",
 	);
 	assert.equal(
 		segmentOriginLabel({ ...material, source_ref: "雪国" }),
-		"雪国 · 第一章 · 章内约 35%",
+		"雪国 · 第一章 · 本章约 35%",
 	);
 });
 
 test("失效出处保留可靠书名和状态，不沿用失效的章名与位置", () => {
 	for (const [status, label] of [
-		["material_deleted", "材料已删除"],
-		["version_unavailable", "材料版本不可用"],
-		["snapshot_mismatch", "原文快照不一致"],
-		["invalid_reference", "无法精确定位"],
+		["material_deleted", "原书已删除"],
+		["version_unavailable", "原书版本已变更"],
+		["snapshot_mismatch", "原文已变动，无法定位"],
+		["invalid_reference", "无法定位到原文"],
 	] as const) {
 		assert.equal(
 			segmentOriginLabel({
@@ -150,6 +150,6 @@ test("损坏出处即使缺少原始定位仍显示失效，不冒充手动片�
 			},
 			source_ref: "文库版",
 		}),
-		"材料出处 · 无法精确定位 · 出处补充：文库版",
+		"书籍出处 · 无法定位到原文 · 补充：文库版",
 	);
 });

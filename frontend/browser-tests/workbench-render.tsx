@@ -184,11 +184,11 @@ export async function workbenchRender(h: BrowserHarness) {
 				window.__chatMarkdownParses?.["## 活动回复第二段"] === activeParses,
 			"Progress-only refresh must preserve every unchanged Markdown tree",
 		);
-		button("复制助手消息").click();
+		button("复制回复").click();
 		await until(
 			() =>
 				copied === historic[0]?.content &&
-				!!container.querySelector('button[aria-label="已复制助手消息"]'),
+				!!container.querySelector('button[aria-label="已复制回复"]'),
 			"Memoized history copy button must remain interactive",
 		);
 		check(
@@ -208,7 +208,7 @@ export async function workbenchRender(h: BrowserHarness) {
 		const progress = () =>
 			container.querySelector(".chat-reply-progress[data-status]");
 		check(
-			progress()?.textContent?.includes("正在处理本轮请求"),
+			progress()?.textContent?.includes("正在生成回复"),
 			"Unknown activity must use neutral fallback",
 		);
 		const phase = () => progress()?.querySelector('[role="status"]');
@@ -267,7 +267,7 @@ export async function workbenchRender(h: BrowserHarness) {
 		);
 		await update(
 			{ status: "waiting_review", active_step: "streaming" },
-			"等待你审核修改",
+			"等待确认修改",
 		);
 		check(
 			!!container.querySelector(".chat-review-card"),
@@ -277,13 +277,13 @@ export async function workbenchRender(h: BrowserHarness) {
 			getComputedStyle(phase() as Element, "::before").content === "none",
 			"Review waiting must not look like active processing",
 		);
-		await update({ status: "stopping" }, "正在停止本轮");
+		await update({ status: "stopping" }, "正在停止生成…");
 		await update(
 			{
 				status: "interrupted",
 				finished_at: new Date(Date.parse(job.created_at) + 31000).toISOString(),
 			},
-			"本轮已中断",
+			"回复已中断",
 		);
 		check(
 			clock()?.textContent === "已用 0:31",

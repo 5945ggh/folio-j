@@ -126,7 +126,7 @@ test("missing mapping and unsupported highlights report honest errors without pa
 			prepareHighlights(missing.doc, { raw: "原文", entries: [] }, [
 				{ start: 0, end: 1 },
 			]),
-		/无法映射/,
+		/无法高亮/,
 	);
 	assert.equal(missing.marks.size, 0);
 });

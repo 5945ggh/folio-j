@@ -30,7 +30,7 @@ function readCover(file: File): Promise<string> {
 			const data = String(reader.result);
 			const image = new Image();
 			image.onerror = () =>
-				reject(new Error("图片无法解码，请选择有效的 PNG 或 JPEG。"));
+				reject(new Error("无法识别该图片，请选择有效的 PNG 或 JPEG 文件。"));
 			image.onload = () => {
 				if (image.naturalWidth * image.naturalHeight > 16_000_000)
 					reject(new Error("图片不能超过 1600 万像素。"));
@@ -75,7 +75,7 @@ export function BookEditDialog({
 			{details.isError ? (
 				<InlineError error={details.error} />
 			) : (
-				<p role="status">正在读取当前信息…</p>
+				<p role="status">正在加载书籍信息…</p>
 			)}
 			<div className="actions">
 				{details.isError && (
@@ -209,7 +209,7 @@ function BookEditor({
 			save.reset();
 		} catch (error) {
 			setReloadError(
-				error instanceof Error ? error : new Error("重新读取失败。"),
+				error instanceof Error ? error : new Error("重新加载失败。"),
 			);
 		} finally {
 			setReloading(false);
@@ -317,7 +317,9 @@ function BookEditor({
 								}}
 							/>
 						</label>
-						<small>支持静态 PNG／JPEG，最大 4 MiB、1600 万像素。</small>
+						<small>
+							支持静态 PNG、JPEG，大小不超过 4 MB，最多 1600 万像素。
+						</small>
 						<button
 							type="button"
 							className="button secondary"
@@ -339,22 +341,20 @@ function BookEditor({
 						{coverAction === "reset" && (
 							<p role="status">保存后恢复原书封面。</p>
 						)}
-						{readingFile && <p role="status">正在读取图片…</p>}
+						{readingFile && <p role="status">正在加载图片…</p>}
 					</div>
 				</div>
 				<InlineError error={imageError} />
 				{conflict ? (
 					<div className="inline-error" role="alert">
-						<p>
-							书籍信息已被其他操作更新。当前草稿已保留，请重新读取后再编辑。
-						</p>
+						<p>书籍信息已有更新，当前修改已保留。重新加载会放弃这些修改。</p>
 						<button
 							type="button"
 							className="button secondary"
 							disabled={busy}
 							onClick={() => setConfirm("reload")}
 						>
-							重新读取当前信息…
+							重新加载最新信息
 						</button>
 					</div>
 				) : (
@@ -362,7 +362,7 @@ function BookEditor({
 				)}
 				<InlineError error={reloadError} />
 				<p className="book-edit-note">
-					仅编辑应用内书名与封面；原始 EPUB 和所属来源保持不变。
+					仅修改应用内的书名和封面，不会改动本地 EPUB 文件。
 				</p>
 				<div className="actions">
 					<button
@@ -377,7 +377,7 @@ function BookEditor({
 							!dirty
 						}
 					>
-						{save.isPending ? "正在保存…" : reloading ? "正在读取…" : "保存"}
+						{save.isPending ? "正在保存…" : reloading ? "正在加载…" : "保存"}
 					</button>
 					<button
 						type="button"
@@ -394,13 +394,11 @@ function BookEditor({
 				<ConfirmDialog titleId={`${titleId}-discard`} onClose={continueEditing}>
 					<h2 id={`${titleId}-discard`}>
 						{confirmation === "reload"
-							? "重新读取并放弃草稿？"
+							? "放弃修改并重新加载？"
 							: "放弃未保存的修改？"}
 					</h2>
 					<p>
-						{busy
-							? "正在保存或读取书籍信息，请稍候。"
-							: "书名和封面草稿尚未保存。"}
+						{busy ? "正在保存或加载书籍信息，请稍候。" : "当前修改尚未保存。"}
 					</p>
 					<div className="actions">
 						<button
@@ -420,7 +418,7 @@ function BookEditor({
 								confirmation === "reload" ? void reload() : discard()
 							}
 						>
-							{confirmation === "reload" ? "放弃并重新读取" : "放弃修改"}
+							{confirmation === "reload" ? "放弃并重新加载" : "放弃修改"}
 						</button>
 					</div>
 				</ConfirmDialog>

@@ -79,25 +79,25 @@ export function statisticPercent(value: number | null | undefined): string {
 export function analysisConfigurationLabel(
 	configuration: string | null,
 ): string {
-	if (!configuration) return "分词版本信息不可用";
+	if (!configuration) return "暂无分词版本信息";
 	try {
 		const parsed: unknown = JSON.parse(configuration);
-		if (!parsed || typeof parsed !== "object") return "分词版本信息不可用";
+		if (!parsed || typeof parsed !== "object") return "暂无分词版本信息";
 		const field = (name: string) => {
 			const value = (parsed as Record<string, unknown>)[name];
 			return typeof value === "string" && value.length <= 40 ? value : null;
 		};
 		const mode = field("mode");
 		if (field("analyzer") !== "SudachiPy" || !mode || !/^[ABC]$/.test(mode))
-			return "分词版本信息不可用";
+			return "暂无分词版本信息";
 		return [
 			`Sudachi ${mode}`,
-			field("analyzer_version") && `分析器 ${field("analyzer_version")}`,
+			field("analyzer_version") && `SudachiPy ${field("analyzer_version")}`,
 			field("dictionary_version") && `词典 ${field("dictionary_version")}`,
 		]
 			.filter(Boolean)
 			.join(" · ");
 	} catch {
-		return "分词版本信息不可用";
+		return "暂无分词版本信息";
 	}
 }

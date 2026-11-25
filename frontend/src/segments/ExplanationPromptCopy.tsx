@@ -177,15 +177,15 @@ export function ExplanationPromptCopyFeedback({
 			<div className="segment-prompt-feedback-line">
 				<p role="status" aria-live="polite" aria-atomic="true">
 					{state.status === "reading"
-						? "正在读取讲解提示词…"
+						? "正在加载讲解提示词…"
 						: state.status === "copying"
 							? "正在复制讲解提示词…"
 							: state.status === "copied"
 								? "已复制讲解提示词"
 								: state.status === "read-error"
-									? "讲解提示词读取失败。"
+									? "获取讲解提示词失败"
 									: fallback
-										? "复制失败，可选择下方文本手动复制。"
+										? "无法自动复制到剪贴板，请手动复制下方内容。"
 										: ""}
 				</p>
 				<button
@@ -198,7 +198,7 @@ export function ExplanationPromptCopyFeedback({
 			</div>
 			{state.status === "read-error" && (
 				<button type="button" onClick={() => retry()}>
-					重试读取并复制
+					重试
 				</button>
 			)}
 			{fallback && (
@@ -211,7 +211,7 @@ export function ExplanationPromptCopyFeedback({
 					/>
 					<div className="segment-prompt-copy-actions">
 						<button type="button" onClick={() => text.current?.select()}>
-							选择文本
+							全选
 						</button>
 						<button type="button" onClick={() => retry(state.prompt)}>
 							重试复制

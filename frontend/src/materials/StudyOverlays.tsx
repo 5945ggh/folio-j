@@ -114,7 +114,7 @@ export function SavedSegmentNotice({
 					setFocused(false);
 			}}
 		>
-			<span>{kind === "created" ? "已保存学习片段" : "已选用已有片段"}</span>
+			<span>{kind === "created" ? "已保存为学习片段" : "已关联已有片段"}</span>
 			<button
 				type="button"
 				className="reader-study-notice-open"

@@ -88,7 +88,7 @@ export function MediaFieldControl({
 					<span className="anki-media-placeholder">
 						{field.type === "image"
 							? "可拖入文件，或在此粘贴截图"
-							: "未选择文件，可点击或拖入"}
+							: "未选择文件，可拖入或点击左侧按钮选择"}
 					</span>
 				)}
 			</div>

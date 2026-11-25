@@ -137,9 +137,9 @@ export function Shell({
 						className="sidebar-toggle"
 						type="button"
 						onClick={toggle}
-						aria-label={collapsed ? "展开导航" : "收窄导航"}
-						title={collapsed ? undefined : "收窄导航"}
-						data-tooltip="展开导航"
+						aria-label={collapsed ? "展开侧边栏" : "收起侧边栏"}
+						title={collapsed ? undefined : "收起侧边栏"}
+						data-tooltip={collapsed ? "展开侧边栏" : "收起侧边栏"}
 					>
 						<svg
 							viewBox="0 0 24 24"
@@ -204,7 +204,7 @@ export function Loading() {
 	return (
 		<Shell>
 			<p className="loading" role="status">
-				正在加载资料…
+				正在加载…
 			</p>
 		</Shell>
 	);

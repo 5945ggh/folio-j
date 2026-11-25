@@ -18,8 +18,8 @@ const paragraphs = [
 const text = paragraphs.join("");
 const preferenceKey = "folio-reader-context-copy-v1";
 const defaultCopy =
-	"出处：《上下文の本》／第一章\n\n目标原文：\n猫が歩く。\n\n前文：\n第二句。第三句。\n\n后文：\n後ろ一。後ろ二。";
-const configuredCopy = "目标原文：\n猫が歩く。\n\n后文：\n後ろ一。";
+	"出处：《上下文の本》 / 第一章\n\n原文：\n猫が歩く。\n\n前文：\n第二句。第三句。\n\n后文：\n後ろ一。後ろ二。";
+const configuredCopy = "原文：\n猫が歩く。\n\n后文：\n後ろ一。";
 
 /** Real MaterialReader and native iframe selection, with a clipboard API substitute. */
 export async function readerContextCopy(h: BrowserHarness, preview = false) {
@@ -372,7 +372,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		}
 	};
 	const success = () =>
-		!!h.container.textContent?.includes("已复制目标原文与上下文");
+		!!h.container.textContent?.includes("已复制原文与前后文");
 	const failure = () =>
 		h.container.querySelector<HTMLTextAreaElement>(
 			'textarea[aria-label="待复制的文本"]',
@@ -393,14 +393,14 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		);
 		releaseRead();
 		await h.until(
-			() => !h.container.textContent?.includes("正在读取复制设置"),
+			() => !h.container.textContent?.includes("正在加载复制设置"),
 			"Initial settings read must settle",
 		);
 		if (!preview) await dragAfterRuby();
 		const selected = await select();
 		toolbarFits();
 		const count = copies.length;
-		button("带上下文复制").click();
+		button("带前后文复制").click();
 		check(
 			copies.length === count + 1,
 			"Clipboard write must begin synchronously in the action handler",
@@ -480,7 +480,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		nextSaveStatus = 500;
 		await blur(beforeInput);
 		await h.until(
-			() => !!h.container.textContent?.includes("保存失败，修改已保留"),
+			() => !!h.container.textContent?.includes("保存失败，请重试"),
 			"Failed automatic save must retain inputs and expose retry",
 		);
 		check(
@@ -491,12 +491,12 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			"Failed save must retain the complete edited group without changing persistence",
 		);
 		await select();
-		button("带上下文复制").click();
+		button("带前后文复制").click();
 		check(
 			copies.at(-1) === defaultCopy,
 			"Copying must still use saved settings after failure",
 		);
-		button("重试保存复制设置").click();
+		button("重试保存").click();
 		await h.until(
 			() =>
 				stored.before_sentences === 0 &&
@@ -505,7 +505,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			"Retry must persist the complete current group without revision reloading",
 		);
 		await h.until(
-			() => !!h.container.textContent?.includes("复制设置已自动保存"),
+			() => !!h.container.textContent?.includes("已自动保存"),
 			"Successful automatic save must be visible",
 		);
 		check(
@@ -549,7 +549,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		);
 		button("关闭阅读设置").click();
 		await select();
-		button("带上下文复制").click();
+		button("带前后文复制").click();
 		check(
 			copies.at(-1) === configuredCopy,
 			"0-before and 1-after with source disabled must produce only target and after",
@@ -557,7 +557,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		dispose?.();
 		await open();
 		await select();
-		button("带上下文复制").click();
+		button("带前后文复制").click();
 		check(
 			copies.at(-1) === configuredCopy,
 			"Saved database copy preferences must survive unmount/remount",
@@ -566,7 +566,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		write = async () => {
 			throw new DOMException("Clipboard denied", "NotAllowedError");
 		};
-		button("带上下文复制").click();
+		button("带前后文复制").click();
 		await h.until(
 			() => !!failure(),
 			"Clipboard rejection must provide manual copy text",
@@ -577,10 +577,10 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			"Failure fallback must expose complete readonly copy text",
 		);
 		check(
-			h.container.textContent?.includes("未能写入剪贴板"),
+			h.container.textContent?.includes("无法自动复制到剪贴板"),
 			"Clipboard rejection must explicitly report failure",
 		);
-		button("选择文本").click();
+		button("全选").click();
 		check(
 			manual.selectionStart === 0 &&
 				manual.selectionEnd === configuredCopy.length,
@@ -593,7 +593,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 				rejectLate = reject;
 			});
 		await select();
-		button("带上下文复制").click();
+		button("带前后文复制").click();
 		check(rejectLate, "Delayed clipboard substitute must be pending");
 		await select(4);
 		check(
@@ -607,9 +607,9 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			"Late previous-selection failure must not reappear",
 		);
 		write = async () => {};
-		button("带上下文复制").click();
+		button("带前后文复制").click();
 		check(
-			copies.at(-1)?.includes("目标原文：\n後ろ一。"),
+			copies.at(-1)?.includes("原文：\n後ろ一。"),
 			"Next action must copy new selection",
 		);
 		await h.until(success, "Current selection copy must still complete");
@@ -618,7 +618,7 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 			new Promise<void>((resolve) => {
 				resolveLate = resolve;
 			});
-		button("带上下文复制").click();
+		button("带前后文复制").click();
 		check(resolveLate, "Delayed clipboard substitute must capture completion");
 		dispose?.();
 		dispose = undefined;
@@ -633,8 +633,12 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		failRead = true;
 		await open();
 		button("阅读设置").click();
+		const copyReadAlert = () =>
+			h.container.querySelector(
+				'.reader-copy-settings-feedback .reader-settings-error[role="alert"]',
+			);
 		await h.until(
-			() => !!h.container.textContent?.includes("读取复制设置失败"),
+			() => copyReadAlert()?.textContent?.includes("复制设置加载失败") === true,
 			"Failed settings read must be visible while original remains readable",
 		);
 		check(
@@ -648,7 +652,9 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 		check(retryCopyGroup, "Copy group must remain available after failed read");
 		if (!retryCopyGroup.open)
 			retryCopyGroup.querySelector<HTMLElement>("summary")?.click();
-		button("重新读取复制设置").click();
+		const retryAlert = copyReadAlert();
+		check(retryAlert, "Copy settings read failure must retain its alert");
+		button("重试", retryAlert).click();
 		await h.until(
 			() => !!h.container.querySelector(".reader-copy-settings input"),
 			"Read retry must recover saved preferences",

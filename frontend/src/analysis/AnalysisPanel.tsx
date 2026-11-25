@@ -21,6 +21,13 @@ import { readingAnalysis } from "./state";
 import { useAnalysisActionMenu } from "./useAnalysisActionMenu";
 import "./reading.css";
 
+const warningLabels: Record<string, string> = {
+	no_h2: "正文中没有二级标题（##），整篇内容将作为一整段展示",
+	h1_present: "正文中包含一级标题（#），建议改用二级标题（##）划分小节",
+	duplicate_title: "存在重复的二级标题，目录跳转时可能不易区分",
+	empty_section: "存在没有正文内容的空白小节",
+};
+
 export function AnalysisPanel({
 	segmentId,
 	selectedId,
@@ -75,7 +82,7 @@ export function AnalysisPanel({
 		mutationFn: async () => {
 			if (!deleting) throw new Error("请先打开当前片段的讲解。");
 			if (!impact.data || impact.data.analysis_id !== deleting.id)
-				throw new Error("无法核对目标讲解，请重新读取删除影响。");
+				throw new Error("无法确认要删除的讲解，请刷新后重试。");
 			await deleteAnalysis(deleting.id);
 			return deleting.id;
 		},
@@ -141,7 +148,7 @@ export function AnalysisPanel({
 						>
 							<strong>{item.title}</strong>
 							<small>
-								正文摘录：{item.excerpt.slice(0, 90)}
+								{item.excerpt.slice(0, 90)}
 								{item.excerpt.length > 90 ? "…" : ""}
 							</small>
 						</button>
@@ -159,7 +166,7 @@ export function AnalysisPanel({
 						className="analysis-quiet-button"
 						onClick={() => void analyses.refetch()}
 					>
-						重试加载讲解列表
+						重试
 					</button>
 				</>
 			)}
@@ -170,7 +177,7 @@ export function AnalysisPanel({
 					disabled={analyses.isFetchingNextPage}
 					onClick={() => void analyses.fetchNextPage()}
 				>
-					{analyses.isFetchingNextPage ? "加载中…" : "加载更多讲解"}
+					{analyses.isFetchingNextPage ? "正在加载…" : "加载更多讲解"}
 				</button>
 			)}
 			{children}
@@ -179,12 +186,12 @@ export function AnalysisPanel({
 				analyses.isSuccess &&
 				!children && (
 					<div className="analysis-empty">
-						<h2>还没有已保存讲解</h2>
-						<p>保存的讲解会显示在这里。</p>
+						<h2>还没有讲解</h2>
+						<p>点击「新建讲解」，手动编写或让 AI 生成。</p>
 					</div>
 				)}
 			{detail.isPending && effectiveId && (
-				<p className="loading">正在打开讲解…</p>
+				<p className="loading">正在加载讲解…</p>
 			)}
 			{effectiveId && detail.isError && (
 				<>
@@ -194,7 +201,7 @@ export function AnalysisPanel({
 						className="analysis-quiet-button"
 						onClick={() => void detail.refetch()}
 					>
-						重试打开讲解
+						重试
 					</button>
 				</>
 			)}
@@ -256,7 +263,7 @@ export function AnalysisPanel({
 							<summary>格式提醒（{document.warnings.length}）</summary>
 							<ul>
 								{document.warnings.map((warning) => (
-									<li key={warning}>{warning}</li>
+									<li key={warning}>{warningLabels[warning] ?? warning}</li>
 								))}
 							</ul>
 						</details>
@@ -272,7 +279,7 @@ export function AnalysisPanel({
 											key={section.id}
 											href={`#analysis-section-${section.id}`}
 										>
-											{section.title ?? "未命名段落"}
+											{section.title ?? "未命名小节"}
 										</a>
 									))}
 							</nav>
@@ -313,7 +320,7 @@ export function AnalysisPanel({
 					<p className="eyebrow">删除确认</p>
 					<h2 id="delete-analysis-title">删除这份讲解？</h2>
 					{impact.isPending ? (
-						<p>正在核对关联范围…</p>
+						<p>正在统计关联内容…</p>
 					) : impact.isError ? (
 						<>
 							<InlineError error={impact.error} />
@@ -322,15 +329,17 @@ export function AnalysisPanel({
 								className="analysis-quiet-button"
 								onClick={() => void impact.refetch()}
 							>
-								重新核对删除影响
+								重试
 							</button>
 						</>
 					) : (
 						<p>
-							“{impact.data.title}”的 {impact.data.revision_count} 个修订、
-							{impact.data.section_count} 个讲解块及{" "}
-							{impact.data.occurrence_count}{" "}
-							个关联学习条目会受到影响。片段和对话保留。删除后无法从页面恢复。
+							将删除「{impact.data.title}」的 {impact.data.revision_count}{" "}
+							个版本和 {impact.data.section_count} 个小节
+							{impact.data.occurrence_count > 0
+								? `（关联的 ${impact.data.occurrence_count} 条学习记录也会受到影响）`
+								: ""}
+							。原文片段和对话会保留，删除后无法恢复。
 						</p>
 					)}
 					<InlineError error={remove.error} />
@@ -444,7 +453,7 @@ function DocumentActions({
 						onDelete();
 					}}
 				>
-					删除此讲解
+					删除讲解
 				</button>
 			</div>
 			{versionOpen && (
@@ -460,14 +469,17 @@ function DocumentActions({
 							? "正在阅读当前版本。"
 							: "正在阅读历史版本，此版本只读。"}
 					</p>
-					<dl>
-						<dt>讲解 ID</dt>
-						<dd>{document.id}</dd>
-						<dt>所读修订</dt>
-						<dd>{document.revision_id}</dd>
-						<dt>当前修订</dt>
-						<dd>{document.current_revision_id}</dd>
-					</dl>
+					<details className="analysis-version-technical">
+						<summary>技术信息</summary>
+						<dl>
+							<dt>讲解 ID</dt>
+							<dd>{document.id}</dd>
+							<dt>查看版本 ID</dt>
+							<dd>{document.revision_id}</dd>
+							<dt>当前版本 ID</dt>
+							<dd>{document.current_revision_id}</dd>
+						</dl>
+					</details>
 					<button
 						type="button"
 						className="button secondary"

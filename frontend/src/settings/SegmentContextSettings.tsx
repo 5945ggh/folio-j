@@ -29,7 +29,7 @@ export function SegmentContextSettingsGroup() {
 			</p>
 			<InlineError error={settings.error} />
 			{settings.isPending && (
-				<p className="settings-hint">正在读取前后文设置…</p>
+				<p className="settings-hint">正在加载前后文设置…</p>
 			)}
 			{settings.data ? (
 				<ContextForm settings={settings.data} />
@@ -39,7 +39,7 @@ export function SegmentContextSettingsGroup() {
 					className="settings-button secondary"
 					onClick={() => void settings.refetch()}
 				>
-					重新读取
+					重试
 				</button>
 			) : null}
 		</section>
@@ -157,7 +157,8 @@ function ContextForm({ settings }: { settings: SegmentContextSettings }) {
 				))}
 			</div>
 			<p className="settings-hint">
-				每侧达到任一上限就停止取文。填 0 会跳过该侧。字符数包含空白与标点。
+				前文和后文分别受句数和字符上限限制，设为 0
+				则不附带该侧（字符数包含空格和标点）。
 			</p>
 			{draft.feedback}
 		</form>

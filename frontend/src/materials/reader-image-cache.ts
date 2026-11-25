@@ -109,7 +109,7 @@ export class ReaderImageCache {
 	}
 
 	async get(url: string, signal: AbortSignal): Promise<Blob> {
-		if (this.closed) throw new Error("图片会话已关闭");
+		if (this.closed) throw new Error("页面已关闭，操作已取消");
 		signal.throwIfAborted();
 		url = this.readResource(this.sources, url) ?? url;
 		const cached = this.readResource(this.blobs, url);
@@ -155,7 +155,7 @@ export class ReaderImageCache {
 	): Promise<{ blob: Blob; release: () => void }> {
 		const blob = await this.get(url, signal);
 		signal.throwIfAborted();
-		if (this.closed) throw new Error("图片会话已关闭");
+		if (this.closed) throw new Error("页面已关闭，操作已取消");
 		let retained: Resource<Blob> | undefined;
 		for (const entry of this.blobs.values()) {
 			if (entry.value === blob) {

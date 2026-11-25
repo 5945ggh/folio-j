@@ -137,7 +137,7 @@ export async function segmentCatalog(
 					analysis_count: id === "material" ? analysisCount : 0,
 					thread_count: 1,
 					message_count: 3,
-					active_job_count: 0,
+					active_job_count: id === "material" ? 1 : 0,
 				};
 				return Response.json(impact);
 			}
@@ -313,8 +313,8 @@ export async function segmentCatalog(
 			"第三章　物語の中で出会う言葉と登場人物の心の変化を一つずつ確かめながら読み進める長い章の名前".repeat(
 				3,
 			);
-		const position = "章内约 12%";
-		const origin = `${longTitle} · ${longChapter} · ${position} · 出处补充：手填页码 42`;
+		const position = "本章约 12%";
+		const origin = `${longTitle} · ${longChapter} · ${position} · 补充：手填页码 42`;
 		items = [
 			segment("long-material", {
 				material_provenance: material,
@@ -356,7 +356,7 @@ export async function segmentCatalog(
 			for (const [className, text] of [
 				["segment-origin-title", longTitle],
 				["segment-origin-chapter", longChapter],
-				["segment-origin-supplement", "出处补充：手填页码 42"],
+				["segment-origin-supplement", "补充：手填页码 42"],
 			] as const) {
 				const node = current.querySelector<HTMLElement>(
 					`.${className} .segment-origin-value`,
@@ -376,7 +376,7 @@ export async function segmentCatalog(
 			}
 			for (const [owner, className, text] of [
 				[current, "segment-origin-position", position],
-				[deleted, "segment-origin-state", "材料已删除"],
+				[deleted, "segment-origin-state", "原书已删除"],
 			] as const) {
 				const node = owner.querySelector<HTMLElement>(
 					`.${className} .segment-origin-value`,
@@ -461,7 +461,7 @@ export async function segmentCatalog(
 				chapter_percent: 12,
 				title: "確かな本",
 				chapter_title: "第三章",
-				display: "確かな本 · 第三章 · 章内约 12%",
+				display: "確かな本 · 第三章 · 本章约 12%",
 			},
 		}),
 		segment("manual", { source_ref: "手填出处" }),
@@ -519,7 +519,7 @@ export async function segmentCatalog(
 			"";
 		check(
 			origin.startsWith("確かな本 · 第三章") &&
-				origin.includes("出处补充：手填页码 42"),
+				origin.includes("补充：手填页码 42"),
 			"Material origin must precede handwritten supplement",
 		);
 		check(
@@ -529,11 +529,11 @@ export async function segmentCatalog(
 		);
 		check(
 			row("no-origin")?.querySelector(".segment-origin-label")?.textContent ===
-				"未保存出处",
+				"手动录入",
 			"Missing origin must be explicit",
 		);
 		check(
-			row("deleted-material")?.textContent?.includes("消えた本 · 材料已删除"),
+			row("deleted-material")?.textContent?.includes("消えた本 · 原书已删除"),
 			"Deleted material must retain its saved origin state",
 		);
 		for (const node of container.querySelectorAll<HTMLTimeElement>(
@@ -548,7 +548,8 @@ export async function segmentCatalog(
 		await loadedImpact();
 		check(
 			requiredDialog().textContent?.includes("2 份讲解") &&
-				/1\s*条讨论和\s*3\s*条消息/.test(requiredDialog().textContent ?? ""),
+				/1\s*段对话和\s*3\s*条消息/.test(requiredDialog().textContent ?? "") &&
+				requiredDialog().textContent?.includes("并停止 1 个对话任务"),
 			"Confirmation must include analysis and discussion scope",
 		);
 		action("取消", requiredDialog()).click();
@@ -568,7 +569,7 @@ export async function segmentCatalog(
 			"Unreadable impact must prevent delete",
 		);
 		impactFailure = false;
-		action("重试读取影响范围", requiredDialog()).click();
+		action("重试", requiredDialog()).click();
 		await loadedImpact();
 		analysisCount = 3;
 		const beforeDeleteImpact = impactReads;
@@ -624,7 +625,7 @@ export async function segmentCatalog(
 		);
 		await tab("analyses");
 		await until(
-			() => !!container.textContent?.includes("还没有保存的讲解"),
+			() => !!container.textContent?.includes("还没有讲解"),
 			"Deleted segment analysis must disappear from analysis catalog",
 		);
 		await tab("overview");

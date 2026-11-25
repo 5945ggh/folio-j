@@ -7,7 +7,7 @@ import {
 	useState,
 } from "react";
 import { api } from "../../api/client";
-import { requireData } from "../../content";
+import { requireData, trimTrailingPunctuation } from "../../content";
 import { InlineError } from "../../Shared";
 import { type Model, type Provider, settingsKeys } from "../api";
 import { RunDetail } from "../RunHistory";
@@ -99,13 +99,13 @@ export function ProviderModels({
 	return (
 		<div className="provider-models-view">
 			<div className="provider-section-heading">
-				<h3>已登记模型</h3>
+				<h3>已添加模型</h3>
 				<button
 					type="button"
 					className="settings-button primary"
 					onClick={onAdd}
 				>
-					<span aria-hidden="true">＋</span> 登记模型
+					<span aria-hidden="true">＋</span> 添加模型
 				</button>
 			</div>
 			{provider.models.length ? (
@@ -122,7 +122,7 @@ export function ProviderModels({
 				</div>
 			) : (
 				<p className="provider-empty settings-hint">
-					还没有已登记的模型。可以从服务列表选择，或手动填写模型 ID。
+					还没有添加模型。可以从模型列表选择，或手动填写模型 ID。
 				</p>
 			)}
 		</div>
@@ -192,7 +192,7 @@ function ModelRow({
 				} catch (error) {
 					const reason = error instanceof Error ? error.message : "请求未完成";
 					throw new Error(
-						`已接受 ${accepted} 项验证；${target === "text" ? "普通文本" : "流式文本"}请求未确认接受，其余尚未发送。${reason}。可刷新状态核实后重试。`,
+						`已发送 ${accepted} 项验证；${target === "text" ? "普通文本" : "流式文本"}验证暂未确认是否发送成功，其余尚未发送（${trimTrailingPunctuation(reason) || "请求未完成"}）。请刷新状态后重试。`,
 					);
 				}
 			}
@@ -292,9 +292,6 @@ function ModelRow({
 						>
 							验证两项文本（2 次调用）
 						</button>
-						<small className="provider-verification-note">
-							暂未提供结构化输出验证。
-						</small>
 					</ActionMenu>
 					<ActionMenu label={`${model.model_id} 更多操作`}>
 						<button
@@ -349,7 +346,7 @@ function ModelRow({
 						className="provider-back"
 						onClick={() => setShowRecord(null)}
 					>
-						收起诊断
+						收起详情
 					</button>
 				</div>
 			)}

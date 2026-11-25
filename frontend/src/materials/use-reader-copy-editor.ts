@@ -92,9 +92,9 @@ export function useReaderCopyEditor(active: boolean) {
 		valid: draft ? parseCopyFields(draft.value) !== null : false,
 		pending,
 		notice: error
-			? "保存失败，修改已保留。"
+			? "保存失败，请重试。"
 			: draft?.saved && !dirty
-				? "复制设置已自动保存。"
+				? "已自动保存"
 				: "",
 		noticeError: error,
 		change,

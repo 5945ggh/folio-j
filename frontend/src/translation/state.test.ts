@@ -55,9 +55,13 @@ test("version shortcut returns to the exact newer result even when history pages
 		id: "previous",
 		label: "上一版",
 	});
+	assert.deepEqual(translationVersionShortcut(results, "previous", "new"), {
+		id: "new",
+		label: "返回新版",
+	});
 	assert.deepEqual(
 		translationVersionShortcut([{ id: "old" }], "previous", "new"),
-		{ id: "new", label: "返回新版" },
+		{ id: "new", label: "返回刚才查看的版本" },
 	);
 	assert.deepEqual(translationVersionShortcut(results, "previous", null), {
 		id: "old",

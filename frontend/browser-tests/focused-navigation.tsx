@@ -896,7 +896,7 @@ export async function focusedNavigation(h: BrowserHarness) {
 				find<HTMLElement>(".settings-reading-notice-excerpt").textContent ===
 					"学习片段" &&
 				find<HTMLElement>(".settings-reading-notice-source").textContent ===
-					"正在读取来源…",
+					"正在加载来源…",
 			"Pending Segment metadata must show readable placeholders while keeping return available",
 		);
 		deletedSegment = true;
@@ -910,7 +910,7 @@ export async function focusedNavigation(h: BrowserHarness) {
 					freshReadIndex &&
 				h.container
 					.querySelector('.segment-page-state[role="alert"]')
-					?.textContent?.includes("找不到这条记录") === true,
+					?.textContent?.includes("找不到这个片段") === true,
 			"Return must start a fresh GET and honor deletion while the old initial GET is still unresolved",
 		);
 		check(releaseStaleRead, "Test must control the obsolete Segment response");
@@ -927,7 +927,7 @@ export async function focusedNavigation(h: BrowserHarness) {
 				!h.container.querySelector("#chat-question") &&
 				h.container
 					.querySelector('.segment-page-state[role="alert"]')
-					?.textContent?.includes("找不到这条记录"),
+					?.textContent?.includes("找不到这个片段"),
 			"Late obsolete response must not reveal deleted Segment content, start a model or change the return URL",
 		);
 		deletedSegment = false;

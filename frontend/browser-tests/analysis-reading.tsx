@@ -364,7 +364,7 @@ export async function analysisReading(h: BrowserHarness) {
 			() => !!container.querySelector(".segment-create-menu:popover-open"),
 			"Creation choices must reopen for the independent AI action",
 		);
-		button("创建 AI 讲解").click();
+		button("生成 AI 讲解").click();
 		await until(
 			() =>
 				generates === before[1] + 1 &&
@@ -510,10 +510,10 @@ export async function analysisReading(h: BrowserHarness) {
 		);
 		key(button("重命名"), "ArrowDown");
 		check(
-			document.activeElement === button("删除此讲解"),
+			document.activeElement === button("删除讲解"),
 			"Version menu ArrowDown must reach delete without activating it",
 		);
-		key(button("删除此讲解"), "Home");
+		key(button("删除讲解"), "Home");
 		check(
 			document.activeElement === button("版本信息"),
 			"Version menu Home must return to version information",
@@ -560,15 +560,25 @@ export async function analysisReading(h: BrowserHarness) {
 			() => !!container.querySelector("dialog[open]"),
 			"Version information must open a modal",
 		);
+		const technical = container.querySelector<HTMLDetailsElement>(
+			"dialog[open] .analysis-version-technical",
+		);
+		const summary = technical?.querySelector("summary");
+		check(
+			technical && !technical.open && summary?.textContent === "技术信息",
+			"Technical version information must be collapsed by default",
+		);
+		summary.click();
+		check(technical.open, "Technical version information must be expandable");
 		const details = new Map(
-			[...container.querySelectorAll("dialog dt")].map((node) => [
+			[...technical.querySelectorAll("dt")].map((node) => [
 				node.textContent,
 				node.nextElementSibling?.textContent,
 			]),
 		);
 		check(
-			details.get("所读修订") === doc.revision_id &&
-				details.get("当前修订") === doc.current_revision_id,
+			details.get("查看版本 ID") === doc.revision_id &&
+				details.get("当前版本 ID") === doc.current_revision_id,
 			"Version dialog must preserve the exact read/current revision identities",
 		);
 		check(
@@ -706,18 +716,18 @@ export async function analysisReading(h: BrowserHarness) {
 			() => menu().getAttribute("aria-expanded") === "true",
 			"Delete action menu must open",
 		);
-		button("删除此讲解").click();
+		button("删除讲解").click();
 		await until(
 			() =>
-				container.querySelector("dialog")?.textContent?.includes("2 个修订") ===
+				container.querySelector("dialog")?.textContent?.includes("2 个版本") ===
 				true,
 			"Delete confirmation must read the affected revision count",
 		);
 		check(
-			container.querySelector("dialog")?.textContent?.includes("4 个讲解块") &&
+			container.querySelector("dialog")?.textContent?.includes("4 个小节") &&
 				container
 					.querySelector("dialog")
-					?.textContent?.includes("3 个关联学习条目"),
+					?.textContent?.includes("关联的 3 条学习记录"),
 			"Delete confirmation must retain section and occurrence impact",
 		);
 		button("取消", container.querySelector("dialog") ?? container).click();
@@ -799,8 +809,12 @@ export async function analysisReading(h: BrowserHarness) {
 				() =>
 					mode === "pending"
 						? !!releaseDetail &&
-							container.textContent?.includes("正在打开讲解") === true
-						: container.textContent?.includes("重试打开讲解") === true,
+							container.textContent?.includes("正在加载讲解") === true
+						: [
+								...container.querySelectorAll<HTMLButtonElement>(
+									".analysis-panel button.analysis-quiet-button",
+								),
+							].some((node) => node.textContent?.trim() === "重试"),
 				"Selected detail loading/error state must remain explicit",
 			);
 			const back = container.querySelector<HTMLButtonElement>(
@@ -862,7 +876,7 @@ export async function analysisReading(h: BrowserHarness) {
 					...container.querySelectorAll<HTMLButtonElement>(
 						".segment-create-menu button",
 					),
-				].find((node) => node.textContent?.trim() === "创建 AI 讲解");
+				].find((node) => node.textContent?.trim() === "生成 AI 讲解");
 				check(
 					generate && !generate.disabled && !button("编写或粘贴讲解").disabled,
 					"Available material must allow both manual writing and AI explanation",

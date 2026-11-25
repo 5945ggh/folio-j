@@ -15,7 +15,7 @@ export function captureNativeSelection(
 ): MaterialProvenance {
 	const selection = doc.getSelection();
 	if (!selection || selection.isCollapsed || selection.rangeCount !== 1)
-		throw new Error("请在同一个正文区域内选择一段连续原文。");
+		throw new Error("请选择同一段落或连续区域内的原文。");
 	const range = selection.getRangeAt(0);
 	if (inlineTranslationInRange(doc, range))
 		throw new Error("选区包含译文，请只选择原文。");
@@ -25,11 +25,11 @@ export function captureNativeSelection(
 		const element =
 			node.nodeType === 1 ? (node as Element) : node.parentElement;
 		if (element?.closest("rt,rp"))
-			throw new Error("选区端点不能落在注音文字中。");
+			throw new Error("请勿将选区起点或终点停在注音上。");
 		const entry = projection.entries.find((item) => item.node === node);
 		if (entry) {
 			if (!Number.isInteger(offset) || offset < 0 || offset > entry.node.length)
-				throw new Error("选区文字边界无效。");
+				throw new Error("选区范围无效，请重新选择正文。");
 			return entry.start + offset;
 		}
 		if (
@@ -38,9 +38,9 @@ export function captureNativeSelection(
 			offset < 0 ||
 			offset > node.childNodes.length
 		)
-			throw new Error("选区端点不在定位正文中。");
+			throw new Error("选区范围无效，请重新选择正文。");
 		if (!projection.entries.some((item) => node.contains(item.node)))
-			throw new Error("选区端点不在定位正文结构中。");
+			throw new Error("选区范围无效，请重新选择正文。");
 		let before = 0;
 		for (const item of projection.entries) {
 			let child: Node = item.node;
@@ -68,9 +68,9 @@ export function captureNativeSelection(
 		.slice(part.start, part.end)
 		.join("");
 	if (projection.raw.normalize("NFC") !== expected)
-		throw new Error("当前显示正文无法精确映射，请重新打开章节。");
+		throw new Error("章节显示异常，请重新打开本章。");
 	const exact = Array.from(expected).slice(start, end).join("");
-	if (!exact.trim()) throw new Error("目标原文不能只有空白。");
+	if (!exact.trim()) throw new Error("所选原文不能为空。");
 	return {
 		contract_version: "1",
 		material_id: materialId,
@@ -113,14 +113,14 @@ export function referenceParts(
 			target.end <= target.start ||
 			target.end > Array.from(resource.text).length
 		)
-			throw new Error("出处资源或范围不可用。");
+			throw new Error("原文位置已失效，无法精确定位。");
 		if (
 			(target.text_sha256 && resource.text_sha256 !== target.text_sha256) ||
 			(target.exact !== undefined &&
 				Array.from(resource.text).slice(target.start, target.end).join("") !==
 					target.exact)
 		)
-			throw new Error("出处原文快照失配，无法精确定位。");
+			throw new Error("原文内容已变更，无法精确定位。");
 		let cursor = target.start;
 		let offset = 0;
 		let first: number | null = null;
@@ -135,7 +135,7 @@ export function referenceParts(
 				if (left < right) {
 					const position = offset + left - part.start;
 					if (left !== cursor || (first !== null && position !== end))
-						throw new Error("出处在当前章节中的映射不连续。");
+						throw new Error("原文位置已失效，无法精确定位。");
 					first ??= position;
 					end = offset + right - part.start;
 					cursor = right;
@@ -151,9 +151,9 @@ export function referenceParts(
 			first === null ||
 			(previousEnd !== null && first !== previousEnd)
 		)
-			throw new Error("无法完整定位同章原文范围。");
+			throw new Error("原文位置已失效，无法精确定位。");
 		previousEnd = end;
 	}
-	if (!result.size) throw new Error("出处没有可定位的原文。");
+	if (!result.size) throw new Error("出处定位信息无效，无法定位原文。");
 	return result;
 }

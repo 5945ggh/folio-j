@@ -153,10 +153,10 @@ function TranslationGroupCard({
 			<p className="anki-ref-group-title" lang="ja">
 				{translation.excerpt}
 			</p>
-			{history.isPending && <p className="anki-ref-meta">正在读取译文版本…</p>}
+			{history.isPending && <p className="anki-ref-meta">正在加载译文…</p>}
 			{history.isError && (
 				<div className="anki-ref-meta">
-					译文读取失败。{" "}
+					加载译文失败。{" "}
 					<button
 						type="button"
 						className="anki-link-btn"
@@ -188,7 +188,7 @@ function TranslationGroupCard({
 					disabled={history.isFetchingNextPage}
 					onClick={() => void history.fetchNextPage()}
 				>
-					{history.isFetchingNextPage ? "加载中…" : "加载更早的译文版本"}
+					{history.isFetchingNextPage ? "正在加载…" : "加载更早的译文"}
 				</button>
 			)}
 		</section>
@@ -265,11 +265,11 @@ function SegmentDetailCard({
 			{expanded && (
 				<>
 					{detailQuery.isPending && (
-						<p className="anki-ref-meta">正在读取片段内容…</p>
+						<p className="anki-ref-meta">正在加载片段内容…</p>
 					)}
 					{detailQuery.isError && (
 						<div className="anki-ref-meta">
-							读取片段失败。{" "}
+							加载片段失败。{" "}
 							<button
 								type="button"
 								className="anki-link-btn"
@@ -302,7 +302,7 @@ function SegmentDetailCard({
 					)}
 					{(analysesQuery.isError || analysisDetailQuery.isError) && (
 						<p role="alert" className="anki-ref-meta">
-							读取讲解失败。{" "}
+							加载讲解失败。{" "}
 							<button
 								type="button"
 								className="anki-link-btn"
@@ -349,7 +349,7 @@ function SegmentDetailCard({
 								)}
 							</div>
 							{analysisDetailQuery.isPending && (
-								<p className="anki-ref-meta">正在读取讲解…</p>
+								<p className="anki-ref-meta">正在加载讲解…</p>
 							)}
 							{analysesQuery.hasNextPage && (
 								<button
@@ -640,7 +640,7 @@ export function AnkiReferencePane({
 				<>
 					<search
 						className="anki-ref-search"
-						aria-label="本地词典"
+						aria-label="离线词典"
 						onKeyDown={(event) => {
 							const submitByEnter =
 								event.key === "Enter" &&
@@ -719,7 +719,7 @@ export function AnkiReferencePane({
 							className="anki-ref-search-error"
 							role="status"
 						>
-							搜索词最多 {DICTIONARY_QUERY_LIMIT} 个字符。
+							搜索词最多 {DICTIONARY_QUERY_LIMIT} 字
 						</p>
 					)}
 				</>
@@ -729,11 +729,11 @@ export function AnkiReferencePane({
 				{tab === "dictionary" &&
 					(!seed && dictionaryStatusQuery.isPending ? (
 						<div className="anki-ref-empty" role="status">
-							正在读取词典状态…
+							正在加载离线词典…
 						</div>
 					) : !seed && !hasDictionary && dictionaryStatusQuery.isError ? (
 						<div className="anki-ref-empty" role="status">
-							读取词典状态失败。{" "}
+							加载离线词典失败{" "}
 							<button
 								type="button"
 								className="anki-link-btn"
@@ -744,7 +744,7 @@ export function AnkiReferencePane({
 						</div>
 					) : !seed && !hasDictionary ? (
 						<div className="anki-ref-empty">
-							尚未导入本地词典。可在「设置 → 词典」导入。
+							尚未导入离线词典，可在「设置 → 词典」导入。
 						</div>
 					) : !seed &&
 						(searchTerm || needsOnDemandLookup) &&
@@ -818,10 +818,10 @@ export function AnkiReferencePane({
 					(translationGroups.length === 0 ? (
 						<div className="anki-ref-empty">
 							{recordsStatus === "error"
-								? "读取本章记录失败。"
+								? "加载本章记录失败。"
 								: recordsStatus === "loading"
-									? "正在读取本章记录…"
-									: "本选区附近暂无已保存的阅读翻译。"}
+									? "正在加载本章记录…"
+									: "与当前选区重叠的原文暂无译文记录。"}
 						</div>
 					) : (
 						translationGroups.map((item) => (
@@ -844,10 +844,10 @@ export function AnkiReferencePane({
 					(segments.length === 0 ? (
 						<div className="anki-ref-empty">
 							{recordsStatus === "error"
-								? "读取本章记录失败。"
+								? "加载本章记录失败。"
 								: recordsStatus === "loading"
-									? "正在读取本章记录…"
-									: "本选区附近暂无已保存的学习片段。"}
+									? "正在加载本章记录…"
+									: "与当前选区重叠的原文暂无学习片段。"}
 						</div>
 					) : (
 						segments.map((item) => (
@@ -930,7 +930,7 @@ export function AnkiReferencePane({
 						</>
 					) : (
 						<span className="anki-ref-meta">
-							点弯箭头填入整条，或划选文字摘录。
+							点击填入按钮插入整条内容，或划选任意文字摘录。
 						</span>
 					)}
 				</div>

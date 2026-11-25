@@ -139,7 +139,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		inputValue(field, "自己的名称");
 		button("取消").click();
 		await until(
-			() => dialogText()?.includes("放弃本次编辑") === true,
+			() => dialogText()?.includes("放弃未保存的修改") === true,
 			"Cancel must protect edits",
 		);
 		button("继续编辑", top()).click();
@@ -149,7 +149,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		);
 		cancelEvent();
 		await until(
-			() => dialogText()?.includes("放弃本次编辑") === true,
+			() => dialogText()?.includes("放弃未保存的修改") === true,
 			"Escape close request uses same reminder",
 		);
 		button("继续编辑", top()).click();
@@ -159,7 +159,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		);
 		container.querySelector<HTMLAnchorElement>("a")?.click();
 		await until(
-			() => dialogText()?.includes("放弃本次编辑") === true,
+			() => dialogText()?.includes("放弃未保存的修改") === true,
 			"Navigation uses same reminder",
 		);
 		check(
@@ -275,10 +275,10 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		inputValue(discardField, "放弃的内容");
 		container.querySelector<HTMLAnchorElement>("a")?.click();
 		await until(
-			() => dialogText()?.includes("放弃本次编辑") === true,
+			() => dialogText()?.includes("放弃未保存的修改") === true,
 			"Discard navigation is protected",
 		);
-		button("放弃并离开", top()).click();
+		button("放弃修改", top()).click();
 		await until(
 			() =>
 				container.querySelector("[data-path]")?.textContent === "/finish" &&
@@ -380,27 +380,33 @@ export async function sourceEditDelete(h: BrowserHarness) {
 				"Book deletion starts with learning content retained",
 			);
 			check(
-				checkbox.closest("label")?.textContent?.trim() === "同时删除学习积累",
+				container.querySelector(".book-delete-dialog h2")?.textContent ===
+					`删除《${book.title}》？`,
+				"Book deletion must identify the book by title",
+			);
+			check(
+				checkbox.closest("label")?.textContent?.trim() ===
+					"同时删除本书关联的片段、讲解和对话",
 				"Cleanup uses the concise checkbox label",
 			);
 			check(button("删除书籍").disabled, "Impact failure prevents deletion");
-			button("重试读取删除影响").click();
+			button("重试").click();
 			await until(
-				() => !!dialogText()?.includes("2 份译文随本书隐藏"),
+				() => !!dialogText()?.includes("2 份译文将无法继续查看"),
 				"Impact retry displays retained mode",
 			);
 			check(
-				dialogText()?.includes("3 个学习片段、4 份讲解") &&
-					dialogText()?.includes("5 个讨论、12 条消息") &&
-					dialogText()?.includes("1 个讨论任务继续运行") &&
+				dialogText()?.includes("3 个片段、4 份讲解") &&
+					dialogText()?.includes("5 段对话、12 条消息") &&
+					dialogText()?.includes("将保留 1 个对话任务") &&
 					dialogText()?.includes("2 个翻译任务") &&
-					dialogText()?.includes("1 份仍可从保留的片段查看"),
+					dialogText()?.includes("1 份仍可在保留的片段中查看"),
 				"All learning impact counts appear",
 			);
 			if (cascade) {
 				checkbox.click();
 				await until(
-					() => !!dialogText()?.includes("3 份译文随本书隐藏"),
+					() => !!dialogText()?.includes("3 份译文将无法继续查看"),
 					"Cascade impact uses its own query",
 				);
 				checkbox.click();
@@ -412,7 +418,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 				await until(
 					() =>
 						checkbox.checked &&
-						!!dialogText()?.includes("3 份译文随本书隐藏") &&
+						!!dialogText()?.includes("3 份译文将无法继续查看") &&
 						!button("删除书籍").disabled,
 					"Checked mode can finish before old unchecked impact",
 				);
@@ -423,14 +429,13 @@ export async function sourceEditDelete(h: BrowserHarness) {
 				await new Promise((resolve) => setTimeout(resolve, 0));
 				check(
 					!dialogText()?.includes("99") &&
-						dialogText()?.includes("3 份译文随本书隐藏"),
+						dialogText()?.includes("3 份译文将无法继续查看"),
 					"Late unchecked data cannot replace checked counts",
 				);
 				check(
-					dialogText()?.includes("人工讲解") &&
-						dialogText()?.includes("后续讨论") &&
-						dialogText()?.includes("手动录入的片段保留") &&
-						dialogText()?.includes("将停止 1 个讨论任务、2 个翻译任务"),
+					dialogText()?.includes("保存的讲解（含历史版本）和对话") &&
+						dialogText()?.includes("手动录入的片段不受影响") &&
+						dialogText()?.includes("将停止 1 个对话任务、2 个翻译任务"),
 					"Cascade warning explains its exact scope",
 				);
 			}
@@ -494,7 +499,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 					}),
 				);
 				await until(
-					() => !!dialogText()?.includes("删除回执与目标书籍不一致"),
+					() => !!dialogText()?.includes("删除结果异常，请刷新页面确认。"),
 					"A different book receipt cannot complete deletion",
 				);
 				releaseDelete = undefined;
@@ -611,9 +616,9 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		);
 		check(menu, "Analysis menu exists");
 		menu.click();
-		button("删除此讲解").click();
+		button("删除讲解").click();
 		await until(
-			() => !!dialogText()?.includes("2 个修订"),
+			() => !!dialogText()?.includes("2 个版本"),
 			"Analysis impact loads",
 		);
 		check(
@@ -626,7 +631,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 			"Cancel closes analysis preview",
 		);
 		menu.click();
-		button("删除此讲解").click();
+		button("删除讲解").click();
 		await until(() => analysisReads === 2, "Reopen starts a fresh impact read");
 		check(
 			button("确认删除").disabled &&
@@ -645,7 +650,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		check(!analysisDeletes, "Enter must not delete an analysis");
 		reread.release();
 		menu.click();
-		button("删除此讲解").click();
+		button("删除讲解").click();
 		await until(
 			() =>
 				!!container.querySelector("dialog[open]") &&
@@ -718,10 +723,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 		});
 		await mount(<BookDeletion />);
 		await until(
-			() =>
-				!!dialogText()?.includes(
-					empty ? "本书暂无关联的学习片段" : "3 个学习片段",
-				),
+			() => !!dialogText()?.includes(empty ? "本书暂无关联的片段" : "3 个片段"),
 			"Capture dialog and impact finish mounting",
 		);
 		await until(() => !button("删除书籍").disabled, "Capture impact loads");
@@ -733,7 +735,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 			checkbox.click();
 			await until(
 				() =>
-					!!dialogText()?.includes("3 份译文随本书隐藏") &&
+					!!dialogText()?.includes("3 份译文将无法继续查看") &&
 					!button("删除书籍").disabled,
 				"Capture shows selected learning cleanup",
 			);
@@ -753,7 +755,7 @@ export async function sourceEditDelete(h: BrowserHarness) {
 			);
 		} else {
 			check(
-				dialogText()?.includes("3 个学习片段、4 份讲解、5 个讨论、12 条消息"),
+				dialogText()?.includes("3 个片段、4 份讲解、5 段对话、12 条消息"),
 				"Capture shows nonzero learning counts",
 			);
 		}

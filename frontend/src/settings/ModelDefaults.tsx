@@ -146,17 +146,14 @@ export function ModelDefaults({
 			{!hasAvailableModels && (
 				<aside className="settings-model-guide">
 					<strong>
-						{providers.length === 0
-							? "还没有模型服务。"
-							: "还没有可用的已登记模型。"}
+						{providers.length === 0 ? "还没有模型服务。" : "还没有可用的模型。"}
 					</strong>
 					<p>
 						{providers.length === 0
-							? "先添加服务并登记模型，再返回这里选择默认模型。"
-							: "请在服务管理中登记模型，或启用服务和模型，再返回这里选择。"}
-						登记不会自动选择模型，也不要求先验证。
+							? "先添加模型服务并添加模型，再返回这里选择默认模型。"
+							: "请在「模型服务」中添加模型，或启用已有服务和模型，再返回这里选择。"}
 					</p>
-					<Link to="/settings?section=providers">前往服务管理 →</Link>
+					<Link to="/settings?section=providers">前往模型服务 →</Link>
 				</aside>
 			)}
 			{settings && (
@@ -177,23 +174,20 @@ export function ModelDefaults({
 					>
 						<div className="settings-group">
 							{modelSelect(
-								"讨论模型",
+								"对话与讲解模型",
 								"chat_model_id",
 								"新对话和「创建 AI 讲解」默认使用这个模型。",
 							)}
 							{modelSelect(
 								"讲解模型（旧版）",
 								"analysis_model_id",
-								"保留旧版独立讲解的模型选择。",
+								"仅用于兼容旧版讲解配置，当前讲解均使用上方模型。",
 							)}
 						</div>
 					</form>
 					{draft.feedback}
 					<p className="settings-hint settings-section-note">
-						已有对话继续使用各自的模型；已接受的任务不受影响。
-					</p>
-					<p className="settings-hint settings-section-note">
-						条目整理功能尚未开放，已保存的模型配置会保留。
+						已有对话将继续使用各自原有的模型。
 					</p>
 				</section>
 			)}

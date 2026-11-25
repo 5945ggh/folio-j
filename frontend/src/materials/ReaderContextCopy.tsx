@@ -71,9 +71,9 @@ export function ContextCopyFeedback({
 		return (
 			<div className="reader-copy-feedback" role="status" data-reader-tool="">
 				<span>
-					已复制目标原文与上下文
+					已复制原文与前后文
 					{(feedback.beforeTruncated || feedback.afterTruncated) &&
-						"，超长语境已标明截断"}
+						"（超长部分已截断）"}
 				</span>
 				<button type="button" aria-label="关闭复制提示" onClick={onClose}>
 					×
@@ -101,7 +101,7 @@ export function ContextCopyFeedback({
 					×
 				</button>
 			</header>
-			<p role="alert">未能写入剪贴板，可选择下方文本手动复制。</p>
+			<p role="alert">无法自动复制到剪贴板，请手动复制下方内容。</p>
 			<textarea
 				ref={text}
 				aria-label="待复制的文本"
@@ -109,7 +109,7 @@ export function ContextCopyFeedback({
 				value={feedback.text}
 			/>
 			<button type="button" onClick={() => text.current?.select()}>
-				选择文本
+				全选
 			</button>
 		</section>
 	);

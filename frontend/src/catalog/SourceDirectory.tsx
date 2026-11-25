@@ -232,8 +232,8 @@ export function SourceDirectory({
 					<button
 						type="button"
 						className="s2-search-chip-clear"
-						aria-label={`清除来源搜索：${state.q}`}
-						title="清除来源搜索"
+						aria-label={`清空搜索词：${state.q}`}
+						title="清空搜索词"
 						onClick={() => {
 							change({ q: "" });
 							searchButton.current?.focus();
@@ -254,15 +254,15 @@ export function SourceDirectory({
 							type="button"
 							onClick={() => void sources.refetch()}
 						>
-							重试来源列表
+							重新加载
 						</button>
 					</>
 				) : sources.data.items.length === 0 ? (
 					state.q ? (
-						<p className="s2-directory-empty">没有匹配的来源。</p>
+						<p className="s2-directory-empty">没有匹配的来源</p>
 					) : (
 						<div className="s2-directory-empty">
-							<p>还没有来源。</p>
+							<p>还没有来源</p>
 							<button
 								className="button secondary"
 								type="button"
@@ -351,7 +351,7 @@ export function SourceDirectory({
 										<strong>{source.title}</strong>
 										<span>
 											{source.material_count} 本书 · {source.segment_count}{" "}
-											个片段 · {source.analysis_count} 篇讲解
+											个片段 · {source.analysis_count} 份讲解
 										</span>
 									</Link>
 									{onEdit && (

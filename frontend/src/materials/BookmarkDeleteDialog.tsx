@@ -49,7 +49,7 @@ export function BookmarkDeleteDialog({
 			setConflict(changed);
 			setError(
 				changed
-					? "书签已更新，请读取最新书签后重试删除。"
+					? "书签已更新，请刷新后再删除。"
 					: `删除失败：${failure instanceof Error ? failure.message : String(failure)}`,
 			);
 		},
@@ -68,7 +68,7 @@ export function BookmarkDeleteDialog({
 		},
 		onError: (failure) =>
 			setError(
-				`无法读取最新书签：${failure instanceof Error ? failure.message : String(failure)}`,
+				`刷新书签失败：${failure instanceof Error ? failure.message : String(failure)}`,
 			),
 	});
 	const busy = deletion.isPending || reload.isPending;
@@ -85,14 +85,16 @@ export function BookmarkDeleteDialog({
 			<p className="reader-bookmark-delete-source" lang="ja">
 				{current.chapter_title} · {bookmarkExcerpt(current)}
 			</p>
-			<p>会同时删除备注，此操作无法撤销。</p>
+			<p>
+				{current.note ? "备注将一并删除，此操作无法撤销。" : "删除后无法撤销。"}
+			</p>
 			{current.note && (
 				<p className="reader-bookmark-delete-source">备注：{current.note}</p>
 			)}
 			{error && <p role="alert">{error}</p>}
 			{error && (
 				<button type="button" disabled={busy} onClick={() => reload.mutate()}>
-					读取最新书签
+					刷新书签
 				</button>
 			)}
 			<div className="actions">
@@ -114,7 +116,7 @@ export function BookmarkDeleteDialog({
 						deletion.mutate();
 					}}
 				>
-					{deletion.isPending ? "正在删除…" : "删除书签"}
+					{deletion.isPending ? "删除中…" : "删除书签"}
 				</button>
 			</div>
 		</ConfirmDialog>

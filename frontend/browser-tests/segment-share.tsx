@@ -112,7 +112,7 @@ async function segmentShareComponentRegression(h: BrowserHarness) {
 		);
 		check(mode && main && content, "Share controls must be present");
 		check(
-			!dialog.textContent?.includes("正在核对材料出处"),
+			!dialog.textContent?.includes("正在核对出处"),
 			"Share must not show a loading explanation",
 		);
 		// Sample both states after the dialog's entrance translation, with origin still pending.
@@ -267,7 +267,7 @@ async function segmentShareComponentRegression(h: BrowserHarness) {
 			"Explicit origin invalidation still revalidates",
 		);
 		check(
-			!dialog.textContent?.includes("正在核对材料出处"),
+			!dialog.textContent?.includes("正在核对出处"),
 			"Background verification stays quiet",
 		);
 		verified = false;
@@ -279,7 +279,7 @@ async function segmentShareComponentRegression(h: BrowserHarness) {
 		await choose("full");
 		finishOrigin();
 		await until(
-			() => !!container.textContent?.includes("材料出处读取失败"),
+			() => !!container.textContent?.includes("出处信息加载失败"),
 			"Origin error shows saved-content fallback",
 		);
 		check(

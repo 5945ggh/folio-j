@@ -70,7 +70,7 @@ export async function catalogToolbarRegression(
 			"筛选书籍",
 			"排序",
 			"卡片大小",
-			"添加书籍",
+			"导入书籍",
 		]) {
 			const button = action(label);
 			check(!button.disabled, `${label} must remain enabled`);
@@ -241,7 +241,7 @@ export async function catalogToolbarRegression(
 		);
 		size.hidePopover();
 
-		action("添加书籍").click();
+		action("导入书籍").click();
 		await until(
 			() => !!container.querySelector(".import-dialog[open]"),
 			"Add book must open import",

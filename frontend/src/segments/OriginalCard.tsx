@@ -96,7 +96,7 @@ export function OriginalCard({
 							</div>
 						</section>
 					)}
-					<section className="segment-original-focus" aria-label="目标原文">
+					<section className="segment-original-focus" aria-label="原文">
 						{segment.text}
 					</section>
 					{segment.context_after.trim() && (
@@ -157,16 +157,16 @@ export function OriginalCard({
 						>
 							<section
 								className="segment-material-group"
-								aria-label="原文与语境"
+								aria-label="原文与前后文"
 							>
-								<h3 className="segment-group-title">原文与语境</h3>
+								<h3 className="segment-group-title">原文与前后文</h3>
 								<Field
 									label="前文"
 									value={segment.context_before}
 									lang="ja"
 									lookup
 								/>
-								<Field label="目标原文" value={segment.text} lang="ja" lookup />
+								<Field label="原文" value={segment.text} lang="ja" lookup />
 								<Field
 									label="后文"
 									value={segment.context_after}
@@ -200,7 +200,7 @@ export function OriginalCard({
 										}
 										value={segment.source_ref}
 									/>
-									<Field label="个人管理备注" value={segment.note} />
+									<Field label="备注" value={segment.note} />
 								</section>
 							)}
 							<p className="segment-material-date">
@@ -222,7 +222,7 @@ export function OriginalCard({
 								编辑片段资料
 							</button>
 							<button type="button" className="button primary" onClick={close}>
-								完成
+								关闭
 							</button>
 						</footer>
 						<SegmentReadingDialogLayer />

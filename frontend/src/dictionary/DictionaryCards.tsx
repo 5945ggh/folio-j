@@ -510,7 +510,7 @@ function WordCard({
 				ref={header}
 				className="dict-card-head"
 				tabIndex={0}
-				title={compact ? "拖动卡头移动整组词卡" : "拖动卡头移动词卡"}
+				title={compact ? "拖动标题栏移动整组词卡" : "拖动标题栏移动词卡"}
 				{...drag.handlers}
 			>
 				<div className="dict-card-heading">
@@ -518,7 +518,7 @@ function WordCard({
 						<span className="dict-seal" aria-hidden="true">
 							辞
 						</span>
-						{noEntries ? "基础词卡" : title}
+						{noEntries ? (hasDictionary ? title : "读音与词形") : title}
 					</div>
 					<h2 lang="ja" tabIndex={-1}>
 						{titleWord ?? glyph}
@@ -572,7 +572,7 @@ function WordCard({
 				<button
 					type="button"
 					className="dict-parent-line"
-					aria-label={`回到父卡 ${titleWord ?? ""}`}
+					aria-label={`返回上一张词卡 ${titleWord ?? ""}`}
 					onClick={() => backTo(depth)}
 				>
 					{excerpt(child)}
@@ -628,7 +628,7 @@ function WordCard({
 					<span role="status">{level.message}</span>
 					{level.refresh === "retry" && (
 						<button type="button" onClick={retry}>
-							重试查词
+							重试
 						</button>
 					)}
 				</div>
@@ -645,7 +645,7 @@ function WordCard({
 								if (level.origin.record) onRecord(level.origin.record);
 							}}
 						>
-							此处记录 ↗
+							查看记录 ↗
 						</button>
 					)}
 					{depth === 0 && level.origin.anki && page && (

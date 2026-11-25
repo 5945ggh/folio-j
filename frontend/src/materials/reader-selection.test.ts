@@ -152,7 +152,7 @@ test("U3/U4/U9: surrogate splits, unstable NFC boundaries, empty/multiple ranges
 		[first, 0, third, 0],
 	] as const) {
 		h.select(left, a, right, b);
-		assert.throws(h.capture, /边界切开/);
+		assert.throws(h.capture, /无法识别选区边界/);
 	}
 	h.select(first, 0, third, 4);
 	h.count(2);
@@ -240,15 +240,15 @@ test("full reference projection handles canonical ranges across parts and repeat
 	);
 	assert.throws(
 		() => referenceParts(chapter, [{ ...firstTarget, exact: "錯" }]),
-		/快照/,
+		/原文内容已变更/,
 	);
 	assert.throws(
 		() => referenceParts(chapter, [{ ...firstTarget, spine_index: 9 }]),
-		/完整/,
+		/原文位置已失效/,
 	);
 	assert.throws(
 		() => referenceParts(chapter, [secondTarget, firstTarget]),
-		/完整/,
+		/原文位置已失效/,
 	);
 	const gap = structuredClone(chapter);
 	gap.parts.splice(1, 0, {
@@ -260,5 +260,5 @@ test("full reference projection handles canonical ranges across parts and repeat
 		leaf_start: 0,
 		leaf_end: 0,
 	});
-	assert.throws(() => referenceParts(gap, [firstTarget]), /不连续/);
+	assert.throws(() => referenceParts(gap, [firstTarget]), /原文位置已失效/);
 });

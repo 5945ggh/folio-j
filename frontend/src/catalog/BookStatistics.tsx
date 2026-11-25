@@ -32,11 +32,11 @@ function CoverageChart({ data }: { data: BookStatisticsData }) {
 						role="img"
 						aria-labelledby={`${chartId}-title ${chartId}-description`}
 					>
-						<title id={`${chartId}-title`}>本书高频词的词次覆盖曲线</title>
+						<title id={`${chartId}-title`}>本书高频词累计覆盖曲线</title>
 						<desc id={`${chartId}-description`}>
-							横轴为本书最高频的前 k 种词，纵轴为其累计词次占比。全部
-							{statisticCount(lexical.distinct_word_count)} 种词计入
-							{statisticCount(lexical.counted_token_count)} 个词次。
+							横轴为本书高频词数量，纵轴为其累计出现占比。共{" "}
+							{statisticCount(lexical.distinct_word_count)} 种词，合计{" "}
+							{statisticCount(lexical.counted_token_count)} 词次。
 						</desc>
 						{[0, 0.5, 1].map((coverage) => {
 							const y = bottom - coverage * (bottom - top);
@@ -88,13 +88,15 @@ function CoverageChart({ data }: { data: BookStatisticsData }) {
 							</text>
 						))}
 					</svg>
-					<p className="book-statistics-axis-label">本书最高频的前 k 种词</p>
+					<p className="book-statistics-axis-label">
+						高频词数量（按词频从高到低）
+					</p>
 				</>
 			) : (
 				<p className="book-statistics-state">
 					{lexical
-						? "没有可计入的词次，暂无覆盖曲线。"
-						: "词法统计尚未准备，暂无覆盖曲线。"}
+						? "本书暂无可统计的词汇，无法生成覆盖曲线。"
+						: "词汇统计尚未就绪，暂无法显示覆盖曲线。"}
 				</p>
 			)}
 			<dl className="book-statistics-thresholds">
@@ -120,10 +122,10 @@ function CoverageChart({ data }: { data: BookStatisticsData }) {
 function StatisticsContent({ data }: { data: BookStatisticsData }) {
 	const lexical = data.lexical;
 	const metrics = [
-		["词次（按词典形统计）", statisticCount(lexical?.counted_token_count)],
-		["词种", statisticCount(lexical?.distinct_word_count)],
-		["单次词种", statisticCount(lexical?.singleton_word_count)],
-		["单次词种比例", statisticPercent(lexical?.singleton_word_ratio)],
+		["总词数", statisticCount(lexical?.counted_token_count)],
+		["词汇量（按词典形）", statisticCount(lexical?.distinct_word_count)],
+		["仅出现一次的词", statisticCount(lexical?.singleton_word_count)],
+		["单次词占比", statisticPercent(lexical?.singleton_word_ratio)],
 		["字符数", statisticCount(data.text.character_count)],
 		["不同汉字数", statisticCount(data.text.unique_kanji_count)],
 		["单次汉字数", statisticCount(data.text.singleton_kanji_count)],
@@ -140,41 +142,29 @@ function StatisticsContent({ data }: { data: BookStatisticsData }) {
 			</dl>
 			{!lexical && (
 				<p className="book-statistics-state" role="status">
-					正文统计可用；词法统计尚未准备。
+					词汇统计尚未就绪，打开阅读后将自动分析。
 				</p>
 			)}
 			<CoverageChart data={data} />
 			<details className="book-statistics-rules">
-				<summary>统计范围与计算口径</summary>
+				<summary>统计说明</summary>
 				<p>
-					范围为当前材料版本的全部可提取正文，包括目录、后记，共{" "}
-					{statisticCount(data.text.resource_count)}{" "}
-					份正文资源。同一资源在阅读顺序中重复出现只计一次；不同资源即使文字相同也分别计入。
+					统计范围涵盖本书全部正文（含目录与后记，共{" "}
+					{statisticCount(data.text.resource_count)} 个正文文件），不含注音。
 				</p>
 				<p>
-					词次保留助词、助动词、数字及未登录词，排除空白、标点和零跨度记录。词种按词典形归并，缺失时回退表层；单次词种只出现一次，H/V
-					表示其占全部词种的比例。
+					词汇按词典形合并统计（无词典形时按原文计），包含助词、助动词与数字，排除空白和标点。覆盖率反映高频词在全书总词数中的占比。
 				</p>
-				<p>
-					覆盖率是本书高频词的累计词次占比，不表示理解率或掌握率。曲线采用简化显示，阈值按完整词频计算。
-				</p>
-				<p>
-					字符数为 NFC 正文的 Unicode
-					码点数，含空白和标点，不含注音文字。汉字统计采用 Unicode
-					统一及兼容汉字，保留兼容字形差异，不计入々、〇。单次汉字表示在范围内只出现一次。
-				</p>
-				{lexical && (
-					<p>{analysisConfigurationLabel(data.analysis_configuration)}</p>
-				)}
-				<p>
-					正文规则 {data.text.rule_version.replace("text-statistics-", "")} ·
-					Unicode {data.text.unicode_version}
-					{lexical
-						? ` · 词法规则 ${lexical.rule_version.replace("lexical-statistics-", "")}`
-						: ""}
-					。结果随当前材料版本与分词结果自动更新。
-				</p>
+				<p>字符数包含空白与标点；汉字统计不含叠字号「々」与「〇」。</p>
 			</details>
+			{lexical && (
+				<details className="book-statistics-rules">
+					<summary>技术信息</summary>
+					<p>
+						分词引擎：{analysisConfigurationLabel(data.analysis_configuration)}
+					</p>
+				</details>
+			)}
 		</>
 	);
 }
@@ -205,7 +195,6 @@ export function BookStatistics({
 			<div className="book-statistics-heading">
 				<div>
 					<h2>正文统计</h2>
-					<p>全部可提取正文 · 按资源去重</p>
 				</div>
 				<Link
 					className="book-details-action"
@@ -220,7 +209,7 @@ export function BookStatistics({
 			</div>
 			{statistics.isPending ? (
 				<p className="book-statistics-state" role="status">
-					正在读取正文统计…
+					正在加载正文统计…
 				</p>
 			) : statistics.isError ? (
 				<div className="book-statistics-error">
@@ -231,7 +220,7 @@ export function BookStatistics({
 						disabled={statistics.isFetching}
 						onClick={() => void statistics.refetch()}
 					>
-						重试统计
+						重新加载
 					</button>
 				</div>
 			) : (

@@ -163,7 +163,7 @@ export async function settingsModels(h: BrowserHarness) {
 			"The explicit models entry must open default models",
 		);
 		check(
-			tab("模型配置").getAttribute("aria-current") === "page" &&
+			tab("默认模型").getAttribute("aria-current") === "page" &&
 				!h.container.querySelector(".provider-settings") &&
 				!h.container.querySelector('a[href="/settings?section=history"]'),
 			"Defaults must be active and show neither service management nor its history tools",
@@ -177,7 +177,7 @@ export async function settingsModels(h: BrowserHarness) {
 			() => h.container.textContent?.includes("正在保存…") === true,
 			"Selecting a default must start saving immediately",
 		);
-		tab("服务管理").click();
+		tab("模型服务").click();
 		check(
 			!guard(),
 			"A pending model selection should finish before navigation",
@@ -198,7 +198,7 @@ export async function settingsModels(h: BrowserHarness) {
 			"Changing the discussion default must save only that model selection",
 		);
 		check(
-			tab("服务管理").getAttribute("aria-current") === "page" &&
+			tab("模型服务").getAttribute("aria-current") === "page" &&
 				!h.container.querySelector("#model-defaults-form") &&
 				!h.container.querySelector('button[form="model-defaults-form"]'),
 			"Service management must have no default model form or save bar",
@@ -220,14 +220,14 @@ export async function settingsModels(h: BrowserHarness) {
 		);
 		const name = find<HTMLInputElement>(".provider-editor-dialog input");
 		h.inputValue(name, "尚未保存的新服务");
-		tab("模型配置").click();
+		tab("默认模型").click();
 		await waitGuard();
 		await dismissGuard("继续编辑");
 		check(
 			name.isConnected && name.value === "尚未保存的新服务",
 			"Cancelling service-to-default navigation must preserve the provider draft",
 		);
-		tab("模型配置").click();
+		tab("默认模型").click();
 		await waitGuard();
 		await dismissGuard("放弃修改");
 		await h.until(
@@ -239,7 +239,7 @@ export async function settingsModels(h: BrowserHarness) {
 				"model-two",
 			"Returning to model configuration must show the saved selection",
 		);
-		tab("服务管理").click();
+		tab("模型服务").click();
 		await h.until(
 			() => !!h.container.querySelector(".provider-settings"),
 			"Saved defaults must allow switching without a guard",
@@ -250,7 +250,7 @@ export async function settingsModels(h: BrowserHarness) {
 			"The existing verification history link must still work",
 		);
 		check(
-			tab("服务管理").getAttribute("aria-current") === "page",
+			tab("模型服务").getAttribute("aria-current") === "page",
 			"History must belong to service management",
 		);
 		find<HTMLAnchorElement>(".settings-back-link").click();
@@ -315,7 +315,7 @@ export async function settingsModels(h: BrowserHarness) {
 					".provider-detail-dialog button",
 				),
 			].find(
-				(item) => item.textContent?.replace("＋", "").trim() === "登记模型",
+				(item) => item.textContent?.replace("＋", "").trim() === "添加模型",
 			);
 			check(node, "Service models must offer one registration entry");
 			node.click();
@@ -367,12 +367,12 @@ export async function settingsModels(h: BrowserHarness) {
 		modelChoice("new-model").click();
 		modelChoice("retry-model").click();
 		await h.until(
-			() => dialog.textContent?.includes("登记所选模型（2）") === true,
+			() => dialog.textContent?.includes("添加所选模型（2）") === true,
 			"Registration action must count selected models",
 		);
-		button("登记所选模型（2）", dialog).click();
+		button("添加所选模型（2）", dialog).click();
 		await h.until(
-			() => dialog.textContent?.includes("未成功") === true,
+			() => dialog.textContent?.includes("添加失败") === true,
 			"Partial registration failure must stay in the dialog",
 		);
 		check(
@@ -385,7 +385,7 @@ export async function settingsModels(h: BrowserHarness) {
 			"Successful registrations must become disabled registered items",
 		);
 		failRegistration = false;
-		button("登记所选模型（1）", dialog).click();
+		button("添加所选模型（1）", dialog).click();
 		await h.until(
 			() => !registration(),
 			"Successful retry must return to the registered model list",
@@ -411,7 +411,7 @@ export async function settingsModels(h: BrowserHarness) {
 		await switchDirtyMode(dialog, "手动填写", "放弃并切换");
 		const manualId = () => {
 			const label = [...(registration()?.querySelectorAll("label") ?? [])].find(
-				(node) => node.textContent?.includes("上游模型 ID"),
+				(node) => node.textContent?.includes("模型 ID"),
 			);
 			return label?.querySelector<HTMLInputElement>("input");
 		};
@@ -437,7 +437,7 @@ export async function settingsModels(h: BrowserHarness) {
 			manualId()?.value === "manual-draft",
 			"Continuing manual entry must preserve the model ID",
 		);
-		tab("模型配置").click();
+		tab("默认模型").click();
 		await waitGuard();
 		await dismissGuard("继续编辑");
 		check(
@@ -464,7 +464,7 @@ export async function settingsModels(h: BrowserHarness) {
 			"Discarded manual input must not reappear",
 		);
 		h.inputValue(freshId, "manual-model");
-		button("登记模型", dialog).click();
+		button("添加模型", dialog).click();
 		await h.until(
 			() => !registration(),
 			"Manual registration success must return to model list",
@@ -505,12 +505,12 @@ export async function settingsModels(h: BrowserHarness) {
 			check(
 				settingsReads === before &&
 					!h.container.textContent?.includes("正在加载设置…") &&
-					!h.container.textContent?.includes("重试设置"),
+					!h.container.querySelector(".settings-state"),
 				`${entry} must not request or gate on general settings`,
 			);
 			if (!entry.includes("speech"))
 				check(
-					tab("服务管理").getAttribute("aria-current") === "page",
+					tab("模型服务").getAttribute("aria-current") === "page",
 					"Direct service/history entry must select service management",
 				);
 		} finally {
@@ -533,7 +533,7 @@ export async function settingsModels(h: BrowserHarness) {
 				...h.container.querySelectorAll<HTMLAnchorElement>(
 					".settings-content a",
 				),
-			].find((link) => link.textContent?.includes("前往服务管理"));
+			].find((link) => link.textContent?.includes("前往模型服务"));
 			check(entry, "No usable models must offer a service management entry");
 			entry.click();
 			await h.until(
@@ -953,7 +953,7 @@ export async function settingsModels(h: BrowserHarness) {
 				h.container.textContent?.includes("有未保存的修改"),
 			"The restored choice must remain unsaved against the confirmed remote model after failure",
 		);
-		tab("服务管理").click();
+		tab("模型服务").click();
 		await waitGuard();
 		await dismissGuard("继续编辑");
 		failModelSave = false;

@@ -28,7 +28,7 @@ export function ReaderSearchTranslation({
 				result.material_deleted ||
 				result.material_provenance.material_id !== materialId
 			)
-				throw new Error("译文已移除或材料不可用");
+				throw new Error("该译文已删除或原书不可用");
 			return result;
 		},
 		enabled,
@@ -50,7 +50,7 @@ export function ReaderSearchTranslation({
 		<ReaderPanel title="已保存译文" inactive={inactive} onClose={onClose}>
 			<div className="reader-search-saved-translation">
 				<p className="reader-search-empty">
-					原文位置暂不可用，以下为已保存内容。
+					无法定位到原书位置，以下为已保存的内容。
 				</p>
 				{query.isError ? (
 					<p role="alert">
@@ -60,7 +60,7 @@ export function ReaderSearchTranslation({
 						</button>
 					</p>
 				) : !result ? (
-					<p role="status">正在读取译文…</p>
+					<p role="status">正在加载译文…</p>
 				) : (
 					<>
 						<blockquote lang="ja">{result.text}</blockquote>

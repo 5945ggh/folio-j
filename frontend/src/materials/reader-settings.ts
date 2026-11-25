@@ -85,7 +85,7 @@ export function typographySummary(
 		bookUi.font === "mincho" ? "明朝体" : "黑体",
 		`行距 ${settings.line_height.toFixed(1)}`,
 		settings.writing_mode === "vertical-rl"
-			? "宽度仅用于横排"
-			: `宽度 ${bookUi.width}`,
+			? "仅横排可调宽度"
+			: `宽度 ${bookUi.width} px`,
 	].join(" · ");
 }

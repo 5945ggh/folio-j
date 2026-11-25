@@ -136,7 +136,7 @@ test("选中声音失效不静默换声，重新出现后可用", () => {
 	f.controller.play(target);
 	f.call(0).onError("not-allowed");
 	assert.equal(f.controller.getSnapshot().status, "error");
-	assert.match(f.controller.getSnapshot().error ?? "", /not-allowed/);
+	assert.match(f.controller.getSnapshot().error ?? "", /阻止了自动播放/);
 });
 test("偏好拒绝坏存储和越界语速，存储失败不妨碍当前使用", () => {
 	assert.deepEqual(readSpeechPreferences(), { voice: null, rate: 1 });
@@ -214,7 +214,7 @@ test("同步启动失败与声音读取失败准确反馈，可重新检测恢�
 			input.onStart();
 		},
 	});
-	assert.match(controller.getSnapshot().voiceListError ?? "", /无法读取/);
+	assert.match(controller.getSnapshot().voiceListError ?? "", /无法获取/);
 	broken = false;
 	controller.refresh();
 	assert.equal(controller.getSnapshot().voiceListError, null);
@@ -231,7 +231,7 @@ test("声音刷新和设置变更不清除播放诊断，重试或关闭才清�
 	f.controller.play(target);
 	f.call(0).onError("synthesis-failed");
 	const failure = f.controller.getSnapshot().error;
-	assert.match(failure ?? "", /synthesis-failed/);
+	assert.match(failure ?? "", /语音合成失败/);
 	f.voices([remote]);
 	f.controller.setRate(0.8);
 	assert.equal(f.controller.getSnapshot().error, failure);
@@ -251,7 +251,7 @@ test("首次无声音或不支持时固定失败目标，控制条能保留失�
 		input.text = "更改选区";
 		assert.deepEqual(controller.getSnapshot().target, target);
 		assert.equal(controller.getSnapshot().status, "error");
-		assert.match(controller.getSnapshot().error ?? "", /日语声音|不支持/);
+		assert.match(controller.getSnapshot().error ?? "", /日语语音|不支持/);
 		controller.dismiss();
 		assert.equal(controller.getSnapshot().target, null);
 		assert.equal(controller.getSnapshot().error, null);
@@ -329,7 +329,7 @@ test("播放时声音消失仍保留当前目标的停止动作", () => {
 	f.voices([local]);
 	assert.match(
 		speechUnavailableReason(f.controller.getSnapshot()) ?? "",
-		/已选日语声音当前不可用/,
+		/所选日语语音当前不可用/,
 	);
 	assert.equal(speechTargetAction(f.controller.getSnapshot(), target), "stop");
 	f.controller.stop();

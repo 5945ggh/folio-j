@@ -48,8 +48,10 @@ export function PermissionSettings({ settings }: { settings: Settings }) {
 							onChange={() => draft.select({ permission_mode: "review" })}
 						/>
 						<span>
-							<strong>审核模式</strong>
-							<small>涉及写入或修改学习成果时，先查看提议，再确认执行。</small>
+							<strong>修改前确认</strong>
+							<small>
+								AI 需要修改讲解内容时，先展示具体方案，经你确认后再保存。
+							</small>
 						</span>
 					</label>
 					<label className="settings-permission">
@@ -61,13 +63,15 @@ export function PermissionSettings({ settings }: { settings: Settings }) {
 							onChange={() => draft.select({ permission_mode: "full_access" })}
 						/>
 						<span>
-							<strong>完全访问</strong>
-							<small>允许 Agent 在当前对话的权限范围内直接执行工具操作。</small>
+							<strong>允许直接修改</strong>
+							<small>
+								AI 可在当前对话中直接保存对讲解的修改，无需逐次确认。
+							</small>
 						</span>
 					</label>
 				</fieldset>
 				<p className="settings-hint settings-section-note">
-					只影响此后创建的新对话；已有对话保留自己的权限设置。
+					仅对之后新建的对话生效，已有对话不受影响。
 				</p>
 			</section>
 			{draft.feedback}

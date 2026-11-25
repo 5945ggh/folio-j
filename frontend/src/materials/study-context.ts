@@ -78,7 +78,7 @@ function validateBudget(budget: ContextBudget): void {
 	) {
 		throw new ContextPrefillError(
 			"invalid_budget",
-			"语境预算须为 0–100000 的整数",
+			"前后文上限须为 0–100000 的整数",
 		);
 	}
 }
@@ -93,7 +93,7 @@ export function chapterTarget(chapter: Chapter, reference: MaterialProvenance) {
 	) {
 		throw new ContextPrefillError(
 			"invalid_reference",
-			"目标材料或版本与章节不一致",
+			"选区与当前书籍或章节不匹配",
 		);
 	}
 	const resources = new Map<
@@ -110,7 +110,7 @@ export function chapterTarget(chapter: Chapter, reference: MaterialProvenance) {
 		) {
 			throw new ContextPrefillError(
 				"invalid_chapter",
-				"章节资源正文身份不一致",
+				"章节内容异常，请重新打开本章",
 			);
 		}
 		resources.set(resource.id, {
@@ -130,7 +130,10 @@ export function chapterTarget(chapter: Chapter, reference: MaterialProvenance) {
 			part.end > points.length ||
 			part.spine_index < 0
 		) {
-			throw new ContextPrefillError("invalid_chapter", "章节 part 范围不可用");
+			throw new ContextPrefillError(
+				"invalid_chapter",
+				"章节内容异常，请重新打开本章",
+			);
 		}
 		const positioned = {
 			...part,
@@ -158,7 +161,7 @@ export function chapterTarget(chapter: Chapter, reference: MaterialProvenance) {
 		) {
 			throw new ContextPrefillError(
 				"invalid_reference",
-				"目标原文与章节资源不一致",
+				"所选原文与当前章节内容不一致",
 			);
 		}
 		let cursor = range.start;
@@ -181,7 +184,7 @@ export function chapterTarget(chapter: Chapter, reference: MaterialProvenance) {
 			) {
 				throw new ContextPrefillError(
 					"invalid_reference",
-					"目标出现位置重复或不连续",
+					"所选范围不连续或存在重复",
 				);
 			}
 			rangeStart ??= position;
@@ -196,14 +199,14 @@ export function chapterTarget(chapter: Chapter, reference: MaterialProvenance) {
 		) {
 			throw new ContextPrefillError(
 				"invalid_reference",
-				"目标未完整且连续地位于本章",
+				"所选范围不完整，请重新选择正文",
 			);
 		}
 		start ??= rangeStart;
 		end = rangeEnd;
 	}
 	if (start === undefined || end === undefined) {
-		throw new ContextPrefillError("invalid_reference", "目标范围为空");
+		throw new ContextPrefillError("invalid_reference", "未选择有效正文");
 	}
 	const raw = parts.map((part) => part.text).join("");
 	const points = Array.from(raw);
@@ -213,11 +216,11 @@ export function chapterTarget(chapter: Chapter, reference: MaterialProvenance) {
 	if (before + selected + after !== raw.normalize("NFC")) {
 		throw new ContextPrefillError(
 			"unsafe_normalization",
-			"目标边界跨越 Unicode 组合字符，无法安全预装语境",
+			"选区边界不完整，无法自动提取前后文",
 		);
 	}
 	if (!hasContent(selected)) {
-		throw new ContextPrefillError("invalid_reference", "目标原文为空白");
+		throw new ContextPrefillError("invalid_reference", "所选原文为空白");
 	}
 	return {
 		raw,

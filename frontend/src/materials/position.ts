@@ -4,22 +4,23 @@ export function rawBoundary(
 	canonical = raw.normalize("NFC"),
 ): number {
 	if (!Number.isInteger(offset) || offset < 0 || offset > raw.length)
-		throw new Error("边界超出正文");
+		throw new Error("无法识别选区边界，请重新选择。");
 	if (
 		offset > 0 &&
 		offset < raw.length &&
 		/[\uD800-\uDBFF]/.test(raw[offset - 1] ?? "") &&
 		/[\uDC00-\uDFFF]/.test(raw[offset] ?? "")
 	)
-		throw new Error("边界切开字符");
+		throw new Error("无法识别选区边界，请重新选择。");
 	if (raw === canonical) return Array.from(raw.slice(0, offset)).length;
 	const before = raw.slice(0, offset).normalize("NFC");
 	if (before + raw.slice(offset).normalize("NFC") !== canonical)
-		throw new Error("边界切开 NFC 组合");
+		throw new Error("无法识别选区边界，请重新选择。");
 	return [...before].length;
 }
 export function rawOffset(raw: string, point: number): number {
-	if (!Number.isInteger(point) || point < 0) throw new Error("码点无效");
+	if (!Number.isInteger(point) || point < 0)
+		throw new Error("无法定位该文本位置，请重试。");
 	if (raw === raw.normalize("NFC")) {
 		let count = 0,
 			offset = 0;
@@ -29,7 +30,7 @@ export function rawOffset(raw: string, point: number): number {
 			offset += c.length;
 		}
 		if (count === point) return offset;
-		throw new Error("码点越界");
+		throw new Error("无法定位该文本位置，请重试。");
 	}
 	const normalized = raw.normalize("NFC");
 	const segments = Array.from(
@@ -39,7 +40,7 @@ export function rawOffset(raw: string, point: number): number {
 		segments.map((value) => value.segment.normalize("NFC")).join("") !==
 		normalized
 	)
-		throw new Error("浏览器分段无法验证 NFC 正文");
+		throw new Error("无法定位该文本位置，请重试。");
 	let count = 0;
 	for (const { segment, index } of segments) {
 		const length = Array.from(segment.normalize("NFC")).length;
@@ -55,7 +56,7 @@ export function rawOffset(raw: string, point: number): number {
 		count += length;
 		if (count > point) break;
 	}
-	throw new Error("无法恢复码点");
+	throw new Error("无法定位该文本位置，请重试。");
 }
 export function scrollProgress(distance: number, extent: number): number {
 	return extent <= 0 ? 0 : Math.max(0, Math.min(1, distance / extent));

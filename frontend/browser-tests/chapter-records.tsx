@@ -629,7 +629,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => !!h.container.querySelector('[role="tab"]'),
 			"Chapter records must expose study and translation tabs",
 		);
-		button("翻译").click();
+		button("译文").click();
 		await h.until(
 			() =>
 				summaries.every((item) =>
@@ -714,7 +714,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		if (preview && previewPanel === "translation-removal") {
 			const target = results[1];
 			check(target, "Removal preview requires a saved target");
-			button(`清除此处全部翻译：${target.text}`).click();
+			button(`删除该处译文：${target.text}`).click();
 			await h.until(
 				() => !!h.container.querySelector("dialog[open]"),
 				"Removal confirmation must open for preview",
@@ -966,7 +966,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			(node) => node.getAttribute("aria-label") ?? node.textContent?.trim(),
 		);
 		check(
-			tabs.includes("学习片段") && tabs.includes("翻译"),
+			tabs.includes("学习片段") && tabs.includes("译文"),
 			"Chapter panel must retain both record kinds",
 		);
 		const summaryButtons = [
@@ -1175,7 +1175,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => markdown()?.textContent?.includes("完整讲解终点。") === true,
 			"Reopening the same row must load its explanation",
 		);
-		button("翻译").click();
+		button("译文").click();
 		await h.until(
 			() => !!h.container.querySelector(".reader-record-translation"),
 			"Translation tab must show its own rows",
@@ -1236,13 +1236,13 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			await h.until(
 				() =>
 					!!h.container.querySelector(
-						'.reader-study-margin[aria-label="打开此处翻译"]',
+						'.reader-study-margin[aria-label="打开此处译文"]',
 					),
 				"Reader with margin space must expose a pure translation entrance",
 			);
 			const pureTranslation = [
 				...h.container.querySelectorAll<HTMLButtonElement>(
-					'.reader-study-margin[aria-label="打开此处翻译"]',
+					'.reader-study-margin[aria-label="打开此处译文"]',
 				),
 			].sort((a, b) =>
 				direction === "vertical-rl"
@@ -1262,7 +1262,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			);
 			check(
 				h.container.querySelector(".reader-record-title strong")
-					?.textContent === "翻译" &&
+					?.textContent === "译文" &&
 					!h.container.querySelector(".reader-record-tabs-row"),
 				"Single-type contextual record must use its type as title and omit the entire tab row",
 			);
@@ -1411,7 +1411,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => !!h.container.querySelector('[role="tab"]'),
 			"Chapter records must reopen after close",
 		);
-		button("翻译").click();
+		button("译文").click();
 		await h.until(
 			() => !!h.container.querySelector(".reader-record-translation"),
 			"Translation rows must return after preview checks",
@@ -1431,7 +1431,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		);
 		await h.until(
 			() =>
-				document.activeElement?.getAttribute("aria-label") === "返回翻译列表" &&
+				document.activeElement?.getAttribute("aria-label") === "返回译文列表" &&
 				h.container
 					.querySelector(".reader-chapter-records > header")
 					?.contains(document.activeElement) === true,
@@ -1441,7 +1441,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
 		);
 		containedPanel();
-		const backBounds = button("返回翻译列表").getBoundingClientRect();
+		const backBounds = button("返回译文列表").getBoundingClientRect();
 		const heading = h.container.querySelector<HTMLElement>(
 			".reader-chapter-records > header strong",
 		);
@@ -1477,7 +1477,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 				() => !!h.container.querySelector('[role="tab"]'),
 				"Chapter records must reopen after locating translation",
 			);
-			button("翻译").click();
+			button("译文").click();
 			await h.until(
 				() => !!h.container.querySelector(".reader-record-translation"),
 				"Located translation must remain in its chapter list",
@@ -1489,7 +1489,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			row?.click();
 			await h.until(
 				() =>
-					document.activeElement?.getAttribute("aria-label") === "返回翻译列表",
+					document.activeElement?.getAttribute("aria-label") === "返回译文列表",
 				"Reopening located translation restores detail-header focus",
 			);
 		}
@@ -1509,7 +1509,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 		(document.activeElement as HTMLButtonElement).click();
 		await h.until(
 			() =>
-				document.activeElement?.getAttribute("aria-label") === "返回翻译列表",
+				document.activeElement?.getAttribute("aria-label") === "返回译文列表",
 			"Reopening the focused row must restore detail-header focus",
 		);
 		const history = [...h.container.querySelectorAll("details")].find((node) =>
@@ -1550,7 +1550,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			generated.length === 0,
 			"Reading latest or historical records must never generate",
 		);
-		const backToList = button("返回翻译列表");
+		const backToList = button("返回译文列表");
 		backToList.focus();
 		backToList.click();
 		await h.until(
@@ -1591,7 +1591,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			"Shared entry translation tab must expose latest result",
 		);
 		check(
-			!h.container.querySelector('[aria-label="返回翻译列表"]'),
+			!h.container.querySelector('[aria-label="返回译文列表"]'),
 			"A single direct source translation must not offer a return to a list",
 		);
 		checkTranslationResultActions(h);
@@ -1605,7 +1605,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			return "contextual translation detail: completed result with shared actions and no redundant origin return";
 		}
 		check(
-			document.activeElement === button("翻译"),
+			document.activeElement === button("译文"),
 			"End key on the segment tab must select and focus the translation tab",
 		);
 		const detailSection = (label: string) =>
@@ -1616,7 +1616,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			].find((node) =>
 				node.querySelector("summary")?.textContent?.includes(label),
 			);
-		const contextDetails = detailSection("语境与设置");
+		const contextDetails = detailSection("前后文与设置");
 		const historyDetails = detailSection("历史译文");
 		check(
 			contextDetails?.hidden && historyDetails?.hidden,
@@ -1669,7 +1669,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => markdown()?.textContent?.includes("完整讲解终点。") === true,
 			"Mixed record must retain its selected explanation when returning from translation",
 		);
-		button("翻译").click();
+		button("译文").click();
 		await h.until(
 			() =>
 				h.container.querySelector(".translation-output")?.textContent ===
@@ -1725,7 +1725,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 						?.textContent?.trim() === "等待翻译",
 				"Explicit selection must create a queued translation before leaving its target",
 			);
-			button("关闭翻译（任务继续）").click();
+			button("关闭翻译（后台继续）").click();
 			const nextLeaf = doc.querySelector('[data-locator-leaf="2"]');
 			check(nextLeaf, "Fixture needs another already translated target");
 			range.selectNodeContents(nextLeaf);
@@ -1747,7 +1747,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 					false,
 				"Switching selection must remount card for existing second target without generation",
 			);
-			button("关闭翻译（任务继续）").click();
+			button("关闭翻译").click();
 			if (evicted) {
 				await h.until(
 					() => pendingObserved,
@@ -1812,13 +1812,13 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			".translation-card textarea",
 		);
 		check(floatingEditor, "Original selection card must expose context editor");
-		button("关闭翻译（任务继续）").click();
+		button("关闭翻译").click();
 		button("本章记录").click();
 		await h.until(
 			() => !!h.container.querySelector('[role="tab"]'),
 			"Chapter records must reopen",
 		);
-		button("翻译").click();
+		button("译文").click();
 		const sharedRow = [
 			...h.container.querySelectorAll<HTMLButtonElement>(
 				".reader-record-translation",
@@ -1847,7 +1847,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			() => embeddedEditor.value === "真实阅读器共享语境",
 			"Embedded context edit must render",
 		);
-		button("返回翻译列表").click();
+		button("返回译文列表").click();
 		button("本章记录").click();
 		await h.until(
 			() => !h.container.querySelector('[role="tab"]'),
@@ -1869,7 +1869,7 @@ export async function chapterRecords(h: BrowserHarness, preview = false) {
 			generated.length === generationsBeforeSharedEdit,
 			"Reopening the same translated source must never generate",
 		);
-		button("关闭翻译（任务继续）").click();
+		button("关闭翻译").click();
 		sharedSelection.removeAllRanges();
 		doc.dispatchEvent(new Event("selectionchange"));
 		await h.until(

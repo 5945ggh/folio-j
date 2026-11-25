@@ -172,9 +172,6 @@ function DiscussionReference({ segment }: { segment: Segment }) {
 		<details className="chat-reference">
 			<summary>参考原文与前后文</summary>
 			<div className="chat-reference-body">
-				<p className="chat-reference-note">
-					以下是当前保存的片段资料，新任务采用这些内容；历史任务仍以当时的输入快照为准。
-				</p>
 				{segment.context_before.trim() && (
 					<section>
 						<h3 className="chat-reference-label">前文</h3>
@@ -184,7 +181,7 @@ function DiscussionReference({ segment }: { segment: Segment }) {
 					</section>
 				)}
 				<section className="chat-reference-target">
-					<h3 className="chat-reference-label">目标原文</h3>
+					<h3 className="chat-reference-label">原文</h3>
 					<p className="chat-reference-text" lang="ja">
 						{segment.text}
 					</p>
@@ -263,7 +260,7 @@ const MessageItem = memo(function MessageItem({
 	return (
 		<article
 			className={`chat-message ${current.role}`}
-			aria-label={current.role === "user" ? "你的消息" : "助手消息"}
+			aria-label={current.role === "user" ? "你的消息" : "AI 回复"}
 		>
 			{current.role === "assistant" &&
 				(activeJob ? (
@@ -275,10 +272,10 @@ const MessageItem = memo(function MessageItem({
 				) : current.status !== "complete" ? (
 					<p className="chat-reply-progress">
 						{current.status === "failed"
-							? "本轮失败"
+							? "回复失败"
 							: current.status === "interrupted"
-								? "本轮已中断"
-								: "正在读取本轮状态"}
+								? "回复已中断"
+								: "正在加载状态…"}
 					</p>
 				) : null)}
 			{current.content ? (
@@ -295,9 +292,7 @@ const MessageItem = memo(function MessageItem({
 					<button
 						type="button"
 						className="chat-copy-button"
-						aria-label={
-							copyState === "copied" ? "已复制助手消息" : "复制助手消息"
-						}
+						aria-label={copyState === "copied" ? "已复制回复" : "复制回复"}
 						title={copyState === "copied" ? "已复制" : "复制回复"}
 						onClick={() => {
 							void Promise.resolve()
@@ -316,7 +311,7 @@ const MessageItem = memo(function MessageItem({
 						className={copyState === "failed" ? "chat-copy-error" : "sr-only"}
 					>
 						{copyState === "failed"
-							? "复制失败，请选择回复文字复制。"
+							? "无法自动复制到剪贴板，请手动选择文字复制。"
 							: copyState === "copied"
 								? "回复已复制"
 								: ""}
@@ -330,12 +325,11 @@ const MessageItem = memo(function MessageItem({
 							key={`${artifact.analysis_id}-${artifact.revision_id}`}
 							type="button"
 							className="chat-artifact-button"
-							title={`讲解 ${artifact.analysis_id} · 修订 ${artifact.revision_id}`}
 							onClick={() =>
 								onOpenArtifact(artifact.analysis_id, artifact.revision_id)
 							}
 						>
-							查看已保存讲解 · 修订 {artifact.revision_id.slice(-6)} →
+							查看已保存讲解 →
 						</button>
 					) : null,
 				)}
@@ -386,7 +380,7 @@ function ThreadPanel({
 		},
 		select: (item) => {
 			if (item.segment_id !== segment.id)
-				throw new Error("这条讨论不属于当前片段，请返回对话列表选择。");
+				throw new Error("该对话不属于当前片段，请返回对话列表选择。");
 			return item;
 		},
 		refetchInterval: 2000,
@@ -428,7 +422,7 @@ function ThreadPanel({
 	const pendingCheck = useQuery({
 		queryKey: chatKeys.request(threadId, pending?.input.request_id ?? ""),
 		queryFn: async () => {
-			if (!pending) throw new Error("没有待核实的提交。");
+			if (!pending) throw new Error("没有待确认的提交。");
 			return (await coordinator.current?.verify(threadId, pending))?.job;
 		},
 		enabled: Boolean(pending?.uncertain),
@@ -628,7 +622,7 @@ function ThreadPanel({
 		}),
 		[segment.revision, draft.question, stream],
 	);
-	if (thread.isPending) return <p className="loading">正在加载讨论…</p>;
+	if (thread.isPending) return <p className="loading">正在加载对话…</p>;
 	if (thread.isError)
 		return (
 			<div className="state-card">
@@ -648,7 +642,7 @@ function ThreadPanel({
 			<DiscussionReference segment={segment} />
 			{!usable && providers.isSuccess && (
 				<p className="chat-notice" role="alert">
-					当前线程的模型未选或已停用。请选择可用模型后发送；系统不会自动替换原选择。
+					当前对话尚未选择可用模型或所选模型已停用，请先选择模型。
 				</p>
 			)}
 			{chosen &&
@@ -656,20 +650,20 @@ function ThreadPanel({
 				(stream ? chosen.model.stream_status : chosen.model.text_status) !==
 					"succeeded" && (
 					<p className="chat-notice">
-						该模型的{stream ? "流式" : "普通文本"}验证状态为
+						该模型的{stream ? "流式" : "普通文本"}验证
 						{(stream
 							? chosen.model.stream_status
 							: chosen.model.text_status) === "failed"
-							? "失败"
-							: "未知"}
-						，仍可尝试本次问答。
+							? "未通过"
+							: "尚未执行"}
+						，仍可尝试发送。
 					</p>
 				)}
 			<InlineError error={patch.error} />
 			<InlineError error={providers.error} />
 			<InlineError error={settings.error} />
-			<section className="chat-history" aria-label="讨论历史">
-				{history.isPending && <p className="loading">正在加载历史…</p>}
+			<section className="chat-history" aria-label="对话记录">
+				{history.isPending && <p className="loading">正在加载消息…</p>}
 				{history.isError && <InlineError error={history.error} />}
 				{history.hasNextPage && (
 					<button
@@ -682,9 +676,7 @@ function ThreadPanel({
 					</button>
 				)}
 				{visibleMessages.length === 0 && !history.isPending && (
-					<p className="chat-empty">
-						围绕这段原文提出第一个问题，讨论会保存在本线程。
-					</p>
+					<p className="chat-empty">围绕这段原文提出第一个问题。</p>
 				)}
 				{visibleMessages.map((message) => (
 					<MessageItem
@@ -710,19 +702,24 @@ function ThreadPanel({
 					/>
 				))}
 				{active.data?.status === "waiting_review" && (
-					<section className="chat-review-card" aria-label="待审核讲解修改">
-						<h3>{review?.title ?? "审核讲解修改"}</h3>
+					<section className="chat-review-card" aria-label="待确认的讲解修改">
+						<h3>{review?.title ?? "确认讲解修改"}</h3>
 						<p>
 							{proposal?.title ?? "当前讲解"} · 目标：
-							{review?.target ?? "待核对"} · 基础修订{" "}
-							<span title={reviewRevisionId}>{reviewRevisionId.slice(-6)}</span>
+							{review?.target ?? "待确认"}
 						</p>
+						{reviewRevisionId && (
+							<details className="chat-review-technical">
+								<summary>技术信息</summary>
+								<p>基础版本 ID：{reviewRevisionId}</p>
+							</details>
+						)}
 						{reviewBase.isError && <InlineError error={reviewBase.error} />}
 						{review && (
 							<>
 								<strong>修改前</strong>
 								<pre>{review.before}</pre>
-								<strong>拟修改为</strong>
+								<strong>修改后</strong>
 								<pre>{review.after}</pre>
 							</>
 						)}
@@ -790,14 +787,14 @@ function ThreadPanel({
 
 				{sending && !pending?.uncertain && (
 					<p className="chat-reply-progress" role="status">
-						正在提交本轮请求…
+						正在发送…
 					</p>
 				)}
 				{pending?.uncertain && (
 					<div className="chat-uncertain" role="status">
-						<strong>正在核实提交</strong>
+						<strong>发送状态待确认</strong>
 						<p>
-							提交结果尚不确定。查询不会再次调用模型；重试会继续核实同一次提交。
+							暂未确认是否发送成功，可先查询状态或安全重试（不会重复发送）。
 						</p>
 						<div className="actions">
 							<button
@@ -805,7 +802,7 @@ function ThreadPanel({
 								type="button"
 								onClick={() => void pendingCheck.refetch()}
 							>
-								查询结果
+								查询状态
 							</button>
 							<button
 								className="button secondary"
@@ -813,7 +810,7 @@ function ThreadPanel({
 								disabled={sending}
 								onClick={() => void send(pending.input)}
 							>
-								同请求重试提交
+								安全重试
 							</button>
 						</div>
 						{pendingCheck.isError &&
@@ -828,7 +825,7 @@ function ThreadPanel({
 				<div
 					className={`chat-composer-tools${thread.data.active_job_id ? " has-stop" : ""}`}
 				>
-					<section className="chat-config" aria-label="本轮设置">
+					<section className="chat-config" aria-label="对话设置">
 						<ComposerSetting
 							label="选择模型"
 							panelLabel="模型设置"
@@ -896,7 +893,7 @@ function ThreadPanel({
 											className="chat-model-configure"
 											onClick={() => void providers.refetch()}
 										>
-											重试模型列表
+											重新加载
 										</button>
 									</div>
 								) : !models.some(
@@ -922,19 +919,19 @@ function ThreadPanel({
 								className="chat-model-configure"
 								onClick={onConfigureModels}
 							>
-								配置模型与服务 →
+								配置模型服务 →
 							</button>
 						</ComposerSetting>
 						<ComposerSetting
-							label="设置审核模式"
-							panelLabel="审核模式"
+							label="设置 AI 修改权限"
+							panelLabel="AI 修改权限"
 							value={
 								thread.data.permission_mode === "review"
-									? "审核模式"
-									: "完全访问"
+									? "修改前确认"
+									: "允许直接修改"
 							}
 						>
-							<fieldset className="chat-choice-list" aria-label="可选审核模式">
+							<fieldset className="chat-choice-list" aria-label="AI 修改权限">
 								{(["review", "full_access"] as const).map((mode) => (
 									<label className="chat-choice" key={mode}>
 										<input
@@ -961,7 +958,7 @@ function ThreadPanel({
 											}}
 										/>
 										<span className="chat-choice-name">
-											{mode === "review" ? "审核模式" : "完全访问"}
+											{mode === "review" ? "修改前确认" : "允许直接修改"}
 										</span>
 										<span className="chat-choice-check" aria-hidden="true">
 											{thread.data.permission_mode === mode ? "✓" : ""}
@@ -983,15 +980,15 @@ function ThreadPanel({
 									onClick={() => stop.mutate(thread.data.active_job_id ?? "")}
 								>
 									{stop.isPending || active.data?.status === "stopping"
-										? "停止中…"
-										: "停止本轮"}
+										? "正在停止…"
+										: "停止生成"}
 								</button>
 							)}
 							<button
 								className="chat-send-button"
 								type="button"
-								aria-label={sending ? "提交中…" : "发送问题"}
-								title={sending ? "提交中…" : "发送问题（Enter）"}
+								aria-label={sending ? "发送中…" : "发送问题"}
+								title={sending ? "发送中…" : "发送问题（Enter）"}
 								disabled={sendDisabled}
 								onClick={() => void send(makeInput(thread.data))}
 							>
@@ -1319,9 +1316,9 @@ export function Workbench({
 	);
 
 	return (
-		<section className="workbench" aria-label="片段讨论工作台">
+		<section className="workbench" aria-label="片段对话">
 			{configuringModels && (
-				<Suspense fallback={<p role="status">正在打开模型配置…</p>}>
+				<Suspense fallback={<p role="status">正在加载模型设置…</p>}>
 					<ModelSetupDialog onClose={() => setConfiguringModels(false)} />
 				</Suspense>
 			)}
@@ -1370,15 +1367,17 @@ export function Workbench({
 						>
 							<span className="chat-thread-title">{item.display_title}</span>
 							<span className="chat-thread-meta">
-								<span>
-									{item.active_job_id
-										? "进行中"
-										: pending[item.id]?.uncertain
-											? "提交待核实"
-											: drafts[item.id]?.question
-												? "有草稿"
-												: "已保存"}
-								</span>
+								{(item.active_job_id ||
+									pending[item.id]?.uncertain ||
+									drafts[item.id]?.question) && (
+									<span>
+										{item.active_job_id
+											? "进行中"
+											: pending[item.id]?.uncertain
+												? "发送待确认"
+												: "有草稿"}
+									</span>
+								)}
 								<time dateTime={item.updated_at}>
 									{new Date(item.updated_at).toLocaleString("zh-CN", {
 										month: "numeric",
@@ -1416,7 +1415,7 @@ export function Workbench({
 							disabled={threads.isFetchingNextPage}
 							onClick={() => void threads.fetchNextPage()}
 						>
-							{threads.isFetchingNextPage ? "加载中…" : "加载更多对话"}
+							{threads.isFetchingNextPage ? "正在加载…" : "加载更多对话"}
 						</button>
 					)}
 				</section>
@@ -1453,12 +1452,12 @@ export function Workbench({
 								key={attempt.input.token}
 							>
 								{attempt.progress === "thread"
-									? "正在准备新的讲解对话…"
+									? "正在准备 AI 讲解…"
 									: attempt.progress === "checking"
-										? "正在核实本次讲解请求…"
+										? "正在确认讲解请求…"
 										: attempt.progress === "submitting"
-											? "正在提交讲解请求…"
-											: "正在读取讲解请求…"}
+											? "正在发送讲解请求…"
+											: "正在准备 AI 讲解…"}
 							</p>
 						) : null,
 					)}
@@ -1476,7 +1475,7 @@ export function Workbench({
 										})
 									}
 								>
-									重试新建讲解对话
+									重试
 								</button>
 							</div>
 						) : null,
@@ -1513,24 +1512,22 @@ export function Workbench({
 							{defaults.isPending ||
 							providers.isPending ||
 							(selected && selectedInfo.isPending)
-								? "正在读取模型设置…"
-								: "正在准备讲解请求…"}
+								? "正在加载模型设置…"
+								: "正在准备 AI 讲解…"}
 						</p>
 					) : explainToken ? (
 						<div className="chat-first-generation">
 							<h3>创建 AI 讲解</h3>
-							<p>选择模型后，在新对话中创建并保存一份独立讲解。</p>
+							<p>选择模型后，将在新对话中生成并保存一份讲解。</p>
 							{providers.isSuccess && availableModels.length === 0 ? (
 								<div className="chat-model-guide">
-									<p>
-										还没有可用模型。添加模型服务并登记模型，或启用已有模型后继续。
-									</p>
+									<p>还没有可用模型，请先添加并启用模型。</p>
 									<button
 										type="button"
 										className="button secondary"
 										onClick={configureModels}
 									>
-										配置模型与服务
+										配置模型服务
 									</button>
 								</div>
 							) : (
@@ -1553,7 +1550,7 @@ export function Workbench({
 										className="chat-model-configure"
 										onClick={configureModels}
 									>
-										配置模型与服务 →
+										配置模型服务 →
 									</button>
 								</>
 							)}
@@ -1589,7 +1586,9 @@ export function Workbench({
 							</button>
 						</div>
 					) : (
-						<div className="chat-empty">尚无对话。新建对话后可直接提问。</div>
+						<div className="chat-empty">
+							还没有对话，新建后可直接围绕原文提问。
+						</div>
 					)}
 				</div>
 			</div>

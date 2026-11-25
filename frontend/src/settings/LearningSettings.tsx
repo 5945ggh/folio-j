@@ -41,7 +41,7 @@ export function LearningSettings({ settings }: { settings: Settings }) {
 				accept(learningFields(result)),
 			);
 		},
-		"请填完母语和讲解语言，以便自动保存。",
+		"请填写母语和讲解语言。",
 	);
 	const { profile } = draft.fields;
 	return (
@@ -56,10 +56,8 @@ export function LearningSettings({ settings }: { settings: Settings }) {
 				<details className="learning-disclosure learning-help">
 					<summary>这些信息会用在哪里？</summary>
 					<p className="settings-hint">
-						创建 AI 讲解或在学习片段里提问时，AI
-						会参考你的学习背景和默认讲解预设。
-						在片段中选择「复制讲解提示词」时，复制的文字也会包含学习背景和默认预设，方便粘贴给外部
-						AI。
+						创建 AI 讲解、在学习片段中对话，或使用「复制讲解提示词」时，
+						都会附上这里的学习背景和默认预设。
 					</p>
 				</details>
 				<form
@@ -85,7 +83,7 @@ export function LearningSettings({ settings }: { settings: Settings }) {
 								<label className="settings-preference-row">
 									<span className="settings-row-copy">
 										<strong>母语</strong>
-										<small>用于理解语言差异与表达习惯。</small>
+										<small>帮助 AI 结合你的母语对比说明语言差异。</small>
 									</span>
 									<input
 										className="settings-control"
@@ -314,7 +312,7 @@ function StyleList({
 					}}
 				>
 					<h2 id="delete-style-title">删除「{deleting.name}」？</h2>
-					<p>此操作会删除该讲解预设，当前默认预设不能删除。</p>
+					<p>删除后无法恢复。</p>
 					<InlineError error={remove.error} />
 					<div className="settings-actions">
 						<button

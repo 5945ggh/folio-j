@@ -187,13 +187,13 @@ export function ReaderSettings({
 						<h3 id="reader-typography-title">排版</h3>
 						<span
 							className="reader-settings-scope"
-							data-tooltip="字号、行距和文字方向随本书阅读位置保存到资料库；连接同一资料库的浏览器共用。"
+							data-tooltip="字号、行距和文字方向随本书保存，同步到素材库。"
 						>
-							本书 · 资料库
+							本书 · 同步
 						</span>
 						<ReaderSettingsReset
 							label="排版"
-							description="恢复字号、方向、行距、字体与正文宽度。"
+							description="将字号、文字方向、行距、字体与正文宽度恢复默认。"
 							onReset={() => onResetGroup("typography")}
 						/>
 					</div>
@@ -257,9 +257,9 @@ export function ReaderSettings({
 								字体
 								<span
 									className="reader-settings-scope"
-									data-tooltip="字体仅对本书当前版本生效，保存在此浏览器中。"
+									data-tooltip="仅保存在当前浏览器。"
 								>
-									此浏览器
+									当前浏览器
 								</span>
 							</span>
 							<fieldset className="reader-options" aria-label="字体">
@@ -280,9 +280,9 @@ export function ReaderSettings({
 								正文宽度
 								<span
 									className="reader-settings-scope"
-									data-tooltip="正文宽度仅对本书当前版本生效，保存在此浏览器中。"
+									data-tooltip="仅保存在当前浏览器。"
 								>
-									此浏览器
+									当前浏览器
 								</span>
 							</span>
 							<output>
@@ -303,7 +303,7 @@ export function ReaderSettings({
 							/>
 						</label>
 						{settings.writing_mode === "vertical-rl" && (
-							<p>正文宽度仅在横排生效，当前值会保留。</p>
+							<p>仅在横排模式下生效。</p>
 						)}
 					</SettingsDisclosure>
 				</section>
@@ -316,13 +316,13 @@ export function ReaderSettings({
 						<h3 id="reader-ruby-title">注音</h3>
 						<span
 							className="reader-settings-scope"
-							data-tooltip="注音显示与范围仅对本书当前版本生效，保存在此浏览器中。"
+							data-tooltip="仅对本书生效，保存在当前浏览器。"
 						>
-							本书 · 此浏览器
+							本书 · 当前浏览器
 						</span>
 						<ReaderSettingsReset
 							label="注音"
-							description="恢复原书注音与显示方式。"
+							description="将注音显示方式与范围恢复默认。"
 							onReset={() => onResetGroup("ruby")}
 						/>
 					</div>
@@ -352,7 +352,7 @@ export function ReaderSettings({
 									aria-pressed={(bookUi.rubyScope ?? "original") === v}
 									onClick={() => onBookUi({ ...bookUi, rubyScope: v })}
 								>
-									{["原书", "全量"][i]}
+									{["仅原书", "全部汉字"][i]}
 								</button>
 							))}
 						</fieldset>
@@ -363,8 +363,8 @@ export function ReaderSettings({
 						onOpen={(open) => setExpanded("rubyHelp", open)}
 					>
 						<p>
-							原书注音优先；全量补充未标注的汉字。按需时可悬停、轻点、选中或按 R
-							显现。
+							「全部汉字」会为原书未标注的汉字补充假名。选择「按需」时，悬停、轻点、选中文字或按
+							R 键可显示注音。
 						</p>
 					</SettingsDisclosure>
 				</section>
@@ -377,13 +377,13 @@ export function ReaderSettings({
 						<h3 id="reader-interface-title">阅读界面</h3>
 						<span
 							className="reader-settings-scope"
-							data-tooltip="对所有书籍生效，保存在此浏览器中；其他浏览器需另行设置。"
+							data-tooltip="对所有书籍生效，保存在当前浏览器。"
 						>
-							所有书籍 · 此浏览器
+							所有书籍 · 当前浏览器
 						</span>
 						<ReaderSettingsReset
 							label="阅读界面"
-							description="恢复纸面、工具栏与浮窗不透明度及记录显示。"
+							description="将纸面、不透明度与正文标记恢复默认。"
 							onReset={() => onResetGroup("interface")}
 						/>
 					</div>
@@ -397,21 +397,21 @@ export function ReaderSettings({
 									aria-pressed={ui.theme === v}
 									onClick={() => onUi({ ...ui, theme: v })}
 								>
-									{["白", "黑", "跟随系统"][i]}
+									{["浅色", "深色", "跟随系统"][i]}
 								</button>
 							))}
 						</fieldset>
 					</div>
 					<SettingsDisclosure
 						label="更多界面设置"
-						summary={`下划线${ui.marks.studySegmentUnderlines ? "开" : "关"} · 页边入口${ui.marks.studySegmentMargins ? "开" : "关"}`}
+						summary={`下划线：${ui.marks.studySegmentUnderlines ? "开" : "关"} · 页边入口：${ui.marks.studySegmentMargins ? "开" : "关"}`}
 						open={expanded.interface}
 						onOpen={(open) => setExpanded("interface", open)}
 					>
 						<label className="reader-settings-slider">
 							工具栏不透明度 <output>{ui.toolbarOpacity}%</output>
 							<input
-								aria-label="工具栏背景不透明度"
+								aria-label="工具栏不透明度"
 								aria-valuetext={`${ui.toolbarOpacity}%`}
 								type="range"
 								min="0"
@@ -424,12 +424,12 @@ export function ReaderSettings({
 							/>
 						</label>
 						<label className="reader-settings-slider">
-							浮窗背景不透明度
+							浮窗不透明度
 							<output>
 								{ui.dictionaryOpacity ?? DEFAULT_DICTIONARY_OPACITY}%
 							</output>
 							<input
-								aria-label="浮窗背景不透明度"
+								aria-label="浮窗不透明度"
 								aria-valuetext={`${ui.dictionaryOpacity ?? DEFAULT_DICTIONARY_OPACITY}%`}
 								aria-describedby="reader-popover-opacity-help"
 								type="range"
@@ -443,7 +443,7 @@ export function ReaderSettings({
 							/>
 						</label>
 						<p id="reader-popover-opacity-help">
-							选区工具栏、词卡、学习片段、翻译与记录列表共用；展开阅读使用实底。
+							适用于划选工具栏、查词卡片及浮窗预览（停靠侧栏时为不透明背景）。
 						</p>
 						<label className="reader-settings-toggle">
 							<span>展示阅读记录下划线</span>
@@ -489,11 +489,10 @@ export function ReaderSettings({
 							onOpen={(open) => setExpanded("interfaceHelp", open)}
 						>
 							<p>
-								单击未标记正文收起工具，再次单击、移动鼠标或按 Tab
-								唤出。方向键、空格和滚动不会唤出工具。不透明度同时用于顶部与底部工具栏。
+								单击正文空白处可收起或唤出工具栏，移动鼠标或按 Tab 键也可唤出。
 							</p>
 							<p>
-								实线表示学习片段，虚线表示翻译；重叠处保留实线。页边空间不足时使用“本章记录”。隐藏标记不删除记录。纸面独立于应用外观。
+								正文中的实线表示已保存的学习片段，虚线表示译文记录；关闭显示不会删除已有记录。
 							</p>
 						</SettingsDisclosure>
 					</SettingsDisclosure>

@@ -103,7 +103,7 @@ export async function renameAnalysis(analysisId: string, body: AnalysisRename) {
 	);
 	const result = requireData(data, error, response.status);
 	if (result.id !== analysisId)
-		throw new Error("重命名返回的讲解不匹配，请重新读取。");
+		throw new Error("重命名结果异常，请刷新页面确认。");
 	return result;
 }
 

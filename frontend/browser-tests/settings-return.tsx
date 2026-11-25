@@ -223,11 +223,11 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 			() => !!container.querySelector(".reader-record-translation"),
 			"Chapter translation list must load",
 		);
-		button("翻译").click();
+		button("译文").click();
 		await until(
 			() =>
 				container
-					.querySelector('[aria-label="翻译"][role="tab"]')
+					.querySelector('[aria-label="译文"][role="tab"]')
 					?.getAttribute("aria-selected") === "true",
 			"Chapter translation tab must be selected",
 		);
@@ -488,7 +488,9 @@ export async function settingsReturn(h: BrowserHarness): Promise<string> {
 			"Failed chapter refresh must not unmount the selected translation",
 		);
 		failTranslations = false;
-		button("重试读取本章翻译").click();
+		const records = container.querySelector(".reader-chapter-records");
+		check(records, "Chapter record panel must remain available for retry");
+		button("重试", records).click();
 		await until(
 			() => !container.textContent?.includes("记录暂时读取失败"),
 			"Record retry must recover",

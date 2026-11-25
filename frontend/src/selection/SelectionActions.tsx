@@ -105,14 +105,14 @@ export function SelectionActions({
 					)}
 					<button
 						type="button"
-						aria-label="带上下文复制"
+						aria-label="带前后文复制"
 						aria-busy={copying}
 						disabled={copying}
 						onPointerDown={(event) => event.preventDefault()}
 						onClick={onCopy}
 					>
 						<ToolIcon name="copy" />
-						带上下文复制
+						带前后文复制
 					</button>
 				</div>
 			)}
@@ -138,8 +138,8 @@ export function SelectionActions({
 					{onAnki && (
 						<button
 							type="button"
-							aria-label="制作 Anki 笔记"
-							data-tooltip="发送到 Anki"
+							aria-label="制卡（发送到 Anki）"
+							data-tooltip="制卡（发送到 Anki）"
 							onPointerDown={(event) => event.preventDefault()}
 							onClick={onAnki}
 						>

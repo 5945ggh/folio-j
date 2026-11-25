@@ -39,7 +39,7 @@ function projectedRanges(
 	const last = projection.entries.find(
 		(e) => e.end >= finish && e.start < finish,
 	);
-	if (!first || !last) throw new Error("搜索命中无法映射到原文。");
+	if (!first || !last) throw new Error("无法高亮该处原文。");
 	const ranges: Range[] = [];
 	if (
 		baseOnly ||
@@ -84,7 +84,7 @@ export function prepareHighlights(
 		  })
 		| null;
 	if (!view?.Highlight || !view.CSS?.highlights)
-		throw new Error("已定位到原文，当前浏览器不支持搜索高亮。");
+		throw new Error("已定位到原文，但当前浏览器不支持高亮显示。");
 	const Highlight = view.Highlight;
 	const highlights = view.CSS.highlights;
 	return () => {
@@ -253,7 +253,7 @@ export function prepareStudyUnderlines(
 		  })
 		| null;
 	if (!view?.Highlight || !view.CSS?.highlights)
-		throw new Error("当前浏览器无法显示学习片段标记。");
+		throw new Error("当前浏览器不支持显示正文下划线标记。");
 	const Highlight = view.Highlight,
 		registry = view.CSS.highlights;
 	return () => {

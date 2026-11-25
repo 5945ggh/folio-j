@@ -141,7 +141,7 @@ export function projectPart(
 					),
 			)
 		)
-			throw new Error("正文叶子身份失配");
+			throw new Error("章节内容校验失败，请重新打开本章。");
 		const walker = doc.createTreeWalker(leaf, 4);
 		let node = walker.nextNode();
 		while (node) {
@@ -156,7 +156,8 @@ export function projectPart(
 			raw += text.data;
 		}
 	}
-	if (raw.normalize("NFC") !== expected) throw new Error("正文定位投影失配");
+	if (raw.normalize("NFC") !== expected)
+		throw new Error("章节内容校验失败，请重新打开本章。");
 	return { raw, entries };
 }
 export function textRect(

@@ -172,15 +172,11 @@ export function SettingsDraftProvider({ children }: { children: ReactNode }) {
 						}
 					}}
 				>
-					<h2 id="settings-leave-title">有尚未保存的修改</h2>
-					<p>
-						{pending
-							? "正在保存，请稍候。"
-							: "可以保存后离开，或放弃这次修改。"}
-					</p>
+					<h2 id="settings-leave-title">有未保存的修改</h2>
+					<p>{pending ? "正在保存，请稍候。" : "离开前是否保存当前修改？"}</p>
 					{failed && (
 						<p className="inline-error" role="alert">
-							保存未完成，请返回检查表单后重试。
+							保存失败，请检查填写内容后重试。
 						</p>
 					)}
 					<div className="settings-actions">
@@ -289,7 +285,7 @@ export function SettingsEditorDialog({
 					}}
 				>
 					<h2 id={`${id}-discard-title`}>保存这次修改？</h2>
-					<p>关闭前可以保存，或放弃未保存的修改。</p>
+					<p>当前修改尚未保存。</p>
 					<div className="settings-actions">
 						<button
 							type="button"

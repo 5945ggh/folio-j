@@ -11,9 +11,9 @@ export const FIELD_SOURCE_LABELS: Record<
 	AnkiFieldDefinition["source"],
 	string
 > = {
-	selection: "系统选区",
-	sentence: "系统原句",
-	sourceMetadata: "系统出处",
+	selection: "自动填入（选区）",
+	sentence: "自动填入（原句）",
+	sourceMetadata: "自动填入（出处）",
 	manual: "手动填写",
 };
 
@@ -22,8 +22,8 @@ export const PRESENTATION_LABELS: Record<
 	string
 > = {
 	common: "常用",
-	summary: "摘要",
-	more: "靠后",
+	summary: "单行摘要",
+	more: "靠后显示",
 };
 
 export function AnkiMappingField({
@@ -33,6 +33,7 @@ export function AnkiMappingField({
 	issue,
 	expanded,
 	knownTargetFields,
+	unverifiedTargetLabel,
 	onMove,
 	onToggle,
 	onChange,
@@ -44,6 +45,7 @@ export function AnkiMappingField({
 	issue?: string;
 	expanded: boolean;
 	knownTargetFields: string[] | null;
+	unverifiedTargetLabel: string;
 	onMove: (direction: -1 | 1) => void;
 	onToggle: () => void;
 	onChange: (patch: Partial<AnkiFieldDefinition>) => void;
@@ -82,7 +84,7 @@ export function AnkiMappingField({
 
 				<NativeSelect
 					wrapperClassName="anki-select-wrap"
-					aria-label={`${field.label || field.id} 对应的 Anki 字段`}
+					aria-label={`${field.label || "未命名字段"} 对应的 Anki 字段`}
 					value={savedTarget}
 					onChange={(event) =>
 						onChange({
@@ -94,7 +96,9 @@ export function AnkiMappingField({
 					{(targetMissingFromKnown || targetUnverified) && (
 						<option value={savedTarget}>
 							{savedTarget}
-							{targetMissingFromKnown ? "（类型中不存在）" : "（待核验）"}
+							{targetMissingFromKnown
+								? "（所选笔记类型中没有此字段）"
+								: unverifiedTargetLabel}
 						</option>
 					)}
 					{knownTargetFields?.map((name) => (
@@ -178,7 +182,7 @@ export function AnkiMappingField({
 					</div>
 
 					<div className="anki-field-group">
-						<label htmlFor={`field-pres-${field.id}`}>显示位置</label>
+						<label htmlFor={`field-pres-${field.id}`}>显示方式</label>
 						<NativeSelect
 							id={`field-pres-${field.id}`}
 							wrapperClassName="anki-select-wrap"
@@ -191,7 +195,7 @@ export function AnkiMappingField({
 							}
 						>
 							<option value="common">常用</option>
-							<option value="summary">摘要（单行展示）</option>
+							<option value="summary">单行摘要</option>
 							<option value="more">靠后显示</option>
 						</NativeSelect>
 					</div>
@@ -234,7 +238,7 @@ export function AnkiMappingField({
 						<span>
 							{field.source === "manual"
 								? "手动填写字段，可自由改名、调整类型或删除。"
-								: `${FIELD_SOURCE_LABELS[field.source]}字段，可保留为未映射。`}
+								: "该字段会自动填入，不需要时可保留为未映射。"}
 						</span>
 						{field.source === "manual" && (
 							<button

@@ -116,10 +116,10 @@ export async function navigationFeedback(h: BrowserHarness, preview = false) {
 		}
 		button("本章记录").click();
 		await h.until(
-			() => !!h.container.querySelector('[role="tab"][aria-label="翻译"]'),
+			() => !!h.container.querySelector('[role="tab"][aria-label="译文"]'),
 			"Records must mount before selecting their translation tab",
 		);
-		button("翻译").click();
+		button("译文").click();
 		await h.until(
 			() =>
 				(h.container
@@ -180,7 +180,7 @@ export async function navigationFeedback(h: BrowserHarness, preview = false) {
 			"Reading settings must open for a presentation-only theme switch",
 		);
 		const dark = new URLSearchParams(location.search).get("theme") !== "dark";
-		button(dark ? "黑" : "白").click();
+		button(dark ? "深色" : "浅色").click();
 		await h.until(
 			() =>
 				!!doc()?.body &&

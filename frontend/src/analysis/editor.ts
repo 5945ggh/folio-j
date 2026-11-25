@@ -26,15 +26,15 @@ export const MAX_ANALYSIS_CHARACTERS = 500_000;
 
 export function sourceError(source: string): string | null {
 	const normalized = source.normalize("NFC");
-	if (!normalized.trim()) return "讲解正文不能为空白。";
+	if (!normalized.trim()) return "请输入讲解正文。";
 	if (Array.from(normalized).length > MAX_ANALYSIS_CHARACTERS)
-		return "讲解正文不能超过 500,000 个字符。";
+		return "讲解正文不能超过 500,000 字。";
 	return null;
 }
 
 export function titleError(title: string): string | null {
 	return Array.from(title.normalize("NFC").trim()).length > 200
-		? "标题不能超过 200 个字符。"
+		? "标题不能超过 200 字。"
 		: null;
 }
 
@@ -138,7 +138,7 @@ export function analysisWriteError(
 					? "片段或讲解已不可用。"
 					: status >= 400 && status < 500 && status !== 408
 						? "保存未被接受，请检查后重试。"
-						: "未能确认保存结果，请核实本次保存。"),
+						: "暂未确认保存结果，请重试保存。"),
 		status,
 		code,
 	);

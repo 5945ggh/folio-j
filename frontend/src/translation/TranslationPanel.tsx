@@ -58,14 +58,34 @@ type ResultSnapshot = {
 	result: TranslationResult;
 };
 
+const taskStatusLabels = {
+	queued: "等待翻译…",
+	running: "正在翻译…",
+	stopping: "正在停止…",
+	succeeded: "翻译完成",
+	failed: "翻译失败",
+	cancelled: "已停止翻译",
+	interrupted: "翻译因应用重启而中断",
+} as const;
+
+const taskHistoryStatusLabels = {
+	queued: "排队中",
+	running: "翻译中",
+	stopping: "正在停止",
+	succeeded: "已完成",
+	failed: "失败",
+	cancelled: "已取消",
+	interrupted: "已中断",
+} as const;
+
 function ResultConfiguration({ result }: { result: TranslationResult }) {
 	return (
 		<>
 			<p>前文：{result.context_before || "（空）"}</p>
 			<p>后文：{result.context_after || "（空）"}</p>
 			<details className="translation-technical">
-				<summary>生成信息</summary>
-				<p>译文语言：{result.target_language}</p>
+				<summary>技术信息</summary>
+				<p>目标语言：{result.target_language}</p>
 				<p>
 					{result.scheme_name} · {new Date(result.created_at).toLocaleString()}
 				</p>
@@ -76,11 +96,11 @@ function ResultConfiguration({ result }: { result: TranslationResult }) {
 					方案版本：{result.scheme_revision} · 模板：{result.prompt_version}
 				</p>
 				<p>
-					温度：{result.temperature ?? "默认"} · 推理：
+					温度：{result.temperature ?? "默认"} · 推理强度：
 					{result.reasoning_effort ?? "默认"} · 输出上限：
 					{result.max_output_tokens ?? "默认"}
 				</p>
-				<p>调用记录：{result.run_id}</p>
+				<p>调用记录 ID：{result.run_id}</p>
 			</details>
 		</>
 	);
@@ -430,7 +450,7 @@ export function TranslationPanel({
 	const history = useQuery({
 		queryKey: ["translations", materialId, identity.data, offset],
 		queryFn: ({ signal }) => {
-			if (!identity.data) throw new Error("缺少翻译目标身份");
+			if (!identity.data) throw new Error("无法识别要翻译的内容");
 			return getTranslationHistory(materialId, offset, identity.data, signal);
 		},
 		enabled: active && !!identity.data,
@@ -718,7 +738,7 @@ export function TranslationPanel({
 	const progressLabel = removing
 		? "正在删除"
 		: pending
-			? "提交中"
+			? "发送中"
 			: currentTask?.status === "queued"
 				? "等待翻译"
 				: currentTask?.status === "running"
@@ -726,17 +746,20 @@ export function TranslationPanel({
 						? "重译中"
 						: "翻译中"
 					: currentTask?.status === "stopping"
-						? "停止中"
+						? "正在停止"
 						: history.isPending ||
 								identity.isPending ||
 								(result.isFetching && !readableResult && !!resolvedId)
-							? "读取中"
+							? "正在加载"
 							: "";
 	const actionLabel = uncertain
-		? "核实原提交"
+		? "重试确认"
 		: displayedResult || history.data?.results.length
 			? "重新翻译"
 			: "开始翻译";
+	const closeLabel = activeTranslation(currentTask)
+		? "关闭翻译（后台继续）"
+		: "关闭翻译";
 	const actionDisabled =
 		pending ||
 		(!uncertain &&
@@ -754,7 +777,7 @@ export function TranslationPanel({
 			aria-label={actionLabel}
 			title={
 				actionLabel === "重新翻译"
-					? "用当前语境与设置重新翻译，保留已有译文"
+					? "使用当前前后文与设置重新翻译，已有译文会保留"
 					: actionLabel
 			}
 			disabled={actionDisabled}
@@ -847,8 +870,8 @@ export function TranslationPanel({
 						<button
 							type="button"
 							className="translation-icon-button"
-							aria-label="关闭翻译（任务继续）"
-							title="收起译文（任务继续）"
+							aria-label={closeLabel}
+							title={closeLabel}
 							onClick={onClose}
 						>
 							<TranslationIcon action="close" />
@@ -923,7 +946,9 @@ export function TranslationPanel({
 			<div ref={content} className="translation-content">
 				<InlineError error={history.error ?? identity.error} />
 				<InlineError error={localError ?? settings.error ?? state.error} />
-				{uncertain && <p role="status">提交响应尚未核实，请核实原提交。</p>}
+				{uncertain && (
+					<p role="status">暂未确认翻译请求是否发送成功，请点击重试确认。</p>
+				)}
 				{history.isError && (
 					<button
 						type="button"
@@ -936,7 +961,7 @@ export function TranslationPanel({
 							});
 						}}
 					>
-						重试读取已有翻译
+						重试
 					</button>
 				)}
 				{displayedResult && (
@@ -966,7 +991,7 @@ export function TranslationPanel({
 									});
 								}}
 							>
-								重试翻译设置
+								重新加载
 							</button>
 						)}
 						{settings.data && !settings.data.model_id && (
@@ -991,7 +1016,7 @@ export function TranslationPanel({
 				)}
 				{!displayedResult && versionAction}
 				<details hidden={!detailsVisible}>
-					<summary>语境与设置</summary>
+					<summary>前后文与设置</summary>
 					{displayedResult && (
 						<>
 							<ResultConfiguration result={displayedResult} />
@@ -1032,7 +1057,7 @@ export function TranslationPanel({
 						))}
 						{(["before", "after"] as const).map((side) => (
 							<label key={`${side}-characters`}>
-								{side === "before" ? "前文" : "后文"}码点
+								{side === "before" ? "前文" : "后文"}字符上限
 								<input
 									type="number"
 									min={0}
@@ -1053,8 +1078,9 @@ export function TranslationPanel({
 						disabled={!initialized || busy || uncertain}
 						onClick={fill}
 					>
-						按句数重新摘录（替换下面语境）
+						重新提取前后文
 					</button>
+					<small>提取后会替换下方的前文和后文。</small>
 					<label>
 						前文
 						<textarea
@@ -1083,10 +1109,10 @@ export function TranslationPanel({
 							}}
 						/>
 					</label>
-					<small>提交后固定本次输入。旧译文仍使用上次生成时的语境。</small>
+					<small>重新翻译时将使用当前前后文，已有译文不受影响。</small>
 					{settings.data && !settings.data.model_id && (
 						<p>
-							先在
+							请先在
 							<SettingsLink
 								to="/settings?section=translation"
 								onClick={() => session.leaveForSettings()}
@@ -1101,21 +1127,7 @@ export function TranslationPanel({
 					currentTask.status !== "succeeded" &&
 					!activeTranslation(currentTask) && (
 						<section role="status">
-							<p>
-								{
-									(
-										{
-											queued: "等待翻译…",
-											running: "正在翻译…",
-											stopping: "正在停止…",
-											succeeded: "翻译完成",
-											failed: "翻译失败",
-											cancelled: "已停止翻译",
-											interrupted: "任务因应用重启中断",
-										} as const
-									)[currentTask.status]
-								}
-							</p>
+							<p>{taskStatusLabels[currentTask.status]}</p>
 							{currentTask.error && <p>{currentTask.error}</p>}
 						</section>
 					)}
@@ -1128,7 +1140,11 @@ export function TranslationPanel({
 						<>
 							<details hidden={!detailsVisible}>
 								<summary>
-									历史译文（本页 {history.data.results.length}）
+									历史译文（
+									{offset > 0 || history.data.next_offset !== null
+										? `本页 ${history.data.results.length}`
+										: history.data.results.length}
+									）
 								</summary>
 								{history.data.results.map((item) => (
 									<button
@@ -1165,7 +1181,8 @@ export function TranslationPanel({
 												setResultId(null);
 											}}
 										>
-											{item.text.slice(0, 45)} · {item.status}
+											{item.text.slice(0, 45)} ·{" "}
+											{taskHistoryStatusLabels[item.status] ?? item.status}
 										</button>
 									))}
 							</details>

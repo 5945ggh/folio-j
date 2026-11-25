@@ -225,7 +225,7 @@ export function Dictionary({
 		) {
 			clearCards();
 			if (!refresh) {
-				setNotice("当前词典已变化，请重新点击原文查词。");
+				setNotice("当前词典已切换，请重新查词。");
 				setMenu(true);
 			}
 			return;
@@ -287,7 +287,7 @@ export function Dictionary({
 				}
 				publish([
 					emptyResult(
-						error instanceof Error ? error.message : "读取词典失败。",
+						error instanceof Error ? error.message : "加载词典失败。",
 					),
 				]);
 				return;
@@ -338,7 +338,7 @@ export function Dictionary({
 			if (!isCurrent()) return;
 			if (error instanceof RequestError && error.status === 409) {
 				clearCards();
-				setNotice("当前词典已变化，请重新点击原文查词。");
+				setNotice("当前词典已切换，请重新查词。");
 				setMenu(true);
 				await status.refetch();
 				return;
@@ -400,7 +400,7 @@ export function Dictionary({
 						? "即时查词"
 						: mode === "click"
 							? "点击查词已开启"
-							: "Shift 指向查词已开启"
+							: "Shift 悬停查词已开启"
 				}
 				aria-pressed={ready && mode !== "off"}
 				aria-expanded={menu}
@@ -464,7 +464,7 @@ export function Dictionary({
 									</button>
 								</header>
 								{status.isPending ? (
-									<p role="status">正在读取词典…</p>
+									<p role="status">正在加载词典…</p>
 								) : status.isError ? (
 									<p role="alert">
 										{status.error.message}{" "}
@@ -477,7 +477,7 @@ export function Dictionary({
 										<p className="dict-installed">
 											<span aria-hidden="true">辞</span>
 											{selection === null
-												? "未安装词典 · 可查看基础词卡"
+												? "未导入离线词典 · 仅显示读音与词形"
 												: status.data?.title}
 										</p>
 										<fieldset className="dict-modes" aria-label="查词方式">
@@ -485,7 +485,7 @@ export function Dictionary({
 												[
 													["off", "关闭"],
 													["click", "点击查词"],
-													["hover", "Shift 悬浮"],
+													["hover", "Shift 悬停"],
 												] as const
 											).map(([value, label]) => (
 												<button
@@ -564,7 +564,6 @@ export function Dictionary({
 											>
 												开启后，结合原文的词形、读音和词性，优先显示更匹配的词条。
 											</p>
-											<p>基本词形还原始终开启。</p>
 										</div>
 									</>
 								) : (
@@ -601,7 +600,7 @@ export function Dictionary({
 									opacity={opacity}
 									title={
 										cardDictionary?.title ??
-										(selection === null ? "基础词卡" : "本机词典")
+										(selection === null ? "读音与词形" : "离线词典")
 									}
 									hasDictionary={selection !== null}
 									nested={(depth, origin) => void search(origin, depth)}

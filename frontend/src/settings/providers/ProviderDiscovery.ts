@@ -54,7 +54,7 @@ export function useProviderDiscovery(provider: Provider) {
 			void client.invalidateQueries({ queryKey: settingsKeys.settings });
 			if (failed.length > 0)
 				setRegistrationError(
-					`${selected.length - failed.length} 个已登记；${failed.length} 个未成功，已保留选择，可重试。`,
+					`${selected.length - failed.length} 个已添加；${failed.length} 个添加失败，已保留勾选，可重试。`,
 				);
 			return failed.length === 0;
 		} finally {

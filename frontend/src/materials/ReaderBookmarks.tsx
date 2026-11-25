@@ -4,7 +4,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
-import { RequestError } from "../content";
+import { RequestError, trimTrailingPunctuation } from "../content";
 import { useViewActivity } from "../navigation/view-activity";
 import type { Position, Settings } from "./api";
 import { BookmarkDeleteDialog } from "./BookmarkDeleteDialog";
@@ -31,9 +31,6 @@ import "./reader-bookmarks.css";
 
 const pendingCreations = new Map<string, BookmarkCreationIntent>();
 
-function failureMessage(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
-}
 /** Owns a frozen creation request and its retry identity, independent of navigation and scrolling. */
 export function useReaderBookmarks(materialId: string, versionId: string) {
 	const client = useQueryClient();
@@ -77,7 +74,13 @@ export function useReaderBookmarks(materialId: string, versionId: string) {
 		},
 		onError: (failure, request) => {
 			if (!pending.current.isCurrent(request)) return;
-			setError(`书签未保存：${failureMessage(failure)} 重试将保存刚才的位置。`);
+			setError(
+				failure instanceof RequestError &&
+					failure.status >= 400 &&
+					failure.status < 500
+					? `书签保存失败：${trimTrailingPunctuation(failure.message) || "无法保存当前位置"}。重试仍使用刚才的位置。`
+					: "暂未确认书签是否保存成功，重试会保存刚才的位置。",
+			);
 		},
 		onSettled: () => {
 			inFlight.current = false;
@@ -94,9 +97,7 @@ export function useReaderBookmarks(materialId: string, versionId: string) {
 	const add = (sample: () => Position | null) => {
 		if (inFlight.current) return;
 		if (pending.current.canRetry) {
-			setError(
-				"上次书签尚未确认保存，请重试保存刚才的位置，或放弃重试后添加新位置。",
-			);
+			setError("请先重试或放弃上一次保存，再添加新书签。");
 			return;
 		}
 		if (pending.current.nearby) {
@@ -107,7 +108,7 @@ export function useReaderBookmarks(materialId: string, versionId: string) {
 		setCreated(null);
 		const position = freezeBookmarkPosition(sample(), versionId);
 		if (!position) {
-			setError("当前位置尚未稳定，请等待章节或排版呈现后重试。");
+			setError("页面正在排版，请稍后再添加书签。");
 			return;
 		}
 		const request = {
@@ -316,7 +317,7 @@ export function ReaderBookmarkNotice({
 							onEdit();
 						}}
 					>
-						查看已有
+						查看已有书签
 					</button>
 					<button
 						type="button"
@@ -333,12 +334,12 @@ export function ReaderBookmarkNotice({
 					disabled={bookmarks.busy}
 					onClick={bookmarks.retry}
 				>
-					重试保存书签
+					重试
 				</button>
 			)}
 			{bookmarks.error && bookmarks.canRetry && (
 				<button type="button" onClick={bookmarks.discardRetry}>
-					放弃重试
+					放弃
 				</button>
 			)}
 			{!bookmarks.canRetry && !bookmarks.busy && (
@@ -476,10 +477,10 @@ export function ReaderBookmarksContent({
 	}, [deletedId, active, activity.active, query.isError, items]);
 	const listError =
 		query.error instanceof RequestError && query.error.status === 404
-			? "本书或所属来源已不可用，暂时无法查看书签。备注草稿已保留。"
+			? "本书暂不可用，无法查看书签。"
 			: query.error instanceof RequestError && query.error.status === 409
-				? "本书版本已变化，请重新打开本书后查看书签。备注草稿已保留。"
-				: "书签读取失败，请重试。备注草稿已保留。";
+				? "本书内容已更新，请重新打开后查看书签。"
+				: "书签加载失败，请重试。";
 	const created = bookmarks.created;
 	const forgetCreated = bookmarks.forgetCreated;
 	useEffect(() => {
@@ -504,8 +505,8 @@ export function ReaderBookmarksContent({
 		<div className="reader-bookmarks-content">
 			<p className="reader-bookmark-hint">
 				{query.isError
-					? "书签清单暂不可用"
-					: `按书中顺序 · ${page?.pages[0]?.total ?? "—"} 个书签`}
+					? "书签暂不可用"
+					: `共 ${page?.pages[0]?.total ?? "—"} 个书签 · 按书中顺序`}
 			</p>
 			{active && !query.isError && bookmarks.editing && (
 				<ReaderBookmarkDetail
@@ -521,10 +522,11 @@ export function ReaderBookmarksContent({
 			)}
 			{!query.isError && navigationError && (
 				<p role="alert">
-					定位失败：{navigationError.message}。请再次点击书签重试。
+					{trimTrailingPunctuation(navigationError.message) || "未能定位到书签"}
+					。请再次点击书签重试。
 				</p>
 			)}
-			{query.isPending && <p role="status">正在读取书签…</p>}
+			{query.isPending && <p role="status">正在加载书签…</p>}
 			{query.isError && (
 				<p role="alert">
 					{listError}
@@ -534,7 +536,7 @@ export function ReaderBookmarksContent({
 							void query.refetch();
 						}}
 					>
-						重试读取书签
+						重试
 					</button>
 				</p>
 			)}
@@ -547,7 +549,7 @@ export function ReaderBookmarksContent({
 				id={listFocusId}
 				ref={list}
 				tabIndex={-1}
-				aria-label="位置书签"
+				aria-label="书签列表"
 				className="reader-bookmarks-list"
 			>
 				{items.map((bookmark) => (
@@ -570,7 +572,7 @@ export function ReaderBookmarksContent({
 						void query.fetchNextPage();
 					}}
 				>
-					{query.isFetchingNextPage ? "正在读取…" : "更多书签"}
+					{query.isFetchingNextPage ? "正在加载…" : "更多书签"}
 				</button>
 			)}
 		</div>

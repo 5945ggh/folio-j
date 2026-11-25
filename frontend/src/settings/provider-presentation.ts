@@ -24,19 +24,18 @@ export function summarizeProvider(
 	);
 	if (!provider.enabled)
 		return { ready, tone: "neutral", label: "已停用" } as const;
-	if (active) return { ready, tone: "busy", label: "文本验证中" } as const;
+	if (active) return { ready, tone: "busy", label: "验证中" } as const;
 	if (ready > 0)
 		return {
 			ready,
 			tone: "ready",
-			label: `${ready} 个模型两项文本验证通过`,
+			label: `${ready} 个模型已验证`,
 		} as const;
-	if (failed)
-		return { ready, tone: "warning", label: "文本验证待处理" } as const;
+	if (failed) return { ready, tone: "warning", label: "验证未通过" } as const;
 	return {
 		ready,
 		tone: "neutral",
-		label: "尚无两项文本验证通过的模型",
+		label: "尚未验证",
 	} as const;
 }
 

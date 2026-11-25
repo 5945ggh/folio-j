@@ -357,11 +357,7 @@ export function ChapterRecords(props: Props) {
 				data-reader-card-drag-handle=""
 				data-reader-card-draggable={draggable ? "true" : "false"}
 				tabIndex={draggable ? 0 : undefined}
-				title={
-					draggable
-						? "拖动标题栏移动；聚焦后用方向键移动，Shift 加快"
-						: undefined
-				}
+				title={draggable ? "拖动可移动位置（聚焦后可用方向键微调）" : undefined}
 				{...dragHandlers}
 			>
 				<div className="reader-record-title">
@@ -374,8 +370,8 @@ export function ChapterRecords(props: Props) {
 						<button
 							type="button"
 							className="reader-record-back"
-							aria-label={returnToRecords ? "返回此处记录" : "返回翻译列表"}
-							title={returnToRecords ? "返回此处记录" : "返回翻译列表"}
+							aria-label={returnToRecords ? "返回此处记录" : "返回译文列表"}
+							title={returnToRecords ? "返回此处记录" : "返回译文列表"}
 							onClick={returnToList}
 						>
 							<span aria-hidden="true">←</span>
@@ -383,7 +379,7 @@ export function ChapterRecords(props: Props) {
 					)}
 					<span className="reader-popover-seal" aria-hidden="true">
 						{fixed || relatedRecordCount > 1
-							? "記"
+							? "记"
 							: tab === "translation"
 								? "译"
 								: "文"}
@@ -395,7 +391,7 @@ export function ChapterRecords(props: Props) {
 								? "此处记录"
 								: tab === "segment"
 									? "学习片段"
-									: "翻译"}
+									: "译文"}
 					</strong>
 				</div>
 				<div className="reader-study-preview-actions">
@@ -442,7 +438,7 @@ export function ChapterRecords(props: Props) {
 								id={`${id}-${kind}`}
 								role="tab"
 								type="button"
-								aria-label={kind === "segment" ? "学习片段" : "翻译"}
+								aria-label={kind === "segment" ? "学习片段" : "译文"}
 								aria-selected={tab === kind}
 								aria-controls={`${id}-${kind}-panel`}
 								onClick={() => changeTab(kind)}
@@ -468,11 +464,9 @@ export function ChapterRecords(props: Props) {
 										?.focus();
 								}}
 							>
-								{kind === "segment" ? "学习片段" : "翻译"}
+								{kind === "segment" ? "学习片段" : "译文"}
 								<span>
-									{kind === "segment"
-										? items.length
-										: `${translations.length} 处`}
+									{kind === "segment" ? items.length : translations.length}
 								</span>
 							</button>
 						))}
@@ -491,11 +485,11 @@ export function ChapterRecords(props: Props) {
 						<div>
 							<InlineError error={props.segmentsError} />
 							<button type="button" onClick={props.onRetrySegments}>
-								重试读取本章片段
+								重试
 							</button>
 						</div>
 					)}
-					{segmentsChecking && <p role="status">正在读取本章片段…</p>}
+					{segmentsChecking && <p role="status">正在加载本章片段…</p>}
 					<div hidden={hideSegments}>
 						<StudyPreview
 							{...props}
@@ -520,11 +514,11 @@ export function ChapterRecords(props: Props) {
 								<div>
 									<InlineError error={props.translationsError} />
 									<button type="button" onClick={props.onRetryTranslations}>
-										重试读取本章翻译
+										重试
 									</button>
 								</div>
 							)}
-							{translationsChecking && <p role="status">正在读取本章翻译…</p>}
+							{translationsChecking && <p role="status">正在加载本章译文…</p>}
 							<div hidden={hideTranslations}>
 								<TranslationPanel
 									key={selected.identity_sha256}
@@ -550,21 +544,23 @@ export function ChapterRecords(props: Props) {
 					) : (
 						<div className="reader-record-translations">
 							{props.translationsLoading && (
-								<p role="status">正在读取本章翻译…</p>
+								<p role="status">正在加载本章译文…</p>
 							)}
 							<InlineError error={props.translationsError} />
 							{props.translationsError && (
 								<button type="button" onClick={props.onRetryTranslations}>
-									重试读取本章翻译
+									重试
 								</button>
 							)}
 							{!props.translationsLoading &&
 								!props.translationsError &&
 								translations.length === 0 && (
-									<p>还没有留存的翻译。选择原文后点击翻译即可。</p>
+									<p>本章暂无译文记录。划选原文并点击「翻译」即可保存。</p>
 								)}
 							{props.unavailable > 0 && (
-								<p role="status">有 {props.unavailable} 处翻译暂时无法定位。</p>
+								<p role="status">
+									有 {props.unavailable} 条译文无法定位到当前正文。
+								</p>
 							)}
 							{translations.map((item) => (
 								<div
@@ -611,7 +607,7 @@ export function ChapterRecords(props: Props) {
 										)}
 										onRemoved={props.onTranslationRemoved}
 										hideTrigger={hideTranslationEntries}
-										label={`清除此处全部翻译：${item.excerpt}`}
+										label={`删除该处译文：${item.excerpt}`}
 									/>
 								</div>
 							))}

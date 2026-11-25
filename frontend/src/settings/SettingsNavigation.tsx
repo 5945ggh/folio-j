@@ -71,7 +71,7 @@ function SegmentReturnIdentity({ segmentId }: { segmentId: string }) {
 		? `来源：${sourceTitle}`
 		: segment.isError || source.isError
 			? "来源信息暂不可用"
-			: "正在读取来源…";
+			: "正在加载来源…";
 	const attribution = `${sourceLabel}${bookTitle ? ` · 《${bookTitle}》` : ""}`;
 	return (
 		<>

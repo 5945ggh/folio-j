@@ -34,11 +34,11 @@ export function ModelSetupDialog({ onClose }: { onClose: () => void }) {
 					restoreFocusId={restoreFocusIds}
 				>
 					<div className="settings-dialog-heading">
-						<h2 id="model-setup-title">配置模型与服务</h2>
+						<h2 id="model-setup-title">配置模型服务</h2>
 						<button
 							type="button"
 							className="settings-button secondary"
-							aria-label="关闭模型配置"
+							aria-label="关闭模型服务配置"
 							data-dialog-cancel
 							onClick={onClose}
 						>
@@ -46,7 +46,7 @@ export function ModelSetupDialog({ onClose }: { onClose: () => void }) {
 						</button>
 					</div>
 					<p className="settings-hint">
-						添加服务并登记模型，或启用已有模型。完成后返回讨论，选择本次使用的模型。
+						在模型服务中添加或启用模型，再返回对话选择。
 					</p>
 					{providers.isPending && <p role="status">正在加载模型服务…</p>}
 					{providers.isError && (
@@ -57,7 +57,7 @@ export function ModelSetupDialog({ onClose }: { onClose: () => void }) {
 								className="settings-button secondary"
 								onClick={() => void providers.refetch()}
 							>
-								重试模型服务
+								重试
 							</button>
 						</div>
 					)}
@@ -68,7 +68,7 @@ export function ModelSetupDialog({ onClose }: { onClose: () => void }) {
 							className="settings-button secondary"
 							onClick={onClose}
 						>
-							返回讨论
+							返回对话
 						</button>
 					</div>
 				</ConfirmDialog>

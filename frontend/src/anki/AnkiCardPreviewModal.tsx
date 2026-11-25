@@ -1,4 +1,5 @@
 import { ConfirmDialog } from "../Shared";
+import { FIELD_TYPE_LABELS } from "./AnkiMappingField";
 import type { BuiltinNoteType } from "./api";
 import type { AnkiMaterialContext } from "./context";
 import {
@@ -71,10 +72,10 @@ export function AnkiCardPreviewModal({
 					</h2>
 					<p>
 						{mode === "install"
-							? `当前 Anki 集合中缺少这个内置类型。创建后，将本次笔记发送到「${deckName || "所选卡组"}」。`
+							? `当前 Anki 用户缺少这个内置笔记类型。创建后，将把本次笔记发送到「${deckName || "所选卡组"}」。`
 							: builtinNoteType
-								? `内置样式预览 · 目标卡组：${deckName || "未选择"}`
-								: `待发送字段核对（自定义笔记类型：${noteTypeName}）`}
+								? `卡片模板预览 · 目标卡组：${deckName || "未选择"}`
+								: `待发送字段核对（笔记类型：${noteTypeName}）`}
 					</p>
 				</div>
 				<button
@@ -125,7 +126,7 @@ export function AnkiCardPreviewModal({
 									field.type === "text"
 										? getFieldText(draft, field, context) || "（空）"
 										: media
-											? `${media.name}（${field.type}）`
+											? `${media.name}（${FIELD_TYPE_LABELS[field.type]}）`
 											: "（未选择文件）";
 								return (
 									<div className="anki-field-table-row" key={field.id}>

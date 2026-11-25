@@ -32,11 +32,7 @@ export function ReplyProgress({
 				{replyProgressLabel(job, updateFailed, operation)}
 			</span>
 			{elapsed !== null && (
-				<span
-					className="chat-reply-elapsed"
-					aria-live="off"
-					title="从请求受理起计算，包含排队和审核等待时间"
-				>
+				<span className="chat-reply-elapsed" aria-live="off">
 					已用 {formatElapsed(elapsed)}
 				</span>
 			)}

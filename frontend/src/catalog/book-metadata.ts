@@ -9,12 +9,14 @@ export function normalizedBookTitle(title: string): string {
 }
 export function bookTitleError(title: string): string | null {
 	const length = Array.from(normalizedBookTitle(title)).length;
-	return length < 1 || length > 300 ? "书名须为 1–300 个字符。" : null;
+	if (length < 1) return "请输入书名。";
+	if (length > 300) return "书名不能超过 300 个字符。";
+	return null;
 }
 export function coverFileError(type: string, size: number): string | null {
 	if (type !== "image/png" && type !== "image/jpeg")
 		return "请选择 PNG 或 JPEG 图片。";
-	if (size > MAX_COVER_BYTES) return "封面不能超过 4 MiB。";
+	if (size > MAX_COVER_BYTES) return "封面大小不能超过 4 MB。";
 	if (!size) return "图片文件为空，请重新选择。";
 	return null;
 }

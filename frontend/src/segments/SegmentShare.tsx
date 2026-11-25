@@ -225,7 +225,7 @@ export function SegmentShare({
 					<span>内容预览</span>
 					<span>
 						{mode === "full" && hasContext
-							? "含前后文 · 引用块为当前片段"
+							? "含前后文 ·「>」标出当前片段"
 							: copyLabels[mode]}
 					</span>
 				</div>
@@ -240,23 +240,31 @@ export function SegmentShare({
 				</section>
 				{segment.material_provenance && origin.isError ? (
 					<p className="segment-share-origin-status" role="status">
-						材料出处读取失败，仍可复制已保存内容。
-						<button type="button" onClick={() => void origin.refetch()}>
+						出处信息加载失败，仍可复制已有内容。
+						<button
+							type="button"
+							aria-label="重试加载出处"
+							onClick={() => void origin.refetch()}
+						>
 							重试
 						</button>
 					</p>
 				) : null}
 				{!hasMaterialTitle && sourceQuery?.isError ? (
 					<p className="segment-share-origin-status" role="status">
-						来源信息读取失败，可重试或复制现有内容。
-						<button type="button" onClick={() => void sourceQuery.refetch()}>
-							重试来源
+						来源信息加载失败，仍可复制已有内容。
+						<button
+							type="button"
+							aria-label="重试加载来源"
+							onClick={() => void sourceQuery.refetch()}
+						>
+							重试
 						</button>
 					</p>
 				) : null}
 				<footer className="segment-share-footer">
 					<p className="segment-share-feedback" role="status">
-						{message || "复制后即可粘贴使用"}
+						{message}
 					</p>
 					<div className="segment-share-copy">
 						<button

@@ -17,7 +17,7 @@ export type VocabularyReaderTarget = {
 };
 const PARAM = "vocabulary";
 const failure = () =>
-	new Error("词汇原文位置已失效或无法校验，请返回词汇页重新选择。");
+	new Error("该词汇的原文位置已失效，请返回词汇页重新选择。");
 function valid(value: unknown): value is VocabularyReaderTarget {
 	if (!value || typeof value !== "object") return false;
 	const target = value as Record<string, unknown>;

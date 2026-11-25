@@ -147,7 +147,7 @@ function WordOccurrences({
 				{selected && (
 					<p lang="ja">
 						{selected.readings.join(" · ")}
-						{selected.readings.length > 0 ? "　" : ""}
+						{selected.readings.length > 0 && posLabels(selected) ? " · " : ""}
 						{posLabels(selected)}
 					</p>
 				)}
@@ -160,7 +160,7 @@ function WordOccurrences({
 			</header>
 			{result.isPending ? (
 				<p className="vocabulary-state" role="status">
-					正在读取出现位置…
+					正在加载出现位置…
 				</p>
 			) : result.isError ? (
 				<Retry error={result.error} retry={() => void result.refetch()} />
@@ -188,7 +188,7 @@ function WordOccurrences({
 							<li key={`${item.resource_id}:${item.start}:${item.end}`}>
 								<div className="vocabulary-occurrence-source">
 									<span>{result.data.offset + index + 1}</span>
-									<span>{item.chapter_title || "正文资源"}</span>
+									<span>{item.chapter_title || "未命名章节"}</span>
 								</div>
 								<p className="vocabulary-context" lang="ja">
 									{item.before}
@@ -200,7 +200,7 @@ function WordOccurrences({
 										{item.reading} ·{" "}
 										{item.parts_of_speech
 											.filter((part) => part !== "*")
-											.join("・")}
+											.join(" · ")}
 									</span>
 									{href ? (
 										<Link
@@ -217,7 +217,7 @@ function WordOccurrences({
 											查看原文 <span aria-hidden="true">↗</span>
 										</Link>
 									) : (
-										<span>此处暂无法定位到阅读页</span>
+										<span>暂无法定位原文</span>
 									)}
 								</div>
 							</li>
@@ -366,12 +366,12 @@ function VocabularyExplorer({
 			<div className="vocabulary-result-summary" role="status">
 				<span>
 					{vocabulary.isPending
-						? "正在读取词汇…"
+						? "正在加载词汇…"
 						: vocabulary.isError
 							? "词汇暂不可用"
-							: `${statisticCount(data?.total)} 种词${state.q || state.pos ? "符合筛选条件" : ""}`}
+							: `${state.q || state.pos ? "找到" : "共"} ${statisticCount(data?.total)} 种词`}
 					<span className="vocabulary-count-note">
-						{state.pos ? " · 次数仅统计所选词性" : " · 按词典形归并"}
+						{state.pos ? " · 次数仅统计所选词性" : " · 按词典形合并"}
 					</span>
 				</span>
 				{(state.q || state.pos) && (
@@ -393,7 +393,7 @@ function VocabularyExplorer({
 					</div>
 					<div className="vocabulary-list" ref={list}>
 						{vocabulary.isPending ? (
-							<p className="vocabulary-state">正在读取词汇…</p>
+							<p className="vocabulary-state">正在加载词汇…</p>
 						) : vocabulary.isError ? (
 							<Retry
 								error={vocabulary.error}
@@ -401,14 +401,14 @@ function VocabularyExplorer({
 							/>
 						) : data?.status === "unavailable" ? (
 							<p className="vocabulary-state">
-								词汇尚未准备，完成文本分析后会自动显示。
+								词汇尚未就绪，打开阅读后将自动分析并显示。
 							</p>
 						) : data?.items.length === 0 ? (
 							<div className="vocabulary-state">
 								<p>
 									{state.q || state.pos
-										? "没有符合条件的词汇。试试其他词形、读音或词性。"
-										: "当前材料没有可计入的词汇。"}
+										? "没有符合条件的词汇，试试其他词形、读音或词性。"
+										: "本书暂无可统计的词汇。"}
 								</p>
 								{state.page > 1 && (
 									<button
@@ -471,8 +471,8 @@ function VocabularyExplorer({
 				) : (
 					<aside className="vocabulary-empty-detail">
 						<span aria-hidden="true">文</span>
-						<h2>在原文中理解词汇</h2>
-						<p>选择一个词，查看它的实际词形、上下文与出现位置。</p>
+						<h2>查看原文用例</h2>
+						<p>选择一个词，查看它的前后文和出现位置。</p>
 					</aside>
 				)}
 			</div>
@@ -496,7 +496,7 @@ function VocabularyContent({
 	if (analysis.isPending)
 		return (
 			<p className="vocabulary-state" role="status">
-				正在读取文本分析…
+				正在加载词汇…
 			</p>
 		);
 	if (analysis.isError)
@@ -506,9 +506,9 @@ function VocabularyContent({
 	if (!analysis.data.generation_id)
 		return (
 			<div className="vocabulary-state">
-				<h2>词汇尚未准备</h2>
+				<h2>词汇尚未就绪</h2>
 				<p>
-					完成文本分析后，词汇会在这里自动显示。已有书籍可以进入阅读以准备注音与分词。
+					进入本书阅读页后，系统会自动完成分词与注音，随后词汇表会显示在这里。
 				</p>
 				<Link
 					className="book-details-action"
@@ -560,15 +560,14 @@ function MaterialVocabulary({ id }: { id: string }) {
 			<div className="vocabulary-page-heading">
 				<div>
 					<p className="vocabulary-material-title">
-						{details.data?.title || "材料词汇"}
+						{details.data?.title || "书籍词汇"}
 					</p>
 					<h1>词汇</h1>
 				</div>
-				<p>从出现频率到具体语境</p>
 			</div>
 			{details.isPending ? (
 				<p className="vocabulary-state" role="status">
-					正在读取材料信息…
+					正在加载书籍信息…
 				</p>
 			) : details.isError ? (
 				<Retry error={details.error} retry={() => void details.refetch()} />
@@ -579,15 +578,12 @@ function MaterialVocabulary({ id }: { id: string }) {
 				/>
 			)}
 			<details className="vocabulary-rules">
-				<summary>词汇范围与计数方式</summary>
+				<summary>词汇说明</summary>
 				<p>
-					范围为全部可提取正文，包括目录和后记。同一正文资源重复呈现只计一次；出现位置优先定位到第一个可完整显示该词的位置。
+					统计范围涵盖全书正文（含目录与后记），按词典形合并计数（无词典形时按原文计），包含助词、助动词与数字，排除空白和标点。
 				</p>
 				<p>
-					按词典形归并，缺失时使用原文词形。保留助词、助动词、数字和未登录词，排除空白、标点和零跨度记录。词性筛选后重新计算次数；搜索词形或读音会显示命中词在所选词性下的全部出现。
-				</p>
-				<p>
-					读音来自原文中的实际切分结果，同一词可以有多种读音和词性。结果随文本分析更新。
+					按词性筛选时仅统计对应词性的出现次数；同一词在原文中可能对应多种读音和词性。
 				</p>
 			</details>
 		</Shell>

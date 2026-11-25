@@ -310,7 +310,7 @@ export async function appTheme(h: BrowserHarness, preview = false) {
 				"Preview page must finish loading",
 			);
 			if (params.get("panel") === "import") {
-				find<HTMLButtonElement>('button[aria-label="添加书籍"]').click();
+				find<HTMLButtonElement>('button[aria-label="导入书籍"]').click();
 				await h.until(
 					() => !!h.container.querySelector(".import-dialog[open]"),
 					"Preview import dialog must open",
@@ -441,7 +441,7 @@ export async function appTheme(h: BrowserHarness, preview = false) {
 			}
 
 			layout(".library-toolbar");
-			find<HTMLButtonElement>('button[aria-label="添加书籍"]').click();
+			find<HTMLButtonElement>('button[aria-label="导入书籍"]').click();
 			await h.until(
 				() => !!h.container.querySelector(".import-dialog[open]"),
 				"Real catalog import dialog must open",

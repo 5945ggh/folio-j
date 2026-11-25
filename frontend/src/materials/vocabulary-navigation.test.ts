@@ -112,7 +112,7 @@ test("present but malformed or ambiguous targets fail instead of resuming", () =
 		`${search}&segment=saved`,
 		`?vocabulary=${encodeURIComponent(JSON.stringify({ ...target(), start: 1.5 }))}`,
 	])
-		assert.throws(() => readVocabularyReaderTarget(query), /无法校验/);
+		assert.throws(() => readVocabularyReaderTarget(query), /已失效/);
 });
 test("changed material, version, resource, spine, ranges and exact snapshot fail closed", () => {
 	for (const patch of [
@@ -134,7 +134,7 @@ test("changed material, version, resource, spine, ranges and exact snapshot fail
 					book,
 					chapter,
 				),
-			/无法校验/,
+			/已失效/,
 		);
 	assert.throws(() =>
 		validateVocabularyReaderTarget(target(), book, {

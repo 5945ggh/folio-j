@@ -214,10 +214,7 @@ export class ReaderNavigation {
 						this.origin = null;
 						this.originProgress = null;
 						this.originRevision++;
-					} else
-						this.error = new Error(
-							"无法返回跳转前的位置，已保留返回点，请重试。",
-						);
+					} else this.error = new Error("未能返回原位置，请重试。");
 				}
 			}
 			surface.stable = true;
@@ -253,7 +250,7 @@ export class ReaderNavigation {
 						? this.origin
 						: null;
 			if (explicit && explicit.version_id !== context.versionId)
-				throw new Error("原位置版本已不可用。");
+				throw new Error("本书版本已更新，原位置已失效。");
 			const id =
 				explicit?.chapter_id ??
 				(intent.type === "chapter"
@@ -264,9 +261,8 @@ export class ReaderNavigation {
 			const active = this.context;
 			if (!active) return false;
 			if (data.version_id !== active.versionId)
-				throw new Error("原位置版本已不可用。");
-			if (data.id !== id)
-				throw new Error("无法定位到原文位置，请重新打开目录或重试。");
+				throw new Error("本书版本已更新，原位置已失效。");
+			if (data.id !== id) throw new Error("无法定位到该位置，请重试。");
 			const draft: NavigationDraft = explicit
 				? {
 						target: { ...explicit, settings: active.settings },
@@ -286,7 +282,7 @@ export class ReaderNavigation {
 					);
 			const target = draft.target;
 			if (target.version_id !== active.versionId)
-				throw new Error("原位置版本已不可用。");
+				throw new Error("本书版本已更新，原位置已失效。");
 			const part = data.parts[target.part_index];
 			if (
 				target.chapter_id !== data.id ||
@@ -298,7 +294,7 @@ export class ReaderNavigation {
 				(target.kind === "image" &&
 					!part.html.includes(`data-epub-image="${target.image_id}"`))
 			)
-				throw new Error("无法定位到原文位置，请重新打开目录或重试。");
+				throw new Error("无法定位到该位置，请重试。");
 			const destination: ReaderNavigationDestination = {
 				...draft,
 				chapter: data,

@@ -95,11 +95,13 @@ export function ImportDialog({
 			restoreFocusId={restoreFocusIds}
 		>
 			<header className="import-dialog-heading">
-				<h2 id="import-title">{newSource ? "新建来源" : "添加书籍"}</h2>
+				<h2 id="import-title">{newSource ? "新建来源" : "导入书籍"}</h2>
 				<p>
 					{newSource
-						? "填写来源信息，创建后继续添加书籍。"
-						: "选择一本 EPUB，并设置所属来源。"}
+						? "填写来源信息，创建后继续导入书籍。"
+						: sourceId
+							? "选择要导入的 EPUB 文件。"
+							: "选择 EPUB 文件，并设置所属来源。"}
 				</p>
 			</header>
 			<div className="import-view" hidden={newSource}>
@@ -123,7 +125,7 @@ export function ImportDialog({
 							</span>
 							<span className="import-file-copy">
 								<strong>{file?.name ?? "选择 EPUB 文件"}</strong>
-								<span>{file ? "EPUB 电子书" : "每次导入一本书籍"}</span>
+								<span>{file ? "EPUB 电子书" : "每次导入一本书"}</span>
 							</span>
 							<span className="import-file-action">
 								{file ? "更换" : "选择文件"}
@@ -148,7 +150,7 @@ export function ImportDialog({
 										id={`${sourceSelectId}-empty-note`}
 										className="import-source-empty-note"
 									>
-										还没有来源，创建后继续添加书籍。
+										还没有来源，创建后继续导入书籍。
 									</span>
 								</span>
 							</button>
@@ -226,7 +228,7 @@ export function ImportDialog({
 						pending={create.isPending}
 						error={create.error}
 						submitLabel="创建来源"
-						cancelLabel="返回添加书籍"
+						cancelLabel="返回导入书籍"
 					/>
 				</div>
 			)}

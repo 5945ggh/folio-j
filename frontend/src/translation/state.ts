@@ -66,9 +66,13 @@ export function translationVersionShortcut(
 	results: readonly { id: string }[],
 	currentId: string | undefined,
 	returnId: string | null,
-): { id: string; label: "上一版" | "返回新版" } | null {
-	if (returnId && returnId !== currentId)
-		return { id: returnId, label: "返回新版" };
+): { id: string; label: "上一版" | "返回新版" | "返回刚才查看的版本" } | null {
+	if (returnId && returnId !== currentId) {
+		return {
+			id: returnId,
+			label: results[0]?.id === returnId ? "返回新版" : "返回刚才查看的版本",
+		};
+	}
 	const index = results.findIndex((result) => result.id === currentId);
 	const previous = index < 0 ? undefined : results[index + 1];
 	return previous ? { id: previous.id, label: "上一版" } : null;

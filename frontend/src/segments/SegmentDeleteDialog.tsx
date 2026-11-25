@@ -33,7 +33,7 @@ export function SegmentDeleteDialog({
 	const remove = useMutation({
 		mutationFn: async () => {
 			if (!shownImpact || shownImpact.segment_id !== segment.id)
-				throw new Error("无法核对目标片段，请重新读取删除影响范围。");
+				throw new Error("未能确认要删除的片段，请刷新后重试。");
 			const { error, response } = await api.DELETE(
 				"/api/segments/{segment_id}",
 				{ params: { path: { segment_id: segment.id } } },
@@ -66,15 +66,15 @@ export function SegmentDeleteDialog({
 			</blockquote>
 			{shownImpact ? (
 				<p>
-					这会一并删除 {shownImpact.analysis_count} 份讲解（包含全部修订）、{" "}
-					{shownImpact.thread_count} 条讨论和 {shownImpact.message_count}{" "}
-					条消息。
-					{shownImpact.active_job_count > 0 &&
-						`其中 ${shownImpact.active_job_count} 个进行中的任务会被中断。`}
-					来源、原材料及其他片段保留。删除后无法从页面恢复。
+					将一并删除 {shownImpact.analysis_count} 份讲解（含历史版本）、
+					{shownImpact.thread_count} 段对话和 {shownImpact.message_count} 条消息
+					{shownImpact.active_job_count > 0
+						? `，并停止 ${shownImpact.active_job_count} 个对话任务`
+						: ""}
+					。所属来源、原书及其他片段不受影响。此操作无法撤销。
 				</p>
 			) : impact.isPending ? (
-				<p role="status">正在读取当前影响范围…</p>
+				<p role="status">正在统计关联内容…</p>
 			) : null}
 			{impact.isError && (
 				<>
@@ -84,7 +84,7 @@ export function SegmentDeleteDialog({
 						disabled={remove.isPending}
 						onClick={() => void impact.refetch()}
 					>
-						重试读取影响范围
+						重试
 					</button>
 				</>
 			)}

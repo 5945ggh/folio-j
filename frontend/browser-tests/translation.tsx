@@ -361,7 +361,7 @@ export async function translationRegression(h: BrowserHarness) {
 			"StrictMode/reopen repeated automatic generation",
 		);
 		check(
-			!container.textContent?.includes("历史译文（本页 0）"),
+			!container.textContent?.includes("历史译文"),
 			"Empty history should not clutter card",
 		);
 	} finally {
@@ -528,14 +528,18 @@ export async function translationRegression(h: BrowserHarness) {
 					Response.json({ detail: "响应丢失" }, { status: 500 }),
 				);
 				await until(
-					() => container.textContent?.includes("提交响应尚未核实") ?? false,
+					() =>
+						container.textContent?.includes("暂未确认翻译请求是否发送成功") ??
+						false,
 					"Late uncertain response must reach remounted A",
 				);
 				click("目标 B");
 				await new Promise((resolve) => setTimeout(resolve, 20));
 				click("目标 A");
 				await until(
-					() => container.textContent?.includes("提交响应尚未核实") ?? false,
+					() =>
+						container.textContent?.includes("暂未确认翻译请求是否发送成功") ??
+						false,
 					"Unknown identity must survive another target remount",
 				);
 				check(
@@ -543,7 +547,7 @@ export async function translationRegression(h: BrowserHarness) {
 					"Unknown submission retried without explicit verification",
 				);
 				verificationOnly = true;
-				click("核实原提交");
+				click("重试确认");
 				await until(
 					() => requests.length === 3,
 					"Original A request should be verified explicitly",
@@ -931,7 +935,7 @@ export async function translationRegression(h: BrowserHarness) {
 			const revision = writeCount() === 1 ? savedRevision : ++savedRevision;
 			if (writeCount() === 3) await modelSave;
 			return writeCount() === 1
-				? Response.json({ detail: "翻译设置已更新" }, { status: 409 })
+				? Response.json({ detail: "翻译设置已更新。" }, { status: 409 })
 				: Response.json({ ...newer, ...body, revision });
 		}
 		throw new Error(
@@ -953,7 +957,7 @@ export async function translationRegression(h: BrowserHarness) {
 			"Single default should not expose scheme naming",
 		);
 		await until(
-			() => container.textContent?.includes("选用当前讨论模型") ?? false,
+			() => container.textContent?.includes("选用当前对话模型") ?? false,
 			"Available discussion model shortcut should show",
 		);
 		check(
@@ -963,7 +967,7 @@ export async function translationRegression(h: BrowserHarness) {
 			"Model option must identify provider",
 		);
 		const language = [...container.querySelectorAll("label")]
-			.find((label) => label.textContent?.includes("译成"))
+			.find((label) => label.textContent?.includes("目标语言"))
 			?.querySelector<HTMLInputElement>("input");
 		check(language, "Language input exists");
 		const budget = container.querySelector<HTMLInputElement>(
@@ -982,7 +986,9 @@ export async function translationRegression(h: BrowserHarness) {
 		);
 		language.blur();
 		await until(
-			() => container.textContent?.includes("你的修改仍保留在这里") ?? false,
+			() =>
+				container.querySelector(".translation-conflict [role=alert]")
+					?.textContent === "翻译设置已更新。你的修改仍保留在这里。",
 			"409 should retain draft and require comparison",
 		);
 		check(language.value === "英语", "409 replaced local settings draft");
@@ -1031,13 +1037,13 @@ export async function translationRegression(h: BrowserHarness) {
 			writes[1]?.name === "保留的方案名称",
 			"Hidden scheme name must remain stored",
 		);
-		click("选用当前讨论模型");
+		click("选用当前对话模型");
 		await until(
 			() => writes[2]?.model_id === "chat",
 			"Choosing the discussion model saves immediately",
 		);
 		check(
-			!container.textContent?.includes("选用当前讨论模型"),
+			!container.textContent?.includes("选用当前对话模型"),
 			"Hide the shortcut when the models match",
 		);
 		budget.focus();

@@ -160,7 +160,7 @@ export async function explanationPromptCopy(h: BrowserHarness) {
 			text?.readOnly && text.value === copied[0],
 			"Manual fallback must retain the exact prompt",
 		);
-		button("选择文本").click();
+		button("全选").click();
 		check(
 			text.selectionStart === 0 && text.selectionEnd === text.value.length,
 			"Select text must select the complete prompt for keyboard and touch copying",
@@ -204,7 +204,7 @@ export async function explanationPromptCopy(h: BrowserHarness) {
 		readMode = "error";
 		await chooseCopy();
 		await until(
-			() => container.textContent?.includes("讲解提示词读取失败") === true,
+			() => container.textContent?.includes("获取讲解提示词失败") === true,
 			"Reading failure must remain distinct from clipboard failure",
 		);
 		check(
@@ -212,7 +212,7 @@ export async function explanationPromptCopy(h: BrowserHarness) {
 			"A failed read must not offer an old prompt",
 		);
 		readMode = "normal";
-		button("重试读取并复制").click();
+		button("重试").click();
 		await until(
 			() => Number(copied.length) === 3,
 			"Read retry must finish copying without another menu choice",

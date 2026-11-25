@@ -27,14 +27,14 @@ async function changeDictionary(action: DictionaryAction): Promise<{
 }> {
 	if (action.kind === "delete") {
 		const library = await deleteDictionary(action.id, action.replacementId);
-		return { library, notice: `已删除《${action.title}》的本机安装。` };
+		return { library, notice: `已删除离线词典《${action.title}》` };
 	}
 	if (action.kind === "select") {
 		const library = await selectDictionary(action.id);
 		const chosen = library.dictionaries.find(
 			(item) => item.dictionary_id === library.active_dictionary_id,
 		);
-		return { library, notice: `已切换到《${chosen?.title ?? "所选词典"}》。` };
+		return { library, notice: `已切换到《${chosen?.title ?? "所选词典"}》` };
 	}
 	const result = await installDictionary(action.file);
 	const installed = result.library.dictionaries.find(
@@ -42,10 +42,10 @@ async function changeDictionary(action: DictionaryAction): Promise<{
 	);
 	const title = installed?.title ?? action.file.name;
 	const notice = result.already_installed
-		? `已核对《${title}》的本机索引。`
+		? `《${title}》已导入`
 		: result.library.active_dictionary_id === result.dictionary_id
-			? `已导入《${title}》，阅读时将使用这本词典。`
-			: `已导入《${title}》。`;
+			? `已导入《${title}》，阅读时将使用这本词典`
+			: `已导入《${title}》`;
 	return {
 		library: result.library,
 		notice,
@@ -218,15 +218,15 @@ export function DictionarySettings() {
 		</button>
 	);
 	return (
-		<section className="dictionary-settings" aria-label="查词词典">
+		<section className="dictionary-settings" aria-label="离线词典">
 			<div className="settings-page-head">
-				<h2>词典</h2>
-				<p>选择阅读时使用的词典，适用于所有书籍。</p>
+				<h2>离线词典</h2>
+				<p>选择阅读时使用的离线词典，对所有素材生效。</p>
 			</div>
 			{!!items?.length && (
 				<div className="settings-section-heading">
 					<h3 id="installed-dictionaries">
-						已安装词典<span className="dictionary-count">{items.length}</span>
+						已导入词典<span className="dictionary-count">{items.length}</span>
 					</h3>
 					{importButton}
 				</div>
@@ -246,7 +246,7 @@ export function DictionarySettings() {
 			/>
 			{library.isPending && (
 				<p role="status" className="settings-loading">
-					正在读取已安装词典…
+					正在加载离线词典…
 				</p>
 			)}
 			{library.isError && (
@@ -257,7 +257,7 @@ export function DictionarySettings() {
 						type="button"
 						onClick={() => void library.refetch()}
 					>
-						重试读取
+						重试
 					</button>
 				</div>
 			)}
@@ -280,7 +280,7 @@ export function DictionarySettings() {
 										<span className="dictionary-details">
 											<strong>{item.title}</strong>
 											<small id={`dictionary-meta-${item.dictionary_id}`}>
-												{item.entry_count.toLocaleString("zh-CN")} 条记录
+												{item.entry_count.toLocaleString("zh-CN")} 个词条
 												{item.revision && <> · 版本 {item.revision}</>}
 											</small>
 										</span>
@@ -319,13 +319,11 @@ export function DictionarySettings() {
 				) : (
 					<div className="dictionary-empty settings-group">
 						<DictionaryGlyph />
-						<strong>还没有安装词典</strong>
-						<p>导入词典，在基础词卡中查看释义与例句。</p>
+						<strong>还没有导入离线词典</strong>
+						<p>导入离线词典，查词时即可查看释义与例句。</p>
 						{importButton}
 						<p className="dictionary-format">
-							支持 Yomitan format 3 词条词典
-							<br />
-							ZIP 文件，最大 256 MiB
+							支持 Yomitan 第 3 版词条词典（.zip，不超过 256 MB）
 						</p>
 					</div>
 				))}
@@ -357,8 +355,8 @@ export function DictionarySettings() {
 			)}
 			{!!items?.length && (
 				<p className="settings-hint dictionary-format">
-					支持 Yomitan format 3 词条词典（.zip，最大 256
-					MiB）。第一本自动使用，以后导入的词典可在这里切换。
+					支持 Yomitan 第 3 版词条词典（.zip，不超过 256
+					MB），导入后可在此切换。
 				</p>
 			)}
 			{deleting && (
@@ -374,7 +372,7 @@ export function DictionarySettings() {
 					}}
 				>
 					<h2 id="dictionary-delete-title">删除《{deleting.title}》？</h2>
-					<p>将删除这本词典在本机的安装，之后可以重新导入。</p>
+					<p>将删除这本离线词典，之后可随时重新导入。</p>
 					{needsReplacement ? (
 						<label className="dictionary-replacement">
 							删除后使用的词典
@@ -394,7 +392,7 @@ export function DictionarySettings() {
 							</NativeSelect>
 						</label>
 					) : replacements.length === 0 ? (
-						<p>删除最后一本词典后，即时查词仍可显示基础词卡。</p>
+						<p>删除最后一本词典后，查词将仅显示读音与词形。</p>
 					) : null}
 					{change.isError && change.variables.kind === "delete" && (
 						<>

@@ -25,10 +25,10 @@ export function checkTranslationResultActions(
 		".device-speech > button",
 	);
 	const regenerate = actions.querySelector<HTMLButtonElement>(
-		'[aria-label="重新翻译"], [aria-label="停止翻译"], [aria-label="核实原提交"]',
+		'[aria-label="重新翻译"], [aria-label="停止翻译"], [aria-label="重试确认"]',
 	);
 	const remove = actions.querySelector<HTMLButtonElement>(
-		'[aria-label="清除此处全部翻译"]',
+		'[aria-label="删除该处翻译记录"]',
 	);
 	check(
 		speech && regenerate && remove,
@@ -38,7 +38,7 @@ export function checkTranslationResultActions(
 		speech.textContent?.trim() &&
 			regenerate.textContent?.trim() ===
 				regenerate.getAttribute("aria-label") &&
-			remove.textContent?.trim() === "清除此处全部翻译" &&
+			remove.textContent?.trim() === "删除该处翻译记录" &&
 			!!remove.closest(".translation-more"),
 		"Speech and translation have visible labels; target clearing is labelled inside the more-actions disclosure",
 	);

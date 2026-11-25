@@ -18,6 +18,7 @@ const labels: Record<string, string> = {
 	running: "执行中",
 	succeeded: "成功",
 	failed: "失败",
+	cancelled: "已取消",
 	interrupted: "已中断",
 };
 const PAGE_SIZE = 10;
@@ -129,7 +130,7 @@ export function RunHistory({
 									changeFilter(() => pickProvider(event.target.value))
 								}
 							>
-								<option value="">全部服务（含已删除）</option>
+								<option value="">全部服务</option>
 								{providers.map((provider) => (
 									<option key={provider.id} value={provider.id}>
 										{provider.name}
@@ -150,7 +151,7 @@ export function RunHistory({
 								changeFilter(() => setSelectedModel(event.target.value))
 							}
 						>
-							<option value="">全部模型（含已删除）</option>
+							<option value="">全部模型</option>
 							{modelOptions.map((model) => (
 								<option key={model.id} value={model.id}>
 									{!filters.provider_id
@@ -161,7 +162,7 @@ export function RunHistory({
 							))}
 							{selectedModel &&
 								!modelOptions.some((model) => model.id === selectedModel) && (
-									<option value={selectedModel}>已删除模型登记</option>
+									<option value={selectedModel}>已删除模型</option>
 								)}
 						</NativeSelect>
 					</label>
@@ -246,7 +247,7 @@ export function RunHistory({
 									})
 								}
 							>
-								清除筛选
+								清空筛选
 							</button>
 						</>
 					) : page > 0 ? (
@@ -333,7 +334,7 @@ export function RunDetail({ id }: { id: string }) {
 				? 1000
 				: false,
 	});
-	if (run.isPending) return <p className="loading">正在读取详情…</p>;
+	if (run.isPending) return <p className="loading">正在加载详情…</p>;
 	if (run.isError)
 		return (
 			<div className="run-detail">
@@ -367,11 +368,13 @@ export function RunDetail({ id }: { id: string }) {
 				<p>
 					{item.status === "succeeded"
 						? "本次验证未返回正文。"
-						: `${labels[item.status]}，结果会自动更新。`}
+						: item.status === "cancelled"
+							? "本次验证已取消。"
+							: `${labels[item.status] ?? item.status}，结果会自动更新。`}
 				</p>
 			)}
 			<details className="history-call-detail">
-				<summary>调用详情</summary>
+				<summary>技术信息</summary>
 				<dl>
 					<dt>协议</dt>
 					<dd>
@@ -385,9 +388,21 @@ export function RunDetail({ id }: { id: string }) {
 					<dd>{item.prompt_version}</dd>
 					<dt>用量</dt>
 					<dd>
-						{item.usage
-							? `输入 ${item.usage.input_tokens ?? "未知"} · 输出 ${item.usage.output_tokens ?? "未知"} · 合计 ${item.usage.total_tokens ?? "未知"} token`
-							: "未提供"}
+						{(() => {
+							if (!item.usage) return "未提供";
+							const parts = [
+								item.usage.input_tokens != null
+									? `输入 ${item.usage.input_tokens}`
+									: null,
+								item.usage.output_tokens != null
+									? `输出 ${item.usage.output_tokens}`
+									: null,
+								item.usage.total_tokens != null
+									? `合计 ${item.usage.total_tokens}`
+									: null,
+							].filter(Boolean);
+							return parts.length ? `${parts.join(" · ")} token` : "未提供";
+						})()}
 					</dd>
 				</dl>
 			</details>

@@ -157,9 +157,7 @@ export async function overviewImportRegression(
 	const dialog = () =>
 		container.querySelector<HTMLDialogElement>(".import-dialog[open]");
 	async function start(filename: string) {
-		action(
-			container.querySelector(".source-welcome") ? "导入素材" : "导入书籍",
-		).click();
+		action("导入书籍").click();
 		await until(() => !!dialog(), "Overview import dialog must open");
 		// The modal opens before its independent sources query necessarily settles.
 		// A controlled native select has no value until the matching option exists.

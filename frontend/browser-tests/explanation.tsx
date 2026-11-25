@@ -43,6 +43,14 @@ async function runExplanation(
 					: settings,
 			);
 		if (path === "/api/providers") return Response.json([provider]);
+		if (path === "/api/dictionary" && request.method === "GET")
+			return Response.json({
+				ready: false,
+				dictionary_id: null,
+				title: null,
+				revision: null,
+				entry_count: 0,
+			});
 		if (path === "/api/chat/explanation-prompt") {
 			promptReads++;
 			return Response.json({ question });
@@ -172,9 +180,9 @@ async function runExplanation(
 			return Response.json(jobs.get(path.split("/").at(-1) ?? ""));
 		throw new Error(`Unexpected explanation request ${request.method} ${path}`);
 	});
-	const action = (label: string) => {
+	const action = (label: string, scope: ParentNode = container) => {
 		const button = [
-			...container.querySelectorAll<HTMLButtonElement>("button"),
+			...scope.querySelectorAll<HTMLButtonElement>("button"),
 		].find(
 			(item) =>
 				item.textContent?.trim() === label ||
@@ -224,7 +232,7 @@ async function runExplanation(
 				() => !!container.querySelector(".segment-create-menu:popover-open"),
 				"Creation menu must open",
 			);
-			action("创建 AI 讲解").click();
+			action("生成 AI 讲解").click();
 			if (mode === "choose" && index === 1) {
 				await until(
 					() => !!container.querySelector("#explanation-model"),
@@ -241,9 +249,9 @@ async function runExplanation(
 					container.querySelector(".chat-first-generation h3")?.textContent ===
 						"创建 AI 讲解" &&
 						container.textContent?.includes(
-							"选择模型后，在新对话中创建并保存一份独立讲解。",
+							"选择模型后，将在新对话中生成并保存一份讲解。",
 						),
-					"Model choice must explain creation and saving with the same action title",
+					"Model choice must explain creation and saving before sending",
 				);
 				selector.value = "model";
 				selector.dispatchEvent(new Event("change", { bubbles: true }));
@@ -324,13 +332,13 @@ async function runExplanation(
 				() => !!container.querySelector(".segment-create-menu:popover-open"),
 				"Rapid explanation menu must open",
 			);
-			action("创建 AI 讲解").click();
+			action("生成 AI 讲解").click();
 			await until(
 				() => creations.length === index,
 				"Both rapid clicks must begin fresh thread creation",
 			);
 			check(
-				container.textContent?.includes("正在准备新的讲解对话…") &&
+				container.textContent?.includes("正在准备 AI 讲解…") &&
 					!container.querySelector("#explanation-model"),
 				"Accepted shortcut preparation must show its actual phase without an actionable model selector",
 			);
@@ -373,7 +381,7 @@ async function runExplanation(
 			() => !!container.querySelector(".segment-create-menu:popover-open"),
 			"Failure scenario menu must open",
 		);
-		action("创建 AI 讲解").click();
+		action("生成 AI 讲解").click();
 		await until(
 			() => container.textContent?.includes("快捷问题离线拒绝") === true,
 			"Definite ordinary submission rejection must be visible",
@@ -453,7 +461,7 @@ async function runExplanation(
 				() => !!container.querySelector(".segment-create-menu:popover-open"),
 				"Concurrent recovery menu must open",
 			);
-			action("创建 AI 讲解").click();
+			action("生成 AI 讲解").click();
 			await until(
 				() => creations.length === creationsBeforeLoss + index,
 				"Both recovery intents must create separate threads",
@@ -476,7 +484,14 @@ async function runExplanation(
 		check(lostRequest, "Missing frozen failed creation request");
 		const lostThread = createdByRequest.get(lostRequest.request_id);
 		check(lostThread, "The lost response must leave a persisted thread");
-		action("重试新建讲解对话").click();
+		const failure = [
+			...container.querySelectorAll(".workbench .state-card"),
+		].find((node) => node.textContent?.includes("并发创建响应丢失"));
+		check(
+			failure,
+			"The failed explanation attempt must retain its own controls",
+		);
+		action("重试", failure).click();
 		await until(
 			() => submissions.length === submissionsBeforeLoss + 2,
 			"Retry must finish the earlier intent with its original identity",

@@ -77,7 +77,7 @@ test("copy labels separate exact target, local context, and optional source", ()
 	assert.deepEqual(
 		buildContextCopy(book, selected, DEFAULT_CONTEXT_COPY, " 本 "),
 		{
-			text: "出处：《本》／第一章\n\n目标原文：\n 𠮷が\n学ぶ \n\n\n前文：\n前々。前。\n\n后文：\n後。遠後。",
+			text: "出处：《本》 / 第一章\n\n原文：\n 𠮷が\n学ぶ \n\n\n前文：\n前々。前。\n\n后文：\n後。遠後。",
 			beforeTruncated: false,
 			afterTruncated: false,
 		},
@@ -94,10 +94,10 @@ test("copy labels separate exact target, local context, and optional source", ()
 			},
 			"本",
 		).text,
-		"目标原文：\n 𠮷が\n学ぶ \n",
+		"原文：\n 𠮷が\n学ぶ \n",
 	);
 	for (const [title, chapterTitle, source] of [
-		["《本》", " 第一章 ", "出处：《本》／第一章"],
+		["《本》", " 第一章 ", "出处：《本》 / 第一章"],
 		["", "第一章", "出处：第一章"],
 		["本", "", "出处：《本》"],
 		[" ", " ", ""],
@@ -109,7 +109,7 @@ test("copy labels separate exact target, local context, and optional source", ()
 				{ ...DEFAULT_CONTEXT_COPY, before_sentences: 0, after_sentences: 0 },
 				title ?? "",
 			).text,
-			`${source ? `${source}\n\n` : ""}目标原文：\n 𠮷が\n学ぶ \n`,
+			`${source ? `${source}\n\n` : ""}原文：\n 𠮷が\n学ぶ \n`,
 		);
 	}
 });
@@ -126,7 +126,7 @@ test("independent sentence and codepoint budgets annotate cuts outside original 
 		include_source: false,
 	};
 	assert.deepEqual(buildContextCopy(book, selected, preferences, "本"), {
-		text: "目标原文：\n学ぶ。\n\n前文（已截断）：\n。𠮷丙。\n\n后文（已截断）：\n後𠮷",
+		text: "原文：\n学ぶ。\n\n前文（已截断）：\n。𠮷丙。\n\n后文（已截断）：\n後𠮷",
 		beforeTruncated: true,
 		afterTruncated: true,
 	});
@@ -143,7 +143,7 @@ test("independent sentence and codepoint budgets annotate cuts outside original 
 		"本",
 	);
 	assert.deepEqual(whole, {
-		text: "目标原文：\n学ぶ。\n\n前文：\n𠮷丙。\n\n后文：\n後𠮷。",
+		text: "原文：\n学ぶ。\n\n前文：\n𠮷丙。\n\n后文：\n後𠮷。",
 		beforeTruncated: false,
 		afterTruncated: false,
 	});
@@ -171,7 +171,7 @@ test("chapter edges and whitespace-only sides omit empty context blocks", () => 
 		assert.deepEqual(
 			buildContextCopy(book, target(book, start, end), preferences, "本"),
 			{
-				text: "出处：《本》／第一章\n\n目标原文：\n学",
+				text: "出处：《本》 / 第一章\n\n原文：\n学",
 				beforeTruncated: false,
 				afterTruncated: false,
 			},
@@ -191,7 +191,7 @@ test("copy verifies reference identity even with all context budgets disabled", 
 	};
 	assert.equal(
 		buildContextCopy(book, selected, preferences, "本").text,
-		"目标原文：\n𠮷学",
+		"原文：\n𠮷学",
 	);
 	const range = selected.ranges[0];
 	assert.ok(range);
@@ -258,7 +258,7 @@ test("multi-resource targets normalize the verified exact text and leave all inp
 	freeze(selected);
 	freeze(preferences);
 	assert.deepEqual(buildContextCopy(book, selected, preferences, "本"), {
-		text: "出处：《本》／第一章\n\n目标原文：\nが𠮷\n\n前文：\n前。\n\n后文：\n学。",
+		text: "出处：《本》 / 第一章\n\n原文：\nが𠮷\n\n前文：\n前。\n\n后文：\n学。",
 		beforeTruncated: false,
 		afterTruncated: false,
 	});

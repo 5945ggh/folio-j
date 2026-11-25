@@ -11,6 +11,7 @@ import {
 	useState,
 } from "react";
 import { Link } from "react-router";
+import { trimTrailingPunctuation } from "../content";
 import { dictionaryKey, getDictionary } from "../dictionary/dictionary-api";
 import type { ChapterTranslation } from "../materials/chapter-translations-query";
 import type { ScreenAnchor } from "../materials/reader-study";
@@ -254,6 +255,9 @@ export function AnkiComposer({
 		AnkiDeckTarget | "choose" | null
 	>(null);
 	const catalog = catalogQuery.isError ? undefined : catalogQuery.data;
+	const connectionError = catalogQuery.isError
+		? trimTrailingPunctuation(catalogQuery.error.message)
+		: "";
 	const scope = catalog && JSON.stringify([catalog.endpoint, catalog.profile]);
 	const previousScope = useRef(scope);
 	const targetChanged = Boolean(
@@ -265,11 +269,16 @@ export function AnkiComposer({
 			setDeckOverride("choose");
 		previousScope.current = scope;
 	}, [scope]);
+	const selectedDeck =
+		targetChanged || deckOverride === "choose"
+			? null
+			: (deckOverride ?? activeConfig?.deck);
 	const effectiveDeck = useMemo(() => {
 		if (targetChanged || deckOverride === "choose") return null;
-		const selected = deckOverride ?? activeConfig?.deck;
-		if (selected)
-			return catalog ? resolveDeckInCatalog(selected, catalog) : selected;
+		if (selectedDeck)
+			return catalog
+				? resolveDeckInCatalog(selectedDeck, catalog)
+				: selectedDeck;
 		if (!catalog) return null;
 		const remembered = getRememberedDeck(catalog.endpoint, catalog.profile);
 		return (
@@ -282,7 +291,7 @@ export function AnkiComposer({
 				catalog,
 			)
 		);
-	}, [catalog, deckOverride, activeConfig, targetChanged]);
+	}, [catalog, deckOverride, selectedDeck, targetChanged]);
 
 	const builtinNoteType = findBuiltinNoteType(
 		builtinsQuery.data,
@@ -459,6 +468,16 @@ export function AnkiComposer({
 			: previewOpen
 				? "preview"
 				: null;
+	const fallbackNotice =
+		response?.status === "duplicate"
+			? "Anki 中存在相同首字段的笔记"
+			: response?.status === "unknown"
+				? "结果未确认，请先在 Anki 中查看。"
+				: "发送未完成，请检查目标和字段。";
+	const responseMessage = response?.message?.trim() ?? "";
+	const baseNoticeText = trimTrailingPunctuation(responseMessage)
+		? responseMessage
+		: fallbackNotice;
 	const notice: ExportNotice =
 		localNotice ??
 		(response && !["installation_required", "created"].includes(response.status)
@@ -468,14 +487,9 @@ export function AnkiComposer({
 							? "warn"
 							: "error",
 					allowDuplicate: response.status === "duplicate",
-					text:
-						(response.message ||
-							(response.status === "duplicate"
-								? "Anki 中存在相同首字段的笔记。"
-								: response.status === "unknown"
-									? "结果未确认，请先在 Anki 中查看。"
-									: "发送未完成，请检查目标和字段。")) +
-						(response.media_may_remain ? "（部分媒体可能已上传。）" : ""),
+					text: response.media_may_remain
+						? `${trimTrailingPunctuation(baseNoticeText)}（部分媒体文件可能已上传）。`
+						: baseNoticeText,
 				}
 			: null);
 	const { drag, narrow, singlePane, dualPane, positionStyle } = useAnkiPosition(
@@ -663,7 +677,7 @@ export function AnkiComposer({
 			setTargetExpanded(true);
 			setNotice({
 				tone: "error",
-				text: "当前配置尚未设置笔记类型，请前往编辑配置。",
+				text: "当前配置尚未设置笔记类型，请先在设置中完善配置。",
 			});
 			return;
 		}
@@ -671,7 +685,7 @@ export function AnkiComposer({
 			setTargetExpanded(true);
 			setNotice({
 				tone: "error",
-				text: "当前配置的笔记类型不适用于此集合，请在设置中重新选择。",
+				text: "当前配置的笔记类型不适用于此 Anki 用户，请在设置中重新选择。",
 			});
 			return;
 		}
@@ -818,7 +832,7 @@ export function AnkiComposer({
 						lang="ja"
 						className="anki-headword-input"
 						value={value}
-						placeholder="点击直接编辑词条或词典形"
+						placeholder="输入词条或词典形"
 						onFocus={() => setActiveRefFieldId(field.id)}
 						onChange={(event) => setFieldText(field, event.target.value)}
 					/>
@@ -866,7 +880,7 @@ export function AnkiComposer({
 						type="button"
 						className={isSentence ? "anki-quote-inline" : "anki-summary-inline"}
 						lang={isSentence ? "ja" : undefined}
-						title={isSentence ? "点击就地编辑原句" : value || "点击就地编辑"}
+						title={isSentence ? "点击编辑原句" : value || "点击编辑"}
 						ref={(el) => {
 							fieldRefs.current[field.id] = el;
 						}}
@@ -884,7 +898,7 @@ export function AnkiComposer({
 								{points.slice(focus.end).join("")}
 							</>
 						) : (
-							value || (isSentence ? "点击填写原句" : "（点击填写）")
+							value || (isSentence ? "点击填写原句" : "点击填写")
 						)}
 					</button>
 				</div>
@@ -1006,8 +1020,16 @@ export function AnkiComposer({
 		);
 	};
 
+	const deckStatus =
+		selectedDeck && (!catalog || !effectiveDeck)
+			? catalogQuery.isFetching
+				? "（正在加载）"
+				: catalog
+					? "（当前 Anki 中未找到）"
+					: "（未连接）"
+			: "";
 	const summaryText = activeConfig
-		? `${activeConfig.name} · ${effectiveDeck?.name || "未选卡组"}`
+		? `${activeConfig.name} · ${effectiveDeck?.name ?? selectedDeck?.name ?? "未选卡组"}${deckStatus}`
 		: "正在加载配置…";
 
 	return (
@@ -1147,11 +1169,11 @@ export function AnkiComposer({
 						inert={!draftVisible}
 					>
 						<div className="anki-composer-scroll">
-							{catalogQuery.isError && (
+							{catalogQuery.isError && !catalogQuery.isFetching && (
 								<div className="anki-banner" data-tone="error" role="status">
 									<span>
-										未连接 Anki（{catalogQuery.error.message}
-										），可先编辑草稿。
+										未连接 Anki{connectionError ? `（${connectionError}）` : ""}
+										，可先编辑草稿。
 									</span>
 									<span className="anki-banner-actions">
 										<button
@@ -1182,7 +1204,6 @@ export function AnkiComposer({
 								>
 									<span className="anki-target-summary-text">
 										{summaryText}
-										{!catalog && effectiveDeck ? "（待核验）" : ""}
 									</span>
 									<span className="anki-target-summary-action">
 										{targetExpanded ? "收起" : "更改"}
@@ -1192,7 +1213,7 @@ export function AnkiComposer({
 								{targetExpanded && (
 									<div className="anki-target-panel">
 										<div className="anki-target-row">
-											<label htmlFor="anki-composer-config">配置</label>
+											<label htmlFor="anki-composer-config">导出配置</label>
 											<NativeSelect
 												id="anki-composer-config"
 												className="anki-reader-select"
@@ -1208,16 +1229,14 @@ export function AnkiComposer({
 												{configOptions.map((item) => (
 													<option key={item.id} value={item.id}>
 														{item.name}
-														{item.isBuiltin ? "（预设）" : ""}
+														{item.isBuiltin ? "（系统预设）" : ""}
 													</option>
 												))}
 											</NativeSelect>
 										</div>
 
 										<div className="anki-target-row">
-											<label htmlFor="anki-composer-deck">
-												卡组（本次发送）
-											</label>
+											<label htmlFor="anki-composer-deck">目标卡组</label>
 											<NativeSelect
 												id="anki-composer-deck"
 												className="anki-reader-select"
@@ -1246,7 +1265,11 @@ export function AnkiComposer({
 												}}
 											>
 												<option value="">
-													{catalog ? "请选择卡组…" : "连接 Anki 后可选"}
+													{catalog
+														? "请选择卡组…"
+														: catalogQuery.isFetching
+															? "正在加载卡组…"
+															: "连接 Anki 后可选"}
 												</option>
 												{catalog?.decks.map((item) => (
 													<option key={item.id} value={item.id}>
@@ -1266,7 +1289,7 @@ export function AnkiComposer({
 												color: "var(--reader-muted)",
 											}}
 										>
-											<span>类型：{noteTypeDisplayName}</span>
+											<span>笔记类型：{noteTypeDisplayName}</span>
 											<Link
 												to={editConfigUrl}
 												state={settingsState}
@@ -1283,7 +1306,7 @@ export function AnkiComposer({
 
 							{(builtinsQuery.isPending || configsQuery.isPending) && (
 								<p className="anki-ref-meta" role="status">
-									正在准备字段…
+									正在加载配置…
 								</p>
 							)}
 
@@ -1305,7 +1328,7 @@ export function AnkiComposer({
 												disabled={submission.busy}
 												onClick={() => void submission.send("duplicate")}
 											>
-												仍作为新笔记发送
+												仍然发送
 											</button>
 										</span>
 									)}
@@ -1337,7 +1360,7 @@ export function AnkiComposer({
 								{submission.busy
 									? "发送中…"
 									: awaitingReadings
-										? "正在读取注音…"
+										? "正在加载注音…"
 										: "发送到 Anki"}
 							</button>
 						</footer>
@@ -1377,7 +1400,7 @@ export function AnkiComposer({
 					onClose={() => setConfirmDiscard(false)}
 				>
 					<h2 id="anki-discard-title">放弃本次制卡草稿？</h2>
-					<p>当前草稿包含已填写内容或附件，关闭后不会保存在 Folio-J 中。</p>
+					<p>当前草稿尚未发送，关闭后将不会保留。</p>
 					<div className="confirm-actions">
 						<button
 							type="button"
@@ -1394,7 +1417,7 @@ export function AnkiComposer({
 								onClose();
 							}}
 						>
-							放弃并关闭
+							放弃修改
 						</button>
 					</div>
 				</ConfirmDialog>

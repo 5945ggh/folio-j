@@ -164,13 +164,7 @@ export async function materialImport(
 				),
 			"Import entry must be available after route navigation",
 		);
-		action(
-			scoped
-				? "导入书籍"
-				: container.querySelector("#library-empty-import")
-					? "导入 EPUB"
-					: "添加书籍",
-		).click();
+		action("导入书籍").click();
 		await until(() => !!dialog(), "Import picker must open");
 		const picker =
 			dialog()?.querySelector<HTMLInputElement>('input[type="file"]');

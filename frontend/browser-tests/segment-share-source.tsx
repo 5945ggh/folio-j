@@ -181,7 +181,7 @@ export async function segmentShareSourceRegression(h: BrowserHarness) {
 					);
 					if (scenario === "dual-failure") {
 						await until(
-							() => /材料出处.*失败/.test(dialog.textContent ?? ""),
+							() => /出处信息加载失败/.test(dialog.textContent ?? ""),
 							"Both material and Source failures must be explained",
 						);
 						const reachable = async (node: HTMLElement, label: string) => {
@@ -258,13 +258,11 @@ export async function segmentShareSourceRegression(h: BrowserHarness) {
 							".segment-share-origin-status button",
 						))
 							await reachable(retry, "retry");
-						const materialRetry = [
-							...dialog.querySelectorAll<HTMLButtonElement>(
-								".segment-share-origin-status button",
-							),
-						].find((node) => !node.textContent?.includes("来源"));
+						const materialRetry = dialog.querySelector<HTMLButtonElement>(
+							'.segment-share-origin-status button[aria-label="重试加载出处"]',
+						);
 						check(
-							materialRetry,
+							materialRetry?.textContent?.trim() === "重试",
 							"Failed material provenance must offer its own retry",
 						);
 						materialRetry.click();
@@ -283,10 +281,13 @@ export async function segmentShareSourceRegression(h: BrowserHarness) {
 						writes.at(-1)?.includes("手填出处"),
 						"Failed Source fallback must retain the handwritten source reference",
 					);
-					const retry = [
-						...dialog.querySelectorAll<HTMLButtonElement>("button"),
-					].find((node) => node.textContent?.includes("重试来源"));
-					check(retry, "Source read failure must offer retry");
+					const retry = dialog.querySelector<HTMLButtonElement>(
+						'.segment-share-origin-status button[aria-label="重试加载来源"]',
+					);
+					check(
+						retry?.textContent?.trim() === "重试",
+						"Source read failure must offer retry",
+					);
 					retry.click();
 					await until(
 						() => requests.length === 2,

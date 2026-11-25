@@ -132,7 +132,7 @@ export async function checkSegmentSelectionSpeech(
 			speaker?.querySelector(':scope > svg[aria-hidden="true"]') &&
 				(!lookupAvailable ||
 					(lookup?.classList.contains("secondary") &&
-						lookup.getAttribute("aria-label") === "查所选文字" &&
+						lookup.getAttribute("aria-label") === "查词" &&
 						!lookup.querySelector("svg"))),
 			"Speech must have a speaker icon and lookup must remain accessible, secondary and text-only",
 		);
@@ -192,7 +192,7 @@ export async function checkSegmentSelectionSpeech(
 		action("关闭查词设置").click();
 	} else {
 		const toolbar = await select(source, selectedOriginal, 0, 2);
-		await press(action("查所选文字", toolbar));
+		await press(action("查词", toolbar));
 		await h.until(
 			() => !!h.container.querySelector(".dict-definitions"),
 			"Selection must allow manual lookup before dictionary setup and while automatic lookup is off",
@@ -297,9 +297,7 @@ export async function checkSegmentSelectionSpeech(
 		Math.abs(reader.scrollTop - pageEnd) <= 1,
 		"Closing the material dialog while speaking must preserve the page-end reading position",
 	);
-	find<HTMLAnchorElement>(
-		'.segment-tools a[aria-label="首页（素材库）"]',
-	).click();
+	find<HTMLAnchorElement>('.segment-tools a[aria-label="素材库"]').click();
 	await h.until(
 		() =>
 			h.container.textContent?.includes("已离开片段") === true &&

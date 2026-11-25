@@ -182,7 +182,7 @@ export async function translationDragRegression(
 	);
 	window.getSelection()?.removeAllRanges();
 	const close = card.querySelector<HTMLButtonElement>(
-		'[aria-label="关闭翻译（任务继续）"]',
+		'[aria-label="关闭翻译"]',
 	);
 	check(close, "Close action exists");
 	let closed = false;

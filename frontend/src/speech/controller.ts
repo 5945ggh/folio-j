@@ -99,12 +99,29 @@ export function selectedVoice(state: SpeechState): DeviceVoice | undefined {
 			)
 		: state.voices[0];
 }
+const speechErrorMessages: Record<string, string> = {
+	"audio-busy": "音频设备正忙",
+	"audio-hardware": "音频设备异常",
+	"language-unavailable": "当前语音不支持日语",
+	network: "网络异常，无法加载在线语音",
+	"not-allowed": "浏览器阻止了自动播放",
+	"synthesis-failed": "语音合成失败",
+	"synthesis-unavailable": "当前语音服务不可用",
+	"text-too-long": "文本过长，无法朗读",
+	"voice-unavailable": "所选语音不可用",
+};
+function formatSpeechError(error: string): string {
+	const detail = speechErrorMessages[error];
+	return detail
+		? `朗读失败（${detail}），请重试或检查朗读设置。`
+		: "朗读失败，请重试或检查朗读设置。";
+}
 export function speechUnavailableReason(state: SpeechState): string | null {
-	if (!state.supported) return "当前浏览器不支持设备朗读。";
+	if (!state.supported) return "当前浏览器不支持朗读功能。";
 	if (state.preferences.voice && !selectedVoice(state))
-		return "已选日语声音当前不可用，请在设置中重新选择或重新检测。";
+		return "所选日语语音当前不可用，请在朗读设置中重新选择或重新检测。";
 	if (!state.voices.length)
-		return "尚未检测到日语声音。可重新检测，或在系统中安装日语声音后重试。";
+		return "尚未检测到日语语音，可重新检测或在系统中安装日语语音后重试。";
 	return null;
 }
 
@@ -153,7 +170,7 @@ export function createSpeechController(
 				.sort((a, b) => Number(b.localService) - Number(a.localService));
 			update({ voices, voiceListError: null });
 		} catch {
-			update({ voiceListError: "无法读取设备声音，请重新检测。" });
+			update({ voiceListError: "无法获取语音列表，请重新检测。" });
 		}
 	};
 	const save = (preferences: SpeechPreferences) => {
@@ -216,7 +233,7 @@ export function createSpeechController(
 				onError: (error) => {
 					event({
 						status: "error",
-						error: `设备朗读失败（${error}），请重试或检查声音设置。`,
+						error: formatSpeechError(error),
 					});
 					if (current === generation) generation++;
 				},
@@ -224,7 +241,7 @@ export function createSpeechController(
 		} catch {
 			event({
 				status: "error",
-				error: "设备朗读未能启动，请重试或检查声音设置。",
+				error: "朗读未能启动，请重试或检查朗读设置。",
 			});
 			if (current === generation) generation++;
 		}
@@ -253,7 +270,7 @@ export function createSpeechController(
 				stop();
 				update({
 					status: "error",
-					error: "设备未能暂停朗读，请重播或关闭后重试。",
+					error: "未能暂停朗读，请重播或关闭后重试。",
 				});
 			}
 		},
@@ -268,7 +285,7 @@ export function createSpeechController(
 				stop();
 				update({
 					status: "error",
-					error: "设备未能继续朗读，请重播或关闭后重试。",
+					error: "未能继续朗读，请重播或关闭后重试。",
 				});
 			}
 		},

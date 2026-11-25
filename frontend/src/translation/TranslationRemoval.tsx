@@ -20,7 +20,7 @@ export function useTranslationRemoval({
 	onOpenConfirmation,
 	hideTrigger,
 	withLabel = false,
-	label = "清除此处全部翻译",
+	label = "删除该处翻译记录",
 }: {
 	session: TranslationSession;
 	onRemoved?: TranslationRemoved;
@@ -55,7 +55,7 @@ export function useTranslationRemoval({
 					: "translation-icon-button translation-remove"
 			}
 			aria-label={label}
-			title={unresolved ? "请先核实原提交，再删除翻译" : label}
+			title={unresolved ? "请先确认当前翻译请求状态，再执行删除" : label}
 			disabled={pending || unresolved}
 			onClick={() => {
 				removal.reset();
@@ -87,13 +87,13 @@ export function useTranslationRemoval({
 				if (!pending) setConfirmation(false);
 			}}
 		>
-			<h2 id={id}>清除此处全部翻译？</h2>
+			<h2 id={id}>删除此处全部译文？</h2>
 			<blockquote className="translation-removal-target" lang="ja">
 				{targetText(session.reference)}
 			</blockquote>
 			<p>
-				将清除此处全部阅读译文历史和正文翻译划线，并停止进行中的重译。
-				已另存的学习片段及关联译文快照保留。
+				将删除此处全部译文记录和正文翻译划线，并停止进行中的翻译任务。
+				已保存的学习片段及关联译文记录会保留。
 			</p>
 			<InlineError error={removal.error} />
 			<div className="actions">
@@ -111,7 +111,7 @@ export function useTranslationRemoval({
 					disabled={pending}
 					onClick={() => removal.mutate()}
 				>
-					{pending ? "正在删除…" : "确认删除翻译"}
+					{pending ? "正在删除…" : "确认删除"}
 				</button>
 			</div>
 		</ConfirmDialog>

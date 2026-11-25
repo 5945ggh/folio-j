@@ -688,7 +688,7 @@ export async function materialVocabulary(
 		focusManager.setFocused(false);
 		focusManager.setFocused(true);
 		await until(
-			() => container.textContent?.includes("词汇尚未准备") === true,
+			() => container.textContent?.includes("词汇尚未就绪") === true,
 			"Absent analysis must be distinct from an empty vocabulary",
 		);
 		generation = "generation-one";

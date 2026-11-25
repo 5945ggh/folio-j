@@ -11,7 +11,7 @@ import {
 
 test("书名提交采用 NFC 与去空白，并按 Unicode 码点限制长度", () => {
 	assert.equal(normalizedBookTitle("  は\u3099な  "), "ばな");
-	assert.equal(bookTitleError("　 "), "书名须为 1–300 个字符。");
+	assert.equal(bookTitleError("　 "), "请输入书名。");
 	assert.equal(bookTitleError("𠮷".repeat(300)), null);
 	assert.ok(bookTitleError("𠮷".repeat(301)));
 });

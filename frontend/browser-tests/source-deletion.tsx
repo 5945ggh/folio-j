@@ -389,15 +389,15 @@ export async function sourceDeletion(h: BrowserHarness, preview = false) {
 		);
 		const text = requiredDialog().textContent?.replace(/\s+/g, " ") ?? "";
 		for (const expected of [
-			"2 份阅读材料",
+			"2 本已导入的书籍及其阅读数据",
 			"3 个片段",
-			"4 份讲解（含全部修订）",
-			"5 条讨论",
+			"4 份讲解（含历史版本）",
+			"5 段对话",
 			"6 条消息",
-			"1 个进行中的任务",
-			"原书和派生阅读数据",
-			"清理不可撤销",
-			"本地 EPUB 文件不会被删除",
+			"将停止 1 个对话任务",
+			"这些书籍的翻译任务也会停止",
+			"此操作无法撤销",
+			"不会影响你本地保存的 EPUB 文件",
 		])
 			check(
 				text.includes(expected),

@@ -500,7 +500,9 @@ export function createTranslationSessions(
 			if (this.removal) return this.removal;
 			if (!bound) return Promise.reject(new Error("请返回阅读器后重试删除。"));
 			if (this.operation?.posted || this.state.phase === "uncertain")
-				return Promise.reject(new Error("请先核实原提交，再删除此处翻译。"));
+				return Promise.reject(
+					new Error("请先确认当前翻译请求状态，再执行删除。"),
+				);
 			this.generation++;
 			this.automatic = "consumed";
 			this.freshEpoch = -1;

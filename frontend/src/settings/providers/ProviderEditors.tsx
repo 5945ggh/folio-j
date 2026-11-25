@@ -127,7 +127,7 @@ export function ProviderEditor({
 							disabled={save.isPending}
 							onClick={requestClose}
 						>
-							‹ 返回连接设置
+							← 返回连接设置
 						</button>
 					)}
 					<fieldset disabled={save.isPending} className="provider-form-fields">
@@ -176,7 +176,7 @@ export function ProviderEditor({
 							)}
 							{(!provider || keyOnly) && (
 								<label className="settings-field full">
-									<span>{keyOnly ? "新密钥" : "API Key（可选）"}</span>
+									<span>{keyOnly ? "新密钥" : "API 密钥（可选）"}</span>
 									<input
 										type="password"
 										autoComplete="new-password"
@@ -186,10 +186,10 @@ export function ProviderEditor({
 										value={apiKey}
 										onChange={(event) => setApiKey(event.target.value)}
 										placeholder={
-											provider?.has_api_key ? "输入新密钥" : "未设置"
+											provider?.has_api_key ? "输入新密钥" : "输入 API 密钥"
 										}
 									/>
-									<small>保存后只显示密钥的配置状态。</small>
+									<small>保存后仅显示密钥的配置状态。</small>
 								</label>
 							)}
 							{keyOnly && provider?.has_api_key && (
@@ -204,7 +204,7 @@ export function ProviderEditor({
 									>
 										{clearKey ? "取消移除" : "移除密钥"}
 									</button>
-									{clearKey && <small>保存后此服务将不再携带 API Key。</small>}
+									{clearKey && <small>保存后将移除此服务的 API 密钥。</small>}
 								</div>
 							)}
 							{!provider && (
@@ -216,7 +216,7 @@ export function ProviderEditor({
 											setFields({ ...fields, enabled: event.target.checked })
 										}
 									/>
-									启用服务，并尝试发现模型
+									启用服务，并尝试获取模型列表
 								</label>
 							)}
 						</div>
@@ -227,7 +227,7 @@ export function ProviderEditor({
 							apiKey.trim() ||
 							clearKey) && (
 							<p className="settings-hint">
-								保存后，已登记模型的验证状态会重置为「未验证」，模型发现列表需重新获取。
+								保存后，已添加模型的验证状态会重置为「未验证」，模型列表需重新获取。
 							</p>
 						)}
 					<InlineError error={save.error} />
@@ -335,7 +335,7 @@ export function ModelEditor({
 	return (
 		<SettingsEditorDialog
 			id={`model-editor-${model?.id ?? provider.id}`}
-			title={model ? `编辑 ${model.model_id}` : "登记模型"}
+			title={model ? `编辑 ${model.model_id}` : "添加模型"}
 			dirty={dirty}
 			pending={pending}
 			save={saveDraft}
@@ -358,14 +358,14 @@ export function ModelEditor({
 							disabled={pending}
 							onClick={requestClose}
 						>
-							‹ 返回模型列表
+							← 返回模型列表
 						</button>
 						<span className="settings-hint">{provider.name}</span>
 					</div>
 					{!model && (
 						<fieldset
 							className="provider-registration-modes"
-							aria-label="登记方式"
+							aria-label="添加方式"
 						>
 							{(["list", "manual"] as const).map((method) => (
 								<button
@@ -393,7 +393,7 @@ export function ModelEditor({
 								disabled={save.isPending}
 							>
 								<label className="settings-field">
-									<span>上游模型 ID</span>
+									<span>模型 ID</span>
 									<input
 										required
 										disabled={Boolean(model)}
@@ -413,7 +413,7 @@ export function ModelEditor({
 									<summary>高级设置</summary>
 									<div className="settings-form-grid">
 										<label className="settings-field">
-											<span>协议覆盖</span>
+											<span>接口协议</span>
 											<NativeSelect
 												value={fields.protocol_override ?? ""}
 												onChange={(event) =>
@@ -424,7 +424,7 @@ export function ModelEditor({
 													})
 												}
 											>
-												<option value="">继承服务默认协议</option>
+												<option value="">跟随服务默认</option>
 												<option value="chat_completions">
 													Chat Completions
 												</option>
@@ -432,7 +432,7 @@ export function ModelEditor({
 											</NativeSelect>
 										</label>
 										<label className="settings-field">
-											<span>Temperature（可选）</span>
+											<span>温度（Temperature，可选）</span>
 											<input
 												type="number"
 												min="0"
@@ -485,11 +485,11 @@ export function ModelEditor({
 													})
 												}
 											>
-												<option value="">不传递</option>
-												<option value="none">none</option>
-												<option value="low">low</option>
-												<option value="medium">medium</option>
-												<option value="high">high</option>
+												<option value="">默认</option>
+												<option value="none">无（none）</option>
+												<option value="low">低（low）</option>
+												<option value="medium">中（medium）</option>
+												<option value="high">高（high）</option>
 											</NativeSelect>
 										</label>
 										<label className="provider-check">
@@ -524,10 +524,10 @@ export function ModelEditor({
 							{pending
 								? "保存中…"
 								: mode === "list"
-									? `登记所选模型（${discovery.selected.length}）`
+									? `添加所选模型（${discovery.selected.length}）`
 									: model
 										? "保存模型"
-										: "登记模型"}
+										: "添加模型"}
 						</button>
 					</div>
 					{confirmSwitch && (
@@ -536,7 +536,7 @@ export function ModelEditor({
 							titleId="switch-registration-method"
 							onClose={() => setConfirmSwitch(false)}
 						>
-							<h2 id="switch-registration-method">切换登记方式？</h2>
+							<h2 id="switch-registration-method">切换添加方式？</h2>
 							<p>
 								{mode === "list"
 									? "切换后将清除本次勾选。"

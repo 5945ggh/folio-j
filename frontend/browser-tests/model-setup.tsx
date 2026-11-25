@@ -154,7 +154,7 @@ export async function modelSetup(h: BrowserHarness): Promise<string> {
 			() => !!container.querySelector(".chat-setting-popover:popover-open"),
 			"Model selector must open",
 		);
-		action("配置模型与服务 →").click();
+		action("配置模型服务 →").click();
 		await until(
 			() => !!container.querySelector(".model-setup-dialog[open]"),
 			"Configuration must open without leaving the discussion",
@@ -201,7 +201,7 @@ export async function modelSetup(h: BrowserHarness): Promise<string> {
 			"Discard must close only the unsaved editor",
 		);
 		await enableProvider();
-		action("返回讨论").click();
+		action("返回对话").click();
 		await until(
 			() => !container.querySelector(".model-setup-dialog"),
 			"Setup must close",
@@ -245,7 +245,7 @@ export async function modelSetup(h: BrowserHarness): Promise<string> {
 			"No-model explanation must not offer an empty select",
 		);
 		if (params.has("preview")) return "explanation setup preview";
-		action("配置模型与服务").click();
+		action("配置模型服务").click();
 		await enableProvider();
 		await until(
 			() =>
@@ -256,7 +256,7 @@ export async function modelSetup(h: BrowserHarness): Promise<string> {
 			generated === 0,
 			"Restoring an old default while setup is open must not create an explanation",
 		);
-		action("返回讨论").click();
+		action("返回对话").click();
 		await until(
 			() => !container.querySelector(".model-setup-dialog"),
 			"AI setup must close",
@@ -272,18 +272,18 @@ export async function modelSetup(h: BrowserHarness): Promise<string> {
 		action("创建 AI 讲解");
 		// Read failures must stay distinguishable from an empty service library.
 		failRead = true;
-		action("配置模型与服务 →").click();
+		action("配置模型服务 →").click();
 		await until(
 			() => container.textContent?.includes("服务读取失败") ?? false,
 			"Setup must show provider read errors",
 		);
 		failRead = false;
-		action("重试模型服务").click();
+		action("重试").click();
 		await until(
 			() => !container.querySelector(".model-setup-dialog .inline-error"),
 			"Provider read retry must recover",
 		);
-		action("返回讨论").click();
+		action("返回对话").click();
 		await until(
 			() => !container.querySelector(".model-setup-dialog"),
 			"Retry setup must finish closing before continuation",
@@ -317,12 +317,12 @@ export async function modelSetup(h: BrowserHarness): Promise<string> {
 			() => !!container.querySelector(".chat-setting-popover:popover-open"),
 			"Running discussion model options must open",
 		);
-		action("配置模型与服务 →").click();
+		action("配置模型服务 →").click();
 		await until(
 			() => !!container.querySelector(".model-setup-dialog[open]"),
 			"Running task must allow service configuration without leaving the thread",
 		);
-		action("返回讨论").click();
+		action("返回对话").click();
 		await until(
 			() => !container.querySelector(".model-setup-dialog"),
 			"Task setup must close back to the running discussion",

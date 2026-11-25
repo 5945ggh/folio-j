@@ -65,7 +65,7 @@ export function NewAnalysisActions({
 						onExplain();
 					}}
 				>
-					创建 AI 讲解
+					生成 AI 讲解
 				</button>
 				<button
 					className="button"

@@ -97,12 +97,12 @@ export function AnkiConnectionSettings() {
 	}
 	const probeLabel =
 		probeState.status === "checking"
-			? "连接中…"
+			? "正在测试…"
 			: probeState.status === "connected"
 				? `已连接 · ${probeState.info.profile}`
 				: probeState.status === "error"
 					? "未连接"
-					: "未检查";
+					: "未测试";
 
 	return (
 		<>
@@ -114,7 +114,7 @@ export function AnkiConnectionSettings() {
 						className="settings-button secondary"
 						onClick={() => void connectionQuery.refetch()}
 					>
-						重试读取连接设置
+						重试
 					</button>
 				</section>
 			)}
@@ -139,7 +139,7 @@ export function AnkiConnectionSettings() {
 								AnkiConnect 地址
 							</label>
 							<p className="anki-row-desc">
-								连接本机运行的 Anki Desktop 与 AnkiConnect 插件（默认
+								连接本机运行的 Anki 桌面端与 AnkiConnect 插件（默认
 								http://127.0.0.1:8765）。
 							</p>
 						</div>
@@ -159,7 +159,7 @@ export function AnkiConnectionSettings() {
 								disabled={probeMutation.isPending}
 								onClick={handleProbe}
 							>
-								{probeMutation.isPending ? "测试中…" : "测试连接"}
+								{probeMutation.isPending ? "正在测试…" : "测试连接"}
 							</button>
 						</div>
 					</div>
@@ -174,8 +174,8 @@ export function AnkiConnectionSettings() {
 							</label>
 							<p className="anki-row-desc">
 								{connectionQuery.data?.has_api_key && !clearApiKey
-									? "已保存密钥。更改服务地址时旧密钥不会自动带往新地址。"
-									: "如果 AnkiConnect 配置了访问密钥，请在此填写。"}
+									? "已保存密钥。更改地址后需重新填写密钥。"
+									: "如果 AnkiConnect 设置了 API 密钥，请在此填写。"}
 							</p>
 						</div>
 						<div className="anki-row-control">
@@ -187,7 +187,7 @@ export function AnkiConnectionSettings() {
 								placeholder={
 									connectionQuery.data?.has_api_key && !clearApiKey
 										? "已配置（留空保持不变）"
-										: "未设置"
+										: "输入 API 密钥"
 								}
 								onChange={(event) => {
 									change({ key: event.target.value, clear: false });
@@ -223,12 +223,12 @@ export function AnkiConnectionSettings() {
 							{probeState.status === "error"
 								? probeState.message
 								: probeState.status === "connected"
-									? `已连通 ${probeState.info.endpoint}（用户配置：${probeState.info.profile}，协议 ${probeState.info.protocol}）。`
+									? `已连接 ${probeState.info.endpoint}（Anki 用户：${probeState.info.profile}）。`
 									: connectionNotice
 										? connectionNotice
 										: connectionDirty
-											? "有未保存的连接更改。可先测试连接，或直接保存。"
-											: "所有材料共用这套连接设置。"}
+											? "有未保存的修改，可先测试连接，或直接保存。"
+											: "所有素材共用这套连接设置。"}
 						</p>
 						<button
 							type="button"

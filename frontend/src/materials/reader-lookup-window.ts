@@ -13,7 +13,7 @@ export function readerLookupWindow(
 ) {
 	const text = projection.points;
 	if (!Number.isInteger(offset) || offset < 0 || offset >= text.length)
-		throw new Error("查词落点超出正文");
+		throw new Error("无法识别点击位置的文本。");
 	let first = 0,
 		last = text.length;
 	const block = node.parentElement?.closest(PARAGRAPH);
@@ -23,7 +23,7 @@ export function readerLookupWindow(
 		);
 		const begin = entries[0],
 			end = entries.at(-1);
-		if (!begin || !end) throw new Error("查词段落不属于正文投影");
+		if (!begin || !end) throw new Error("无法识别点击位置的文本。");
 		if (begin.start !== 0)
 			first = rawBoundary(projection.raw, begin.start, projection.canonical);
 		if (end.end !== projection.raw.length)
@@ -43,6 +43,6 @@ export function readerLookupWindow(
 			break;
 		}
 	if (offset < start || offset >= end)
-		throw new Error("查词落点不在段落正文中");
+		throw new Error("无法识别点击位置的文本。");
 	return { start, end };
 }

@@ -49,6 +49,7 @@ type Measurement = {
 	documentReused: boolean[];
 };
 const round = (value: number) => Math.round(value * 10) / 10;
+const imageImportWarning = "Removed unsupported image: cover.svg";
 
 /** Strict offline DOM measurements: fixture response durations are not network latency. */
 export async function readerSession(
@@ -182,6 +183,7 @@ export async function readerSession(
 		if (path === `/api/materials/${materialId}` && request.method === "GET")
 			data = {
 				...book,
+				warnings: [imageImportWarning],
 				reading_position:
 					savedPositions.get(requestedMaterialId ?? materialId) ??
 					(book.reading_position
@@ -1159,8 +1161,34 @@ export async function readerSession(
 			};
 			await openBookInfo();
 			check(
-				h.container.textContent?.includes("已新导入书籍。"),
+				h.container.textContent?.includes("已导入书籍"),
 				"Import notice must survive its transient route-state replacement",
+			);
+			const bookInfo = h.container
+				.querySelector(".reader-book-info")
+				?.closest<HTMLElement>('[role="dialog"]');
+			check(bookInfo, "Book information dialog must contain import warnings");
+			const importWarnings = [...bookInfo.querySelectorAll("details")].find(
+				(details) =>
+					details.querySelector(":scope > summary")?.textContent === "导入提示",
+			);
+			check(
+				importWarnings && !importWarnings.open,
+				"Import warnings start closed",
+			);
+			importWarnings.querySelector("summary")?.click();
+			const technical = importWarnings.querySelector("details");
+			check(
+				technical?.querySelector("summary")?.textContent === "技术信息" &&
+					!technical.open &&
+					bookInfo.innerText.includes("部分图片格式不受支持，已跳过这些图片") &&
+					!bookInfo.innerText.includes(imageImportWarning),
+				"Import notice must show the Chinese summary and keep the diagnostic collapsed",
+			);
+			technical.querySelector("summary")?.click();
+			check(
+				technical.open && bookInfo.innerText.includes(imageImportWarning),
+				"Technical information must retain the original import warning",
 			);
 			const importBack = h.container.querySelector<HTMLAnchorElement>(
 				'.reader-r1 a[aria-label="返回导入来源"]',
@@ -1188,7 +1216,7 @@ export async function readerSession(
 			);
 			await openBookInfo();
 			check(
-				!h.container.textContent?.includes("已新导入书籍。"),
+				!h.container.textContent?.includes("已导入书籍"),
 				"History must not replay a consumed import notice",
 			);
 			const { waitForPositionWrites } = await import(

@@ -190,7 +190,7 @@ export async function analysisRename(h: BrowserHarness) {
 			"Dialog must identify the metadata operation",
 		);
 		check(
-			field().labels?.[0]?.textContent?.trim() === "名称",
+			field().labels?.[0]?.textContent?.trim() === "标题",
 			"Name input needs its visible label",
 		);
 		check(
@@ -247,7 +247,7 @@ export async function analysisRename(h: BrowserHarness) {
 			"Menu must retain version/delete and add rename",
 		);
 		const deleteAction = menuItems.find(
-			(item) => item.textContent?.trim() === "删除此讲解",
+			(item) => item.textContent?.trim() === "删除讲解",
 		);
 		check(deleteAction, "Menu must expose delete-analysis action");
 		const color = getComputedStyle(deleteAction).color;
@@ -288,12 +288,12 @@ export async function analysisRename(h: BrowserHarness) {
 		for (const invalid of ["   ", "あ".repeat(201)]) {
 			await edit(invalid);
 			check(
-				findButton("保存名称").disabled,
+				findButton("保存标题").disabled,
 				"Blank and over-limit names must disable save",
 			);
 		}
 		await edit("  カ\u3099の講解  ");
-		findButton("保存名称").click();
+		findButton("保存标题").click();
 		await saved("ガの講解");
 		check(
 			writes.at(-1)?.title === "ガの講解",
@@ -307,7 +307,7 @@ export async function analysisRename(h: BrowserHarness) {
 		await open();
 		await edit("本次明确保存的名称");
 		title = "另一操作保存的名称";
-		findButton("保存名称").click();
+		findButton("保存标题").click();
 		await saved("本次明确保存的名称");
 		check(
 			writes.at(-1)?.title === "本次明确保存的名称",
@@ -318,14 +318,14 @@ export async function analysisRename(h: BrowserHarness) {
 			mode = failure;
 			const draft = failure === "error" ? "失败后重试" : "响应中断后重试";
 			await edit(draft);
-			findButton("保存名称").click();
+			findButton("保存标题").click();
 			await until(
 				() => !!dialog()?.querySelector('[role="alert"]'),
 				"Failed response must remain visible",
 			);
 			check(field().value === draft, "Failure must preserve editable draft");
 			mode = "success";
-			findButton("保存名称").click();
+			findButton("保存标题").click();
 			await saved(draft);
 		}
 		findButton("测试历史").click();
@@ -337,7 +337,7 @@ export async function analysisRename(h: BrowserHarness) {
 		mode = "pending";
 		await edit("历史阅读时的新名称");
 		const beforePending = writes.length;
-		findButton("保存名称").click();
+		findButton("保存标题").click();
 		await until(() => !!release, "Save must reach the pending request");
 		check(
 			field().disabled && findButton("取消").disabled,

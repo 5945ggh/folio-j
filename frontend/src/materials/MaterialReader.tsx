@@ -32,7 +32,13 @@ import {
 import { originalSentenceRuby } from "../anki/sentence-ruby";
 import { Icon as CatalogIcon } from "../catalog/LibraryTools";
 import { refreshMaterialAnalysis } from "../catalog/statistics-query";
-import { getSource, queries, RequestError, type Segment } from "../content";
+import {
+	getSource,
+	queries,
+	RequestError,
+	type Segment,
+	trimTrailingPunctuation,
+} from "../content";
 import {
 	type ReturnDestination,
 	returnDestination,
@@ -214,6 +220,51 @@ import {
 } from "./vocabulary-navigation";
 
 const defaults: Settings = DEFAULT_READING_SETTINGS;
+
+const epubImportWarningLabels: ReadonlyArray<readonly [RegExp, string]> = [
+	[/^Removed unsupported image/, "部分图片格式不受支持，已跳过这些图片"],
+	[/^Fixed image page/, "固定版式的图片页已按普通图片显示"],
+	[
+		/^(Unsupported CSS import|Skipped CSS import|Unterminated CSS import|Skipped unavailable stylesheet)/,
+		"部分样式无法使用，页面外观可能与原书不同",
+	],
+	[
+		/^(EPUB (nav|NCX)|nav 目录|spine 重复资源|目录|没有有效目录)/,
+		"已根据可用的目录和正文调整章节划分",
+	],
+];
+
+function BookImportWarnings({ warnings }: { warnings: readonly string[] }) {
+	if (warnings.length === 0) return null;
+	const uniqueWarnings = [...new Set(warnings)];
+	const notices = new Set(
+		uniqueWarnings.map(
+			(warning) =>
+				epubImportWarningLabels.find(([pattern]) =>
+					pattern.test(warning),
+				)?.[1] ?? "部分 EPUB 内容已按兼容方式处理",
+		),
+	);
+	return (
+		<details>
+			<summary>导入提示</summary>
+			<ul>
+				{[...notices].map((notice) => (
+					<li key={notice}>{notice}</li>
+				))}
+			</ul>
+			<details>
+				<summary>技术信息</summary>
+				<ul>
+					{uniqueWarnings.map((warning) => (
+						<li key={warning}>{warning}</li>
+					))}
+				</ul>
+			</details>
+		</details>
+	);
+}
+
 function ReaderNavigationIcon({
 	name,
 }: {
@@ -487,7 +538,7 @@ function Reader({
 					if (failure instanceof RequestError && failure.status === 409) {
 						await client.invalidateQueries({ queryKey: usageKey(book.id) });
 						setRetryOpen(false);
-						setUsageError(new Error("阅读状态已更新，打开记录未覆盖新状态。"));
+						setUsageError(new Error("阅读状态已刷新。"));
 						return;
 					}
 					throw failure;
@@ -519,9 +570,7 @@ function Reader({
 		} catch (failure) {
 			if (failure instanceof RequestError && failure.status === 409) {
 				await client.invalidateQueries({ queryKey: usageKey(book.id) });
-				setUsageError(
-					new Error("阅读状态已被其他操作更新，请确认当前状态后重新选择。"),
-				);
+				setUsageError(new Error("阅读状态已变更，请重新选择。"));
 			} else
 				setUsageError(
 					failure instanceof Error ? failure : new Error(String(failure)),
@@ -530,7 +579,6 @@ function Reader({
 			setUsageBusy(false);
 		}
 	};
-	const warnings = Array.from(new Set(book.warnings));
 	const [presentationState, setPresentationState] =
 		useState<ReaderPresentationState>({
 			chapterId: initialAnchor?.chapter_id ?? book.chapters[0]?.id ?? "",
@@ -1210,7 +1258,7 @@ function Reader({
 		setPendingSearchRecord(null);
 		if (!current()) return;
 		if (chapterId !== targetChapterId || pendingSearchStatus === "error") {
-			setSearchOpenError(new Error("原文已切换或资料暂不可用"));
+			setSearchOpenError(new Error("章节已切换或记录暂不可用"));
 			return;
 		}
 		if (
@@ -1220,7 +1268,7 @@ function Reader({
 				target.kind === "translation" ? target.resultId : undefined,
 			)
 		) {
-			setSearchOpenError(new Error("资料已更新或移除，请刷新搜索结果"));
+			setSearchOpenError(new Error("该记录已更新或删除，请重新搜索"));
 			return;
 		}
 		openMarkHit({
@@ -1616,7 +1664,7 @@ function Reader({
 			}
 
 			if (highlight.current && !located) {
-				setOriginError(new Error("原文尚未完整定位，已保留目标，请重试。"));
+				setOriginError(new Error("未能定位到目标位置，请重试。"));
 				return false;
 			}
 
@@ -1746,7 +1794,7 @@ function Reader({
 			error: (failure) =>
 				setError(
 					initialOrigin
-						? new Error("原文定位不完整，目标已保留。请重新打开后重试。")
+						? new Error("未能完成定位，请重新打开后重试。")
 						: failure,
 				),
 		});
@@ -1921,6 +1969,8 @@ function Reader({
 	}, [active, readKey]);
 	const [rubyPreparing, setRubyPreparing] = useState(false);
 	const [rubyError, setRubyError] = useState<Error | null>(null);
+	const rubyErrorDetail =
+		rubyError && trimTrailingPunctuation(rubyError.message);
 	const [preferenceSubmission] = useState(
 		() => new ReaderPreferenceSubmission(),
 	);
@@ -2215,7 +2265,7 @@ function Reader({
 				setPanels((previous) => selectReaderPanel(previous, "study"));
 				return;
 			}
-			throw new Error("该记录的原文位置已不可用，无法在阅读器中打开");
+			throw new Error("无法定位该记录对应的原文位置");
 		}
 		const success = await navigation.navigate({
 			type: "position",
@@ -2243,7 +2293,7 @@ function Reader({
 								resultId: item.result_id,
 							}
 						: null;
-			if (!target) throw new Error("该记录的资料身份不可用，请刷新搜索结果");
+			if (!target) throw new Error("该记录信息已失效，请重新搜索");
 			setPendingSearchRecord({
 				chapterId: item.chapter_id ?? null,
 				target,
@@ -2312,8 +2362,8 @@ function Reader({
 						className="reader-navigation-icon reader-home-link"
 						to="/"
 						onClick={leave}
-						aria-label="首页（素材库）"
-						data-tooltip="首页（素材库）"
+						aria-label="素材库"
+						data-tooltip="素材库"
 					>
 						<ReaderNavigationIcon name="home" />
 					</Link>
@@ -2342,9 +2392,7 @@ function Reader({
 								))}
 						</span>
 						<span className="reader-heading-progress">
-							{progress === null
-								? "章内 —"
-								: `章内 ${Math.round(progress * 100)}%`}
+							{progress === null ? "—" : `本章 ${Math.round(progress * 100)}%`}
 						</span>
 					</p>
 				</div>
@@ -2403,9 +2451,9 @@ function Reader({
 			</header>
 			<div className="reader-alerts" aria-live="polite">
 				{inlineRequest && inlineResult.isPending && (
-					<p role="status">正在读取译文…</p>
+					<p role="status">正在加载译文…</p>
 				)}
-				{marks.loading && <p>正在载入本章学习片段标记…</p>}
+				{marks.loading && <p>正在加载本章学习片段标记…</p>}
 				{(marks.isError || markError) && (
 					<div className="reader-mark-error" role="alert">
 						学习片段标记暂不可用，原文可继续阅读。
@@ -2446,7 +2494,7 @@ function Reader({
 							});
 						}}
 					>
-						重新读取复制设置
+						重试
 					</button>
 				)}
 				{originError && (
@@ -2458,7 +2506,7 @@ function Reader({
 							presentation.retry();
 						}}
 					>
-						重试精确定位
+						重试定位
 					</button>
 				)}
 				{(error || positionError) && (
@@ -2468,7 +2516,7 @@ function Reader({
 				)}
 				{navigationError && (
 					<button type="button" onClick={() => navigation.dismissError()}>
-						关闭定位提示
+						关闭
 					</button>
 				)}
 				{retryOpen && (
@@ -2479,7 +2527,7 @@ function Reader({
 							void opened();
 						}}
 					>
-						重试打开记录
+						重试同步状态
 					</button>
 				)}
 			</div>
@@ -2499,7 +2547,7 @@ function Reader({
 							void readings.refetch();
 						}}
 					>
-						重试章节
+						重试加载
 					</button>
 				</div>
 			) : (
@@ -2555,7 +2603,7 @@ function Reader({
 										count > 1
 											? `查看此处 ${count} 条记录`
 											: translation
-												? "打开此处翻译"
+												? "打开此处译文"
 												: "打开此处学习片段"
 									}
 									onClick={(event) => {
@@ -2614,10 +2662,8 @@ function Reader({
 				aria-hidden={!toolsVisible}
 			>
 				<nav aria-label="书内工具">
-					<span className="reader-progress" title="当前章节位置">
-						{progress === null
-							? "章内 —"
-							: `章内 ${Math.round(progress * 100)}%`}
+					<span className="reader-progress" title="本章阅读进度">
+						{progress === null ? "—" : `本章 ${Math.round(progress * 100)}%`}
 					</span>
 					{origin && (
 						<button
@@ -2655,7 +2701,7 @@ function Reader({
 						</button>
 						<button
 							type="button"
-							aria-label="目录"
+							aria-label="目录与书签"
 							data-tooltip="目录与书签"
 							aria-expanded={
 								panels.left === "toc" || panels.left === "bookmarks"
@@ -2696,8 +2742,8 @@ function Reader({
 					</button>
 					<button
 						type="button"
-						aria-label="添加当前位置书签"
-						data-tooltip="添加当前位置书签"
+						aria-label="添加书签"
+						data-tooltip="添加书签"
 						disabled={bookmarks.busy || chapterSwitchBusy || !presented}
 						onClick={() =>
 							bookmarks.add(() => {
@@ -2781,7 +2827,7 @@ function Reader({
 						className="reader-settings-trigger"
 						data-tooltip={
 							copyEditorStatus
-								? `阅读设置 · 复制设置${copyEditorStatus}`
+								? `阅读设置（复制设置${copyEditorStatus}）`
 								: "阅读设置"
 						}
 						aria-expanded={panels.right === "settings"}
@@ -2931,7 +2977,7 @@ function Reader({
 								!container.current ||
 								!presentation.canSample(viewportSize(container.current))
 							)
-								throw new Error("正文仍在准备，请重新选择。");
+								throw new Error("章节正在加载，请稍后重新选择。");
 							const reference = frames.captureStudyReference(
 								book.id,
 								book.version_id,
@@ -2944,7 +2990,7 @@ function Reader({
 								client.getQueryState(contextCopyKey)?.status !== "success"
 							) {
 								const failure = new Error(
-									"复制设置尚未就绪，请重新读取后再复制。原文可继续阅读。",
+									"复制设置尚未加载完成，请重试后再复制。",
 								);
 								setCopySettingsError(failure);
 								throw failure;
@@ -2971,7 +3017,7 @@ function Reader({
 								!container.current ||
 								!presentation.canSample(viewportSize(container.current))
 							)
-								throw new Error("正文仍在准备，请重新选择。");
+								throw new Error("章节正在加载，请稍后重新选择。");
 							const target = frames.captureStudyTarget(
 								book.id,
 								book.version_id,
@@ -2996,7 +3042,8 @@ function Reader({
 					}}
 					onSpeak={() => {
 						try {
-							if (!chapter.data) throw new Error("正文仍在准备，请重新选择。");
+							if (!chapter.data)
+								throw new Error("章节正在加载，请稍后重新选择。");
 							const reference = frames.captureStudyReference(
 								book.id,
 								book.version_id,
@@ -3022,7 +3069,7 @@ function Reader({
 								!container.current ||
 								!presentation.canSample(viewportSize(container.current))
 							)
-								throw new Error("正文仍在准备，请重新选择。");
+								throw new Error("章节正在加载，请稍后重新选择。");
 							const reference = frames.captureStudyReference(
 								book.id,
 								book.version_id,
@@ -3053,7 +3100,7 @@ function Reader({
 								!container.current ||
 								!presentation.canSample(viewportSize(container.current))
 							)
-								throw new Error("正文仍在准备，请重新选择。");
+								throw new Error("章节正在加载，请稍后重新选择。");
 							setTranslationOpen(false);
 							setStudyTarget(
 								frames.captureStudyTarget(
@@ -3256,8 +3303,8 @@ function Reader({
 						rubyPreparing || rubyError ? (
 							<p role={rubyError ? "alert" : "status"}>
 								{rubyError
-									? `注音暂不可用，已保留当前阅读范围。${rubyError.message}`
-									: "正在获取全量注音，当前阅读可继续。"}
+									? `全量注音加载失败，当前注音设置已保留${rubyErrorDetail ? `（${rubyErrorDetail}）` : ""}`
+									: "正在加载全量注音…"}
 							</p>
 						) : null
 					}
@@ -3287,7 +3334,7 @@ function Reader({
 
 			{storageFailed && panels.right === "settings" && (
 				<p className="reader-preference-notice" role="status">
-					偏好暂未存入浏览器，本次阅读仍可使用。
+					设置未能保存到浏览器，仅在本次阅读中生效。
 				</p>
 			)}
 			{leftView.value !== null && leftView.value !== "search" && (
@@ -3445,10 +3492,25 @@ function Reader({
 						<dd>
 							<Link
 								to={`/sources/${book.source_id}?view=materials`}
+								aria-label={
+									source.data?.title
+										? `查看来源「${source.data.title}」`
+										: undefined
+								}
 								onClick={leave}
 							>
-								{source.data?.title ?? "打开来源空间"}
-								<span className="reader-info-link-hint">查看来源空间 →</span>
+								{source.data?.title ? (
+									<>
+										{source.data.title}
+										<span className="reader-info-link-hint" aria-hidden="true">
+											查看来源 →
+										</span>
+									</>
+								) : (
+									<>
+										查看来源 <span aria-hidden="true">→</span>
+									</>
+								)}
 							</Link>
 						</dd>
 					</dl>
@@ -3472,23 +3534,9 @@ function Reader({
 						<dd role="status">{status}</dd>
 					</dl>
 					{notice && (
-						<p>
-							{notice === "reused"
-								? "已打开此前导入的材料。"
-								: "已新导入书籍。"}
-						</p>
+						<p>{notice === "reused" ? "已打开此前导入的书籍" : "已导入书籍"}</p>
 					)}
-					{warnings.length > 0 && (
-						<details>
-							<summary>导入提示（{warnings.length}）</summary>
-							<p>导入时的格式与兼容性处理记录，可展开查看详情。</p>
-							<ul>
-								{warnings.map((w) => (
-									<li key={w}>{w}</li>
-								))}
-							</ul>
-						</details>
-					)}
+					<BookImportWarnings warnings={book.warnings} />
 				</ReaderPanel>
 			)}
 		</main>
@@ -3598,9 +3646,9 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 				const message = originFailure(origin);
 				if (message) throw new Error(message);
 				if (origin.material_provenance?.material_id !== id)
-					throw new Error("片段出处不属于当前材料，无法精确定位。");
+					throw new Error("片段出处不属于本书，无法定位。");
 				if (origin.material_provenance?.version_id !== book.version_id)
-					throw new Error("出处绑定的材料版本不可用，不能套用到当前版本。");
+					throw new Error("出处对应的原书版本已失效，无法定位。");
 				originPosition(origin, defaults);
 			}
 			if (vocabulary) {
@@ -3609,7 +3657,7 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 					vocabulary.version_id !== book.version_id
 				)
 					throw new Error(
-						"词汇原文位置绑定的材料版本已不可用，请返回词汇页重新选择。",
+						"本书文件已更新，原词汇位置已失效，请返回词汇页重新选择。",
 					);
 				const targetChapter = await client.fetchQuery({
 					queryKey: materialKeys.chapter(id, vocabulary.chapter_id),
@@ -3620,7 +3668,7 @@ function MaterialOpening({ id, location }: { id: string; location: Location }) {
 			}
 			const summary = await prepareReadings(id, book.version_id);
 			if (summary.version_id !== book.version_id)
-				throw new Error("材料注音版本已改变，请重新打开。");
+				throw new Error("本书注音数据已更新，请重新打开。");
 			if (!current) return;
 			void refreshMaterialAnalysis(
 				client,

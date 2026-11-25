@@ -12,8 +12,8 @@ import {
 
 export const statusLabels = {
 	not_started: "未开始",
-	in_progress: "进行中",
-	completed: "已完成",
+	in_progress: "阅读中",
+	completed: "已读完",
 };
 export function Tabs({
 	id,
@@ -81,7 +81,7 @@ export function Tabs({
 					<span className="catalog-tab-unavailable" key={item.value}>
 						{button}
 						<span id={hintId} className="catalog-tab-hint" role="tooltip">
-							{item.label}支持会有的 (´▽｀)
+							{item.label}暂未开放
 						</span>
 					</span>
 				);
@@ -107,7 +107,7 @@ export function CatalogToolbar({
 	const searchLabel = sourceList
 		? `搜索${listLabel}`
 		: kind === "books"
-			? "搜索书名或 Source"
+			? "搜索书名或来源"
 			: "搜索当前列表";
 	const searchId = useId();
 	const sortId = useId();
@@ -116,9 +116,7 @@ export function CatalogToolbar({
 	const sorting = (
 		<>
 			<label className={sourceList ? "source-sort-field" : undefined}>
-				<span className={sourceList ? undefined : "sr-only"}>
-					{sourceList ? "排序依据" : "排序字段"}
-				</span>
+				<span className={sourceList ? undefined : "sr-only"}>排序依据</span>
 				<NativeSelect
 					value={state.sort}
 					onChange={(e) =>
@@ -194,12 +192,12 @@ export function CatalogToolbar({
 			</label>
 			{sources && (
 				<label>
-					<span className="sr-only">Source 筛选</span>
+					<span className="sr-only">来源筛选</span>
 					<NativeSelect
 						value={state.source_id}
 						onChange={(e) => change({ source_id: e.target.value })}
 					>
-						<option value="">全部 Source</option>
+						<option value="">全部来源</option>
 						{sources.map((source) => (
 							<option key={source.id} value={source.id}>
 								{source.title}

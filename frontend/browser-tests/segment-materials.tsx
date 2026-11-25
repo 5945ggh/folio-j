@@ -151,7 +151,7 @@ export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
 			return control;
 		};
 		const original = [...container.querySelectorAll("label")]
-			.find((node) => node.textContent?.includes("目标原文"))
+			.find((node) => node.textContent?.includes("原文"))
 			?.querySelector("textarea");
 		if (refreshed) {
 			check(
@@ -167,7 +167,7 @@ export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
 				(node) => node.textContent,
 			);
 			check(
-				groups.join("|") === "原文与语境|译文与听写|出处与备注",
+				groups.join("|") === "原文与前后文|译文与听写|出处与备注",
 				"Editor must group original/context, translation/transcription and provenance/notes consistently",
 			);
 			const contexts = [
@@ -198,7 +198,7 @@ export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
 				.filter((node) => node.querySelector("input,textarea"))
 				.map((node) => node.querySelector("span")?.textContent?.trim());
 			check(
-				labels.join("|") === "前文|后文|译文|听写|出处补充|个人管理备注",
+				labels.join("|") === "前文|后文|译文|听写|出处补充|备注",
 				`Edit field order changed: ${labels.join("|")}`,
 			);
 			await until(
@@ -218,7 +218,7 @@ export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
 			["译文", "修改译文"],
 			["听写", "修改听写"],
 			["出处补充", "修改出处"],
-			["个人管理备注", "修改备注"],
+			["备注", "修改备注"],
 		] as const;
 		for (const [label, value] of updates) {
 			const control = byLabel(label);
@@ -291,15 +291,14 @@ export async function segmentMaterials(h: BrowserHarness, refreshed = true) {
 				(node) => node.getAttribute("aria-label"),
 			);
 			check(
-				groups.join("|") === "原文与语境|译文与听写|出处与备注",
+				groups.join("|") === "原文与前后文|译文与听写|出处与备注",
 				"Reader and editor groups must match",
 			);
 			const labels = [
 				...body.querySelectorAll(".segment-material-field h4"),
 			].map((node) => node.textContent);
 			check(
-				labels.join("|") ===
-					"前文|目标原文|后文|译文|听写|出处补充|个人管理备注",
+				labels.join("|") === "前文|原文|后文|译文|听写|出处补充|备注",
 				`Read field order changed: ${labels.join("|")}`,
 			);
 			await until(
@@ -589,7 +588,7 @@ async function segmentContentAggregation(
 				`${scenario.name}: target/context preview lost saved text`,
 			);
 			const before = card.querySelector('[aria-label="已保存前文"]');
-			const target = card.querySelector('[aria-label="目标原文"]');
+			const target = card.querySelector('[aria-label="原文"]');
 			const after = card.querySelector('[aria-label="已保存后文"]');
 			check(
 				before &&
@@ -682,7 +681,7 @@ async function segmentContentAggregation(
 					"History read failure must preserve the current translation state",
 				);
 				const retry = [...body.querySelectorAll("button")].find(
-					(node) => node.textContent?.trim() === "重试读取",
+					(node) => node.textContent?.trim() === "重试",
 				);
 				check(retry, "History read failure must offer retry");
 				if (records) records.open = true;
@@ -748,7 +747,7 @@ async function segmentContentAggregation(
 							?.textContent === "第三章",
 					"Material origin must use separate structured title and chapter fields",
 				);
-				const origin = body.querySelector('[aria-label="材料出处"]');
+				const origin = body.querySelector('[aria-label="原文出处"]');
 				check(
 					origin && !origin.textContent?.includes("第 4—9 字"),
 					"Readable origin must not expose locator offsets from legacy display",
@@ -765,8 +764,8 @@ async function segmentContentAggregation(
 					() =>
 						body.textContent?.includes(
 							scenario.name === "material-deleted"
-								? "原材料已删除"
-								: "快照不一致",
+								? "原书已删除"
+								: "原文内容已变更",
 						) === true,
 					"Unavailable origin must explain the saved snapshot state",
 				);
@@ -816,13 +815,13 @@ async function segmentEditConflicts(h: BrowserHarness) {
 	const { container, mount, until, inputValue, mock } = h;
 	const check: BrowserHarness["check"] = h.check;
 	const labels = {
-		text: "目标原文",
+		text: "原文",
 		translation: "译文",
 		context_before: "前文",
 		context_after: "后文",
 		transcription: "听写",
 		source_ref: "出处说明",
-		note: "个人管理备注",
+		note: "备注",
 	} as const;
 	const button = (label: string) =>
 		[...container.querySelectorAll<HTMLButtonElement>("button")].find(
@@ -835,7 +834,7 @@ async function segmentEditConflicts(h: BrowserHarness) {
 		check(control, `Missing draft field ${name}`);
 		return control;
 	};
-	const confirmLabel = "已核对，允许按当前版本保存草稿";
+	const confirmLabel = "确认并继续保存";
 	for (const scenario of ["preserve", "read-failure", ...Object.keys(labels)]) {
 		let saved = {
 			...materialSegment,
@@ -849,6 +848,8 @@ async function segmentEditConflicts(h: BrowserHarness) {
 		let readsFail = false;
 		mock(async (request) => {
 			const path = new URL(request.url).pathname;
+			if (path === "/api/dictionary" && request.method === "GET")
+				return Response.json({ dictionaries: [], active_dictionary_id: null });
 			if (path === "/api/segments/segment" && request.method === "PATCH") {
 				const body: components["schemas"]["SegmentUpdate"] =
 					await request.json();
@@ -934,7 +935,7 @@ async function segmentEditConflicts(h: BrowserHarness) {
 			);
 			if (scenario === "read-failure") {
 				await until(
-					() => !!button("重试读取当前内容"),
+					() => !!button("重试"),
 					"Failed current-content read must offer retry",
 				);
 				check(
@@ -954,7 +955,7 @@ async function segmentEditConflicts(h: BrowserHarness) {
 					"Unconfirmed conflict must not submit again",
 				);
 				readsFail = false;
-				button("重试读取当前内容")?.click();
+				button("重试")?.click();
 			}
 			await until(
 				() => !!button(confirmLabel) && !button(confirmLabel)?.disabled,

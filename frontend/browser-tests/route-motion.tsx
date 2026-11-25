@@ -464,7 +464,10 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 		);
 		const trigger =
 			h.container.querySelector<HTMLButtonElement>(".book-menu-trigger");
-		check(trigger, "Card menu must exist");
+		check(
+			trigger?.getAttribute("aria-label") === `《${book.title}》的更多操作`,
+			"Card menu must identify the book by title",
+		);
 		trigger.click();
 		await h.until(
 			() => !!h.container.querySelector(".book-menu:popover-open"),

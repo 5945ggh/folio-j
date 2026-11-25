@@ -125,7 +125,7 @@ export async function ankiSentenceFocusRegression(h: BrowserHarness) {
 		card.current?.querySelector<HTMLInputElement>("#anki-f-partOfSpeech");
 	const headword = () =>
 		card.current?.querySelector<HTMLInputElement>("#anki-f-selection");
-	const confirmation = () => button("仍作为新笔记发送");
+	const confirmation = () => button("仍然发送");
 	const sentenceFor = (index: number) =>
 		requests[index]?.fields.find((field) => field.target_field === "Sentence");
 	try {

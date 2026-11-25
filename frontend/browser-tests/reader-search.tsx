@@ -394,7 +394,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 			() => !!h.container.querySelector("iframe.material-part"),
 			"Reader must render exact source frames",
 		);
-		tool("目录").click();
+		tool("目录与书签").click();
 		await settle();
 		check(
 			!h.container.querySelector('[role="tab"][data-value="search"]'),
@@ -493,7 +493,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 					() =>
 						card()?.inert === false &&
 						!!card()?.querySelector('[role="tab"][aria-label="学习片段"]') &&
-						!!card()?.querySelector('[role="tab"][aria-label="翻译"]'),
+						!!card()?.querySelector('[role="tab"][aria-label="译文"]'),
 					"The original text tap must open the combined record preview once overlap is verified",
 				);
 				return "reader search translation preserves the combined body preview while segments load";
@@ -518,12 +518,12 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 				});
 			if (scene === "preview-refresh") {
 				await h.until(
-					() => !!card()?.querySelector('[role="tab"][aria-label="翻译"]'),
+					() => !!card()?.querySelector('[role="tab"][aria-label="译文"]'),
 					"Two verified overlapping types must remain available",
 				);
 				const translationTab = () =>
 					card()?.querySelector<HTMLButtonElement>(
-						'[role="tab"][aria-label="翻译"]',
+						'[role="tab"][aria-label="译文"]',
 					);
 				translationTab()?.click();
 				const translationKey = [
@@ -611,7 +611,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 						) === true,
 					"Verified translation must become visible again without remounting",
 				);
-				click("返回翻译列表", card() ?? undefined);
+				click("返回译文列表", card() ?? undefined);
 				const remove = () =>
 					card()?.querySelector<HTMLButtonElement>(
 						".reader-record-translation-entry .translation-remove",
@@ -626,7 +626,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 				);
 				const openedDialog = dialog();
 				check(openedDialog, "A modal must be open");
-				click("确认删除翻译", openedDialog);
+				click("确认删除", openedDialog);
 				await h.until(
 					() =>
 						openedDialog.textContent?.includes("本地删除失败，请重试") === true,
@@ -695,7 +695,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 				segmentRead = "error";
 				await refreshSegments();
 				await h.until(
-					() => card()?.textContent?.includes("重试读取本章片段") === true,
+					() => card()?.textContent?.includes("重试") === true,
 					"The target's own failed refresh must hide the content and offer retry",
 				);
 				check(
@@ -705,7 +705,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 				releaseTranslation?.();
 				await h.until(() => !translationPending, "Unrelated read must settle");
 				segmentRead = "deleted";
-				click("重试读取本章片段", card() ?? undefined);
+				click("重试", card() ?? undefined);
 				await h.until(
 					() => !card(),
 					"A deleted target must close even when an overlapping translation remains",
@@ -813,7 +813,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 		};
 		checkbox("全部章节").click();
 		await h.until(
-			() => panel()?.textContent?.includes("尚未选择章节") ?? false,
+			() => panel()?.textContent?.includes("未选择任何章节") ?? false,
 			"No chapters must show explicit empty state",
 		);
 		const beforeEmpty = calls.length;
@@ -920,7 +920,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 		click("全部");
 		h.inputValue(input(), "失敗");
 		await h.until(
-			() => panel()?.textContent?.includes("译文读取失败") ?? false,
+			() => panel()?.textContent?.includes("译文加载失败") ?? false,
 			"One category must expose its own failure",
 		);
 		check(
@@ -936,7 +936,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 			() => panel()?.querySelectorAll(".reader-search-hit").length === 40,
 			"Single category must show first 40 records",
 		);
-		click("继续加载 40 条");
+		click("加载更多");
 		await h.until(
 			() => panel()?.querySelectorAll(".reader-search-hit").length === 43,
 			"Category pagination must append remaining records",
@@ -1108,7 +1108,7 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 		check(
 			h.container
 				.querySelector(".reader-search-saved-translation")
-				?.textContent?.includes("原文位置暂不可用"),
+				?.textContent?.includes("无法定位到原书位置"),
 			"Historical translation must explain unavailable location",
 		);
 		check(

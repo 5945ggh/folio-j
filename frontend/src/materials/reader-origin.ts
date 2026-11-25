@@ -13,14 +13,14 @@ export function recordOriginPosition(
 		reference.material_id !== chapter.material_id ||
 		reference.version_id !== chapter.version_id
 	)
-		throw new Error("原文材料或版本不匹配，无法精确定位。");
+		throw new Error("本书版本已变化，无法定位原文。");
 	const mapped = referenceParts(chapter, reference.ranges);
 	const first = mapped.entries().next().value;
-	if (!first) throw new Error("出处没有可定位的原文。");
+	if (!first) throw new Error("出处定位信息无效，无法定位原文。");
 	const [index, intervals] = first;
 	const part = chapter.parts[index];
 	const interval = intervals[0];
-	if (!part || !interval) throw new Error("出处缺少完整的定位范围。");
+	if (!part || !interval) throw new Error("出处定位信息无效，无法定位原文。");
 	return {
 		version_id: reference.version_id,
 		chapter_id: chapter.id,
@@ -38,15 +38,15 @@ export function originFailure(origin: SegmentProvenance): string | null {
 		case "resolved":
 			return null;
 		case "material_deleted":
-			return "原材料已删除，保留了历史原文，当前无法返回原处。";
+			return "原书已删除，无法跳转回原文。";
 		case "version_unavailable":
-			return "出处绑定的材料版本不可用，当前无法返回原处。";
+			return "原书版本已变更，无法跳转回原文。";
 		case "snapshot_mismatch":
-			return "出处与材料原文快照不一致，无法精确定位。";
+			return "原文内容已变更，无法精确定位。";
 		case "none":
-			return "这个片段没有材料出处。";
+			return "该片段未关联书籍出处。";
 		default:
-			return "出处契约或范围无法校验，当前无法精确定位。";
+			return "出处定位信息无效，无法定位原文。";
 	}
 }
 
@@ -64,7 +64,7 @@ export function originPosition(
 		!range ||
 		!part
 	)
-		throw new Error(failure ?? "出处缺少完整的定位范围。");
+		throw new Error(failure ?? "出处定位信息无效，无法定位原文。");
 	return {
 		version_id: origin.material_provenance.version_id,
 		chapter_id: origin.chapter_id,

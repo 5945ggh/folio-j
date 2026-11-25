@@ -181,7 +181,7 @@ export function ReaderNavigationPanel(
 	);
 	return (
 		<ReaderQueryPanel
-			title="书内导航"
+			title="目录与书签"
 			onClose={props.onClose}
 			inactive={props.inactive}
 			closing={props.closing}
@@ -193,14 +193,14 @@ export function ReaderNavigationPanel(
 							正在阅读 · {current?.title}
 							{props.progress === null
 								? ""
-								: ` · 章内 ${Math.round(props.progress * 100)}%`}
+								: ` · 本章 ${Math.round(props.progress * 100)}%`}
 						</span>
 					</div>
 					<div
 						className="reader-query-tabs"
 						data-active-tab={props.tab}
 						role="tablist"
-						aria-label="导航方式"
+						aria-label="视图切换"
 						onKeyDown={(event) => {
 							let next: (typeof tabs)[number];
 							if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
@@ -252,15 +252,15 @@ export function ReaderNavigationPanel(
 			>
 				<NavigationFailure
 					error={props.navigationError}
-					retryHint="请再次点击章节重试，或继续阅读。"
+					retryHint="请再次点击章节重试。"
 				/>
-				<p className="reader-toc-hint">显示各章上次停留位置</p>
+				<p className="reader-toc-hint">各章右侧显示上次阅读进度</p>
 				<ol className="reader-toc">
 					{props.chapters.map((chapter) => (
 						<li key={chapter.id}>
 							<button
 								type="button"
-								aria-label={`${chapter.title}，${!props.chapterProgress.has(chapter.id) ? "尚无停留记录" : props.chapterProgress.get(chapter.id) == null ? "已记录上次停留位置" : `上次停留位置 ${Math.round((props.chapterProgress.get(chapter.id) ?? 0) * 100)}%`}`}
+								aria-label={`${chapter.title}，${!props.chapterProgress.has(chapter.id) ? "未读" : props.chapterProgress.get(chapter.id) == null ? "已读" : `上次读到 ${Math.round((props.chapterProgress.get(chapter.id) ?? 0) * 100)}%`}`}
 								aria-current={
 									chapter.id === props.chapterId ? "location" : undefined
 								}
@@ -274,7 +274,7 @@ export function ReaderNavigationPanel(
 									{!props.chapterProgress.has(chapter.id)
 										? ""
 										: props.chapterProgress.get(chapter.id) == null
-											? "有记录"
+											? "已读"
 											: `${Math.round((props.chapterProgress.get(chapter.id) ?? 0) * 100)}%`}
 								</small>
 							</button>
@@ -531,7 +531,7 @@ function IllustrationImage({
 							setAttempt((value) => value + 1);
 						}}
 					>
-						重试此图
+						重新加载
 					</button>
 				</div>
 			) : (
@@ -573,7 +573,7 @@ function IllustrationImage({
 						/>
 					) : (
 						<span className="reader-gallery-placeholder" aria-hidden="true">
-							浏览时加载
+							加载中…
 						</span>
 					)}
 				</div>
@@ -647,7 +647,7 @@ function ImageViewer({
 		],
 		enabled: activity.active && ordinal !== null && !cachedItem,
 		queryFn: async ({ signal }) => {
-			if (ordinal === null) throw new Error("图片尚未定位");
+			if (ordinal === null) throw new Error("插图位置加载中");
 			const page = await listIllustrations(
 				props.materialId,
 				props.versionId,
@@ -764,7 +764,7 @@ function ImageViewer({
 									signal,
 								).then(
 									() => {
-										if (!signal.aborted) setFeedback("正在下载图片");
+										if (!signal.aborted) setFeedback("已开始下载");
 									},
 									() => {
 										if (!signal.aborted) setFeedback("下载失败，请重试。");
@@ -814,7 +814,7 @@ function ImageViewer({
 				)}
 				<NavigationFailure
 					error={props.navigationError}
-					retryHint="请再次点击“前往书中位置”重试；浏览插图不会移动正文。"
+					retryHint="请再次点击「前往书中位置」重试。"
 				/>
 				{lookupError && (
 					<div role="alert" className="reader-query-error">
@@ -829,7 +829,7 @@ function ImageViewer({
 				)}
 				{!displayItem && image.isError && (
 					<div className="reader-query-error" role="alert">
-						无法读取插图。
+						插图加载失败。
 						<button
 							type="button"
 							onClick={() => {
@@ -926,7 +926,7 @@ export function ReaderDirectImageViewer(
 			);
 			const item = page.items[0];
 			signal.throwIfAborted();
-			if (!item) throw new Error("该图已不可用");
+			if (!item) throw new Error("该插图暂不可用");
 			props.imageCache.remember([item], page.total);
 			return { item, total: page.total };
 		},
@@ -1033,16 +1033,15 @@ export function ReaderGalleryPanel(
 						{gallery.data
 							? `${total} 张`
 							: gallery.isError
-								? "清单暂不可用"
-								: "正在读取清单…"}
-						{" · 浏览插图不会改变阅读位置"}
+								? "暂不可用"
+								: "加载中…"}
 					</>
 				}
 			>
 				{ordinal === null && (
 					<NavigationFailure
 						error={props.navigationError}
-						retryHint="请打开插图后再次点击“前往书中位置”重试，或关闭图库继续阅读。"
+						retryHint="请重新打开插图并点击「前往书中位置」重试。"
 					/>
 				)}
 				{gallery.isPending && (

@@ -9,7 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import type { Segment } from "../content";
+import { type Segment, trimTrailingPunctuation } from "../content";
 import { useViewActivity } from "../navigation/view-activity";
 import type { Material } from "./api";
 import { restoreReaderPanelFocus } from "./motion";
@@ -112,7 +112,7 @@ function ChapterPicker({
 	const chosen = selectedSearchChapters(selected, ids);
 	const all = chosen.length === ids.length;
 	const label = all
-		? "全选章节"
+		? "全部章节"
 		: chosen.length === 0
 			? "未选章节"
 			: `已选 ${chosen.length} 章`;
@@ -451,7 +451,7 @@ export function ReaderSearchPanel(props: Props) {
 	};
 	const chapterLabel =
 		chapterIds === null
-			? "全选章节"
+			? "全部章节"
 			: chapterIds.length
 				? `已选 ${chapterIds.length} 章`
 				: "未选章节";
@@ -611,19 +611,20 @@ export function ReaderSearchPanel(props: Props) {
 			>
 				{(openError || props.error) && (
 					<p role="alert" className="reader-search-error">
-						{(openError ?? props.error)?.message} 请重试打开结果。
+						{trimTrailingPunctuation(
+							(openError ?? props.error)?.message ?? "",
+						) || "未能加载搜索结果"}
+						。请重试。
 					</p>
 				)}
 				{tooLong ? (
-					<p role="alert">查询最多 160 个字符。</p>
+					<p role="alert">搜索词最多 160 个字符。</p>
 				) : !hasChapters ? (
 					<p className="reader-search-empty">
-						尚未选择章节。请在筛选中选择章节。
+						未选择任何章节，请在筛选中勾选要搜索的章节。
 					</p>
 				) : !current ? (
-					<p role="status">
-						{composing ? "输入完成后开始搜索。" : "正在搜索…"}
-					</p>
+					<p role="status">{composing ? "等待输入完成…" : "正在搜索…"}</p>
 				) : (
 					<>
 						<p className="reader-search-summary" aria-live="polite">
@@ -635,7 +636,7 @@ export function ReaderSearchPanel(props: Props) {
 							)
 								? "正在搜索…"
 								: state.kind === "all"
-									? `${query ? `原文 ${original.isError ? "暂不可用" : `${original.data?.pages[0]?.total ?? 0} 处`} · ` : ""}资料 ${[segments, translations, bookmarks].some((entry) => entry.isError) ? "部分暂不可用" : `${[segments, translations, bookmarks].reduce((sum, entry) => sum + (entry.data?.pages[0]?.total ?? 0), 0)} 条`}`
+									? `${query ? `原文 ${original.isError ? "暂不可用" : `${original.data?.pages[0]?.total ?? 0} 处`} · ` : ""}记录 ${[segments, translations, bookmarks].some((entry) => entry.isError) ? "部分暂不可用" : `${[segments, translations, bookmarks].reduce((sum, entry) => sum + (entry.data?.pages[0]?.total ?? 0), 0)} 条`}`
 									: `${searchLabels[state.kind]} ${queries[state.kind].isError ? "暂不可用" : `${queries[state.kind].data?.pages[0]?.total ?? 0} ${state.kind === "original" ? "处" : "条"}`}`}
 						</p>
 						{groups.map((kind) => {
@@ -686,8 +687,7 @@ export function ReaderSearchPanel(props: Props) {
 													<ReaderSearchIcon name={kind} />
 													{searchLabels[kind]}
 													<small>
-														{total ?? "—"}
-														{kind === "original" ? "处" : "条"}
+														{total ?? "—"} {kind === "original" ? "处" : "条"}
 													</small>
 												</button>
 											) : (
@@ -710,7 +710,7 @@ export function ReaderSearchPanel(props: Props) {
 									<div id={`${titleId}-${kind}`} hidden={folded}>
 										{result.isError ? (
 											<p role="alert" className="reader-search-error">
-												{searchLabels[kind]}读取失败。
+												{searchLabels[kind]}加载失败。
 												<button
 													type="button"
 													onClick={() => void result.refetch()}
@@ -720,7 +720,7 @@ export function ReaderSearchPanel(props: Props) {
 											</p>
 										) : !result.data ? (
 											<p role="status" className="reader-search-empty">
-												正在读取…
+												正在加载…
 											</p>
 										) : total === 0 ? (
 											<p className="reader-search-empty">
@@ -748,7 +748,7 @@ export function ReaderSearchPanel(props: Props) {
 														onClick={() => void choose(hit, key)}
 													>
 														<small>
-															{hit.item.chapter_title || "原文位置暂不可用"}
+															{hit.item.chapter_title || "原章节位置不可用"}
 														</small>
 														<span
 															className="reader-search-snippet"
@@ -784,9 +784,7 @@ export function ReaderSearchPanel(props: Props) {
 													disabled={result.isFetchingNextPage}
 													onClick={() => void result.fetchNextPage()}
 												>
-													{result.isFetchingNextPage
-														? "正在加载…"
-														: "继续加载 40 条"}
+													{result.isFetchingNextPage ? "正在加载…" : "加载更多"}
 												</button>
 											)}
 									</div>

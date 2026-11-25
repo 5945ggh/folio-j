@@ -274,9 +274,9 @@ export async function translationRemoval(
 			() => !!h.container.querySelector(".reader-record-tabs"),
 			"Chapter tabs must mount before choosing translations",
 		);
-		button("翻译").click();
+		button("译文").click();
 		const back = h.container.querySelector<HTMLButtonElement>(
-			'button[aria-label="返回翻译列表"]',
+			'button[aria-label="返回译文列表"]',
 		);
 		back?.click();
 		await h.until(
@@ -318,7 +318,7 @@ export async function translationRemoval(
 			entry?.parentElement,
 			"Target row must remain available before deletion",
 		);
-		button(`清除此处全部翻译：${target.text}`, entry.parentElement).click();
+		button(`删除该处译文：${target.text}`, entry.parentElement).click();
 	};
 	removeFromList();
 	await h.until(
@@ -326,8 +326,8 @@ export async function translationRemoval(
 		"List trash opens a native confirmation dialog",
 	);
 	check(
-		modal()?.querySelector("h2")?.textContent === "清除此处全部翻译？" &&
-			modal()?.textContent?.includes("已另存的学习片段及关联译文快照保留"),
+		modal()?.querySelector("h2")?.textContent === "删除此处全部译文？" &&
+			modal()?.textContent?.includes("已保存的学习片段及关联译文记录会保留"),
 		"Confirmation states exact deletion and retention scope",
 	);
 	button("取消", modal() ?? undefined).click();
@@ -340,7 +340,7 @@ export async function translationRemoval(
 	);
 	removeFromList();
 	await h.until(() => !!modal(), "Retry opens the same confirmation");
-	button("确认删除翻译", modal() ?? undefined).click();
+	button("确认删除", modal() ?? undefined).click();
 	await h.until(
 		() => !!modal()?.textContent?.includes("本地删除失败，请重试"),
 		"DELETE failure remains in the modal for retry",
@@ -351,7 +351,7 @@ export async function translationRemoval(
 			marked("folio-translation", target),
 		"Failed DELETE must preserve row and source mark",
 	);
-	button("确认删除翻译", modal() ?? undefined).click();
+	button("确认删除", modal() ?? undefined).click();
 	await h.until(
 		() => !modal() && !listEntry(target.identity_sha256) && !inline(),
 		"Successful retry removes target list entry and any inline output",
@@ -390,22 +390,22 @@ export async function translationRemoval(
 		"Adopted detail GET must remain in flight before deletion",
 	);
 	await h.until(
-		() => !!h.container.querySelector('button[aria-label="返回翻译列表"]'),
+		() => !!h.container.querySelector('button[aria-label="返回译文列表"]'),
 		"Pending adopted detail must retain its chapter list return control",
 	);
-	button("返回翻译列表").click();
+	button("返回译文列表").click();
 	await openList();
 	const adoptedRow = listEntry(first.identity_sha256);
 	check(
 		adoptedRow?.parentElement,
 		"Adopted target must remain listed while its detail is pending",
 	);
-	button(`清除此处全部翻译：${first.text}`, adoptedRow.parentElement).click();
+	button(`删除该处译文：${first.text}`, adoptedRow.parentElement).click();
 	await h.until(
-		() => modal()?.querySelector("h2")?.textContent === "清除此处全部翻译？",
+		() => modal()?.querySelector("h2")?.textContent === "删除此处全部译文？",
 		"Chapter list removal must confirm clearing the complete target",
 	);
-	button("确认删除翻译", modal() ?? undefined).click();
+	button("确认删除", modal() ?? undefined).click();
 	await h.until(
 		() => !modal() && fixture.removed.has(first.identity_sha256),
 		"List deletion completes while stale adopted detail remains pending",
@@ -439,9 +439,9 @@ export async function translationRemoval(
 		h.container.querySelector<HTMLDetailsElement>(".translation-more");
 	check(more, "Translation details expose a more menu");
 	more.open = true;
-	button("清除此处全部翻译").click();
+	button("删除该处翻译记录").click();
 	await h.until(
-		() => modal()?.querySelector("h2")?.textContent === "清除此处全部翻译？",
+		() => modal()?.querySelector("h2")?.textContent === "删除此处全部译文？",
 		"Detail removal confirms all versions at the exact target",
 	);
 	button("取消", modal() ?? undefined).click();
@@ -450,12 +450,12 @@ export async function translationRemoval(
 		"Cancel returns focus to the persistent more trigger",
 	);
 	more.open = true;
-	button("清除此处全部翻译").click();
+	button("删除该处翻译记录").click();
 	await h.until(
 		() => !!modal(),
 		"Reopening the more-menu confirmation must finish before submitting",
 	);
-	button("确认删除翻译", modal() ?? undefined).click();
+	button("确认删除", modal() ?? undefined).click();
 	await h.until(
 		() =>
 			!modal() &&
@@ -510,7 +510,7 @@ export async function translationRemoval(
 			details.setAttribute("open", "");
 		check(
 			h.container.textContent?.includes(
-				"此处阅读翻译已删除；关联译文快照保留。",
+				"阅读器中的该处翻译已删除，此条译文记录已保留。",
 			) && h.container.textContent.includes(first.translation),
 			"Segment explains retained snapshots and preserves original result text",
 		);
@@ -661,7 +661,7 @@ async function studyDraftRemoval(
 				await h.until(
 					() =>
 						!!h.container.textContent?.includes(
-							"原阅读翻译已删除，草稿文字仍保留，可独立保存为片段",
+							"原译文已删除，当前输入框中的内容已保留，仍可直接保存。",
 						),
 					"Deleted source must detach and explain that the draft survives",
 				);
@@ -674,18 +674,20 @@ async function studyDraftRemoval(
 				failDetail = true;
 				await client.invalidateQueries({ queryKey: detailKey, exact: true });
 				await h.until(
-					() => !!h.container.textContent?.includes("保留草稿并解除译文关联"),
+					() => !!h.container.textContent?.includes("不再关联原译文"),
 					"Failed result read must offer explicit detach",
 				);
 				check(
-					!h.container.textContent?.includes("已解除译文关联，草稿文字仍保留"),
+					!h.container.textContent?.includes(
+						"已取消关联原译文，当前输入框中的内容已保留",
+					),
 					"Read failure alone must not silently detach",
 				);
-				button("保留草稿并解除译文关联").click();
+				button("不再关联原译文").click();
 				await h.until(
 					() =>
 						!!h.container.textContent?.includes(
-							"已解除译文关联，草稿文字仍保留",
+							"已取消关联原译文，当前输入框中的内容已保留",
 						),
 					"Explicit detach must retain draft and explain the result",
 				);
@@ -703,27 +705,25 @@ async function studyDraftRemoval(
 				client.setQueryData(detailKey, { ...original, reader_deleted: true });
 				await new Promise((resolve) => setTimeout(resolve, 30));
 				check(
-					!h.container.textContent?.includes(
-						"草稿文字仍保留，可独立保存为片段",
-					),
+					!h.container.textContent?.includes("原译文已删除"),
 					"Pending save must not detach its frozen association",
 				);
 				releaseSave?.();
 				await h.until(
-					() => !!h.container.textContent?.includes("保存结果尚未确认"),
+					() => !!h.container.textContent?.includes("暂未确认是否保存成功"),
 					"503 keeps the original save uncertain",
 				);
 				failDetail = true;
 				await client.invalidateQueries({ queryKey: detailKey, exact: true });
 				await h.until(
-					() => !!h.container.textContent?.includes("保留草稿并解除译文关联"),
+					() => !!h.container.textContent?.includes("不再关联原译文"),
 					"Uncertain save can show failed-read recovery but keeps it disabled",
 				);
 				check(
-					button("保留草稿并解除译文关联").disabled && field.disabled,
+					button("不再关联原译文").disabled && field.disabled,
 					"Uncertain save must disable detach and preserve original frozen request",
 				);
-				button("核实本次保存").click();
+				button("重试保存").click();
 			}
 			await h.until(
 				() => saved,

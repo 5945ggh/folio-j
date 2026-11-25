@@ -432,7 +432,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 	};
 	const items = () => [
 		...container.querySelectorAll<HTMLLIElement>(
-			'ol[aria-label="位置书签"] > li',
+			'ol[aria-label="书签列表"] > li',
 		),
 	];
 	const itemContaining = (value: string) => {
@@ -511,7 +511,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 	};
 	const openBookmarks = async () => {
 		if (!container.querySelector('[role="dialog"]:not([inert]) [role="tab"]'))
-			button("目录").click();
+			button("目录与书签").click();
 		await until(
 			() =>
 				!!container.querySelector('[role="dialog"]:not([inert]) [role="tab"]'),
@@ -525,7 +525,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 	};
 	const closeNavigation = async () => {
 		await closeDetail();
-		button("关闭书内导航").click();
+		button("关闭目录与书签").click();
 		await until(
 			() => !container.querySelector('[role="dialog"]:not([inert])'),
 			"Navigation must close",
@@ -546,7 +546,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 	}
 
 	async function capturePendingAnchor() {
-		button("添加当前位置书签").click();
+		button("添加书签").click();
 		await until(
 			() => Number(creates.length) === 1,
 			"Toolbar add must submit a bookmark",
@@ -599,7 +599,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 
 	async function checkCreationRetry(firstCreate: Schema["BookmarkCreate"]) {
 		const beforeNearbyView = visibleParagraphs().join(",");
-		button("查看已有").click();
+		button("查看已有书签").click();
 		await until(
 			() => !!detail()?.querySelector(".reader-bookmark-detail-excerpt"),
 			"View existing must open and validate bookmark details",
@@ -617,7 +617,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		await closeNavigation();
 
 		nextCreate = "nearby";
-		button("添加当前位置书签").click();
+		button("添加书签").click();
 		await until(
 			() =>
 				!!container
@@ -636,7 +636,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		);
 
 		nextCreate = "nearby";
-		button("添加当前位置书签").click();
+		button("添加书签").click();
 		await until(
 			() =>
 				Number(creates.length) === 3 &&
@@ -664,7 +664,11 @@ export async function positionBookmarks(h: BrowserHarness) {
 		await until(
 			() =>
 				Number(creates.length) === 4 &&
-				!!container.querySelector(".reader-bookmark-notice [role=alert]"),
+				container
+					.querySelector(".reader-bookmark-notice [role=alert]")
+					?.textContent?.includes(
+						"暂未确认书签是否保存成功，重试会保存刚才的位置。",
+					) === true,
 			"Forced add failure must offer an explicit retry",
 		);
 		check(
@@ -673,12 +677,12 @@ export async function positionBookmarks(h: BrowserHarness) {
 				JSON.stringify(creates[3]?.position) === forcedPosition,
 			"Forced addition must preserve the first anchor and request identity after scrolling",
 		);
-		button("添加当前位置书签").click();
+		button("添加书签").click();
 		check(
 			Number(creates.length) === 4,
 			"A pending failed creation must block sampling a new position",
 		);
-		button("重试保存书签").click();
+		button("重试", find(".reader-bookmark-notice")).click();
 		await until(
 			() => Number(creates.length) === 5,
 			"Forced creation must retry",
@@ -778,7 +782,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		checkVisibleLines(excerptPreview, 2, "List excerpt");
 		checkVisibleLines(notePreview, 1, "List note");
 		check(
-			longItem.textContent?.includes("章内约 8%"),
+			longItem.textContent?.includes("本章约 8%"),
 			"List progress must refer to the bookmark chapter",
 		);
 		const beforeDetailPosition = visibleParagraphs().join(",");
@@ -962,12 +966,12 @@ export async function positionBookmarks(h: BrowserHarness) {
 			await until(
 				() =>
 					document.activeElement ===
-					container.querySelector('ol[aria-label="位置书签"]'),
+					container.querySelector('ol[aria-label="书签列表"]'),
 				"Deleted shortcut must restore focus to the stable list",
 			);
 		} catch (failure) {
 			throw new Error(
-				`${String(failure)}; active=${document.activeElement?.outerHTML.slice(0, 400)}; list=${container.querySelector('ol[aria-label="位置书签"]')?.outerHTML.slice(0, 200)}`,
+				`${String(failure)}; active=${document.activeElement?.outerHTML.slice(0, 400)}; list=${container.querySelector('ol[aria-label="书签列表"]')?.outerHTML.slice(0, 200)}`,
 			);
 		}
 		const dialog = find<HTMLElement>('[role="dialog"]:not([inert])');
@@ -1087,7 +1091,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		await until(
 			() =>
 				patches.length > patchesBeforeRefreshSave &&
-				!!detail()?.textContent?.includes("读取最新书签"),
+				!!detail()?.textContent?.includes("刷新书签"),
 			"Saving after an external edit must require conflict recovery",
 		);
 		check(
@@ -1170,7 +1174,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		nextPatch = "conflict";
 		button("保存备注").click();
 		await until(
-			() => !!container.textContent?.includes("读取最新书签"),
+			() => !!container.textContent?.includes("刷新书签"),
 			"Conflict must offer an explicit latest-version read",
 		);
 		check(
@@ -1185,11 +1189,11 @@ export async function positionBookmarks(h: BrowserHarness) {
 				container.querySelector<HTMLTextAreaElement>(
 					'textarea[aria-label="书签备注"]',
 				)?.value === "冲突后的本地草稿" &&
-				!!container.textContent?.includes("读取最新书签"),
+				!!container.textContent?.includes("刷新书签"),
 			"Closing and reopening must retain both the conflict and local note draft",
 		);
 		const beforeRead = singleReads;
-		button("读取最新书签").click();
+		button("刷新书签").click();
 		await until(
 			() => singleReads > beforeRead,
 			"Conflict recovery must read the latest bookmark",
@@ -1224,7 +1228,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		);
 		button("书签", navigation).click();
 		await until(
-			() => !!container.textContent?.includes("本书或所属来源已不可用"),
+			() => !!container.textContent?.includes("本书暂不可用，无法查看书签"),
 			"Refetch 404 must explain that the material or source is unavailable",
 		);
 		check(
@@ -1236,7 +1240,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 			"Failed revalidation must hide cached bookmarks, their old count and the old editor",
 		);
 		listUnavailable = false;
-		button("重试读取书签").click();
+		button("重试", navigation).click();
 		await until(
 			() => items().length === records.length,
 			"Successful retry must restore the bookmark list",
@@ -1303,7 +1307,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 			"Image bookmark must open its source illustration",
 		);
 		const beforeImageCreate = creates.length;
-		button("添加当前位置书签").click();
+		button("添加书签").click();
 		await until(
 			() =>
 				Number(creates.length) === beforeImageCreate + 1 &&
@@ -1347,7 +1351,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 			"Saving through the list must remove the old creation notice and its stale revision",
 		);
 		await closeDetail();
-		button("添加当前位置书签").click();
+		button("添加书签").click();
 		await until(
 			() =>
 				records.some((record) => record.id === "created-3") &&
@@ -1493,10 +1497,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 			"Automatic detail refresh must not silently raise the deletion revision the user confirmed",
 		);
 		const beforeDeleteRead = singleReads;
-		button(
-			"读取最新书签",
-			find("dialog.reader-bookmark-confirm[open]"),
-		).click();
+		button("刷新书签", find("dialog.reader-bookmark-confirm[open]")).click();
 		await until(
 			() =>
 				singleReads > beforeDeleteRead &&
@@ -1534,7 +1535,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 		await closeNavigation();
 		const beforeExpiry = records.length;
 		nextCreate = "nearby";
-		button("添加当前位置书签").click();
+		button("添加书签").click();
 		await until(
 			() =>
 				!!container
@@ -1552,7 +1553,7 @@ export async function positionBookmarks(h: BrowserHarness) {
 			"Timing out nearby choice must abandon creation without a bookmark write",
 		);
 		nextCreate = "ok";
-		button("添加当前位置书签").click();
+		button("添加书签").click();
 		await until(
 			() =>
 				creates.length === attemptsBeforeExpiry + 1 &&

@@ -894,10 +894,10 @@ export async function readerDictionary(h: BrowserHarness) {
 			);
 			check(
 				actions.join("|") ===
-					"翻译|朗读|查词|带上下文复制|保存为学习片段|制作 Anki 笔记",
+					"翻译|朗读|查词|带前后文复制|保存为学习片段|制卡（发送到 Anki）",
 				"Selection actions must have the requested reading, copy, save and Anki order",
 			);
-			const copy = button("带上下文复制", tool);
+			const copy = button("带前后文复制", tool);
 			const save = button("保存为学习片段", tool);
 			check(
 				[copy, save].every((item) => {
@@ -993,7 +993,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			await selectText(first, 2, 4);
 			const cardAction = toolbar();
 			check(cardAction, "Selection actions must be ready for Anki");
-			button("制作 Anki 笔记", cardAction).click();
+			button("制卡（发送到 Anki）", cardAction).click();
 			await h.until(
 				() =>
 					h.container.querySelector(".anki-quote-inline")?.textContent ===
@@ -1128,7 +1128,7 @@ export async function readerDictionary(h: BrowserHarness) {
 				);
 			};
 			for (const [label, beforeHelp] of [
-				["自动扩展查词", button("Shift 悬浮", menu)],
+				["自动扩展查词", button("Shift 悬停", menu)],
 				["辅助排序", option("自动扩展查词")],
 			] as const) {
 				const help = button(`${label}说明`, menu);
@@ -1201,7 +1201,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			const card = h.container.querySelector<HTMLElement>(".dict-card");
 			check(
 				card?.getAttribute("aria-label") === "词卡 · 猫" &&
-					card.textContent?.includes("基础词卡") &&
+					card.textContent?.includes("读音与词形") &&
 					card.querySelector(".dict-source")?.textContent?.includes("名詞") &&
 					!card.querySelector(".dict-entry") &&
 					requests[0]?.expected_dictionary_id === null,
@@ -1965,7 +1965,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			() => !!h.container.querySelector(".dict-definitions"),
 			"Saved mark must open dictionary in click mode",
 		);
-		button("此处记录 ↗").click();
+		button("查看记录 ↗").click();
 		await h.until(
 			() =>
 				!!h.container
@@ -1988,7 +1988,7 @@ export async function readerDictionary(h: BrowserHarness) {
 			() => !!h.container.querySelector(".dict-modes"),
 			"Dictionary mode controls must open",
 		);
-		button("Shift 悬浮").click();
+		button("Shift 悬停").click();
 		if (window.innerWidth >= 740) {
 			await glyphClick(leaf, 2, frame);
 			check(
@@ -2656,7 +2656,7 @@ export async function readerDictionary(h: BrowserHarness) {
 				() =>
 					h.container
 						.querySelector(".dict-config")
-						?.textContent?.includes("可查看基础词卡") === true,
+						?.textContent?.includes("仅显示读音与词形") === true,
 				"An empty library must describe the available basic cards",
 			);
 			check(

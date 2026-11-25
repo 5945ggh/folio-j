@@ -344,7 +344,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		for (const label of [
 			"更多排版",
 			"更多界面",
-			"带上下文复制",
+			"带前后文复制",
 			"注音使用说明",
 			"工具与阅读记录说明",
 		])
@@ -403,7 +403,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			),
 			"Cross-group reset must be removed",
 		);
-		for (const label of ["更多排版", "更多界面", "带上下文复制"])
+		for (const label of ["更多排版", "更多界面", "带前后文复制"])
 			await expand(label);
 		check(!details("格式示例").open, "Format example must begin collapsed");
 		await expand("格式示例");
@@ -417,8 +417,8 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			"行距",
 			"字体",
 			"正文宽度",
-			"工具栏背景不透明度",
-			"浮窗背景不透明度",
+			"工具栏不透明度",
+			"浮窗不透明度",
 		])
 			namedControl(label);
 		for (const label of [
@@ -472,7 +472,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			"Settings must inherit Reader paper color scheme",
 		);
 		const opacity = find<HTMLInputElement>(
-			'input[aria-label="工具栏背景不透明度"]',
+			'input[aria-label="工具栏不透明度"]',
 		);
 		const geometry = () =>
 			JSON.stringify({
@@ -483,7 +483,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			});
 		const beforeOpacity = geometry();
 		const popoverOpacity = find<HTMLInputElement>(
-			'input[aria-label="浮窗背景不透明度"]',
+			'input[aria-label="浮窗不透明度"]',
 		);
 		check(
 			popoverOpacity.value === "72" &&
@@ -540,7 +540,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		}
 		if (preview) {
 			if (params.get("panel") !== "expanded") {
-				for (const label of ["更多排版", "更多界面", "带上下文复制"])
+				for (const label of ["更多排版", "更多界面", "带前后文复制"])
 					find<HTMLElement>(":scope > summary", details(label)).click();
 			}
 			find<HTMLElement>(".reader-panel-body", panel).scrollTop = 0;
@@ -663,8 +663,8 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		button("重置阅读界面").click();
 		await h.until(
 			() =>
-				find<HTMLInputElement>('input[aria-label="工具栏背景不透明度"]')
-					.value === "80" && popoverOpacity.value === "72",
+				find<HTMLInputElement>('input[aria-label="工具栏不透明度"]').value ===
+					"80" && popoverOpacity.value === "72",
 			"Interface reset must restore defaults",
 		);
 		check(
@@ -697,9 +697,9 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 				saves.length === beforeInvalid,
 			"Empty numeric input must remain invalid without saving zero",
 		);
-		find<HTMLElement>(":scope > summary", details("带上下文复制")).click();
+		find<HTMLElement>(":scope > summary", details("带前后文复制")).click();
 		await h.until(
-			() => !details("带上下文复制").open,
+			() => !details("带前后文复制").open,
 			"Copy group must collapse",
 		);
 		check(
@@ -723,12 +723,12 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		);
 		await open();
 		check(
-			!details("带上下文复制").open &&
+			!details("带前后文复制").open &&
 				details("更多排版").open &&
 				field("前文句数").value === "",
 			"Replacing tools must retain same-reader raw input and disclosure state",
 		);
-		await expand("带上下文复制");
+		await expand("带前后文复制");
 		await edit("7");
 		await blurBudget();
 		await h.until(
@@ -766,7 +766,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			"Chapter switch must complete",
 		);
 		check(
-			field("前文句数").value === "7" && details("带上下文复制").open,
+			field("前文句数").value === "7" && details("带前后文复制").open,
 			"Chapter switch must retain copy inputs",
 		);
 		await edit("");
@@ -806,7 +806,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		);
 		if (!h.container.querySelector('[role="dialog"][aria-label="阅读设置"]'))
 			await open();
-		await expand("带上下文复制");
+		await expand("带前后文复制");
 		await edit("");
 		// The independent Segment draft must still guard navigation.
 		await new Promise((resolve) => setTimeout(resolve, 150));
@@ -842,7 +842,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 		);
 		const studyDialog = () =>
 			[...h.container.querySelectorAll("dialog")].find((node) =>
-				node.textContent?.includes("放弃本次草稿"),
+				node.textContent?.includes("放弃未保存的修改"),
 			);
 		await go("/materials");
 		await h.until(
@@ -862,7 +862,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			() => !!studyDialog(),
 			"Second leave must still protect Segment draft",
 		);
-		button("放弃草稿", studyDialog()).click();
+		button("放弃修改", studyDialog()).click();
 		await h.until(
 			() => route === "/materials",
 			"Discarding Segment draft must leave directly without copy confirmation",
@@ -880,7 +880,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			"Reader must reopen for automatic saves",
 		);
 		await open();
-		await expand("带上下文复制");
+		await expand("带前后文复制");
 		saveGate = new Promise<void>((resolve) => {
 			releaseSave = resolve;
 		});
@@ -962,15 +962,15 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			field("前文句数").value === "10",
 			"Failure must preserve editable input",
 		);
-		find<HTMLElement>(":scope > summary", details("带上下文复制")).click();
+		find<HTMLElement>(":scope > summary", details("带前后文复制")).click();
 		check(
 			find('[data-reader-settings-group="copy"]').textContent?.includes(
 				"保存失败",
 			),
 			"Collapsed group must keep save failure discoverable",
 		);
-		await expand("带上下文复制");
-		button("重试保存复制设置").click();
+		await expand("带前后文复制");
+		button("重试保存").click();
 		await h.until(
 			() => stored.before_sentences === 10,
 			"Retry must save retained current inputs",
@@ -1001,7 +1001,7 @@ export async function readerSettings(h: BrowserHarness, preview = false) {
 			"Other book must open while original save is pending",
 		);
 		await open();
-		await expand("带上下文复制");
+		await expand("带前后文复制");
 		await edit("12");
 		await blurBudget();
 		await new Promise<void>((resolve) =>

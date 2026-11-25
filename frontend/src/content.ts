@@ -17,6 +17,12 @@ export class RequestError extends Error {
 	}
 }
 
+export function trimTrailingPunctuation(text: string): string {
+	const trimmed = text.trim();
+	if (/^[\p{P}\s]*$/u.test(trimmed)) return "";
+	return trimmed.replace(/[。．.!！?？…]+$/u, "").trimEnd();
+}
+
 export function errorMessage(error: unknown, status: number): RequestError {
 	const detail =
 		error && typeof error === "object" && "detail" in error
@@ -26,13 +32,16 @@ export function errorMessage(error: unknown, status: number): RequestError {
 	if (status === 404) return new RequestError("记录不存在或已删除。", status);
 	if (status === 409)
 		return new RequestError(
-			"目标原文已锁定，无法修改。其他附带信息仍可编辑。",
+			"内容已被更新或与当前状态冲突，请刷新后重试。",
 			status,
 		);
 	if (status === 422)
 		return new RequestError("输入未通过验证，请检查必填项和长度。", status);
 	if (status === 0)
-		return new RequestError("无法连接服务，请检查本地服务后重试。", status);
+		return new RequestError(
+			"暂时无法连接服务，请确认服务已启动后重试。",
+			status,
+		);
 	return new RequestError(
 		typeof detail === "string" ? detail : "操作失败，请稍后重试。",
 		status,

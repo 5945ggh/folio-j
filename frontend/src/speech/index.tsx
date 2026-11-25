@@ -63,7 +63,7 @@ function SpeechRate({ onPreferenceChange }: { onPreferenceChange(): void }) {
 				max={MAX_SPEECH_RATE}
 				step="0.1"
 				aria-label="朗读语速"
-				aria-valuetext={`${state.preferences.rate} 倍速`}
+				aria-valuetext={`${state.preferences.rate.toFixed(1)} 倍速`}
 				value={state.preferences.rate}
 				onChange={(event) => change(Number(event.target.value))}
 			/>
@@ -84,12 +84,12 @@ function SpeechRate({ onPreferenceChange }: { onPreferenceChange(): void }) {
 }
 const statusLabels = {
 	idle: "尚未播放",
-	starting: "等待设备开始",
+	starting: "准备朗读…",
 	speaking: "正在朗读",
 	paused: "已暂停",
 	stopped: "已停止",
 	ended: "朗读结束",
-	error: "朗读失败，请重试或检查声音设置。",
+	error: "朗读失败，请重试或检查朗读设置。",
 };
 
 /** Both the settings page and the in-place popover share this form, without route cleanup. */
@@ -144,12 +144,10 @@ function SpeechSettingsForm({
 				)}
 			</div>
 			{!compact && (
-				<p>
-					声音由当前浏览器和系统提供；选择与语速仅保存在当前浏览器。不会保存音频文件。
-				</p>
+				<p>语音由当前浏览器和系统提供，偏好设置仅保存在当前浏览器。</p>
 			)}
 			<div className="device-speech-voice">
-				<label htmlFor={`${id}-voice`}>日语声音</label>
+				<label htmlFor={`${id}-voice`}>日语语音</label>
 				<NativeSelect
 					wrapperClassName="device-speech-voice-select"
 					id={`${id}-voice`}
@@ -182,7 +180,7 @@ function SpeechSettingsForm({
 							value={index}
 						>
 							{voice.name} · {voice.lang} ·{" "}
-							{voice.localService ? "本地声音" : "远端声音"}
+							{voice.localService ? "本地语音" : "在线语音"}
 						</option>
 					))}
 				</NativeSelect>
@@ -204,7 +202,7 @@ function SpeechSettingsForm({
 						</svg>
 						<span>
 							当前使用 {selected.name} ·{" "}
-							{selected.localService ? "本地" : "远端"}
+							{selected.localService ? "本地语音" : "在线语音"}
 						</span>
 					</p>
 				)}
@@ -221,7 +219,7 @@ function SpeechSettingsForm({
 								: controller.play({
 										id: "device-speech-preview",
 										text: "こんにちは。日本語の文章を読み上げます。",
-										label: "声音试听",
+										label: "语音试听",
 									})
 						}
 					>
@@ -254,7 +252,7 @@ function SpeechSettingsForm({
 						disabled={!state.supported}
 						onClick={() => controller.refresh()}
 					>
-						重新检测声音
+						重新检测语音
 					</button>
 				</div>
 			</details>
@@ -311,20 +309,20 @@ function SpeechSettingsPopover({ showRate = false }: { showRate?: boolean }) {
 				ref={trigger}
 				type="button"
 				className="device-speech-settings-trigger"
-				aria-label="声音与语速"
+				aria-label="朗读设置"
 				aria-haspopup="dialog"
 				aria-expanded={open}
 				aria-controls={id}
 				popoverTarget={id}
-				title="声音与语速"
+				title="朗读设置"
 			>
 				{showRate ? (
 					<>
-						<span>{state.preferences.rate}×</span>
+						<span>{state.preferences.rate.toFixed(1)}×</span>
 						<SpeechIcon action="chevron" />
 					</>
 				) : (
-					"声音设置"
+					"朗读设置"
 				)}
 			</button>
 			<div
@@ -413,7 +411,7 @@ export function SpeechControls({
 			{error && (
 				<div className="device-speech-message">
 					<span role="status">
-						{compact ? (reason ? "声音不可用" : "朗读失败") : error}
+						{compact ? (reason ? "语音不可用" : "朗读失败") : error}
 					</span>
 					<SpeechSettingsPopover />
 				</div>
@@ -491,7 +489,7 @@ export function SpeechPlaybackBar() {
 		<section
 			className="device-speech device-speech-bar"
 			data-state={mode}
-			aria-label="当前设备朗读"
+			aria-label="朗读控制"
 		>
 			<button
 				type="button"
@@ -531,7 +529,7 @@ export function SpeechPlaybackBar() {
 			</button>
 			{error && (
 				<p className="device-speech-message" role="status">
-					{unavailable ? "声音不可用" : "朗读失败"}，请查看声音设置。
+					{unavailable ? "语音不可用" : "朗读失败"}，请查看朗读设置。
 				</p>
 			)}
 		</section>

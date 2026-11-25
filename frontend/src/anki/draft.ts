@@ -555,10 +555,10 @@ export function mediaFileIssue(
 				file.name.toLowerCase().endsWith(ext) && file.name.length > ext.length,
 		)
 	) {
-		return `请选择 ${allowed.join("、")} 文件。`;
+		return `请选择 ${allowed.map((ext) => ext.slice(1).toUpperCase()).join("、")} 格式的文件。`;
 	}
-	if (!file.size || file.size > 11 * 1024 * 1024)
-		return "附件须有内容，单个文件限 11 MiB。";
+	if (!file.size) return "所选文件为空，请重新选择。";
+	if (file.size > 11 * 1024 * 1024) return "单个附件不能超过 11 MB。";
 	return null;
 }
 
@@ -589,7 +589,7 @@ export async function buildExportFields(
 		totalBytes += file.size;
 	}
 	if (totalBytes > 24 * 1024 * 1024)
-		throw new Error("每次发送的附件合计限 24 MiB。");
+		throw new Error("单次发送的附件总大小不能超过 24 MB。");
 	for (const field of config.fields) {
 		const target = field.target_field;
 		if (!target) continue;
