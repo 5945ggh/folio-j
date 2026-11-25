@@ -1,0 +1,36 @@
+backend/src/app/jobs/agent.py
+  h_c735ec7f46d14b 879
+backend/src/app/launcher.py
+  h_c735ec7f46d14b 144,165
+backend/src/app/services/startup.py
+  h_c735ec7f46d14b 94,141,173
+backend/src/app/startup.py
+  h_c735ec7f46d14b 97
+backend/static/startup/index.html
+  h_c735ec7f46d14b 6,14,29,75
+backend/tests/test_startup.py
+  h_c735ec7f46d14b 66,501
+frontend/browser-tests/explanation.tsx
+  h_c735ec7f46d14b 250
+frontend/browser-tests/model-setup.tsx
+  h_c735ec7f46d14b 272,295
+frontend/browser-tests/workbench-activity.tsx
+  h_c735ec7f46d14b 272
+frontend/src/chat/Workbench.tsx
+  h_c735ec7f46d14b 1520,1585
+frontend/src/settings/LearningSettings.tsx
+  h_c735ec7f46d14b 59
+frontend/src/settings/ModelDefaults.tsx
+  h_c735ec7f46d14b 34,179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dfdcc9dd7b5601d0933050e03bcf201cd1715ec0",
+  "prompts": {},
+  "humans": {
+    "h_c735ec7f46d14b": {
+      "author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
