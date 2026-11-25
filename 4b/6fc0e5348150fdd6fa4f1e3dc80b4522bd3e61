@@ -1,0 +1,19 @@
+frontend/browser-tests/margin-record-targets.tsx
+  s_8ed53f4feaedde::t_97a4e83aee5ef1 232-235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4b6fc0e5348150fdd6fa4f1e3dc80b4522bd3e61",
+  "prompts": {},
+  "sessions": {
+    "s_8ed53f4feaedde": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2102b-c1e7-7391-b36e-d4ff50c3b428",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
