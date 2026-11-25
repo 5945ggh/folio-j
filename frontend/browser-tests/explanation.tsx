@@ -247,7 +247,7 @@ async function runExplanation(
 				check(selector, "Missing explanation model selector");
 				check(
 					container.querySelector(".chat-first-generation h3")?.textContent ===
-						"创建 AI 讲解" &&
+						"生成 AI 讲解" &&
 						container.textContent?.includes(
 							"选择模型后，将在新对话中生成并保存一份讲解。",
 						),

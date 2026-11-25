@@ -91,7 +91,7 @@ class StartupService:
     async def select(self, selection: StartupSelection) -> StartupState:
         async with self._lock:
             if self.application is not None:
-                raise ValueError("应用已启动，如需更换数据位置，请先停止服务")
+                raise ValueError("应用已启动，如需更换数据目录，请先停止服务")
             try:
                 settings = await asyncio.to_thread(
                     data_location.prepare_selection,
@@ -138,7 +138,7 @@ class StartupService:
                 raise ValueError("应用已启动")
             candidate = self._candidate
             if candidate is None:
-                raise ValueError("请先选择数据位置")
+                raise ValueError("请先选择数据目录")
             self._selected_path = candidate.settings.database.path
             try:
                 if candidate.database_existed and not await asyncio.to_thread(
@@ -170,7 +170,7 @@ class StartupService:
                         data_location.remember_selection, settings.database.path
                     )
                 except (data_location.DataLocationError, OSError) as exc:
-                    warning = f"{exc}\n本次可以继续使用。下次启动时可能需要重新选择数据位置。"
+                    warning = f"{exc}\n本次可以继续使用。下次启动时可能需要重新选择数据目录。"
                     self._warning = f"{self._warning}\n{warning}" if self._warning else warning
         except Exception as exc:
             self._error = str(exc) or type(exc).__name__

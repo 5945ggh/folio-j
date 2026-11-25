@@ -63,7 +63,7 @@ async def test_first_visit_is_read_only_and_selection_starts_same_server(
         transport=httpx.ASGITransport(app=bootstrap), base_url="http://127.0.0.1:8010"
     ) as client:
         page = await client.get("/")
-        assert "选择数据位置" in page.text
+        assert "选择数据目录" in page.text
         assert "__FOLIO_STARTUP_NONCE__" not in page.text
         assert "no-store" in page.headers["cache-control"]
         assert (await client.get("/api/health")).status_code == 503
@@ -498,7 +498,7 @@ async def test_unconfirmed_first_choice_and_missing_remembered_location_have_no_
         service = StartupService(status, lambda path: None, lambda path: FastAPI())
         await service.initialize()
         assert service.state().retry_current_path is None
-        with pytest.raises(ValueError, match="请先选择数据位置"):
+        with pytest.raises(ValueError, match="请先选择数据目录"):
             await service.retry_current()
         assert not (tmp_path / "missing").exists()
         await service.close()

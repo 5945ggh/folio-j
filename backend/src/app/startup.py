@@ -94,7 +94,7 @@ class StartupApplication:
             include_in_schema=False,
         )
         async def unavailable_api(path: str = "") -> None:
-            raise HTTPException(status_code=503, detail="请先在启动页选择或恢复数据位置")
+            raise HTTPException(status_code=503, detail="请先在启动页选择或恢复数据目录")
 
         startup_page = page or RESOURCE_ROOT / "backend/static/startup/index.html"
 

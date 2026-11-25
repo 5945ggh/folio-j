@@ -141,7 +141,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command")
     serve = commands.add_parser("start", help="升级数据库并启动，默认打开系统浏览器")
     serve.add_argument("--no-browser", action="store_true", help="启动后不自动打开浏览器")
-    serve.add_argument("--choose-data", action="store_true", help="重新选择数据位置后启动")
+    serve.add_argument("--choose-data", action="store_true", help="重新选择数据目录后启动")
     commands.add_parser("data-path", help="显示下次启动使用的数据库文件路径")
     commands.add_parser("migrate", help="停止服务后将数据库升级到当前版本")
     backup = commands.add_parser("backup", help="停止服务后将数据备份到新目录")
@@ -162,7 +162,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             migrate()
         elif arguments.command == "data-path":
             print(f"下次迁移和启动时使用的数据库文件：{load_settings().database.path}")
-            print("可使用 start --choose-data 打开启动页，重新选择数据位置。")
+            print("可使用 start --choose-data 打开启动页，重新选择数据目录。")
         else:
             return start_interactive(
                 no_browser=bool(getattr(arguments, "no_browser", False)),

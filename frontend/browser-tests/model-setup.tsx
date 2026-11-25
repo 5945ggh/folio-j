@@ -269,7 +269,7 @@ export async function modelSetup(h: BrowserHarness): Promise<string> {
 			document.activeElement?.id === "explanation-model",
 			"Replacing the empty-state entry must restore focus to the newly available model select",
 		);
-		action("创建 AI 讲解");
+		action("生成 AI 讲解");
 		// Read failures must stay distinguishable from an empty service library.
 		failRead = true;
 		action("配置模型服务 →").click();
@@ -292,7 +292,7 @@ export async function modelSetup(h: BrowserHarness): Promise<string> {
 			generated === 0,
 			"Setup errors and retries must not trigger generation",
 		);
-		action("创建 AI 讲解").click();
+		action("生成 AI 讲解").click();
 		await until(
 			() => submittedJobs === 1 && !!container.querySelector(".chat-composer"),
 			"Explicit continuation must create one explanation request",

@@ -1517,7 +1517,7 @@ export function Workbench({
 						</p>
 					) : explainToken ? (
 						<div className="chat-first-generation">
-							<h3>创建 AI 讲解</h3>
+							<h3>生成 AI 讲解</h3>
 							<p>选择模型后，将在新对话中生成并保存一份讲解。</p>
 							{providers.isSuccess && availableModels.length === 0 ? (
 								<div className="chat-model-guide">
@@ -1582,7 +1582,7 @@ export function Workbench({
 									});
 								}}
 							>
-								创建 AI 讲解
+								生成 AI 讲解
 							</button>
 						</div>
 					) : (

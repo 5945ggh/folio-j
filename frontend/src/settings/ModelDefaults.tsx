@@ -31,7 +31,7 @@ export function ModelDefaults({
 	const edited = useRef(new Map<keyof ModelFields, string | null>());
 	const draft = useAutosavingFields(
 		"model-defaults",
-		"模型配置",
+		"默认模型",
 		modelFields(settings),
 		async (fields, accept) => {
 			const current = modelFields(
@@ -176,7 +176,7 @@ export function ModelDefaults({
 							{modelSelect(
 								"对话与讲解模型",
 								"chat_model_id",
-								"新对话和「创建 AI 讲解」默认使用这个模型。",
+								"新对话和「生成 AI 讲解」默认使用这个模型。",
 							)}
 							{modelSelect(
 								"讲解模型（旧版）",

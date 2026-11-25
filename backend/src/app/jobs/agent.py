@@ -876,7 +876,7 @@ async def execute_agent_job(
                     job_id,
                     token,
                     error_code="tool_error",
-                    error="本轮操作失败，请查看对话任务记录",
+                    error="本轮操作失败，可把原问题放回输入框后重试",
                     messages=messages,
                 )
                 return

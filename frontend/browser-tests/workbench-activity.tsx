@@ -269,7 +269,7 @@ export async function workbenchActivityRegression(h: BrowserHarness) {
 			generationCalls() === 0 && submissions.length === 0,
 			"Restoring activity must keep the unsubmitted explanation intent manual",
 		);
-		action("创建 AI 讲解").click();
+		action("生成 AI 讲解").click();
 		await until(() => jobRequests === 1, "Explanation submission must start");
 		action("返回对话列表").click();
 		await settle();

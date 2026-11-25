@@ -56,7 +56,7 @@ export function LearningSettings({ settings }: { settings: Settings }) {
 				<details className="learning-disclosure learning-help">
 					<summary>这些信息会用在哪里？</summary>
 					<p className="settings-hint">
-						创建 AI 讲解、在学习片段中对话，或使用「复制讲解提示词」时，
+						生成 AI 讲解、在学习片段中对话，或使用「复制讲解提示词」时，
 						都会附上这里的学习背景和默认预设。
 					</p>
 				</details>
