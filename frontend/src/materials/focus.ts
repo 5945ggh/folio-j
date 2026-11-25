@@ -341,6 +341,7 @@ export function createFocusController(options: FocusOptions) {
 					show();
 					options.onTabReveal?.(e, wasHidden);
 				} else if (e.key === "Escape") {
+					if (!frame && element(e)?.closest("dialog[open]")) return;
 					if (options.onEscapeOverlay?.()) {
 						e.preventDefault();
 					} else if (

@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Link, type Location, useLocation, useNavigate } from "react-router";
 import type { components } from "../src/api/schema";
+import { checkAnkiRubyCoordinates } from "./anki-source-ruby";
 import type { BrowserHarness } from "./harness";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
 import {
@@ -39,6 +40,8 @@ export async function focusedNavigation(h: BrowserHarness) {
 	const check: BrowserHarness["check"] = h.check;
 	const params = new URLSearchParams(location.search);
 	const metadataScene = params.get("notice-metadata");
+	const ankiScene = params.get("scene") === "anki";
+	if (ankiScene) checkAnkiRubyCoordinates(check);
 	if (metadataScene === "failed" || metadataScene === "long")
 		return segmentNoticeMetadata(h, metadataScene);
 	const capture = params.has("capture") || params.has("preview");
@@ -67,6 +70,45 @@ export async function focusedNavigation(h: BrowserHarness) {
 	let releaseSegment: (() => void) | undefined;
 	let segmentGate: Promise<void> | undefined;
 	const requests: Array<{ method: string; path: string }> = [];
+	const rubyChapter: Schema["MaterialChapterResponse"] = {
+		...fixture.chapter,
+		parts: fixture.chapter.parts.map((part) => {
+			if (
+				fixture.targetParagraph < part.leaf_start ||
+				fixture.targetParagraph >= part.leaf_end
+			)
+				return part;
+			return {
+				...part,
+				leaf_end: part.leaf_end + 1,
+				html: part.html.replace(
+					/<span data-locator-leaf="(\d+)">([^<]*)<\/span>/g,
+					(leaf: string, id: string, text: string) => {
+						const index = Number(id);
+						if (index === fixture.targetParagraph)
+							return `<ruby><span data-locator-leaf="${index}">春</span><rt>はる・原書</rt></ruby><span data-locator-leaf="${index + 1}">${text.slice(1)}</span>`;
+						return index > fixture.targetParagraph
+							? leaf.replace(id, String(index + 1))
+							: leaf;
+					},
+				),
+			};
+		}),
+	};
+	const extraToken: Schema["MaterialReadingToken"] = {
+		start: fixture.targetStart + fixture.targetText.indexOf("庭"),
+		end: fixture.targetStart + fixture.targetText.indexOf("庭") + 1,
+		surface: "庭",
+		reading: "ニワ",
+		dictionary_form: "庭",
+		normalized_form: "庭",
+		is_oov: false,
+		pos: ["名詞"],
+	};
+	let resolveReadings: (() => void) | undefined;
+	const readingGate = new Promise<void>((resolve) => {
+		resolveReadings = resolve;
+	});
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
 		requests.push({ method: request.method, path });
@@ -89,6 +131,94 @@ export async function focusedNavigation(h: BrowserHarness) {
 					{ detail: "离线回归：片段暂不可读取" },
 					{ status: 503 },
 				);
+		}
+		if (ankiScene) {
+			if (
+				path ===
+				`/api/materials/${fixture.materialId}/chapters/${fixture.chapterId}`
+			)
+				return Response.json(rubyChapter);
+			if (path === `/api/materials/${fixture.materialId}/readings`) {
+				await readingGate;
+				return Response.json({
+					...fixture.readings,
+					resources: fixture.readings.resources.map((resource) => ({
+						...resource,
+						tokens: [...resource.tokens, extraToken].sort(
+							(a, b) => a.start - b.start,
+						),
+					})),
+				});
+			}
+			if (path === "/api/dictionary") return Response.json({ ready: false });
+			if (path === "/api/anki/builtins")
+				return Response.json({
+					note_types: [
+						{
+							id: "folio-j.sentence-reading",
+							version: 1,
+							name: "Folio-J 例句",
+							fields: ["Sentence", "Explanation"],
+							card_templates: [
+								{
+									name: "例句理解",
+									front: "<p>{{Sentence}}</p>",
+									back: "<p>{{Sentence}}</p>",
+								},
+							],
+						},
+					],
+					export_presets: [],
+					shared_css: "",
+				});
+			if (path === "/api/anki/catalog")
+				return Response.json({
+					endpoint: "http://localhost:8765",
+					profile: "A",
+					protocol: "v1",
+					decks: [],
+					note_types: [],
+				});
+			if (path === "/api/settings/anki/connection")
+				return Response.json({
+					url: "http://localhost:8765",
+					has_api_key: false,
+					revision: 1,
+				});
+			if (path === "/api/settings/anki/configurations")
+				return Response.json([
+					{
+						id: "offline",
+						name: "回归配置",
+						note_type: {
+							kind: "builtin",
+							id: "folio-j.sentence-reading",
+							version: 1,
+						},
+						fields: [
+							{
+								id: "sentence",
+								label: "原句",
+								type: "text",
+								source: "sentence",
+								presentation: "common",
+								target_field: "Sentence",
+								multiline: true,
+								required: true,
+							},
+							{
+								id: "meaning",
+								label: "释义",
+								type: "text",
+								source: "manual",
+								presentation: "common",
+								target_field: "Explanation",
+								multiline: true,
+								required: false,
+							},
+						],
+					} satisfies Schema["AnkiConfigurationResponse"],
+				]);
 		}
 		if (path === "/api/settings/context-copy")
 			return Response.json(defaultContextCopySettings);
@@ -274,6 +404,149 @@ export async function focusedNavigation(h: BrowserHarness) {
 			() => !!h.container.querySelector(".reader-study-preview-open"),
 			"Saved segment must expose its actual open action",
 		);
+		if (ankiScene) {
+			await h.until(
+				() =>
+					Boolean(h.container.querySelector(".reader-study-preview-markdown")),
+				"原阅读预览须已取得分页讲解和确切修订",
+			);
+			click(".reader-study-preview-anki");
+			await h.until(
+				() =>
+					h.container
+						.querySelector(".anki-ref-pane .analysis-markdown")
+						?.textContent?.includes("第 1 段讲解") === true,
+				"制卡参考栏应使用同一份已缓存的分页讲解",
+			);
+			await h.until(
+				() =>
+					find<HTMLButtonElement>(".anki-composer-foot .anki-btn-secondary")
+						.disabled === false,
+				"制卡字段配置就绪后可预览",
+			);
+			click(".anki-composer-foot .anki-btn-secondary");
+			await h.until(
+				() =>
+					h.container.querySelector(".anki-preview-card-body rt")
+						?.textContent === "はる・原書",
+				"显示范围为原书时，预览已经有作者注音",
+			);
+			resolveReadings?.();
+			await h.until(
+				() =>
+					[...h.container.querySelectorAll(".anki-preview-card-body rt")]
+						.map((rt) => rt.textContent)
+						.join("、") === "はる・原書、にわ",
+				"背面预览补齐全量读音，优先采用作者读音",
+			);
+			const [question, answer] = h.container.querySelectorAll(
+				".anki-preview-card-body",
+			);
+			check(
+				!question?.querySelector("ruby,rt") &&
+					question?.textContent?.includes("春") &&
+					answer?.querySelectorAll("rt").length === 2,
+				"卡面正面保留原文，振假名只显示在背面",
+			);
+
+			check(
+				!frames().some((frame) =>
+					frame.contentDocument?.querySelector("ruby[data-auto-ruby]"),
+				),
+				"阅读器仍显示原书注音",
+			);
+			click(".anki-modal [aria-label=关闭预览]");
+			const meaning = find<HTMLTextAreaElement>(
+				".anki-composer #anki-f-meaning",
+			);
+			h.inputValue(meaning, "阅读往返时保留的释义");
+			click(".anki-target-panel a");
+			await h.until(
+				() => Boolean(h.container.querySelector(".anki-name-input")),
+				"进入个人配置",
+			);
+			click(".anki-text-action.settings-back-link");
+			await h.until(
+				() => Boolean(h.container.querySelector("#anki-connect-url")),
+				"回到 Anki 设置列表",
+			);
+			click("#settings-reading-return");
+			await readyReader();
+			check(
+				meaning.isConnected && meaning.value === "阅读往返时保留的释义",
+				"设置内导航应保留同一份制卡草稿",
+			);
+			assertReaderIdentity("设置返回应恢复同一个阅读会话");
+			click('button[aria-label="专注阅读：关闭"]');
+			await h.until(
+				() =>
+					Boolean(
+						h.container.querySelector('button[aria-label="专注阅读：开启"]'),
+					),
+				"打开专注阅读",
+			);
+			const { browserKey } = window as Window & {
+				browserKey?: (key: "Escape") => Promise<void>;
+			};
+			check(browserKey, "制卡浮窗使用原生 Escape 测试");
+			click(".anki-composer-foot .anki-btn-secondary");
+			await h.until(
+				() => Boolean(document.querySelector(".anki-modal[open]")),
+				"再次打开制卡预览",
+			);
+			await browserKey("Escape");
+			await h.until(
+				() => !document.querySelector(".anki-modal[open]"),
+				"Escape 关闭预览并保留草稿",
+			);
+			meaning.focus();
+			meaning.dispatchEvent(
+				new KeyboardEvent("keydown", {
+					key: "Escape",
+					bubbles: true,
+					isComposing: true,
+				}),
+			);
+			const closeAnki = find<HTMLButtonElement>(
+				'button[aria-label="关闭制卡浮窗"]',
+			);
+			check(
+				!document.querySelector("#anki-discard-title") &&
+					document.activeElement === meaning,
+				"制卡字段输入法合成时 Escape 保留草稿与焦点",
+			);
+			closeAnki.focus();
+			await browserKey("Escape");
+			await h.until(
+				() => Boolean(document.querySelector("#anki-discard-title")),
+				"Escape 请求关闭制卡浮窗",
+			);
+			check(
+				h.container.querySelector('button[aria-label="专注阅读：开启"]'),
+				"关闭制卡的 Escape 不传给专注阅读控制",
+			);
+			await browserKey("Escape");
+			await h.until(
+				() =>
+					!document.querySelector("#anki-discard-title") &&
+					document.activeElement === closeAnki,
+				"Escape 取消放弃确认并恢复浮窗焦点",
+			);
+			await browserKey("Escape");
+			await h.until(
+				() => Boolean(document.querySelector("#anki-discard-title")),
+				"重新请求关闭制卡浮窗",
+			);
+			click("dialog[aria-labelledby=anki-discard-title] .danger");
+			await h.until(
+				() =>
+					!meaning.isConnected &&
+					document.activeElement?.classList.contains("reader-viewport") ===
+						true,
+				"丢弃制卡草稿后焦点回到阅读器",
+			);
+			return "Anki records, full source ruby, retained draft through settings, and isolated Escape with focus returning to the reader";
+		}
 		click(".reader-study-preview-open");
 		await h.until(
 			() => !!h.container.querySelector(".analysis-document"),

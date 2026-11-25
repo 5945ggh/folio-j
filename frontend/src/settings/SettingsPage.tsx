@@ -1,6 +1,7 @@
 import "./settings-refresh.css";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
+import { AnkiSettings } from "../anki/AnkiSettings";
 import { InlineError, Shell } from "../Shared";
 import { DeviceSpeechSettings } from "../speech";
 import { AppearanceSettings } from "../theme/AppearanceSettings";
@@ -31,6 +32,7 @@ export function SettingsPage() {
 	const appearance = section === "appearance";
 	const dictionary = section === "dictionary";
 	const dataLocation = section === "data-location";
+	const anki = section === "anki";
 	const learning =
 		!models &&
 		!permissions &&
@@ -38,7 +40,8 @@ export function SettingsPage() {
 		!speech &&
 		!appearance &&
 		!dictionary &&
-		!dataLocation;
+		!dataLocation &&
+		!anki;
 	const services = section === "providers";
 	const needsSettings = learning || permissions || section === "models";
 	const settings = useQuery({
@@ -117,9 +120,17 @@ export function SettingsPage() {
 					>
 						数据位置
 					</Link>
+					<Link
+						to="/settings?section=anki"
+						aria-current={anki ? "page" : undefined}
+					>
+						Anki
+					</Link>
 				</nav>
 				<div className="settings-content">
-					{dataLocation ? (
+					{anki ? (
+						<AnkiSettings />
+					) : dataLocation ? (
 						<DataLocationSettings />
 					) : dictionary ? (
 						<DictionarySettings />

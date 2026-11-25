@@ -238,56 +238,50 @@
 .reader-r1 .reader-study-preview-markdown[data-clipped="true"] {
 	mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
 }
-.reader-r1 .reader-study-preview-markdown .analysis-markdown {
+.reader-r1 .reader-markdown .analysis-markdown {
+	white-space: normal;
 	font-size: 14px;
 	line-height: 1.85;
 	color: inherit;
 }
 
-.reader-r1 .reader-study-preview-markdown :is(h1, h2, h3, h4) {
+.reader-r1 .reader-markdown :is(h1, h2, h3, h4) {
 	color: inherit;
 	font-size: 14px;
 	margin: 15px 0 6px;
 	font-weight: 600;
 }
-.reader-r1 .reader-study-preview-markdown .analysis-markdown > :first-child {
+.reader-r1 .reader-markdown .analysis-markdown > :first-child {
 	margin-top: 0;
 }
-.reader-r1 .reader-study-preview-markdown :is(ul, ol) {
+.reader-r1 .reader-markdown :is(ul, ol) {
 	padding-left: 22px;
 	margin: 6px 0 12px;
 }
-.reader-r1 .reader-study-preview-markdown pre {
+.reader-r1 .reader-markdown pre {
 	white-space: pre-wrap;
 	background: var(--reader-soft);
 	padding: 10px;
 	overflow-wrap: anywhere;
 }
-.reader-r1 .reader-study-preview-markdown code {
+.reader-r1 .reader-markdown code {
 	background: var(--reader-soft);
 	color: inherit;
 }
-.reader-r1 .reader-study-preview-markdown pre code {
+.reader-r1 .reader-markdown pre code {
 	background: transparent;
 }
-.reader-r1 .reader-study-preview-markdown blockquote {
-	margin: 10px 0;
-	padding-left: 12px;
-	border-left: 2px solid var(--reader-line);
-	background: var(--reader-soft);
-	color: var(--reader-muted);
-}
-.reader-r1 .reader-study-preview-markdown a {
+.reader-r1 .reader-markdown a {
 	text-decoration: underline;
 	text-underline-offset: 3px;
 }
-.reader-r1 .reader-study-preview-markdown table {
+.reader-r1 .reader-markdown table {
 	display: block;
 	overflow-x: auto;
 	border-collapse: collapse;
 	max-width: 100%;
 }
-.reader-r1 .reader-study-preview-markdown :is(td, th) {
+.reader-r1 .reader-markdown :is(td, th) {
 	border: 1px solid var(--reader-line);
 	padding: 6px;
 }
@@ -400,7 +394,7 @@
 	padding-bottom: 8px;
 	border-radius: 0;
 }
-.reader-r1 .reader-study-preview-open {
+.reader-r1 :is(.reader-study-preview-open, .reader-study-preview-anki) {
 	flex: 0 0 auto;
 	color: var(--reader-on-accent-soft);
 	font-size: 12px;
@@ -413,7 +407,7 @@
 	white-space: nowrap;
 }
 
-.reader-r1 .reader-study-preview-open:hover {
+.reader-r1 :is(.reader-study-preview-open, .reader-study-preview-anki):hover {
 	color: var(--reader-fg);
 	text-decoration: underline;
 	text-underline-offset: 3px;

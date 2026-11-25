@@ -16,6 +16,10 @@ import { historicalReaderBaseline } from "./reader-baseline.mjs";
 const frontend = fileURLToPath(new URL("..", import.meta.url));
 const scenarios = selectBrowserScenarios(
 	[
+		[1280, 900, "?suite=anki-composer"],
+		[390, 700, "?suite=anki-composer"],
+		[1280, 900, "?suite=anki-composer&reduced-motion"],
+		[390, 700, "?suite=anki-composer&reduced-motion"],
 		[1280, 900, "?suite=native-select&theme=light"],
 		[1280, 900, "?suite=native-select&theme=dark"],
 		[320, 900, "?suite=native-select&theme=light"],
@@ -37,6 +41,7 @@ const scenarios = selectBrowserScenarios(
 		[1280, 900, "?suite=focused-navigation"],
 		[320, 900, "?suite=focused-navigation"],
 		[1280, 900, "?suite=focused-navigation&scene=reader"],
+		[1280, 900, "?suite=focused-navigation&scene=anki"],
 		[320, 900, "?suite=focused-navigation&scene=reader"],
 		[1280, 900, "?suite=focused-navigation&notice-metadata=failed"],
 		[320, 900, "?suite=focused-navigation&notice-metadata=failed"],

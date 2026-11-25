@@ -1,7 +1,11 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { analysisKeys, getAnalysis, listAnalyses } from "../analysis/api";
+import {
+	analysisKeys,
+	analysisListOptions,
+	getAnalysis,
+} from "../analysis/api";
 import { Markdown } from "../analysis/Markdown";
 import { analysisPresentation } from "../analysis/presentation";
 import { getSegment, queries } from "../content";
@@ -25,6 +29,7 @@ export type StudyPreviewProps = {
 	relatedRecordCount?: number;
 	onClose: () => void;
 	onOpen: (segmentId: string, analysisId?: string, revisionId?: string) => void;
+	onAnkiSegment?: (item: ChapterSegment) => void;
 	onLocateOriginal?: (item: ChapterSegment) => void;
 	onEmphasize: (id: string | null) => void;
 };
@@ -40,6 +45,7 @@ export function StudyPreview({
 	relatedRecordCount = items.length,
 	onClose,
 	onOpen,
+	onAnkiSegment,
 	onLocateOriginal,
 	onEmphasize,
 }: StudyPreviewProps) {
@@ -131,11 +137,7 @@ export function StudyPreview({
 		enabled: Boolean(segmentId) && !inactive,
 	});
 	const analyses = useInfiniteQuery({
-		queryKey: analysisKeys.list(segmentId),
-		initialPageParam: 0,
-		queryFn: ({ pageParam }) => listAnalyses(segmentId, pageParam),
-		getNextPageParam: (last, all) =>
-			last.length === 100 ? all.length * 100 : undefined,
+		...analysisListOptions(segmentId),
 		enabled: Boolean(segmentId) && !inactive,
 	});
 	const segmentReady = useReaderSessionRefresh(
@@ -396,7 +398,7 @@ export function StudyPreview({
 								{presentation && (
 									<div
 										ref={analysisPreview}
-										className="reader-study-preview-markdown"
+										className="reader-study-preview-markdown reader-markdown"
 										data-clipped={previewClipped || undefined}
 									>
 										{presentation.blocks.map((block, index) => (
@@ -457,15 +459,28 @@ export function StudyPreview({
 						</dl>
 					</details>
 					{!inactive && (
-						<button
-							className="reader-study-preview-open"
-							type="button"
-							onClick={() =>
-								onOpen(segmentId, analysis?.id, analysis?.current_revision_id)
-							}
+						<div
+							style={{ display: "inline-flex", alignItems: "center", gap: 12 }}
 						>
-							打开片段 <span aria-hidden="true">→</span>
-						</button>
+							{onAnkiSegment && selected && (
+								<button
+									className="reader-study-preview-anki"
+									type="button"
+									onClick={() => onAnkiSegment(selected)}
+								>
+									制卡
+								</button>
+							)}
+							<button
+								className="reader-study-preview-open"
+								type="button"
+								onClick={() =>
+									onOpen(segmentId, analysis?.id, analysis?.current_revision_id)
+								}
+							>
+								打开片段 <span aria-hidden="true">→</span>
+							</button>
+						</div>
 					)}
 				</footer>
 			)}

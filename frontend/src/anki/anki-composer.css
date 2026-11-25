@@ -1,0 +1,1105 @@
+/* Reader Anki composer, dual-pane reference drawer, preview modal, and topbar status. */
+.reader-r1 .anki-composer {
+	--anki-draft-width: 378px;
+	--anki-reference-width: 370px;
+	--anki-pane-transition: 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+	position: fixed;
+	z-index: 44;
+	display: flex;
+	flex-direction: column;
+	width: min(var(--anki-draft-width), calc(100vw - 24px));
+	max-height: min(680px, calc(100vh - 88px));
+	color: var(--reader-fg);
+	font-size: 13.5px;
+	overflow: hidden;
+}
+
+.reader-r1 .anki-composer[data-dual-pane="true"] {
+	width: min(
+		calc(var(--anki-draft-width) + var(--anki-reference-width)),
+		calc(100vw - 24px)
+	);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.reader-r1 .anki-composer {
+		animation: anki-composer-in 130ms ease-out;
+	}
+
+	.reader-r1 .anki-composer:not([data-single-pane]) {
+		transition: width var(--anki-pane-transition);
+	}
+}
+
+@keyframes anki-composer-in {
+	from {
+		opacity: 0;
+		transform: translateY(3px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.reader-r1 .anki-composer-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 13px 14px 10px;
+	border-bottom: 1px solid var(--reader-line);
+	cursor: grab;
+	user-select: none;
+	flex: none;
+}
+
+.reader-r1
+	.anki-composer[data-reader-card-dragging="true"]
+	.anki-composer-head {
+	cursor: grabbing;
+}
+
+.reader-r1 .anki-composer-head-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.reader-r1 .anki-ref-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 4px 9px;
+	border: 1px solid var(--reader-line);
+	border-radius: 7px;
+	background: transparent;
+	color: var(--reader-muted);
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.reader-r1 .anki-ref-toggle:hover {
+	color: var(--reader-fg);
+	background: var(--reader-tool-hover-bg);
+}
+
+.reader-r1 .anki-ref-toggle[aria-expanded="true"] {
+	background: var(--reader-selected-bg);
+	color: var(--reader-selected-fg);
+	border-color: color-mix(in srgb, var(--reader-accent) 30%, transparent);
+}
+
+.reader-r1 .anki-close-btn {
+	display: inline-grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--reader-muted);
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.reader-r1 .anki-close-btn:hover {
+	color: var(--reader-fg);
+	background: var(--reader-tool-hover-bg);
+}
+
+.reader-r1 .anki-composer-body {
+	position: relative;
+	display: flex;
+	min-height: 0;
+	flex: 1 1 auto;
+}
+
+.reader-r1 .anki-composer-form-pane {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.reader-r1 .anki-composer-reference-pane {
+	display: flex;
+	min-width: 0;
+	min-height: 0;
+}
+
+.reader-r1 .anki-composer-reference-pane[inert],
+.reader-r1 .anki-composer-form-pane[inert] {
+	opacity: 0;
+}
+
+.reader-r1 .anki-composer:not([data-single-pane]) .anki-composer-body {
+	justify-content: flex-end;
+}
+
+/* The draft keeps its width while the reference pane is revealed to its left. */
+.reader-r1 .anki-composer:not([data-single-pane]) .anki-composer-form-pane {
+	flex: 0 0 calc(var(--anki-draft-width) - 2px);
+}
+
+.reader-r1
+	.anki-composer:not([data-single-pane])
+	.anki-composer-reference-pane {
+	position: absolute;
+	inset: 0 calc(var(--anki-draft-width) - 2px) 0 0;
+	overflow: clip;
+}
+
+.reader-r1 .anki-composer[data-single-pane] .anki-composer-body {
+	overflow: clip;
+}
+
+/* Size the sheet to the active pane while the outgoing pane can still animate. */
+.reader-r1 .anki-composer[data-single-pane] .anki-composer-body > [inert] {
+	position: absolute;
+	inset: 0;
+}
+
+.reader-r1 .anki-composer[data-single-pane] .anki-composer-reference-pane {
+	flex: 1 1 auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.reader-r1 .anki-composer-reference-pane {
+		transition: opacity var(--anki-pane-transition);
+	}
+
+	.reader-r1
+		.anki-composer[data-single-pane]
+		.anki-composer-body
+		> :is(.anki-composer-reference-pane, .anki-composer-form-pane) {
+		transition:
+			opacity var(--anki-pane-transition),
+			transform var(--anki-pane-transition);
+		transform: translateX(0);
+	}
+
+	.reader-r1
+		.anki-composer[data-single-pane]
+		.anki-composer-reference-pane[inert] {
+		transform: translateX(-12px);
+	}
+
+	.reader-r1 .anki-composer[data-single-pane] .anki-composer-form-pane[inert] {
+		transform: translateX(12px);
+	}
+}
+
+.reader-r1 .anki-composer-scroll {
+	flex: 1 1 auto;
+	overflow-y: auto;
+	padding: 12px 15px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.reader-r1 .anki-composer-scroll > * {
+	flex-shrink: 0;
+}
+
+/* Status banner inside composer */
+.reader-r1 .anki-banner {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 9px 11px;
+	border-radius: 8px;
+	border: 1px solid var(--reader-line);
+	background: color-mix(in srgb, var(--reader-fg) 4%, transparent);
+	font-size: 12.5px;
+	line-height: 1.45;
+}
+
+.reader-r1 .anki-banner[data-tone="error"] {
+	border-color: var(--reader-error-border);
+	background: color-mix(in srgb, var(--reader-error) 8%, transparent);
+	color: var(--reader-error);
+}
+
+.reader-r1 .anki-banner[data-tone="warn"] {
+	border-color: color-mix(
+		in srgb,
+		var(--reader-accent) 35%,
+		var(--reader-line)
+	);
+	background: color-mix(in srgb, var(--reader-accent-soft) 75%, transparent);
+	color: var(--reader-fg);
+}
+
+.reader-r1 .anki-banner-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	flex: none;
+	flex-wrap: wrap;
+}
+
+.reader-r1 .anki-link-btn {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--reader-on-accent-soft);
+	font-size: 12.5px;
+	cursor: pointer;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.reader-r1 .anki-link-btn:hover {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+/* Target summary bar */
+.reader-r1 .anki-target-box {
+	flex: none;
+	border: 1px solid var(--reader-line);
+	border-radius: 9px;
+	background: color-mix(in srgb, var(--reader-fg) 3%, transparent);
+	overflow: hidden;
+}
+
+.reader-r1 .anki-target-summary {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 8px 11px;
+	border: 0;
+	background: transparent;
+	color: var(--reader-fg);
+	font-size: 12.5px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.reader-r1 .anki-target-summary:hover {
+	background: var(--reader-tool-hover-bg);
+}
+
+.reader-r1 .anki-target-summary-text {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.reader-r1 .anki-target-summary-action {
+	flex: none;
+	color: var(--reader-on-accent-soft);
+	font-size: 12px;
+}
+
+.reader-r1 .anki-target-panel {
+	padding: 10px 11px 11px;
+	border-top: 1px solid var(--reader-line);
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+}
+
+.reader-r1 .anki-target-row {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.reader-r1 .anki-target-row label {
+	font-size: 11.5px;
+	color: var(--reader-muted);
+}
+
+.reader-r1 .anki-reader-select {
+	width: 100%;
+}
+
+.reader-r1 select.anki-reader-select {
+	width: 100%;
+	padding: 6px var(--native-select-padding-end, 40px) 6px 10px;
+	border: 1px solid var(--reader-line);
+	border-radius: 7px;
+	background: var(--reader-bg);
+	color: var(--reader-fg);
+	font-size: 13px;
+}
+
+/* Inline fields */
+.reader-r1 .anki-field {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.reader-r1 fieldset.anki-field {
+	min-inline-size: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.reader-r1 .anki-field-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.reader-r1 .anki-field-label {
+	font-size: 12px;
+	color: var(--reader-muted);
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.reader-r1 .anki-field-req {
+	color: var(--reader-error);
+}
+
+.reader-r1 .anki-headword-input {
+	width: 100%;
+	padding: 4px 7px;
+	margin: 0 -7px;
+	border: 1px solid transparent;
+	border-radius: 7px;
+	background: transparent;
+	color: var(--reader-fg);
+	font:
+		600 21px / 1.35 "Hiragino Mincho ProN",
+		"Yu Mincho",
+		serif;
+}
+
+.reader-r1 .anki-headword-input:hover {
+	border-color: var(--reader-line);
+}
+
+.reader-r1 .anki-headword-input:focus {
+	border-color: var(--reader-accent);
+	background: var(--reader-bg);
+	outline: none;
+}
+
+.reader-r1 .anki-text-input,
+.reader-r1 .anki-textarea {
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid var(--reader-line);
+	border-radius: 8px;
+	background: var(--reader-bg);
+	color: var(--reader-fg);
+	font-size: 13.5px;
+	line-height: 1.55;
+	font-family: inherit;
+}
+
+.reader-r1 .anki-textarea {
+	resize: vertical;
+	min-height: 70px;
+}
+
+.reader-r1 .anki-text-input:focus,
+.reader-r1 .anki-textarea:focus {
+	border-color: var(--reader-accent);
+	outline: none;
+}
+
+.reader-r1
+	.anki-field[data-error="true"]
+	:is(
+		.anki-text-input,
+		.anki-textarea,
+		.anki-headword-input,
+		.anki-media-drop
+	) {
+	border-color: var(--reader-error);
+}
+
+.reader-r1 .anki-quote-inline {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	padding: 6px 10px;
+	border-left: 2px solid
+		color-mix(in srgb, var(--reader-accent) 45%, var(--reader-line));
+	border-radius: 0 7px 7px 0;
+	background: transparent;
+	color: var(--reader-fg);
+	font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+	font-size: 14px;
+	line-height: 1.65;
+	text-align: left;
+	cursor: text;
+	border-top: 1px solid transparent;
+	border-right: 1px solid transparent;
+	border-bottom: 1px solid transparent;
+}
+
+.reader-r1 .anki-quote-inline:hover {
+	background: color-mix(in srgb, var(--reader-fg) 4%, transparent);
+	border-color: var(--reader-line);
+	border-left-color: var(--reader-accent);
+}
+
+.reader-r1 .anki-sentence-focus-actions {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+}
+
+.reader-r1 .anki-sentence-focus-actions .anki-link-btn:disabled {
+	color: var(--reader-muted);
+	cursor: default;
+	text-decoration: none;
+}
+
+.reader-r1 .anki-sentence-focus-status {
+	flex: 1;
+	min-width: 0;
+	color: var(--reader-muted);
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+
+.reader-r1 .anki-sentence-focus-text {
+	background: var(--reader-selected-bg);
+	color: var(--reader-selected-fg);
+	border-radius: 2px;
+}
+
+.reader-r1 .anki-summary-inline {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	width: 100%;
+	padding: 4px 6px;
+	margin: 0 -6px;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--reader-muted);
+	font-size: 12.5px;
+	text-align: left;
+	cursor: text;
+}
+
+.reader-r1 .anki-summary-inline:hover {
+	color: var(--reader-fg);
+	border-color: var(--reader-line);
+}
+
+/* Media field */
+.reader-r1 .anki-media-drop {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 9px 10px;
+	border: 1px dashed var(--reader-line);
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--reader-fg) 2%, transparent);
+}
+
+.reader-r1 .anki-media-drop[data-dragover="true"] {
+	border-color: var(--reader-accent);
+	background: var(--reader-accent-soft);
+}
+
+.reader-r1 .anki-media-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.reader-r1 .anki-media-filename {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 12.5px;
+	color: var(--reader-fg);
+}
+
+.reader-r1 .anki-media-placeholder {
+	font-size: 12px;
+	color: var(--reader-muted);
+}
+
+.reader-r1 .anki-media-thumb {
+	max-width: 100%;
+	max-height: 110px;
+	border-radius: 6px;
+	object-fit: contain;
+	align-self: flex-start;
+	border: 1px solid var(--reader-line);
+}
+
+.reader-r1 .anki-media-audio {
+	width: 100%;
+	height: 32px;
+}
+
+/* Footer actions */
+.reader-r1 .anki-composer-foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 10px 15px 12px;
+	border-top: 1px solid var(--reader-line);
+	flex: none;
+}
+
+.reader-r1 .anki-btn-secondary {
+	padding: 7px 12px;
+	border: 1px solid var(--reader-line);
+	border-radius: 8px;
+	background: transparent;
+	color: var(--reader-fg);
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.reader-r1 .anki-btn-secondary:hover:not(:disabled) {
+	background: var(--reader-tool-hover-bg);
+}
+
+.reader-r1 .anki-btn-secondary:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.reader-r1 .anki-btn-primary {
+	padding: 7px 14px;
+	border: 0;
+	border-radius: 8px;
+	background: var(--color-accent-solid, #2f65c8);
+	color: var(--color-text-on-accent, #fff);
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.reader-r1 .anki-btn-primary:hover:not(:disabled) {
+	filter: brightness(1.06);
+}
+
+.reader-r1 .anki-btn-primary:disabled {
+	background: color-mix(in srgb, var(--reader-fg) 16%, transparent);
+	color: var(--reader-muted);
+	cursor: not-allowed;
+}
+
+/* Left Reference Pane */
+.reader-r1 .anki-ref-pane {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	border-right: 1px solid var(--reader-line);
+	background: color-mix(in srgb, var(--reader-fg) 2%, transparent);
+	min-height: 0;
+}
+
+.reader-r1 .anki-composer:not([data-single-pane]) .anki-ref-pane {
+	position: absolute;
+	inset-block: 0;
+	inset-inline-end: 0;
+	width: var(--anki-reference-width);
+}
+
+.reader-r1 .anki-ref-tabs {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 8px 12px 0;
+	border-bottom: 1px solid var(--reader-line);
+	flex: none;
+}
+
+.reader-r1 .anki-ref-tab {
+	padding: 7px 9px;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	color: var(--reader-muted);
+	font-size: 12.5px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.reader-r1 .anki-ref-tab[aria-selected="true"] {
+	color: var(--reader-on-accent-soft);
+	border-bottom-color: var(--reader-accent);
+	font-weight: 500;
+}
+
+.reader-r1 .anki-ref-search {
+	display: flex;
+	align-items: center;
+	flex: none;
+	min-width: 0;
+	margin: 10px 12px 0;
+	padding: 3px 6px;
+	border: 2px solid var(--reader-line);
+	border-radius: 21px;
+	background: var(--reader-bg);
+}
+
+.reader-r1 .anki-ref-search:focus-within {
+	border-color: var(--reader-accent);
+}
+
+.reader-r1 .anki-ref-search input {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 32px;
+	padding: 0 4px;
+	border: 0;
+	background: transparent;
+	color: var(--reader-fg);
+	font: inherit;
+}
+
+.reader-r1 .anki-ref-search :is(input, button):focus-visible {
+	outline: none;
+}
+
+.reader-r1 .anki-ref-search input::placeholder {
+	color: var(--reader-muted);
+}
+
+.reader-r1 .anki-ref-search input::-webkit-search-cancel-button {
+	appearance: none;
+}
+
+.reader-r1 .anki-ref-search button {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--reader-muted);
+	font-size: 17px;
+	cursor: pointer;
+}
+
+.reader-r1 .anki-ref-search button svg {
+	width: 15px;
+	height: 15px;
+}
+
+.reader-r1 .anki-ref-search button:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.reader-r1 .anki-ref-search button:hover:not(:disabled),
+.reader-r1 .anki-ref-search button:focus-visible {
+	background: var(--reader-accent-soft);
+	color: var(--reader-on-accent-soft);
+}
+
+.reader-r1 .anki-ref-search-error {
+	margin: 4px 12px 0;
+	color: var(--reader-error);
+	font-size: 12px;
+}
+
+@media (forced-colors: active) {
+	.reader-r1 .anki-ref-search:focus-within {
+		outline: 2px solid Highlight;
+		outline-offset: -2px;
+	}
+
+	.reader-r1 .anki-ref-search button:focus-visible {
+		color: HighlightText;
+		background: Highlight;
+		forced-color-adjust: none;
+	}
+}
+
+.reader-r1 .anki-ref-scroll {
+	flex: 1 1 auto;
+	overflow-y: auto;
+	padding: 11px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.reader-r1 .anki-ref-card {
+	border: 1px solid var(--reader-line);
+	border-radius: 9px;
+	padding: 10px 11px;
+	background: color-mix(in srgb, var(--reader-bg) 88%, transparent);
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.reader-r1 .anki-ref-card-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.reader-r1 .anki-ref-term {
+	font:
+		600 17px / 1.3 "Hiragino Mincho ProN",
+		"Yu Mincho",
+		serif;
+}
+
+.reader-r1 .anki-ref-reading {
+	font-size: 12.5px;
+	color: var(--reader-muted);
+}
+
+.reader-r1 .anki-ref-chips {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.reader-r1 .anki-fill-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	flex: none;
+	min-width: 28px;
+	height: 28px;
+	padding: 0 6px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--reader-on-accent-soft);
+	font-size: 12px;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.reader-r1 .anki-fill-btn:hover,
+.reader-r1 .anki-fill-btn:focus-visible {
+	background: var(--reader-accent-soft);
+}
+
+.reader-r1 .anki-fill-btn[data-tooltip]::after {
+	z-index: 1;
+	inset: calc(100% + 3px) 0 auto auto;
+	transform: none;
+}
+
+.reader-r1 .anki-sense-row {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 6px 0;
+	border-top: 1px solid color-mix(in srgb, var(--reader-line) 70%, transparent);
+	font-size: 13px;
+	line-height: 1.55;
+}
+
+.reader-r1 .anki-sense-text {
+	flex: 1 1 auto;
+	min-width: 0;
+	white-space: pre-wrap;
+	word-break: break-word;
+	user-select: text;
+}
+
+.reader-r1 .anki-ref-card .dict-definitions {
+	padding: 6px 0 0;
+	border-top: 1px solid var(--reader-line);
+	display: flow-root;
+}
+
+.reader-r1 .dict-definitions .anki-fill-btn {
+	float: inline-end;
+	clear: inline-end;
+	margin-inline-start: 6px;
+	user-select: none;
+}
+
+.reader-r1 .anki-ref-quote-bar {
+	padding: 9px 12px 10px;
+	border-top: 1px solid var(--reader-line);
+	background: color-mix(in srgb, var(--reader-bg) 95%, transparent);
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	flex: none;
+}
+
+.reader-r1 .anki-ref-target-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	font-size: 12px;
+	color: var(--reader-muted);
+}
+
+.reader-r1 .anki-ref-excerpt {
+	padding: 5px 8px;
+	border-left: 2px solid var(--reader-accent);
+	font-size: 12.5px;
+	line-height: 1.45;
+	max-height: 62px;
+	overflow-y: auto;
+	color: var(--reader-fg);
+}
+
+.reader-r1 .anki-ref-empty {
+	padding: 18px 8px;
+	text-align: center;
+	color: var(--reader-muted);
+	font-size: 12.5px;
+	line-height: 1.6;
+}
+
+.reader-r1 .anki-ref-group-title {
+	margin: 2px 0 0;
+	font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+	font-size: 13px;
+	color: var(--reader-muted);
+}
+
+.reader-r1 .anki-ref-meta {
+	font-size: 11.5px;
+	color: var(--reader-muted);
+}
+
+/* Preview & install modal */
+.anki-modal::backdrop {
+	background: #0007;
+}
+
+.reader-r1 dialog.anki-modal[open] {
+	margin: auto;
+	padding: 0;
+	max-width: calc(100vw - 32px);
+	width: min(1000px, 100%);
+	max-height: min(86vh, 720px);
+	display: flex;
+	flex-direction: column;
+	border-radius: 14px;
+	border: 1px solid var(--reader-line, var(--color-border));
+	background: var(--reader-bg, var(--color-surface));
+	color: var(--reader-fg, var(--color-text));
+	box-shadow: 0 20px 54px rgba(0, 0, 0, 0.28);
+	overflow: hidden;
+}
+
+.anki-modal-head {
+	padding: 18px 22px 12px;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.anki-modal-head h2 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.anki-modal-head p {
+	margin: 5px 0 0;
+	font-size: 13px;
+	color: var(--reader-muted, var(--color-text-muted));
+}
+
+.anki-modal-body {
+	padding: 4px 22px 18px;
+	overflow-y: auto;
+	flex: 1 1 auto;
+}
+
+.anki-preview-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+}
+
+.anki-preview-card {
+	border: 1px solid var(--reader-line, var(--color-border));
+	border-radius: 10px;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	background: var(--reader-bg, var(--color-surface));
+}
+
+.anki-preview-card-head {
+	padding: 8px 13px;
+	border-bottom: 1px solid var(--reader-line, var(--color-border));
+	background: color-mix(
+		in srgb,
+		var(--reader-fg, var(--color-text)) 4%,
+		transparent
+	);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--reader-muted, var(--color-text-muted));
+}
+
+.anki-preview-card-body {
+	flex: 1;
+	min-width: 0;
+	min-height: 160px;
+	overflow-wrap: anywhere;
+}
+
+.anki-preview-card-body .fj-media-chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 6px;
+	border: 1px solid var(--reader-line, var(--color-border));
+	font-size: 12px;
+	color: var(--reader-muted, var(--color-text-muted));
+}
+
+.anki-field-table {
+	border: 1px solid var(--reader-line, var(--color-border));
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+.anki-field-table-row {
+	display: grid;
+	grid-template-columns: 140px minmax(0, 1fr);
+	gap: 12px;
+	padding: 10px 14px;
+	font-size: 13px;
+}
+
+.anki-field-table-row + .anki-field-table-row {
+	border-top: 1px solid var(--reader-line, var(--color-border));
+}
+
+.anki-modal-foot {
+	padding: 12px 22px 16px;
+	border-top: 1px solid var(--reader-line, var(--color-border));
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+/* Topbar Anki status button & lightweight popover */
+.reader-r1 .anki-topbar-wrap {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+}
+
+.reader-r1 .anki-topbar-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 5px 8px;
+	border: 0;
+	border-radius: 7px;
+	background: transparent;
+	color: var(--reader-muted);
+	font-size: 12.5px;
+	cursor: pointer;
+}
+
+.reader-r1 .anki-topbar-btn:hover,
+.reader-r1 .anki-topbar-btn[aria-expanded="true"] {
+	color: var(--reader-fg);
+	background: var(--reader-tool-hover-bg);
+}
+
+.reader-r1 .anki-topbar-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 999px;
+	background: var(--color-success, #2a8a4b);
+}
+
+.reader-r1 .anki-topbar-popover {
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	z-index: 60;
+	width: 268px;
+	padding: 12px 13px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	font-size: 12.5px;
+}
+
+.reader-r1 .anki-topbar-popover-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	font-weight: 500;
+}
+
+.reader-r1 .anki-topbar-popover-meta {
+	color: var(--reader-muted);
+	line-height: 1.5;
+	word-break: break-all;
+	margin: 0;
+}
+
+.reader-r1 .anki-topbar-popover-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding-top: 6px;
+	border-top: 1px solid var(--reader-line);
+}
+
+.reader-r1 .anki-composer[data-single-pane="true"] .anki-ref-pane {
+	width: 100%;
+	flex: 1 1 auto;
+	border-right: 0;
+}
+
+/* Narrow viewport bottom sheet */
+@media (max-width: 780px) {
+	.reader-r1 .anki-composer,
+	.reader-r1 .anki-composer[data-dual-pane="true"] {
+		left: 8px;
+		right: 8px;
+		top: auto;
+		bottom: 8px;
+		width: auto;
+		max-height: 78vh;
+	}
+	.reader-r1 .anki-composer-body {
+		flex-direction: column;
+	}
+	.anki-preview-grid {
+		grid-template-columns: 1fr;
+	}
+}

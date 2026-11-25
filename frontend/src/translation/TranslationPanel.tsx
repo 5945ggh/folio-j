@@ -241,6 +241,7 @@ export function TranslationPanel({
 	translationSessions,
 	onClose,
 	onOpenSegment,
+	onAnki,
 	onBackToOrigin,
 	onResultSelected,
 	onRemoved,
@@ -261,6 +262,7 @@ export function TranslationPanel({
 	translationSessions?: TranslationSessions;
 	onClose: () => void;
 	onOpenSegment?: (id: string) => void;
+	onAnki?: (result: TranslationResult) => void;
 	onBackToOrigin?: (result: TranslationResult) => void;
 	onResultSelected?: (result: TranslationResult) => void;
 	onRemoved?: TranslationRemoved;
@@ -791,6 +793,15 @@ export function TranslationPanel({
 			{!uncertain && activeTranslation(currentTask)
 				? stopAction(true)
 				: translationAction(true)}
+			{onAnki && (
+				<button
+					type="button"
+					className="translation-text-action"
+					onClick={() => onAnki(displayedResult)}
+				>
+					制卡
+				</button>
+			)}
 			{moreActions}
 		</fieldset>
 	);

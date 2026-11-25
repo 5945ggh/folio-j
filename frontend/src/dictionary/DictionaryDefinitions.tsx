@@ -1,5 +1,4 @@
 import {
-	type CSSProperties,
 	type MouseEvent,
 	type PointerEvent,
 	type ReactNode,
@@ -10,52 +9,13 @@ import {
 } from "react";
 import { FOCUS_TIMING } from "../materials/focus";
 import type { LookupLevel } from "./DictionaryCards";
+import { DictionaryDefinitionNodes } from "./DictionaryDefinitionNodes";
 import type { DictionaryNode } from "./dictionary-api";
 import {
 	type DictionaryPassage,
 	dictionaryPassage,
 } from "./dictionary-passage";
 import type { DictionaryMode } from "./preferences";
-
-function definitionStyle(
-	style: DictionaryNode["style"],
-): CSSProperties | undefined {
-	if (!style) return undefined;
-	const properties = Object.fromEntries(
-		Object.entries(style).filter(([, value]) => value != null),
-	);
-	// Preserve the dictionary's colors on both reader papers.
-	for (const [key, paper, percent] of [
-		["color", "--reader-fg", 48],
-		["backgroundColor", "--reader-bg", 24],
-		["borderColor", "--reader-fg", 52],
-	] as const) {
-		const color = style[key];
-		if (color)
-			properties[key] =
-				`light-dark(${color}, color-mix(in srgb, ${color} ${percent}%, var(${paper})))`;
-	}
-	return properties;
-}
-
-function entryContent(nodes: DictionaryNode[], path = "") {
-	return nodes.map((node, i) => {
-		const key = `${path}.${i}`;
-		const Tag = node.tag ?? "span";
-		if (Tag === "br") return <br key={key} />;
-		return (
-			<Tag
-				key={key}
-				lang={node.lang ?? undefined}
-				data-dict-role={node.role ?? undefined}
-				style={definitionStyle(node.style)}
-			>
-				{node.text}
-				{node.content && entryContent(node.content, key)}
-			</Tag>
-		);
-	});
-}
 
 function covers(coverage: Range | null | undefined, glyph: Range) {
 	return (
@@ -77,7 +37,7 @@ export function DictionaryDefinitions({
 >) {
 	return (
 		<DictionaryText {...props} contentKey={nodes} lang="ja">
-			{entryContent(nodes)}
+			<DictionaryDefinitionNodes nodes={nodes} />
 		</DictionaryText>
 	);
 }

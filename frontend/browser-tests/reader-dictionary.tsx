@@ -19,6 +19,7 @@ export async function readerDictionary(h: BrowserHarness) {
 	const selectionLifecycle = params.get("scene") === "selection-lifecycle";
 	const selectionScene =
 		params.get("scene") === "selection" || selectionLifecycle;
+	const ankiScene = basicsScene || (selectionScene && !selectionLifecycle);
 	const { MaterialReader } = await import("../src/materials/MaterialReader");
 	const { readingsKey } = await import("../src/materials/api");
 	const { SettingsPage } = await import("../src/settings/SettingsPage");
@@ -188,6 +189,59 @@ export async function readerDictionary(h: BrowserHarness) {
 	let releaseReadings: (() => void) | undefined;
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
+		if (ankiScene && path === "/api/anki/builtins") {
+			const note = { id: "folio-j.vocabulary-recall", version: 2 };
+			return Response.json({
+				shared_css: "",
+				note_types: [
+					{
+						...note,
+						name: "Folio-J 词汇 v2",
+						fields: ["Sentence", "PartOfSpeech"],
+						card_templates: [],
+					},
+				],
+				export_presets: [
+					{
+						id: "export.vocabulary",
+						name: "词义回忆",
+						note_type_ref: note,
+						fields: [
+							{
+								id: "sentence",
+								label: "原句",
+								type: "text",
+								source: "sentence",
+								presentation: "common",
+								target_field: "Sentence",
+								multiline: true,
+								required: false,
+							},
+							{
+								id: "partOfSpeech",
+								label: "词性",
+								type: "text",
+								source: "manual",
+								presentation: "common",
+								target_field: "PartOfSpeech",
+								multiline: false,
+								required: false,
+							},
+						],
+					},
+				],
+			} satisfies Schema["AnkiBuiltins"]);
+		}
+		if (ankiScene && path === "/api/settings/anki/configurations")
+			return Response.json([]);
+		if (ankiScene && path === "/api/anki/catalog")
+			return Response.json({
+				endpoint: "http://localhost:8765",
+				profile: "A",
+				protocol: "v1",
+				decks: [],
+				note_types: [],
+			});
 		if (path === "/api/dictionary" && request.method === "GET") {
 			statusReads++;
 			if (selectionLifecycle && statusReads === 1)
@@ -839,8 +893,9 @@ export async function readerDictionary(h: BrowserHarness) {
 				(item) => item.getAttribute("aria-label") ?? item.textContent?.trim(),
 			);
 			check(
-				actions.join("|") === "翻译|朗读|查词|带上下文复制|保存为学习片段",
-				"Selection actions must have the requested reading, copy and save order",
+				actions.join("|") ===
+					"翻译|朗读|查词|带上下文复制|保存为学习片段|制作 Anki 笔记",
+				"Selection actions must have the requested reading, copy, save and Anki order",
 			);
 			const copy = button("带上下文复制", tool);
 			const save = button("保存为学习片段", tool);
@@ -934,8 +989,26 @@ export async function readerDictionary(h: BrowserHarness) {
 				);
 				return !!meaning && getComputedStyle(meaning).fontWeight === "700";
 			}, "重新导入同一 ZIP 后，查同一词立即显示更新的词典样式");
+			button("关闭当前词卡").click();
+			await selectText(first, 2, 4);
+			const cardAction = toolbar();
+			check(cardAction, "Selection actions must be ready for Anki");
+			button("制作 Anki 笔记", cardAction).click();
+			await h.until(
+				() =>
+					h.container.querySelector(".anki-quote-inline")?.textContent ===
+					"猫が歩く。",
+				"Direct selection must expand to the verified original sentence",
+			);
+			check(
+				h.container.querySelector(".anki-sentence-focus-text")?.textContent ===
+					"歩く" &&
+					h.container.querySelector<HTMLInputElement>("#anki-f-partOfSpeech")
+						?.value === "",
+				"Direct selection supplies a precise source range and leaves part of speech empty",
+			);
+			button("关闭制卡浮窗").click();
 			if (params.has("capture")) {
-				button("关闭当前词卡").click();
 				await selectText(first, 2, 4);
 				await pointer([{ type: "mouseMoved", x: 1, y: 1 }]);
 				await settle();
@@ -1157,7 +1230,38 @@ export async function readerDictionary(h: BrowserHarness) {
 				() => requests[1]?.tokens?.[0]?.surface === "猫",
 				"Clicking the same glyph must send the newly arrived chapter token",
 			);
-			return "reader basics: lookup with no local dictionary, then use late chapter tokens in the same document";
+			await h.until(
+				() => Boolean(h.container.querySelector(".dict-card .dict-source")),
+				"The new lookup must render its source details",
+			);
+			button("关闭当前词卡").click();
+			const nextLeaf = frame.contentDocument?.querySelector(
+				'[data-locator-leaf="1"]',
+			);
+			check(nextLeaf, "The next paragraph must be available for lookup");
+			await glyphClick(nextLeaf, 5, frame);
+			await h.until(
+				() =>
+					h.container
+						.querySelector(".dict-card .dict-source")
+						?.textContent?.includes("五段・カ行") === true,
+				"The original verb must have known source morphology",
+			);
+			button("制卡").click();
+			await h.until(
+				() =>
+					h.container.querySelector<HTMLInputElement>("#anki-f-partOfSpeech")
+						?.value === "動詞・五段",
+				"The dictionary card must pass the original verb's part of speech to the composer",
+			);
+			check(
+				h.container.querySelector(".anki-quote-inline")?.textContent ===
+					"静かな道を歩く。" &&
+					h.container.querySelector(".anki-sentence-focus-text")
+						?.textContent === "歩く",
+				"The composer must focus the looked-up word in its verified enclosing sentence",
+			);
+			return "reader basics: late chapter tokens and dictionary-to-Anki sentence focus and part of speech";
 		}
 		await h.until(
 			() =>

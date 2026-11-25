@@ -61,6 +61,7 @@ coverage/
 
 # Local scratch files and repository snapshots
 /temp/
+/references/anki-connect/upstream/
 /data/acceptance-evidence/
 .snapshots/
 

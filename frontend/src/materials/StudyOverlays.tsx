@@ -9,6 +9,7 @@ export function SelectionToolbar({
 	onLookup,
 	anchor,
 	onSave,
+	onAnki,
 	onTranslate,
 	onSpeak,
 	onCopy,
@@ -22,6 +23,7 @@ export function SelectionToolbar({
 	copying?: boolean;
 	anchor: ScreenAnchor;
 	onSave: () => void;
+	onAnki?: () => void;
 	onClose: () => void;
 }) {
 	const element = useRef<HTMLDivElement>(null);
@@ -71,6 +73,7 @@ export function SelectionToolbar({
 			onCopy={onCopy}
 			copying={copying}
 			onSave={onSave}
+			onAnki={onAnki}
 			saveButtonId="reader-selection-save"
 		/>
 	);

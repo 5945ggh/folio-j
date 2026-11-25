@@ -1,0 +1,423 @@
+/* Anki settings & mapping editor, inheriting shared settings-page tokens. */
+.anki-settings-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 13px;
+	color: var(--settings-muted);
+}
+
+.anki-status-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 999px;
+	background: var(--settings-muted);
+	flex: none;
+}
+
+.anki-status-dot[data-state="connected"] {
+	background: var(--color-success, #2a8a4b);
+}
+
+.anki-status-dot[data-state="error"] {
+	background: var(--color-danger, #c43b3b);
+}
+
+.anki-status-dot[data-state="checking"] {
+	background: var(--settings-blue);
+}
+
+.anki-card {
+	border: 1px solid var(--settings-line);
+	border-radius: 10px;
+	background: var(--color-surface);
+	overflow: hidden;
+}
+
+.anki-card-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 15px 18px;
+}
+
+.anki-card-row + .anki-card-row {
+	border-top: 1px solid var(--settings-line);
+}
+
+.anki-row-meta {
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.anki-row-title {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--color-text);
+}
+
+.anki-row-desc {
+	margin: 4px 0 0;
+	font-size: 12.5px;
+	color: var(--settings-muted);
+	line-height: 1.5;
+}
+
+.anki-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 1px 7px;
+	border-radius: 5px;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.6;
+	background: color-mix(in srgb, var(--settings-blue) 12%, transparent);
+	color: var(--settings-blue);
+}
+
+.anki-badge[data-tone="muted"] {
+	background: color-mix(in srgb, var(--settings-muted) 14%, transparent);
+	color: var(--settings-muted);
+}
+
+.anki-badge[data-tone="warn"] {
+	background: color-mix(in srgb, var(--color-danger, #c43b3b) 12%, transparent);
+	color: var(--color-danger, #c43b3b);
+}
+
+.anki-row-control {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 0 1 auto;
+}
+
+.anki-row-control input[type="text"],
+.anki-row-control input[type="url"],
+.anki-row-control input[type="password"] {
+	width: 240px;
+	max-width: 100%;
+	padding: 7px 11px;
+	border: 1px solid var(--settings-line);
+	border-radius: 7px;
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-size: 13.5px;
+}
+
+.anki-row-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 12px;
+	flex: none;
+}
+
+.anki-text-action {
+	padding: 2px 0;
+	border: 0;
+	background: none;
+	color: var(--settings-blue);
+	font-size: 13px;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.anki-text-action:hover {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.anki-text-action[data-tone="danger"] {
+	color: var(--color-danger, #c43b3b);
+}
+
+.anki-text-action:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	text-decoration: none;
+}
+
+.anki-connection-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 18px;
+	border-top: 1px solid var(--settings-line);
+	background: color-mix(
+		in srgb,
+		var(--settings-muted) 4%,
+		var(--color-surface)
+	);
+	flex-wrap: wrap;
+}
+
+.anki-connection-note {
+	font-size: 12.5px;
+	color: var(--settings-muted);
+	margin: 0;
+	flex: 1 1 220px;
+}
+
+.anki-connection-note[data-tone="error"] {
+	color: var(--color-danger, #c43b3b);
+}
+
+.anki-connection-note[data-tone="success"] {
+	color: var(--color-success, #2a8a4b);
+}
+
+.anki-editor-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 22px;
+	flex-wrap: wrap;
+}
+
+.anki-editor-title-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	flex: 1 1 300px;
+}
+
+.anki-name-input {
+	font-size: 20px;
+	font-weight: 500;
+	padding: 6px 10px;
+	border: 1px solid var(--settings-line);
+	border-radius: 8px;
+	background: var(--color-surface);
+	color: var(--color-text);
+	width: 100%;
+	max-width: 380px;
+}
+
+.anki-target-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+}
+
+.anki-field-group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.anki-field-group label {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--color-text);
+}
+
+.anki-select-wrap {
+	width: 100%;
+}
+
+.anki-select-wrap select {
+	width: 100%;
+	padding: 8px var(--native-select-padding-end, 40px) 8px 11px;
+	border: 1px solid var(--settings-line);
+	border-radius: 7px;
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-size: 13.5px;
+}
+
+.anki-mapping-head {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 24px minmax(190px, 260px) auto;
+	gap: 10px;
+	padding: 0 18px 8px;
+	font-size: 12px;
+	color: var(--settings-muted);
+}
+
+.anki-mapping-item {
+	padding: 13px 18px;
+}
+
+.anki-mapping-item + .anki-mapping-item {
+	border-top: 1px solid var(--settings-line);
+}
+
+.anki-mapping-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 24px minmax(190px, 260px) auto;
+	gap: 10px;
+	align-items: center;
+}
+
+.anki-mapping-arrow {
+	text-align: center;
+	color: var(--settings-muted);
+	user-select: none;
+}
+
+.anki-mapping-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--color-text);
+}
+
+.anki-mapping-meta {
+	margin-top: 3px;
+	font-size: 12px;
+	color: var(--settings-muted);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.anki-mapping-required {
+	color: var(--color-danger, #c43b3b);
+}
+
+.anki-mapping-controls {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.anki-icon-btn {
+	display: inline-grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	border: 1px solid var(--settings-line);
+	border-radius: 6px;
+	background: var(--color-surface);
+	color: var(--settings-muted);
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.anki-icon-btn:hover:not(:disabled) {
+	color: var(--color-text);
+	border-color: color-mix(in srgb, var(--color-text) 28%, var(--settings-line));
+}
+
+.anki-icon-btn:disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+}
+
+.anki-mapping-issue {
+	margin: 8px 0 0;
+	font-size: 12.5px;
+	color: var(--color-danger, #c43b3b);
+}
+
+.anki-mapping-drawer {
+	margin-top: 12px;
+	padding: 13px 14px;
+	border-radius: 8px;
+	border: 1px solid var(--settings-line);
+	background: color-mix(
+		in srgb,
+		var(--settings-muted) 4%,
+		var(--color-surface)
+	);
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 12px;
+	align-items: end;
+}
+
+.anki-mapping-drawer input[type="text"] {
+	width: 100%;
+	padding: 7px 10px;
+	border: 1px solid var(--settings-line);
+	border-radius: 7px;
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-size: 13px;
+}
+
+.anki-checkbox-line {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 13px;
+	height: 34px;
+	cursor: pointer;
+}
+
+.anki-drawer-foot {
+	grid-column: 1 / -1;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding-top: 4px;
+	font-size: 12px;
+	color: var(--settings-muted);
+}
+
+.anki-editor-footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 22px;
+}
+
+.anki-offline-banner {
+	margin: 0 0 14px;
+	padding: 10px 14px;
+	border-radius: 8px;
+	border: 1px solid var(--settings-line);
+	background: color-mix(
+		in srgb,
+		var(--settings-muted) 6%,
+		var(--color-surface)
+	);
+	font-size: 12.5px;
+	color: var(--settings-muted);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+	.anki-card-row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.anki-row-control {
+		width: 100%;
+	}
+	.anki-row-control input[type="text"],
+	.anki-row-control input[type="url"],
+	.anki-row-control input[type="password"] {
+		width: 100%;
+		flex: 1 1 auto;
+	}
+	.anki-target-grid {
+		grid-template-columns: 1fr;
+	}
+	.anki-mapping-head {
+		display: none;
+	}
+	.anki-mapping-row {
+		grid-template-columns: 1fr;
+		gap: 8px;
+	}
+	.anki-mapping-arrow {
+		display: none;
+	}
+}

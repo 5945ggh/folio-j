@@ -337,12 +337,6 @@
 	background: transparent;
 }
 
-.app-shell.segment-study-shell .analysis-markdown blockquote {
-	border-left-color: var(--border);
-	background: var(--sidebar);
-	color: var(--muted);
-}
-
 .app-shell.segment-study-shell .analysis-markdown table :is(th, td) {
 	border-color: var(--border);
 }

@@ -61,6 +61,7 @@ export type ReaderLookupHit = {
 	highlight: (start: number, end: number) => void;
 	unhighlight: () => void;
 	clearHighlight: () => void;
+	referenceForSpan?: (start: number, end: number) => MaterialProvenance | null;
 };
 export type StudyBinding = {
 	dictionaryMode?: "off" | "click" | "hover";
@@ -638,6 +639,8 @@ export class ReaderStudy {
 		this.dismissLookup(false);
 		this.hoverKey = key;
 		const ticket = this.lookupTicket;
+		const boundMaterialId = this.binding.materialId;
+		const boundVersionId = this.binding.versionId;
 		this.binding.onLookup({
 			text,
 			offset: absolute - start,
@@ -645,6 +648,49 @@ export class ReaderStudy {
 			anchor: screenAnchor(frame.element, hit.rect),
 			studyHit,
 			hover,
+			referenceForSpan: (left, right) => {
+				if (
+					!Number.isInteger(left) ||
+					!Number.isInteger(right) ||
+					left < 0 ||
+					right <= left ||
+					right > end - start
+				)
+					return null;
+				const resource = frame.chapter.resources.find(
+					(item) => item.id === part.resource_id,
+				);
+				if (!resource) return null;
+				const absStart = start + left;
+				const absEnd = start + right;
+				const localStart = absStart - part.start;
+				const localEnd = absEnd - part.start;
+				const exact = projection.points.slice(localStart, localEnd).join("");
+				if (!exact) return null;
+				const prefix = projection.points
+					.slice(Math.max(0, localStart - 24), localStart)
+					.join("");
+				const suffix = projection.points
+					.slice(localEnd, Math.min(projection.points.length, localEnd + 24))
+					.join("");
+				return {
+					contract_version: "1",
+					material_id: boundMaterialId,
+					version_id: boundVersionId,
+					ranges: [
+						{
+							resource_id: part.resource_id,
+							spine_index: part.spine_index,
+							text_sha256: resource.text_sha256,
+							start: absStart,
+							end: absEnd,
+							exact,
+							prefix,
+							suffix,
+						},
+					],
+				};
+			},
 			unhighlight: () => {
 				if (ticket !== this.lookupTicket) return;
 				this.lookupCoverage = null;

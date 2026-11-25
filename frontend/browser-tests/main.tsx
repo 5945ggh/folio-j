@@ -9,6 +9,7 @@ import type { StudyTarget } from "../src/materials/study-api";
 import "../src/styles.css";
 import { analysisReading } from "./analysis-reading";
 import { analysisRename } from "./analysis-rename";
+import { ankiComposerRegression } from "./anki-composer";
 import { appTheme } from "./app-theme";
 import { overviewImportRegression } from "./catalog-overview";
 import { reusedImportRegression } from "./catalog-reuse";
@@ -441,6 +442,7 @@ try {
 	};
 	const chapter = () => chapterRecords(harness, preview);
 	const namedSuites = new Map([
+		["anki-composer", () => ankiComposerRegression(harness)],
 		["native-select", () => nativeSelectRegression(harness, preview)],
 		["material-vocabulary", () => materialVocabulary(harness, preview)],
 		["settings-models", () => settingsModels(harness)],

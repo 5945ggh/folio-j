@@ -92,7 +92,9 @@
 	color-scheme: inherit;
 	border: 1px solid var(--reader-line);
 }
-.reader-r1 .confirm-card p:not(.eyebrow):not(.inline-error) {
+.reader-r1
+	.confirm-card
+	p:not(.eyebrow):not(.inline-error):not(:where(.anki-preview-card-body *)) {
 	color: var(--reader-muted);
 }
 .reader-r1 .confirm-card blockquote {

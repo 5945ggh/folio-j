@@ -635,7 +635,8 @@ a {
 	line-height: 1.35;
 	overflow-wrap: anywhere;
 }
-.confirm-card p:not(.eyebrow):not(.inline-error) {
+.confirm-card
+	p:not(.eyebrow):not(.inline-error):not(:where(.anki-preview-card-body *)) {
 	margin: 0 0 23px;
 	color: light-dark(#626b71, var(--color-text-secondary));
 	font-size: 13px;
@@ -1122,11 +1123,16 @@ a {
 	margin: 0.25em 0;
 }
 .analysis-markdown blockquote {
-	margin: 1em 0;
-	padding: 0.3em 1em;
-	border-left: 3px solid light-dark(#dbe3eb, var(--color-border-subtle));
-	color: light-dark(#687681, var(--color-text-muted));
-	background: light-dark(#f8fafb, var(--color-surface-subtle));
+	margin: 0.5em 0 1em;
+	padding-inline-start: 12px;
+	border-inline-start: 2px solid light-dark(#d4d4d4, #484848);
+	color: light-dark(#505050, #c4c4c4);
+}
+.analysis-markdown blockquote > :first-child {
+	margin-block-start: 0;
+}
+.analysis-markdown blockquote > :last-child {
+	margin-block-end: 0;
 }
 .analysis-markdown pre {
 	overflow-x: auto;

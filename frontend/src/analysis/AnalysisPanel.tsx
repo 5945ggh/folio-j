@@ -10,18 +10,16 @@ import { AnalysisRenameDialog } from "./AnalysisRenameDialog";
 import {
 	type AnalysisDetail,
 	analysisKeys,
+	analysisListOptions,
 	deleteAnalysis,
 	getAnalysis,
 	getAnalysisImpact,
-	listAnalyses,
 } from "./api";
 import { Markdown } from "./Markdown";
 import { analysisPresentation } from "./presentation";
 import { readingAnalysis } from "./state";
 import { useAnalysisActionMenu } from "./useAnalysisActionMenu";
 import "./reading.css";
-
-const pageSize = 100;
 
 export function AnalysisPanel({
 	segmentId,
@@ -51,11 +49,7 @@ export function AnalysisPanel({
 	}, [selectedId]);
 
 	const analyses = useInfiniteQuery({
-		queryKey: analysisKeys.list(segmentId),
-		initialPageParam: 0,
-		queryFn: ({ pageParam }) => listAnalyses(segmentId, pageParam),
-		getNextPageParam: (last, all) =>
-			last.length === pageSize ? all.length * pageSize : undefined,
+		...analysisListOptions(segmentId),
 	});
 	const items = analyses.data?.pages.flat() ?? [];
 	const effectiveId = selectedId;

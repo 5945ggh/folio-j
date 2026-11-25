@@ -84,7 +84,7 @@ function validateBudget(budget: ContextBudget): void {
 }
 
 /** Map resource-local codepoints before NFC can combine across resource seams. */
-function chapterTarget(chapter: Chapter, reference: MaterialProvenance) {
+export function chapterTarget(chapter: Chapter, reference: MaterialProvenance) {
 	if (
 		reference.contract_version !== "1" ||
 		reference.material_id !== chapter.material_id ||
@@ -220,6 +220,8 @@ function chapterTarget(chapter: Chapter, reference: MaterialProvenance) {
 		throw new ContextPrefillError("invalid_reference", "目标原文为空白");
 	}
 	return {
+		raw,
+		parts,
 		text: before + selected + after,
 		start: Array.from(before).length,
 		end: Array.from(before + selected).length,

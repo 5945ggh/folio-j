@@ -7,6 +7,7 @@
 | 要确认的问题 | 入口与职责 |
 | --- | --- |
 | 当前能力、实现差额与验证限制 | [MVP 实施基线](MVP_IMPLEMENTATION_BASELINE.md)，统一维护核对版本及验收入口 |
+| 阅读器怎样将选区导出到 Anki | [阅读器制卡与早期手板](anki/READER_EXPORT.md)，涵盖选区工具栏、可拖动浮窗、连接状态、共享配置、字段映射与内置类型 |
 | Windows 源码、冻结包及数据位置怎样验证 | [Windows 验收与实机清单](WINDOWS_ACCEPTANCE.md)，集中重建接力、首次选择、故障恢复、数据保护与阅读体验的待验步骤 |
 | EPUB 学习衔接接下来做什么 | [阶段安排](epub-reading/README.md#下一阶段接力顺序)：材料对话、消息引用和从讨论形成讲解；[接手提示词](epub-reading/AGENT_PROMPT.md)引用本安排 |
 | 阅读实践还有哪些候选与验证事项 | [实际阅读评测计划](reading-practice/PLAN.md)，记录阅读体验候选、数据保护和后续验证条件 |

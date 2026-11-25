@@ -25,8 +25,20 @@ import {
 import type { DictionaryPage } from "./dictionary-pages";
 import type { DictionaryPassage } from "./dictionary-passage";
 import { dictionaryReading } from "./dictionary-reading";
+import { dictionarySourceDetails } from "./dictionary-source-details";
 import type { DictionaryMode } from "./preferences";
 import type { DictionaryAnchor as ScreenAnchor } from "./types";
+
+export type DictionaryAnkiSelection = {
+	surface: string;
+	term: string;
+	reading: string;
+	start: number;
+	end: number;
+	entries: readonly DictionaryMatch[];
+	dictionaryTitle?: string;
+	partOfSpeech?: string;
+};
 
 export type LookupOrigin = {
 	input: Omit<
@@ -37,6 +49,7 @@ export type LookupOrigin = {
 	hover?: boolean;
 	parentBoxes?: ScreenAnchor[];
 	record?: () => void;
+	anki?: (selection: DictionaryAnkiSelection) => void;
 	highlight?: (start: number, end: number) => void;
 	unhighlight?: () => void;
 	clear?: () => void;
@@ -117,53 +130,8 @@ function SourceDetails({
 	titleWord: string | undefined;
 }) {
 	const reading = dictionaryReading(analysis.reading);
-	const head = analysis.components[0];
-	const firstPart = analysis.inflection[0];
-	const hasInflectionHead =
-		!!head &&
-		firstPart?.surface === head.surface &&
-		analysis.inflection.map((part) => part.surface).join("") ===
-			analysis.surface;
-	const lexicalComponents = hasInflectionHead ? [head] : analysis.components;
-	const forms = lexicalComponents
-		.filter(
-			(item) =>
-				!item.is_oov &&
-				item.dictionary_form &&
-				item.dictionary_form !== item.surface,
-		)
-		.map((item) => item.dictionary_form);
-	const conjugations = [
-		...new Set(
-			lexicalComponents
-				.filter((item) => !item.is_oov && item.pos[4] && item.pos[4] !== "*")
-				.map((item) => item.pos[4]?.replaceAll("-", "・")),
-		),
-	];
-	const partsOfSpeech = [
-		...new Set(
-			lexicalComponents
-				.filter((item) => !item.is_oov && item.pos[0] !== "補助記号")
-				.flatMap(({ pos }) => {
-					const [part, detail, subcategory] = pos;
-					if (!part || part === "*") return [];
-					if (
-						detail === "固有名詞" &&
-						subcategory &&
-						subcategory !== "*" &&
-						subcategory !== "一般"
-					)
-						return [`${detail}（${subcategory}）`];
-					return [
-						detail && !["一般", "普通名詞", "*"].includes(detail)
-							? `${part}（${detail}）`
-							: part,
-					];
-				}),
-		),
-	];
+	const { forms, labels } = dictionarySourceDetails(analysis);
 	const showSurface = analysis.surface !== titleWord;
-	const labels = [...partsOfSpeech, ...conjugations];
 	if (!(showSurface || reading || forms.length || labels.length)) return null;
 	return (
 		<div className="dict-source">
@@ -665,7 +633,9 @@ function WordCard({
 					)}
 				</div>
 			)}
-			{(level.origin.record || selection) && (
+			{(level.origin.record ||
+				(depth === 0 && level.origin.anki && page) ||
+				selection) && (
 				<footer className="dict-foot">
 					{level.origin.record && (
 						<button
@@ -676,6 +646,39 @@ function WordCard({
 							}}
 						>
 							此处记录 ↗
+						</button>
+					)}
+					{depth === 0 && level.origin.anki && page && (
+						<button
+							type="button"
+							className="dict-link"
+							onClick={() => {
+								const anki = level.origin.anki;
+								if (!anki) return;
+								const chosen = page.entries[0];
+								const analysis = page.analysis;
+								const reading =
+									chosen?.reading ||
+									(analysis?.reading
+										? (dictionaryReading(analysis.reading)?.kana ?? "")
+										: "");
+								close();
+								anki({
+									surface: page.surface,
+									term: chosen?.term ?? page.surface,
+									reading,
+									start: page.start,
+									end: page.end,
+									entries: page.entries,
+									dictionaryTitle: title,
+									partOfSpeech:
+										analysis?.surface === page.surface
+											? dictionarySourceDetails(analysis).partOfSpeech
+											: undefined,
+								});
+							}}
+						>
+							制卡
 						</button>
 					)}
 					{selection && (

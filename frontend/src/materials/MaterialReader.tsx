@@ -19,6 +19,17 @@ import {
 	useNavigate,
 	useParams,
 } from "react-router";
+import { AnkiComposer } from "../anki/AnkiComposer";
+import { AnkiHeaderStatus } from "../anki/AnkiHeaderStatus";
+import type { AnkiCollectionInfo } from "../anki/api";
+import {
+	type AnkiMaterialContext,
+	type AnkiSentenceSource,
+	expandedSentenceSource,
+	extractExpandedSentence,
+	formatSourceMetadata,
+} from "../anki/context";
+import { originalSentenceRuby } from "../anki/sentence-ruby";
 import { Icon as CatalogIcon } from "../catalog/LibraryTools";
 import { refreshMaterialAnalysis } from "../catalog/statistics-query";
 import { getSource, queries, RequestError, type Segment } from "../content";
@@ -305,6 +316,89 @@ function Reader({
 				: book.reading_position,
 	);
 	const [studyTarget, setStudyTarget] = useState<StudyTarget | null>(null);
+	const [ankiStatus, setAnkiStatus] = useState<{
+		state: "idle" | "checking" | "connected" | "error";
+		info?: AnkiCollectionInfo;
+		message?: string;
+	}>({ state: "idle" });
+	const [ankiDraft, setAnkiDraft] = useState<{
+		chapterId: string;
+		context: AnkiMaterialContext;
+		sentenceSource: AnkiSentenceSource | null;
+		anchor: ScreenAnchor;
+	} | null>(null);
+	const [ankiNotice, setAnkiNotice] = useState<{
+		message: string;
+		serial: number;
+	} | null>(null);
+	useEffect(() => {
+		if (!ankiNotice) return;
+		const timer = setTimeout(() => setAnkiNotice(null), 5000);
+		return () => clearTimeout(timer);
+	}, [ankiNotice]);
+	const ankiCard = useRef<HTMLElement>(null);
+	function closeAnkiComposer(key: string) {
+		setAnkiDraft((current) => (current?.context.key === key ? null : current));
+		requestAnimationFrame(() => {
+			if (!activeRef.current || ankiCard.current) return;
+			if (document.activeElement === document.body)
+				container.current?.focus({ preventScroll: true });
+			controller.current?.refresh();
+		});
+	}
+	function openAnkiComposer(
+		input: Omit<
+			AnkiMaterialContext,
+			| "key"
+			| "sentence"
+			| "sentenceFocus"
+			| "sentenceRuby"
+			| "sentenceRubyPending"
+			| "sourceMetadata"
+		>,
+		anchor: ScreenAnchor,
+		originChapter: Chapter | undefined = chapter.data,
+		fallbackSentence = input.selection,
+	) {
+		dictionary.current?.close();
+		records.clearToolbar();
+		setTranslationOpen(false);
+		setStudyTarget(null);
+		closeMarkHit();
+		if (ankiDraft) {
+			ankiCard.current?.focus({ preventScroll: true });
+			return;
+		}
+		const sentenceSource = expandedSentenceSource(
+			originChapter,
+			input.reference,
+			input.origin === "selection" || input.origin === "dictionary"
+				? input.selection
+				: undefined,
+		);
+		const context = {
+			...input,
+			key: crypto.randomUUID(),
+			sentence:
+				sentenceSource?.sentence ??
+				extractExpandedSentence(null, null, fallbackSentence),
+			sentenceFocus: sentenceSource?.focus,
+			sourceMetadata: formatSourceMetadata([
+				source.data?.title,
+				book.title,
+				originChapter?.title,
+			]),
+		};
+		setAnkiDraft({
+			context,
+			sentenceSource,
+			anchor,
+			chapterId: originChapter?.id ?? chapterId,
+		});
+		setSelectionError(null);
+		controller.current?.show();
+	}
+
 	const [selectionError, setSelectionError] = useState<Error | null>(null);
 	const [originError, setOriginError] = useState<Error | null>(null);
 	const [recordState, setRecordState] = useState(EMPTY_READER_RECORD_STATE);
@@ -600,6 +694,7 @@ function Reader({
 		ui,
 		translationTarget,
 		translationOpen,
+		ankiActive: ankiDraft !== null,
 		studyActive: translationOpen || studyTarget !== null,
 	});
 	latest.current = {
@@ -615,6 +710,7 @@ function Reader({
 		ui,
 		translationTarget,
 		translationOpen,
+		ankiActive: ankiDraft !== null,
 		studyActive: translationOpen || studyTarget !== null,
 	};
 	const dismissReadingBackground = useCallback(
@@ -762,6 +858,7 @@ function Reader({
 				setUiPreference({ ...latest.current.ui, focus: enabled }),
 			hasOverlay: () =>
 				!!dictionary.current?.isOpen() ||
+				latest.current.ankiActive ||
 				latest.current.studyActive ||
 				records.active ||
 				latest.current.directImage !== undefined ||
@@ -880,6 +977,26 @@ function Reader({
 		active,
 		activation,
 	);
+	const otherAnkiChapter =
+		ankiDraft && ankiDraft.chapterId !== chapterId ? ankiDraft.chapterId : "";
+	const otherMarks = useChapterStudyMarks(
+		book.id,
+		book.version_id,
+		otherAnkiChapter,
+		active && !!otherAnkiChapter,
+		activation,
+	);
+	const otherTranslations = useChapterTranslations(
+		book.id,
+		book.version_id,
+		otherAnkiChapter,
+		active && !!otherAnkiChapter,
+		activation,
+	);
+	const ankiSegments = otherAnkiChapter ? otherMarks : marks;
+	const ankiTranslations = otherAnkiChapter
+		? otherTranslations
+		: chapterTranslations;
 	const recordMarks = useMemo(
 		() => [
 			...marks.items,
@@ -890,25 +1007,46 @@ function Reader({
 		],
 		[marks.items, chapterTranslations.items],
 	);
-	const chapterReadingsKey = readingsKey(
-		book.id,
-		book.version_id,
-		chapterId,
-		readingGeneration,
-	);
-	const readings = useQuery({
-		queryKey: chapterReadingsKey,
-		queryFn: ({ signal }) =>
-			getReadings(
-				book.id,
-				book.version_id,
-				chapterId,
-				readingGeneration,
-				signal,
-			),
-		enabled: active && !!chapterId,
+	const chapterReadingOptions = (id: string) => ({
+		queryKey: readingsKey(book.id, book.version_id, id, readingGeneration),
+		queryFn: ({ signal }: { signal: AbortSignal }) =>
+			getReadings(book.id, book.version_id, id, readingGeneration, signal),
+		enabled: active && !!id,
 		staleTime: Number.POSITIVE_INFINITY,
 	});
+	const chapterReading = chapterReadingOptions(chapterId);
+	const chapterReadingsKey = chapterReading.queryKey;
+	const readings = useQuery(chapterReading);
+	const ankiSourceChapterId = ankiDraft?.sentenceSource?.chapter.id;
+	const ankiOtherChapterReadings = useQuery(
+		chapterReadingOptions(
+			ankiSourceChapterId === chapterId ? "" : (ankiSourceChapterId ?? ""),
+		),
+	);
+	const ankiReadings =
+		ankiSourceChapterId === chapterId ? readings : ankiOtherChapterReadings;
+	const sentenceRuby = useMemo(
+		() =>
+			ankiDraft?.sentenceSource
+				? originalSentenceRuby(
+						ankiDraft.sentenceSource,
+						ankiReadings.data,
+						readingGeneration,
+						document,
+					)
+				: undefined,
+		[ankiDraft?.sentenceSource, ankiReadings.data, readingGeneration],
+	);
+	const sentenceRubyPending = Boolean(
+		ankiDraft?.sentenceSource &&
+			ankiReadings.isPending &&
+			ankiReadings.isFetching,
+	);
+	const ankiContext = useMemo(
+		() =>
+			ankiDraft && { ...ankiDraft.context, sentenceRuby, sentenceRubyPending },
+		[ankiDraft, sentenceRuby, sentenceRubyPending],
+	);
 	const viewportReady =
 		chapter.isSuccess && (bookUi.rubyScope !== "all" || readings.isSuccess);
 	const container = useRef<HTMLElement>(null);
@@ -1798,7 +1936,12 @@ function Reader({
 			readingsReady: readings.isSuccess,
 			loadReadings: () =>
 				client.fetchQuery({
-					queryKey: chapterReadingsKey,
+					queryKey: readingsKey(
+						book.id,
+						book.version_id,
+						chapterId,
+						readingGeneration,
+					),
 					queryFn: ({ signal }) =>
 						getReadings(
 							book.id,
@@ -2247,6 +2390,15 @@ function Reader({
 					>
 						<ReaderNavigationIcon name="settings" />
 					</SettingsLink>
+					<AnkiHeaderStatus
+						settingsState={returnState(
+							{ to: `/materials/${book.id}`, label: book.title },
+							returnTo,
+							"/settings",
+						)}
+						externalStatus={ankiStatus}
+						onStatusChange={setAnkiStatus}
+					/>
 				</div>
 			</header>
 			<div className="reader-alerts" aria-live="polite">
@@ -2598,6 +2750,27 @@ function Reader({
 						mode={dictionaryPreferences.mode}
 						onMode={(mode) => updateDictionaryPreferences({ mode })}
 						onRecord={openMarkHit}
+						onAnki={(payload) => {
+							openAnkiComposer(
+								{
+									origin: "dictionary",
+									selection: payload.surface,
+									reference: payload.reference,
+									dictionarySeed: {
+										surface: payload.surface,
+										term: payload.term,
+										reading: payload.reading,
+										entries: payload.entries,
+										dictionaryTitle: payload.dictionaryTitle,
+										partOfSpeech: payload.partOfSpeech,
+									},
+									lookupInput: payload.lookupInput,
+								},
+								payload.anchor,
+								chapter.data,
+								payload.lookupInput.text || payload.surface,
+							);
+						}}
 						restoreFocus={() =>
 							container.current?.focus({ preventScroll: true })
 						}
@@ -2682,6 +2855,26 @@ function Reader({
 						target={translationTarget}
 						autoStart
 						onOpenSegment={openStudySegment}
+						onAnki={(result) => {
+							const ref = result.material_provenance;
+							const selectionText = targetText(ref);
+
+							openAnkiComposer(
+								{
+									origin: "translation",
+									selection: selectionText,
+									reference: ref,
+									initialTranslation: result,
+								},
+								translationAnchor ?? {
+									left: 120,
+									right: 260,
+									top: 120,
+									bottom: 160,
+								},
+								translationTarget.chapter,
+							);
+						}}
 						onClose={() => {
 							setTranslationOpen(false);
 							setPanels((current) =>
@@ -2822,6 +3015,37 @@ function Reader({
 						}
 					}}
 					onClose={() => records.clearToolbar()}
+					onAnki={() => {
+						try {
+							if (
+								!chapter.data ||
+								!container.current ||
+								!presentation.canSample(viewportSize(container.current))
+							)
+								throw new Error("正文仍在准备，请重新选择。");
+							const reference = frames.captureStudyReference(
+								book.id,
+								book.version_id,
+								chapter.data,
+							);
+							const selectionText = targetText(reference);
+
+							openAnkiComposer(
+								{
+									origin: "selection",
+									selection: selectionText,
+									reference,
+								},
+								selection.anchor,
+							);
+						} catch (failure) {
+							setSelectionError(
+								failure instanceof Error
+									? failure
+									: new Error("无法读取选区，请重新选择。"),
+							);
+						}
+					}}
 					onSave={() => {
 						try {
 							if (
@@ -2891,6 +3115,36 @@ function Reader({
 						translationSessions={translationSessions}
 						onBackToOrigin={backToTranslationOrigin}
 						onOpen={openStudySegment}
+						onAnkiSegment={(segmentItem) => {
+							if (!chapter.data) return;
+							const ref = segmentItem.material_provenance;
+							const selectionText = targetText(ref);
+
+							openAnkiComposer(
+								{
+									origin: "segment",
+									selection: selectionText,
+									reference: ref,
+									initialSegmentId: segmentItem.segment_id,
+								},
+								markHit.anchor,
+							);
+						}}
+						onAnkiTranslation={(result) => {
+							if (!chapter.data) return;
+							const ref = result.material_provenance;
+							const selectionText = targetText(ref);
+
+							openAnkiComposer(
+								{
+									origin: "translation",
+									selection: selectionText,
+									reference: ref,
+									initialTranslation: result,
+								},
+								markHit.anchor,
+							);
+						}}
 						onLocateOriginal={(item) =>
 							locateRecordOrigin(
 								item.material_provenance,
@@ -2934,6 +3188,54 @@ function Reader({
 					onOpen={() => openStudySegment(savedNotice.id)}
 					onClose={() => setSavedNotice(null)}
 				/>
+			)}
+			{ankiDraft && ankiContext && (
+				<AnkiComposer
+					key={ankiDraft.context.key}
+					cardRef={ankiCard}
+					night={theme === "black"}
+					context={ankiContext}
+					materialId={book.id}
+					anchor={ankiDraft.anchor}
+					chapterSegments={ankiSegments.items}
+					chapterTranslations={ankiTranslations.items}
+					recordsStatus={
+						ankiSegments.isError || ankiTranslations.isError
+							? "error"
+							: ankiSegments.loading || ankiTranslations.loading
+								? "loading"
+								: "ready"
+					}
+					settingsState={returnState(
+						{ to: `/materials/${book.id}`, label: book.title },
+						returnTo,
+						"/settings",
+					)}
+					onConnectionStatus={setAnkiStatus}
+					onClose={() => closeAnkiComposer(ankiDraft.context.key)}
+					onExported={(message) => {
+						closeAnkiComposer(ankiDraft.context.key);
+						setAnkiNotice({ message, serial: Date.now() });
+					}}
+				/>
+			)}
+			{ankiNotice && (
+				<div
+					className="reader-study-notice"
+					role="status"
+					aria-live="polite"
+					data-reader-tool=""
+				>
+					<span>{ankiNotice.message}</span>
+					<button
+						type="button"
+						className="reader-study-notice-close"
+						aria-label="关闭通知"
+						onClick={() => setAnkiNotice(null)}
+					>
+						×
+					</button>
+				</div>
 			)}
 			{active && selection && contextCopy.feedback && (
 				<ContextCopyFeedback

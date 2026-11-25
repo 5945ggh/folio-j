@@ -55,6 +55,7 @@ type Props = Omit<
 	onEmphasize: (id: string | null, kind?: "segment" | "translation") => void;
 	onResultSelected: (result: TranslationResult) => void;
 	onBackToOrigin: (result: TranslationResult) => void;
+	onAnkiTranslation?: (result: TranslationResult) => void;
 	translationSessions: TranslationSessions;
 	onTranslationRemoved?: TranslationRemoved;
 	manualPosition?: ReaderCardPosition | null;
@@ -540,6 +541,7 @@ export function ChapterRecords(props: Props) {
 									onResultSelected={props.onResultSelected}
 									onRemoved={props.onTranslationRemoved}
 									onOpenSegment={props.onOpen}
+									onAnki={props.onAnkiTranslation}
 									onBackToOrigin={fixed ? props.onBackToOrigin : undefined}
 									onClose={onClose}
 								/>

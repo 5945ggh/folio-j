@@ -1,3 +1,4 @@
+import { infiniteQueryOptions } from "@tanstack/react-query";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 import { errorMessage, requireData } from "../content";
@@ -44,6 +45,16 @@ export const analysisKeys = {
 		["analysis", analysisId, revisionId ?? "current"] as const,
 	impact: (analysisId: string) => ["analysis-impact", analysisId] as const,
 };
+
+export function analysisListOptions(segmentId: string) {
+	return infiniteQueryOptions({
+		queryKey: analysisKeys.list(segmentId),
+		initialPageParam: 0,
+		queryFn: ({ pageParam }) => listAnalyses(segmentId, pageParam),
+		getNextPageParam: (last, all) =>
+			last.length === 100 ? all.length * 100 : undefined,
+	});
+}
 
 export async function listAnalyses(segmentId: string, offset = 0) {
 	const { data, error, response } = await api.GET(
