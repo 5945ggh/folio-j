@@ -707,7 +707,9 @@ Occurrence创建／整理与积累库、可选提取及SSE事件接口仍是未�
 | 连接和选择目标 | `POST /api/anki/probe` 可测试尚未保存的连接设置，检查活动集合和基本文字导出能力。`GET /api/anki/catalog` 返回当前普通卡组、笔记类型和所处集合。`POST /api/anki/note-type-fields` 返回所选类型的字段及卡片模板名。外部 ID 在公开接口中使用十进制字符串。 |
 | 核对与发送 | `POST /api/anki/builtin-check` 按类型身份、版本及字段／模板判定是否存在且兼容。`POST /api/anki/export` 接收预期地址、profile、选定目标、字段映射及本次值。缺少内置类型时返回 `installation_required`，调用方经用户确认后显式设置 `install_builtin`。同名异构不覆盖。Anki 判定重复时返回 `duplicate`，只有显式 `allow_duplicate` 才允许本次重复。 |
 
-发送前校验实际目标、有效映射、必填值与已映射附件。正文按普通文本转义。附件接收文件名及 base64 数据，支持 MP3、PNG、JPEG、MP4，单件 11 MiB，每次合计 24 MiB，JSON 请求体上限 40 MiB。媒体写入使用内容摘要命名，并采用 Anki 返回的文件名。导出回执以 `status` 判断结果，必要时附失败阶段、已上传文件和可能的媒体残留。笔记写入结果不明返回 `unknown`。已经确认创建但未取得卡片详情时保留 Note ID，`card_ids` 可为 null。应用不自动重发写入，草稿、媒体和回执都不写入业务库。
+内置类型用 ID 和版本共同解析。「词义回忆」系统预设指向 `Folio-J 词汇 v2`，分别映射 `Meaning`、`SentenceMeaning` 和选填的 `PartOfSpeech`。个人配置引用的 v1 仍按原字段与模板发送。
+
+发送前校验实际目标、有效映射、必填值与已映射附件。正文按普通文本转义。内置类型的 `Sentence` 可附带相对于原句的码点区间和读音，服务端校验顺序与边界后生成 ruby 标记。词汇 v2 和例句 v1 的 `Sentence` 另可携带 `sentence_focus`，以半开码点区间及对应文字共同验证目标，再生成供背面配色的片段标记。例句是首字段时，读音写入标记属性，保留 Anki 按例句正文判重的行为。附件接收文件名及 base64 数据，支持 MP3、PNG、JPEG、MP4，单件 11 MiB，每次合计 24 MiB，JSON 请求体上限 40 MiB。媒体写入使用内容摘要命名，并采用 Anki 返回的文件名。导出回执以 `status` 判断结果，必要时附失败阶段、已上传文件和可能的媒体残留。笔记写入结果不明返回 `unknown`。已经确认创建但未取得卡片详情时保留 Note ID，`card_ids` 可为 null。应用不自动重发写入，草稿、媒体和回执都不写入业务库。
 
 后端只对明确的操作调用 AnkiConnect，先探测 v1，识别旧协议后可使用 legacy v6。v1 写入携带集合 session，v6 在写入前重查活动 profile 与目标身份。v6 的核对与写入是两个外部操作，不能提供原子会话保证。取材沿用既有章节片段与翻译目录，按命中的确切出处读取各版译文。公开请求与响应见[生成的 OpenAPI](../backend/openapi.json)，内置资源见[随包的模板和配置](../backend/src/app/anki_builtin_types.json)。
 

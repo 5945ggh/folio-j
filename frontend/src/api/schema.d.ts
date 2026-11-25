@@ -1945,6 +1945,9 @@ export interface components {
              * @default false
              */
             required: boolean;
+            sentence_focus?: components["schemas"]["AnkiSentenceFocus"] | null;
+            /** Sentence Ruby */
+            sentence_ruby?: components["schemas"]["AnkiSentenceRuby"][];
             /** Target Field */
             target_field?: string | null;
             /**
@@ -2079,6 +2082,30 @@ export interface components {
             code?: ("unreachable" | "authentication" | "no_collection" | "unsupported" | "stale_session" | "duplicate" | "invalid_note" | "target_missing" | "conflict" | "unknown_write" | "protocol_error") | null;
             /** Detail */
             detail: string;
+        };
+        /**
+         * AnkiSentenceFocus
+         * @description One half-open Unicode code-point range in the original field value.
+         */
+        AnkiSentenceFocus: {
+            /** End */
+            end: number;
+            /** Start */
+            start: number;
+            /** Text */
+            text: string;
+        };
+        /**
+         * AnkiSentenceRuby
+         * @description One annotation indexed by Unicode code points in the original field value.
+         */
+        AnkiSentenceRuby: {
+            /** End */
+            end: number;
+            /** Reading */
+            reading: string;
+            /** Start */
+            start: number;
         };
         /** AnkiTargetScope */
         AnkiTargetScope: {

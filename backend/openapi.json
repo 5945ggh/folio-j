@@ -861,6 +861,24 @@
             "title": "Required",
             "type": "boolean"
           },
+          "sentence_focus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnkiSentenceFocus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sentence_ruby": {
+            "items": {
+              "$ref": "#/components/schemas/AnkiSentenceRuby"
+            },
+            "maxItems": 32768,
+            "title": "Sentence Ruby",
+            "type": "array"
+          },
           "target_field": {
             "anyOf": [
               {
@@ -1298,6 +1316,68 @@
           "detail"
         ],
         "title": "AnkiReadFailure",
+        "type": "object"
+      },
+      "AnkiSentenceFocus": {
+        "additionalProperties": false,
+        "description": "One half-open Unicode code-point range in the original field value.",
+        "properties": {
+          "end": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 32768.0,
+            "title": "End",
+            "type": "integer"
+          },
+          "start": {
+            "exclusiveMaximum": 32768.0,
+            "minimum": 0.0,
+            "title": "Start",
+            "type": "integer"
+          },
+          "text": {
+            "maxLength": 32768,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "text"
+        ],
+        "title": "AnkiSentenceFocus",
+        "type": "object"
+      },
+      "AnkiSentenceRuby": {
+        "additionalProperties": false,
+        "description": "One annotation indexed by Unicode code points in the original field value.",
+        "properties": {
+          "end": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 32768.0,
+            "title": "End",
+            "type": "integer"
+          },
+          "reading": {
+            "maxLength": 32768,
+            "minLength": 1,
+            "title": "Reading",
+            "type": "string"
+          },
+          "start": {
+            "exclusiveMaximum": 32768.0,
+            "minimum": 0.0,
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "reading"
+        ],
+        "title": "AnkiSentenceRuby",
         "type": "object"
       },
       "AnkiTargetScope": {

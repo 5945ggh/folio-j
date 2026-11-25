@@ -13,6 +13,8 @@ from app.anki_export_schemas import (
     AnkiExportAttachment,
     AnkiExportField,
     AnkiExportInput,
+    AnkiSentenceFocus,
+    AnkiSentenceRuby,
 )
 from app.anki_settings_schemas import AnkiBuiltinNoteTypeRef
 from app.services import anki_export
@@ -45,10 +47,16 @@ _MP4 = b"\x00\x00\x00\x18ftypisom\0\0\0\0isommp42"
 
 
 class _RecordingAnki(AnkiConnect):
-    def __init__(self, note_type: AnkiNoteType | None = _EXTERNAL) -> None:
+    def __init__(
+        self,
+        note_type: AnkiNoteType | None = _EXTERNAL,
+        *,
+        other_models: tuple[AnkiNoteType, ...] = (),
+    ) -> None:
         self.endpoint = _ENDPOINT
         self.collection = AnkiCollection(protocol="v1", profile=_PROFILE, session="instance")
         self.model = note_type
+        self.other_models = other_models
         self.calls: list[str] = []
         self.validations: list[tuple[bool, dict[str, str]]] = []
         self.note_creations: list[tuple[bool, dict[str, str]]] = []
@@ -68,17 +76,20 @@ class _RecordingAnki(AnkiConnect):
         self.calls.append("list_decks")
         return (_DECK,)
 
+    def _models(self) -> tuple[AnkiNoteType, ...]:
+        return self.other_models if self.model is None else (self.model, *self.other_models)
+
     async def list_note_types(self, collection: AnkiCollection) -> tuple[AnkiEntity, ...]:
         assert collection is self.collection
         self.calls.append("list_note_types")
-        return (AnkiEntity(self.model.id, self.model.name),) if self.model is not None else ()
+        return tuple(AnkiEntity(model.id, model.name) for model in self._models())
 
     async def get_note_type(self, collection: AnkiCollection, model: AnkiEntity) -> AnkiNoteType:
         assert collection is self.collection
         self.calls.append("get_note_type")
-        assert self.model is not None
-        assert model == AnkiEntity(self.model.id, self.model.name)
-        return self.model
+        return next(
+            item for item in self._models() if (item.id, item.name) == (model.id, model.name)
+        )
 
     async def create_note_type(
         self,
@@ -108,7 +119,9 @@ class _RecordingAnki(AnkiConnect):
     ) -> None:
         assert collection is self.collection
         assert deck == _DECK
-        assert self.model is not None and note_type.id == self.model.id
+        assert any(
+            (note_type.id, note_type.name) == (model.id, model.name) for model in self._models()
+        )
         self.calls.append("validate")
         self.validations.append((allow_duplicate, fields.copy()))
         if self.duplicate and not allow_duplicate:
@@ -127,7 +140,9 @@ class _RecordingAnki(AnkiConnect):
     ) -> AnkiNoteCreated:
         assert collection is self.collection
         assert deck == _DECK
-        assert self.model is not None and note_type.id == self.model.id
+        assert any(
+            (note_type.id, note_type.name) == (model.id, model.name) for model in self._models()
+        )
         self.calls.append("create_note")
         self.note_creations.append((allow_duplicate, fields.copy()))
         if self.note_result_unknown:
@@ -171,6 +186,230 @@ def _request(*fields: AnkiExportField) -> AnkiExportInput:
         note_type_id=_EXTERNAL.id,
         fields=list(fields),
     )
+
+
+@pytest.mark.parametrize("builtin_index", [0, 1, 2])
+@pytest.mark.asyncio
+async def test_builtin_exports_ruby_on_the_existing_sentence_field(builtin_index: int) -> None:
+    builtins = get_builtins()
+    builtin = builtins.note_types[builtin_index]
+    gateway = _RecordingAnki(
+        replace(
+            _EXTERNAL,
+            name=builtin.name,
+            fields=tuple(builtin.fields),
+            templates=tuple(
+                AnkiTemplate(template.name, template.front, template.back)
+                for template in builtin.card_templates
+            ),
+        )
+    )
+    sentence = "𠮷野 & <tag>\r\n[Sound:private.mp3]"
+    request = AnkiExportInput(
+        endpoint=_ENDPOINT,
+        profile=_PROFILE,
+        deck=_DECK.name,
+        note_type=builtin.name,
+        builtin_type=AnkiBuiltinNoteTypeRef(id=builtin.id, version=builtin.version),
+        fields=[
+            AnkiExportField(
+                id="sentence",
+                type="text",
+                target_field="Sentence",
+                value=sentence,
+                sentence_ruby=[AnkiSentenceRuby(start=0, end=2, reading='よしの"<>')],
+            ),
+            *([_text("word", "Word")] if "Word" in builtin.fields else []),
+        ],
+    )
+    sent = await anki_export.export_note(gateway, request, builtins)
+
+    assert sent.status == "created"
+    assert "create_type" not in gateway.calls
+    rendered = gateway.note_creations[0][1]["Sentence"]
+    assert rendered.endswith(" &amp; &lt;tag&gt;<br>&#91;Sound:private.mp3]")
+    assert len(gateway.validations) == 1
+    assert gateway.validations[0][1]["Sentence"] == rendered
+    style, markup = rendered.split("</style>", 1)
+    assert ".fj>.fj-jp:only-child rt" in style
+    assert ".fj>.fj-word:first-child+.fj-jp:last-child rt{display:none}" in style
+    if builtin.fields[0] == "Sentence":
+        assert "content:attr(data-reading)" in style
+        assert markup.startswith(
+            '<ruby>𠮷野<rt class="fj-sentence-ruby" '
+            'data-reading="よしの&quot;&lt;&gt;"></rt></ruby>'
+        )
+        gateway.duplicate = True
+        duplicate = await anki_export.export_note(gateway, request, builtins)
+        assert duplicate.status == "duplicate"
+        assert len(gateway.note_creations) == 1
+    else:
+        assert markup.startswith("<ruby>𠮷野<rt>よしの&quot;&lt;&gt;</rt></ruby>")
+
+
+@pytest.mark.parametrize(
+    "ruby",
+    [
+        [AnkiSentenceRuby(start=0, end=4, reading="よしの")],
+        [
+            AnkiSentenceRuby(start=0, end=2, reading="よしの"),
+            AnkiSentenceRuby(start=1, end=3, reading="の"),
+        ],
+        [AnkiSentenceRuby(start=0, end=2, reading="\n")],
+    ],
+)
+@pytest.mark.asyncio
+async def test_invalid_ruby_fails_before_installing_or_creating_a_note(
+    ruby: list[AnkiSentenceRuby],
+) -> None:
+    builtins = get_builtins()
+    builtin = builtins.note_types[1]
+    gateway = _RecordingAnki(note_type=None)
+    request = AnkiExportInput(
+        endpoint=_ENDPOINT,
+        profile=_PROFILE,
+        deck=_DECK.name,
+        note_type=builtin.name,
+        builtin_type=AnkiBuiltinNoteTypeRef(id=builtin.id, version=builtin.version),
+        install_builtin=True,
+        fields=[
+            AnkiExportField(
+                id="sentence",
+                type="text",
+                target_field="Sentence",
+                value="吉野。",
+                sentence_ruby=ruby,
+            )
+        ],
+    )
+    result = await anki_export.export_note(gateway, request, builtins)
+
+    assert (result.status, result.stage, result.field_id) == ("invalid", "validation", "sentence")
+    assert gateway.model is None
+    assert not gateway.note_creations
+
+
+@pytest.mark.asyncio
+async def test_sentence_metadata_has_no_effect_on_external_note_types() -> None:
+    gateway = _RecordingAnki(replace(_EXTERNAL, fields=("Sentence",)))
+    request = _request(
+        AnkiExportField(
+            id="sentence",
+            type="text",
+            target_field="Sentence",
+            value="吉野。",
+            sentence_focus=AnkiSentenceFocus(start=0, end=1, text="野"),
+            sentence_ruby=[AnkiSentenceRuby(start=0, end=2, reading="よしの")],
+        )
+    )
+
+    assert (await anki_export.export_note(gateway, request, get_builtins())).status == "created"
+    assert gateway.note_creations[0][1] == {"Sentence": "吉野。"}
+
+
+@pytest.mark.parametrize("builtin_index", [1, 2])
+@pytest.mark.asyncio
+async def test_focus_preserves_ruby_boundaries_and_the_duplicate_key(builtin_index: int) -> None:
+    builtins = get_builtins()
+    builtin = builtins.note_types[builtin_index]
+    gateway = _RecordingAnki(note_type=None)
+    request = AnkiExportInput(
+        endpoint=_ENDPOINT,
+        profile=_PROFILE,
+        deck=_DECK.name,
+        note_type=builtin.name,
+        builtin_type=AnkiBuiltinNoteTypeRef(id=builtin.id, version=builtin.version),
+        install_builtin=True,
+        fields=[
+            AnkiExportField(
+                id="sentence",
+                type="text",
+                target_field="Sentence",
+                value="𠮷野と猫&< [Sound:clip.mp3]",
+                sentence_focus=AnkiSentenceFocus(start=1, end=6, text="野と猫&<"),
+                sentence_ruby=[
+                    AnkiSentenceRuby(start=0, end=2, reading="よしの"),
+                    AnkiSentenceRuby(start=3, end=4, reading="ねこ"),
+                ],
+            ),
+            *([_text("word", "Word")] if "Word" in builtin.fields else []),
+        ],
+    )
+    assert (await anki_export.export_note(gateway, request, builtins)).status == "created"
+    rendered = gateway.note_creations[0][1]["Sentence"]
+    style, markup = rendered.split("</style>", 1)
+    assert "sentence-focus" not in style
+    if builtin.fields[0] == "Sentence":
+        yoshino = '<rt class="fj-sentence-ruby" data-reading="よしの"></rt>'
+        neko = '<rt class="fj-sentence-ruby" data-reading="ねこ"></rt>'
+        gateway.duplicate = True
+        assert (await anki_export.export_note(gateway, request, builtins)).status == "duplicate"
+        assert len(gateway.note_creations) == 1
+    else:
+        yoshino, neko = "<rt>よしの</rt>", "<rt>ねこ</rt>"
+    assert markup == (
+        f'<ruby>𠮷<span class="sentence-focus">野</span>{yoshino}</ruby>'
+        '<span class="sentence-focus">と</span>'
+        f'<span class="sentence-focus"><ruby>猫{neko}</ruby></span>'
+        '<span class="sentence-focus">&amp;&lt;</span> &#91;Sound:clip.mp3]'
+    )
+    assert gateway.validations[0][1]["Sentence"] == rendered
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "text", "created"),
+    [
+        (0, 4, "𠮷[So", True),
+        (2, 18, "Sound:clip.mp3]\r", True),
+        (2, 21, "Sound:clip.mp3]\r\n次", False),
+        (1, 3, "So", False),
+        (2, 2, "S", False),
+        (17, 19, "\r\n", False),
+    ],
+)
+@pytest.mark.asyncio
+async def test_focus_validates_against_exact_sentence_text(
+    start: int, end: int, text: str, created: bool
+) -> None:
+    builtins = get_builtins()
+    builtin = builtins.note_types[1]
+    gateway = _RecordingAnki(note_type=None)
+    sentence = "𠮷[Sound:clip.mp3]\r\n次"
+    result = await anki_export.export_note(
+        gateway,
+        AnkiExportInput(
+            endpoint=_ENDPOINT,
+            profile=_PROFILE,
+            deck=_DECK.name,
+            note_type=builtin.name,
+            builtin_type=AnkiBuiltinNoteTypeRef(id=builtin.id, version=builtin.version),
+            install_builtin=True,
+            fields=[
+                AnkiExportField(
+                    id="sentence",
+                    type="text",
+                    target_field="Sentence",
+                    value=sentence,
+                    sentence_focus=AnkiSentenceFocus(start=start, end=end, text=text),
+                )
+            ],
+        ),
+        builtins,
+    )
+    if created:
+        assert result.status == "created"
+        rendered = gateway.note_creations[0][1]["Sentence"]
+        assert "<style>" not in rendered
+        assert "[Sound:" not in rendered
+        assert rendered.count("<br>") == 1
+    else:
+        assert (result.status, result.stage, result.field_id) == (
+            "invalid",
+            "validation",
+            "sentence",
+        )
+        assert gateway.model is None
+        assert not gateway.note_creations
 
 
 def test_permissions_require_explicit_json_booleans() -> None:
@@ -450,7 +689,126 @@ async def test_same_name_without_identity_is_never_replaced() -> None:
 
 
 @pytest.mark.asyncio
-async def test_superseded_builtin_version_cannot_be_checked_or_installed() -> None:
+async def test_vocabulary_preset_installs_v2_alongside_existing_v1() -> None:
+    builtins = get_builtins()
+    preset = next(item for item in builtins.export_presets if item.id == "export.vocabulary")
+    ref = preset.note_type_ref
+    current = next(item for item in builtins.note_types if (item.id, item.version) == (ref.id, 2))
+    legacy = next(item for item in builtins.note_types if (item.id, item.version) == (ref.id, 1))
+    edited_legacy = AnkiNoteType(
+        id="70",
+        name=legacy.name,
+        fields=tuple(legacy.fields),
+        templates=tuple(
+            AnkiTemplate(item.name, item.front, item.back + "<!-- My template edit -->")
+            for item in legacy.card_templates
+        ),
+        css=".card { color: red }",
+        kind="normal",
+    )
+    gateway = _RecordingAnki(note_type=None, other_models=(edited_legacy,))
+    check = AnkiBuiltinCheckInput(endpoint=_ENDPOINT, profile=_PROFILE, builtin_type=ref)
+    assert (await anki_export.check_builtin(gateway, check, builtins)).status == "missing"
+
+    word, reading, part_of_speech, meaning, sentence, sentence_meaning = preset.fields[:6]
+    assert (reading.target_field, reading.presentation) == ("Reading", "common")
+    assert (
+        part_of_speech.label,
+        part_of_speech.target_field,
+        part_of_speech.required,
+        part_of_speech.presentation,
+    ) == ("词性", "PartOfSpeech", False, "common")
+    assert (meaning.label, meaning.target_field, meaning.required) == ("词汇释义", "Meaning", True)
+    assert (sentence_meaning.label, sentence_meaning.target_field, sentence_meaning.required) == (
+        "例句释义",
+        "SentenceMeaning",
+        False,
+    )
+    draft = AnkiExportInput(
+        endpoint=_ENDPOINT,
+        profile=_PROFILE,
+        deck=_DECK.name,
+        note_type=current.name,
+        builtin_type=ref,
+        fields=[
+            AnkiExportField(
+                id=definition.id,
+                type=definition.type,
+                target_field=definition.target_field,
+                required=definition.required,
+                value=value,
+            )
+            for definition, value in zip(
+                (word, meaning, sentence, sentence_meaning),
+                ("取る", "撇去", "灰汁を取る", None),
+                strict=True,
+            )
+        ],
+    )
+    assert (
+        await anki_export.export_note(gateway, draft, builtins)
+    ).status == "installation_required"
+    invalid = draft.model_copy(
+        update={"fields": [draft.fields[0], draft.fields[1].model_copy(update={"value": " "})]}
+    )
+    rejection = await anki_export.export_note(gateway, invalid, builtins)
+    assert (rejection.status, rejection.field_id) == ("invalid", meaning.id)
+    assert "create_type" not in gateway.calls
+
+    confirmed = draft.model_copy(update={"install_builtin": True})
+    sent = await anki_export.export_note(gateway, confirmed, builtins)
+    assert sent.status == "created" and sent.type_created
+    assert gateway.note_creations[-1][1]["SentenceMeaning"] == ""
+    assert gateway.note_creations[-1][1]["PartOfSpeech"] == ""
+    assert (await anki_export.check_builtin(gateway, check, builtins)).status == "compatible"
+
+    short_explanation = draft.fields[3].model_copy(update={"value": "撇去浮沫 <后> 再盛汤"})
+    filled = draft.model_copy(
+        update={
+            "fields": [
+                *draft.fields[:3],
+                short_explanation,
+                AnkiExportField(
+                    id=part_of_speech.id,
+                    type=part_of_speech.type,
+                    target_field=part_of_speech.target_field,
+                    value="动词 & <五段>",
+                ),
+            ]
+        }
+    )
+    assert (await anki_export.export_note(gateway, filled, builtins)).status == "created"
+    assert gateway.note_creations[-1][1]["SentenceMeaning"] == "撇去浮沫 &lt;后&gt; 再盛汤"
+    assert gateway.note_creations[-1][1]["PartOfSpeech"] == "动词 &amp; &lt;五段&gt;"
+
+    old_ref = AnkiBuiltinNoteTypeRef(id=legacy.id, version=legacy.version)
+    old_check = check.model_copy(update={"builtin_type": old_ref})
+    assert (await anki_export.check_builtin(gateway, old_check, builtins)).status == "compatible"
+    old_draft = draft.model_copy(
+        update={
+            "builtin_type": old_ref,
+            "note_type": edited_legacy.name,
+            "fields": [
+                *draft.fields[:2],
+                draft.fields[2].model_copy(
+                    update={"sentence_focus": AnkiSentenceFocus(start=3, end=5, text="取る")}
+                ),
+            ],
+        }
+    )
+    assert (await anki_export.export_note(gateway, old_draft, builtins)).status == "created"
+    assert "SentenceMeaning" not in gateway.note_creations[-1][1]
+    assert "PartOfSpeech" not in gateway.note_creations[-1][1]
+    assert gateway.note_creations[-1][1]["Sentence"] == "灰汁を取る"
+    assert (
+        await gateway.get_note_type(gateway.collection, AnkiEntity("70", legacy.name))
+        is edited_legacy
+    )
+    assert gateway.calls.count("create_type") == 1
+
+
+@pytest.mark.asyncio
+async def test_unbundled_builtin_version_cannot_be_checked_or_installed() -> None:
     builtins = get_builtins()
     builtin = builtins.note_types[0]
     current = builtins.model_copy(

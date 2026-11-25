@@ -30,12 +30,29 @@ AnkiExportStatus = Literal[
 ]
 AnkiExportStage = Literal["target", "validation", "install_type", "media", "note"]
 AnkiBuiltinStatus = Literal["missing", "compatible", "incompatible", "target_changed", "failed"]
-_FieldText = Annotated[str, Field(max_length=32_768)]
+_MAX_FIELD_TEXT_LENGTH = 32_768
+_FieldText = Annotated[str, Field(max_length=_MAX_FIELD_TEXT_LENGTH)]
 
 
 class AnkiExportAttachment(AnkiSettingsInput):
     name: str = Field(min_length=1, max_length=255)
     data_base64: str = Field(min_length=1, max_length=_MAX_BASE64_LENGTH, repr=False)
+
+
+class AnkiSentenceRuby(AnkiSettingsInput):
+    """One annotation indexed by Unicode code points in the original field value."""
+
+    start: int = Field(ge=0, lt=_MAX_FIELD_TEXT_LENGTH)
+    end: int = Field(gt=0, le=_MAX_FIELD_TEXT_LENGTH)
+    reading: str = Field(min_length=1, max_length=_MAX_FIELD_TEXT_LENGTH)
+
+
+class AnkiSentenceFocus(AnkiSettingsInput):
+    """One half-open Unicode code-point range in the original field value."""
+
+    start: int = Field(ge=0, lt=_MAX_FIELD_TEXT_LENGTH)
+    end: int = Field(gt=0, le=_MAX_FIELD_TEXT_LENGTH)
+    text: str = Field(min_length=1, max_length=_MAX_FIELD_TEXT_LENGTH, repr=False)
 
 
 class AnkiExportField(AnkiSettingsInput):
@@ -44,6 +61,12 @@ class AnkiExportField(AnkiSettingsInput):
     target_field: AnkiName | None = None
     required: bool = False
     value: _FieldText | AnkiExportAttachment | None = Field(default=None, repr=False)
+    sentence_ruby: list[AnkiSentenceRuby] = Field(
+        default_factory=lambda: list[AnkiSentenceRuby](),
+        max_length=_MAX_FIELD_TEXT_LENGTH,
+        repr=False,
+    )
+    sentence_focus: AnkiSentenceFocus | None = Field(default=None, repr=False)
 
     @field_validator("value", mode="before")
     @classmethod

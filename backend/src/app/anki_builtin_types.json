@@ -1,5 +1,5 @@
 {
-  "sharedCss": ".card {\n  color: #25303b;\n  background: #fff;\n  font: 18px/1.65 system-ui, sans-serif;\n  text-align: left;\n}\n.fj { max-width: 36em; margin: 1.25em auto; padding: 0 1em; }\n.fj-word { font: 600 1.8em/1.5 \"Hiragino Mincho ProN\", \"Yu Mincho\", serif; }\n.fj-jp { margin: .55em 0; font-family: \"Hiragino Mincho ProN\", \"Yu Mincho\", serif; }\n.fj-reading, .fj-source { font-size: .8em; color: #586578; }\n.fj-source { margin-top: 1.25em; }\n.fj-source::before { content: \"\"; display: block; width: 1.8em; border-top: 1px solid currentColor; margin-bottom: .45em; }\n.fj-media img, .fj-media video { max-width: 100%; height: auto; }\n.nightMode.card, .night_mode.card { color: #e6eaf0; background: #22272e; }\n.nightMode .fj-source, .nightMode .fj-reading, .night_mode .fj-source, .night_mode .fj-reading { color: #b7c0cf; }",
+  "sharedCss": ".card {\n  color: #25303b;\n  background: #fff;\n  font: 19px/1.65 system-ui, sans-serif;\n  text-align: left;\n}\n.fj { max-width: 36em; margin: 1.25em auto; padding: 0 1em; }\n.fj p { margin: .55em 0; }\n.fj-word { font: 600 34px/1.5 \"Hiragino Mincho ProN\", \"Yu Mincho\", serif; }\n.fj-jp { font-family: \"Hiragino Mincho ProN\", \"Yu Mincho\", serif; }\n.fj-word-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15em .65em; }\n.fj-word-meta:empty, .fj-example:empty { display: none; }\n.fj-reading, .fj-part-of-speech { font-size: 15px; }\n.fj-reading, .fj-source { color: #586578; }\n.fj-part-of-speech { color: #32675d; }\n.fj p.fj-meaning { margin: 12px 0 0; }\n.fj-example { margin-top: 16px; }\n.fj-example:first-child { margin-top: 0; }\n.fj .fj-example p { margin: 0; }\n.fj .fj-example .fj-jp + .fj-sentence-meaning { margin-top: 4px; }\n.fj-sentence-meaning { font-size: 16px; color: #657284; }\n.fj-example + .fj-reading { margin-top: .55em; }\n.fj-source { margin-top: 1.25em; font-size: .8em; }\n.fj-source::before { content: \"\"; display: block; width: 1.8em; border-top: 1px solid currentColor; margin-bottom: .45em; }\n.fj-media img, .fj-media video { max-width: 100%; height: auto; }\n.fj .sentence-focus { color: #414b9b; font-weight: 700; }\n.nightMode.card, .night_mode.card { color: #e6eaf0; background: #22272e; }\n.nightMode .fj-source, .nightMode .fj-reading, .night_mode .fj-source, .night_mode .fj-reading { color: #b7c0cf; }\n.nightMode .fj-part-of-speech, .night_mode .fj-part-of-speech { color: #a9d6c8; }\n.nightMode .fj-sentence-meaning, .night_mode .fj-sentence-meaning { color: #aeb9ca; }\n.nightMode .fj .sentence-focus, .night_mode .fj .sentence-focus { color: #b9c3ff; }\n.fj-question .fj-jp rt { display: none; }\n.fj.fj-question .fj-jp .sentence-focus { color: inherit; font-weight: inherit; }",
   "noteTypes": [
     {
       "id": "folio-j.vocabulary-recall",
@@ -18,7 +18,7 @@
       "cardTemplates": [
         {
           "name": "词义回忆",
-          "front": "<!-- folio-j.vocabulary-recall@1 -->\n{{#Word}}<main class=\"fj\"><div class=\"fj-word\" lang=\"ja\">{{Word}}</div>{{#Sentence}}<p class=\"fj-jp\" lang=\"ja\">{{Sentence}}</p>{{/Sentence}}</main>{{/Word}}",
+          "front": "<!-- folio-j.vocabulary-recall@1 -->\n{{#Word}}<main class=\"fj fj-question\"><div class=\"fj-word\" lang=\"ja\">{{Word}}</div>{{#Sentence}}<p class=\"fj-jp\" lang=\"ja\">{{Sentence}}</p>{{/Sentence}}</main>{{/Word}}",
           "back": "<!-- folio-j.vocabulary-recall@1 -->\n<main class=\"fj\"><div class=\"fj-word\" lang=\"ja\">{{Word}}</div>{{#Reading}}<div class=\"fj-reading\" lang=\"ja\">{{Reading}}</div>{{/Reading}}<p>{{Meaning}}</p>{{#Sentence}}<p class=\"fj-jp\" lang=\"ja\">{{Sentence}}</p>{{/Sentence}}{{#SentenceAudio}}<div>{{SentenceAudio}}</div>{{/SentenceAudio}}{{#Picture}}<div class=\"fj-media\">{{Picture}}</div>{{/Picture}}{{#Video}}<div class=\"fj-media\">{{Video}}</div>{{/Video}}{{#SourceMetadata}}<footer class=\"fj-source\">{{SourceMetadata}}</footer>{{/SourceMetadata}}</main>"
         }
       ]
@@ -39,8 +39,32 @@
       "cardTemplates": [
         {
           "name": "例句理解",
-          "front": "<!-- folio-j.sentence-reading@1 -->\n{{#Sentence}}<main class=\"fj\"><p class=\"fj-jp\" lang=\"ja\">{{Sentence}}</p></main>{{/Sentence}}",
-          "back": "<!-- folio-j.sentence-reading@1 -->\n<main class=\"fj\"><p class=\"fj-jp\" lang=\"ja\">{{Sentence}}</p><p>{{Explanation}}</p>{{#Target}}<div class=\"fj-reading\" lang=\"ja\">{{Target}}</div>{{/Target}}{{#SentenceAudio}}<div>{{SentenceAudio}}</div>{{/SentenceAudio}}{{#Picture}}<div class=\"fj-media\">{{Picture}}</div>{{/Picture}}{{#Video}}<div class=\"fj-media\">{{Video}}</div>{{/Video}}{{#SourceMetadata}}<footer class=\"fj-source\">{{SourceMetadata}}</footer>{{/SourceMetadata}}</main>"
+          "front": "<!-- folio-j.sentence-reading@1 -->\n{{#Sentence}}<main class=\"fj fj-question\"><p class=\"fj-jp\" lang=\"ja\">{{Sentence}}</p></main>{{/Sentence}}",
+          "back": "<!-- folio-j.sentence-reading@1 -->\n<main class=\"fj\"><div class=\"fj-example\"><p class=\"fj-jp\" lang=\"ja\">{{Sentence}}</p>{{#Explanation}}<p class=\"fj-sentence-meaning\">{{Explanation}}</p>{{/Explanation}}</div>{{#Target}}<div class=\"fj-reading\" lang=\"ja\">{{Target}}</div>{{/Target}}{{#SentenceAudio}}<div>{{SentenceAudio}}</div>{{/SentenceAudio}}{{#Picture}}<div class=\"fj-media\">{{Picture}}</div>{{/Picture}}{{#Video}}<div class=\"fj-media\">{{Video}}</div>{{/Video}}{{#SourceMetadata}}<footer class=\"fj-source\">{{SourceMetadata}}</footer>{{/SourceMetadata}}</main>"
+        }
+      ]
+    },
+    {
+      "id": "folio-j.vocabulary-recall",
+      "version": 2,
+      "name": "Folio-J 词汇 v2",
+      "fields": [
+        "Word",
+        "Meaning",
+        "Reading",
+        "PartOfSpeech",
+        "Sentence",
+        "SentenceMeaning",
+        "SentenceAudio",
+        "Picture",
+        "Video",
+        "SourceMetadata"
+      ],
+      "cardTemplates": [
+        {
+          "name": "词义回忆",
+          "front": "<!-- folio-j.vocabulary-recall@2 -->\n{{#Word}}<main class=\"fj fj-question\"><div class=\"fj-word\" lang=\"ja\">{{Word}}</div>{{#Sentence}}<p class=\"fj-jp\" lang=\"ja\">{{Sentence}}</p>{{/Sentence}}</main>{{/Word}}",
+          "back": "<!-- folio-j.vocabulary-recall@2 -->\n<main class=\"fj\"><div class=\"fj-word\" lang=\"ja\">{{Word}}</div><div class=\"fj-word-meta\">{{#Reading}}<span class=\"fj-reading\" lang=\"ja\">{{Reading}}</span>{{/Reading}}{{#PartOfSpeech}}<span class=\"fj-part-of-speech\">{{PartOfSpeech}}</span>{{/PartOfSpeech}}</div><p class=\"fj-meaning\">{{Meaning}}</p><div class=\"fj-example\">{{#Sentence}}<p class=\"fj-jp\" lang=\"ja\">{{Sentence}}</p>{{/Sentence}}{{#SentenceMeaning}}<p class=\"fj-sentence-meaning\">{{SentenceMeaning}}</p>{{/SentenceMeaning}}</div>{{#SentenceAudio}}<div>{{SentenceAudio}}</div>{{/SentenceAudio}}{{#Picture}}<div class=\"fj-media\">{{Picture}}</div>{{/Picture}}{{#Video}}<div class=\"fj-media\">{{Video}}</div>{{/Video}}{{#SourceMetadata}}<footer class=\"fj-source\">{{SourceMetadata}}</footer>{{/SourceMetadata}}</main>"
         }
       ]
     }
@@ -52,7 +76,7 @@
       "deck": null,
       "noteTypeRef": {
         "id": "folio-j.vocabulary-recall",
-        "version": 1
+        "version": 2
       },
       "fields": [
         {
@@ -66,8 +90,28 @@
           "multiline": false
         },
         {
+          "id": "reading",
+          "label": "读音",
+          "type": "text",
+          "source": "manual",
+          "targetField": "Reading",
+          "required": false,
+          "presentation": "common",
+          "multiline": false
+        },
+        {
+          "id": "partOfSpeech",
+          "label": "词性",
+          "type": "text",
+          "source": "manual",
+          "targetField": "PartOfSpeech",
+          "required": false,
+          "presentation": "common",
+          "multiline": false
+        },
+        {
           "id": "meaning",
-          "label": "本句义",
+          "label": "词汇释义",
           "type": "text",
           "source": "manual",
           "targetField": "Meaning",
@@ -86,6 +130,16 @@
           "multiline": true
         },
         {
+          "id": "sentenceMeaning",
+          "label": "例句释义",
+          "type": "text",
+          "source": "manual",
+          "targetField": "SentenceMeaning",
+          "required": false,
+          "presentation": "common",
+          "multiline": true
+        },
+        {
           "id": "source",
           "label": "出处",
           "type": "text",
@@ -93,16 +147,6 @@
           "targetField": "SourceMetadata",
           "required": false,
           "presentation": "summary",
-          "multiline": false
-        },
-        {
-          "id": "reading",
-          "label": "读音",
-          "type": "text",
-          "source": "manual",
-          "targetField": "Reading",
-          "required": false,
-          "presentation": "more",
           "multiline": false
         },
         {

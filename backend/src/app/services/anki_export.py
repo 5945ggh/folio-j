@@ -20,6 +20,8 @@ from app.anki_export_schemas import (
     AnkiExportResponse,
     AnkiExportStage,
     AnkiExportStatus,
+    AnkiSentenceFocus,
+    AnkiSentenceRuby,
 )
 from app.anki_settings_schemas import AnkiBuiltinNoteTypeRef
 from app.services.anki_connect import (
@@ -42,6 +44,13 @@ _MEDIA_TYPES: dict[str, _MediaKind] = {
 }
 _SAFE_MEDIA_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,254}")
 _TEXT_MEDIA_MARKER = re.compile(r"\[(?=sound:)", flags=re.IGNORECASE)
+# Earlier installed templates can lack the question class. On those templates, only
+# the front contains just the sentence, or the headword followed by the sentence.
+_LEGACY_QUESTION_RUBY_CSS = (
+    ".fj>.fj-jp:only-child rt,.fj>.fj-word:first-child+.fj-jp:last-child rt{display:none}"
+)
+_FIRST_FIELD_RUBY_CSS = "rt.fj-sentence-ruby::before{content:attr(data-reading)}"
+_SENTENCE_FOCUS_TYPES = {("folio-j.vocabulary-recall", 2), ("folio-j.sentence-reading", 1)}
 
 
 class _ExportError(Exception):
@@ -83,12 +92,12 @@ def _find_entity(
 
 
 def _find_builtin(builtins: AnkiBuiltins, ref: AnkiBuiltinNoteTypeRef) -> BuiltinNoteType:
-    builtin = next((item for item in builtins.note_types if item.id == ref.id), None)
-    if builtin is None:
-        raise _ExportError("invalid", "未找到该内置笔记类型。")
-    if builtin.version != ref.version:
-        raise _ExportError("target_changed", "内置笔记类型版本已变更，请重新选择当前版本。")
-    return builtin
+    for builtin in builtins.note_types:
+        if builtin.id == ref.id and builtin.version == ref.version:
+            return builtin
+    if any(builtin.id == ref.id for builtin in builtins.note_types):
+        raise _ExportError("target_changed", "此内置笔记类型版本不可用，请重新选择。")
+    raise _ExportError("invalid", "未找到该内置笔记类型。")
 
 
 def _builtin_compatible(actual: AnkiNoteType, builtin: BuiltinNoteType) -> bool:
@@ -225,8 +234,81 @@ def _plain_text(value: str) -> str:
     )
 
 
+def _sentence_html(
+    value: str,
+    annotations: list[AnkiSentenceRuby],
+    focus: AnkiSentenceFocus | None,
+    field_id: str,
+    *,
+    first_field: bool,
+) -> str:
+    if focus is not None and (
+        not focus.start < focus.end <= len(value)
+        or not focus.text.strip()
+        or value[focus.start : focus.end] != focus.text
+    ):
+        raise _ExportError("invalid", "原句强调与正文范围不匹配。", field_id)
+
+    def escape_part(text: str) -> str:
+        # A marker can straddle two slices, so escape brackets in each part.
+        return _plain_text(text).replace("[", "&#91;")
+
+    def escape_range(start: int, end: int) -> str:
+        part = value[start:end]
+        if value[end : end + 1] == "\n":
+            part = part.removesuffix("\r")  # A sliced CRLF still renders as one line break.
+        return escape_part(part)
+
+    def mark_focus(content: str) -> str:
+        return f'<span class="sentence-focus">{content}</span>'
+
+    def render_base(start: int, end: int) -> str:
+        if focus is None or start == end or end <= focus.start or focus.end <= start:
+            return escape_range(start, end)
+        marked_start = max(start, focus.start)
+        marked_end = min(end, focus.end)
+        return (
+            escape_range(start, marked_start)
+            + mark_focus(escape_range(marked_start, marked_end))
+            + escape_range(marked_end, end)
+        )
+
+    # Anki strips CSS and HTML tags for duplicate detection but keeps <rt> text.
+    # Store the reading in an attribute when the annotated sentence is the duplicate key.
+    parts: list[str] = []
+    if annotations:
+        css = _LEGACY_QUESTION_RUBY_CSS + (_FIRST_FIELD_RUBY_CSS if first_field else "")
+        parts.append(f"<style>{css}</style>")
+    consumed = 0
+    for annotation in annotations:
+        start, end, reading = annotation.start, annotation.end, annotation.reading
+        base = value[start:end]
+        if (
+            not consumed <= start < end <= len(value)
+            or not base.strip()
+            or not reading.strip()
+            or "\r" in base + reading
+            or "\n" in base + reading
+        ):
+            raise _ExportError("invalid", "例句注音与正文范围不匹配。", field_id)
+        parts.append(render_base(consumed, start))
+        escaped_reading = escape_part(reading)
+        rt = (
+            f'<rt class="fj-sentence-ruby" data-reading="{escaped_reading}"></rt>'
+            if first_field
+            else f"<rt>{escaped_reading}</rt>"
+        )
+        if focus is not None and focus.start <= start and end <= focus.end:
+            parts.append(mark_focus(f"<ruby>{escape_range(start, end)}{rt}</ruby>"))
+        else:
+            parts.append(f"<ruby>{render_base(start, end)}{rt}</ruby>")
+        consumed = end
+    parts.append(render_base(consumed, len(value)))
+    return "".join(parts)
+
+
 def _prepare_fields(
-    entries: list[AnkiExportField], model_fields: tuple[str, ...]
+    entries: list[AnkiExportField], model_fields: tuple[str, ...], builtin: BuiltinNoteType | None
 ) -> tuple[dict[str, str], dict[str, _Media]]:
     if not model_fields:
         raise _ExportError("invalid", "Anki 笔记类型没有可填写的字段。")
@@ -235,6 +317,7 @@ def _prepare_fields(
     fields = dict.fromkeys(model_fields, "")
     media: dict[str, _Media] = {}
     remaining_bytes = MAX_ANKI_EXPORT_MEDIA_BYTES
+    supports_focus = builtin is not None and (builtin.id, builtin.version) in _SENTENCE_FOCUS_TYPES
 
     for entry in entries:
         if entry.id in ids:
@@ -252,10 +335,23 @@ def _prepare_fields(
         targets[target] = entry.id
 
         value = entry.value
+        annotate_sentence = builtin is not None and target == "Sentence"
+        focus = entry.sentence_focus if supports_focus and annotate_sentence else None
+        if focus is not None and (entry.type != "text" or not isinstance(value, str)):
+            raise _ExportError("invalid", "原句强调与正文范围不匹配。", entry.id)
         text_value = ""
         if value is not None:
             if entry.type == "text" and isinstance(value, str):
-                if value.strip():
+                has_ruby = annotate_sentence and bool(entry.sentence_ruby)
+                if focus is not None or (has_ruby and value.strip()):
+                    text_value = _sentence_html(
+                        value,
+                        entry.sentence_ruby,
+                        focus,
+                        entry.id,
+                        first_field=target == model_fields[0],
+                    )
+                elif value.strip():
                     text_value = _plain_text(value)
             elif entry.type != "text" and isinstance(value, AnkiExportAttachment):
                 attachment = _attachment(entry, value, remaining_bytes)
@@ -328,7 +424,7 @@ async def export_note(
             raise _ExportError("target_changed", "目标笔记类型不可用，请重新选择。")
 
         stage = "validation"
-        fields, media = _prepare_fields(request.fields, model_fields)
+        fields, media = _prepare_fields(request.fields, model_fields, builtin)
         if model is None and builtin is not None:
             if not request.install_builtin:
                 raise _ExportError("installation_required", "发送前需确认创建内置笔记类型。")
