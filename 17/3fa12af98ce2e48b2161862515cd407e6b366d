@@ -1,0 +1,63 @@
+docs/ARCHITECTURE.md
+  s_8ed53f4feaedde::t_5d3cb689bba082 279
+docs/TECH_STACK.md
+  s_8ed53f4feaedde::t_2b27c92de89af2 14
+frontend/browser-tests/reader-dictionary.tsx
+  s_8ed53f4feaedde::t_3300d86c2c91f4 180,351,907-934,936
+  s_8ed53f4feaedde::t_49d2ab711510f6 935
+docs/USAGE.md
+  s_8ed53f4feaedde::t_2b27c92de89af2 37
+frontend/src/settings/DictionarySettings.tsx
+  s_8ed53f4feaedde::t_178acfad7288b3 26,52,176-177
+  s_8ed53f4feaedde::t_3300d86c2c91f4 23-25,27,45,49-51,53
+backend/src/app/services/dictionary_store.py
+  s_8ed53f4feaedde::t_801f6868f5fdc1 48-49,59-61,98-102,111-113,117-118,120,124-125,128-131,144-151,158-160,219-226,228,239,338-342,529,612,615-616,618-621,623-631,633-641,643-644,664-665,728-732,744-745,782-784,787-791,794,800,804,807,916-941,980-985,1010
+  s_8ed53f4feaedde::t_62fefc86ee451e 38-44,203-204,227,229-238,299,302-311,324,326,343-352
+  s_8ed53f4feaedde::t_dfcfb957adbc09 786,792,795-799
+  s_8ed53f4feaedde::t_9d72aa1162d0e4 240,793
+backend/tests/support_dictionary_store.py
+  s_8ed53f4feaedde::t_801f6868f5fdc1 12-18,25-26
+backend/tests/test_dictionary_store.py
+  s_8ed53f4feaedde::t_62fefc86ee451e 216
+frontend/src/dictionary/dictionary-api.ts
+  s_8ed53f4feaedde::t_3300d86c2c91f4 106-112
+  s_8ed53f4feaedde::t_178acfad7288b3 70,93,98,116-117
+backend/src/app/services/dictionary_styles.py
+  s_8ed53f4feaedde::t_801f6868f5fdc1 5,58-73,112-130,151,153
+frontend/browser-tests/dictionary-settings.tsx
+  s_8ed53f4feaedde::t_2e6c30fc07a075 635-637
+  s_8ed53f4feaedde::t_c72f87275a07a4 632
+  s_8ed53f4feaedde::t_178acfad7288b3 1,24-28,511,609-617,633-634,638-646
+docs/handovers/epub-reading/README.md
+  s_8ed53f4feaedde::t_2b27c92de89af2 70
+backend/tests/test_dictionary_styles.py
+  s_8ed53f4feaedde::t_801f6868f5fdc1 1,4,9,150-154,158,201-230,232-236,238-264,266-288,290-337,340-341,349-353,361,363,369-373,381-388,392,394,399-403
+  s_8ed53f4feaedde::t_62fefc86ee451e 20,188-190,192-194,389-391,393,395-398,404-424
+  s_8ed53f4feaedde::t_dba21907261131 354-360,362,374-380
+  s_8ed53f4feaedde::t_e5ba9ba4d6980d 3,7,231,237,265,289,338-339,342-348,364-368
+backend/src/app/services/dictionary_stylesheet.py
+  s_8ed53f4feaedde::t_801f6868f5fdc1 1-30,32-61,63-129,131-150,152,155-245,247-254,256-306,308-311,314-373
+  s_8ed53f4feaedde::t_e5ba9ba4d6980d 31,62,130,151,153-154,246,255,307,312-313
+backend/pyproject.toml
+  s_8ed53f4feaedde::t_2d47cf0853176f 24
+backend/uv.lock
+  s_8ed53f4feaedde::t_d3fc5f9ee2b032 141,171,1164-1175,1218-1226
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_8ed53f4feaedde::t_c9c72004398f23 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "173fa12af98ce2e48b2161862515cd407e6b366d",
+  "prompts": {},
+  "sessions": {
+    "s_8ed53f4feaedde": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2102b-c1e7-7391-b36e-d4ff50c3b428",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
