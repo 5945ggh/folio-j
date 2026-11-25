@@ -1,0 +1,23 @@
+docs/README.md
+  s_8ed53f4feaedde::t_dbdcddbd4f9313 14
+README.md
+  s_8ed53f4feaedde::t_dbdcddbd4f9313 91
+docs/USAGE.md
+  s_8ed53f4feaedde::t_dbdcddbd4f9313 59-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "09fe2682dc77ced06655096abc48792ec2ca591c",
+  "prompts": {},
+  "sessions": {
+    "s_8ed53f4feaedde": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2102b-c1e7-7391-b36e-d4ff50c3b428",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
