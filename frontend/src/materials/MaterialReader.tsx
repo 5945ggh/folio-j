@@ -84,6 +84,7 @@ import {
 	setUsage,
 	usageKey,
 } from "./api";
+import { BookImportWarnings } from "./BookImportWarnings";
 import { type Bookmark, bookmarkKeys, getBookmark } from "./bookmarks-api";
 import { ChapterRecords } from "./ChapterRecords";
 import { marginRecordEntry, sameMarginRecordHit } from "./chapter-records";
@@ -220,50 +221,6 @@ import {
 } from "./vocabulary-navigation";
 
 const defaults: Settings = DEFAULT_READING_SETTINGS;
-
-const epubImportWarningLabels: ReadonlyArray<readonly [RegExp, string]> = [
-	[/^Removed unsupported image/, "部分图片格式不受支持，已跳过这些图片"],
-	[/^Fixed image page/, "固定版式的图片页已按普通图片显示"],
-	[
-		/^(Unsupported CSS import|Skipped CSS import|Unterminated CSS import|Skipped unavailable stylesheet)/,
-		"部分样式无法使用，页面外观可能与原书不同",
-	],
-	[
-		/^(EPUB (nav|NCX)|nav 目录|spine 重复资源|目录|没有有效目录)/,
-		"已根据可用的目录和正文调整章节划分",
-	],
-];
-
-function BookImportWarnings({ warnings }: { warnings: readonly string[] }) {
-	if (warnings.length === 0) return null;
-	const uniqueWarnings = [...new Set(warnings)];
-	const notices = new Set(
-		uniqueWarnings.map(
-			(warning) =>
-				epubImportWarningLabels.find(([pattern]) =>
-					pattern.test(warning),
-				)?.[1] ?? "部分 EPUB 内容已按兼容方式处理",
-		),
-	);
-	return (
-		<details>
-			<summary>导入提示</summary>
-			<ul>
-				{[...notices].map((notice) => (
-					<li key={notice}>{notice}</li>
-				))}
-			</ul>
-			<details>
-				<summary>技术信息</summary>
-				<ul>
-					{uniqueWarnings.map((warning) => (
-						<li key={warning}>{warning}</li>
-					))}
-				</ul>
-			</details>
-		</details>
-	);
-}
 
 function ReaderNavigationIcon({
 	name,

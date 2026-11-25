@@ -132,10 +132,10 @@ def test_nav_precedes_ncx_and_diagnoses_invalid_reverse_duplicate(tmp_path: Path
     )
     book = epub.compile_epub_bytes(publication(tmp_path, nav, ncx))
     assert [chapter.title for chapter in book.chapters] == ["前置内容", "本文"]
-    for title in ("重複", "逆順"):
-        assert any(f"目录目标重复或逆序，已跳过：{title}" in warning for warning in book.warnings)
-    for title in ("欠落", "不存在"):
-        assert any(f"目录目标缺失或无效，已跳过：{title}" in warning for warning in book.warnings)
+    for title, href in (("重複", "chapter1.xhtml#duplicate-one"), ("逆順", "chapter1.xhtml")):
+        assert f"目录链接的位置重复或顺序有误，已跳过：「{title}」（{href}）" in book.warnings
+    for title, href in (("欠落", "missing.xhtml"), ("不存在", "chapter1.xhtml#missing")):
+        assert f"目录链接无法定位到正文，已跳过：「{title}」（{href}）" in book.warnings
     assert any("前置内容" in warning for warning in book.warnings)
     assert len(book.chapters[1].parts) == 2
     assert_partition(book)
@@ -150,7 +150,8 @@ def test_ncx_hierarchy_and_missing_toc_fallback(tmp_path: Path) -> None:
     ]
     assert_partition(book)
     fallback = epub.compile_epub_bytes(publication(tmp_path))
-    assert len(fallback.chapters) == 2 and fallback.warnings
+    assert len(fallback.chapters) == 2
+    assert "目录不可用，已按原书的正文顺序划分章节" in fallback.warnings
 
 
 def test_image_boundary_and_nfc_seam_are_not_lost(tmp_path: Path) -> None:
@@ -161,7 +162,7 @@ def test_image_boundary_and_nfc_seam_are_not_lost(tmp_path: Path) -> None:
     picture = book.chapters[1].parts[0]
     assert picture.start == picture.end and "<img" in picture.html
     assert 'data-epub-image="0"' in picture.html
-    assert any("NFC" in warning for warning in book.warnings)
+    assert "目录链接指向字符中间，已跳过：「危険」（chapter1.xhtml#seam）" in book.warnings
     assert_partition(book)
 
 
@@ -416,7 +417,7 @@ def test_duplicate_spine_occurrences_are_retained(tmp_path: Path) -> None:
     book = epub.compile_epub_bytes(path.read_bytes())
     assert [part.spine_index for chapter in book.chapters for part in chapter.parts] == [0, 1, 2]
     assert book.resources[0].id == book.resources[2].id
-    assert any("重复资源" in warning for warning in book.warnings)
+    assert any("重复正文均已保留" in warning for warning in book.warnings)
     assert_partition(book)
 
 
@@ -428,7 +429,7 @@ def test_invalid_nav_targets_fall_back_to_valid_ncx(tmp_path: Path) -> None:
     )
     book = epub.compile_epub_bytes(publication(tmp_path, nav, ncx))
     assert [chapter.title for chapter in book.chapters] == ["NCX 原章名"]
-    assert any("nav 目录没有有效正文目标" in warning for warning in book.warnings)
+    assert "目录中的链接无法定位到正文，将尝试使用备用目录" in book.warnings
     assert_partition(book)
 
 
@@ -509,7 +510,7 @@ def test_unsafe_zip_members_are_rejected(tmp_path: Path, entry: str) -> None:
 
 
 def test_fixed_layout_is_explicitly_rejected(tmp_path: Path) -> None:
-    with pytest.raises(epub.EpubError, match="[Ff]ixed"):
+    with pytest.raises(epub.EpubError, match="本书采用固定版式"):
         compile_fixture(tmp_path, fixed=True)
 
 
@@ -544,7 +545,7 @@ def test_image_only_fixed_spine_page_in_reflowable_book(tmp_path: Path) -> None:
     book = epub.compile_epub_bytes(path.read_bytes())
     assert book.resources[0].text.strip() == ""
     assert "<img" in resource_markup(book, 0)
-    assert book.warnings
+    assert "固定版式的图片页已按普通图片显示：OEBPS/chapter1.xhtml" in book.warnings
 
 
 @pytest.mark.parametrize("encoding", ["utf-8", "utf-16-le", "utf-16-be"])
@@ -556,7 +557,7 @@ def test_entity_declarations_rejected_in_every_xml_encoding(encoding: str) -> No
         "<html><body><p>&injected;</p></body></html>"
     )
     bom = {"utf-8": b"", "utf-16-le": b"\xff\xfe", "utf-16-be": b"\xfe\xff"}[encoding]
-    with pytest.raises(epub.EpubError, match="entity declarations"):
+    with pytest.raises(epub.EpubError, match=r"实体声明（chapter\.xhtml）"):
         epub.sanitize_xhtml(bom + document.encode(encoding), "chapter.xhtml", {})
 
 
@@ -584,24 +585,29 @@ def test_css_import_cycles_remote_and_unsupported_syntax_warn() -> None:
         warnings,
     )
     assert "@import" not in css
-    assert any("cycle or depth limit" in warning for warning in warnings)
-    assert any("External package resource is unsupported" in warning for warning in warnings)
-    assert any("Unsupported CSS import syntax" in warning for warning in warnings)
+    assert warnings == [
+        "样式引用已跳过：styles/cycle.css 中的 cycle.css（样式文件相互引用或引用层数过多）",
+        "样式引用已跳过：styles/main.css 中的 https://evil.test/style.css"
+        "（无法读取书籍外部的资源：https://evil.test/style.css）",
+        "样式引用的写法不受支持，已跳过：styles/main.css（nonsense）",
+    ]
     assert css.strip() == ""
 
 
 @pytest.mark.parametrize(
     ("name", "expected"),
     [
-        ("synthetic-reading", "014f87e7da839135a4f53e2d4d51d02048730b6da722be08f5102396803fdcbe"),
-        ("synthetic-vertical", "5d5146ba1640d1cdbc3b49b79213af627e69c5b7730d41baf76701d582921a0e"),
-        ("synthetic-malicious", "7137482b97a2b44b181c9a60595523c0ed8f87d16d68bb0d8bb052fa5dceba0e"),
+        ("synthetic-reading", "4f1f5f2b9ab543ebfca93d1eaf8f6b547821bcda19f1f95fd1b292f700e97222"),
+        ("synthetic-vertical", "d1aa3ba50efe2da676bb3212d64d61412f13261a1bcd759f8b962caae3915e89"),
+        ("synthetic-malicious", "15ad2f9270cd644aa3b90ab37f4dd23ebd0d3552517f9f3894c4fa683497c4ed"),
     ],
 )
 def test_public_fixture_reading_snapshot_is_unchanged(name: str, expected: str) -> None:
     raw = (ROOT / "backend/tests/fixtures/epub" / f"{name}.epub").read_bytes()
-    snapshot = epub.compile_epub_bytes(raw).model_dump(exclude={"contract", "product_sha256"})
-    # Frozen against v1 before implementation: all reading data survives removal of resource HTML.
+    snapshot = epub.compile_epub_bytes(raw).model_dump(
+        exclude={"contract", "product_sha256", "warnings"}
+    )
+    # Frozen from the original compiler output excluding localized import diagnostics.
     for resource in snapshot["resources"]:
         resource.pop("html", None)
     compiled = json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")).encode()
@@ -633,10 +639,20 @@ def test_archive_is_opened_once_and_each_member_read_once(
 
 
 @pytest.mark.parametrize(
-    "limit", ["entries", "expanded", "member", "ratio", "encrypted", "path", "duplicate", "drm"]
+    ("limit", "message"),
+    [
+        ("entries", "超过 5000 项或 128 MB"),
+        ("expanded", "超过 5000 项或 128 MB"),
+        ("member", "超过 16 MB"),
+        ("ratio", "超过压缩后大小的 200 倍"),
+        ("encrypted", "书籍含有加密文件"),
+        ("path", "书籍中存在不安全的文件路径"),
+        ("duplicate", "书籍中存在同名文件"),
+        ("drm", "DRM 保护"),
+    ],
 )
 def test_archive_limits_reject_metadata_before_member_read(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, limit: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, limit: str, message: str
 ) -> None:
     raw = publication(tmp_path)
     entries = [ZipInfo("safe.xhtml")]
@@ -674,7 +690,7 @@ def test_archive_limits_reject_metadata_before_member_read(
 
     monkeypatch.setattr(ZipFile, "infolist", metadata)
     monkeypatch.setattr(ZipFile, "read", unexpected_read)
-    with pytest.raises(epub.EpubError, match="limit|Encrypted|Unsafe|Duplicate"):
+    with pytest.raises(epub.EpubError, match=message):
         epub.compile_epub_bytes(raw)
 
 

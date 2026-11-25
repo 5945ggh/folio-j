@@ -288,7 +288,7 @@ async def soft_delete_discussions(
                 status="interrupted",
                 execution_token=None,
                 error_code="content_deleted",
-                error="所属内容已删除",
+                error="原片段已删除",
                 finished_at=deleted,
                 version=Job.version + 1,
             )
@@ -296,7 +296,7 @@ async def soft_delete_discussions(
         await session.execute(
             update(Run)
             .where(Run.job_id.in_(active_ids), Run.status.in_(["queued", "running"]))
-            .values(status="interrupted", error="所属内容已删除", finished_at=deleted)
+            .values(status="interrupted", error="原片段已删除", finished_at=deleted)
         )
         await session.execute(
             update(ChatMessage)

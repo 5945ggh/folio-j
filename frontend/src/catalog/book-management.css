@@ -160,6 +160,16 @@
 .book-details-fields a:hover {
 	color: var(--color-accent);
 }
+.book-details-warnings {
+	grid-column: 2;
+	color: var(--color-text-secondary);
+	font-size: 13px;
+	line-height: 1.6;
+	overflow-wrap: anywhere;
+}
+.book-details-warnings summary {
+	cursor: pointer;
+}
 @media (max-width: 640px) {
 	.app-shell.book-details-page > .page-content {
 		padding: 0 20px 40px;
@@ -181,7 +191,8 @@
 	.book-details-content h1 {
 		font-size: 18px;
 	}
-	.book-details-fields {
+	.book-details-fields,
+	.book-details-warnings {
 		grid-column: 1 / -1;
 	}
 	.book-edit-cover-row {

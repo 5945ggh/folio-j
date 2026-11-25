@@ -69,7 +69,7 @@ async def resolve_connection_target(
     try:
         url = normalize_url(current.url)
     except ValueError as exc:
-        raise HTTPException(422, "已保存的 Anki 服务地址无效，请重新填写") from exc
+        raise HTTPException(422, "已保存的 AnkiConnect 地址无效，请重新填写") from exc
     return AnkiConnectionTarget(
         url,
         stored_api_key(database_path, row.credential_ref if row is not None else None),
@@ -125,7 +125,7 @@ def configuration_response(row: AnkiExportConfiguration) -> AnkiConfigurationRes
 async def configuration_row(session: AsyncSession, identity: str) -> AnkiExportConfiguration:
     row = await session.get(AnkiExportConfiguration, identity)
     if row is None:
-        raise HTTPException(404, "个人 Anki 导出配置不存在")
+        raise HTTPException(404, "Anki 导出配置不存在")
     return row
 
 

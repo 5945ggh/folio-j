@@ -45,7 +45,7 @@ class AnalysisWriteError(Exception):
 
 def _check_text(segment: Segment, expected_text_sha256: str) -> None:
     if segment_text_sha256(segment.text) != expected_text_sha256:
-        raise AnalysisWriteError(409, "原文已变化，请重新读取后保存", "stale_text")
+        raise AnalysisWriteError(409, "原文已变化，请刷新后再保存", "stale_text")
 
 
 def _manual_http_error(exc: HTTPException) -> AnalysisWriteError | None:
@@ -122,7 +122,7 @@ async def _detail(session: AsyncSession, analysis: Analysis, revision_id: str) -
         )
     )
     if revision is None:
-        raise HTTPException(status_code=404, detail="修订不存在")
+        raise HTTPException(status_code=404, detail="讲解版本不存在")
     sections = (
         await session.scalars(
             select(Section).where(Section.revision_id == revision.id).order_by(Section.ordinal)
@@ -205,7 +205,7 @@ async def get_editable_analysis(
     if analysis.segment_id != segment_id:
         raise HTTPException(status_code=404, detail="讲解不属于当前片段")
     if analysis.current_revision_id != base_revision_id:
-        raise HTTPException(status_code=409, detail="讲解版本已变化")
+        raise HTTPException(status_code=409, detail="讲解版本已变化，请刷新后重试")
     return await _detail(session, analysis, base_revision_id)
 
 
@@ -232,7 +232,7 @@ async def _save_revision(
 ) -> AnalysisDetail:
     doc = normalize(source_md)
     if identity is not None and len(identity) != len(doc.blocks):
-        raise HTTPException(status_code=422, detail="编辑后的块边界与方案不一致")
+        raise HTTPException(status_code=422, detail="修改后的小节划分有变化，请检查二级标题")
     revision_id = new_ulid()
     created = _now()
     session.add(
@@ -298,7 +298,7 @@ async def create_analysis(
 ) -> AnalysisDetail:
     """Create once under the caller's write transaction; no implicit commit."""
     if not operation_key or len(operation_key) > 100:
-        raise HTTPException(status_code=422, detail="无效操作身份")
+        raise HTTPException(status_code=422, detail="无法确认这次修改，请刷新后重试")
     segment = await require_segment(session, segment_id)
     source_md = unicodedata.normalize("NFC", source_md)
     create_payload: dict[str, object] = {
@@ -312,7 +312,7 @@ async def create_analysis(
     existing = await session.scalar(select(Analysis).where(Analysis.operation_key == operation_key))
     if existing is not None:
         if existing.segment_id != segment_id:
-            raise HTTPException(status_code=409, detail="操作身份已用于其他讲解")
+            raise HTTPException(status_code=409, detail="这次提交已用于其他讲解，请刷新后重试")
         if existing.deleted_at is not None:
             raise HTTPException(status_code=404, detail="讲解不存在")
         original = await session.scalar(
@@ -326,10 +326,10 @@ async def create_analysis(
             or original.operation_payload != create_payload
             or original.source_md != source_md
         ):
-            raise HTTPException(status_code=409, detail="操作身份对应的请求不同")
+            raise HTTPException(status_code=409, detail="内容与上次提交不一致，请刷新后重试")
         return await _detail(session, existing, original.id)
     if not source_md.strip() or len(source_md) > 500_000:
-        raise HTTPException(status_code=422, detail="讲解正文须非空且不超过 500000 字符")
+        raise HTTPException(status_code=422, detail="请填写讲解正文，最多 500000 个字符")
     if expected_text_sha256 is not None:
         _check_text(segment, expected_text_sha256)
     created = _now()
@@ -413,14 +413,16 @@ async def create_manual_analysis_revision(
                 or prior.operation_payload != payload
                 or prior.source_md != data.source_md
             ):
-                raise AnalysisWriteError(409, "操作身份对应的请求不同", "idempotency_conflict")
+                raise AnalysisWriteError(
+                    409, "内容与上次提交不一致，请刷新后重试", "idempotency_conflict"
+                )
             result = await _detail(session, analysis, prior.id)
         else:
             _check_text(segment, data.expected_text_sha256)
             current = await _detail(session, analysis, data.base_revision_id)
             if analysis.current_revision_id != data.base_revision_id:
                 raise AnalysisWriteError(
-                    409, "讲解版本已变化，请基于最新修订编辑", "stale_revision"
+                    409, "讲解版本已变化，请在最新版本上编辑", "stale_revision"
                 )
             if current.source_md == data.source_md:
                 raise AnalysisWriteError(422, "讲解正文没有变化", "no_changes")
@@ -450,14 +452,14 @@ def _section_raw(title: str, body: str) -> str:
     title = unicodedata.normalize("NFC", title.strip())
     body = unicodedata.normalize("NFC", body)
     if not title or "\n" in title or "\r" in title or len(title) > 500:
-        raise HTTPException(status_code=422, detail="块标题无效")
+        raise HTTPException(status_code=422, detail="请为小节填写有效的二级标题")
     raw = f"## {title}\n"
     if body:
         raw += "\n" + body.lstrip("\r\n")
         if not raw.endswith(("\n", "\r")):
             raw += "\n"
     if len([block for block in normalize(raw).blocks if block.kind == "section"]) != 1:
-        raise HTTPException(status_code=422, detail="一个块只能包含一个二级标题")
+        raise HTTPException(status_code=422, detail="每个小节只能有 1 个二级标题")
     return raw
 
 
@@ -475,7 +477,7 @@ def preview_section_replacement(block: Block, title: str | None, body: str | Non
             or "\n" in normalized_title
             or "\r" in normalized_title
         ):
-            raise HTTPException(status_code=422, detail="块标题无效")
+            raise HTTPException(status_code=422, detail="请为小节填写有效的二级标题")
         first = lines[0]
         ending = (
             "\r\n"
@@ -496,7 +498,7 @@ def preview_section_replacement(block: Block, title: str | None, body: str | Non
         heading += "\n"
     result = heading + tail
     if len([part for part in normalize(result).blocks if part.kind == "section"]) != 1:
-        raise HTTPException(status_code=422, detail="一个块只能包含一个二级标题")
+        raise HTTPException(status_code=422, detail="每个小节只能有 1 个二级标题")
     return result
 
 
@@ -514,7 +516,9 @@ def preview_operation(detail: AnalysisDetail, operation: SectionOperation) -> Op
     blocks = list(normalize(detail.source_md).blocks)
     identity: list[tuple[str, str] | None] = [(row.uid, row.handle) for row in detail.sections]
     if len(blocks) != len(identity):
-        raise HTTPException(status_code=409, detail="修订结构不一致")
+        raise HTTPException(
+            status_code=409, detail="当前讲解的小节无法与这个版本对应，请刷新后重试"
+        )
     raw = [block.raw for block in blocks]
     by_uid = {section.uid: index for index, section in enumerate(detail.sections)}
     before = ""
@@ -531,10 +535,10 @@ def preview_operation(detail: AnalysisDetail, operation: SectionOperation) -> Op
         affected_start, affected_count = 0, 1
     elif operation.kind == "insert_sections":
         if not operation.sections:
-            raise HTTPException(status_code=422, detail="至少插入一个块")
+            raise HTTPException(status_code=422, detail="请至少添加 1 个小节")
         index = 1 if operation.after_sid is None else by_uid.get(operation.after_sid, -1) + 1
         if index <= 0:
-            raise HTTPException(status_code=404, detail="插入锚点不存在")
+            raise HTTPException(status_code=404, detail="找不到要插入的位置，请刷新后重试")
         if raw[index - 1] and not raw[index - 1].endswith(("\n", "\r")):
             raw[index - 1] += "\n"
         inserted = [_section_raw(entry.title, entry.body) for entry in operation.sections]
@@ -544,7 +548,7 @@ def preview_operation(detail: AnalysisDetail, operation: SectionOperation) -> Op
     else:
         index = by_uid.get(operation.sid or "", -1)
         if index <= 0:
-            raise HTTPException(status_code=404, detail="目标块不存在")
+            raise HTTPException(status_code=404, detail="找不到要修改的小节，请刷新后重试")
         before = raw[index]
         if operation.kind == "delete_section":
             del raw[index]
@@ -557,10 +561,10 @@ def preview_operation(detail: AnalysisDetail, operation: SectionOperation) -> Op
             affected_start, affected_count = index, 1
     source_md = join_revision_blocks(raw)
     if len(source_md) > 500_000:
-        raise HTTPException(status_code=422, detail="讲解正文超过 500000 字符")
+        raise HTTPException(status_code=422, detail="讲解正文超过 500000 个字符，请缩短后重试")
     rendered = list(normalize(source_md).blocks)
     if len(rendered) != len(identity):
-        raise HTTPException(status_code=422, detail="编辑后的块边界与方案不一致")
+        raise HTTPException(status_code=422, detail="修改后的小节划分有变化，请检查二级标题")
     affected = rendered[affected_start : affected_start + affected_count]
     after = "".join(block.raw for block in affected)
     return OperationPreview(
@@ -583,7 +587,7 @@ async def apply_operation(
 ) -> AnalysisDetail:
     """Apply a reviewed edit, preserving old revisions and explicit block identity."""
     if not operation_key or len(operation_key) > 100:
-        raise HTTPException(status_code=422, detail="无效操作身份")
+        raise HTTPException(status_code=422, detail="无法确认这次修改，请刷新后重试")
     operation_payload: dict[str, object] = {
         "operation": operation.model_dump(mode="json"),
         "run_id": run_id,
@@ -597,7 +601,7 @@ async def apply_operation(
             or prior.parent_revision_id != base_revision_id
             or prior.operation_payload != operation_payload
         ):
-            raise HTTPException(status_code=409, detail="操作身份已用于其他讲解")
+            raise HTTPException(status_code=409, detail="这次提交已用于其他讲解，请刷新后重试")
         analysis = await _active_analysis(session, analysis_id)
         if analysis.segment_id != segment_id:
             raise HTTPException(status_code=404, detail="讲解不属于当前片段")

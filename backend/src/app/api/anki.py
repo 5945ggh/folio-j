@@ -38,7 +38,7 @@ class _AnkiRoute(APIRoute):
                 message = await request.receive()
                 total += len(message.get("body", b""))
                 if total > MAX_EXPORT_REQUEST_BYTES:
-                    raise HTTPException(413, "Anki 请求超过 40 MiB 上限")
+                    raise HTTPException(413, "发送内容超过 40 MB，请减少附件或文字内容")
                 return message
 
             return await handle(Request(request.scope, receive))

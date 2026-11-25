@@ -385,7 +385,7 @@ async def test_incomplete_response_never_publishes(
         assert run["status"] == "failed"
         assert run["output_text"] == output
         assert {name: run["usage"][name] for name in usage} == usage
-        assert run["error"] == "模型返回不完整或空译文"
+        assert run["error"] == "模型未返回完整译文，请重试"
         assert run["finished_at"] is not None
         async with app.state.session_factory() as session:
             stored = await session.get(Run, done["run_id"])
@@ -477,7 +477,7 @@ async def test_timeout_records_translation_and_accepted_budget(
         task = (await client.get(f"/api/translation-tasks/{task_id}")).json()
         run = (await client.get(f"/api/runs/{task['run_id']}")).json()
         assert run["status"] == task["status"] == "failed"
-        assert run["error"] == task["error"] == "阅读翻译超时（本次等待上限 12.5 秒）"
+        assert run["error"] == task["error"] == "翻译超时（本次等待上限 12.5 秒）"
 
 
 @pytest.mark.asyncio

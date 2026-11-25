@@ -63,7 +63,7 @@ async def mutate_usage(
             await session.commit()
             return result
         if usage.revision != data.expected_revision:
-            raise HTTPException(409, "材料使用状态已更新，请重新读取")
+            raise HTTPException(409, "阅读状态已更新，请刷新后重试")
         now = utc_now()
         if isinstance(data, MaterialOpenedInput):
             usage.last_action_id = data.action_id

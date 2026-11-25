@@ -78,9 +78,9 @@ async def resolve_input(
             )
         ).one_or_none()
         if material is None:
-            raise HTTPException(404, "材料不存在")
+            raise HTTPException(404, "书籍不存在")
         if material.version_id != version_id:
-            raise HTTPException(409, "材料版本已改变")
+            raise HTTPException(409, "原书版本已变化，请重新打开本书")
         statement = select(
             MaterialReadingsGeneration.id,
             MaterialReadingsGeneration.asset_sha256,
@@ -98,7 +98,7 @@ async def resolve_input(
             statement = statement.where(MaterialReadingsGeneration.id == generation_id)
         asset = (await session.execute(statement)).one_or_none()
         if generation_id is not None and asset is None:
-            raise HTTPException(404, "分词代次不存在")
+            raise HTTPException(404, "词汇统计尚不可用，请稍后重试")
         return StatisticsInput(
             material_id,
             version_id,
@@ -123,7 +123,7 @@ async def load_bundle(factory: SessionFactory, identity: StatisticsInput) -> byt
             )
         )
         if result is None:
-            raise HTTPException(404, "材料不存在")
+            raise HTTPException(404, "书籍不存在")
         return result
 
 
@@ -161,7 +161,7 @@ async def load_payload(factory: SessionFactory, identity: StatisticsInput) -> by
             )
         )
         if payload is None:
-            raise HTTPException(404, "分词代次不存在")
+            raise HTTPException(404, "词汇统计尚不可用，请稍后重试")
         return payload
 
 
@@ -171,9 +171,9 @@ async def verify_input(factory: SessionFactory, identity: StatisticsInput) -> No
         factory, identity.material_id, identity.version_id, identity.generation_id
     )
     if observed.product_sha256 != identity.product_sha256:
-        raise HTTPException(409, "材料内容已改变")
+        raise HTTPException(409, "书籍内容已变化，请刷新后重试")
     if identity.generation_id is not None and observed != identity:
-        raise HTTPException(409, "分词资产已改变")
+        raise HTTPException(409, "词汇统计已更新，请刷新后重试")
 
 
 async def _lexical(factory: SessionFactory, identity: StatisticsInput) -> bytes:

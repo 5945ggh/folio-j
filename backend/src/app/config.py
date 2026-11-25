@@ -62,8 +62,8 @@ def _read_settings(path: Path) -> Settings:
         return Settings()
     except OSError as exc:
         raise SettingsAccessError(
-            f"无法读取配置文件：{path}。请核对文件与所在目录的访问权限；"
-            "也可能是安全软件拦截了程序访问。"
+            f"无法读取配置文件：{path}。请检查文件及其所在目录的访问权限。"
+            "也可能是安全软件阻止了访问。"
         ) from exc
 
 
@@ -74,8 +74,8 @@ def _path_present(path: Path) -> bool:
         return False
     except OSError as exc:
         raise ValueError(
-            f"无法访问数据库或配套文件：{path}。请核对目录访问权限；"
-            "也可能是安全软件拦截了程序访问。"
+            f"无法访问数据库文件或配套文件：{path}。请检查数据目录的访问权限。"
+            "也可能是安全软件阻止了访问。"
         ) from exc
     return True
 
@@ -89,12 +89,12 @@ def database_exists(path: Path) -> bool:
         pass
     except OSError as exc:
         raise ValueError(
-            f"无法访问数据库：{path}。请核对文件与目录访问权限；也可能是安全软件拦截了程序访问。"
+            f"无法访问数据库文件：{path}。请检查文件和数据目录的访问权限。也可能是安全软件阻止了访问。"
         ) from exc
     if _path_present(path) or any(
         _path_present(Path(f"{path}{suffix}")) for suffix in DATABASE_COMPANIONS
     ):
-        raise ValueError(f"数据库路径不可用或仅剩配套文件：{path}。请核对路径或从备份恢复。")
+        raise ValueError(f"数据库文件无法打开或仅剩配套文件：{path}。请核对路径或从备份恢复。")
     return False
 
 
@@ -130,8 +130,8 @@ def resolve_settings(
             raise
         user = Settings()
         warning = (
-            f"无法读取旧配置 {user_file}；本次沿用所选学习库，"
-            "旧配置中的端口与翻译限制已使用程序配置或默认值。"
+            f"无法读取旧配置：{user_file}。本次可以使用所选数据。"
+            "端口和翻译限制将使用程序配置或默认值。"
         )
     local = _read_settings(config_path or REPO_ROOT / "config" / "app.toml")
     fields = user.model_dump(exclude_unset=True)
@@ -151,7 +151,7 @@ def resolve_settings(
     elif "path" in user.database.model_fields_set:
         path, source = settings.database.path.expanduser(), "user"
         if not path.is_absolute():
-            raise ValueError(f"{user_file} 的 [database].path 需要填写绝对路径。")
+            raise ValueError(f"请在 {user_file} 的 [database].path 中填写数据库文件的完整路径。")
     else:
         legacy = REPO_ROOT / "data" / "app.db"
         if database_exists(legacy):
@@ -164,7 +164,9 @@ def resolve_settings(
     try:
         exists = database_exists(path)
         if source == "remembered" and not exists:
-            raise ValueError(f"已记住的学习库不存在：{path}。请重新连接原位置或选择已有学习库。")
+            raise ValueError(
+                f"找不到已记住的数据库文件：{path}。请重新连接原位置或使用「打开已有数据」重新选择。"
+            )
     except ValueError as exc:
         raise DatabaseLocationError(resolution, str(exc)) from exc
     return resolution
@@ -179,4 +181,4 @@ def load_settings(config_path: Path | None = None) -> Settings:
 
 
 if __name__ == "__main__":
-    print(f"下次迁移和启动使用的数据库：{load_settings().database.path}")
+    print(f"下次迁移和启动时使用的数据库文件：{load_settings().database.path}")

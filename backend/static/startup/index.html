@@ -12,28 +12,28 @@
 <main>
 <header>FOLIO-J</header>
 <h1 id="title">选择数据位置</h1>
-<p id="intro">学习内容、设置和模型凭据会保存在你选择的位置。启动成功后会尝试记住位置；未能记住时，下次可重新选择已有库。</p>
+<p id="intro">学习内容、设置和 API 密钥将保存在所选数据目录。启动成功后，应用会尝试记住这个位置。</p>
 <div id="error" class="notice" role="alert" hidden></div>
 <div id="warning" class="notice warning" hidden></div>
 <div id="ready" hidden>
-<p class="small">本次使用的数据库<span id="ready-path" class="location"></span></p>
+<p class="small">本次使用的数据库文件<span id="ready-path" class="location"></span></p>
 <button id="enter" class="primary" type="button">进入学习界面</button>
 </div>
 <div id="selection">
-<p id="configured" class="small" hidden>原配置的数据库<span id="configured-path" class="location"></span></p>
-<div id="current-candidate" hidden><p class="small">本次已确认的数据位置<span id="retry-current-path" class="location"></span></p><button id="retry-current" class="primary" type="button">重试当前选择</button></div>
-<p id="selected" class="small" hidden>当前尝试的数据库<span id="selected-path" class="location"></span></p>
+<p id="configured" class="small" hidden>原来配置的数据库文件<span id="configured-path" class="location"></span></p>
+<div id="current-candidate" hidden><p class="small">本次选择的数据库文件<span id="retry-current-path" class="location"></span></p><button id="retry-current" class="primary" type="button">重试当前选择</button></div>
+<p id="selected" class="small" hidden>当前尝试打开的数据库文件<span id="selected-path" class="location"></span></p>
 <p class="small">默认数据目录<span id="default-path" class="location"></span></p>
 <div class="actions"><button id="retry" class="primary" type="button" hidden>重试原配置位置</button><button id="default" class="primary" type="button" disabled>使用默认位置</button></div>
 <hr>
-<label for="directory">其他数据目录（完整绝对路径）</label>
-<input id="directory" type="text" autocomplete="off" spellcheck="false" placeholder="粘贴文件管理器中的完整目录路径">
-<p class="small">新位置创建 app.db；打开已有数据时，请填写包含 app.db 的目录，也可填写数据库文件的完整路径。</p>
+<label for="directory">其他数据位置</label>
+<input id="directory" type="text" autocomplete="off" spellcheck="false" placeholder="粘贴数据目录或数据库文件的完整路径">
+<p class="small">创建新数据时，请填写数据目录。打开已有数据时，可填写数据库文件的完整路径，或填写包含 app.db 的目录。</p>
 <div class="actions">
 <button id="new" type="button">在此创建新数据</button>
 <button id="existing" type="button">打开已有数据</button>
 </div>
-<button id="reload-state" type="button" hidden>重试读取启动状态</button>
+<button id="reload-state" type="button" hidden>重新加载启动状态</button>
 </div>
 <p id="status" class="status small" role="status" aria-live="polite"></p>
 </main>
@@ -52,12 +52,12 @@ function show(state){
  if(state.ready){
   if(!state.warning){location.replace("/");return;}
   el("title").textContent="应用已启动";
-  el("intro").textContent="学习库已就绪，可以继续使用。请留意以下启动提示。";
+  el("intro").textContent="请查看以下启动提示。";
   el("error").hidden=true;
   el("warning").hidden=false;el("warning").textContent=state.warning;
   el("ready-path").textContent=state.selected_path||"";
   el("selection").hidden=true;el("ready").hidden=false;
-  el("status").textContent="可进入学习界面。";
+  el("status").textContent="";
   updateControls();return;
  }
  defaultDirectory=state.default_directory;
@@ -72,26 +72,26 @@ function show(state){
  el("retry").hidden=!state.recovery;
  el("default").textContent=state.recovery?"在默认位置创建新数据":"使用默认位置";
  if(state.recovery&&state.selected_path&&!el("directory").value)el("directory").value=state.selected_path;
- el("title").textContent=state.recovery?"恢复数据连接":"选择数据位置";
- el("intro").textContent=state.recovery?"当前数据无法启动。请修复目录访问后重试当前选择，或重试原配置位置。也可以打开另一份已有数据。":"学习内容、设置和模型凭据会保存在你选择的位置。启动成功后会尝试记住位置；未能记住时，下次可重新选择已有库。";
+ el("title").textContent=state.recovery?"无法打开学习数据":"选择数据位置";
+ el("intro").textContent=state.recovery?"请检查数据库文件和数据目录的访问权限后重试，或选择另一份已有数据。":"学习内容、设置和 API 密钥将保存在所选数据目录。启动成功后，应用会尝试记住这个位置。";
  updateControls();
 }
 async function choose(directory,mode,retry=null){
  busy=true;updateControls();
- el("status").textContent="正在检查数据并启动，请稍候…";
+ el("status").textContent="正在检查数据并启动…";
  try{
   const response=await fetch(retry||"/_startup/select",{method:"POST",headers:{"Content-Type":"application/json","X-Folio-Startup-Token":token},body:retry?undefined:JSON.stringify({directory,mode})});
   const result=await response.json();
-  if(!response.ok)throw new Error(typeof result.detail==="string"?result.detail:"无法提交，请核对目录后重试。");
-  show(result);if(!result.ready)el("status").textContent="请修复访问或修改位置后重试。";
- }catch(error){el("error").hidden=false;el("error").textContent=error.message;el("status").textContent="操作未完成，请重试。";}
+  if(!response.ok)throw new Error(typeof result.detail==="string"?result.detail:"无法打开这个位置，请核对路径后重试。");
+  show(result);if(!result.ready)el("status").textContent="请根据上方提示重试或选择其他位置。";
+ }catch(error){el("error").hidden=false;el("error").textContent=error.message;el("status").textContent="请重试。";}
  finally{busy=false;updateControls();}
 }
 async function loadState(){
  busy=true;updateControls();el("reload-state").hidden=true;
  try{
   const response=await fetch("/_startup/state");
-  if(!response.ok)throw new Error("无法读取启动状态，请重试。");
+  if(!response.ok)throw new Error("无法加载启动状态，请重新加载。");
   show(await response.json());
  }catch(error){stateLoaded=false;el("error").hidden=false;el("error").textContent=error.message;el("reload-state").hidden=false;}
  finally{busy=false;updateControls();}

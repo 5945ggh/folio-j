@@ -53,7 +53,7 @@ async def build(resources: Sequence[TextResource]) -> GeneratedReadings:
     try:
         return await asyncio.to_thread(generate, resources)
     except Exception as exc:
-        raise HTTPException(503, "本地注音生成失败，请重试。") from exc
+        raise HTTPException(503, "生成注音失败，请重试") from exc
 
 
 async def publish(
@@ -103,7 +103,7 @@ async def prepare(
 
     material = await require_material(session, material_id)
     if material.version_id != data.version_id:
-        raise HTTPException(409, "材料版本已改变")
+        raise HTTPException(409, "原书版本已变化，请重新打开本书")
     active = await current(session, material)
     if active is not None and not data.force:
         return summary(active)
@@ -115,7 +115,7 @@ async def prepare(
         await begin_write(session)
         material = await require_material(session, material_id)
         if material.version_id != data.version_id:
-            raise HTTPException(409, "材料版本已改变")
+            raise HTTPException(409, "原书版本已变化，请重新打开本书")
         asset = await publish(session, material, generated, observed_id)
         result = summary(asset)
         await session.commit()

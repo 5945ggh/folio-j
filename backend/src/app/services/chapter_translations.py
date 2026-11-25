@@ -138,7 +138,7 @@ def decode_cursor(
         ):
             raise ValueError("cursor scope or position mismatch")
     except (ValidationError, ValueError, binascii.Error) as exc:
-        raise failure("invalid_cursor", "翻译记录游标无效，请重新读取本章。") from exc
+        raise failure("invalid_cursor", "无法继续加载翻译记录，请刷新本章") from exc
     return cursor.position
 
 
@@ -148,11 +148,11 @@ def validate_candidates(
     try:
         book = decode_epub(identity.compiled_bundle)
     except ValueError as exc:
-        raise failure("material_unavailable", "材料版本产物不可用，请重新打开材料。", 409) from exc
+        raise failure("material_unavailable", "书籍内容无法读取，请重新打开本书", 409) from exc
     if book.product_sha256 != identity.product_sha256 or book.contract != identity.contract_version:
-        raise failure("material_unavailable", "材料版本产物身份不匹配。", 409)
+        raise failure("material_unavailable", "书籍内容与当前版本不符，请重新打开本书", 409)
     if not any(chapter.id == chapter_id for chapter in book.chapters):
-        raise failure("not_found", "章节不存在。", 404)
+        raise failure("not_found", "章节不存在", 404)
     validated: dict[str, tuple[Validated | None, bool]] = {}
     for row in rows:
         belongs = False
@@ -216,7 +216,7 @@ async def list_chapter_translations(
     try:
         identity = MaterialIdentity.capture(await require_material(session, material_id))
         if identity.version_id != version_id:
-            raise failure("stale_provenance", "材料版本不可用，请重新打开材料。", 409)
+            raise failure("stale_provenance", "原书版本不可用，请重新打开本书", 409)
         position = decode_cursor(after, identity, chapter_id)
         rows = await _chapter_candidates(session, identity, chapter_id)
         await session.rollback()
@@ -227,7 +227,7 @@ async def list_chapter_translations(
         await session.execute(text("BEGIN"))
         current = MaterialIdentity.capture(await require_material(session, material_id))
         if current != identity:
-            raise failure("stale_provenance", "材料正文身份已变化，请重新打开材料。", 409)
+            raise failure("stale_provenance", "原书内容已变化，请重新打开本书", 409)
         visible = {
             row.result_id: row
             for row in await _recheck_candidates(

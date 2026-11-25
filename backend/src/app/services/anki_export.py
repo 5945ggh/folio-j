@@ -75,10 +75,10 @@ class _Media:
 
 async def _checked_collection(gateway: AnkiConnect, endpoint: str, profile: str) -> AnkiCollection:
     if endpoint != gateway.endpoint:
-        raise _ExportError("target_changed", "Anki 连接地址已变更，请重新核对目标。")
+        raise _ExportError("target_changed", "AnkiConnect 地址已变化，请重新确认导出目标。")
     collection = await gateway.probe()
     if profile != collection.profile:
-        raise _ExportError("target_changed", "Anki 活动配置已变更，请重新核对目标。")
+        raise _ExportError("target_changed", "当前 Anki 用户已变化，请重新确认导出目标。")
     return collection
 
 
@@ -87,7 +87,7 @@ def _find_entity(
 ) -> AnkiEntity | None:
     entity = next((entry for entry in entries if entry.name == name), None)
     if entity_id is not None and (entity is None or entity.id != entity_id):
-        raise _ExportError("target_changed", "Anki 目标已变更，请重新选择。")
+        raise _ExportError("target_changed", "Anki 导出目标已变化，请重新选择。")
     return entity
 
 
@@ -96,7 +96,7 @@ def _find_builtin(builtins: AnkiBuiltins, ref: AnkiBuiltinNoteTypeRef) -> Builti
         if builtin.id == ref.id and builtin.version == ref.version:
             return builtin
     if any(builtin.id == ref.id for builtin in builtins.note_types):
-        raise _ExportError("target_changed", "此内置笔记类型版本不可用，请重新选择。")
+        raise _ExportError("target_changed", "此版本的内置笔记类型不可用，请重新选择。")
     raise _ExportError("invalid", "未找到该内置笔记类型。")
 
 
@@ -117,7 +117,7 @@ def _builtin_compatible(actual: AnkiNoteType, builtin: BuiltinNoteType) -> bool:
 
 
 def _incompatible() -> _ExportError:
-    return _ExportError("incompatible_type", "同名笔记类型与内置模板不兼容。")
+    return _ExportError("incompatible_type", "Anki 中已有同名笔记类型，与内置卡片模板不兼容。")
 
 
 async def check_builtin(
@@ -209,13 +209,15 @@ def _attachment(
     size = len(encoded) // 4 * 3
     size -= 2 if encoded.endswith("==") else int(encoded.endswith("="))
     if size > remaining_bytes or size > MAX_ANKI_MEDIA_BYTES:
-        raise _ExportError("invalid", "单个附件限 11 MiB，每次发送的附件合计限 24 MiB。", field.id)
+        raise _ExportError(
+            "invalid", "单个附件不能超过 11 MB，每次发送的附件合计不能超过 24 MB。", field.id
+        )
     try:
         data = base64.b64decode(encoded, validate=True)
     except (ValueError, binascii.Error) as error:
-        raise _ExportError("invalid", "附件数据无法读取。", field.id) from error
+        raise _ExportError("invalid", "无法读取附件，请重新选择文件。", field.id) from error
     if not _matches_format(extension, data):
-        raise _ExportError("invalid", "文件内容与所选媒体格式不符。", field.id)
+        raise _ExportError("invalid", "文件内容与所选格式不符，请重新选择文件。", field.id)
 
     # A retry with the same bytes asks Anki for the same name using its keep/rename behavior.
     digest = hashlib.sha256(data).hexdigest()
@@ -247,7 +249,7 @@ def _sentence_html(
         or not focus.text.strip()
         or value[focus.start : focus.end] != focus.text
     ):
-        raise _ExportError("invalid", "原句强调与正文范围不匹配。", field_id)
+        raise _ExportError("invalid", "高亮范围与原句不符，请重新选取原句。", field_id)
 
     def escape_part(text: str) -> str:
         # A marker can straddle two slices, so escape brackets in each part.
@@ -290,7 +292,7 @@ def _sentence_html(
             or "\r" in base + reading
             or "\n" in base + reading
         ):
-            raise _ExportError("invalid", "例句注音与正文范围不匹配。", field_id)
+            raise _ExportError("invalid", "注音与例句不符，请重新选取例句。", field_id)
         parts.append(render_base(consumed, start))
         escaped_reading = escape_part(reading)
         rt = (
@@ -321,24 +323,26 @@ def _prepare_fields(
 
     for entry in entries:
         if entry.id in ids:
-            raise _ExportError("invalid", "草稿中存在重复的应用字段。", entry.id)
+            raise _ExportError("invalid", "草稿中有重复字段，请检查导出配置。", entry.id)
         ids.add(entry.id)
         target = entry.target_field
         if target is None:
             if entry.required:
-                raise _ExportError("invalid", "必填字段须映射到 Anki 字段。", entry.id)
+                raise _ExportError("invalid", "请为每个必填字段选择对应的 Anki 字段。", entry.id)
             continue
         if target not in fields:
-            raise _ExportError("invalid", "映射的 Anki 字段已不存在。", entry.id)
+            raise _ExportError("invalid", "对应的 Anki 字段已不存在，请重新选择。", entry.id)
         if target in targets:
-            raise _ExportError("invalid", "一个 Anki 字段只能接收一个应用字段。", entry.id)
+            raise _ExportError(
+                "invalid", "草稿中有多个字段对应同一个 Anki 字段，请检查导出配置。", entry.id
+            )
         targets[target] = entry.id
 
         value = entry.value
         annotate_sentence = builtin is not None and target == "Sentence"
         focus = entry.sentence_focus if supports_focus and annotate_sentence else None
         if focus is not None and (entry.type != "text" or not isinstance(value, str)):
-            raise _ExportError("invalid", "原句强调与正文范围不匹配。", entry.id)
+            raise _ExportError("invalid", "高亮范围与原句不符，请重新选取原句。", entry.id)
         text_value = ""
         if value is not None:
             if entry.type == "text" and isinstance(value, str):
@@ -359,14 +363,16 @@ def _prepare_fields(
                 media[target] = attachment
                 text_value = attachment.reference(attachment.filename)
             else:
-                raise _ExportError("invalid", "字段值与类型不匹配。", entry.id)
+                raise _ExportError("invalid", "请按字段要求填写内容或选择文件。", entry.id)
         if entry.required and not text_value:
             raise _ExportError("invalid", "请填写必填字段。", entry.id)
         fields[target] = text_value
 
     first_field = model_fields[0]
     if not fields[first_field]:
-        raise _ExportError("invalid", "Anki 要求填写笔记类型的首字段。", targets.get(first_field))
+        raise _ExportError(
+            "invalid", "请填写 Anki 笔记类型的第一个字段。", targets.get(first_field)
+        )
     return fields, media
 
 
@@ -382,9 +388,9 @@ def _gateway_failure(
         return "invalid", message
     if error.code == "unknown_write":
         if stage == "note":
-            return "unknown", "发送结果未确认，请先在 Anki 中查看。"
+            return "unknown", "发送结果未确认，请先在 Anki 中查看笔记是否已创建。"
         if stage == "install_type":
-            return "failed", "笔记类型安装结果未确认，请重新检查 Anki。"
+            return "failed", "安装结果未确认，请先在 Anki 中查看笔记类型是否已创建。"
         if stage == "media":
             return "failed", "附件上传结果未确认，可以在当前草稿中重试。"
     return "failed", message
@@ -427,7 +433,7 @@ async def export_note(
         fields, media = _prepare_fields(request.fields, model_fields, builtin)
         if model is None and builtin is not None:
             if not request.install_builtin:
-                raise _ExportError("installation_required", "发送前需确认创建内置笔记类型。")
+                raise _ExportError("installation_required", "发送前请确认安装内置笔记类型。")
             stage = "install_type"
             actual = await gateway.create_note_type(
                 collection,
@@ -465,7 +471,7 @@ async def export_note(
                 if _SAFE_MEDIA_NAME.fullmatch(filename) is None or not filename.endswith(
                     f".{attachment.filename.rpartition('.')[2]}"
                 ):
-                    raise _ExportError("failed", "Anki 返回了不可用的附件文件名。")
+                    raise _ExportError("failed", "无法使用已上传的附件，请重新选择文件。")
                 uploaded[attachment.filename] = filename
             fields[target] = attachment.reference(filename)
 

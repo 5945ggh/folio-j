@@ -133,7 +133,7 @@ def test_migrate_recipe_refuses_in_use_database_before_applying_pending_revision
     with exclusive_file_lock(Path(str(database) + ".worker.lock")):
         rejected = migrate_recipe()
         assert rejected.returncode != 0, rejected.stdout + rejected.stderr
-        assert "数据库正在使用或进程锁不可用" in rejected.stderr
+        assert "无法使用数据库文件" in rejected.stderr
         with closing(sqlite3.connect(database)) as connection:
             assert list(connection.iterdump()) == before
     upgraded = migrate_recipe()
@@ -439,7 +439,7 @@ def test_windows_cli_accepts_replacement_and_missing_streams(
     monkeypatch.setattr(sys, "stderr", stderr)
     assert launcher.main(["data-path"]) == 0
     if stdout is not None:
-        assert "下次迁移和启动使用的数据库" in stdout.getvalue()
+        assert "下次迁移和启动时使用的数据库文件" in stdout.getvalue()
 
 
 @pytest.mark.parametrize("outcome", ["complete", "interrupt", "startup_interrupt", "bind_failure"])
@@ -556,7 +556,7 @@ def test_migrate_permission_error_preserves_write_failure_reason(
     assert launcher.main(["migrate"]) == 1
     error = capsys.readouterr().err
     assert "没有权限" in error
-    assert "启动页面选择可写的数据目录" in error
+    assert "启动页选择可写的数据目录" in error
 
 
 def test_recovery_server_uses_configured_port_when_database_cannot_load(

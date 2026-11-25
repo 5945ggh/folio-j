@@ -674,7 +674,7 @@ async def execute_agent_job(
                 job_id,
                 token,
                 error_code="budget_exhausted",
-                error="本轮模型调用预算已用尽",
+                error="本轮对话已达到调用次数上限，请继续提问或新建对话",
                 messages=messages,
             )
             return
@@ -703,7 +703,7 @@ async def execute_agent_job(
                 job_id,
                 token,
                 error_code="context_limit",
-                error="上下文超过本地上限",
+                error="发送内容过长，请缩短问题或新建对话",
                 messages=messages,
             )
             return
@@ -713,7 +713,7 @@ async def execute_agent_job(
                 job_id,
                 token,
                 error_code="output_limit",
-                error="回答超过本地长度上限",
+                error="回答超过长度上限，请缩小问题范围后重试",
                 messages=messages,
             )
             return
@@ -734,7 +734,7 @@ async def execute_agent_job(
                 job_id,
                 token,
                 error_code="output_limit",
-                error="回答超过本地长度上限",
+                error="回答超过长度上限，请缩小问题范围后重试",
                 messages=messages,
             )
             return
@@ -745,7 +745,7 @@ async def execute_agent_job(
                 token,
                 turn,
                 messages,
-                error="模型输出不完整或超过长度上限",
+                error="模型未返回完整回答或回答过长，请缩小问题范围后重试",
                 elapsed=elapsed,
             )
             await _terminate(
@@ -753,7 +753,7 @@ async def execute_agent_job(
                 job_id,
                 token,
                 error_code="incomplete_output",
-                error="模型输出不完整或超过长度上限",
+                error="模型未返回完整回答或回答过长，请缩小问题范围后重试",
                 messages=messages,
             )
             return
@@ -864,7 +864,7 @@ async def execute_agent_job(
                     job_id,
                     token,
                     error_code="context_limit",
-                    error="保存后的上下文超过本地上限，讲解未保存",
+                    error="本轮内容过长，讲解未保存，请缩小问题范围后重试",
                     messages=messages,
                 )
                 return
@@ -876,7 +876,7 @@ async def execute_agent_job(
                     job_id,
                     token,
                     error_code="tool_error",
-                    error="工具执行失败，请查看本轮任务记录",
+                    error="本轮操作失败，请查看对话任务记录",
                     messages=messages,
                 )
                 return

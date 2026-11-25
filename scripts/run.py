@@ -68,7 +68,7 @@ def frontend_command() -> list[str]:
     """Call Vite through Node directly, without invoking a Windows .cmd shim."""
     node = shutil.which("node")
     if node is None:
-        raise FileNotFoundError("缺少 Node.js，请先安装并加入 PATH。")
+        raise FileNotFoundError("找不到 Node.js，请先安装并将它加入 PATH。")
     return [
         node,
         str(ROOT / "frontend/node_modules/vite/bin/vite.js"),
@@ -80,7 +80,7 @@ def frontend_command() -> list[str]:
 
 def main() -> int:
     if len(sys.argv) != 2 or sys.argv[1] not in {"dev", "start"}:
-        print("Usage: run.py dev|start", file=sys.stderr)
+        print("用法：run.py dev 或 run.py start", file=sys.stderr)
         return 2
 
     if sys.argv[1] == "start":
@@ -109,8 +109,8 @@ def main() -> int:
         contain_process_tree()
     api_url = f"http://{settings.server.host}:{settings.server.port}"
     access_url = f"http://{settings.server.host}:{settings.server.dev_port}"
-    print(f"数据库：{settings.database.path.resolve()}", flush=True)
-    print(f"启动访问地址：{access_url}", flush=True)
+    print(f"数据库文件：{settings.database.path.resolve()}", flush=True)
+    print(f"浏览器访问地址：{access_url}", flush=True)
     print(f"API 文档：{api_url}/api/docs", flush=True)
     port_fields = "port（应用）或 dev_port（开发页面）"
     print(

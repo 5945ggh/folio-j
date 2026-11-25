@@ -131,7 +131,7 @@ def test_data_path_accepts_resolved_windows_short_user_directory(
 
     # Simulate Windows GetFinalPathNameByHandle's 8.3 expansion on any host OS.
     monkeypatch.setattr(Path, "resolve", resolve_short)
-    output = f"下次迁移和启动使用的数据库：{canonical}\n启动后可选择数据位置。\n"
+    output = f"下次迁移和启动时使用的数据库文件：{canonical}\n启动后可选择数据位置。\n"
     assert str(short) not in output  # The previous raw substring check rejected this.
     smoke.check_data_path(output, short)
 
@@ -139,9 +139,9 @@ def test_data_path_accepts_resolved_windows_short_user_directory(
 @pytest.mark.parametrize("reported", ["daily", "suffix", "missing", "duplicate"])
 def test_data_path_rejects_wrong_or_ambiguous_database(tmp_path: Path, reported: str) -> None:
     database = tmp_path / "isolated" / "app.db"
-    correct = f"下次迁移和启动使用的数据库：{database.resolve()}\n"
+    correct = f"下次迁移和启动时使用的数据库文件：{database.resolve()}\n"
     output = {
-        "daily": f"下次迁移和启动使用的数据库：{tmp_path / 'daily' / 'app.db'}\n",
+        "daily": f"下次迁移和启动时使用的数据库文件：{tmp_path / 'daily' / 'app.db'}\n",
         "suffix": correct.rstrip() + ".daily\n",
         "missing": str(database.resolve()),
         "duplicate": correct + correct,
@@ -153,7 +153,7 @@ def test_data_path_rejects_wrong_or_ambiguous_database(tmp_path: Path, reported:
 
 def test_data_path_rejects_creation_even_when_reported_path_is_correct(tmp_path: Path) -> None:
     database = write(tmp_path, "isolated/app.db")
-    output = f"下次迁移和启动使用的数据库：{database.resolve()}\n"
+    output = f"下次迁移和启动时使用的数据库文件：{database.resolve()}\n"
     with pytest.raises(RuntimeError, match="created it"):
         smoke.check_data_path(output, database)
 

@@ -21,7 +21,7 @@ async def test_second_application_cannot_run_recovery_or_start_workers(
     monkeypatch.setattr(main, "recover_chat_jobs", recovery)
     async with api_client(database):
         second = create_app(database_path=database)
-        with pytest.raises(RuntimeError, match="数据库已有后台执行进程"):
+        with pytest.raises(RuntimeError, match="无法锁定数据库文件"):
             async with second.router.lifespan_context(second):
                 pytest.fail("second application started")
         assert recovery.await_count == 1

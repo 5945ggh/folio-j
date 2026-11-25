@@ -35,7 +35,7 @@ def exclusive_file_lock(path: Path) -> Generator[None, None, None]:
     descriptor: int | None = None
     try:
         if is_link_or_reparse(path):
-            raise OSError("进程锁不能是链接或 reparse point")
+            raise OSError("进程锁文件不能是符号链接或系统重解析点")
         descriptor = os.open(path, os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0), 0o600)
         info = os.fstat(descriptor)
         current = path.lstat()
@@ -45,7 +45,7 @@ def exclusive_file_lock(path: Path) -> Generator[None, None, None]:
             or is_link_or_reparse(path)
             or (info.st_dev, info.st_ino) != (current.st_dev, current.st_ino)
         ):
-            raise OSError("进程锁不是安全的普通文件")
+            raise OSError("进程锁文件必须是普通文件")
         if _WINDOWS:
             msvcrt = importlib.import_module("msvcrt")
 
@@ -62,7 +62,7 @@ def exclusive_file_lock(path: Path) -> Generator[None, None, None]:
                 # The CRT uses EACCES for byte-lock contention after a successful
                 # file open. Preserve actual file-access failures separately.
                 if exc.errno == errno.EACCES:
-                    raise BlockingIOError(errno.EAGAIN, "数据库进程锁已被占用") from exc
+                    raise BlockingIOError(errno.EAGAIN, "数据库文件正在使用") from exc
                 raise
         else:
             fcntl = importlib.import_module("fcntl")

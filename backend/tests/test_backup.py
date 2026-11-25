@@ -233,7 +233,7 @@ def test_cli_accepts_0004_backup_and_rejects_missing_anki_credential(
     failed = tmp_path / "missing-credential"
     result = backup_cli("create", failed)
     _failure(result)
-    assert "凭据缺失" in result.stderr
+    assert "找不到数据库所需的 API 密钥文件" in result.stderr
     assert not failed.exists()
 
 
@@ -313,7 +313,7 @@ def test_cli_missing_source_does_not_silently_create_database(
     monkeypatch.setenv("PYTHONIOENCODING", inherited_encoding)
     result = backup_cli("create", target)
     _failure(result)
-    assert "源数据库不存在或不安全" in result.stderr
+    assert "找不到数据库文件，或该路径指向不受支持的文件" in result.stderr
     assert not missing.exists()
     assert not target.exists()
 
@@ -645,7 +645,7 @@ def test_cli_backup_protocol_survives_a_normal_forward_schema_migration(
 
 @pytest.mark.parametrize("name", ["C:outside.db", "credentials/key:secret", "CON", "key. "])
 def test_package_paths_reject_windows_aliases_and_streams(name: str) -> None:
-    with pytest.raises(BackupError, match="不安全相对路径"):
+    with pytest.raises(BackupError, match="无效的文件路径"):
         _relative(name)
 
 
@@ -718,7 +718,7 @@ def test_restore_rejects_windows_reparse_directory(
 
     monkeypatch.setattr(backup_module, "is_link_or_reparse", is_reparse)
     destination = tmp_path / "restored"
-    with pytest.raises(BackupError, match="reparse point"):
+    with pytest.raises(BackupError, match="符号链接或系统重解析点"):
         restore_backup(package, destination)
     assert not destination.exists()
 

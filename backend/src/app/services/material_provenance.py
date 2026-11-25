@@ -138,30 +138,30 @@ def translation_reference_matches(left: MaterialProvenance, right: MaterialProve
 
 def _resource(book: CompiledBook, item: MaterialProvenanceRange) -> CompiledResource:
     if item.spine_index >= len(book.resources):
-        raise ProvenanceError("材料出现位置不存在")
+        raise ProvenanceError("无法找到原文位置，请重新选择")
     resource = book.resources[item.spine_index]
     if resource.id != item.resource_id:
-        raise ProvenanceError("资源与 spine 出现位置不一致")
+        raise ProvenanceError("原文与所选位置不符，请重新选择")
     if any(
         other.text != resource.text or other.text_sha256 != resource.text_sha256
         for other in book.resources
         if other.id == resource.id
     ):
-        raise ProvenanceError("同一资源正文身份不一致", snapshot=True)
+        raise ProvenanceError("书籍原文与所选内容不符，请重新打开本书", snapshot=True)
     try:
         digest = hashlib.sha256(resource.text.encode()).hexdigest()
     except UnicodeError as exc:
-        raise ProvenanceError("资源正文不是有效 Unicode", snapshot=True) from exc
+        raise ProvenanceError("书籍原文无法读取，请重新打开本书", snapshot=True) from exc
     if (
         unicodedata.normalize("NFC", resource.text) != resource.text
         or digest != resource.text_sha256
         or digest != item.text_sha256
     ):
-        raise ProvenanceError("资源正文摘要不匹配", snapshot=True)
+        raise ProvenanceError("书籍原文与所选内容不符，请重新打开本书", snapshot=True)
     if item.end > len(resource.text):
-        raise ProvenanceError("范围超过资源正文上界")
+        raise ProvenanceError("选区超出原文范围，请重新选择")
     if item.exact != resource.text[item.start : item.end]:
-        raise ProvenanceError("原文快照不匹配", snapshot=True)
+        raise ProvenanceError("书籍原文与所选内容不符，请重新选择", snapshot=True)
     return resource
 
 
@@ -183,7 +183,7 @@ def project_ranges(
             pieces: list[ProvenancePart] = []
             for part_index, part in enumerate(chapter.parts):
                 if part.start < 0 or part.end < part.start:
-                    raise ProvenanceError("章节范围无效")
+                    raise ProvenanceError("章节范围无法识别，请重新打开本书")
                 if part.resource_id == item.resource_id and part.spine_index == item.spine_index:
                     left, right = max(item.start, part.start), min(item.end, part.end)
                     if left < right:
@@ -208,16 +208,16 @@ def project_ranges(
             if cursor == item.end and start_position is not None:
                 matches.append((chapter.id, start_position, end_position, pieces))
         if len(matches) != 1:
-            raise ProvenanceError("目标必须完整位于同一逻辑章，且出现位置须明确")
+            raise ProvenanceError("请在同一章节内重新选择原文")
         chapter_id, start, end, pieces = matches[0]
         if chosen_chapter is None:
             chosen_chapter = chapter_id
         if chosen_chapter != chapter_id or (previous_end is not None and previous_end != start):
-            raise ProvenanceError("目标范围须按阅读顺序连续，不能重叠、跳跃或跨章")
+            raise ProvenanceError("请在同一章节内选择一段连续原文")
         previous_end = end
         projections.extend(pieces)
     if chosen_chapter is None:
-        raise ProvenanceError("目标范围为空")
+        raise ProvenanceError("请先选择原文")
     return chosen_chapter, projections
 
 
@@ -252,7 +252,7 @@ def validate_reference(
     normalized = reference.model_copy(update={"ranges": canonical})
     assembled = unicodedata.normalize("NFC", "".join(item.exact for item in canonical))
     if not assembled.strip() or len(assembled) > MAX_PROVENANCE_TEXT:
-        raise ProvenanceError("目标原文须非空白且不超过限额")
+        raise ProvenanceError(f"请选取非空原文，最多 {MAX_PROVENANCE_TEXT} 个字符")
     chapter, parts = project_ranges(book, normalized)
     return normalized, assembled, chapter, parts
 
@@ -276,9 +276,9 @@ def _validate_bundle(
     try:
         book = decode_epub(material.compiled_bundle)
     except ValueError as exc:
-        raise ProvenanceError("材料版本产物不可用", snapshot=True) from exc
+        raise ProvenanceError("书籍内容无法读取，请重新打开本书", snapshot=True) from exc
     if book.product_sha256 != material.product_sha256 or book.contract != material.contract_version:
-        raise ProvenanceError("材料版本产物身份不匹配", snapshot=True)
+        raise ProvenanceError("书籍内容与当前版本不符，请重新打开本书", snapshot=True)
     return validate_reference(book, reference)
 
 
@@ -297,9 +297,9 @@ async def prepare_reference(
         )
     )
     if material is None:
-        raise failure("not_found", "材料不存在或不属于当前来源", 404)
+        raise failure("not_found", "书籍不存在或不属于当前来源", 404)
     if material.version_id != reference.version_id:
-        raise failure("stale_provenance", "材料版本不可用", 409)
+        raise failure("stale_provenance", "原书版本不可用，请重新打开本书", 409)
     # expire_on_commit=False is the application's session contract; capture values before rollback.
     source, product, contract, compiled = (
         material.source_id,
@@ -338,14 +338,14 @@ async def recheck_reference(session: AsyncSession, prepared: PreparedReference) 
         .execution_options(populate_existing=True)
     )
     if material is None:
-        raise failure("not_found", "材料已删除", 404)
+        raise failure("not_found", "书籍已删除", 404)
     if (
         material.version_id != prepared.reference.version_id
         or material.product_sha256 != prepared.product_sha256
         or material.contract_version != prepared.contract_version
         or material.compiled_bundle != prepared.compiled_bundle
     ):
-        raise failure("stale_provenance", "材料正文身份已变化", 409)
+        raise failure("stale_provenance", "原书内容已变化，请重新打开本书", 409)
     return material
 
 
@@ -374,7 +374,7 @@ async def replay_creation(
         return None
     segment = await require_segment(session, receipt.segment_id)
     if receipt.request_payload != request_payload(data):
-        raise failure("idempotency_conflict", "同一请求身份不能提交不同内容", 409)
+        raise failure("idempotency_conflict", "片段已提交，如需修改请先刷新", 409)
     return segment_response(segment)
 
 
@@ -387,7 +387,7 @@ async def create_material_segment(
 
     reference = data.material_provenance
     if reference is None or data.request_id is None:
-        raise failure("invalid_provenance", "材料出处和请求身份不能为空")
+        raise failure("invalid_provenance", "保存所需的书籍出处不完整，请重新选择原文后保存")
     try:
         replay = await replay_creation(session, source_id, data)
         if replay is not None:
@@ -396,17 +396,17 @@ async def create_material_segment(
         await session.rollback()
         prepared = await prepare_reference(session, source_id, reference)
         if data.text is not None and data.text != prepared.text:
-            raise failure("invalid_provenance", "提交原文与材料出处不一致")
+            raise failure("invalid_provenance", "原文与书籍出处不符，请重新选择")
         translation_reference: PreparedReference | None = None
         translation: TranslationResultResponse | None = None
         if data.translation_result_id is not None:
             translation = await get_result(session, data.translation_result_id)
             if translation.reader_deleted:
-                raise failure("not_found", "翻译记录已从阅读器移除", 404)
+                raise failure("not_found", "阅读器中的翻译记录已删除", 404)
             if translation.source_id != source_id or not translation_reference_matches(
                 prepared.reference, translation.material_provenance
             ):
-                raise failure("invalid_provenance", "译文与保存目标出处不一致")
+                raise failure("invalid_provenance", "译文与所选原文的出处不符，请重新选择")
             translation_reference = await prepare_reference(
                 session, source_id, translation.material_provenance
             )
@@ -414,7 +414,7 @@ async def create_material_segment(
                 translation_reference.text != translation.text
                 or identity_sha256(translation_reference.reference) != translation.identity_sha256
             ):
-                raise failure("invalid_provenance", "译文目标与材料不一致")
+                raise failure("invalid_provenance", "译文与所选书籍不符，请重新选择")
         await begin_write(session)
         # Another request may have committed while validation ran outside the write lock.
         replay = await replay_creation(session, source_id, data)
@@ -427,11 +427,11 @@ async def create_material_segment(
             await recheck_reference(session, translation_reference)
             current = await get_result(session, data.translation_result_id)
             if current.reader_deleted:
-                raise failure("not_found", "翻译记录已从阅读器移除", 404)
+                raise failure("not_found", "阅读器中的翻译记录已删除", 404)
             if current.model_dump(exclude={"adopted_segment_ids"}) != translation.model_dump(
                 exclude={"adopted_segment_ids"}
             ):
-                raise failure("stale_provenance", "译文身份已变化", 409)
+                raise failure("stale_provenance", "译文已变化，请刷新后重试", 409)
         created = utc_now()
         segment = Segment(
             id=new_ulid(),
@@ -566,7 +566,7 @@ async def select_existing(
         await recheck_reference(session, prepared)
         segment = await require_segment(session, segment_id)
         if not _matches_saved_reference(segment, prepared):
-            raise failure("stale_provenance", "片段出处已失效或与所选目标不一致", 409)
+            raise failure("stale_provenance", "片段出处与所选原文不符或已不可用，请重新选择", 409)
         result = segment_response(segment)
         await session.rollback()
         return result

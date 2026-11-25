@@ -795,7 +795,7 @@ async def test_verification_failure_redacts_sdk_error_and_marks_current_capabili
             "status": "failed",
             "created_at": accepted.json()["created_at"],
             "finished_at": finished.json()["finished_at"],
-            "error": "模型验证失败，请检查地址、凭据和模型参数",
+            "error": "模型验证失败，请检查 API 地址、密钥和模型参数",
         }
         assert secret not in json.dumps(current)
 

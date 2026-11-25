@@ -106,7 +106,7 @@ async def put_settings(
     await begin_write(session)
     current = await get_settings(session)
     if current.revision != data.expected_revision:
-        raise conflict("翻译设置已改变，请刷新后重试")
+        raise conflict("翻译设置已更新，请刷新后重试")
     if data.model_id is not None:
         await model_for(session, data.model_id)
     row = await session.get(TranslationSettings, current.id)
@@ -129,7 +129,7 @@ async def model_for(session: AsyncSession, model_id: str) -> tuple[ProviderModel
         or not provider.enabled
         or provider.deleted_at is not None
     ):
-        raise conflict("翻译模型不可用，请修复翻译设置")
+        raise conflict("翻译模型不可用，请在翻译设置中重新选择")
     return model, provider
 
 
@@ -141,7 +141,7 @@ async def visible_task(session: AsyncSession, task: TranslationTask) -> Material
         .where(Material.id == task.material_id)
     )
     if material is None:
-        raise HTTPException(404, "材料不存在")
+        raise HTTPException(404, "书籍不存在")
     if material.deleted_at is not None or task.reader_deleted_at is not None:
         linked = await session.scalar(
             select(TranslationAdoption.id)
@@ -260,7 +260,7 @@ async def history(
         select(Material).options(defer(Material.compiled_bundle)).where(Material.id == material_id)
     )
     if material is None or material.deleted_at is not None:
-        raise HTTPException(404, "材料不存在")
+        raise HTTPException(404, "书籍不存在")
     await require_source(session, material.source_id)
     query = select(TranslationTask).where(
         TranslationTask.material_id == material_id, TranslationTask.reader_deleted_at.is_(None)
@@ -311,30 +311,30 @@ async def accept(
     )
     if old:
         if old.reader_deleted_at is not None:
-            raise HTTPException(404, "翻译记录已从阅读器移除")
+            raise HTTPException(404, "阅读器中的翻译记录已删除")
         await visible_task(session, old)
         if old.request_payload != serialized:
-            raise conflict("相同请求身份不能提交不同内容")
+            raise conflict("翻译内容与上次提交不一致，请刷新后重试")
         return task_response(old)
     if (
         material_id != data.material_provenance.material_id
         or len(data.context_before) + len(data.context_after) > limits.max_context_characters
         or len(data.text) > limits.max_target_characters
     ):
-        raise HTTPException(422, "材料身份或语境预算无效")
+        raise HTTPException(422, "书籍出处或前后文范围无效，请检查选区和前后文")
     await session.rollback()
     prepared = await prepare_reference(session, data.source_id, data.material_provenance)
     if data.text != prepared.text:
-        raise HTTPException(422, "目标原文与出处不一致")
+        raise HTTPException(422, "原文与书籍出处不符，请重新选择")
     await begin_write(session)
     old = await session.scalar(
         select(TranslationTask).where(TranslationTask.request_id == str(data.request_id))
     )
     if old:
         if old.reader_deleted_at is not None:
-            raise HTTPException(404, "翻译记录已从阅读器移除")
+            raise HTTPException(404, "阅读器中的翻译记录已删除")
         if old.request_payload != serialized:
-            raise conflict("相同请求身份不能提交不同内容")
+            raise conflict("翻译内容与上次提交不一致，请刷新后重试")
         await visible_task(session, old)
         await session.commit()
         return task_response(old)
@@ -344,10 +344,10 @@ async def accept(
         select(func.count()).select_from(TranslationTask).where(TranslationTask.status.in_(ACTIVE))
     )
     if (count or 0) >= limits.max_pending:
-        raise HTTPException(429, "翻译队列已满")
+        raise HTTPException(429, "待处理的翻译任务已满，请稍后重试")
     settings = await get_settings(session)
     if settings.model_id is None:
-        raise conflict("请先选择翻译方案的模型")
+        raise conflict("请先在翻译设置中选择模型")
     model, provider = await model_for(session, settings.model_id)
     messages = render_messages(
         language=settings.target_language,
@@ -426,7 +426,7 @@ async def remove_reader_history(
         select(Material).options(defer(Material.compiled_bundle)).where(Material.id == material_id)
     )
     if material is None or material.deleted_at is not None:
-        raise HTTPException(404, "材料不存在")
+        raise HTTPException(404, "书籍不存在")
     await require_source(session, material.source_id)
     tasks = list(
         (
@@ -445,7 +445,7 @@ async def remove_reader_history(
         if task.reader_deleted_at is None:
             task.reader_deleted_at = removed_at
         if task.status in ACTIVE:
-            task.status, task.token, task.error = "cancelled", None, "翻译记录已从阅读器移除"
+            task.status, task.token, task.error = "cancelled", None, "阅读器中的翻译记录已删除"
             if task.run_id:
                 run = await session.get(Run, task.run_id)
                 if run is not None:
@@ -479,7 +479,11 @@ async def recover(session: AsyncSession) -> None:
         await session.scalars(select(TranslationTask).where(TranslationTask.status.in_(ACTIVE)))
     ).all()
     for task in rows:
-        task.status, task.token, task.error = "interrupted", None, "进程重启，未自动重新调用"
+        task.status, task.token, task.error = (
+            "interrupted",
+            None,
+            "应用已重启，翻译已中断，请按需重试",
+        )
         if task.run_id:
             run = await session.get(Run, task.run_id)
             if run:
@@ -565,12 +569,12 @@ async def _execute(application: FastAPI, task_id: str) -> None:
             async with asyncio.timeout(payload["timeout_seconds"]):
                 output = await generate_text(snapshot, key, progress)
             if not output.completed or not output.text.strip():
-                error = "模型返回不完整或空译文"
+                error = "模型未返回完整译文，请重试"
         except asyncio.CancelledError:
             interrupted = True
-            error = "进程停止，未自动重新调用"
+            error = "应用已停止，翻译已中断，请按需重试"
         except Exception as exc:
-            error = describe_call_failure(exc, "阅读翻译", payload["timeout_seconds"]).message
+            error = describe_call_failure(exc, "翻译", payload["timeout_seconds"]).message
         async with application.state.session_factory() as session:
             await begin_write(session)
             task = await session.get(TranslationTask, task_id)
@@ -585,7 +589,7 @@ async def _execute(application: FastAPI, task_id: str) -> None:
                     run.usage = output.usage
                     run.raw_response = redact_credential(output.raw_response, key)
             except HTTPException:
-                error = "来源或材料已删除"
+                error = "来源或书籍已删除"
             run.finished_at = utc_now()
             task.token = None
             if error:
@@ -611,7 +615,7 @@ async def fail_task(application: FastAPI, task_id: str) -> None:
         task = await session.get(TranslationTask, task_id)
         if task is None or task.status not in ACTIVE:
             return
-        task.status, task.token, task.error = "failed", None, "后台翻译异常，未自动重新调用"
+        task.status, task.token, task.error = "failed", None, "翻译失败，请重试"
         if task.run_id:
             run = await session.get(Run, task.run_id)
             if run is not None and run.status in ("queued", "running"):
@@ -654,7 +658,7 @@ async def assert_no_active(
         if (provider_id is not None and snapshot["provider_id"] == provider_id) or (
             model_id is not None and snapshot["provider_model_id"] == model_id
         ):
-            raise conflict("仍有活动翻译任务，不能删除接入或模型")
+            raise conflict("还有翻译任务正在进行，完成或停止后才能删除模型服务或模型")
 
 
 async def revoke_tasks(
@@ -666,7 +670,7 @@ async def revoke_tasks(
     if material_id is not None:
         query = query.where(TranslationTask.material_id == material_id)
     for task in (await session.scalars(query)).all():
-        task.status, task.token, task.error = "cancelled", None, "来源或材料已删除"
+        task.status, task.token, task.error = "cancelled", None, "来源或书籍已删除"
         if task.run_id:
             run = await session.get(Run, task.run_id)
             if run:
@@ -680,7 +684,7 @@ async def delete_impact(
         select(Material).options(defer(Material.compiled_bundle)).where(Material.id == material_id)
     )
     if material is None:
-        raise HTTPException(404, "材料不存在")
+        raise HTTPException(404, "书籍不存在")
     await require_source(session, material.source_id)
     linked = func.count(Segment.id)
     surviving = (

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
+import { BookImportWarnings } from "../materials/BookImportWarnings";
 import { returnDestination } from "../navigation";
 import { dateLabel, InlineError, Shell } from "../Shared";
 import { bookDetailsKey, getBookDetails } from "./api";
@@ -138,6 +139,10 @@ function BookDetails({ id }: { id: string }) {
 								</dd>
 							</div>
 						</dl>
+						<BookImportWarnings
+							className="book-details-warnings"
+							warnings={book.warnings}
+						/>
 					</section>
 				)
 			)}

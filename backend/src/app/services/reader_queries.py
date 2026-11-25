@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 async def _material(session: AsyncSession, material_id: str, version_id: str) -> Material:
     material = await require_material(session, material_id)
     if material.version_id != version_id:
-        raise HTTPException(409, "材料版本已变更，请重新打开")
+        raise HTTPException(409, "原书版本已变化，请重新打开本书")
     return material
 
 
@@ -146,7 +146,7 @@ async def search(
         current.product_sha256,
         current.contract_version,
     ) != identity:
-        raise HTTPException(409, "材料版本已变更，请重新打开")
+        raise HTTPException(409, "原书版本已变化，请重新打开本书")
     return result
 
 

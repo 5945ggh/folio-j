@@ -97,11 +97,11 @@ def validate_page(
     try:
         book = decode_epub(identity.compiled_bundle)
     except ValueError as exc:
-        raise failure("material_unavailable", "材料版本产物不可用，请重新打开材料。", 409) from exc
+        raise failure("material_unavailable", "书籍内容无法读取，请重新打开本书", 409) from exc
     if book.product_sha256 != identity.product_sha256 or book.contract != identity.contract_version:
-        raise failure("material_unavailable", "材料版本产物身份不匹配。", 409)
+        raise failure("material_unavailable", "书籍内容与当前版本不符，请重新打开本书", 409)
     if not any(chapter.id == chapter_id for chapter in book.chapters):
-        raise failure("not_found", "章节不存在。", 404)
+        raise failure("not_found", "章节不存在", 404)
     result: dict[str, tuple[MaterialChapterSegment | None, bool]] = {}
     for row in rows:
         try:
@@ -145,7 +145,7 @@ async def list_chapter_segments(
     try:
         identity = MaterialIdentity.capture(await require_material(session, material_id))
         if identity.version_id != version_id:
-            raise failure("stale_provenance", "材料版本不可用，请重新打开材料。", 409)
+            raise failure("stale_provenance", "原书版本不可用，请重新打开本书", 409)
         selected = await candidates(session, identity, after=after, limit=limit + 1)
         scanned = selected[:limit]
         next_cursor = scanned[-1].segment_id if len(selected) > limit else None
@@ -155,7 +155,7 @@ async def list_chapter_segments(
         # A new read snapshot gates ancestors and immutable identity after CPU work.
         current = MaterialIdentity.capture(await require_material(session, material_id))
         if current != identity:
-            raise failure("stale_provenance", "材料正文身份已变化，请重新打开材料。", 409)
+            raise failure("stale_provenance", "原书内容已变化，请重新打开本书", 409)
         visible = {
             row.segment_id: row
             for row in await candidates(session, identity, ids=[row.segment_id for row in scanned])

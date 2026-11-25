@@ -72,7 +72,9 @@ def _search_key(value: str) -> str:
     )
 
 
-def _invalid(detail: str = "词典 ZIP 无效，请使用 Yomitan format 3 词典") -> HTTPException:
+def _invalid(
+    detail: str = "无法导入此文件，请选择 Yomitan 第 3 版词条词典的 ZIP 文件",
+) -> HTTPException:
     return HTTPException(status_code=422, detail=detail)
 
 
@@ -103,7 +105,7 @@ def _nodes(
 ) -> list[DictionaryNode]:
     context = context or StyleContext()
     if depth > 40:
-        raise _invalid("词典正文层次超过限制")
+        raise _invalid("词典释义的嵌套层级超过限制")
     if isinstance(value, str):
         return [DictionaryNode(text=_string(value, 1_000_000))]
     if isinstance(value, list):
@@ -243,7 +245,7 @@ class DictionarySnapshot:
             return []
         values = list(dict.fromkeys(_search_key(key) for key in keys))
         if len(values) > 4096:
-            raise _invalid("查询候选超过限制")
+            raise _invalid("匹配词条过多，请缩短查询文字")
         entries: dict[int, DictionaryEntry] = {}
         for offset in range(0, len(values), 400):
             batch = values[offset : offset + 400]
@@ -266,7 +268,7 @@ class DictionarySnapshot:
         if self.connection is None or not keys:
             return []
         if len(keys) > 100:
-            raise _invalid("查询词条超过限制")
+            raise _invalid("匹配词条过多，请缩短查询文字")
         clauses = " OR ".join("(dictionary_id = ? AND sequence = ?)" for _ in keys)
         parameters = [value for key in keys for value in key]
         async with self.connection.execute(
@@ -275,7 +277,7 @@ class DictionarySnapshot:
         ) as cursor:
             rows = list(await cursor.fetchall())
         if len(rows) > MAX_QUERY_RECORDS:
-            raise _invalid("查询结果超过限制")
+            raise _invalid("匹配词条过多，请缩短查询文字")
         return [_entry(tuple(row)) for row in rows]
 
     async def load_definitions(self, entries: list[DictionaryEntry]) -> list[DictionaryEntry]:
@@ -330,10 +332,10 @@ def _decode_definitions(
         try:
             raw = decoder.decompress(payload, min(MAX_DEFINITION_BYTES, budget - size) + 1)
         except zlib.error as exc:
-            raise _invalid("词典正文索引无效，请重新导入") from exc
+            raise _invalid("无法读取词典释义，请重新导入该词典") from exc
         size += len(raw)
         if len(raw) > MAX_DEFINITION_BYTES or size > budget or not decoder.eof:
-            raise _invalid("词典正文索引无效，请重新导入")
+            raise _invalid("无法读取词典释义，请重新导入该词典")
         envelope = _object(json.loads(raw))
         if envelope.get("tree_version") == TREE_VERSION:
             decoded[identity] = tuple(
@@ -618,7 +620,9 @@ class DictionaryStore:
                     current = await cursor.fetchone()
                 already_installed = current is not None
                 if current is None and prepared_index is None:
-                    raise HTTPException(status_code=409, detail="词典库已变化，请重新导入该词典")
+                    raise HTTPException(
+                        status_code=409, detail="已安装的词典发生变化，请重新导入该词典"
+                    )
                 if prepared_index is not None:
                     current_path = None
                     if current is not None:
@@ -655,7 +659,7 @@ class DictionaryStore:
                 async with self._file_snapshot(selected_path) as snapshot:
                     selected = await snapshot.status()
                 if not selected.ready or selected.dictionary_id != active_id:
-                    raise _invalid("所选词典索引不可用，请重新导入该词典")
+                    raise _invalid("无法读取所选词典，请重新导入该词典")
                 await connection.execute(
                     "INSERT OR REPLACE INTO active VALUES (1, ?)", (active_id,)
                 )
@@ -697,7 +701,7 @@ class DictionaryStore:
                         size += len(chunk)
                         if size > MAX_UPLOAD_BYTES:
                             raise HTTPException(
-                                status_code=413, detail="词典 ZIP 超过 256 MiB 限制"
+                                status_code=413, detail="词典 ZIP 文件不能超过 256 MB"
                             )
                         await asyncio.to_thread(output.write, chunk)
                 task = asyncio.create_task(self._install(source, activate))
@@ -849,7 +853,7 @@ class DictionaryStore:
                     async with self._file_snapshot(path) as snapshot:
                         status = await snapshot.status()
                     if not status.ready or status.dictionary_id != replacement_dictionary_id:
-                        raise _invalid("替代词典索引不可用，请重新导入该词典")
+                        raise _invalid("无法读取替代词典，请重新导入该词典")
                 elif is_active and len(rows) > 1:
                     raise _invalid("删除当前词典前请选择替代词典")
                 if is_active:
@@ -947,10 +951,10 @@ def _build(source: Path, target: Path) -> DictionaryStatus:
         if len(files) > 4096 or len({item.filename for item in files}) != len(files):
             raise _invalid()
         if sum(item.file_size for item in files) > MAX_UNPACKED_BYTES:
-            raise _invalid("词典解压大小超过限制")
+            raise _invalid("词典解压后体积超过限制")
         for item in files:
             if item.flag_bits & 1 or item.file_size > MAX_BANK_BYTES:
-                raise _invalid("词典文件大小或加密格式不受支持")
+                raise _invalid("词典 ZIP 中含有过大或加密的文件")
             if item.file_size > 1_000_000 and item.file_size > max(item.compress_size, 1) * 1000:
                 raise _invalid("词典压缩比例超过限制")
         index = _object(json.loads(archive.read("index.json")))
@@ -965,7 +969,7 @@ def _build(source: Path, target: Path) -> DictionaryStatus:
             key=lambda item: int(cast(re.Match[str], BANK_NAME.fullmatch(item.filename))[1]),
         )
         if not banks:
-            raise _invalid("词典没有 term_bank 文件")
+            raise _invalid("词典 ZIP 中缺少词条文件")
         connection.executescript("""
             CREATE TABLE metadata(title TEXT, dictionary_id TEXT, revision TEXT,
                 entry_count INTEGER, version TEXT);
@@ -1004,7 +1008,7 @@ def _build(source: Path, target: Path) -> DictionaryStatus:
                     _array(record[5]), ensure_ascii=False, sort_keys=True, separators=(",", ":")
                 ).encode("utf-8")
                 if len(source_definitions) > MAX_DEFINITION_BYTES // 4:
-                    raise _invalid("单条词典正文超过限制")
+                    raise _invalid("单个词条的释义超过大小限制")
                 definition_id = hashlib.sha256(source_definitions).hexdigest()
                 if definition_id not in seen_definitions:
                     definitions = _nodes(record[5], stylesheet=stylesheet)
@@ -1021,7 +1025,7 @@ def _build(source: Path, target: Path) -> DictionaryStatus:
                         separators=(",", ":"),
                     ).encode("utf-8")
                     if len(envelope) > MAX_DEFINITION_BYTES:
-                        raise _invalid("单条词典正文索引超过限制")
+                        raise _invalid("单个词条的释义超过大小限制")
                     connection.execute(
                         "INSERT INTO definitions VALUES (?, ?)",
                         (definition_id, zlib.compress(envelope)),
@@ -1053,7 +1057,7 @@ def _build(source: Path, target: Path) -> DictionaryStatus:
                 if count % 1000 == 0:
                     _check_index_budget(connection)
         if not count:
-            raise _invalid("词典没有可导入条目")
+            raise _invalid("词典中没有可导入的词条")
         connection.executescript("""
             CREATE INDEX entries_term ON entries(term_key);
             CREATE INDEX entries_reading ON entries(reading_key);
@@ -1074,4 +1078,4 @@ def _check_index_budget(connection: sqlite3.Connection) -> None:
     pages = int(connection.execute("PRAGMA page_count").fetchone()[0])
     page_size = int(connection.execute("PRAGMA page_size").fetchone()[0])
     if pages * page_size > MAX_INDEX_BYTES:
-        raise _invalid("词典索引大小超过限制")
+        raise _invalid("词典导入后体积超过限制")

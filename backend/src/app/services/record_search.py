@@ -176,7 +176,7 @@ def scan_records(
 ) -> list[MaterialRecordSearchItem]:
     book = decode_epub(identity.compiled_bundle)
     if book.product_sha256 != identity.product_sha256 or book.contract != identity.contract_version:
-        raise HTTPException(409, "材料版本产物身份不匹配")
+        raise HTTPException(409, "书籍内容与当前版本不符，请重新打开本书")
     selected = selected_chapters(book, chapter_ids)
     chapters = {chapter.id: (index, chapter) for index, chapter in enumerate(book.chapters)}
     ordered: list[tuple[tuple[int, int, int, int, float, str], MaterialRecordSearchItem]] = []
@@ -279,7 +279,7 @@ async def search(
     try:
         identity = MaterialIdentity.capture(await require_material(session, material_id))
         if identity.version_id != version_id:
-            raise HTTPException(409, "材料版本已变更，请重新打开")
+            raise HTTPException(409, "原书版本已变化，请重新打开本书")
         rows = await candidates(session, identity, kind)
         query = unicodedata.normalize("NFC", q.strip())
         await session.rollback()
@@ -290,7 +290,7 @@ async def search(
         session.expire_all()
         current = MaterialIdentity.capture(await require_material(session, material_id))
         if current != identity:
-            raise HTTPException(409, "材料版本已变更，请重新打开")
+            raise HTTPException(409, "原书版本已变化，请重新打开本书")
         fresh = await candidates(session, identity, kind)
         visible = {row.id: row for row in (_latest(fresh) if kind == "translation" else fresh)}
         originals = {row.id: row for row in rows}

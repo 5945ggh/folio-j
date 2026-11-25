@@ -201,7 +201,7 @@ def test_prepare_new_does_not_create_database_or_remember(tmp_path: Path) -> Non
 def test_prepare_protects_existing_library_and_supports_explicit_open(tmp_path: Path) -> None:
     chosen = database(tmp_path / "existing" / "app.db")
     before = chosen.read_bytes()
-    with pytest.raises(locations.DataLocationError, match="已有学习库"):
+    with pytest.raises(locations.DataLocationError, match="已有数据库文件"):
         locations.prepare_selection(chosen.parent)
     assert locations.prepare_selection(chosen.parent, use_existing=True).database.path == chosen
     assert locations.prepare_selection(chosen, use_existing=True).database.path == chosen
@@ -217,13 +217,13 @@ def test_existing_choice_must_exist_and_have_sqlite_header(tmp_path: Path) -> No
     invalid = tmp_path / "invalid" / "app.db"
     invalid.parent.mkdir()
     invalid.write_bytes(b"original non-database data")
-    with pytest.raises(locations.DataLocationError, match="SQLite"):
+    with pytest.raises(locations.DataLocationError, match="不是可读取的数据库文件"):
         locations.prepare_selection(invalid.parent, use_existing=True)
     assert invalid.read_bytes() == b"original non-database data"
 
 
 def test_relative_selection_rejected_without_side_effects() -> None:
-    with pytest.raises(locations.DataLocationError, match="绝对路径"):
+    with pytest.raises(locations.DataLocationError, match="完整路径"):
         locations.prepare_selection(Path("relative/library"))
     assert locations.read_selection() is None
 
@@ -271,7 +271,7 @@ def test_permission_failure_explains_directory_and_does_not_create_database(
     with pytest.raises(locations.DataLocationError) as error:
         locations.prepare_selection(directory)
     assert str(directory) in str(error.value)
-    assert "不可写" in str(error.value)
+    assert "无法写入" in str(error.value)
     assert "可能是安全软件" in str(error.value)
     assert not (directory / "app.db").exists()
     assert locations.read_selection() is None
@@ -283,7 +283,7 @@ def test_readonly_database_is_rejected_without_changing_permissions(tmp_path: Pa
     before = path.read_bytes()
     path.chmod(0o444)
     try:
-        with pytest.raises(locations.DataLocationError, match="不可写"):
+        with pytest.raises(locations.DataLocationError, match="无法写入"):
             locations.prepare_selection(path.parent, use_existing=True)
         assert path.stat().st_mode & 0o777 == 0o444
         assert path.read_bytes() == before
@@ -348,9 +348,9 @@ def test_unrelated_sqlite_is_rejected_without_schema_or_file_changes(tmp_path: P
         connection.execute("CREATE TABLE another_app (value TEXT)")
         connection.execute("INSERT INTO another_app VALUES ('retain')")
     before = path.read_bytes()
-    with pytest.raises(locations.DataLocationError, match="不是可识别的 Folio-J"):
+    with pytest.raises(locations.DataLocationError, match="无法识别所选的 Folio-J 数据库文件"):
         locations.prepare_selection(path.parent, use_existing=True)
-    with pytest.raises(locations.DataLocationError, match="不是可识别的 Folio-J"):
+    with pytest.raises(locations.DataLocationError, match="无法识别所选的 Folio-J 数据库文件"):
         locations.remember_selection(path)
     assert path.read_bytes() == before
     assert list(path.parent.iterdir()) == [path]
@@ -407,7 +407,7 @@ def test_retry_prepared_candidate_allows_only_plain_worker_lock_and_keeps_migrat
         locations.prepare_selection(path.parent)
     with exclusive_file_lock(lock):
         assert locations.validate_retry_selection(settings) is settings
-        with pytest.raises(ValueError, match="正在使用|进程锁"):
+        with pytest.raises(ValueError, match="无法使用数据库文件"):
             migrate(path)
         assert not path.exists()
     # Windows byte-range locks also exclude reads through another descriptor.
@@ -449,7 +449,7 @@ def test_retry_rejects_unrelated_database_created_after_prepare(tmp_path: Path) 
     with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("CREATE TABLE unrelated_app (id INTEGER)")
     before = path.read_bytes()
-    with pytest.raises(locations.DataLocationError, match="不是可识别的 Folio-J"):
+    with pytest.raises(locations.DataLocationError, match="无法识别所选的 Folio-J 数据库文件"):
         locations.validate_retry_selection(settings)
     assert path.read_bytes() == before
     assert list(path.parent.iterdir()) == [path]
@@ -472,7 +472,7 @@ def test_retry_rejects_changed_links_without_following_or_recreating_data(
     else:
         target = tmp_path / "missing-target"
         symlink_or_skip(path if kind == "database" else Path(f"{path}.worker.lock"), target)
-    with pytest.raises(locations.DataLocationError, match="链接|异常进程锁"):
+    with pytest.raises(locations.DataLocationError, match="路径已改变|锁文件异常"):
         locations.validate_retry_selection(settings)
     assert not target.joinpath("app.db").exists() if target.is_dir() else not target.exists()
     assert locations.read_selection() is None
@@ -501,7 +501,7 @@ def test_retry_permission_error_never_treated_as_missing_database(
         return original(self)
 
     monkeypatch.setattr(Path, "lstat", denied_lstat)
-    with pytest.raises(locations.DataLocationError, match="无法访问先前选择"):
+    with pytest.raises(locations.DataLocationError, match="无法访问之前选择"):
         locations.validate_retry_selection(settings)
     assert list(path.parent.iterdir()) == [lock]
     assert locations.read_selection() is None
@@ -511,7 +511,7 @@ def test_retry_rejects_nonregular_worker_lock(tmp_path: Path) -> None:
     settings = locations.prepare_selection(tmp_path / "candidate")
     lock = Path(f"{settings.database.path}.worker.lock")
     lock.mkdir()
-    with pytest.raises(locations.DataLocationError, match="异常进程锁"):
+    with pytest.raises(locations.DataLocationError, match="锁文件异常"):
         locations.validate_retry_selection(settings)
     assert lock.is_dir()
     assert not settings.database.path.exists()

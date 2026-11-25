@@ -78,7 +78,7 @@ class Manifest(StrictModel):
 def _safe_path(path: Path) -> Path:
     path = path.expanduser().absolute()
     if is_link_or_reparse(path):
-        raise BackupError(f"不接受符号链接或 reparse point 路径：{path}")
+        raise BackupError(f"路径不能是符号链接或系统重解析点：{path}")
     # macOS exposes /tmp and /var through trusted system links.
     return path.parent.resolve() / path.name
 
@@ -96,7 +96,7 @@ def _relative(name: str) -> Path:
             for part in parsed.parts
         )
     ):
-        raise BackupError("备份含不安全相对路径")
+        raise BackupError("备份清单中有无效的文件路径")
     return Path(*parsed.parts)
 
 
@@ -112,14 +112,14 @@ def _tree(root: Path) -> tuple[set[str], set[str]]:
             item = Path(current) / name
             mode = item.lstat().st_mode
             if is_link_or_reparse(item):
-                raise BackupError(f"不接受链接或 reparse point：{item}")
+                raise BackupError(f"备份中的路径不能是符号链接或系统重解析点：{item}")
             relative = item.relative_to(root).as_posix()
             if stat.S_ISDIR(mode):
                 directories.add(relative)
             elif stat.S_ISREG(mode) and item.stat().st_nlink == 1:
                 files.add(relative)
             else:
-                raise BackupError(f"不接受链接或特殊文件：{relative}")
+                raise BackupError(f"备份不能包含硬链接或特殊文件：{relative}")
     return files, directories
 
 
@@ -138,9 +138,9 @@ def _connect(path: Path) -> sqlite3.Connection:
 
 def _check_sqlite(connection: sqlite3.Connection) -> None:
     if connection.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
-        raise BackupError("数据库完整性检查失败")
+        raise BackupError("数据库文件未通过完整性检查")
     if connection.execute("PRAGMA foreign_key_check").fetchall():
-        raise BackupError("数据库外键检查失败")
+        raise BackupError("数据库文件中的记录关联有误")
 
 
 def _supported_revisions() -> set[str]:
@@ -154,7 +154,7 @@ def _supported_revisions() -> set[str]:
             )
         }
     except CommandError as exc:
-        raise BackupError("无法读取程序的数据库迁移链") from exc
+        raise BackupError("无法读取应用支持的数据库版本") from exc
 
 
 def _check_database(path: Path, credentials: Path, expected_revision: str | None = None) -> str:
@@ -162,25 +162,27 @@ def _check_database(path: Path, credentials: Path, expected_revision: str | None
         _check_sqlite(connection)
         versions = connection.execute("SELECT version_num FROM alembic_version").fetchall()
         if len(versions) != 1 or versions[0][0] not in _supported_revisions():
-            raise BackupError("不支持此数据库迁移版本，请使用匹配的程序版本")
+            raise BackupError("此应用版本无法处理该数据库文件，请使用与数据匹配的应用版本")
         revision = str(versions[0][0])
         if expected_revision is not None and revision != expected_revision:
-            raise BackupError("数据库实际迁移版本与 manifest 声明不一致")
+            raise BackupError("数据库文件的版本与备份清单不一致")
         for contract, payload, product_sha256, original, source_sha256 in connection.execute(
             "SELECT contract_version, compiled_bundle, product_sha256, original_bytes, "
             "source_sha256 FROM materials "
             "WHERE deleted_at IS NULL"
         ):
             if contract != "epub-reading-v2":
-                raise BackupError("不支持此 EPUB 编译包版本")
+                raise BackupError(
+                    "此应用版本无法处理数据库文件中的书籍数据，请使用与数据匹配的应用版本"
+                )
             try:
                 book = decode(payload)
             except ValueError as exc:
-                raise BackupError(f"EPUB 编译包无法读取：{exc}") from exc
+                raise BackupError("无法读取数据库文件中的书籍阅读数据") from exc
             if book.contract != contract or book.product_sha256 != product_sha256:
-                raise BackupError("EPUB 编译包与材料版本摘要不一致")
+                raise BackupError("数据库文件中的书籍阅读数据未通过完整性检查")
             if hashlib.sha256(original).hexdigest() != source_sha256:
-                raise BackupError("原 EPUB 字节与来源摘要不一致")
+                raise BackupError("数据库文件中的 EPUB 原文件未通过完整性检查")
             del book, payload, original
         queries = [
             f"SELECT DISTINCT credential_ref FROM {table} WHERE credential_ref IS NOT NULL"
@@ -197,16 +199,16 @@ def _check_database(path: Path, credentials: Path, expected_revision: str | None
                 if reference is None:
                     continue
                 if not isinstance(reference, str) or _relative(reference).name != reference:
-                    raise BackupError("数据库含不安全凭据引用")
+                    raise BackupError("数据库文件中保存的 API 密钥位置无效")
                 if not (credentials / reference).is_file():
-                    raise BackupError("数据库引用的凭据缺失")
+                    raise BackupError("找不到数据库所需的 API 密钥文件")
         return revision
 
 
 def _check_dictionaries(index: Path, library: Path) -> None:
     catalog = library / "catalog.sqlite3"
     if library.exists() and not catalog.is_file() and _tree(library)[0]:
-        raise BackupError("非空词典目录缺少 catalog.sqlite3")
+        raise BackupError("离线词典目录缺少清单文件 catalog.sqlite3")
     if index.exists():
         with closing(_connect(index)) as connection:
             _check_sqlite(connection)
@@ -220,15 +222,15 @@ def _check_dictionaries(index: Path, library: Path) -> None:
         ):
             ids.add(identity)
             if not isinstance(filename, str) or _relative(filename).name != filename:
-                raise BackupError("词典目录含不安全引用")
+                raise BackupError("离线词典清单中有无效的文件路径")
             target = index if filename == "legacy" else library / filename
             if not target.is_file():
-                raise BackupError("词典目录引用的索引缺失")
+                raise BackupError("离线词典清单中记录的词典文件缺失")
             with closing(_connect(target)) as dictionary:
                 _check_sqlite(dictionary)
         for (identity,) in connection.execute("SELECT dictionary_id FROM active"):
             if identity is not None and identity not in ids:
-                raise BackupError("当前词典选择引用不存在的词典")
+                raise BackupError("找不到当前选用的离线词典文件")
 
 
 def _application_version() -> ApplicationVersion:
@@ -259,13 +261,15 @@ def _offline(database: Path) -> Generator[None, None, None]:
         try:
             resources.enter_context(exclusive_file_lock(lock))
         except FileLockError as exc:
-            raise BackupError("请停止使用此数据库的全部服务，并确认进程锁为安全普通文件") from exc
+            raise BackupError(
+                "无法锁定数据库文件。请关闭其他正在使用它的程序，并检查数据目录和数据库锁文件后重试"
+            ) from exc
         yield
 
 
 def _copy(source: Path, target: Path) -> None:
     if is_link_or_reparse(source):
-        raise BackupError("不接受符号链接文件")
+        raise BackupError("文件不能是符号链接或系统重解析点")
     if source.is_dir():
         files, directories = _tree(source)
         target.mkdir(mode=0o700)
@@ -282,7 +286,7 @@ def _copy(source: Path, target: Path) -> None:
 
 def _snapshot(source: Path, target: Path) -> None:
     if is_link_or_reparse(source) or not source.is_file() or source.stat().st_nlink != 1:
-        raise BackupError("SQLite 来源不是安全普通文件")
+        raise BackupError("无法读取用于备份的数据库文件，请确认它是普通文件")
     with closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as original:
         with closing(sqlite3.connect(target)) as snapshot:
             original.backup(snapshot)
@@ -301,7 +305,7 @@ def _copy_dictionary_library(source: Path, target: Path) -> None:
         item = source / name
         if name.endswith(("-wal", "-shm")):
             if not Path(str(item)[:-4]).is_file():
-                raise BackupError("词典仅剩 WAL/SHM 配套文件")
+                raise BackupError("离线词典的数据库文件缺失，仅剩配套文件")
             continue
         if item.name.endswith(".sqlite3") or ".sqlite3.deleting-" in item.name:
             _snapshot(item, target / name)
@@ -315,11 +319,11 @@ def _copy_dictionaries(index: Path, library: Path, staging: Path) -> None:
     target_library = staging / "dictionary.sqlite3.library"
     if index.exists():
         if not index.is_file():
-            raise BackupError("旧词典索引不是普通文件")
+            raise BackupError("旧版离线词典文件必须是普通文件")
         _snapshot(index, target_index)
     if library.exists():
         if not library.is_dir():
-            raise BackupError("词典 library 不是目录")
+            raise BackupError("离线词典必须保存在数据目录下的词典子目录中")
         _copy_dictionary_library(library, target_library)
     catalog = target_library / "catalog.sqlite3"
     if catalog.exists():
@@ -330,7 +334,7 @@ def _copy_dictionaries(index: Path, library: Path, staging: Path) -> None:
         filenames = ["legacy"]
     for filename in filenames:
         if not isinstance(filename, str) or _relative(filename).name != filename:
-            raise BackupError("词典目录含不安全引用")
+            raise BackupError("离线词典清单中有无效的文件路径")
         source = index if filename == "legacy" else library / filename
         target = target_index if filename == "legacy" else target_library / filename
         if target.exists():
@@ -341,7 +345,7 @@ def _copy_dictionaries(index: Path, library: Path, staging: Path) -> None:
         if readable.exists():
             _snapshot(readable, target)
         elif catalog.exists():
-            raise BackupError("词典目录引用的索引缺失")
+            raise BackupError("离线词典清单中记录的词典文件缺失")
 
 
 def _new_destination(destination: Path, sources: list[Path]) -> None:
@@ -351,11 +355,11 @@ def _new_destination(destination: Path, sources: list[Path]) -> None:
             or destination.is_relative_to(source)
             or source.is_relative_to(destination)
         ):
-            raise BackupError("备份、源数据与恢复目录不能互相嵌套")
+            raise BackupError("请选择新位置，避免与数据目录或备份目录重叠")
     if os.path.lexists(destination):
-        raise BackupError("目标必须是不存在的新目录")
+        raise BackupError("请选择尚未创建的新目录")
     if not destination.parent.is_dir():
-        raise BackupError("目标的父目录必须已存在")
+        raise BackupError("请在一个已有目录下指定新目录")
 
 
 def _sync_tree(directory: Path) -> None:
@@ -405,7 +409,7 @@ def create_backup(destination: Path, database_path: Path | None = None) -> Path:
         database_path if database_path is not None else load_settings().database.path
     )
     if not database.is_file() or database.stat().st_nlink != 1:
-        raise BackupError("源数据库不存在或不安全")
+        raise BackupError("找不到数据库文件，或该路径指向不受支持的文件")
     companions = {
         key: _safe_path(Path(str(database) + suffix)) for key, (_, suffix) in COMPONENTS.items()
     }
@@ -416,7 +420,7 @@ def create_backup(destination: Path, database_path: Path | None = None) -> Path:
         credentials = companions["credentials"]
         if credentials.exists():
             if not credentials.is_dir():
-                raise BackupError("源凭据组件不是目录")
+                raise BackupError("保存 API 密钥的位置必须是目录")
             _copy(credentials, staging / "credentials")
         _copy_dictionaries(
             companions["dictionary_index"], companions["dictionary_library"], staging
@@ -446,46 +450,46 @@ def _validate_package(backup: Path) -> Manifest:
     files, directories = _tree(backup)
     manifest = Manifest.model_validate_json((backup / "manifest.json").read_bytes())
     if set(manifest.components) != set(COMPONENTS) or "app.db" not in manifest.files:
-        raise BackupError("备份组件清单无效")
+        raise BackupError("备份清单缺少数据库文件或包含不受支持的内容")
     if files != set(manifest.files) | {"manifest.json"}:
-        raise BackupError("备份存在未声明或缺失的文件")
+        raise BackupError("备份中的文件与清单不一致")
     allowed_directories = set(manifest.directories)
     if len(allowed_directories) != len(manifest.directories):
-        raise BackupError("备份目录清单重复")
+        raise BackupError("备份清单重复列出了同一目录")
     for name in allowed_directories:
         relative = _relative(name)
         if relative.parts[0] not in ("credentials", "dictionary.sqlite3.library"):
-            raise BackupError("备份含未知目录")
+            raise BackupError("备份清单包含不受支持的目录")
         if any(
             parent.as_posix() not in allowed_directories
             for parent in relative.parents
             if parent != Path(".")
         ):
-            raise BackupError("备份目录清单缺少父目录")
+            raise BackupError("备份清单缺少上级目录")
     for name, expected in manifest.files.items():
         relative = _relative(name)
         top = relative.parts[0]
         if top != "app.db" and top not in {value[0] for value in COMPONENTS.values()}:
-            raise BackupError("备份存在未知组件")
+            raise BackupError("备份清单包含不受支持的文件")
         if top in ("app.db", "dictionary.sqlite3") and len(relative.parts) != 1:
             raise BackupError("备份文件结构无效")
         for parent in relative.parents:
             if parent != Path("."):
                 if parent.as_posix() not in allowed_directories:
-                    raise BackupError("备份文件缺少声明的父目录")
+                    raise BackupError("备份清单未列出文件所在的目录")
         if _digest(backup / relative) != expected:
-            raise BackupError(f"备份文件大小或摘要不匹配：{name}")
+            raise BackupError(f"备份文件未通过完整性检查：{name}")
     for key, (name, _) in COMPONENTS.items():
         present = (backup / name).exists()
         if manifest.components[key] != present:
-            raise BackupError("备份组件有无与清单不一致")
+            raise BackupError("备份内容与清单不一致")
         if present and key != "dictionary_index":
             if not (backup / name).is_dir():
-                raise BackupError("备份组件类型错误")
+                raise BackupError("备份中应为目录的项目是文件")
             if name not in allowed_directories:
-                raise BackupError("备份组件缺少声明的目录")
+                raise BackupError("备份清单未列出所需的目录")
     if directories != allowed_directories:
-        raise BackupError("备份存在未声明或多余目录")
+        raise BackupError("备份中的目录与清单不一致")
     _check_database(backup / "app.db", backup / "credentials", manifest.database.revision)
     _check_dictionaries(backup / "dictionary.sqlite3", backup / "dictionary.sqlite3.library")
     return manifest
@@ -505,7 +509,7 @@ def restore_backup(backup: Path, destination: Path) -> Path:
             restored = _restored_path(staging, name)
             _copy(backup / _relative(name), restored)
             if _digest(restored) != expected:
-                raise BackupError("恢复期间备份文件发生变化，未保留恢复目标")
+                raise BackupError("恢复期间备份文件发生变化，本次未生成恢复目录")
     return destination / "app.db"
 
 
@@ -519,7 +523,7 @@ def _restored_path(directory: Path, name: str) -> Path:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Folio-J 停服备份与恢复")
+    parser = argparse.ArgumentParser(description="Folio-J 数据备份与恢复")
     commands = parser.add_subparsers(dest="command", required=True)
     create = commands.add_parser("create")
     create.add_argument("destination", type=Path)
@@ -538,7 +542,7 @@ def main() -> int:
         return 1
     print(f"{'备份' if arguments.command == 'create' else '恢复'}完成：{result}")
     if arguments.command == "create":
-        print("此备份可能包含未加密的模型密钥，请私下保管整个目录。")
+        print("备份可能包含未加密的 API 密钥，请将整个备份目录保存在私有位置，并避免分享。")
     return 0
 
 

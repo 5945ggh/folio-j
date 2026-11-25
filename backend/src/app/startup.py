@@ -26,7 +26,7 @@ def _authorize(request: Request, service: StartupService) -> None:
     origin = request.headers.get("origin")
     expected_origin = f"{request.url.scheme}://{request.url.netloc}"
     if origin != expected_origin or not compare_digest(token.encode(), service.token.encode()):
-        raise HTTPException(status_code=403, detail="请从本机启动页面提交操作。")
+        raise HTTPException(status_code=403, detail="请返回启动页重试")
 
 
 @router.get("/state", response_model=StartupState)
@@ -94,7 +94,7 @@ class StartupApplication:
             include_in_schema=False,
         )
         async def unavailable_api(path: str = "") -> None:
-            raise HTTPException(status_code=503, detail="请先完成数据位置设置或恢复。")
+            raise HTTPException(status_code=503, detail="请先在启动页选择或恢复数据位置")
 
         startup_page = page or RESOURCE_ROOT / "backend/static/startup/index.html"
 

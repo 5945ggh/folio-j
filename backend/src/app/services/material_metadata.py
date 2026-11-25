@@ -69,11 +69,11 @@ def decode_cover(data: MaterialMetadataUpdate) -> bytes | None:
     try:
         image = base64.b64decode(data.cover.data_base64, validate=True)
     except (ValueError, binascii.Error) as exc:
-        raise HTTPException(422, "封面须为严格 base64 图片") from exc
+        raise HTTPException(422, "封面图片无法读取，请重新选择图片") from exc
     if len(image) > MAX_COVER_BYTES:
-        raise HTTPException(422, "封面超过 4 MiB")
+        raise HTTPException(422, "封面图片超过 4 MB")
     if not valid_static_raster(image, data.cover.media_type):
-        raise HTTPException(422, "封面须为有效静态 PNG／JPEG，且不超过 1600 万像素")
+        raise HTTPException(422, "请使用不超过 1600 万像素的静态 PNG / JPEG 图片")
     return image
 
 
@@ -94,9 +94,9 @@ async def update_metadata(
         await begin_write(session)
         material = await require_material(session, material_id, with_bundle=False)
         if _version_identity(material) != identity:
-            raise HTTPException(409, "书籍版本已更新，请重新读取")
+            raise HTTPException(409, "原书版本已更新，请刷新后重试")
         if material.metadata_revision != data.expected_revision:
-            raise HTTPException(409, "书籍信息已更新，请重新读取")
+            raise HTTPException(409, "书籍信息已更新，请刷新后重试")
         material.title = data.title
         material.metadata_revision += 1
         if data.cover_action != "keep":

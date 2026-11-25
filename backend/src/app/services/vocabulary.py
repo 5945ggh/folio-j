@@ -190,7 +190,7 @@ async def _occurrences(
             _occurrences_result, bundle, payload, identity.configuration, word, pos, offset, limit
         )
     except ValueError as exc:
-        raise HTTPException(503, "词汇出现位置读取失败，请重试") from exc
+        raise HTTPException(503, "词汇在原文中的位置加载失败，请重试") from exc
 
 
 async def get_vocabulary(

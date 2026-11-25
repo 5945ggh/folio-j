@@ -47,7 +47,10 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
             try:
                 resources.enter_context(exclusive_file_lock(lock_path))
             except FileLockError as exc:
-                raise RuntimeError(f"数据库已有后台执行进程或进程锁不可用：{path}") from exc
+                raise RuntimeError(
+                    f"无法锁定数据库文件：{path}。请关闭正在使用该文件的其他 Folio-J 实例，"
+                    "或检查数据目录权限后重试。"
+                ) from exc
             engine = create_engine(path)
             resources.push_async_callback(engine.dispose)
             application.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)

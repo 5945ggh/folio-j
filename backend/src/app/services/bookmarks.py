@@ -76,7 +76,7 @@ async def list_bookmarks(
 ) -> BookmarksResponse:
     material = await require_material(session, material_id, with_bundle=False)
     if material.version_id != version_id:
-        raise HTTPException(409, "材料版本已改变，请重新打开")
+        raise HTTPException(409, "原书版本已变化，请重新打开本书")
     conditions = (
         MaterialBookmark.material_id == material_id,
         MaterialBookmark.version_id == version_id,
@@ -150,7 +150,7 @@ async def create_bookmark(
     )
     if saved is not None:
         if saved.request_payload != payload:
-            raise HTTPException(409, "书签请求内容与首次提交不一致")
+            raise HTTPException(409, "书签已提交，如需修改请先刷新")
         if saved.deleted_at is not None:
             raise HTTPException(404, "书签已删除")
         response = _response(saved)
@@ -161,7 +161,7 @@ async def create_bookmark(
         await begin_write(session)
         material = await require_material(session, material_id, with_bundle=False)
         if MaterialIdentity.from_material(material) != identity:
-            raise HTTPException(409, "材料版本已改变，请重新打开")
+            raise HTTPException(409, "原书版本已变化，请重新打开本书")
         existing = await session.scalar(
             select(MaterialBookmark).where(
                 MaterialBookmark.material_id == material_id,
@@ -170,7 +170,7 @@ async def create_bookmark(
         )
         if existing is not None:
             if existing.request_payload != payload:
-                raise HTTPException(409, "书签请求内容与首次提交不一致")
+                raise HTTPException(409, "书签已提交，如需修改请先刷新")
             if existing.deleted_at is not None:
                 raise HTTPException(404, "书签已删除")
             response = _response(existing)
@@ -226,7 +226,7 @@ async def update_bookmark(
         await begin_write(session)
         bookmark = await _require(session, material_id, bookmark_id)
         if bookmark.revision != data.expected_revision:
-            raise HTTPException(409, "书签已更新，请重新读取")
+            raise HTTPException(409, "书签已更新，请刷新后重试")
         if bookmark.note != data.note:
             bookmark.note = data.note
             bookmark.revision += 1
@@ -246,7 +246,7 @@ async def delete_bookmark(
         await begin_write(session)
         bookmark = await _require(session, material_id, bookmark_id)
         if bookmark.revision != expected_revision:
-            raise HTTPException(409, "书签已更新，请重新读取")
+            raise HTTPException(409, "书签已更新，请刷新后重试")
         deleted = utc_now()
         bookmark.deleted_at = deleted
         bookmark.updated_at = deleted

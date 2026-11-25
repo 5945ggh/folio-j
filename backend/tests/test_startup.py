@@ -498,7 +498,7 @@ async def test_unconfirmed_first_choice_and_missing_remembered_location_have_no_
         service = StartupService(status, lambda path: None, lambda path: FastAPI())
         await service.initialize()
         assert service.state().retry_current_path is None
-        with pytest.raises(ValueError, match="尚无已确认"):
+        with pytest.raises(ValueError, match="请先选择数据位置"):
             await service.retry_current()
         assert not (tmp_path / "missing").exists()
         await service.close()

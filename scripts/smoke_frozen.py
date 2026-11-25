@@ -120,7 +120,7 @@ def command(
 
 def check_data_path(output: str, database: Path) -> None:
     """Match the settings' canonical path without allowing data-path to create it."""
-    prefix = "下次迁移和启动使用的数据库："
+    prefix = "下次迁移和启动时使用的数据库文件："
     reported = [
         line.removeprefix(prefix) for line in output.splitlines() if line.startswith(prefix)
     ]

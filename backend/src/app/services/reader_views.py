@@ -115,7 +115,7 @@ class _Readings(NamedTuple):
 def _decode_book(payload: bytes, identity: MaterialIdentity) -> _BookView:
     book = decode_epub(payload)
     if book.product_sha256 != identity.product_sha256 or book.contract != identity.contract_version:
-        raise HTTPException(409, "材料版本产物身份不匹配")
+        raise HTTPException(409, "书籍内容与当前版本不符，请重新打开本书")
     return _BookView(book)
 
 
@@ -162,16 +162,16 @@ def _position(view: _BookView, data: PositionAnchor) -> float | None:
     book = view.book
     chapter = next((chapter for chapter in book.chapters if chapter.id == data.chapter_id), None)
     if chapter is None or data.part_index >= len(chapter.parts):
-        raise HTTPException(422, "位置版本或章节无效")
+        raise HTTPException(422, "阅读位置已不可用，请重新打开本书")
     part = chapter.parts[data.part_index]
     if part.resource_id != data.resource_id:
-        raise HTTPException(422, "位置资源不属于章节")
+        raise HTTPException(422, "所选位置不在本章，请重新选择")
     if data.kind == "text" and (data.offset is None or not part.start <= data.offset <= part.end):
-        raise HTTPException(422, "正文偏移超出章节范围")
+        raise HTTPException(422, "所选位置超出本章范围，请重新选择")
     if data.kind == "image" and str(data.image_id) not in re.findall(
         r'data-epub-image=["\'](\d+)["\']', part.html
     ):
-        raise HTTPException(422, "图片不属于章节")
+        raise HTTPException(422, "图片不在本章，请重新选择")
     return chapter_progress(book, data)
 
 
@@ -218,11 +218,11 @@ def _image(images: tuple[str, ...], ordinal: int) -> tuple[bytes, str]:
         raise HTTPException(404, "图片不存在")
     header, encoded = images[ordinal].split(",", 1)
     if len(encoded) > ((MAX_PRODUCT_BYTES + 2) // 3) * 4:
-        raise HTTPException(413, "图片超过编译安全大小限制")
+        raise HTTPException(413, "图片过大，无法显示")
     try:
         data = base64.b64decode(encoded, validate=True)
     except (ValueError, binascii.Error) as exc:
-        raise HTTPException(422, "图片数据损坏") from exc
+        raise HTTPException(422, "图片已损坏，无法显示") from exc
     mime = header[5:].split(";", 1)[0]
     valid = (
         (mime == "image/png" and data.startswith(b"\x89PNG\r\n\x1a\n"))
@@ -231,7 +231,7 @@ def _image(images: tuple[str, ...], ordinal: int) -> tuple[bytes, str]:
         or (mime == "image/webp" and data.startswith(b"RIFF") and data[8:12] == b"WEBP")
     )
     if not valid or len(data) > MAX_PRODUCT_BYTES:
-        raise HTTPException(422, "图片类型与内容不符")
+        raise HTTPException(422, "图片格式与内容不符，无法显示")
     return data, mime
 
 
@@ -346,12 +346,12 @@ class ReaderViews:
                 )
             ).one_or_none()
         if row is None:
-            raise HTTPException(404, "材料不存在")
+            raise HTTPException(404, "书籍不存在")
         return MaterialIdentity(*row)
 
     async def _check(self, identity: MaterialIdentity, *, position: bool = False) -> None:
         if await self._identity(identity.id) != identity:
-            raise HTTPException(422 if position else 409, "材料版本已改变")
+            raise HTTPException(422 if position else 409, "原书版本已变化，请重新打开本书")
 
     async def _generation(
         self, identity: MaterialIdentity, generation_id: str | None
@@ -375,8 +375,8 @@ class ReaderViews:
             row = (await session.execute(statement)).one_or_none()
         if row is None:
             if generation_id is not None:
-                raise HTTPException(404, "注音代次不存在")
-            raise HTTPException(409, "注音尚未准备，请调用准备接口后重试")
+                raise HTTPException(404, "注音不可用，请刷新后重试")
+            raise HTTPException(409, "注音尚未准备完成，请稍后重试")
         return _Generation(*row)
 
     async def _load_book(self, identity: MaterialIdentity) -> _BookView:
@@ -398,7 +398,7 @@ class ReaderViews:
                 )
             if payload is None:
                 await self._check(identity)
-                raise HTTPException(409, "材料版本产物不可用")
+                raise HTTPException(409, "书籍内容无法读取，请重新打开本书")
             result = await asyncio.to_thread(_decode_book, payload, identity)
             await self._check(identity)
             return result
@@ -423,11 +423,11 @@ class ReaderViews:
                     )
                 )
             if payload is None:
-                raise HTTPException(404, "注音代次不存在")
+                raise HTTPException(404, "注音不可用，请刷新后重试")
             result = await asyncio.to_thread(_decode_asset, payload, book, generation)
             await self._check(identity)
             if await self._generation(identity, generation.id) != generation:
-                raise HTTPException(409, "注音代次已改变")
+                raise HTTPException(409, "注音已更新，请刷新后重试")
             return result
 
     async def _load_images(self, identity: MaterialIdentity, book: _BookView) -> tuple[str, ...]:
@@ -449,7 +449,7 @@ class ReaderViews:
     ) -> ValidatedPosition:
         identity = await self._identity(material_id)
         if identity.version_id != data.version_id:
-            raise HTTPException(422, "位置版本或章节无效")
+            raise HTTPException(422, "阅读位置已不可用，请重新打开本书")
         book = await self._book(identity)
         progress = await self._project(_position, book, data)
         await self._check(identity, position=True)
@@ -467,7 +467,7 @@ class ReaderViews:
     ) -> tuple[MaterialIdentity, BookmarkLocation]:
         identity = await self._identity(material_id)
         if identity.version_id != position.version_id:
-            raise HTTPException(422, "位置版本或章节无效")
+            raise HTTPException(422, "阅读位置已不可用，请重新打开本书")
         view = await self._book(identity)
 
         def project() -> BookmarkLocation:
@@ -490,7 +490,7 @@ class ReaderViews:
     ) -> list[float | None]:
         identity = await self._identity(material_id)
         if any(position.version_id != identity.version_id for position in positions):
-            raise HTTPException(409, "材料版本已改变，请重新打开")
+            raise HTTPException(409, "原书版本已变化，请重新打开本书")
         if not positions:
             return []
         view = await self._book(identity)
@@ -522,7 +522,7 @@ class ReaderViews:
     ) -> MaterialReadingsResponse:
         identity = await self._identity(material_id)
         if identity.version_id != version_id:
-            raise HTTPException(409, "材料版本已改变")
+            raise HTTPException(409, "原书版本已变化，请重新打开本书")
         generation = await self._generation(identity, generation_id)
         # Complete the dependency before registering the asset computation: no nested
         # pending slots/semaphores, including max_pending=1 and concurrency=1.
@@ -540,7 +540,7 @@ class ReaderViews:
         resources = await self._project(_chapter, book, readings, chapter_id)
         await self._check(identity)
         if await self._generation(identity, generation.id) != generation:
-            raise HTTPException(409, "注音代次已改变")
+            raise HTTPException(409, "注音已更新，请刷新后重试")
         return MaterialReadingsResponse(
             material_id=identity.id,
             version_id=identity.version_id,
@@ -558,7 +558,7 @@ class ReaderViews:
     ) -> tuple[bytes, str]:
         identity = await self._identity(material_id)
         if identity.version_id != version_id:
-            raise HTTPException(409, "材料版本已变更，请重新打开")
+            raise HTTPException(409, "原书版本已变化，请重新打开本书")
         book = await self._book(identity)
         images = await self._cache.get(
             ("images", *_identity_key(identity)), partial(self._load_images, identity, book)

@@ -75,7 +75,7 @@ async def require_material(
         statement = statement.options(defer(Material.compiled_bundle))
     material = await session.scalar(statement)
     if material is None:
-        raise HTTPException(404, "材料不存在")
+        raise HTTPException(404, "书籍不存在")
     return material
 
 
@@ -156,7 +156,7 @@ async def reject_deleted_import(
         .limit(1)
     )
     if removed is not None:
-        raise HTTPException(404, "材料已删除，请重新导入")
+        raise HTTPException(404, "书籍已删除，请重新导入")
 
 
 async def import_material(
@@ -170,7 +170,7 @@ async def import_material(
     data = bytearray()
     async for chunk in request.stream():
         if len(data) + len(chunk) > MAX_UPLOAD_BYTES:
-            raise HTTPException(413, "EPUB 文件超过 32 MiB")
+            raise HTTPException(413, "EPUB 文件超过 32 MB，请选择较小的文件")
         data.extend(chunk)
     raw = bytes(data)
     del data
@@ -281,13 +281,13 @@ async def save_position(
         await begin_write(session)
         material = await require_material(session, material_id, with_bundle=False)
         if material.version_id != data.version_id:
-            raise HTTPException(422, "位置版本无效")
+            raise HTTPException(422, "阅读位置不适用于当前版本，请重新打开本书")
         if prepared.identity != MaterialIdentity.from_material(material):
-            raise HTTPException(409, "材料版本已改变")
+            raise HTTPException(409, "原书版本已变化，请重新打开本书")
         position = await session.get(ReadingPosition, material_id)
         revision = position.revision if position else 0
         if data.expected_revision != revision:
-            raise HTTPException(409, "阅读位置已更新，请重新读取")
+            raise HTTPException(409, "阅读位置已更新，请刷新后重试")
         now = utc_now()
         if position is None:
             position = ReadingPosition(
@@ -331,7 +331,7 @@ async def require_material_delete_target(session: AsyncSession, material_id: str
         .where(Material.id == material_id, Source.deleted_at.is_(None))
     )
     if existing_id is None:
-        raise HTTPException(404, "材料不存在")
+        raise HTTPException(404, "书籍不存在")
 
 
 async def material_segment_ids(

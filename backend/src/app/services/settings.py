@@ -244,7 +244,7 @@ async def delete_style(session: AsyncSession, style_id: str) -> None:
     if row is None:
         fail(404, "讲解预设不存在")
     if defaults.style_id == style_id:
-        fail(409, "当前默认讲解预设不能删除")
+        fail(409, "请先更换默认讲解预设，再删除此预设")
     assert row is not None
     await session.delete(row)
     await session.commit()
@@ -265,7 +265,7 @@ async def validate_defaults(session: AsyncSession, data: DefaultsInput | Default
             or provider.deleted_at
             or not provider.enabled
         ):
-            fail(422, "默认模型不可用")
+            fail(422, "默认模型不可用，请重新选择")
 
 
 async def put_defaults(session: AsyncSession, data: DefaultsInput) -> DefaultsResponse:
@@ -420,7 +420,7 @@ async def provider_response(session: AsyncSession, provider: Provider) -> Provid
 async def get_provider(session: AsyncSession, provider_id: str) -> Provider:
     provider = await session.get(Provider, provider_id)
     if provider is None or provider.deleted_at is not None:
-        fail(404, "Provider 不存在")
+        fail(404, "模型服务不存在")
     assert provider is not None
     return provider
 
@@ -512,7 +512,7 @@ async def delete_provider(session: AsyncSession, provider_id: str) -> None:
         .limit(1)
     )
     if active:
-        fail(409, "存在未完成的模型验证")
+        fail(409, "模型验证尚未完成，请在验证结束后再删除")
     chat_active = await session.scalar(
         select(Job.id)
         .where(
@@ -523,7 +523,7 @@ async def delete_provider(session: AsyncSession, provider_id: str) -> None:
         .limit(1)
     )
     if chat_active:
-        fail(409, "存在未完成的片段问答")
+        fail(409, "对话任务尚未结束，请在任务结束后再删除")
     row.deleted_at = now()
     row.enabled = False
     await session.commit()
@@ -538,7 +538,7 @@ async def create_model(session: AsyncSession, provider_id: str, data: ModelInput
         )
     )
     if existing:
-        fail(409, "模型 ID 已登记")
+        fail(409, "已添加相同 ID 的模型")
     row = ProviderModel(
         id=new_ulid(),
         provider_id=provider_id,
@@ -552,7 +552,7 @@ async def create_model(session: AsyncSession, provider_id: str, data: ModelInput
         await session.commit()
     except IntegrityError:
         await session.rollback()
-        fail(409, "模型 ID 已登记")
+        fail(409, "已添加相同 ID 的模型")
     return model_response(row, provider, {})
 
 
@@ -598,7 +598,7 @@ async def delete_model(session: AsyncSession, model_id: str) -> None:
         .limit(1)
     )
     if active:
-        fail(409, "存在未完成的模型验证")
+        fail(409, "模型验证尚未完成，请在验证结束后再删除")
     chat_active = await session.scalar(
         select(Job.id)
         .where(
@@ -609,7 +609,7 @@ async def delete_model(session: AsyncSession, model_id: str) -> None:
         .limit(1)
     )
     if chat_active:
-        fail(409, "存在未完成的片段问答")
+        fail(409, "对话任务尚未结束，请在任务结束后再删除")
     # Runs retain their original identity and snapshots; defaults stay visibly invalid.
     await session.delete(row)
     await session.commit()
@@ -640,7 +640,7 @@ async def refresh_models(
         row.discovery_error = None
     else:
         row.discovery_status = "failed"
-        row.discovery_error = "模型列表获取失败，请检查地址、网络或凭据"
+        row.discovery_error = "无法获取模型列表，请检查 API 地址、网络和密钥"
     row.last_discovered_at = now()
     await session.commit()
     return await provider_response(session, row)
@@ -694,7 +694,7 @@ async def list_runs(
 async def get_run(session: AsyncSession, run_id: str) -> RunResponse:
     row = await session.get(Run, run_id)
     if row is None or row.deleted_at is not None:
-        fail(404, "Run 不存在")
+        fail(404, "未找到这条记录")
     assert row is not None
     if row.purpose == "translation":
         from app.services.translations import visible_task
@@ -702,7 +702,7 @@ async def get_run(session: AsyncSession, run_id: str) -> RunResponse:
 
         task = await session.scalar(select(TranslationTask).where(TranslationTask.run_id == row.id))
         if task is None:
-            fail(404, "Run 不存在")
+            fail(404, "未找到这条记录")
         assert task is not None
         await visible_task(session, task)
     if row.purpose == "chat":
@@ -720,7 +720,7 @@ async def get_run(session: AsyncSession, run_id: str) -> RunResponse:
             or source is None
             or source.deleted_at is not None
         ):
-            fail(404, "Run 不存在")
+            fail(404, "未找到这条记录")
     return run_response(row)
 
 
@@ -734,7 +734,7 @@ async def accept_verification(
     assert model is not None
     provider = await get_provider(session, model.provider_id)
     if not model.enabled or not provider.enabled:
-        fail(409, "模型或 Provider 已停用")
+        fail(409, "模型或所属模型服务已停用，请启用后重试")
     prompt = (
         Environment(loader=FileSystemLoader(PROMPTS), undefined=StrictUndefined)
         .get_template("model_verification_v1.j2")
@@ -780,7 +780,7 @@ async def interrupt_unfinished(session: AsyncSession) -> None:
     await session.execute(
         update(Run)
         .where(Run.purpose == "verification", Run.status.in_(["queued", "running"]))
-        .values(status="interrupted", error="应用重启，验证已中断", finished_at=now())
+        .values(status="interrupted", error="应用重启时中断了模型验证，请重试", finished_at=now())
     )
     await session.commit()
 
@@ -832,7 +832,7 @@ async def fail_verification(application: "FastAPI", run_id: str) -> None:
         row = await session.get(Run, run_id)
         if row is None or row.purpose != "verification" or row.status not in ("queued", "running"):
             return
-        row.status, row.error, row.finished_at = "failed", "后台验证异常，未自动重新调用", now()
+        row.status, row.error, row.finished_at = "failed", "模型验证未完成，请重试", now()
         await update_current_verification_status(session, row)
         await session.commit()
 

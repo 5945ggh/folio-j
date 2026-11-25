@@ -208,7 +208,7 @@ async def test_invalid_transport_urls_cannot_be_saved_or_probed(tmp_path: Path) 
             )
         saved = await client.post("/api/anki/probe")
         assert saved.status_code == 422
-        assert saved.json()["detail"] == "已保存的 Anki 服务地址无效，请重新填写"
+        assert saved.json()["detail"] == "已保存的 AnkiConnect 地址无效，请重新填写"
         assert (await client.get(CONNECTION)).json()["url"] == "http://☃.test"
         assert (await client.put(CONNECTION, json={"url": LOOPBACK})).status_code == 200
 

@@ -125,7 +125,7 @@ async def require_job(session: AsyncSession, job_id: str) -> Job:
         )
     )
     if job is None:
-        raise ChatError(404, "任务不存在", "not_found")
+        raise ChatError(404, "对话任务不存在", "not_found")
     return job
 
 
@@ -191,7 +191,7 @@ async def job_response(session: AsyncSession, job: Job) -> JobResponse:
     ).all()
     run_id = runs[0].id if runs else None
     if assistant is None or user is None:
-        raise ChatError(404, "任务不存在", "not_found")
+        raise ChatError(404, "对话任务不存在", "not_found")
     model = ModelSnapshotResponse.model_validate(
         {k: v for k, v in job.model_snapshot.items() if k in ModelSnapshotResponse.model_fields}
     )
@@ -228,7 +228,7 @@ async def model_for_accept(
     session: AsyncSession, model_id: str | None
 ) -> tuple[ProviderModel, Provider]:
     if model_id is None:
-        raise ChatError(409, "尚未选择可用模型", "model_unavailable")
+        raise ChatError(409, "请先选择可用的模型", "model_unavailable")
     pair = (
         await session.execute(
             select(ProviderModel, Provider)
@@ -242,7 +242,7 @@ async def model_for_accept(
         )
     ).first()
     if pair is None:
-        raise ChatError(409, "模型不可用", "model_unavailable")
+        raise ChatError(409, "所选模型不可用，请更换模型后重试", "model_unavailable")
     return pair
 
 
@@ -276,7 +276,7 @@ async def create_thread(
             if existing.deleted_at is not None:
                 raise ChatError(404, "对话不存在", "not_found")
             if existing.create_request_payload != payload:
-                raise ChatError(409, "请求ID对应不同内容", "idempotency_conflict")
+                raise ChatError(409, "内容与上次提交不一致，请刷新后重试", "idempotency_conflict")
             response = await thread_response(session, existing)
             await session.commit()
             return response
@@ -319,9 +319,9 @@ async def patch_thread(session: AsyncSession, thread_id: str, data: ThreadPatch)
         await begin_write(session)
         thread = await require_thread(session, thread_id)
         if thread.active_job_id is not None:
-            raise ChatError(409, "对话正在执行", "thread_busy")
+            raise ChatError(409, "对话任务正在进行，请等待完成或停止任务后重试", "thread_busy")
         if thread.revision != data.expected_revision:
-            raise ChatError(409, "对话版本已变化", "stale_thread")
+            raise ChatError(409, "对话已更新，请刷新后重试", "stale_thread")
         changes = data.model_dump(exclude_unset=True, exclude={"expected_revision"})
         if "model_id" in changes and changes["model_id"] is not None:
             await model_for_accept(session, changes["model_id"])
@@ -361,7 +361,7 @@ def decode_cursor(segment_id: str, cursor: str) -> tuple[datetime, str]:
             raise ValueError("cursor shape")
         return timestamp, identity
     except (ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError) as exc:
-        raise ChatError(422, "无效分页游标", "invalid_cursor") from exc
+        raise ChatError(422, "无法加载这部分对话，请刷新后重试", "invalid_cursor") from exc
 
 
 async def list_threads(
@@ -482,18 +482,18 @@ async def accept_job(
         )
         if old is not None:
             if old.deleted_at is not None:
-                raise ChatError(404, "任务不存在", "not_found")
+                raise ChatError(404, "对话任务不存在", "not_found")
             if _current_job_payload(old.request_payload) != payload:
-                raise ChatError(409, "请求ID对应不同内容", "idempotency_conflict")
+                raise ChatError(409, "内容与上次提交不一致，请刷新后重试", "idempotency_conflict")
             response = await job_response(session, old)
             await session.commit()
             return response
         if thread.active_job_id is not None:
-            raise ChatError(409, "对话正在执行", "thread_busy")
+            raise ChatError(409, "对话任务正在进行，请等待完成或停止任务后重试", "thread_busy")
         if thread.revision != data.expected_thread_revision:
-            raise ChatError(409, "对话版本已变化", "stale_thread")
+            raise ChatError(409, "对话已更新，请刷新后重试", "stale_thread")
         if segment.revision != data.expected_segment_revision:
-            raise ChatError(409, "片段版本已变化", "stale_segment")
+            raise ChatError(409, "片段已更新，请刷新后重试", "stale_segment")
         model_id = data.model_id if data.model_id is not None else thread.selected_model_id
         model, provider = await model_for_accept(session, model_id)
         protocol = model.protocol_override or provider.protocol
@@ -503,11 +503,11 @@ async def accept_job(
         style_id = defaults.style_id if "style_id" not in data.model_fields_set else data.style_id
         style = await session.get(Style, style_id) if style_id else None
         if style_id is not None and style is None:
-            raise ChatError(409, "讲解预设不可用", "style_unavailable")
+            raise ChatError(409, "讲解预设不可用，请更换预设后重试", "style_unavailable")
         if prepared_provenance is None or not await prepared_provenance.matches(
             session, segment.id
         ):
-            raise ChatError(409, "片段材料出处已变化，请重新发送", "stale_provenance")
+            raise ChatError(409, "片段的书籍出处已变化，请刷新后重新发送", "stale_provenance")
         snapshot = await make_input_snapshot(
             session,
             thread_id,
@@ -520,7 +520,7 @@ async def accept_job(
             material_provenance=prepared_provenance.value,
         )
         if not context_fits(snapshot["messages"], snapshot["tools"]):
-            raise ChatError(422, "上下文超过本地上限，请缩短问题或新建对话", "context_limit")
+            raise ChatError(422, "发送内容过长，请缩短问题或新建对话", "context_limit")
         model_snapshot: dict[str, Any] = {
             "provider_id": provider.id,
             "provider_name": provider.name,
@@ -548,7 +548,9 @@ async def accept_job(
                 separators=(",", ":"),
             )
             if redact_credential(serialized, credential) != serialized:
-                raise ChatError(422, "输入包含当前模型凭据，请移除后再发送", "credential_in_input")
+                raise ChatError(
+                    422, "输入包含当前模型服务的 API 密钥，请移除后再发送", "credential_in_input"
+                )
         created = now()
         job = Job(
             id=new_ulid(),
@@ -628,7 +630,7 @@ async def get_job_by_request(session: AsyncSession, thread_id: str, request_id: 
         )
     )
     if job is None:
-        raise ChatError(404, "任务不存在", "not_found")
+        raise ChatError(404, "对话任务不存在", "not_found")
     return await job_response(session, job)
 
 
@@ -657,7 +659,7 @@ async def _stop_job_committed(session: AsyncSession, job_id: str) -> JobResponse
             if job.status in ("queued", "waiting_review"):
                 job.status = "interrupted"
                 job.error_code = "user_stopped"
-                job.error = "用户已停止本轮"
+                job.error = "已停止本轮对话"
                 job.finished_at = changed
                 if thread.active_job_id == job.id:
                     thread.active_job_id = None
@@ -696,12 +698,12 @@ async def decide_job(session: AsyncSession, job_id: str, data: JobDecision) -> J
             await session.commit()
             return response
         if state.get("decision_request") is not None:
-            raise ChatError(409, "审核决定已提交", "decision_conflict")
+            raise ChatError(409, "修改决定已提交，请刷新查看结果", "decision_conflict")
         if job.status != "waiting_review" or job.version != data.expected_version:
-            raise ChatError(409, "审核方案已经变化", "stale_review")
+            raise ChatError(409, "修改方案已变化，请刷新后再确认", "stale_review")
         proposal = state.get("review_proposal")
         if not isinstance(proposal, dict):
-            raise ChatError(409, "没有待审核方案", "review_unavailable")
+            raise ChatError(409, "没有待确认的修改", "review_unavailable")
         state["decision"] = data.decision
         state["decision_instructions"] = data.additional_instructions
         state["decision_request"] = request

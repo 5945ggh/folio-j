@@ -34,7 +34,7 @@ async def save_settings(
                 status_code=409,
                 detail={
                     "code": "settings_conflict",
-                    "message": "语境设置已更新，请读取最新配置后重试。",
+                    "message": "前后文范围已更新，请刷新后重试",
                 },
             )
         values = data.model_dump(exclude={"expected_revision"})

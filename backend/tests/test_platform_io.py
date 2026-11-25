@@ -82,7 +82,7 @@ def test_reparse_point_is_detected_and_cannot_be_used_as_lock(
 
     monkeypatch.setattr(Path, "lstat", reparse_stat)
     assert is_link_or_reparse(path)
-    with pytest.raises(FileLockError, match="reparse point"):
+    with pytest.raises(FileLockError, match="符号链接或系统重解析点"):
         with exclusive_file_lock(path):
             pytest.fail("reparse lock accepted")
 

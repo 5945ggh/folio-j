@@ -59,18 +59,18 @@ class AnkiConnectError(Exception):
 
 def connection_error_message(error: AnkiConnectError) -> str:
     return {
-        "unreachable": "无法连接 Anki，请检查 Anki 与 AnkiConnect 是否正在运行。",
-        "authentication": "AnkiConnect 未接受当前凭据，请检查连接设置。",
-        "no_collection": "Anki 当前没有打开的集合。",
-        "unsupported": "当前 AnkiConnect 不支持此操作。",
-        "stale_session": "Anki 活动集合已变更，请重新核对目标。",
-        "duplicate": "Anki 判定当前笔记为重复。",
-        "invalid_note": "Anki 未接受当前字段，请检查必填项和卡片模板。",
-        "target_missing": "Anki 目标已失效，请重新选择。",
-        "conflict": "Anki 当前状态与请求冲突，请重新检查后再操作。",
-        "unknown_write": "Anki 回执未确认。",
-        "protocol_error": "AnkiConnect 返回了无法解析的结果。",
-    }.get(error.code, "Anki 操作失败。")
+        "unreachable": "无法连接 Anki，请检查 AnkiConnect 地址，并确认 Anki 和 AnkiConnect 已启动",
+        "authentication": "AnkiConnect 未接受当前 API 密钥，请检查连接设置",
+        "no_collection": "请在 Anki 中选择用户并打开卡片库",
+        "unsupported": "当前版本的 AnkiConnect 不支持此操作",
+        "stale_session": "Anki 用户或连接已变化，请重新确认导出目标",
+        "duplicate": "Anki 中已有重复笔记",
+        "invalid_note": "Anki 未接受这条笔记，请检查必填字段和卡片模板",
+        "target_missing": "Anki 导出目标已不可用，请重新选择",
+        "conflict": "Anki 当前无法完成操作，请检查导出目标后重试",
+        "unknown_write": "操作结果未确认，请先在 Anki 中查看",
+        "protocol_error": "无法读取 AnkiConnect 的响应，请检查连接设置",
+    }.get(error.code, "Anki 操作失败")
 
 
 class _V1Unavailable(Exception):

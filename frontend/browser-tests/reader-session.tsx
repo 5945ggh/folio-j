@@ -50,6 +50,8 @@ type Measurement = {
 };
 const round = (value: number) => Math.round(value * 10) / 10;
 const imageImportWarning = "Removed unsupported image: cover.svg";
+const styleImportWarning =
+	"样式表无法读取，已跳过：OEBPS/chapter.xhtml（book.css）";
 
 /** Strict offline DOM measurements: fixture response durations are not network latency. */
 export async function readerSession(
@@ -183,7 +185,7 @@ export async function readerSession(
 		if (path === `/api/materials/${materialId}` && request.method === "GET")
 			data = {
 				...book,
-				warnings: [imageImportWarning],
+				warnings: [imageImportWarning, styleImportWarning],
 				reading_position:
 					savedPositions.get(requestedMaterialId ?? materialId) ??
 					(book.reading_position
@@ -1181,14 +1183,20 @@ export async function readerSession(
 			check(
 				technical?.querySelector("summary")?.textContent === "技术信息" &&
 					!technical.open &&
-					bookInfo.innerText.includes("部分图片格式不受支持，已跳过这些图片") &&
-					!bookInfo.innerText.includes(imageImportWarning),
-				"Import notice must show the Chinese summary and keep the diagnostic collapsed",
+					bookInfo.innerText.includes("部分图片无法显示，已跳过") &&
+					bookInfo.innerText.includes(
+						"部分样式无法使用，页面外观可能与原书不同",
+					) &&
+					!bookInfo.innerText.includes(imageImportWarning) &&
+					!bookInfo.innerText.includes(styleImportWarning),
+				"Import notice must summarize old and new warnings and keep diagnostics collapsed",
 			);
 			technical.querySelector("summary")?.click();
 			check(
-				technical.open && bookInfo.innerText.includes(imageImportWarning),
-				"Technical information must retain the original import warning",
+				technical.open &&
+					bookInfo.innerText.includes(imageImportWarning) &&
+					bookInfo.innerText.includes(styleImportWarning),
+				"Technical information must retain both original import warnings",
 			);
 			const importBack = h.container.querySelector<HTMLAnchorElement>(
 				'.reader-r1 a[aria-label="返回导入来源"]',

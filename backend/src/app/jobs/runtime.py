@@ -68,7 +68,7 @@ async def _claim(
             finished = now()
             job.status = "interrupted"
             job.error_code = "legacy_job_unsupported"
-            job.error = "旧版专用生成任务已停用，请重新发起普通对话"
+            job.error = "旧版讲解任务已停用，请新建对话"
             job.execution_token = None
             job.finished_at = finished
             job.version += 1
@@ -81,7 +81,7 @@ async def _claim(
         except (OSError, UnicodeError):
             job.status = "failed"
             job.error_code = "credential_unavailable"
-            job.error = "凭据不可用，请检查模型接入配置"
+            job.error = "API 密钥不可用，请检查模型服务设置"
             job.finished_at = now()
             job.version += 1
             assistant.status = "failed"
@@ -282,7 +282,7 @@ async def fail_job(application: "FastAPI", job_id: str) -> None:
         finished = now()
         job.status = "interrupted" if stopped else "failed"
         job.error_code = "user_stopped" if stopped else "worker_failed"
-        job.error = "已停止本轮回答" if stopped else "后台执行异常，本轮已停止；已保存成果保留"
+        job.error = "已停止本轮回答" if stopped else "本轮对话失败，已保存的内容会保留"
         job.execution_token = None
         job.finished_at = finished
         job.version += 1

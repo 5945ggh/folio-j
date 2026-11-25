@@ -91,7 +91,7 @@ class StartupService:
     async def select(self, selection: StartupSelection) -> StartupState:
         async with self._lock:
             if self.application is not None:
-                raise ValueError("应用已启动；如需更换数据位置，请先停止服务。")
+                raise ValueError("应用已启动，如需更换数据位置，请先停止服务")
             try:
                 settings = await asyncio.to_thread(
                     data_location.prepare_selection,
@@ -111,7 +111,7 @@ class StartupService:
     async def retry(self) -> StartupState:
         async with self._lock:
             if self.application is not None:
-                raise ValueError("应用已启动。")
+                raise ValueError("应用已启动")
             self.status = await asyncio.to_thread(data_location.location_status)
             self._selected_path = self.status.selected_path
             self._configured_path = self.status.selected_path
@@ -135,16 +135,18 @@ class StartupService:
     async def retry_current(self) -> StartupState:
         async with self._lock:
             if self.application is not None:
-                raise ValueError("应用已启动。")
+                raise ValueError("应用已启动")
             candidate = self._candidate
             if candidate is None:
-                raise ValueError("本次启动尚无已确认的数据位置，请先选择。")
+                raise ValueError("请先选择数据位置")
             self._selected_path = candidate.settings.database.path
             try:
                 if candidate.database_existed and not await asyncio.to_thread(
                     database_exists, candidate.settings.database.path
                 ):
-                    raise ValueError("先前选择的学习库已不存在，请重新连接原位置或选择已有学习库。")
+                    raise ValueError(
+                        "之前选择的数据库文件已不存在，请重新连接原位置或选择其他已有数据"
+                    )
                 settings = await asyncio.to_thread(
                     data_location.validate_retry_selection, candidate.settings
                 )
@@ -168,17 +170,14 @@ class StartupService:
                         data_location.remember_selection, settings.database.path
                     )
                 except (data_location.DataLocationError, OSError) as exc:
-                    warning = (
-                        f"{exc}\n本次继续使用该学习库。"
-                        "下次启动请核对数据位置，必要时重新选择已有库。"
-                    )
+                    warning = f"{exc}\n本次可以继续使用。下次启动时可能需要重新选择数据位置。"
                     self._warning = f"{self._warning}\n{warning}" if self._warning else warning
         except Exception as exc:
             self._error = str(exc) or type(exc).__name__
             try:
                 await resources.aclose()
             except Exception as cleanup_error:
-                self._error += f"；关闭启动资源时出错：{cleanup_error}"
+                self._error += f"\n清理本次启动时打开的资源失败：{cleanup_error}"
             self._recovery = True
         except BaseException:
             await resources.aclose()

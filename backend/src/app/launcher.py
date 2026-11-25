@@ -41,9 +41,11 @@ def migrate(database_path: Path | None = None) -> None:
     except FileLockError as exc:
         if isinstance(exc.__cause__, PermissionError):
             raise ValueError(
-                f"没有权限访问数据库进程锁：{lock}。请在启动页面选择可写的数据目录。"
+                f"没有权限访问数据库锁文件：{lock}。请在启动页选择可写的数据目录。"
             ) from exc
-        raise ValueError(f"数据库正在使用或进程锁不可用：{database}。{exc}") from exc
+        raise ValueError(
+            f"无法使用数据库文件：{database}。请检查数据目录是否可写，并关闭正在使用该文件的其他程序后重试。\n详细信息：{exc}"
+        ) from exc
 
 
 class BrowserServer(uvicorn.Server):
@@ -65,7 +67,10 @@ class BrowserServer(uvicorn.Server):
             try:
                 await asyncio.to_thread(webbrowser.open, self.browser_url)
             except (OSError, webbrowser.Error) as exc:
-                print(f"无法自动打开浏览器，请手动访问 {self.browser_url}：{exc}", file=sys.stderr)
+                print(
+                    f"无法自动打开浏览器，请手动访问 {self.browser_url}。详细信息：{exc}",
+                    file=sys.stderr,
+                )
 
 
 def start_interactive(*, no_browser: bool, choose_data: bool = False) -> int:
@@ -77,12 +82,12 @@ def start_interactive(*, no_browser: bool, choose_data: bool = False) -> int:
 
     frontend = RESOURCE_ROOT / "frontend/dist"
     if not (frontend / "index.html").is_file():
-        raise ValueError("缺少前端构建，请重新安装完整程序包或先构建前端。")
+        raise ValueError("缺少应用页面文件，请重新解压完整程序包。使用源码版时，请先构建前端。")
     status = location_status()
     if choose_data:
         status = replace(status, needs_selection=True)
     if status.selected_path is not None:
-        print(f"数据库：{status.selected_path}", flush=True)
+        print(f"数据库文件：{status.selected_path}", flush=True)
     service = StartupService(
         status,
         migrate,
@@ -94,7 +99,7 @@ def start_interactive(*, no_browser: bool, choose_data: bool = False) -> int:
 
 def _serve(application: ASGIApplication, settings: Settings, *, no_browser: bool) -> int:
     url = f"http://{settings.server.host}:{settings.server.port}"
-    print(f"启动访问地址：{url}", flush=True)
+    print(f"浏览器访问地址：{url}", flush=True)
     print("按 Ctrl-C 停止服务。", flush=True)
     configuration = uvicorn.Config(
         application,
@@ -137,11 +142,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     serve = commands.add_parser("start", help="升级数据库并启动，默认打开系统浏览器")
     serve.add_argument("--no-browser", action="store_true", help="启动后不自动打开浏览器")
     serve.add_argument("--choose-data", action="store_true", help="重新选择数据位置后启动")
-    commands.add_parser("data-path", help="显示下次启动使用的数据库路径")
-    commands.add_parser("migrate", help="停服后将数据库升级到当前版本")
-    backup = commands.add_parser("backup", help="停服后备份到新目录")
+    commands.add_parser("data-path", help="显示下次启动使用的数据库文件路径")
+    commands.add_parser("migrate", help="停止服务后将数据库升级到当前版本")
+    backup = commands.add_parser("backup", help="停止服务后将数据备份到新目录")
     backup.add_argument("destination", type=Path)
-    restore = commands.add_parser("restore", help="将原生备份恢复到新目录")
+    restore = commands.add_parser("restore", help="将 Folio-J 备份恢复到新数据目录")
     restore.add_argument("backup", type=Path)
     restore.add_argument("destination", type=Path)
     arguments = parser.parse_args(argv)
@@ -152,12 +157,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         elif arguments.command == "backup":
             result = create_backup(arguments.destination)
             print(f"备份完成：{result}")
-            print("此备份可能包含未加密的模型密钥，请私下保管整个目录。")
+            print("备份可能包含未加密的 API 密钥，请将整个备份目录保存在私有位置，并避免分享。")
         elif arguments.command == "migrate":
             migrate()
         elif arguments.command == "data-path":
-            print(f"下次迁移和启动使用的数据库：{load_settings().database.path}")
-            print("启动后可在首次设置或恢复页面选择数据位置。")
+            print(f"下次迁移和启动时使用的数据库文件：{load_settings().database.path}")
+            print("可使用 start --choose-data 打开启动页，重新选择数据位置。")
         else:
             return start_interactive(
                 no_browser=bool(getattr(arguments, "no_browser", False)),

@@ -59,6 +59,8 @@ const chapter: Schema["MaterialChapterResponse"] = {
 	],
 };
 
+const detailsImportWarning = "备用目录无法读取：toc.ncx";
+
 /** Shared production data routes and real pages; only API data is a fixture. */
 export async function routeMotion(h: BrowserHarness, preview = false) {
 	const check: BrowserHarness["check"] = h.check;
@@ -105,6 +107,7 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 		if (request.method === "GET" && path === `${base}/details`)
 			return Response.json({
 				...book,
+				warnings: [detailsImportWarning],
 				chapter_count: 1,
 				custom_cover: false,
 				metadata_revision: 0,
@@ -481,6 +484,30 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 		await h.until(
 			() => !!h.container.querySelector(".book-details-cover"),
 			"Real details must load",
+		);
+		const importWarnings = h.container.querySelector<HTMLDetailsElement>(
+			".book-details-warnings",
+		);
+		check(
+			importWarnings && !importWarnings.open,
+			"Details must show the closed import disclosure",
+		);
+		importWarnings.querySelector("summary")?.click();
+		const technical = importWarnings.querySelector("details");
+		check(
+			importWarnings.open &&
+				technical &&
+				!technical.open &&
+				importWarnings.innerText.includes(
+					"已根据可用的目录和正文调整章节划分",
+				) &&
+				!importWarnings.innerText.includes(detailsImportWarning),
+			"Book details must summarize the import warning while keeping its path collapsed",
+		);
+		technical.querySelector("summary")?.click();
+		check(
+			technical.open && importWarnings.innerText.includes(detailsImportWarning),
+			"Book details must retain the original warning including its path",
 		);
 		// All data is cached: presentation remains available while its entry animates.
 		link("a.book-details-action.primary").click();

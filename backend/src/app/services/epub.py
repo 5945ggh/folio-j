@@ -156,7 +156,7 @@ class EpubLimitError(EpubError):
 def _spend(budget: list[int], amount: int) -> None:
     budget[0] += amount
     if budget[0] > MAX_PRODUCT_BYTES:
-        raise EpubLimitError("编译产物超过安全大小限制")
+        raise EpubLimitError("处理后的书籍内容超过安全大小限制")
 
 
 def _spend_json(budget: list[int], value: Any) -> None:
@@ -211,9 +211,11 @@ def _tag(element: ET.Element) -> str:
     return element.tag.rsplit("}", 1)[-1].lower()
 
 
-def _xml(data: bytes) -> ET.Element:
+def _xml(data: bytes, path: str | None = None) -> ET.Element:
+    location = f"（{path}）" if path is not None else ""
+
     def reject_entity(*_arguments: object) -> None:
-        raise EpubError("XML entity declarations are unsupported")
+        raise EpubError(f"书籍中的 XML 文件含有不支持的实体声明{location}")
 
     # Expat detects declarations after decoding the document's declared encoding.
     # Reject before ElementTree can expand any internal entities.
@@ -223,7 +225,7 @@ def _xml(data: bytes) -> ET.Element:
     def start_element(_name: str, _attributes: dict[str, str]) -> None:
         depth[0] += 1
         if depth[0] > 128:
-            raise EpubError("XML 嵌套过深，无法安全读取")
+            raise EpubError(f"书籍中的 XML 文件结构过于复杂，无法安全读取{location}")
 
     def end_element(_name: str) -> None:
         depth[0] -= 1
@@ -235,21 +237,24 @@ def _xml(data: bytes) -> ET.Element:
         parser.Parse(data, True)
         return ET.fromstring(data)
     except (ET.ParseError, expat.ExpatError) as exc:
-        raise EpubError(f"Only well-formed XML XHTML is supported: {exc}") from exc
+        line, column = exc.position if isinstance(exc, ET.ParseError) else (exc.lineno, exc.offset)
+        raise EpubError(
+            f"书籍中的 XML / XHTML 文件格式有误{location}，第 {line} 行第 {column + 1} 列"
+        ) from exc
 
 
 def _resolve(base: str, target: str) -> str:
     parts = urlsplit(target)
     if parts.scheme or parts.netloc or parts.query:
-        raise EpubError(f"External package resource is unsupported: {target}")
+        raise EpubError(f"无法读取书籍外部的资源：{target}")
     decoded = unquote(parts.path)
     if not decoded:
         return base
     if "\\" in decoded or decoded.startswith("/"):
-        raise EpubError(f"Unsafe package path: {target}")
+        raise EpubError(f"书籍中的资源路径不安全：{target}")
     path = posixpath.normpath(posixpath.join(posixpath.dirname(base), decoded))
     if path == ".." or path.startswith("../"):
-        raise EpubError(f"Package path escapes archive: {target}")
+        raise EpubError(f"资源路径指向书籍以外的位置：{target}")
     return path
 
 
@@ -263,7 +268,7 @@ def sanitize_xhtml(
     rt/rp remain visible but contain no locator leaves. CSS never defines text.
     """
     budget = budget if budget is not None else [0]
-    root = _xml(data)
+    root = _xml(data, href)
     body = next((el for el in root.iter() if _tag(el) == "body"), root)
     leaves: list[str] = []
     image_count = [0]
@@ -318,14 +323,14 @@ def sanitize_xhtml(
                 mime = IMAGE_TYPES.get(Path(path).suffix.lower())
                 payload = package_files.get(path)
                 if not mime or payload is None:
-                    raise EpubError("Unsupported or missing image")
+                    raise EpubError("图片缺失或格式不受支持")
                 _spend(budget, (len(payload) + 2) // 3 * 4)
                 attrs.append(f' src="data:{mime};base64,{base64.b64encode(payload).decode()}"')
                 attrs.append(f' alt="{html.escape(node.attrib.get("alt", ""), quote=True)}"')
             except EpubLimitError:
                 raise
             except EpubError:
-                warnings.append(f"Removed unsupported image in {href}")
+                warnings.append(f"图片无法读取或格式不受支持，已跳过：{href}")
                 return ""
         # Author URLs and inline styles are never copied into the fragment.
         inside = leaf(node.text, annotation)
@@ -369,7 +374,7 @@ def _inline_css(
         budget = [0]
     budget[0] += len(css.encode())
     if budget[0] > 4 * 1024 * 1024:
-        raise EpubError("CSS import expansion exceeds size limit")
+        raise EpubError(f"合并前的样式文件总大小超过 4 MB：{href}")
     # Comments cannot contain active imports. Keep author rules, discard comments.
     css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
     pattern = re.compile(r"@import\s+([^;]*);", re.IGNORECASE)
@@ -382,17 +387,17 @@ def _inline_css(
             flags=re.IGNORECASE,
         )
         if parsed is None:
-            warnings.append(f"Unsupported CSS import syntax in {href}: {statement}")
+            warnings.append(f"样式引用的写法不受支持，已跳过：{href}（{statement}）")
             return ""
         target = next(value for value in parsed.groups()[:5] if value is not None)
         media = parsed.group(6).strip()
         if media and not re.fullmatch(r"[a-zA-Z0-9 ,():.\-]+", media):
-            warnings.append(f"Unsupported CSS import condition in {href}: {media}")
+            warnings.append(f"样式引用的适用条件不受支持，已跳过：{href}（{media}）")
             return ""
         try:
             imported_path = _resolve(href, target)
             if imported_path in stack or len(stack) >= 8:
-                raise EpubError("CSS import cycle or depth limit")
+                raise EpubError("样式文件相互引用或引用层数过多")
             imported = files[imported_path].decode("utf-8-sig")
             expanded = _inline_css(
                 imported,
@@ -406,15 +411,16 @@ def _inline_css(
         except EpubLimitError:
             raise
         except (EpubError, KeyError, UnicodeError) as exc:
-            warnings.append(f"Skipped CSS import in {href}: {target} ({exc})")
+            reason = str(exc) if isinstance(exc, EpubError) else "文件缺失或无法读取"
+            warnings.append(f"样式引用已跳过：{href} 中的 {target}（{reason}）")
             return ""
 
     expanded = pattern.sub(expand, css)
     if re.search(r"@import\b", expanded, re.IGNORECASE):
-        warnings.append(f"Unterminated CSS import removed in {href}")
+        warnings.append(f"样式引用未正确结束，已移除：{href}")
         expanded = re.sub(r"@import\b.*", "", expanded, flags=re.IGNORECASE | re.DOTALL)
     if len(expanded.encode()) > 4 * 1024 * 1024:
-        raise EpubError("Expanded CSS exceeds size limit")
+        raise EpubError(f"合并后的样式超过 4 MB：{href}")
     return expanded
 
 
@@ -435,46 +441,52 @@ class _Publication:
 def _read_archive(data: bytes) -> dict[str, bytes]:
     """Validate ZIP metadata before reading each local member once, without extraction."""
     files: dict[str, bytes] = {}
+    current_file: str | None = None
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             infos = archive.infolist()
             if len(infos) > 5000 or sum(info.file_size for info in infos) > 128 * 1024 * 1024:
-                raise EpubError("Archive exceeds entry count or expanded size limit")
+                raise EpubError("书籍解压后超过 5000 项或 128 MB，请尝试体积更小的 EPUB 文件")
             names: set[str] = set()
             for info in infos:
                 name = info.filename
                 if name.startswith("/") or "\\" in name or ".." in name.split("/"):
-                    raise EpubError(f"Unsafe ZIP entry: {name}")
+                    raise EpubError(f"书籍中存在不安全的文件路径：{name}")
                 if info.flag_bits & 1:
-                    raise EpubError("Encrypted ZIP/DRM is unsupported")
+                    raise EpubError("书籍含有加密文件，请选择未加密的 EPUB 文件")
                 if (
                     info.file_size > 16 * 1024 * 1024
                     or info.file_size / max(info.compress_size, 1) > 200
                 ):
-                    raise EpubError("Archive member exceeds expansion limits")
+                    raise EpubError(
+                        f"书籍中单个文件解压后超过 16 MB 或超过压缩后大小的 200 倍：{name}"
+                    )
                 if not info.is_dir():
                     if name in names:
-                        raise EpubError(f"Duplicate ZIP entry: {name}")
+                        raise EpubError(f"书籍中存在同名文件：{name}")
                     names.add(name)
             if "META-INF/encryption.xml" in names:
-                raise EpubError("Encrypted/DRM or font-obfuscated EPUB is unsupported")
+                raise EpubError("请换用不含 DRM 保护、加密文件或混淆字体的 EPUB 文件")
             for info in infos:
                 if not info.is_dir():
+                    current_file = info.filename
                     files[info.filename] = archive.read(info)
     except (zipfile.BadZipFile, OSError) as exc:
-        raise EpubError(f"Cannot read EPUB: {exc}") from exc
+        location = f"（{current_file}）" if current_file is not None else ""
+        raise EpubError(f"文件无法读取或已损坏{location}，请检查原文件") from exc
     return files
 
 
 def _prepare_publication(data: bytes) -> _Publication:
     files = _read_archive(data)
     try:
-        container = _xml(files["META-INF/container.xml"])
+        container_path = "META-INF/container.xml"
+        container = _xml(files[container_path], container_path)
         package_path = next(
             el.attrib["full-path"] for el in container.iter() if _tag(el) == "rootfile"
         )
         package_path = _resolve("", package_path)
-        package = _xml(files[package_path])
+        package = _xml(files[package_path], package_path)
         if any(
             _tag(el) == "meta"
             and (
@@ -483,7 +495,7 @@ def _prepare_publication(data: bytes) -> _Publication:
             )
             for el in package.iter()
         ):
-            raise EpubError("Fixed layout EPUB is unsupported")
+            raise EpubError("本书采用固定版式，请选择支持重排版式的 EPUB 文件")
         manifest = {el.attrib["id"]: el for el in package.iter() if _tag(el) == "item"}
         title = next(
             (el.text for el in package.iter() if _tag(el) == "title" and el.text),
@@ -510,24 +522,24 @@ def _prepare_publication(data: bytes) -> _Publication:
             "rendition:layout-pre-paginated" in el.attrib.get("properties", "").split()
             for el in spine
         ):
-            raise EpubError("Fixed layout EPUB is unsupported")
+            raise EpubError("本书采用固定版式，请选择支持重排版式的 EPUB 文件")
         for itemref in spine:
             fixed_item = (
                 "rendition:layout-pre-paginated" in itemref.attrib.get("properties", "").split()
             )
             item = manifest[itemref.attrib["idref"]]
             if item.attrib.get("media-type") != "application/xhtml+xml":
-                raise EpubError("Only XHTML spine resources are supported")
+                raise EpubError(f"章节内容须为 XHTML 格式：{item.attrib.get('href', '未指定文件')}")
             href = _resolve(package_path, item.attrib["href"])
             fragment, text, notes = sanitize_xhtml(files[href], href, files, product_budget)
             warnings.extend(notes)
             if fixed_item:
                 if text.strip() or "<img " not in fragment:
                     raise EpubError(
-                        "Fixed layout spine item with text or unsupported image is unsupported"
+                        f"本书含有无法导入的固定版式页面，页面包含文字或无法显示的图片：{href}"
                     )
-                warnings.append(f"Fixed image page rendered without fixed-layout geometry: {href}")
-            document = _xml(files[href])
+                warnings.append(f"固定版式的图片页已按普通图片显示：{href}")
+            document = _xml(files[href], href)
             styles: list[str] = []
             for el in document.iter():
                 style: str | None = None
@@ -546,7 +558,8 @@ def _prepare_publication(data: bytes) -> _Publication:
                     except EpubLimitError:
                         raise
                     except (EpubError, KeyError, UnicodeError):
-                        warnings.append(f"Skipped unavailable stylesheet in {href}")
+                        target = el.attrib.get("href", "未指定文件")
+                        warnings.append(f"样式表无法读取，已跳过：{href}（{target}）")
                 if style is not None:
                     _spend(product_budget, len(style.encode()))
                     styles.append(style)
@@ -574,9 +587,10 @@ def _prepare_publication(data: bytes) -> _Publication:
             resources.append(resource)
             resource_html.append(fragment)
     except (KeyError, StopIteration) as exc:
-        raise EpubError(f"Incomplete EPUB package: {exc}") from exc
+        location = f"（{exc.args[0]}）" if exc.args else ""
+        raise EpubError(f"书籍缺少必要的文件或信息{location}，请检查原文件") from exc
     if not resources:
-        raise EpubError("EPUB has no readable spine resources")
+        raise EpubError("本书没有可读的章节，请检查原文件")
     return _Publication(
         files, package_path, package, title, resources, resource_html, warnings, output_budget
     )
@@ -617,7 +631,7 @@ def _locator_boundaries(raw_leaves: list[str], text: str) -> list[int | None]:
         _canonical_units(raw), _canonical_units(text), strict=True
     ):
         if unit != normalized_unit:
-            raise EpubError("正文 NFC 索引不一致")
+            raise EpubError("无法准确定位正文，请检查原文件")
         first[target] = min(first[target], source)
         last[target] = max(last[target], source)
     # Reuse the contributor arrays for cumulative bounds rather than retaining
@@ -736,7 +750,7 @@ def _toc(
     if nav is not None and not skip_nav:
         try:
             path = _resolve(package_path, nav.attrib["href"])
-            document = _xml(files[path])
+            document = _xml(files[path], path)
             toc = next(
                 el
                 for el in document.iter()
@@ -769,11 +783,12 @@ def _toc(
             walk(toc, 0)
             if entries:
                 return entries
-            warnings.append("EPUB nav 目录没有有效链接，尝试 NCX。")
+            warnings.append(f"目录没有可用链接，将尝试读取备用目录：{path}")
         except EpubLimitError:
             raise
         except (EpubError, KeyError, StopIteration):
-            warnings.append("EPUB nav 目录无法读取，尝试 NCX。")
+            target = nav.attrib.get("href", "未指定文件")
+            warnings.append(f"目录无法读取，将尝试读取备用目录：{target}")
     spine = next((el for el in package.iter() if _tag(el) == "spine"), None)
     ncx = next(
         (
@@ -790,7 +805,7 @@ def _toc(
     if ncx is not None:
         try:
             path = _resolve(package_path, ncx.attrib["href"])
-            document = _xml(files[path])
+            document = _xml(files[path], path)
             entries = []
 
             def walk_ncx(node: ET.Element, level: int) -> None:
@@ -815,7 +830,8 @@ def _toc(
         except EpubLimitError:
             raise
         except (EpubError, KeyError):
-            warnings.append("EPUB NCX 目录无法读取。")
+            target = ncx.attrib.get("href", "未指定文件")
+            warnings.append(f"备用目录无法读取：{target}")
     return []
 
 
@@ -827,7 +843,7 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
         output_budget, warnings = publication.output_budget, publication.warnings
         entries = _toc(files, publication.package_path, publication.package, warnings)
         if len({resource.href for resource in resources}) != len(resources):
-            warnings.append("spine 重复资源保留全部出现位置；目录目标定位到首次出现。")
+            warnings.append("目录链接指向重复正文时会跳到首次出现的位置，重复正文均已保留")
         parser_by_href: dict[str, _FragmentParser] = {}
         first_by_href: dict[str, int] = {}
         parsers: list[_FragmentParser] = []
@@ -845,6 +861,7 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
             positions: list[tuple[str, int, int, int]] = []
             for title, target, level in candidates:
                 base, url = target.split("\0", 1)
+                label = f"「{title}」（{url}）" if title else url
                 try:
                     href = _resolve(base, url)
                     index = first_by_href[href]
@@ -852,17 +869,17 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
                     token = parsers[index].ids[fragment] if fragment else 0
                     leaf_boundary = parsers[index].leaf_boundary(token)
                     if parsers[index].locator_offset(leaf_boundary) is None:
-                        warnings.append(f"目录边界跨越 NFC 组合字符，已跳过：{title}")
+                        warnings.append(f"目录链接指向字符中间，已跳过：{label}")
                         continue
                     position = (index, token)
                     if positions and position <= (positions[-1][2], positions[-1][3]):
-                        warnings.append(f"目录目标重复或逆序，已跳过：{title}")
+                        warnings.append(f"目录链接的位置重复或顺序有误，已跳过：{label}")
                         continue
                     positions.append((title or resources[index].title, level, index, token))
                 except EpubLimitError:
                     raise
                 except (EpubError, KeyError, StopIteration):
-                    warnings.append(f"目录目标缺失或无效，已跳过：{title}")
+                    warnings.append(f"目录链接无法定位到正文，已跳过：{label}")
             return positions
 
         positions = resolve_entries(entries)
@@ -871,13 +888,15 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
                 files, publication.package_path, publication.package, warnings, skip_nav=True
             )
             if fallback_entries and fallback_entries != entries:
-                warnings.append("nav 目录没有有效正文目标，尝试 NCX。")
+                warnings.append("目录中的链接无法定位到正文，将尝试使用备用目录")
                 positions = resolve_entries(fallback_entries)
         if not positions:
-            warnings.append("没有有效目录，按原始 spine 资源组织阅读。")
+            warnings.append("目录不可用，已按原书的正文顺序划分章节")
             positions = [(resource.title, 0, index, 0) for index, resource in enumerate(resources)]
         elif positions[0][2:] != (0, 0):
-            warnings.append("目录之前的内容保留为前置内容；末项之后的内容保留在末章。")
+            warnings.append(
+                "目录第一项之前的文字和图片保留为前置内容，最后一项之后的内容保留在末章"
+            )
             positions.insert(0, ("前置内容", 0, 0, 0))
         part_budget = [
             sum(
@@ -914,7 +933,7 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
                 start = parser.locator_offset(leaf_start)
                 end = parser.locator_offset(leaf_end)
                 if start is None or end is None:
-                    raise EpubError("章节边界跨越 NFC 组合字符")
+                    raise EpubError(f"无法在字符中间划分章节：{resources[index].href}")
                 _spend(
                     part_budget,
                     sum(len(value.encode()) for value in parser.tokens[start_token:end_token])
@@ -958,7 +977,7 @@ def compile_epub_bytes(data: bytes) -> CompiledBook:
     except EpubError as exc:
         raise EpubError(f"无法导入 EPUB：{exc}") from exc
     except (KeyError, StopIteration, ValueError, RecursionError) as exc:
-        raise EpubError(f"EPUB 内容无效或不受支持：{exc}") from exc
+        raise EpubError("EPUB 内容无效或格式不受支持，请检查原文件") from exc
 
 
 # Stable pure-function test surface for XML, CSS and presentation rules.

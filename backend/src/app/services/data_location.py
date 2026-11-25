@@ -14,7 +14,7 @@ from app import config
 from app.config import ServerSettings, Settings
 from app.platform_io import is_link_or_reparse
 
-_PERMISSION_HINT = "请核对目录访问权限，或选择可写目录；也可能是安全软件拦截了程序访问。"
+_PERMISSION_HINT = "请检查数据目录的访问权限，或选择可写的数据目录。也可能是安全软件阻止了访问。"
 
 
 class DataLocationError(ValueError):
@@ -49,17 +49,23 @@ class _FileSelectionStore:
                 payload: object = json.load(stream)
         except FileNotFoundError:
             if self.path.is_symlink():
-                raise DataLocationError(f"数据位置记录的链接已失效：{self.path}") from None
+                raise DataLocationError(
+                    f"无法打开已记住的数据位置，位置记录的链接已失效：{self.path}"
+                ) from None
             return None
         except (UnicodeError, json.JSONDecodeError) as exc:
             raise DataLocationError(
-                f"数据位置记录无法读取：{self.path}。请重新选择已有学习库。"
+                f"无法读取数据位置记录：{self.path}。请使用「打开已有数据」重新选择。"
             ) from exc
         if not isinstance(payload, dict):
-            raise DataLocationError(f"数据位置记录无效：{self.path}")
+            raise DataLocationError(
+                f"无法识别数据位置记录：{self.path}。请使用「打开已有数据」重新选择。"
+            )
         value = cast(dict[str, object], payload).get("database_path")
         if not isinstance(value, str):
-            raise DataLocationError(f"数据位置记录缺少数据库路径：{self.path}")
+            raise DataLocationError(
+                f"数据位置记录缺少数据库文件路径：{self.path}。请使用「打开已有数据」重新选择。"
+            )
         return value
 
     def write(self, database_path: str) -> None:
@@ -90,7 +96,7 @@ def read_selection() -> Path | None:
         return None
     path = Path(value).expanduser()
     if not value.strip() or not path.is_absolute():
-        raise DataLocationError("已记住的数据库路径必须是绝对路径，请重新选择已有学习库。")
+        raise DataLocationError("已记住的数据库文件路径不完整，请使用「打开已有数据」重新选择。")
     return path
 
 
@@ -161,14 +167,19 @@ def _validate_library_identity(path: Path) -> None:
             }
             required = {"alembic_version", "sources", "materials", "segments"}
             if not required.issubset(tables):
-                raise DataLocationError(f"所选数据库不是可识别的 Folio-J 学习库：{path}。")
+                raise DataLocationError(
+                    f"无法识别所选的 Folio-J 数据库文件：{path}。"
+                    "请选择由 Folio-J 创建的数据库文件。"
+                )
             versions = connection.execute("SELECT version_num FROM alembic_version").fetchall()
             if not versions or not all(isinstance(row[0], str) and row[0] for row in versions):
-                raise DataLocationError(f"所选学习库缺少迁移版本记录：{path}。")
+                raise DataLocationError(
+                    f"所选数据库文件缺少版本信息：{path}。请选择另一份数据或从备份恢复。"
+                )
     except sqlite3.Error as exc:
         raise DataLocationError(
-            f"无法读取 Folio-J 学习库：{path}。请核对库文件与访问权限；"
-            "也可能是安全软件拦截了程序访问。"
+            f"无法读取 Folio-J 数据库文件：{path}。请检查文件和访问权限。"
+            "也可能是安全软件阻止了访问。"
         ) from exc
 
 
@@ -176,11 +187,11 @@ def _validate_writable(path: Path, *, use_existing: bool) -> None:
     exists = config.database_exists(path)
     if use_existing and not exists:
         raise DataLocationError(
-            f"找不到已有学习库：{path}。请选择包含原 app.db 的目录或数据库文件。"
+            f"找不到数据库文件：{path}。请选择原数据库文件或包含 app.db 的数据目录。"
         )
     if not use_existing and exists:
         raise DataLocationError(
-            f"该位置已有学习库：{path}。请选择“打开已有学习库”，或选择其他目录。"
+            f"该位置已有数据库文件：{path}。请选择「打开已有数据」，或选择其他数据目录。"
         )
     _check_writable(path, exists=exists, create_directory=True)
 
@@ -194,7 +205,10 @@ def _check_writable(path: Path, *, exists: bool, create_directory: bool) -> None
                 raise PermissionError(f"数据库文件不可写：{path}")
             with path.open("r+b") as stream:
                 if stream.read(16) != b"SQLite format 3\x00":
-                    raise DataLocationError(f"所选文件不是可识别的 SQLite 学习库：{path}。")
+                    raise DataLocationError(
+                        f"所选文件不是可读取的数据库文件：{path}。"
+                        "请选择由 Folio-J 创建的数据库文件。"
+                    )
             _validate_library_identity(path)
         if create_directory:
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -207,7 +221,7 @@ def _check_writable(path: Path, *, exists: bool, create_directory: bool) -> None
         Path(name).unlink()
     except OSError as exc:
         raise DataLocationError(
-            f"数据目录或数据库不可写：{path.parent}。{_PERMISSION_HINT}"
+            f"无法写入数据目录或数据库文件：{path.parent}。{_PERMISSION_HINT}"
         ) from exc
 
 
@@ -215,12 +229,12 @@ def prepare_selection(directory: Path, use_existing: bool = False) -> Settings:
     """Validate an explicit choice; never migrate, overwrite, or remember a database."""
     if "FOLIO_J_DATABASE_PATH" in os.environ:
         raise DataLocationError(
-            "当前 FOLIO_J_DATABASE_PATH 环境变量指定了数据库；"
+            "当前数据库文件由环境变量 FOLIO_J_DATABASE_PATH 指定。"
             "请先修改或移除该变量，再选择数据位置。"
         )
     chosen = directory.expanduser()
     if not chosen.is_absolute():
-        raise DataLocationError("数据位置需要填写绝对路径。")
+        raise DataLocationError("请填写数据目录或数据库文件的完整路径。")
     try:
         path = chosen if use_existing and chosen.is_file() else chosen / "app.db"
         path = path.resolve()
@@ -243,21 +257,21 @@ def validate_retry_selection(settings: Settings) -> Settings:
     path = settings.database.path
     try:
         if not path.is_absolute() or path.resolve() != path:
-            raise DataLocationError(
-                f"先前选择的数据位置已变为链接或路径发生变化：{path}。请重新选择。"
-            )
+            raise DataLocationError(f"之前选择的路径已改变：{path}。请重新选择数据位置。")
         if is_link_or_reparse(path) or is_link_or_reparse(path.parent):
-            raise DataLocationError(f"先前选择的数据位置不能是链接：{path}。请重新选择。")
+            raise DataLocationError(f"数据位置不能是符号链接或系统重解析点：{path}。请重新选择。")
         parent_info = path.parent.stat()
         if not stat.S_ISDIR(parent_info.st_mode):
-            raise DataLocationError(f"先前选择的数据目录不再是目录：{path.parent}。")
+            raise DataLocationError(f"所选路径不再是目录：{path.parent}。请选择其他数据目录。")
         try:
             info = path.lstat()
         except FileNotFoundError:
             info = None
         if info is not None:
             if not stat.S_ISREG(info.st_mode):
-                raise DataLocationError(f"先前选择的数据库不再是普通文件：{path}。")
+                raise DataLocationError(
+                    f"之前选择的数据库文件已失效：{path}。请选择另一份数据或从备份恢复。"
+                )
             _check_writable(path, exists=True, create_directory=False)
             return settings
         for suffix in config.DATABASE_COMPANIONS:
@@ -273,31 +287,31 @@ def validate_retry_selection(settings: Settings) -> Settings:
                 or is_link_or_reparse(companion)
             ):
                 raise DataLocationError(
-                    f"先前选择的位置仅剩配套文件或异常进程锁：{companion}。请核对路径或从备份恢复。"
+                    f"所选位置仅剩数据库配套文件，或锁文件异常：{companion}。请核对路径或从备份恢复。"
                 )
         _check_writable(path, exists=False, create_directory=False)
         return settings
     except FileNotFoundError as exc:
         raise DataLocationError(
-            f"先前选择的数据目录已不存在：{path.parent}。请重新连接原位置或重新选择。"
+            f"之前选择的数据目录已不存在：{path.parent}。请重新连接原位置或选择其他数据目录。"
         ) from exc
     except OSError as exc:
-        raise DataLocationError(f"无法访问先前选择的数据位置：{path}。{_PERMISSION_HINT}") from exc
+        raise DataLocationError(f"无法访问之前选择的数据位置：{path}。{_PERMISSION_HINT}") from exc
     except RuntimeError as exc:
-        raise DataLocationError(f"先前选择的数据位置存在异常链接：{path}。请重新选择。") from exc
+        raise DataLocationError(f"无法打开数据位置的链接：{path}。请重新选择数据位置。") from exc
 
 
 def remember_selection(database_path: Path) -> None:
     """Persist only a successfully started learning database; callers migrate first."""
     if not database_path.is_absolute():
-        raise DataLocationError("需要使用数据库的绝对路径记住数据位置。")
+        raise DataLocationError("无法记住数据位置，数据库文件路径不完整。")
     if not config.database_exists(database_path):
-        raise DataLocationError(f"学习库尚未创建，无法记住数据位置：{database_path}")
+        raise DataLocationError(f"数据库文件尚未创建，无法记住数据位置：{database_path}")
     _validate_library_identity(database_path)
     try:
         _FileSelectionStore().write(str(database_path.resolve()))
     except OSError as exc:
         raise DataLocationError(
-            f"学习库已就绪，但无法记住数据位置 {database_path}。"
-            f"请核对用户配置记录的写入权限；也可能是安全软件拦截了程序访问。原因：{exc}"
+            f"无法记住数据位置：{database_path}。请检查应用配置目录的写入权限。"
+            f"也可能是安全软件阻止了访问。详细信息：{exc}"
         ) from exc
