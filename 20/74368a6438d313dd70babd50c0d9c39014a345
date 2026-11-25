@@ -1,0 +1,69 @@
+docs/PRD.md
+  s_8ed53f4feaedde::t_c77833e3682f9c 336,338
+  s_e132c372526d79::t_c0fa66045a641c 339
+  s_8ed53f4feaedde::t_2b27c92de89af2 337
+docs/ARCHITECTURE.md
+  s_8ed53f4feaedde::t_c77833e3682f9c 710,712
+  s_8ed53f4feaedde::t_2b27c92de89af2 711
+backend/src/app/services/anki_export.py
+  s_8ed53f4feaedde::t_7877297938bd78 53,262-264,272,301-304,311,320,338-339,345-346,427
+  s_e132c372526d79::t_d7d5fc2f119d04 244,276-277,295-300
+  s_8ed53f4feaedde::t_c94a2b784d316b 23,47-49,51,237-243,245-251,255-261,265-271,273-274,279,294,306,340-341,347-354
+  s_e132c372526d79::t_7c9250bed84f3b 24,252-254,275,282-293,305,307
+  s_8ed53f4feaedde::t_6d7d1ef784531f 50,278,280-281
+  s_8ed53f4feaedde::t_ab5b93cbe6dba2 95-100
+  s_e132c372526d79::t_c0fa66045a641c 52
+  s_e132c372526d79::t_a4364c922d4c53 308-309
+backend/src/app/anki_export_schemas.py
+  s_e132c372526d79::t_4c453ff325547b 33-34,42-49,64,68
+  s_8ed53f4feaedde::t_cdb2a38d27928c 50-57,69
+  s_e132c372526d79::t_9caf9d99bfa202 65-67
+backend/src/app/anki_builtin_types.json
+  s_8ed53f4feaedde::t_beb7815e19e164 93-111,138-139,141
+  s_e132c372526d79::t_c0fa66045a641c 21,42
+  s_8ed53f4feaedde::t_26370e74d2edd2 2,43,55,67
+  s_8ed53f4feaedde::t_ab5b93cbe6dba2 46-54,56-66,79,92,114,132-137
+  s_8ed53f4feaedde::t_1931d1e4d80888 44-45
+  s_8ed53f4feaedde::t_94d3eea5ad4460 140
+backend/openapi.json
+  s_e132c372526d79::t_ff6699ab55ed8d 873-881,1321-1382
+  s_8ed53f4feaedde::t_99c500e943b85d 864-872
+backend/tests/test_anki_export.py
+  s_8ed53f4feaedde::t_81f731ceeca5ac 363-364,367,791-796,801-802
+  s_8ed53f4feaedde::t_d3dfba3fbacea8 50-55,59,79-81,85,90-92,122-124,143-145,191,692-712,721-761,763-765,780-781,783-790,797-800,803-811
+  s_e132c372526d79::t_c0fa66045a641c 233-235,237-238,247
+  s_8ed53f4feaedde::t_b90674f08f832e 16,293,301,310-362,365-366,368-405,411-412,713-720,762,766-779,782
+  s_e132c372526d79::t_1ab7d78d58d2ea 17,192-206,208-219,221-229,241-245,248-255,258-276,282-292,294-300,302-307
+  s_8ed53f4feaedde::t_5bec29cfa0d0d0 406-410
+  s_e132c372526d79::t_07a6255dc3bb45 239-240
+  s_e132c372526d79::t_eef4a3844ba5e9 220,230-232,236,246
+  s_e132c372526d79::t_ff6699ab55ed8d 207,256-257,277-281
+  s_8ed53f4feaedde::t_3c4ad450214089 308-309,413-414
+frontend/src/api/schema.d.ts
+  s_e132c372526d79::t_ff6699ab55ed8d 1949-1950,2086-2109
+  s_8ed53f4feaedde::t_b3f7b0019f0010 1948
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2074368a6438d313dd70babd50c0d9c39014a345",
+  "prompts": {},
+  "sessions": {
+    "s_8ed53f4feaedde": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2102b-c1e7-7391-b36e-d4ff50c3b428",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_e132c372526d79": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20e10-ddb5-7803-b96f-c46b04444524",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
