@@ -9,7 +9,7 @@
 | 如何准备开发环境、执行检查和生成快照 | [开发指南](DEVELOPMENT.md) | 依赖版本、开发命令、API 生成与快照工具 |
 | 如何试用 Windows 并记录实机结果 | [Windows 验收清单](handovers/WINDOWS_ACCEPTANCE.md) | Windows 11 x64、PowerShell、Chrome／Edge 的实验性范围、操作与待验项目 |
 | 怎样验证重启后能找回讲解并返回原句 | [真实学习闭环验收](DEVELOPMENT.md#真实学习闭环验收) | 仓库合成 EPUB、临时数据库和浏览器操作步骤 |
-| 如何保留数据、升级和恢复旧库 | [升级与备份](UPGRADING.md) | 数据与凭据备份、迁移入口、旧开发库处理边界 |
+| 如何保留数据、升级和恢复旧库 | [升级与备份](UPGRADING.md) | 数据与 API 密钥备份、迁移入口、旧开发库处理边界 |
 | 为什么做、长期怎样演进 | [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) | 动机、取舍与待验证设想；方向不自动成为实施要求 |
 | 怎样在阅读器中把选区导出到 Anki | [制卡使用步骤](USAGE.md#在阅读器中制作-anki-卡片) | 首次连接、填写与发送。字段映射及内置模板详见[阅读器制卡与界面图](handovers/anki/READER_EXPORT.md) |
 | 文本处理与学习资料如何解耦 | [文本分析与统计契约](ARCHITECTURE.md#314-文本分析与统计契约)、[文本与资料历史计划](handovers/archived/text-study/PLAN.md) | 现行契约由架构与 PRD 维护；历史计划保留切片依赖、实施依据与验收入口，当前交付状态见实施基线 |
