@@ -1,0 +1,288 @@
+frontend/browser-tests/analysis-reading.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 367,513,516,812,879
+  s_cc69f38f0e867a::t_763d9ef178f57b 563-572,574,813-817
+  s_b7836e7de4706d::t_0579f0210c2327 580-581,719,722,727,730
+frontend/browser-tests/app-theme.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 313,444
+frontend/browser-tests/settings-models.tsx
+  s_cc69f38f0e867a::t_309b02ea69213c 166,180,201,223,230,440
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 370,373,375,388,414,508
+  s_cc69f38f0e867a::t_e8880ab5c96dca 242,253,318,467,513,536,956
+frontend/src/anki/AnkiComposer.tsx
+  s_cc69f38f0e867a::t_65d2449e52f354 279-281,1175-1176
+  s_cc69f38f0e867a::t_388afa7344eacb 477-480,490-491
+  s_cc69f38f0e867a::t_7cde43fcce888f 258-260,272-275,278,294,471-476,835,883,901,1023-1030,1032,1172,1268-1272
+  s_cc69f38f0e867a::t_f4008a3cb32fd6 492
+  s_cc69f38f0e867a::t_a4b897fc00e4ec 14,680,688,1216,1232,1239,1292,1309,1331,1363,1403,1420
+frontend/browser-tests/reader-context-copy.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 483,494,499,508,552,560,569,580,583
+  s_5205cb416695a2::t_fd33072f7801b7 21-22,375,396,403,596,610,612,621,636-639,641,655-657
+frontend/browser-tests/translation-toolbar.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 374,417,432,498,503
+frontend/src/settings/ModelSetupDialog.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 49
+  s_5205cb416695a2::t_e33d296df3d640 37,41,60,71
+frontend/browser-tests/anki-sentence-focus.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 128
+frontend/browser-tests/inline-records.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 380,538
+frontend/src/catalog/SourceOverview.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 107,142,165,185,197,234,299
+frontend/src/materials/ReaderSearchPanel.tsx
+  s_cc69f38f0e867a::t_3a3d120229fdfd 12,617
+  s_cc69f38f0e867a::t_e009b89adaa694 614-616
+  s_cc69f38f0e867a::t_9776beec96a180 115,454,621,624,627,639,690,713,723,751,787
+frontend/browser-tests/explanation.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 235,252,254,335,341,384,464
+  s_cc69f38f0e867a::t_763d9ef178f57b 183,185,493-494
+  s_cc69f38f0e867a::t_5d2c8b1607bf07 46-53
+  s_cc69f38f0e867a::t_ba1d769f71be83 487-492
+frontend/browser-tests/focused-navigation.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 913,930
+  s_cc69f38f0e867a::t_bdbda398928f07 899
+frontend/browser-tests/source-deletion.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 397-398
+  s_cc69f38f0e867a::t_0f7309e95902d5 392,394-395,399-400
+frontend/browser-tests/segment-share.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 115,270
+  s_cc69f38f0e867a::t_13259abd63ceef 282
+frontend/browser-tests/workbench.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 635,695,716,720,724,825,842,846
+  s_cc69f38f0e867a::t_ba1d769f71be83 831
+  s_cc69f38f0e867a::t_180f8c2e7f5a58 402,455,457,470,518,525,528,531,615,620
+frontend/src/catalog/BookEditDialog.tsx
+  s_cc69f38f0e867a::t_3a3d120229fdfd 321-322,344,350
+  s_cc69f38f0e867a::t_92adce61d4888a 320
+  s_cc69f38f0e867a::t_adbedec4b43e16 33,78,212,357,365,380,397,401,421
+frontend/src/settings/providers/ProviderModels.tsx
+  s_cc69f38f0e867a::t_3a3d120229fdfd 195
+  s_cc69f38f0e867a::t_4c1cdef01d8c3a 10,102,108,125,349
+frontend/browser-tests/reading-aids.tsx
+  s_cc69f38f0e867a::t_b50f79a3614020 405
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 537,600,612,617,694,726,782,790
+  s_cc69f38f0e867a::t_d682ae5538d712 394
+frontend/browser-tests/translation-session.tsx
+  s_cc69f38f0e867a::t_0d913f036546f7 616,726-728
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 715,733,770
+frontend/src/segments/SegmentDeleteDialog.tsx
+  s_cc69f38f0e867a::t_3a3d120229fdfd 72
+  s_cc69f38f0e867a::t_21b2dd23dabe8a 69-71
+  s_cc69f38f0e867a::t_816c0508af6cc3 73-74
+  s_cc69f38f0e867a::t_999ff2f5dc33c8 36,77,87
+frontend/browser-tests/catalog-overview.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 160
+frontend/browser-tests/margin-record-targets.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 139-140,157,215,237,274,344,366,384,399
+frontend/browser-tests/position-bookmarks.tsx
+  s_cc69f38f0e867a::t_708e194094be6c 667-670
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 435,514,528,549,602,620,639
+  s_cc69f38f0e867a::t_24a9b25a696dff 671,680,685,785,969,974,1094,1177,1192,1196,1231,1243,1310,1354,1500,1538,1556
+frontend/browser-tests/translation.tsx
+  s_cc69f38f0e867a::t_296aec3cbd9259 364,531-533,540-542
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 550
+  s_cc69f38f0e867a::t_0d913f036546f7 938,960,970,989-991
+  s_cc69f38f0e867a::t_9140ff83b868fa 1040,1046
+frontend/browser-tests/segment-share-source.tsx
+  s_cc69f38f0e867a::t_763d9ef178f57b 261-263,265,284-285
+  s_cc69f38f0e867a::t_ba1d769f71be83 286-290
+  s_cc69f38f0e867a::t_4ae1ec1a943c6e 184
+frontend/src/catalog/BookDeleteDialog.tsx
+  s_cc69f38f0e867a::t_3a3d120229fdfd 31,34,53,55,68,84,86,88,92,104,108,115,117,125,131-135,150,178
+frontend/src/anki/AnkiSettings.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 111,122,220
+  s_5205cb416695a2::t_29f677cdade026 250,257,270,310,359-361,386,419
+frontend/src/anki/AnkiReferencePane.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 722,732,736
+  s_5205cb416695a2::t_af57fbf7b42779 156,159,191,268,272,305,352,643,747,821,823-824,847,849-850,933
+frontend/src/translation/state.test.ts
+  s_cc69f38f0e867a::t_3c75461695b519 64
+  s_5205cb416695a2::t_e6a58f878680a0 58-61
+frontend/browser-tests/segment-origin-stability.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 252
+  s_cc69f38f0e867a::t_8ff793135ab52f 157,159-160,232,243
+frontend/browser-tests/translation-drag.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 185
+frontend/src/segments/SegmentShare.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 228,243-248,255-261,267
+frontend/browser-tests/catalog-reuse.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 208
+frontend/browser-tests/reader-search.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 397,496,521,526,614,629,698,708,816,923,939,1111
+frontend/src/catalog/Books.tsx
+  s_cc69f38f0e867a::t_3a3d120229fdfd 145,167,263,294,296
+  s_cc69f38f0e867a::t_5d3161ac62edda 484,508,515-516,522,525,533
+frontend/src/settings/RunHistory.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 377
+  s_5205cb416695a2::t_10dbf054000961 21,133,154,165,250,337,371-373,391-405
+frontend/src/materials/MaterialReader.tsx
+  s_cc69f38f0e867a::t_26bbe65f31328e 232,3495-3499
+  s_cc69f38f0e867a::t_65d2449e52f354 243-245,1972-1973,3510-3512,3537
+  s_cc69f38f0e867a::t_eaefe9dadddb7c 36-41,223-231,233-242,246-267,2454,2456,2497,2509,2519,2530,2550,2606,2665-2666,2704,2745-2746,2830,2980,2993,3020,3045-3046,3072,3103,3306,3502-3509,3513,3539
+  s_cc69f38f0e867a::t_f98653819e9f9c 35
+  s_cc69f38f0e867a::t_b76b3e87c88296 3307
+  s_4c6882fe91bb3d::t_75b1f4c352cf4c 541,573,1261,1271,1667,1797,2268,2296,2365-2366,2395,3337,3649,3651,3660,3671
+frontend/browser-tests/material-import.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 167
+frontend/browser-tests/reader-settings.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 420-421,475,486,543,666-667,700,702,726,731,769,809,845,865,883,965,972-973
+  s_cc69f38f0e867a::t_5e08beb2ee0f34 347,406,1004
+frontend/browser-tests/source-onboarding.tsx
+  s_cc69f38f0e867a::t_ba1d769f71be83 110-111
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 208,227
+frontend/src/catalog/SourceDirectory.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 235-236,257,262,265,354
+frontend/browser-tests/settings-connection-history.tsx
+  s_cc69f38f0e867a::t_b5f285925f1dff 287
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 258
+frontend/browser-tests/source-edit-delete.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 142,152,162,278,401,403,409,421,432,436-438,502
+  s_cc69f38f0e867a::t_763d9ef178f57b 383-387
+  s_cc69f38f0e867a::t_d64966e43b5680 388-389
+  s_cc69f38f0e867a::t_ca5d8305f7abca 399-400
+  s_b7836e7de4706d::t_b6d64ad24fabe4 281,393,395,619,621,634,653,726,738,758
+frontend/browser-tests/segment-materials.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 154
+  s_cc69f38f0e867a::t_c455f81511bc2e 851-852
+  s_cc69f38f0e867a::t_aa614468735c65 170,201,221,294,301,591,684,750,767-768,818,824,837,938,958
+frontend/src/materials/StudyPreview.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 253-256,316,326,331,335,337,342,389,394,398,425,435,457,505-506
+frontend/browser-tests/explanation-prompt-copy.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 163
+  s_cc69f38f0e867a::t_a36113db0c765a 207,215
+frontend/src/anki/AnkiConfigurationEditor.tsx
+  s_cc69f38f0e867a::t_65d2449e52f354 462-463
+  s_cc69f38f0e867a::t_3cf73d506da066 354-359,440,457-461,638-640,648,655,658,674-675,700-701,705,724,730,739,776
+  s_cc69f38f0e867a::t_a8f17df2169318 3,145,153,159,166,172,174,619,628,637,789
+frontend/browser-tests/segment-dictionary.tsx
+  s_cc69f38f0e867a::t_763d9ef178f57b 193,946
+  s_cc69f38f0e867a::t_ba1d769f71be83 194,1015
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 316,484,507,574,640,728,777,959
+frontend/browser-tests/translation-removal.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 277,279,321,329-330,343,354,393,396,403,405,408,442,444,453,458,513,664,677,681
+  s_cc69f38f0e867a::t_a13c51b11e0436 682-683,686,690,708,713,719,723,726
+frontend/src/translation/TranslationPanel.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 760-762,780,873-874,949-951,964,994,1019,1060,1081,1083
+  s_5205cb416695a2::t_dd7a9019104e6a 61-80,87-88,99,103,453,741,749,753,756,1112,1115,1130,1143-1147,1184-1185
+frontend/browser-tests/reader-session.tsx
+  s_cc69f38f0e867a::t_708e194094be6c 1164,1219
+  s_cc69f38f0e867a::t_a83ecb3549a79e 1175-1178
+  s_cc69f38f0e867a::t_c4af1fbd3beed8 52,186,1167-1174,1179-1192
+frontend/src/translation/TranslationSettings.tsx
+  s_cc69f38f0e867a::t_3a3d120229fdfd 79-80
+  s_cc69f38f0e867a::t_21254c6842b70d 78
+  s_cc69f38f0e867a::t_d369c673c79532 81
+  s_cc69f38f0e867a::t_de7366c7276f89 4,57,138,167,227,235,272,291,299,355-356,387
+frontend/browser-tests/segment-selection-speech.ts
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 135,195
+  s_cc69f38f0e867a::t_ba1d769f71be83 300
+frontend/src/catalog/MaterialVocabularyPage.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 150,163,191,203,220,369,372,374,396,404,410-411,474-475,499,509,511,563,570,581,583,586
+frontend/browser-tests/route-loading.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 73,178,305
+frontend/browser-tests/record-saving.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 445,474,535,555
+  s_cc69f38f0e867a::t_bf8a0003772f98 556,563,590,595
+frontend/browser-tests/route-motion.tsx
+  s_cc69f38f0e867a::t_763d9ef178f57b 467-470
+frontend/browser-tests/workbench-render.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 187,191,211,270,280,286
+frontend/browser-tests/chapter-records.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 632,717,969,1178,1239,1245,1265,1414,1434,1444,1480,1492,1512,1553,1594,1608,1619,1672,1728,1750,1815,1821,1850,1872
+frontend/browser-tests/translation-result-actions.ts
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 28,31,41
+frontend/src/materials/ReaderBookmarks.tsx
+  s_cc69f38f0e867a::t_e009b89adaa694 525
+  s_cc69f38f0e867a::t_5fb158cf87afd9 81
+  s_cc69f38f0e867a::t_3a3d120229fdfd 7,77-80,82-83,100,111,320,337,342,480,482-483,508-509,526,529,539,552,575
+frontend/src/translation/SavedTranslationDestinations.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 14-15
+  s_5205cb416695a2::t_2b25abad9b172a 11,20,24
+frontend/src/settings/DataLocationSettings.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 18
+  s_5205cb416695a2::t_723938467aedc3 28-29,32,36,48,68,72
+frontend/browser-tests/analysis-rename.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 193,250,291,296,310,321,328,340
+frontend/browser-tests/navigation-feedback.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 119,122,183
+frontend/browser-tests/reader-dictionary.tsx
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 897,900,996,1131,1204,1968,1991
+  s_cc69f38f0e867a::t_a87a977f425814 2659
+frontend/src/settings/DictionarySettings.tsx
+  s_cc69f38f0e867a::t_e009b89adaa694 358-359
+  s_cc69f38f0e867a::t_3c75461695b519 30,37,45,47-48,221,223-224,229,249,260,283,322-323,326
+  s_cc69f38f0e867a::t_3755c2b7221fd4 375,395
+frontend/src/speech/index.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 66,87,92,147,150,183,205,222,255,312,317,321,325,414,492,532
+frontend/browser-tests/segment-catalog.tsx
+  s_cc69f38f0e867a::t_763d9ef178f57b 140,551-552
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 316-317,359,379,464,522,532,628
+  s_b7836e7de4706d::t_0d3baf4cf0ef50 536,572
+frontend/browser-tests/settings-return.tsx
+  s_cc69f38f0e867a::t_708e194094be6c 491-493
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 226,230
+frontend/src/catalog/BookStatistics.tsx
+  s_cc69f38f0e867a::t_3c75461695b519 35,37-39,91-93,98-99,125-128,145,150,152-153,156,158,160-167,212,223
+frontend/src/anki/AnkiMappingField.tsx
+  s_cc69f38f0e867a::t_3cf73d506da066 36,48,87,99-101
+  s_cc69f38f0e867a::t_73cd1f7a9c5ba0 14-16,25-26,185,198,241
+frontend/browser-tests/dictionary-settings.tsx
+  s_cc69f38f0e867a::t_708e194094be6c 202
+  s_cc69f38f0e867a::t_7a4b7cec9f3c6e 222
+  s_5205cb416695a2::t_c5de8f2e43de11 605
+frontend/src/SourcePages.tsx
+  s_cc69f38f0e867a::t_3a3d120229fdfd 170,256-257,295,314,319,321-322,325-328,360,617,620
+frontend/src/translation/state.ts
+  s_cc69f38f0e867a::t_3c75461695b519 69-73
+  s_cc69f38f0e867a::t_fa650ff5b6f373 74-75
+frontend/browser-tests/material-vocabulary.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 691
+frontend/browser-tests/catalog-toolbar.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 73,244
+frontend/src/content.ts
+  s_cc69f38f0e867a::t_5fb158cf87afd9 21-23
+  s_cc69f38f0e867a::t_3a755dad054e45 20,24-25,35,41-44
+frontend/browser-tests/anki-composer.tsx
+  s_cc69f38f0e867a::t_bc103ee4e3a62e 97,118,186,189
+frontend/browser-tests/model-setup.tsx
+  s_b7836e7de4706d::t_0643e09ab1ca82 157,204,248,259,275,281,286,320,325
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7e4c4fd1d6947c605c78bad68d7eaf7b1ac0a7c5",
+  "prompts": {},
+  "sessions": {
+    "s_4c6882fe91bb3d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21363-b6bf-72a1-8eb3-63bd6606ff79",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_5205cb416695a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21363-8841-7850-8397-79747fe213c4",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_b7836e7de4706d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21363-9ebc-77d3-8538-f67d81f22b3f",
+        "model": "unknown"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    },
+    "s_cc69f38f0e867a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21363-34f0-70f2-bde0-c4f5c2746683",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
