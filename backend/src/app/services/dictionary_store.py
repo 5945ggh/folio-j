@@ -35,9 +35,18 @@ from app.dictionary_schemas import (
 )
 from app.platform_io import fsync_directory
 from app.services.dictionary_styles import StyleContext, sanitize_style
+from app.services.dictionary_stylesheet import (
+    MAX_STYLESHEET_BYTES,
+    STRUCTURED_ROOT,
+    DictionaryStylesheet,
+    StyleNode,
+    compile_stylesheet,
+)
 
 INDEX_VERSION = "2"
 TREE_VERSION = "1"
+STYLESHEET_INDEX_VERSION = 1
+STYLESHEET_NAME = "styles.css"
 MAX_UPLOAD_BYTES = 256 * 1024 * 1024
 MAX_UNPACKED_BYTES = 1024 * 1024 * 1024
 MAX_BANK_BYTES = 64 * 1024 * 1024
@@ -47,7 +56,9 @@ MAX_LOADED_DEFINITION_BYTES = 16 * 1024 * 1024
 MAX_INDEX_BYTES = 2 * 1024 * 1024 * 1024
 MAX_QUERY_RECORDS = 20_000
 BANK_NAME = re.compile(r"term_bank_(\d+)\.json\Z")
-STAGED_LIBRARY_INDEX = re.compile(r"([0-9a-f]{64}\.sqlite3)\.deleting-[0-9a-f]{32}")
+_INDEX_FILENAME = r"[0-9a-f]{64}(?:\.styles-\d+)?\.sqlite3"
+LIBRARY_INDEX = re.compile(_INDEX_FILENAME)
+STAGED_LIBRARY_INDEX = re.compile(rf"({_INDEX_FILENAME})\.deleting-[0-9a-f]{{32}}")
 NodeTag = Literal["div", "p", "span", "ul", "ol", "li", "br", "ruby", "rt"]
 NodeRole = Literal["head", "def1", "def2", "dfcn", "exam", "exjp", "excn"]
 NODE_TAGS = {"div", "p", "span", "ul", "ol", "li", "br", "ruby", "rt"}
@@ -84,7 +95,11 @@ def _string(value: object, max_length: int = 4096) -> str:
 
 
 def _nodes(
-    value: object, depth: int = 0, context: StyleContext | None = None
+    value: object,
+    depth: int = 0,
+    context: StyleContext | None = None,
+    stylesheet: DictionaryStylesheet | None = None,
+    ancestors: tuple[StyleNode, ...] = (),
 ) -> list[DictionaryNode]:
     context = context or StyleContext()
     if depth > 40:
@@ -93,22 +108,27 @@ def _nodes(
         return [DictionaryNode(text=_string(value, 1_000_000))]
     if isinstance(value, list):
         return [
-            node for item in cast(list[object], value) for node in _nodes(item, depth + 1, context)
+            node
+            for item in cast(list[object], value)
+            for node in _nodes(item, depth + 1, context, stylesheet, ancestors)
         ]
     item = _object(value)
     if item.get("type") == "structured-content":
-        return _nodes(item.get("content", ""), depth + 1, context)
+        root = (STRUCTURED_ROOT,) if stylesheet is not None else ()
+        return _nodes(item.get("content", ""), depth + 1, context, stylesheet, root)
     if item.get("type") == "text":
-        return _nodes(item.get("text", ""), depth + 1, context)
+        return _nodes(item.get("text", ""), depth + 1, context, stylesheet, ancestors)
     # Unsupported image/audio resources are never fetched or interpreted as HTML.
     if item.get("type") in {"image", "audio"}:
         return []
-    tag = item.get("tag", "span")
+    raw_tag = item.get("tag")
+    tag = raw_tag if isinstance(raw_tag, str) else "span"
     if tag in {"script", "style", "iframe", "object", "img"}:
         return []
-    safe_tag = cast(NodeTag, tag if isinstance(tag, str) and tag in NODE_TAGS else "span")
-    data = item.get("data")
-    role_value = _object(cast(object, data)).get("class") if isinstance(data, dict) else None
+    safe_tag = cast(NodeTag, tag if tag in NODE_TAGS else "span")
+    raw_data = item.get("data")
+    data = _object(cast(object, raw_data)) if isinstance(raw_data, dict) else {}
+    role_value = data.get("class")
     role = cast(
         NodeRole | None,
         role_value if isinstance(role_value, str) and role_value in NODE_ROLES else None,
@@ -121,14 +141,23 @@ def _nodes(
         lang = "zh"
     elif role == "exjp":
         lang = "ja"
-    style, child_context = sanitize_style(item.get("style"), context)
+    raw_style = item.get("style")
+    if stylesheet is not None:
+        ancestors = (
+            *ancestors,
+            StyleNode(tag, data, language if isinstance(language, str) else None),
+        )
+        raw_style = stylesheet.style_for(ancestors, raw_style)
+    style, child_context = sanitize_style(raw_style, context)
     return [
         DictionaryNode(
             tag=safe_tag,
             lang=lang,
             role=role,
             style=style,
-            content=_nodes(item.get("content", ""), depth + 1, child_context),
+            content=_nodes(
+                item.get("content", ""), depth + 1, child_context, stylesheet, ancestors
+            ),
         )
     ]
 
@@ -171,6 +200,8 @@ class DictionarySnapshot:
         self.connection = connection
         self._definitions: dict[str, tuple[DictionaryNode, ...]] = {}
         self._definition_bytes = 0
+        self._stylesheet: DictionaryStylesheet | None = None
+        self._loaded_stylesheet = False
 
     async def status(self) -> DictionaryStatus:
         if self.connection is None:
@@ -184,6 +215,28 @@ class DictionarySnapshot:
         return DictionaryStatus(
             title=row[0], dictionary_id=row[1], revision=row[2], entry_count=row[3], ready=True
         )
+
+    async def has_current_stylesheet_index(self) -> bool:
+        if self.connection is None:
+            return False
+        async with self.connection.execute("PRAGMA user_version") as cursor:
+            row = await cursor.fetchone()
+        return row is not None and row[0] >= STYLESHEET_INDEX_VERSION
+
+    async def _read_stylesheet_source(self) -> str | None:
+        if self.connection is None:
+            return None
+        try:
+            async with self.connection.execute(
+                "SELECT source FROM stylesheet WHERE length(CAST(source AS BLOB)) <= ? LIMIT 1",
+                (MAX_STYLESHEET_BYTES,),
+            ) as cursor:
+                row = await cursor.fetchone()
+        except aiosqlite.OperationalError as exc:
+            if str(exc) != "no such table: stylesheet":
+                raise
+            return None
+        return str(row[0]) if row is not None else None
 
     async def find_terms(self, keys: list[str]) -> list[DictionaryEntry]:
         if self.connection is None or not keys:
@@ -243,9 +296,19 @@ class DictionarySnapshot:
                 f"SELECT id, payload FROM definitions WHERE id IN ({placeholders})", batch
             ) as cursor:
                 rows = [(str(row[0]), bytes(row[1])) for row in await cursor.fetchall()]
-            decoded, size = await asyncio.to_thread(
+            decoded, stale, size = await asyncio.to_thread(
                 _decode_definitions, rows, MAX_LOADED_DEFINITION_BYTES - self._definition_bytes
             )
+            if stale:
+                # Fresh trees never consult the retained stylesheet. When an older
+                # tree needs rebuilding, parse the stylesheet once for this snapshot.
+                if not self._loaded_stylesheet:
+                    source = await self._read_stylesheet_source()
+                    self._stylesheet = await asyncio.to_thread(compile_stylesheet, source)
+                    self._loaded_stylesheet = True
+                decoded.update(
+                    await asyncio.to_thread(_rebuild_definitions, stale, self._stylesheet)
+                )
             self._definitions.update(decoded)
             self._definition_bytes += size
         return [
@@ -258,8 +321,9 @@ class DictionarySnapshot:
 
 def _decode_definitions(
     rows: list[tuple[str, bytes]], budget: int
-) -> tuple[dict[str, tuple[DictionaryNode, ...]], int]:
+) -> tuple[dict[str, tuple[DictionaryNode, ...]], dict[str, object], int]:
     decoded: dict[str, tuple[DictionaryNode, ...]] = {}
+    stale: dict[str, object] = {}
     size = 0
     for identity, payload in rows:
         decoder = zlib.decompressobj()
@@ -271,15 +335,21 @@ def _decode_definitions(
         if len(raw) > MAX_DEFINITION_BYTES or size > budget or not decoder.eof:
             raise _invalid("词典正文索引无效，请重新导入")
         envelope = _object(json.loads(raw))
-        # v2 already retains the source. Older sanitized trees can acquire the new
-        # safe presentation without a database write or a full dictionary reimport.
-        # Fresh trees avoid a second sanitization pass; the snapshot caches both.
-        decoded[identity] = (
-            tuple(DictionaryNode.model_validate(node) for node in _array(envelope["nodes"]))
-            if envelope.get("tree_version") == TREE_VERSION
-            else tuple(_nodes(envelope["source"]))
-        )
-    return decoded, size
+        if envelope.get("tree_version") == TREE_VERSION:
+            decoded[identity] = tuple(
+                DictionaryNode.model_validate(node) for node in _array(envelope["nodes"])
+            )
+        else:
+            stale[identity] = envelope["source"]
+    return decoded, stale, size
+
+
+def _rebuild_definitions(
+    stale: dict[str, object], stylesheet: DictionaryStylesheet | None
+) -> dict[str, tuple[DictionaryNode, ...]]:
+    return {
+        identity: tuple(_nodes(source, stylesheet=stylesheet)) for identity, source in stale.items()
+    }
 
 
 class DictionaryStore:
@@ -456,7 +526,7 @@ class DictionaryStore:
         referenced = set(paths.values())
         candidates = self._deferred_deletions.copy()
         for path in self.library_path.glob("*.sqlite3"):
-            if re.fullmatch(r"[0-9a-f]{64}\.sqlite3", path.name):
+            if LIBRARY_INDEX.fullmatch(path.name):
                 candidates[path] = path
         if self.path not in referenced:
             # A restart loses the in-memory queue for a busy legacy deletion.
@@ -539,37 +609,39 @@ class DictionaryStore:
                 count = 1
             await self._reap_unreferenced_indexes(connection)
             already_installed = False
+            replaced_path: Path | None = None
             if installed is not None and installed.dictionary_id:
                 async with connection.execute(
-                    "SELECT 1 FROM dictionaries WHERE dictionary_id = ?", (installed.dictionary_id,)
+                    "SELECT filename FROM dictionaries WHERE dictionary_id = ?",
+                    (installed.dictionary_id,),
                 ) as cursor:
-                    already_installed = await cursor.fetchone() is not None
-                if prepared_index is None:
-                    async with connection.execute(
-                        "SELECT filename FROM dictionaries WHERE dictionary_id = ?",
-                        (installed.dictionary_id,),
-                    ) as cursor:
-                        current = await cursor.fetchone()
-                    if current is None:
-                        raise HTTPException(
-                            status_code=409, detail="词典库已变化，请重新导入该词典"
-                        )
-                await connection.execute(
-                    "INSERT OR IGNORE INTO dictionaries VALUES (?, ?, ?, ?, ?)",
-                    (
-                        installed.dictionary_id,
-                        installed.title,
-                        installed.revision,
-                        installed.entry_count,
-                        installed.dictionary_id + ".sqlite3",
-                    ),
-                )
+                    current = await cursor.fetchone()
+                already_installed = current is not None
+                if current is None and prepared_index is None:
+                    raise HTTPException(status_code=409, detail="词典库已变化，请重新导入该词典")
                 if prepared_index is not None:
-                    await asyncio.to_thread(self._publish_index, prepared_index, installed)
-                    await connection.execute(
-                        "UPDATE dictionaries SET filename = ? WHERE dictionary_id = ?",
-                        (installed.dictionary_id + ".sqlite3", installed.dictionary_id),
+                    current_path = None
+                    if current is not None:
+                        current_path = (
+                            self.path if current[0] == "legacy" else self.library_path / current[0]
+                        )
+                    chosen = await asyncio.to_thread(
+                        self._publish_index, prepared_index, installed, current_path
                     )
+                    filename = "legacy" if chosen == self.path else chosen.name
+                    await connection.execute(
+                        "INSERT INTO dictionaries VALUES (?, ?, ?, ?, ?) "
+                        "ON CONFLICT(dictionary_id) DO UPDATE SET filename = excluded.filename",
+                        (
+                            installed.dictionary_id,
+                            installed.title,
+                            installed.revision,
+                            installed.entry_count,
+                            filename,
+                        ),
+                    )
+                    if current_path is not None and current_path not in {chosen, self.path}:
+                        replaced_path = current_path
                 if count == 0:
                     active_id = installed.dictionary_id
             if active_id is not None:
@@ -589,6 +661,8 @@ class DictionaryStore:
                 )
             library, _ = await self._read_catalog(connection)
             await connection.commit()
+            if replaced_path is not None:
+                self._deferred_deletions[replaced_path] = replaced_path
         return library, already_installed
 
     async def select(self, dictionary_id: str) -> DictionaryLibrary:
@@ -651,6 +725,11 @@ class DictionaryStore:
             async with self._file_snapshot(paths[identity]) as snapshot:
                 status = await snapshot.status()
                 valid = status.ready and status.dictionary_id == identity
+                has_current_stylesheet_index = (
+                    valid and await snapshot.has_current_stylesheet_index()
+                )
+            if valid and not has_current_stylesheet_index:
+                valid = not await asyncio.to_thread(_archive_contains_stylesheet, source)
         prepared: Path | None = None
         try:
             if existing and valid:
@@ -662,6 +741,8 @@ class DictionaryStore:
                 active_id=result.dictionary_id if activate else None,
                 prepared_index=prepared,
             )
+            if self._deferred_deletions:
+                await self._cleanup_deferred_indexes()
             return DictionaryLibraryImport(
                 library=library, dictionary_id=identity, already_installed=already_installed
             )
@@ -698,23 +779,32 @@ class DictionaryStore:
             target.unlink(missing_ok=True)
             raise
 
-    def _publish_index(self, target: Path, result: DictionaryStatus) -> None:
+    def _publish_index(
+        self, target: Path, result: DictionaryStatus, current_path: Path | None
+    ) -> Path:
         published = self.library_path / (str(result.dictionary_id) + ".sqlite3")
+        base_is_older = False
+        if current_path is not None:
+            readable = self.readable_index_path(current_path)
+            healthy, styled = _index_presentation_status(readable, result.dictionary_id)
+            if styled:
+                return current_path
+            base_is_older = current_path == published and healthy
+
+        # A styled rebuild must not change the file behind readers of the healthy
+        # old index. It can still be open after deletion has removed the catalog entry.
+        if not base_is_older and current_path != published and published.is_file():
+            healthy, styled = _index_presentation_status(published, result.dictionary_id)
+            base_is_older = healthy and not styled
+        if base_is_older:
+            published = published.with_suffix(f".styles-{STYLESHEET_INDEX_VERSION}.sqlite3")
         try:
             os.link(target, published)
         except FileExistsError:
-            healthy = False
-            try:
-                with closing(sqlite3.connect(published)) as existing:
-                    metadata = existing.execute(
-                        "SELECT dictionary_id, version FROM metadata"
-                    ).fetchone()
-                    healthy = metadata == (result.dictionary_id, INDEX_VERSION)
-            except sqlite3.DatabaseError:
-                pass
-            if not healthy:
+            if not _index_presentation_status(published, result.dictionary_id)[1]:
                 os.replace(target, published)
         fsync_directory(self.library_path)
+        return published
 
     async def delete(
         self, dictionary_id: str, replacement_dictionary_id: str | None = None
@@ -823,6 +913,32 @@ class DictionaryStore:
         return library
 
 
+def _index_presentation_status(path: Path, identity: str | None) -> tuple[bool, bool]:
+    try:
+        with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as connection:
+            metadata = connection.execute("SELECT dictionary_id, version FROM metadata").fetchone()
+            styled = connection.execute("PRAGMA user_version").fetchone()[0]
+    except sqlite3.DatabaseError:
+        return False, False
+    healthy = metadata == (identity, INDEX_VERSION)
+    return healthy, healthy and styled >= STYLESHEET_INDEX_VERSION
+
+
+def _archive_contains_stylesheet(source: Path) -> bool:
+    with zipfile.ZipFile(source) as archive:
+        return STYLESHEET_NAME in archive.NameToInfo
+
+
+def _read_stylesheet(archive: zipfile.ZipFile) -> str | None:
+    info = archive.NameToInfo.get(STYLESHEET_NAME)
+    if info is None or info.file_size > MAX_STYLESHEET_BYTES:
+        return None
+    try:
+        return archive.read(info).decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return None
+
+
 def _build(source: Path, target: Path) -> DictionaryStatus:
     with source.open("rb") as uploaded:
         digest = hashlib.file_digest(uploaded, "sha256").hexdigest()
@@ -861,6 +977,12 @@ def _build(source: Path, target: Path) -> DictionaryStatus:
                 original TEXT NOT NULL, term_key TEXT NOT NULL, reading_key TEXT NOT NULL);
         """)
         connection.execute("CREATE TABLE definitions(id TEXT PRIMARY KEY, payload BLOB NOT NULL)")
+        connection.execute("CREATE TABLE stylesheet(source TEXT NOT NULL)")
+        connection.execute(f"PRAGMA user_version = {STYLESHEET_INDEX_VERSION}")
+        stylesheet_source = _read_stylesheet(archive)
+        stylesheet = compile_stylesheet(stylesheet_source)
+        if stylesheet_source is not None:
+            connection.execute("INSERT INTO stylesheet VALUES (?)", (stylesheet_source,))
         seen_definitions: set[str] = set()
         count = 0
         for bank in banks:
@@ -885,7 +1007,7 @@ def _build(source: Path, target: Path) -> DictionaryStatus:
                     raise _invalid("单条词典正文超过限制")
                 definition_id = hashlib.sha256(source_definitions).hexdigest()
                 if definition_id not in seen_definitions:
-                    definitions = _nodes(record[5])
+                    definitions = _nodes(record[5], stylesheet=stylesheet)
                     envelope = json.dumps(
                         {
                             "source": record[5],

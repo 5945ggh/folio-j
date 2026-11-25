@@ -177,6 +177,7 @@ export async function readerDictionary(h: BrowserHarness) {
 	let statusReads = 0;
 	let statusResponses = 0;
 	let lookupResponses = 0;
+	let reimportedWithStyles = false;
 	let activeDictionaryId: string | null = basicsScene ? null : "synthetic";
 	let activeDictionaryTitle: string | null = basicsScene
 		? null
@@ -347,6 +348,7 @@ export async function readerDictionary(h: BrowserHarness) {
 						tag: "p",
 						lang: "zh",
 						role: "dfcn",
+						style: reimportedWithStyles ? { fontWeight: "bold" } : null,
 						text:
 							withinWord && !input.assisted_ranking
 								? "按原始顺序显示的释义。"
@@ -902,6 +904,36 @@ export async function readerDictionary(h: BrowserHarness) {
 				"Manual lookup must still work in click mode",
 			);
 			checkRequest("道");
+			button("关闭当前词卡").click();
+			selection.removeAllRanges();
+			check(
+				readerClient && activeDictionaryId && activeDictionaryTitle,
+				"词典状态已就绪",
+			);
+			reimportedWithStyles = true;
+			await updateDictionaryLibrary(
+				readerClient,
+				{
+					dictionaries: [
+						{
+							dictionary_id: activeDictionaryId,
+							title: activeDictionaryTitle,
+							revision: "1",
+							entry_count: 3,
+						},
+					],
+					active_dictionary_id: activeDictionaryId,
+				},
+				activeDictionaryId,
+			);
+			await selectText(second, 3, 4);
+			lookup().click();
+			await h.until(() => {
+				const meaning = h.container.querySelector(
+					'.dict-card [data-dict-role="dfcn"]',
+				);
+				return !!meaning && getComputedStyle(meaning).fontWeight === "700";
+			}, "重新导入同一 ZIP 后，查同一词立即显示更新的词典样式");
 			if (params.has("capture")) {
 				button("关闭当前词卡").click();
 				await selectText(first, 2, 4);

@@ -213,7 +213,7 @@ async def test_metadata_queries_decode_only_selected_shared_definitions(
 
     def counted(
         rows: list[tuple[str, bytes]], budget: int
-    ) -> tuple[dict[str, tuple[dictionary_store.DictionaryNode, ...]], int]:
+    ) -> tuple[dict[str, tuple[dictionary_store.DictionaryNode, ...]], dict[str, object], int]:
         calls.append(len(rows))
         return decode(rows, budget)
 

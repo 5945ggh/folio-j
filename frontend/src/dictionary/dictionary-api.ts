@@ -67,6 +67,7 @@ export async function deleteDictionary(id: string, replacementId?: string) {
 export async function updateDictionaryLibrary(
 	client: QueryClient,
 	data: DictionaryLibrary,
+	importedId?: string,
 ) {
 	// A GET started before the mutation must not restore the previous selection.
 	await Promise.all([
@@ -89,11 +90,12 @@ export async function updateDictionaryLibrary(
 					ready: false,
 				},
 	);
+	if (importedId) await refreshDictionaryLookups(client, importedId);
 	if (typeof window !== "undefined") {
 		try {
 			window.localStorage.setItem(
 				dictionaryChangeKey,
-				`${Date.now()}:${Math.random()}`,
+				`${Date.now()}:${Math.random()}:${importedId ?? ""}`,
 			);
 		} catch {
 			// Focus refetch and lookup's expected identity still verify the selection.
@@ -101,11 +103,18 @@ export async function updateDictionaryLibrary(
 	}
 }
 
+async function refreshDictionaryLookups(client: QueryClient, id: string) {
+	// Reimport can rebuild the style index while retaining the ZIP identity.
+	const filter = { queryKey: ["dictionary", "lookup", id] };
+	await client.cancelQueries(filter);
+	await client.invalidateQueries(filter);
+}
+
 export function subscribeDictionaryLibrary(client: QueryClient) {
 	const changed = (event: StorageEvent) => {
 		if (event.key !== dictionaryChangeKey && event.key !== null) return;
-		// Installing another dictionary does not change existing lookups. Recheck
-		// only the library and selection; the reader reacts to an identity change.
+		const importedId = event.newValue?.split(":")[2];
+		if (importedId) void refreshDictionaryLookups(client, importedId);
 		void Promise.all(
 			[dictionaryKey, dictionaryLibraryKey].map(async (queryKey) => {
 				await client.cancelQueries({ queryKey });

@@ -2,7 +2,7 @@
 
 Lengths become bounded rem values, including inherited relative font sizes. This
 prevents nested em/percent sizes or indentation from multiplying without a bound.
-No CSS parser, external stylesheets, arbitrary declarations or resources are used.
+Both inline and package declarations use this grammar before reaching a rendered node.
 """
 
 import re
@@ -55,6 +55,22 @@ _ENUMS = {
 }
 
 
+_COLOR_PROPERTIES = {"color", "backgroundColor", "borderColor"}
+_LENGTH_PROPERTIES = {
+    "fontSize",
+    "marginTop",
+    "marginBottom",
+    "marginLeft",
+    "marginRight",
+    "paddingTop",
+    "paddingBottom",
+    "paddingLeft",
+    "paddingRight",
+    "borderWidth",
+    "borderRadius",
+}
+
+
 @dataclass(frozen=True)
 class StyleContext:
     font_size: float = 1.0
@@ -93,6 +109,25 @@ def _color(value: str) -> bool:
     )
 
 
+def is_supported_style_value(key: str, value: str) -> bool:
+    """Check declaration syntax before CSS cascade selects the value for a node."""
+    if len(value) > 64:
+        return False
+    if key in _ENUMS:
+        return value in _ENUMS[key]
+    if key in _COLOR_PROPERTIES:
+        return _color(value)
+    if key in _LENGTH_PROPERTIES:
+        match = _LENGTH.fullmatch(value)
+        if match is None:
+            return False
+        number, unit = float(match[1]), match[2]
+        if unit == "%":
+            return key in {"fontSize", "borderRadius"}
+        return unit is not None or number == 0
+    return False
+
+
 def sanitize_style(
     value: object, parent: StyleContext
 ) -> tuple[DictionaryNodeStyle | None, StyleContext]:
@@ -113,20 +148,9 @@ def sanitize_style(
         text = raw.strip().lower()
         if key in _ENUMS and text in _ENUMS[key]:
             safe[key] = text
-        elif key in {"color", "backgroundColor", "borderColor"} and _color(text):
+        elif key in _COLOR_PROPERTIES and _color(text):
             safe[key] = text
-        elif key in {
-            "marginTop",
-            "marginBottom",
-            "marginLeft",
-            "marginRight",
-            "paddingTop",
-            "paddingBottom",
-            "paddingLeft",
-            "paddingRight",
-            "borderWidth",
-            "borderRadius",
-        }:
+        elif key in _LENGTH_PROPERTIES and key != "fontSize":
             if key == "borderRadius" and text.endswith("%"):
                 radius = _length(text, 1, percent=True)
                 if radius is not None and 0 <= radius <= 0.5:

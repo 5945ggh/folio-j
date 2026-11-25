@@ -20,7 +20,11 @@ type DictionaryAction =
 	| { kind: "select"; id: string }
 	| { kind: "delete"; id: string; title: string; replacementId?: string };
 
-async function changeDictionary(action: DictionaryAction) {
+async function changeDictionary(action: DictionaryAction): Promise<{
+	library: DictionaryLibrary;
+	notice: string;
+	importedId?: string;
+}> {
 	if (action.kind === "delete") {
 		const library = await deleteDictionary(action.id, action.replacementId);
 		return { library, notice: `已删除《${action.title}》的本机安装。` };
@@ -38,11 +42,15 @@ async function changeDictionary(action: DictionaryAction) {
 	);
 	const title = installed?.title ?? action.file.name;
 	const notice = result.already_installed
-		? `《${title}》已经安装。`
+		? `已核对《${title}》的本机索引。`
 		: result.library.active_dictionary_id === result.dictionary_id
 			? `已导入《${title}》，阅读时将使用这本词典。`
 			: `已导入《${title}》。`;
-	return { library: result.library, notice };
+	return {
+		library: result.library,
+		notice,
+		importedId: result.dictionary_id,
+	};
 }
 
 function DictionaryGlyph({ upload = false }: { upload?: boolean }) {
@@ -165,8 +173,8 @@ export function DictionarySettings() {
 	useEffect(() => subscribeDictionaryLibrary(client), [client]);
 	const change = useMutation({
 		mutationFn: changeDictionary,
-		onSuccess: async ({ library: next }, action) => {
-			await updateDictionaryLibrary(client, next);
+		onSuccess: async ({ library: next, importedId }, action) => {
+			await updateDictionaryLibrary(client, next, importedId);
 			if (action.kind === "delete") setDeleting(null);
 		},
 	});

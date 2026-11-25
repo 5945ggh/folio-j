@@ -1,3 +1,4 @@
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { startAppTheme } from "../src/theme/browser";
 import { THEME_STORAGE_KEY } from "../src/theme/preference";
 import type { BrowserHarness } from "./harness";
@@ -20,6 +21,11 @@ export async function dictionarySettings(h: BrowserHarness) {
 	const params = new URLSearchParams(location.search);
 	const { SettingsPage } = await import("../src/settings/SettingsPage");
 	const check: BrowserHarness["check"] = h.check;
+	let queryClient: QueryClient | undefined;
+	function SettingsUnderTest() {
+		queryClient = useQueryClient();
+		return <SettingsPage />;
+	}
 	let library = {
 		dictionaries: [] as (typeof meikyo)[],
 		active_dictionary_id: null as string | null,
@@ -502,7 +508,7 @@ export async function dictionarySettings(h: BrowserHarness) {
 		active_dictionary_id: other.dictionary_id,
 	};
 	dispose = await h.mount(
-		<SettingsPage />,
+		<SettingsUnderTest />,
 		"/settings",
 		"/settings?section=dictionary",
 	);
@@ -600,6 +606,15 @@ export async function dictionarySettings(h: BrowserHarness) {
 			) && !h.container.querySelector(".dictionary-delete-dialog select"),
 			"Deleting the final dictionary must explain continued basic lookup",
 		);
+		const client = queryClient;
+		check(client, "The settings cache must be mounted");
+		const lookupKey = [
+			"dictionary",
+			"lookup",
+			meikyo.dictionary_id,
+			{ text: "雨" },
+		];
+		client.setQueryData(lookupKey, { matches: [], analyses: [] });
 		confirmDelete().click();
 		await h.until(
 			() =>
@@ -614,6 +629,21 @@ export async function dictionarySettings(h: BrowserHarness) {
 			"Successful removal must update the library and notify other tabs",
 		);
 		emptyState();
+		failImport = false;
+		await upload();
+		await h.until(
+			() =>
+				!picker().disabled &&
+				library.active_dictionary_id === meikyo.dictionary_id,
+			"Installing the same ZIP again must restore its active selection",
+		);
+		check(
+			client.getQueryState(lookupKey)?.isInvalidated &&
+				localStorage
+					.getItem("folio-j:dictionary-library-changed")
+					?.endsWith(`:${meikyo.dictionary_id}`),
+			"Deleting then installing the same ZIP must invalidate its cached lookups and notify other tabs",
+		);
 	} finally {
 		dispose();
 	}

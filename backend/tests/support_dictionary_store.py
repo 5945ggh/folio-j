@@ -9,13 +9,21 @@ from app.services import dictionary_store
 from app.services.dictionary_store import DictionaryStore
 
 
-def archive(records: list[list[object]], *, title: str = "合成词典", version: int = 3) -> bytes:
+def archive(
+    records: list[list[object]],
+    *,
+    title: str = "合成词典",
+    version: int = 3,
+    stylesheet: str | bytes | None = None,
+) -> bytes:
     output = io.BytesIO()
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as package:
         package.writestr(
             "index.json", json.dumps({"title": title, "format": version, "revision": "test-1"})
         )
         package.writestr("term_bank_1.json", json.dumps(records))
+        if stylesheet is not None:
+            package.writestr("styles.css", stylesheet)
     return output.getvalue()
 
 
