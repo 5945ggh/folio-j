@@ -229,8 +229,10 @@ export async function marginRecordTargets(
 		assertGroupCounts();
 	};
 	await h.until(
-		() => margins().length === 7,
-		"Fixture must paint seven independently positioned real margin buttons",
+		() =>
+			Boolean(h.container.querySelector('.reader-r1[data-presented="true"]')) &&
+			margins().length === 7,
+		"Reader must finish restoring its position and paint seven real margin buttons",
 	);
 	const singlesTranslation = matchingMargins("打开此处翻译");
 	const singlesSegment = matchingMargins("打开此处学习片段");
