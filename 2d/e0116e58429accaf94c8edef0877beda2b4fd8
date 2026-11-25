@@ -1,0 +1,25 @@
+backend/src/app/services/explanation_prompts.py
+  s_a7245da512c0b7::t_5dcf94605aa356 19
+backend/prompts/chat/external_explanation_v2.j2
+  s_a7245da512c0b7::t_02c39d1c4c7f08 4
+  s_a7245da512c0b7::t_5dcf94605aa356 1,3,5-43
+  s_a7245da512c0b7::t_c7f13b1dd25474 2
+backend/tests/test_explanation_prompt.py
+  s_a7245da512c0b7::t_5dcf94605aa356 46-48,51,55,57-58,157-162,165-166,174,176-183,185-186
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2de0116e58429accaf94c8edef0877beda2b4fd8",
+  "prompts": {},
+  "sessions": {
+    "s_a7245da512c0b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21399-0852-71d1-82e8-3ef67504a477",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
