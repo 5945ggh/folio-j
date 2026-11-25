@@ -16,7 +16,7 @@ async def for_segment(session: AsyncSession, segment_id: str) -> SegmentExplanat
     # Explicit allowlist: neither management notes nor chat/provider state belongs
     # in text the user copies to an external service.
     prompt = (
-        ENV.get_template("external_explanation_v1.j2")
+        ENV.get_template("external_explanation_v2.j2")
         .render(
             source={"title": source.title, "description": source.description},
             segment={
