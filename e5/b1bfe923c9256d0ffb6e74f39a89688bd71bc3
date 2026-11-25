@@ -1,0 +1,159 @@
+backend/src/app/services/reader_views.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 118,165,168,170,174,221,225,234,349,354,378-379,401,426,430,452,470,493,525,543,561
+frontend/src/materials/epub-import-warnings.test.ts
+  s_a7245da512c0b7::t_d82a5fb48e90da 1-60
+backend/src/app/services/bookmarks.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 79,153,164,173,229,249
+backend/src/app/services/sources.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 291,299
+backend/src/app/services/reader_queries.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 31,149
+frontend/src/catalog/book-management.css
+  s_a7245da512c0b7::t_d82a5fb48e90da 163-172,194-195
+backend/src/app/services/record_search.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 179,282,293
+frontend/browser-tests/route-motion.tsx
+  s_a7245da512c0b7::t_2290f2ee4839e6 62-63,110,488-492,494-501,503-511
+  s_a7245da512c0b7::t_0218bb0d532dbe 493,502
+backend/tests/test_startup.py
+  s_a7245da512c0b7::t_b87e6327b3e3ed 501
+backend/src/app/jobs/runtime.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 71,84,285
+backend/src/app/services/startup.py
+  s_a7245da512c0b7::t_b87e6327b3e3ed 94,114,138,141,180
+  s_a7245da512c0b7::t_0c9a9a1f3ad620 147-149,173
+backend/src/app/services/materials.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 78,159,173,284,286,290,334
+backend/src/app/startup.py
+  s_a7245da512c0b7::t_b87e6327b3e3ed 29,97
+backend/src/app/services/translations.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 109,132,144,263,317,324,328,337,347,350,429,572,575,577,592,618,661,673,687
+  s_a7245da512c0b7::t_7b2124ad1f2947 314,335,448
+  s_a7245da512c0b7::t_ae3531cb09512a 482-486
+backend/src/app/services/statistics.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 81,83,101,126,164,174,176
+backend/src/app/services/anki_export.py
+  s_a7245da512c0b7::t_e4282d7ae1de1c 78,81,90,99,120,212-214,218,220,252,295,326,331,334,336-338,345,366,373-375,391,393,436,474
+scripts/run.py
+  s_a7245da512c0b7::t_b87e6327b3e3ed 71,83,112-113
+backend/tests/test_data_location.py
+  s_a7245da512c0b7::t_91eaf30ae93457 204,220,226,274,286,351,353,410,452,475,504,514
+backend/src/app/services/epub.py
+  s_a7245da512c0b7::t_c8f0fe9c831613 539,753,786,790-791,808,833-834,846,891,894,897-899,936,980
+  s_a7245da512c0b7::t_385345d6da908c 159,214-216,218,228,240,249,254,257,271,326,333,377,390,395,400,414-415,420,423,444,449,454,456,466,472,475-476,483-484,489,498,525,532,541-542,561-562,590-591,593,634
+  s_a7245da512c0b7::t_b2f730e08f6e0a 241-243,461-463,469,864,872,876,882
+backend/tests/test_main_lifespan.py
+  s_a7245da512c0b7::t_c0ad98317e64ac 24
+backend/tests/test_launcher.py
+  s_a7245da512c0b7::t_91eaf30ae93457 136,442,559
+backend/src/app/backup.py
+  s_a7245da512c0b7::t_b37df834f63140 512
+  s_a7245da512c0b7::t_0c9a9a1f3ad620 175-177,264-266
+  s_a7245da512c0b7::t_554a343ffcffd8 81,99,115,122,141,143,157,165,168,181,183,185,202,204,211,225,228,233,272,289,308,322,326,337,348,360,362,412,423,453,455,458,462,468,473,479,481,485,488,490,492,526,545
+  s_a7245da512c0b7::t_5586b6c7514f86 358
+backend/src/app/main.py
+  s_a7245da512c0b7::t_54cc4865bcc354 51-52
+  s_a7245da512c0b7::t_5e86d56816dd17 50,53
+backend/static/startup/index.html
+  s_a7245da512c0b7::t_91eaf30ae93457 29
+  s_a7245da512c0b7::t_b87e6327b3e3ed 15,19,23-25,30-31,36,55,60,75-76,81,85-87,94
+backend/src/app/services/chapter_translations.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 141,151,153,155,219,230
+frontend/browser-tests/reader-session.tsx
+  s_a7245da512c0b7::t_2290f2ee4839e6 53-54,188,1186-1187,1189-1192,1196-1199
+  s_a7245da512c0b7::t_5e37658c957720 1188
+backend/src/app/config.py
+  s_a7245da512c0b7::t_91eaf30ae93457 65-66,77-78,92,97,133-134,154,184
+  s_a7245da512c0b7::t_0c9a9a1f3ad620 167-169
+backend/src/app/services/dictionary_store.py
+  s_a7245da512c0b7::t_e4282d7ae1de1c 75-77,108,248,271,280,335,338,623-625,662,704,856,954,957,972,1011,1028,1060,1081
+backend/src/app/platform_io.py
+  s_a7245da512c0b7::t_b87e6327b3e3ed 38,48,65
+backend/src/app/services/material_provenance.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 141,144,150,154,160,162,164,186,211,216,220,255,279,281,300,302,341,348,377,390,399,409,417,434,569
+  s_a7245da512c0b7::t_7b2124ad1f2947 405,430
+frontend/src/materials/epub-import-warnings.ts
+  s_a7245da512c0b7::t_7c8e8f7ffbf36c 1-5,7-27
+  s_a7245da512c0b7::t_c6cc8d81750cf8 6
+frontend/src/materials/MaterialReader.tsx
+  s_a7245da512c0b7::t_7c8e8f7ffbf36c 87
+backend/src/app/services/chat.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 128,194,231,245,279,322,324,364,485,487,492,494,496,506,510,523,633,662,701,703,706
+  s_a7245da512c0b7::t_ae3531cb09512a 551-553
+backend/src/app/services/readings.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 56,106,118
+backend/src/app/launcher.py
+  s_a7245da512c0b7::t_b87e6327b3e3ed 44,85,90,102,145-147,149,160,164-165
+  s_a7245da512c0b7::t_0c9a9a1f3ad620 46-48,70-73
+backend/src/app/services/analyses.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 48,125,208,235,301,315,329,332,425,455,462,480,501,538,541,551,564,567,590,604
+  s_a7245da512c0b7::t_ae3531cb09512a 416-418,519-521
+backend/src/app/services/settings.py
+  s_a7245da512c0b7::t_e4282d7ae1de1c 247,268,423,515,526,541,555,601,612,643,697,705,723,737,783,835
+backend/src/app/services/data_location.py
+  s_a7245da512c0b7::t_2c9e1c15c7584a 52-54,58,61-63,66-68,99,170,173,176-178,181,190,194,208,211,224,232,237,265,272-274,290,296,299,307,309,315
+  s_a7245da512c0b7::t_0c9a9a1f3ad620 260,262,301
+  s_a7245da512c0b7::t_14491391d3267a 171-172,209-210
+  s_a7245da512c0b7::t_91eaf30ae93457 17,182,316
+backend/src/app/services/material_segments.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 100,102,104,148,158
+frontend/src/materials/BookImportWarnings.tsx
+  s_a7245da512c0b7::t_d82a5fb48e90da 3-9,14
+  s_a7245da512c0b7::t_7c8e8f7ffbf36c 1-2,10-13,15-31
+backend/tests/test_platform_io.py
+  s_a7245da512c0b7::t_b87e6327b3e3ed 85
+backend/src/app/services/material_usage.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 66
+backend/tests/test_backup.py
+  s_a7245da512c0b7::t_554a343ffcffd8 648,721
+  s_a7245da512c0b7::t_91eaf30ae93457 236,316
+backend/src/app/services/material_metadata.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 72,74,76,97,99
+backend/src/app/services/vocabulary.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 193
+backend/tests/test_epub_compiler.py
+  s_a7245da512c0b7::t_3d72e2082dcdaf 135-138,153-154,165,420,432,513,548,560,588-593,600-602,607-610,642-652,655,693
+frontend/src/catalog/BookDetailsPage.tsx
+  s_a7245da512c0b7::t_d82a5fb48e90da 142-145
+  s_a7245da512c0b7::t_7c8e8f7ffbf36c 4
+backend/src/app/jobs/agent.py
+  s_a7245da512c0b7::t_f40e8312a8c5cb 677,706,716,737,748,756,867,879
+backend/alembic/env.py
+  s_a7245da512c0b7::t_745ed6c4fa5952 59
+backend/src/app/api/anki.py
+  s_a7245da512c0b7::t_162d107c8a1020 41
+backend/src/app/llm/errors.py
+  s_a7245da512c0b7::t_f0b7328b745932 14,20,22,24,26
+backend/src/app/services/anki_connect.py
+  s_a7245da512c0b7::t_7bcb495da4e6a0 62-73
+backend/src/app/services/anki_settings.py
+  s_a7245da512c0b7::t_5e8863f77d0b78 72,128
+backend/src/app/services/segment_context_settings.py
+  s_a7245da512c0b7::t_9bd897d7831476 37
+backend/tests/test_anki_settings.py
+  s_a7245da512c0b7::t_ef3ab8055bd178 211
+backend/tests/test_settings_api.py
+  s_a7245da512c0b7::t_7ad08948aaba21 798
+backend/tests/test_smoke_frozen.py
+  s_a7245da512c0b7::t_b7b15a1c92217e 134,142,144,156
+backend/tests/test_translations.py
+  s_a7245da512c0b7::t_433e2d0ed0781f 388,480
+scripts/smoke_frozen.py
+  s_a7245da512c0b7::t_a7a1cf8ed25fd3 123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e5b1bfe923c9256d0ffb6e74f39a89688bd71bc3",
+  "prompts": {},
+  "sessions": {
+    "s_a7245da512c0b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21399-0852-71d1-82e8-3ef67504a477",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
