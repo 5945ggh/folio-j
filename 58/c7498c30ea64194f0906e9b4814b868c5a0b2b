@@ -1,0 +1,21 @@
+backend/tests/test_dictionary_styles.py
+  s_acd8443bc1107f::t_e6e8789ca5972e 238,240-241,268
+backend/src/app/services/dictionary_styles.py
+  s_acd8443bc1107f::t_57e04eecdf58d6 125-126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "58c7498c30ea64194f0906e9b4814b868c5a0b2b",
+  "prompts": {},
+  "sessions": {
+    "s_acd8443bc1107f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21594-e56b-7023-88e5-381996b17cc7",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
