@@ -1,0 +1,19 @@
+backend/tests/test_dictionary_styles.py
+  s_acd8443bc1107f::t_2a690d409f875d 302-304
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1b3c7dc10d4316451f69eb0ebb7120c0c66400db",
+  "prompts": {},
+  "sessions": {
+    "s_acd8443bc1107f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21594-e56b-7023-88e5-381996b17cc7",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
