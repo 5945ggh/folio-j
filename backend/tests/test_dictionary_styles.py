@@ -235,8 +235,10 @@ ul[data-sc-content='glossary'] { color: #ffff00; }
     margin: 1em 0.5em; border: 1px solid blue;
 }
 ul[data-sc-content] { color: blue; padding: 0.25em 0.5em; font-weight: 100; }
+ul[data-sc-content] { padding-left: -1px; }
 [data-sc-content=glossary] {
-    color: orange !important; font-size: 1.25em;
+    color: orange !important; font-size: 1.25em; font-size: -10%;
+    margin-left: -0.5em;
     margin-top: 9999px; position: fixed;
     background-image: url(https://example.invalid/x);
 }
@@ -263,6 +265,7 @@ async def test_package_styles_use_one_bounded_definition_tree_for_lookup(tmp_pat
         "color": "orange",
         "fontSize": "1.25rem",
         "fontWeight": "700",
+        "marginLeft": "-0.625rem",
         "paddingTop": "0.625rem",
         "paddingBottom": "0.3125rem",
         "paddingLeft": "0.625rem",

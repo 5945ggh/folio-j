@@ -122,6 +122,8 @@ def is_supported_style_value(key: str, value: str) -> bool:
         if match is None:
             return False
         number, unit = float(match[1]), match[2]
+        if number < 0 and not key.startswith("margin"):
+            return False
         if unit == "%":
             return key in {"fontSize", "borderRadius"}
         return unit is not None or number == 0
