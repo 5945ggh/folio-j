@@ -299,7 +299,9 @@ async def test_package_styles_use_one_bounded_definition_tree_for_lookup(tmp_pat
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("stylesheet", [b"\xff", " " * (MAX_STYLESHEET_BYTES + 1)])
+@pytest.mark.parametrize(
+    "stylesheet", [b"\xff", " " * (MAX_STYLESHEET_BYTES + 1)], ids=["invalid-utf8", "oversized"]
+)
 async def test_unreadable_or_oversized_stylesheet_keeps_inline_presentation(
     tmp_path: Path, stylesheet: str | bytes
 ) -> None:
