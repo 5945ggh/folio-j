@@ -341,6 +341,7 @@ export async function ankiComposerRegression(h: BrowserHarness) {
 	const gate = readGate();
 	const configurations = readGate();
 	let presetLoaded = false;
+	let nextStatus: "unknown" | "target_changed" | undefined;
 	const requests: AnkiExportInput[] = [];
 	const scope = { url: "http://localhost:8765", profile: "A" };
 	const config: AnkiConfigurationResponse = {
@@ -360,7 +361,7 @@ export async function ankiComposerRegression(h: BrowserHarness) {
 				multiline: false,
 			},
 			{
-				id: "sound",
+				id: "custom_1",
 				label: "词条音频",
 				source: "manual",
 				type: "audio",
@@ -479,8 +480,11 @@ export async function ankiComposerRegression(h: BrowserHarness) {
 				const payload: AnkiExportInput = await request.json();
 				requests.push(payload);
 				return Response.json({
-					status: payload.allow_duplicate ? "created" : "duplicate",
-					media_may_remain: false,
+					status:
+						nextStatus ?? (payload.allow_duplicate ? "created" : "duplicate"),
+					media_may_remain: nextStatus === "target_changed",
+					message:
+						nextStatus === "target_changed" ? "当前 Anki 用户已变化。" : null,
 					type_created: false,
 				});
 			}
@@ -809,6 +813,27 @@ export async function ankiComposerRegression(h: BrowserHarness) {
 			() => !!card.current?.querySelector(".anki-media-filename"),
 			"附件应进入草稿",
 		);
+		card.current
+			?.querySelector<HTMLButtonElement>(
+				".anki-composer-foot .anki-btn-secondary",
+			)
+			?.click();
+		await h.until(
+			() =>
+				Array.from(document.querySelectorAll(".anki-field-table-row")).some(
+					(row) =>
+						row.querySelector("strong")?.textContent === "Audio" &&
+						row.textContent?.includes("word.mp3"),
+				),
+			"自定义类型预览应显示旧配置中已选择的附件",
+		);
+		document
+			.querySelector<HTMLButtonElement>(".anki-modal [aria-label=关闭预览]")
+			?.click();
+		await h.until(
+			() => !document.querySelector(".anki-modal[open]"),
+			"关闭字段预览",
+		);
 		send()?.click();
 		send()?.click();
 		await h.until(() => !!send()?.disabled, "附件读取前应锁定发送");
@@ -849,7 +874,43 @@ export async function ankiComposerRegression(h: BrowserHarness) {
 				?.value === readingInput.value,
 			"发送的单行字段值应与输入框显示一致",
 		);
-		return "Anki attachment submission, scoped target and duplicate confirmation";
+		nextStatus = "unknown";
+		send()?.click();
+		await h.until(
+			() =>
+				card.current
+					?.querySelector('[role="alert"]')
+					?.textContent?.includes("结果未确认") === true,
+			"未收到写入回执时应提示先查 Anki",
+		);
+		card.current
+			?.querySelector<HTMLButtonElement>('[aria-label="关闭制卡浮窗"]')
+			?.click();
+		const discard = () =>
+			document.querySelector<HTMLDialogElement>(
+				'dialog[aria-labelledby="anki-discard-title"]',
+			);
+		await h.until(
+			() =>
+				discard()
+					?.querySelector("p")
+					?.textContent?.includes("发送结果尚未确认，请先在 Anki 中核对") ===
+				true,
+			"关闭确认应保留发送结果未知的提示",
+		);
+		discard()
+			?.querySelector<HTMLButtonElement>("[data-dialog-cancel]")
+			?.click();
+		await h.until(() => !discard(), "继续编辑当前草稿");
+		nextStatus = "target_changed";
+		send()?.click();
+		await h.until(
+			() =>
+				card.current?.querySelector('[role="alert"]')?.textContent ===
+				"当前 Anki 用户已变化（部分媒体文件可能已上传）。",
+			"上传后目标变化应保留媒体残留说明",
+		);
+		return "Anki attachment preview and submission, scoped target, duplicate confirmation, unknown receipt and partial media notice";
 	} finally {
 		configurations.release();
 		gate.release();

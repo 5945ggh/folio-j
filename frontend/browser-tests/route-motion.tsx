@@ -192,6 +192,8 @@ export async function routeMotion(h: BrowserHarness, preview = false) {
 			});
 		if (request.method === "GET" && path === `${base}/translations`)
 			return Response.json({ results: [], tasks: [], next_offset: null });
+		if (request.method === "POST" && path === "/api/anki/probe")
+			return Response.json({ detail: "未连接 Anki" }, { status: 502 });
 		throw new Error(`Unmocked route motion request ${request.method} ${path}`);
 	});
 	let dispose = await h.mount(<App />, "/", catalogEntry, appRoutes);

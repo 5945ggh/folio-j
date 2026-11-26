@@ -136,7 +136,13 @@ export function getFieldText(
 ): string {
 	const key = fieldValueKey(field);
 	if (key in draft.text) return draft.text[key] ?? "";
-	if (field.id === "partOfSpeech" && draft.headwordChanged) return "";
+	if (
+		draft.headwordChanged &&
+		(field.id === "partOfSpeech" ||
+			(field.source === "manual" &&
+				(field.id === "reading" || field.target_field === "Reading")))
+	)
+		return "";
 	return initialFieldText(field, context);
 }
 

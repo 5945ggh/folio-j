@@ -2377,6 +2377,17 @@ function Reader({
 					>
 						本章记录
 					</button>
+					<AnkiHeaderStatus
+						active={active}
+						activation={activation}
+						settingsState={returnState(
+							{ to: `/materials/${book.id}`, label: book.title },
+							returnTo,
+							"/settings",
+						)}
+						externalStatus={ankiStatus}
+						onStatusChange={setAnkiStatus}
+					/>
 					<button
 						type="button"
 						aria-label="书籍信息"
@@ -2395,15 +2406,6 @@ function Reader({
 					>
 						<ReaderNavigationIcon name="settings" />
 					</SettingsLink>
-					<AnkiHeaderStatus
-						settingsState={returnState(
-							{ to: `/materials/${book.id}`, label: book.title },
-							returnTo,
-							"/settings",
-						)}
-						externalStatus={ankiStatus}
-						onStatusChange={setAnkiStatus}
-					/>
 				</div>
 			</header>
 			<div className="reader-alerts" aria-live="polite">

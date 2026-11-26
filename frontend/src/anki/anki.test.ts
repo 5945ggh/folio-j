@@ -314,6 +314,33 @@ describe("anki draft, mapping validation, and preview rendering", () => {
 		assert.equal(getFieldText(draft, readingField, dictContext), "とる");
 	});
 
+	it("exports the new headword without the old automatic reading and keeps a manually entered reading", async () => {
+		const vocab = buildConfigOptions(builtins, []).find(
+			(item) => item.id === "export.vocabulary",
+		);
+		const word = vocab?.fields.find((field) => field.target_field === "Word");
+		const reading = vocab?.fields.find(
+			(field) => field.target_field === "Reading",
+		);
+		assert.ok(vocab && word && reading);
+		const initial = createInitialDraft();
+		const changeWord = (draft: typeof initial) =>
+			updateDraftFieldText(draft, word, dictContext, "撮る");
+		const exportReading = async (draft: typeof initial) =>
+			(await buildExportFields(vocab, draft, dictContext)).find(
+				(field) => field.id === reading.id,
+			)?.value;
+		assert.equal(await exportReading(initial), "とる");
+		assert.equal(await exportReading(changeWord(initial)), "");
+		const manual = updateDraftFieldText(
+			initial,
+			reading,
+			dictContext,
+			"と・る",
+		);
+		assert.equal(await exportReading(changeWord(manual)), "と・る");
+	});
+
 	it("preserves manual edits across configuration switches and remembers last config id", () => {
 		const options = buildConfigOptions(builtins, []);
 		const vocab = options[0];

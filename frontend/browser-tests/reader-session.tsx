@@ -156,11 +156,14 @@ export async function readerSession(
 			request.method === "GET" ||
 				(request.method === "POST" &&
 					(path === `/api/materials/${materialId}/readings/prepare` ||
-						path === `/api/materials/${materialId}/opened`)) ||
+						path === `/api/materials/${materialId}/opened` ||
+						path === "/api/anki/probe")) ||
 				(request.method === "PUT" &&
 					path === `/api/materials/${materialId}/reading-position`),
 			`Unexpected reader side effect ${request.method} ${actualPath}`,
 		);
+		if (request.method === "POST" && path === "/api/anki/probe")
+			return Response.json({ detail: "未连接 Anki" }, { status: 502 });
 		const timing: RequestTiming = {
 			method: request.method,
 			path: actualPath,

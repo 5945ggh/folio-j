@@ -6,6 +6,7 @@ import {
 	type AnkiConfigOption,
 	type AnkiDraftValues,
 	buildPreviewFieldMap,
+	fieldValueKey,
 	getFieldText,
 	renderBuiltinTemplate,
 } from "./draft";
@@ -120,8 +121,7 @@ export function AnkiCardPreviewModal({
 							</div>
 						) : (
 							mappedFields.map((field) => {
-								const key = `${field.id}:${field.type}`;
-								const media = draft.media[key];
+								const media = draft.media[fieldValueKey(field)];
 								const displayValue =
 									field.type === "text"
 										? getFieldText(draft, field, context) || "（空）"

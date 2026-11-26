@@ -109,6 +109,10 @@ export async function focusedNavigation(h: BrowserHarness) {
 	const readingGate = new Promise<void>((resolve) => {
 		resolveReadings = resolve;
 	});
+	let ankiProbeState: "connected" | "error" = ankiScene ? "connected" : "error";
+	let ankiCatalogAvailable = false;
+	const ankiProfile = "日本語学習".repeat(8);
+	let ankiProbes = 0;
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
 		requests.push({ method: request.method, path });
@@ -116,11 +120,28 @@ export async function focusedNavigation(h: BrowserHarness) {
 			request.method === "GET" ||
 				(request.method === "POST" &&
 					(path === `/api/materials/${fixture.materialId}/readings/prepare` ||
-						path === `/api/materials/${fixture.materialId}/opened`)) ||
+						path === `/api/materials/${fixture.materialId}/opened` ||
+						path === "/api/anki/probe")) ||
 				(request.method === "PUT" &&
 					path === `/api/materials/${fixture.materialId}/reading-position`),
 			`Navigation must not write content or invoke a model: ${request.method} ${path}`,
 		);
+		if (request.method === "POST" && path === "/api/anki/probe") {
+			ankiProbes += 1;
+			if (ankiProbeState === "connected")
+				return Response.json({
+					endpoint: "http://localhost:8765",
+					profile: ankiProfile,
+					protocol: "v1",
+				});
+			return Response.json(
+				{
+					detail:
+						"无法连接 Anki，请检查 AnkiConnect 地址，并确认 Anki 和 AnkiConnect 插件已在运行。",
+				},
+				{ status: 502 },
+			);
+		}
 		if (path === "/api/segments/saved") {
 			if (deletedSegment)
 				return Response.json({ detail: "片段已删除" }, { status: 404 });
@@ -171,14 +192,23 @@ export async function focusedNavigation(h: BrowserHarness) {
 					export_presets: [],
 					shared_css: "",
 				});
-			if (path === "/api/anki/catalog")
+			if (path === "/api/anki/catalog") {
+				if (!ankiCatalogAvailable)
+					return Response.json(
+						{
+							detail:
+								"无法连接 Anki，请检查 AnkiConnect 地址，并确认 Anki 和 AnkiConnect 插件已在运行。",
+						},
+						{ status: 502 },
+					);
 				return Response.json({
 					endpoint: "http://localhost:8765",
-					profile: "A",
+					profile: ankiProfile,
 					protocol: "v1",
 					decks: [],
 					note_types: [],
 				});
+			}
 			if (path === "/api/settings/anki/connection")
 				return Response.json({
 					url: "http://localhost:8765",
@@ -371,6 +401,14 @@ export async function focusedNavigation(h: BrowserHarness) {
 				"/",
 			"Reader Home must target the canonical index route",
 		);
+		if (ankiScene) {
+			await h.until(
+				() =>
+					ankiProbes >= 1 &&
+					Boolean(h.container.querySelector(".anki-topbar-dot")),
+				"进入阅读器应静默探测 Anki 连接并亮起状态点",
+			);
+		}
 		await openSettings(".reader-r1");
 		check(
 			find<HTMLElement>(".settings-reading-notice-context").textContent ===
@@ -417,6 +455,41 @@ export async function focusedNavigation(h: BrowserHarness) {
 						.querySelector(".anki-ref-pane .analysis-markdown")
 						?.textContent?.includes("第 1 段讲解") === true,
 				"制卡参考栏应使用同一份已缓存的分页讲解",
+			);
+			const backToDraft = [
+				...h.container.querySelectorAll<HTMLButtonElement>(
+					".anki-ref-pane button",
+				),
+			].find((button) => button.textContent?.includes("返回草稿"));
+			backToDraft?.click();
+			const retry = () =>
+				h.container.querySelector<HTMLButtonElement>(
+					".anki-composer .anki-banner-actions button",
+				);
+			await h.until(() => !!retry(), "目录读取失败时可在草稿中重试");
+			check(
+				!!h.container.querySelector(".anki-topbar-dot"),
+				"目录读取失败不应覆盖成功的顶栏探测",
+			);
+			ankiProbeState = "error";
+			const probesBeforeRetry = ankiProbes;
+			retry()?.click();
+			await h.until(
+				() =>
+					ankiProbes === probesBeforeRetry + 1 &&
+					!retry()?.disabled &&
+					!h.container.querySelector(".anki-topbar-dot"),
+				"草稿重试的探测失败结果应同步到顶栏",
+			);
+			ankiProbeState = "connected";
+			ankiCatalogAvailable = true;
+			retry()?.click();
+			await h.until(
+				() =>
+					ankiProbes === probesBeforeRetry + 2 &&
+					!retry() &&
+					!!h.container.querySelector(".anki-topbar-dot"),
+				"草稿重试成功后应更新顶栏并重新读取目录",
 			);
 			await h.until(
 				() =>
@@ -470,8 +543,19 @@ export async function focusedNavigation(h: BrowserHarness) {
 				() => Boolean(h.container.querySelector("#anki-connect-url")),
 				"回到 Anki 设置列表",
 			);
+			ankiProbeState = "error";
+			const probesBeforeSettingsReturn = ankiProbes;
 			click("#settings-reading-return");
 			await readyReader();
+			await h.until(
+				() =>
+					ankiProbes > probesBeforeSettingsReturn &&
+					!!h.container.querySelector(
+						'.anki-topbar-btn[aria-label="Anki 连接状态（未连接）"]',
+					) &&
+					!h.container.querySelector(".anki-topbar-popover"),
+				"从设置返回时的探测失败应隐藏绿点，目录刷新成功也不应覆盖该结果",
+			);
 			check(
 				meaning.isConnected && meaning.value === "阅读往返时保留的释义",
 				"设置内导航应保留同一份制卡草稿",
@@ -545,7 +629,89 @@ export async function focusedNavigation(h: BrowserHarness) {
 						true,
 				"丢弃制卡草稿后焦点回到阅读器",
 			);
-			return "Anki records, full source ruby, retained draft through settings, and isolated Escape with focus returning to the reader";
+			const probesBeforeErrorOpen = ankiProbes;
+			click(".anki-topbar-btn");
+			await h.until(
+				() =>
+					ankiProbes > probesBeforeErrorOpen &&
+					h.container
+						.querySelector(".anki-topbar-popover-meta")
+						?.textContent?.includes("AnkiConnect 插件已在运行") === true,
+				"未连接态打开状态浮层应自动复测并展示连接失败说明",
+			);
+			const popover = find<HTMLElement>(".anki-topbar-popover");
+			const meta = find<HTMLElement>(".anki-topbar-popover-meta");
+			const testBtn = find<HTMLButtonElement>(".anki-topbar-test-btn");
+			const popoverRect = popover.getBoundingClientRect();
+			const metaRect = meta.getBoundingClientRect();
+			const testRect = testBtn.getBoundingClientRect();
+			check(
+				popover.scrollWidth <= popover.clientWidth + 1 &&
+					metaRect.right <= popoverRect.right &&
+					metaRect.height > 28,
+				"连接失败长文案必须在状态浮层内正常换行且不溢出",
+			);
+			check(
+				testRect.height >= 24 && testRect.height <= 34,
+				"状态浮层内的测试连接按钮必须保持紧凑高度，不继承顶栏 44px 高度",
+			);
+			click(".anki-topbar-btn");
+			await h.until(
+				() => !h.container.querySelector(".anki-topbar-popover"),
+				"再次点击顶栏按钮收起状态浮层",
+			);
+			ankiProbeState = "connected";
+			const probesBeforeRecoveryOpen = ankiProbes;
+			click(".anki-topbar-btn");
+			await h.until(
+				() =>
+					ankiProbes > probesBeforeRecoveryOpen &&
+					Boolean(h.container.querySelector(".anki-topbar-dot")) &&
+					h.container.querySelector(".anki-topbar-popover-status")
+						?.textContent === "已连接",
+				"未连接态展开浮层自动复测成功后应恢复为已连接并亮起状态点",
+			);
+			const trigger = find<HTMLButtonElement>(".anki-topbar-btn");
+			const connectedPopover = find<HTMLElement>(".anki-topbar-popover");
+			const connectedBounds = connectedPopover.getBoundingClientRect();
+			check(
+				trigger.getAttribute("aria-label") === "Anki 连接状态（已连接）" &&
+					connectedPopover
+						.querySelector(".anki-topbar-popover-meta")
+						?.textContent?.includes(ankiProfile) &&
+					connectedPopover.scrollWidth <= connectedPopover.clientWidth + 1 &&
+					connectedBounds.left >= 0 &&
+					connectedBounds.right <= innerWidth,
+				"长用户名应完整显示在可换行的详情内，浮层和简短的状态标签保持在视口内",
+			);
+			const probesWhenConnected = ankiProbes;
+			click(".anki-topbar-btn");
+			await h.until(
+				() => !h.container.querySelector(".anki-topbar-popover"),
+				"收起已连接状态浮层",
+			);
+			click(".anki-topbar-btn");
+			await h.until(
+				() => Boolean(h.container.querySelector(".anki-topbar-popover")),
+				"已连接态重新打开状态浮层",
+			);
+			check(
+				ankiProbes === probesWhenConnected,
+				"已连接态展开状态浮层不应重复发起探测",
+			);
+			find<HTMLButtonElement>(".anki-topbar-test-btn").focus();
+			await browserKey("Escape");
+			await h.until(
+				() =>
+					!h.container.querySelector(".anki-topbar-popover") &&
+					document.activeElement === trigger,
+				"关闭状态浮层的 Escape 应恢复顶栏按钮焦点",
+			);
+			check(
+				!!h.container.querySelector('button[aria-label="专注阅读：开启"]'),
+				"关闭状态浮层时应保持专注阅读",
+			);
+			return "Anki records, full source ruby, retained draft through settings, isolated Escape, silent reader probe, return/open reprobe, and wrapped compact topbar status popover";
 		}
 		click(".reader-study-preview-open");
 		await h.until(

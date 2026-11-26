@@ -418,6 +418,8 @@ export async function materialVocabulary(
 			};
 			return Response.json(position);
 		}
+		if (request.method === "POST" && path === "/api/anki/probe")
+			return Response.json({ detail: "未连接 Anki" }, { status: 502 });
 		throw new Error(
 			`Unexpected vocabulary fixture request ${request.method} ${path}`,
 		);
@@ -768,6 +770,7 @@ export async function materialVocabulary(
 						`${base}/opened`,
 						`${base}/readings/prepare`,
 						`${base}/reading-position`,
+						"/api/anki/probe",
 					].includes(request.url.pathname),
 			),
 			"Vocabulary browsing must not write learning content",

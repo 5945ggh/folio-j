@@ -95,7 +95,8 @@
 	justify-content: end;
 	white-space: nowrap;
 }
-.reader-r1 .reader-heading-actions button {
+.reader-r1 .reader-heading-actions > button,
+.reader-r1 .reader-heading-actions > .anki-topbar-wrap > .anki-topbar-btn {
 	font-size: 12px;
 	min-height: 44px;
 }
@@ -116,7 +117,8 @@
 	cursor: pointer;
 }
 @media (max-width: 820px) {
-	.reader-r1 .reader-heading-actions button {
+	.reader-r1 .reader-heading-actions > button,
+	.reader-r1 .reader-heading-actions > .anki-topbar-wrap > .anki-topbar-btn {
 		padding: 6px;
 		font-size: 11px;
 	}

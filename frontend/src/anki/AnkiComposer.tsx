@@ -75,6 +75,12 @@ type ExportNotice = {
 	allowDuplicate?: boolean;
 } | null;
 
+function withMediaWarning(message: string, mediaMayRemain: boolean): string {
+	return mediaMayRemain
+		? `${trimTrailingPunctuation(message)}（部分媒体文件可能已上传）。`
+		: message;
+}
+
 type PaneFocus = "reference" | "toggle" | { fieldId: string };
 
 export function AnkiComposer({
@@ -100,11 +106,11 @@ export function AnkiComposer({
 	chapterSegments: readonly ChapterSegment[];
 	chapterTranslations: readonly ChapterTranslation[];
 	settingsState: unknown;
-	onConnectionStatus?: (status: {
-		state: "idle" | "checking" | "connected" | "error";
-		info?: AnkiCollectionInfo;
-		message?: string;
-	}) => void;
+	onConnectionStatus?: (
+		status:
+			| { state: "connected"; info: AnkiCollectionInfo }
+			| { state: "error"; message: string },
+	) => void;
 	onClose: () => void;
 	onExported: (message: string) => void;
 }) {
@@ -165,34 +171,6 @@ export function AnkiComposer({
 		queryFn: ({ signal }) => getAnkiCatalog(signal),
 		retry: false,
 	});
-
-	// Propagate connection state back to reader topbar
-	useEffect(() => {
-		if (!onConnectionStatus) return;
-		if (catalogQuery.isFetching) {
-			onConnectionStatus({ state: "checking" });
-		} else if (!catalogQuery.isError && catalogQuery.data) {
-			onConnectionStatus({
-				state: "connected",
-				info: {
-					endpoint: catalogQuery.data.endpoint,
-					profile: catalogQuery.data.profile,
-					protocol: catalogQuery.data.protocol,
-				},
-			});
-		} else if (catalogQuery.isError) {
-			onConnectionStatus({
-				state: "error",
-				message: catalogQuery.error.message,
-			});
-		}
-	}, [
-		catalogQuery.data,
-		catalogQuery.isError,
-		catalogQuery.error,
-		catalogQuery.isFetching,
-		onConnectionStatus,
-	]);
 
 	// Re-verify catalog & configurations when returning from settings in the same tab.
 	const lastActivation = useRef(activity.activation);
@@ -448,7 +426,10 @@ export function AnkiComposer({
 				setTargetExpanded(true);
 				setNotice({
 					tone: "error",
-					text: response.message || "目标已变化，请重新选择卡组。",
+					text: withMediaWarning(
+						response.message || "目标已变化，请重新选择卡组。",
+						response.media_may_remain,
+					),
 				});
 				void catalogQuery.refetch();
 			} else if (response.status === "incompatible_type") {
@@ -487,9 +468,7 @@ export function AnkiComposer({
 							? "warn"
 							: "error",
 					allowDuplicate: response.status === "duplicate",
-					text: response.media_may_remain
-						? `${trimTrailingPunctuation(baseNoticeText)}（部分媒体文件可能已上传）。`
-						: baseNoticeText,
+					text: withMediaWarning(baseNoticeText, response.media_may_remain),
 				}
 			: null);
 	const { drag, narrow, singlePane, dualPane, positionStyle } = useAnkiPosition(
@@ -657,11 +636,18 @@ export function AnkiComposer({
 	}, []);
 
 	const retryConnectionMutation = useMutation({
-		mutationFn: async () => {
-			await probeAnkiConnection();
-			return catalogQuery.refetch();
-		},
+		mutationFn: () => probeAnkiConnection(),
 	});
+	function retryConnection() {
+		retryConnectionMutation.mutate(undefined, {
+			onSuccess: (info) => {
+				onConnectionStatus?.({ state: "connected", info });
+				void catalogQuery.refetch();
+			},
+			onError: (error) =>
+				onConnectionStatus?.({ state: "error", message: error.message }),
+		});
+	}
 
 	const submitExport = () => {
 		if (submission.busy || !activeConfig || !catalog || catalogQuery.isFetching)
@@ -1180,7 +1166,7 @@ export function AnkiComposer({
 											type="button"
 											className="anki-link-btn"
 											disabled={retryConnectionMutation.isPending}
-											onClick={() => retryConnectionMutation.mutate()}
+											onClick={retryConnection}
 										>
 											{retryConnectionMutation.isPending ? "重试中…" : "重试"}
 										</button>
@@ -1400,7 +1386,11 @@ export function AnkiComposer({
 					onClose={() => setConfirmDiscard(false)}
 				>
 					<h2 id="anki-discard-title">放弃本次制卡草稿？</h2>
-					<p>当前草稿尚未发送，关闭后将不会保留。</p>
+					<p>
+						{response?.status === "unknown"
+							? "发送结果尚未确认，请先在 Anki 中核对。关闭后将不保留本次草稿。"
+							: "关闭后将不保留本次草稿。"}
+					</p>
 					<div className="confirm-actions">
 						<button
 							type="button"

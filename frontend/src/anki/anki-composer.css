@@ -1014,32 +1014,28 @@
 	position: relative;
 	display: inline-flex;
 	align-items: center;
+	--anki-topbar-connected: light-dark(#3b7a52, #76c090);
 }
 
 .reader-r1 .anki-topbar-btn {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
-	padding: 5px 8px;
-	border: 0;
-	border-radius: 7px;
-	background: transparent;
 	color: var(--reader-muted);
-	font-size: 12.5px;
-	cursor: pointer;
 }
 
 .reader-r1 .anki-topbar-btn:hover,
 .reader-r1 .anki-topbar-btn[aria-expanded="true"] {
 	color: var(--reader-fg);
-	background: var(--reader-tool-hover-bg);
+	background: var(--reader-soft);
 }
 
 .reader-r1 .anki-topbar-dot {
-	width: 6px;
-	height: 6px;
+	width: 5px;
+	height: 5px;
+	flex: none;
 	border-radius: 999px;
-	background: var(--color-success, #2a8a4b);
+	background: var(--anki-topbar-connected);
 }
 
 .reader-r1 .anki-topbar-popover {
@@ -1047,12 +1043,15 @@
 	top: calc(100% + 6px);
 	right: 0;
 	z-index: 60;
-	width: 268px;
-	padding: 12px 13px;
+	width: 276px;
+	max-width: calc(100vw - 24px);
+	padding: 13px 14px;
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
-	font-size: 12.5px;
+	gap: 8px;
+	font-size: 12px;
+	white-space: normal;
+	text-align: left;
 }
 
 .reader-r1 .anki-topbar-popover-head {
@@ -1060,13 +1059,32 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 8px;
+	font-size: 13px;
 	font-weight: 500;
+}
+
+.reader-r1 .anki-topbar-popover-status {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--reader-muted);
+	white-space: nowrap;
+}
+
+.reader-r1 .anki-topbar-popover-status[data-state="connected"] {
+	color: var(--anki-topbar-connected);
+}
+
+.reader-r1 .anki-topbar-popover-status[data-state="error"] {
+	color: var(--reader-error);
 }
 
 .reader-r1 .anki-topbar-popover-meta {
 	color: var(--reader-muted);
-	line-height: 1.5;
-	word-break: break-all;
+	font-size: 12px;
+	line-height: 1.55;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	word-break: normal;
 	margin: 0;
 }
 
@@ -1074,9 +1092,37 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 8px;
-	padding-top: 6px;
-	border-top: 1px solid var(--reader-line);
+	gap: 12px;
+	margin-top: 4px;
+}
+
+.reader-r1 .anki-topbar-test-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 5px 10px;
+	min-height: 28px;
+	border: 0;
+	border-radius: 6px;
+	background: var(--reader-soft);
+	color: var(--reader-fg);
+	font-size: 12px;
+	line-height: 1.2;
+	cursor: pointer;
+}
+
+.reader-r1 .anki-topbar-test-btn:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--reader-fg) 8%, var(--reader-soft));
+}
+
+.reader-r1 .anki-topbar-test-btn:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.reader-r1 .anki-topbar-settings-link {
+	font-size: 12px;
+	line-height: 1.2;
 }
 
 .reader-r1 .anki-composer[data-single-pane="true"] .anki-ref-pane {
@@ -1087,6 +1133,11 @@
 
 /* Narrow viewport bottom sheet */
 @media (max-width: 780px) {
+	.reader-r1 .anki-topbar-popover {
+		position: fixed;
+		top: 64px;
+		right: 12px;
+	}
 	.reader-r1 .anki-composer,
 	.reader-r1 .anki-composer[data-dual-pane="true"] {
 		left: 8px;

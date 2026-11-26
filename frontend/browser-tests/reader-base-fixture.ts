@@ -73,6 +73,8 @@ export function readerBaseData(
 export function readerBaseResponse(
 	...args: Parameters<typeof readerBaseData>
 ): Response {
+	if (args[0] === "POST" && args[1] === "/api/anki/probe")
+		return Response.json({ detail: "未连接 Anki" }, { status: 502 });
 	const data = readerBaseData(...args);
 	if (data === undefined)
 		throw new Error(`Unmocked reader request ${args[0]} ${args[1]}`);

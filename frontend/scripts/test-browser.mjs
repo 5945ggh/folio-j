@@ -42,6 +42,7 @@ const scenarios = selectBrowserScenarios(
 		[320, 900, "?suite=focused-navigation"],
 		[1280, 900, "?suite=focused-navigation&scene=reader"],
 		[1280, 900, "?suite=focused-navigation&scene=anki"],
+		[390, 900, "?suite=focused-navigation&scene=anki"],
 		[320, 900, "?suite=focused-navigation&scene=reader"],
 		[1280, 900, "?suite=focused-navigation&notice-metadata=failed"],
 		[320, 900, "?suite=focused-navigation&notice-metadata=failed"],
