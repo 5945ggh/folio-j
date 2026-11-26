@@ -1,0 +1,42 @@
+frontend/browser-tests/focused-navigation.tsx
+  s_acd8443bc1107f::t_ae02b2f60236ab 113-115,123-124,129-144,195-203,206,405,464,469,474-477,482-487,492-493,546,550,557,634,659,663,666,674,677-678,685-704,708
+  s_acd8443bc1107f::t_091f96fc8c6393 406,410,459-463,465-468,470-473,478-481,488-491,551,554-555,558,635,638,641,648,653-654,657,662,667,670-671,673,679-684,705-707,709-713
+  s_acd8443bc1107f::t_ae0a080c8cd4a2 675-676
+  s_acd8443bc1107f::t_9e9d4456171aef 553
+  s_acd8443bc1107f::t_0d6fedea480ac9 112,211,404,407-409,411,547,552,556,632-633,636-637,639-640,642-647,649-652,655-656,658,660-661,664-665,668-669,672,714
+frontend/src/anki/anki.test.ts
+  s_acd8443bc1107f::t_8ba244ea6834ed 317-321,325-334,341-343
+  s_acd8443bc1107f::t_091f96fc8c6393 322-324,335-340
+frontend/src/anki/AnkiComposer.tsx
+  s_acd8443bc1107f::t_f13c83f2fe8a88 78-83,109-113,429-432,471,639,1389-1393
+  s_acd8443bc1107f::t_0b000d4db245f4 641-650,1169
+frontend/src/anki/draft.ts
+  s_acd8443bc1107f::t_3281d5c712cf12 139-145
+frontend/src/anki/AnkiCardPreviewModal.tsx
+  s_acd8443bc1107f::t_9eb5555a52b2ce 9,124
+frontend/browser-tests/anki-composer.tsx
+  s_acd8443bc1107f::t_f0327492821d61 344,364,485,821,828,836,877-879,884-885,893,899-900,904-907,911-913
+  s_acd8443bc1107f::t_091f96fc8c6393 483-484,486-487,816-820,822-827,829-835,880-883,886-892,894-898,901-903,908-910
+frontend/scripts/test-browser.mjs
+  s_acd8443bc1107f::t_166de9ee82ae14 45
+frontend/src/anki/AnkiHeaderStatus.tsx
+  s_acd8443bc1107f::t_7fc24fb299dd9b 36-45,54-110,118-121,124-129,132,135,139-156,158-160,162,169
+  s_acd8443bc1107f::t_091f96fc8c6393 122-123
+  s_acd8443bc1107f::t_b8a4cd265f3200 1-2,13-14,19-20,34,176,193-194,201,203,211-213,215,220
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aac660a3c02a6eae4843d3a9a9a2e422b4e97032",
+  "prompts": {},
+  "sessions": {
+    "s_acd8443bc1107f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21594-e56b-7023-88e5-381996b17cc7",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
