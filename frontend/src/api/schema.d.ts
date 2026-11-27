@@ -4367,8 +4367,19 @@ export interface components {
              */
             mode: "new" | "existing";
         };
+        /** StartupStage */
+        StartupStage: {
+            /** Elapsed Ms */
+            elapsed_ms: number;
+            /** Name */
+            name: string;
+            /** Target */
+            target: string;
+        };
         /** StartupState */
         StartupState: {
+            /** Busy */
+            busy: boolean;
             /** Configured Path */
             configured_path: string | null;
             /** Default Directory */
@@ -4383,6 +4394,7 @@ export interface components {
             retry_current_path: string | null;
             /** Selected Path */
             selected_path: string | null;
+            stage: components["schemas"]["StartupStage"] | null;
             /** Warning */
             warning: string | null;
         };

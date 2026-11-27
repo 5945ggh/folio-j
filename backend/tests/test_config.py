@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
 from support_paths import symlink_or_skip
 
 from app import config as app_config
@@ -32,7 +31,7 @@ def test_default_config_without_file(tmp_path: Path) -> None:
     assert settings.server.host == "127.0.0.1"
     assert settings.server.port == 8010
     assert settings.server.dev_port == 5187
-    assert settings.database.path == Path.home() / "Folio-J-Data" / "app.db"
+    assert settings.database.path == app_config.default_database_path()
     assert not settings.database.path.exists()
 
 
@@ -189,14 +188,14 @@ def test_missing_selected_database_with_companion_rejected(
 def test_server_ports_reject_unusable_values(tmp_path: Path, field: str, value: int) -> None:
     config = tmp_path / "app.toml"
     write_config(config, f"[server]\n{field} = {value}\n")
-    with pytest.raises(ValidationError):
+    with pytest.raises(app_config.SettingsFormatError, match="配置文件格式有误"):
         load_settings(config)
 
 
 def test_non_loopback_host_rejected(tmp_path: Path) -> None:
     config = tmp_path / "app.toml"
     write_config(config, '[server]\nhost = "0.0.0.0"\n')
-    with pytest.raises(ValidationError):
+    with pytest.raises(app_config.SettingsFormatError, match="配置文件格式有误"):
         load_settings(config)
 
 

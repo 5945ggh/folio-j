@@ -53,6 +53,7 @@ import { sourceDeletion } from "./source-deletion";
 import { sourceDirectoryRegression } from "./source-directory";
 import { sourceEditDelete } from "./source-edit-delete";
 import { sourceOnboarding } from "./source-onboarding";
+import { startupPageRegression } from "./startup-page";
 import { themeRegression } from "./theme";
 import { translationRegression } from "./translation";
 import { workbenchRegression } from "./workbench";
@@ -452,6 +453,7 @@ try {
 		["workbench-activity", () => workbenchActivityRegression(harness)],
 		["dictionary-settings", () => dictionarySettings(harness)],
 		["data-location", () => dataLocation(harness, preview)],
+		["startup-page", () => startupPageRegression(harness)],
 		["app-theme", () => appTheme(harness, preview)],
 		["reader-images", () => readerImages(harness)],
 		["position-bookmarks", () => positionBookmarks(harness)],

@@ -68,10 +68,11 @@ def serve():
 
     launcher.BrowserServer = ObservedServer
     launcher.RESOURCE_ROOT = STATE
-    launcher.migrate = lambda database_path: None
+    launcher.migrate = lambda database_path, require_existing: None
     settings = Settings(
         database=DatabaseSettings(path=STATE / "学习📚𠮷.db"),
         server=ServerSettings(host="127.0.0.1").model_copy(update={"port": 0}))
+    launcher.read_startup_server = lambda: settings.server
     data_location.location_status = lambda: data_location.LocationStatus(
         settings=settings, needs_selection=False, recovery=False,
         selected_path=settings.database.path, default_path=STATE / "default/app.db",

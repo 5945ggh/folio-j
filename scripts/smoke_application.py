@@ -102,12 +102,18 @@ def application(
                 if process.poll() is not None:
                     raise RuntimeError(f"Application exited before readiness: {process.returncode}")
                 try:
-                    client.json("/_startup/state" if selecting else "/api/health")
-                    break
+                    state = client.json("/_startup/state")
+                    if not state["busy"]:
+                        if not selecting:
+                            if not state["ready"]:
+                                raise RuntimeError(f"Application needs startup recovery: {state}")
+                            client.json("/api/health")
+                        break
                 except (urllib.error.URLError, TimeoutError):
-                    if time.monotonic() >= deadline:
-                        raise RuntimeError("Application did not become healthy") from None
-                    time.sleep(0.2)
+                    pass
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("Application did not become ready")
+                time.sleep(0.2)
             yield client
         except BaseException:
             log.seek(0)
@@ -151,12 +157,18 @@ def check_first_run(
     if "FOLIO_J_DATABASE_PATH" in environment:
         raise ValueError("First-run smoke must not launch with a database override")
     database = (directory / "app.db").resolve()
-    default_database = Path(environment["HOME"]) / "Folio-J-Data/app.db"
+    default_directory = (
+        Path(environment["LOCALAPPDATA"]) / "Folio-J" / "Data"
+        if os.name == "nt"
+        else Path(environment["HOME"]) / "Folio-J-Data"
+    )
     with application(launcher, cwd, environment, port, selecting=True) as client:
         state = client.json("/_startup/state")
         if state["ready"] or state["recovery"] or state["selected_path"] is not None:
             raise RuntimeError(f"Expected first-run selection: {state}")
-        if database.exists() or default_database.exists():
+        if Path(state["default_directory"]) != default_directory:
+            raise RuntimeError(f"Unexpected default data directory: {state['default_directory']}")
+        if database.exists() or (default_directory / "app.db").exists():
             raise RuntimeError("A learning database already exists before selection")
         token = re.search(rb'<script nonce="([^"]+)"', client.get("/"))
         if token is None:

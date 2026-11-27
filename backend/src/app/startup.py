@@ -1,13 +1,15 @@
 """Database-independent startup routes and delegation to a ready application."""
 
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from secrets import compare_digest
 from typing import cast
 
-from fastapi import APIRouter, FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.types import Receive, Scope, Send
 
@@ -30,7 +32,8 @@ def _authorize(request: Request, service: StartupService) -> None:
 
 
 @router.get("/state", response_model=StartupState)
-async def startup_state(request: Request) -> StartupState:
+async def startup_state(request: Request, response: Response) -> StartupState:
+    response.headers["Cache-Control"] = "no-store"
     return _service(request).state()
 
 
@@ -72,16 +75,28 @@ class StartupApplication:
 
         @asynccontextmanager
         async def lifespan(_application: FastAPI) -> AsyncGenerator[None]:
+            initialization = asyncio.create_task(service.initialize())
             try:
-                await service.initialize()
                 yield
             finally:
-                await service.close()
+                try:
+                    await initialization
+                finally:
+                    await service.close()
 
         application = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
         application.state.startup = service
         application.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
         application.include_router(router)
+
+        @application.exception_handler(RequestValidationError)
+        async def safe_validation_error(
+            _request: Request, _exc: RequestValidationError
+        ) -> JSONResponse:
+            return JSONResponse(
+                status_code=422,
+                content={"detail": "请填写数据目录或数据库文件的完整路径，并选择打开方式。"},
+            )
 
         @application.api_route(
             "/api",

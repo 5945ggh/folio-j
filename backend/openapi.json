@@ -7847,8 +7847,35 @@
         "title": "StartupSelection",
         "type": "object"
       },
+      "StartupStage": {
+        "properties": {
+          "elapsed_ms": {
+            "title": "Elapsed Ms",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "target",
+          "elapsed_ms"
+        ],
+        "title": "StartupStage",
+        "type": "object"
+      },
       "StartupState": {
         "properties": {
+          "busy": {
+            "title": "Busy",
+            "type": "boolean"
+          },
           "configured_path": {
             "anyOf": [
               {
@@ -7905,6 +7932,16 @@
             ],
             "title": "Selected Path"
           },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StartupStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "warning": {
             "anyOf": [
               {
@@ -7920,6 +7957,8 @@
         "required": [
           "ready",
           "recovery",
+          "busy",
+          "stage",
           "selected_path",
           "configured_path",
           "default_directory",

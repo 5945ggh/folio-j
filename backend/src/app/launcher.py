@@ -7,10 +7,11 @@ import asyncio
 import signal
 import socket
 import sqlite3
+import stat
 import sys
 import webbrowser
 from collections.abc import Sequence
-from dataclasses import replace
+from contextlib import closing
 from io import TextIOWrapper
 from pathlib import Path
 from types import FrameType
@@ -22,28 +23,91 @@ from starlette.types import ASGIApp as ASGIApplication
 
 from alembic import command
 from app.backup import create_backup, restore_backup
-from app.config import Settings, load_settings
-from app.platform_io import FileLockError, exclusive_file_lock
+from app.config import Settings, default_database_path, load_settings, read_startup_server
+from app.platform_io import (
+    FileLockError,
+    exclusive_file_lock,
+    make_private_directory,
+    publish_file,
+    staging_directory,
+)
 from app.resources import RESOURCE_ROOT
+from app.services import data_location
 
 
-def migrate(database_path: Path | None = None) -> None:
+def _upgrade(database: Path, *, target: Path) -> None:
+    configuration = Config()
+    configuration.attributes["database_path"] = database
+    configuration.attributes["database_target"] = target
+    configuration.attributes["require_existing"] = database == target
+    configuration.set_main_option("script_location", str(RESOURCE_ROOT / "backend/alembic"))
+    command.upgrade(configuration, "head")
+
+
+def _checkpoint_staged_database(staged: Path, target: Path) -> None:
+    wal = Path(f"{staged}-wal")
+    if not wal.is_file() or wal.stat().st_size == 0:
+        return
+    with closing(sqlite3.connect(staged)) as connection:
+        checkpoint = connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+        if checkpoint is None or checkpoint[0] != 0:
+            raise data_location.DataLocationError(f"无法完成数据库的初始写入：{target}。请重试。")
+
+
+def _initialize_database(database: Path) -> None:
+    data_location.require_new_database_path(database)
+    published = False
+    try:
+        with staging_directory(database.parent, prefix=".folio-j-create-") as directory:
+            staged = directory / database.name
+            _upgrade(staged, target=database)
+            _checkpoint_staged_database(staged, database)
+            data_location.require_new_database_path(database)
+            try:
+                publish_file(staged, database)
+            except FileExistsError as exc:
+                raise data_location.DataLocationError(
+                    f"该位置已有数据库文件：{database}。请重新选择数据位置。"
+                ) from exc
+            published = True
+    except OSError as exc:
+        if not published:
+            raise
+        # The final file is complete. A temporary directory cleanup failure
+        # must not turn it back into a pending creation.
+        print(
+            f"新数据库已建立，暂存目录清理失败：{database}（{type(exc).__name__}）",
+            file=sys.stderr,
+            flush=True,
+        )
+
+
+def migrate(database_path: Path | None = None, require_existing: bool | None = None) -> None:
     """Migrate under the same offline lock used by workers and backup operations."""
     database = database_path if database_path is not None else load_settings().database.path
-    database.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    make_private_directory(database.parent, parents=True, exist_ok=True)
     lock = database.with_name(database.name + ".worker.lock")
     try:
         with exclusive_file_lock(lock):
-            configuration = Config()
-            configuration.attributes["database_path"] = database
-            configuration.set_main_option("script_location", str(RESOURCE_ROOT / "backend/alembic"))
-            command.upgrade(configuration, "head")
+            if require_existing is None:
+                require_existing = database.is_file()
+            if require_existing:
+                try:
+                    is_regular_file = stat.S_ISREG(database.stat().st_mode)
+                except FileNotFoundError:
+                    is_regular_file = False
+                if not is_regular_file:
+                    raise data_location.DataLocationError(f"找不到可用的数据库文件：{database}")
+                data_location.validate_library_identity(database)
+                _upgrade(database, target=database)
+            else:
+                _initialize_database(database)
     except FileLockError as exc:
         if isinstance(exc.__cause__, PermissionError):
-            raise ValueError(
+            raise data_location.DataLocationError(
                 f"没有权限访问数据库锁文件：{lock}。请在启动页选择可写的数据目录。"
             ) from exc
-        raise ValueError(
+        raise data_location.DataLocationError(
             f"无法使用数据库文件：{database}。请检查数据目录是否可写，并关闭正在使用该文件的其他程序后重试。\n详细信息：{exc}"
         ) from exc
 
@@ -76,24 +140,29 @@ class BrowserServer(uvicorn.Server):
 def start_interactive(*, no_browser: bool, choose_data: bool = False) -> int:
     """Use a database-independent page for first selection and startup recovery."""
     from app.main import create_app
-    from app.services.data_location import location_status
+    from app.services.data_location import LocationStatus, location_status
     from app.services.startup import StartupService
     from app.startup import StartupApplication
 
     frontend = RESOURCE_ROOT / "frontend/dist"
     if not (frontend / "index.html").is_file():
         raise ValueError("缺少应用页面文件，请重新解压完整程序包。使用源码版时，请先构建前端。")
-    status = location_status()
-    if choose_data:
-        status = replace(status, needs_selection=True)
-    if status.selected_path is not None:
-        print(f"数据库文件：{status.selected_path}", flush=True)
+    settings = Settings(server=read_startup_server())
     service = StartupService(
-        status,
+        LocationStatus(
+            settings=None,
+            needs_selection=True,
+            recovery=False,
+            selected_path=None,
+            default_path=default_database_path(),
+        ),
         migrate,
-        lambda database: create_app(frontend_dir=frontend, database_path=database),
+        lambda database: create_app(
+            frontend_dir=frontend, database_path=database, require_existing=True
+        ),
+        load_location=location_status,
+        choose_data=choose_data,
     )
-    settings = status.settings or Settings(server=status.server or Settings().server)
     return _serve(StartupApplication(service), settings, no_browser=no_browser)
 
 

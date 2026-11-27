@@ -34,6 +34,8 @@ const scenarios = selectBrowserScenarios(
 		[320, 900, "?suite=data-location"],
 		[1280, 900, "?suite=data-location&theme=dark"],
 		[320, 900, "?suite=data-location&theme=dark"],
+		[1280, 900, "?suite=startup-page"],
+		[320, 900, "?suite=startup-page"],
 		[1280, 900, "?suite=model-setup"],
 		[390, 900, "?suite=model-setup"],
 		[1280, 900, "?suite=workbench-activity"],
@@ -254,6 +256,14 @@ try {
 		configFile: path.join(frontend, "vite.config.ts"),
 		server: {
 			host: "127.0.0.1",
+			fs: {
+				allow: [
+					frontend,
+					fileURLToPath(
+						new URL("../../backend/static/startup/index.html", import.meta.url),
+					),
+				],
+			},
 			port: 0,
 			strictPort: false,
 			proxy: {},

@@ -44,7 +44,7 @@ uv run --project backend --no-dev python scripts/run.py start
 
 </details>
 
-启动后会自动打开系统浏览器（默认地址为 [http://127.0.0.1:8010](http://127.0.0.1:8010)）。首次启动时，按页面提示选择数据存放位置（默认为 `~/Folio-J-Data`）即可进入应用。在终端按 `Ctrl-C` 可停止服务。
+启动后会自动打开系统浏览器（默认地址为 [http://127.0.0.1:8010](http://127.0.0.1:8010)）。首次启动时，按页面提示选择数据存放位置（Windows 默认为 `%LOCALAPPDATA%\Folio-J\Data`，macOS 和 Linux 默认为 `~/Folio-J-Data`）即可进入应用。在终端按 `Ctrl-C` 可停止服务。
 
 进入应用后，可以从「素材库」新建来源并导入一本可重排 EPUB；首次试用可下载[发行页](https://github.com/5945ggh/folio-j/releases)中的示例 EPUB。在书中划选句子保存为学习片段，试试手写讲解或翻译。
 

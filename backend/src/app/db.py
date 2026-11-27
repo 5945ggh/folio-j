@@ -10,6 +10,8 @@ from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
+from app.platform_io import make_private_directory
+
 
 class SQLiteCursor(Protocol):
     def execute(self, statement: str) -> object: ...
@@ -31,10 +33,26 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
         yield session
 
 
-def create_engine(database_path: Path) -> AsyncEngine:
+def sqlite_file_uri(uri: str) -> str:
+    """Adapt a Path.as_uri() filename for SQLite, including Windows UNC shares."""
+    if not uri.startswith("file:///"):
+        # SQLite builds can reject a non-local URI authority. Keep the server
+        # and share in the filename by using an empty authority and a UNC path.
+        uri = "file:////" + uri.removeprefix("file://")
+    return uri
+
+
+def create_engine(database_path: Path, *, require_existing: bool = False) -> AsyncEngine:
     """Create a WAL-enabled SQLite engine without opening it on import."""
-    database_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    url = URL.create("sqlite+aiosqlite", database=str(database_path))
+    if require_existing:
+        url = URL.create(
+            "sqlite+aiosqlite",
+            database=sqlite_file_uri(database_path.absolute().as_uri()),
+            query={"mode": "rw", "uri": "true"},
+        )
+    else:
+        make_private_directory(database_path.parent, parents=True, exist_ok=True)
+        url = URL.create("sqlite+aiosqlite", database=str(database_path))
     engine = create_async_engine(url)
 
     @event.listens_for(engine.sync_engine, "connect")

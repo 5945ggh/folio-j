@@ -14,6 +14,7 @@ def isolate_user_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> No
     monkeypatch.setenv("HOME", str(tmp_path))
     # Windows expanduser uses USERPROFILE rather than HOME.
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "AppData" / "Local"))
     assert Path.home() == tmp_path
     monkeypatch.delenv("FOLIO_J_DATABASE_PATH", raising=False)
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)

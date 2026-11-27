@@ -38,7 +38,7 @@ def test_first_launch_inspection_does_not_create_default_or_pointer() -> None:
     assert status.needs_selection
     assert not status.recovery
     assert status.settings is None
-    assert status.default_path == Path.home() / "Folio-J-Data" / "app.db"
+    assert status.default_path == config.default_database_path()
     assert not status.default_path.parent.exists()
     assert not locations._FileSelectionStore().path.exists()
     assert config.load_settings().database.path == status.default_path
@@ -54,7 +54,7 @@ def test_existing_locations_continue_without_selection(
     if source not in {"default", "legacy"}:
         database(config.REPO_ROOT / "data" / "app.db")
     if source == "default":
-        path = database(Path.home() / "Folio-J-Data" / "app.db")
+        path = database(config.default_database_path())
     elif source == "legacy":
         path = database(config.REPO_ROOT / "data" / "app.db")
     else:
@@ -252,7 +252,7 @@ def test_atomic_pointer_failure_keeps_previous_choice(
         raise PermissionError("security software may have blocked writing")
 
     monkeypatch.setattr(locations.os, "replace", blocked_replace)
-    with pytest.raises(locations.DataLocationError, match="无法记住"):
+    with pytest.raises(locations.DataLocationError, match="无法写入数据位置记录"):
         locations.remember_selection(replacement)
     assert pointer.read_bytes() == before
     assert list(pointer.parent.iterdir()) == [pointer]
@@ -323,13 +323,17 @@ def test_unreadable_old_settings_only_bypassed_for_explicit_other_location(
 def test_selection_record_roundtrips_in_user_json(
     config_home: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    root = Path.home() / ".config"
+    directory = (
+        Path(os.environ["LOCALAPPDATA"]) / "Folio-J"
+        if os.name == "nt"
+        else Path.home() / ".config" / "folio-j"
+    )
     if config_home == "absolute":
-        root = tmp_path / "xdg"
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(root))
+        directory = tmp_path / "xdg" / "folio-j"
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(directory.parent))
     elif config_home == "relative":
         monkeypatch.setenv("XDG_CONFIG_HOME", "relative")
-    pointer = root / "folio-j" / "data-location.json"
+    pointer = directory / "data-location.json"
     assert locations._FileSelectionStore().path == pointer
     assert locations.read_selection() is None
     assert not pointer.parent.exists()
@@ -403,8 +407,7 @@ def test_retry_prepared_candidate_allows_only_plain_worker_lock_and_keeps_migrat
     lock.write_bytes(b"original worker lock")
     with pytest.raises(ValueError, match="配套文件"):
         config.database_exists(path)
-    with pytest.raises(ValueError, match="配套文件"):
-        locations.prepare_selection(path.parent)
+    assert locations.prepare_selection(path.parent).database.path == path
     with exclusive_file_lock(lock):
         assert locations.validate_retry_selection(settings) is settings
         with pytest.raises(ValueError, match="无法使用数据库文件"):
@@ -539,3 +542,64 @@ def test_prepare_path_permission_error_has_chinese_location_and_hint(
     assert isinstance(error.value.__cause__, PermissionError)
     assert not chosen.exists()
     assert locations.read_selection() is None
+
+
+@pytest.mark.parametrize("local_value", ["absolute", "missing", "relative"])
+def test_windows_new_paths_and_legacy_candidate_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, local_value: str
+) -> None:
+    monkeypatch.setattr(config, "_WINDOWS", True)
+    if local_value == "absolute":
+        local = tmp_path / "redirected app data"
+        monkeypatch.setenv("LOCALAPPDATA", str(local))
+    else:
+        local = Path.home() / "AppData" / "Local"
+        monkeypatch.delenv("LOCALAPPDATA")
+        if local_value == "relative":
+            monkeypatch.setenv("LOCALAPPDATA", "relative")
+    app_dir = local / "Folio-J"
+    old_home = Path.home() / "Folio-J-Data"
+    fresh = locations.location_status()
+    assert fresh.needs_selection and fresh.default_path == app_dir / "Data" / "app.db"
+    assert locations._FileSelectionStore().path == app_dir / "data-location.json"
+    assert not app_dir.exists()
+    current = database(fresh.default_path)
+    assert locations.location_status().selected_path == current
+    old = database(old_home / "app.db")
+    assert locations.location_status().selected_path == old
+    program = database(config.REPO_ROOT / "data" / "app.db")
+    assert locations.location_status().selected_path == program
+    config_file(old_home / "app.toml", f"[database]\npath={json.dumps(str(old))}")
+    assert locations.location_status().selected_path == old
+
+
+def test_windows_reads_previous_record_in_place_and_prefers_new_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(config, "_WINDOWS", True)
+    old_path = database(tmp_path / "custom" / "app.db")
+    new_path = database(tmp_path / "another" / "app.db")
+    current, prior = config.selection_record_paths()
+    config_file(prior, json.dumps({"database_path": str(old_path)}))
+    assert locations.location_status().selected_path == old_path
+    assert not current.exists()
+    locations.remember_selection(new_path)
+    assert locations.location_status().selected_path == new_path
+    assert json.loads(prior.read_text(encoding="utf-8"))["database_path"] == str(old_path)
+    current.write_text("broken", encoding="utf-8")
+    assert locations.location_status().recovery
+    xdg = tmp_path / "isolated config"
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(xdg))
+    assert config.selection_record_paths() == (xdg / "folio-j" / "data-location.json",)
+    assert locations.location_status().needs_selection
+
+
+@pytest.mark.parametrize("mode", ["new", "existing"])
+def test_pasted_path_is_normalized_before_constructing_path(mode: str) -> None:
+    from app.services.startup import StartupSelection
+
+    for directory in (r"D:\学习 数据", r"\\server\share\学习 数据"):
+        selected = StartupSelection.model_validate(
+            {"directory": f'  "{directory}"  ', "mode": mode}
+        )
+        assert selected.directory == directory

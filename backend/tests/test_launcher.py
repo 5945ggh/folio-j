@@ -197,7 +197,8 @@ def test_cli_drives_application_lifespan_and_closes_resources(
     monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
     events: list[str] = []
 
-    def migrate(path: Path | None = None) -> None:
+    def migrate(path: Path, require_existing: bool) -> None:
+        assert not require_existing
         assert path == database
         events.append("migrate")
 
@@ -213,7 +214,10 @@ def test_cli_drives_application_lifespan_and_closes_resources(
 
     application = FastAPI(lifespan=lifespan)
 
-    def create_application(*, frontend_dir: Path, database_path: Path) -> FastAPI:
+    def create_application(
+        *, frontend_dir: Path, database_path: Path, require_existing: bool
+    ) -> FastAPI:
+        assert require_existing
         assert frontend_dir == frontend
         assert database_path == database
         return application
@@ -222,6 +226,16 @@ def test_cli_drives_application_lifespan_and_closes_resources(
     monkeypatch.setattr(main, "create_app", create_application)
 
     async def lifecycle(bootstrap: StartupApplication) -> None:
+        initialized = asyncio.Event()
+        initialize = bootstrap.service.initialize
+
+        async def observe_initialization() -> None:
+            try:
+                await initialize()
+            finally:
+                initialized.set()
+
+        monkeypatch.setattr(bootstrap.service, "initialize", observe_initialization)
         incoming: asyncio.Queue[Message] = asyncio.Queue()
         outgoing: asyncio.Queue[Message] = asyncio.Queue()
         scope: Scope = {"type": "lifespan", "asgi": {"version": "3.0"}, "state": {}}
@@ -231,15 +245,18 @@ def test_cli_drives_application_lifespan_and_closes_resources(
             assert await asyncio.wait_for(outgoing.get(), 5) == {
                 "type": "lifespan.startup.complete"
             }
-            assert events == ["migrate", "start", *(["close"] if startup_failure else [])]
             async with httpx.AsyncClient(
                 transport=httpx.ASGITransport(app=bootstrap), base_url="http://127.0.0.1:8010"
             ) as client:
+                await asyncio.wait_for(initialized.wait(), 5)
                 state = (await client.get("/_startup/state")).json()
+                assert not state["busy"]
+                assert events == ["migrate", "start", *(["close"] if startup_failure else [])]
                 assert state["ready"] is not startup_failure
                 assert state["recovery"] is startup_failure
                 if startup_failure:
-                    assert state["error"] == "初始化失败"
+                    assert "初始化学习应用失败" in state["error"]
+                    assert "RuntimeError" in state["error"]
                     assert (await client.get("/api/health")).status_code == 503
         finally:
             await incoming.put({"type": "lifespan.shutdown"})
@@ -521,11 +538,34 @@ def test_cli_interactive_entry_can_reopen_selection_without_touching_data(
     )
     monkeypatch.setattr(data_location, "location_status", lambda: status)
 
+    migrated: list[Path] = []
+
+    def migrate(database: Path, require_existing: bool) -> None:
+        assert require_existing
+        migrated.append(database)
+
+    monkeypatch.setattr(launcher, "migrate", migrate)
+    from app import main
+
+    def create_application(**kwargs: object) -> FastAPI:
+        return FastAPI()
+
+    monkeypatch.setattr(main, "create_app", create_application)
+
+    async def check(app: StartupApplication) -> None:
+        assert app.service.state().busy
+        await app.service.initialize()
+        state = app.service.state()
+        assert not state.busy
+        assert state.ready is not choose_data
+        assert state.selected_path == str(settings.database.path)
+        assert migrated == ([] if choose_data else [settings.database.path])
+        await app.service.close()
+
     def run(server: launcher.BrowserServer) -> None:
         app = server.config.app
         assert isinstance(app, StartupApplication)
-        assert app.service.status.needs_selection is choose_data
-        assert app.service.status.selected_path == settings.database.path
+        asyncio.run(check(app))
         assert server.browser_url is None
         server.started = True
 
@@ -562,26 +602,19 @@ def test_migrate_permission_error_preserves_write_failure_reason(
 def test_recovery_server_uses_configured_port_when_database_cannot_load(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from app.config import ServerSettings
     from app.services import data_location
-    from app.services.data_location import LocationStatus
 
     frontend = tmp_path / "frontend/dist"
     frontend.mkdir(parents=True)
     (frontend / "index.html").touch()
     monkeypatch.setattr(launcher, "RESOURCE_ROOT", tmp_path)
-    status = LocationStatus(
-        settings=None,
-        needs_selection=True,
-        recovery=True,
-        selected_path=tmp_path / "missing/app.db",
-        default_path=tmp_path / "default/app.db",
-        error="数据库丢失",
-        source="remembered",
-        warning=None,
-        server=ServerSettings(port=8055),
-    )
-    monkeypatch.setattr(data_location, "location_status", lambda: status)
+    user_config = config.LEGACY_USER_DIRECTORY.expanduser() / "app.toml"
+    user_config.parent.mkdir()
+    user_config.write_text("[server]\nport=8055\n", encoding="utf-8")
+    pointer = config.selection_record_paths()[0]
+    pointer.parent.mkdir(parents=True)
+    pointer.write_text("invalid json", encoding="utf-8")
+    assert data_location.location_status().recovery
 
     def run(server: launcher.BrowserServer) -> None:
         assert server.config.port == 8055

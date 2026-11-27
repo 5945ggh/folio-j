@@ -15,11 +15,15 @@
 <p id="intro">学习内容、设置和 API 密钥将保存在所选数据目录。启动成功后，应用会尝试记住这个位置。</p>
 <div id="error" class="notice" role="alert" hidden></div>
 <div id="warning" class="notice warning" hidden></div>
+<div id="progress" hidden>
+<p id="status" class="status" role="status" aria-live="polite"></p>
+<p id="stage-detail" class="small" hidden><span id="elapsed"></span><span id="target" class="location"></span></p>
+</div>
 <div id="ready" hidden>
 <p class="small">本次使用的数据库文件<span id="ready-path" class="location"></span></p>
 <button id="enter" class="primary" type="button">进入学习界面</button>
 </div>
-<div id="selection">
+<div id="selection" hidden>
 <p id="configured" class="small" hidden>原来配置的数据库文件<span id="configured-path" class="location"></span></p>
 <div id="current-candidate" hidden><p class="small">本次选择的数据库文件<span id="retry-current-path" class="location"></span></p><button id="retry-current" class="primary" type="button">重试当前选择</button></div>
 <p id="selected" class="small" hidden>当前尝试打开的数据库文件<span id="selected-path" class="location"></span></p>
@@ -33,22 +37,52 @@
 <button id="new" type="button">在此创建新数据</button>
 <button id="existing" type="button">打开已有数据</button>
 </div>
-<button id="reload-state" type="button" hidden>重新加载启动状态</button>
 </div>
-<p id="status" class="status small" role="status" aria-live="polite"></p>
+<button id="reload-state" type="button" hidden>重新加载启动状态</button>
 </main>
 <script nonce="__FOLIO_STARTUP_NONCE__">
 const token="__FOLIO_STARTUP_NONCE__";
 const el=id=>document.getElementById(id);
+const stateTimeout=4000;
+const submitTimeout=10000;
+const pollInterval=800;
 let defaultDirectory="";
 let stateLoaded=false;
-let busy=false;
+let submitting=false;
+let serverBusy=false;
+let stateRequest=0;
+let pollTimer;
 function updateControls(){
- document.querySelectorAll("button,input").forEach(control=>control.disabled=busy);
- el("default").disabled=busy||!stateLoaded||!defaultDirectory;
+ const disabled=!stateLoaded||submitting||serverBusy;
+ el("selection").querySelectorAll("button,input").forEach(control=>control.disabled=disabled);
+ el("default").disabled=disabled||!defaultDirectory;
+}
+function showProgress(stage){
+ el("title").textContent="正在启动 Folio-J";
+ el("intro").textContent="启动完成后会自动打开学习界面，或显示需要处理的问题。";
+ el("progress").hidden=false;
+ el("selection").hidden=true;
+ el("error").hidden=true;
+ el("warning").hidden=true;
+ const status=stage?`${stage.name}…`:"正在检查启动状态…";
+ if(el("status").textContent!==status)el("status").textContent=status;
+ el("stage-detail").hidden=!stage;
+ if(stage){
+  el("elapsed").textContent=`已用时 ${Math.floor(stage.elapsed_ms/1000)} 秒`;
+  el("target").textContent=stage.target;
+ }
+}
+function showError(message){
+ el("error").hidden=false;
+ el("error").textContent=message;
 }
 function show(state){
  stateLoaded=true;
+ serverBusy=state.busy;
+ el("reload-state").hidden=true;
+ updateControls();
+ if(serverBusy){showProgress(state.stage);return;}
+ el("progress").hidden=true;
  if(state.ready){
   if(!state.warning){location.replace("/");return;}
   el("title").textContent="应用已启动";
@@ -57,11 +91,10 @@ function show(state){
   el("warning").hidden=false;el("warning").textContent=state.warning;
   el("ready-path").textContent=state.selected_path||"";
   el("selection").hidden=true;el("ready").hidden=false;
-  el("status").textContent="";
-  updateControls();return;
+  return;
  }
  defaultDirectory=state.default_directory;
- el("reload-state").hidden=true;
+ el("selection").hidden=false;
  el("default-path").textContent=defaultDirectory;
  el("error").hidden=!state.error;el("error").textContent=state.error||"";
  el("warning").hidden=!state.warning;el("warning").textContent=state.warning||"";
@@ -76,33 +109,69 @@ function show(state){
  el("intro").textContent=state.recovery?"请检查数据库文件和数据目录的访问权限后重试，或选择另一份已有数据。":"学习内容、设置和 API 密钥将保存在所选数据目录。启动成功后，应用会尝试记住这个位置。";
  updateControls();
 }
+function scheduleState(){
+ clearTimeout(pollTimer);
+ pollTimer=setTimeout(()=>loadState(),pollInterval);
+}
+async function loadState(message=""){
+ clearTimeout(pollTimer);
+ const request=++stateRequest;
+ el("reload-state").hidden=true;
+ try{
+  const response=await fetch("/_startup/state",{cache:"no-store",signal:AbortSignal.timeout(stateTimeout)});
+  if(!response.ok)throw new Error();
+  const state=await response.json();
+  if(request!==stateRequest)return;
+  if(!submitting||state.busy)show(state);
+  if(submitting||state.busy)scheduleState();
+  else if(message&&!state.ready&&!state.error)showError(message);
+ }catch{
+  if(request!==stateRequest)return;
+  if(submitting){scheduleState();return;}
+  stateLoaded=false;
+  updateControls();
+  el("title").textContent="无法确认启动状态";
+  el("intro").textContent="请确认终端中的 Folio-J 服务仍在运行。";
+  el("progress").hidden=true;
+  showError("暂时无法连接启动服务。请重新加载启动状态后再操作。");
+  el("reload-state").hidden=false;
+ }
+}
 async function choose(directory,mode,retry=null){
- busy=true;updateControls();
- el("status").textContent="正在检查数据并启动…";
+ if(!stateLoaded||submitting||serverBusy)return;
+ submitting=true;
+ updateControls();
+ showProgress(null);
+ scheduleState();
+ let message="未收到提交结果，请根据当前启动状态操作。";
  try{
-  const response=await fetch(retry||"/_startup/select",{method:"POST",headers:{"Content-Type":"application/json","X-Folio-Startup-Token":token},body:retry?undefined:JSON.stringify({directory,mode})});
-  const result=await response.json();
-  if(!response.ok)throw new Error(typeof result.detail==="string"?result.detail:"无法打开这个位置，请核对路径后重试。");
-  show(result);if(!result.ready)el("status").textContent="请根据上方提示重试或选择其他位置。";
- }catch(error){el("error").hidden=false;el("error").textContent=error.message;el("status").textContent="请重试。";}
- finally{busy=false;updateControls();}
+  const response=await fetch(retry||"/_startup/select",{
+   method:"POST",headers:{"Content-Type":"application/json","X-Folio-Startup-Token":token},
+   body:retry?undefined:JSON.stringify({directory,mode}),signal:AbortSignal.timeout(submitTimeout)
+  });
+  const state=await response.json();
+  if(response.ok){
+   clearTimeout(pollTimer);
+   stateRequest++;
+   submitting=false;
+   show(state);
+   return;
+  }
+  if(typeof state.detail==="string")message=state.detail;
+ }catch{/* The server can still be running the submitted operation. */}
+ submitting=false;
+ stateLoaded=false;
+ updateControls();
+ await loadState(message);
 }
-async function loadState(){
- busy=true;updateControls();el("reload-state").hidden=true;
- try{
-  const response=await fetch("/_startup/state");
-  if(!response.ok)throw new Error("无法加载启动状态，请重新加载。");
-  show(await response.json());
- }catch(error){stateLoaded=false;el("error").hidden=false;el("error").textContent=error.message;el("reload-state").hidden=false;}
- finally{busy=false;updateControls();}
-}
-el("reload-state").addEventListener("click",loadState);
+el("reload-state").addEventListener("click",()=>loadState());
 el("retry").addEventListener("click",()=>choose("","existing","/_startup/retry"));
 el("retry-current").addEventListener("click",()=>choose("","existing","/_startup/retry-current"));
 el("default").addEventListener("click",()=>{if(stateLoaded&&defaultDirectory)choose(defaultDirectory,"new");});
 el("new").addEventListener("click",()=>choose(el("directory").value,"new"));
 el("existing").addEventListener("click",()=>choose(el("directory").value,"existing"));
 el("enter").addEventListener("click",()=>location.replace("/"));
+showProgress(null);
 loadState();
 </script>
 </body>

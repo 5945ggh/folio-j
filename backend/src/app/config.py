@@ -6,13 +6,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from app.resources import installation_root
 
 REPO_ROOT = installation_root()
-USER_DIRECTORY = Path("~/Folio-J-Data")
+LEGACY_USER_DIRECTORY = Path("~/Folio-J-Data")
+_WINDOWS = os.name == "nt"
 DATABASE_COMPANIONS = (
+    "-journal",
     "-wal",
     "-shm",
     ".worker.lock",
@@ -28,8 +30,32 @@ class ServerSettings(BaseModel):
     dev_port: int = Field(default=5187, ge=1, le=65535)
 
 
+def windows_app_directory() -> Path:
+    local = Path(os.environ.get("LOCALAPPDATA", ""))
+    if not local.is_absolute():
+        local = Path.home() / "AppData" / "Local"
+    return local / "Folio-J"
+
+
+def default_database_path() -> Path:
+    if _WINDOWS:
+        return windows_app_directory() / "Data" / "app.db"
+    return LEGACY_USER_DIRECTORY.expanduser() / "app.db"
+
+
+def selection_record_paths() -> tuple[Path, ...]:
+    """Write to the first path; older records remain readable in place."""
+    xdg = Path(os.environ.get("XDG_CONFIG_HOME", ""))
+    if xdg.is_absolute():
+        return (xdg / "folio-j" / "data-location.json",)
+    legacy = Path.home() / ".config" / "folio-j" / "data-location.json"
+    if _WINDOWS:
+        return windows_app_directory() / "data-location.json", legacy
+    return (legacy,)
+
+
 class DatabaseSettings(BaseModel):
-    path: Path = USER_DIRECTORY / "app.db"
+    path: Path = Field(default_factory=default_database_path)
 
 
 class TranslationLimits(BaseModel):
@@ -52,19 +78,46 @@ class SettingsAccessError(ValueError):
     """A configuration file exists but cannot be read."""
 
 
-def _read_settings(path: Path) -> Settings:
+class SettingsFormatError(ValueError):
+    """A configuration file has invalid content."""
+
+
+class DatabasePathError(ValueError):
+    """A database path or its companion files could not be used."""
+
+
+def _read_settings(path: Path, *, server_only: bool = False) -> Settings:
     try:
         with path.open("rb") as stream:
-            return Settings.model_validate(tomllib.load(stream))
+            fields = tomllib.load(stream)
+        if server_only:
+            fields = {"server": fields["server"]} if "server" in fields else {}
+        return Settings.model_validate(fields)
     except FileNotFoundError:
         if path.is_symlink():
-            raise ValueError(f"配置文件的链接已失效：{path}") from None
+            raise SettingsFormatError(f"配置文件的链接已失效：{path}") from None
         return Settings()
     except OSError as exc:
         raise SettingsAccessError(
             f"无法读取配置文件：{path}。请检查文件及其所在目录的访问权限。"
             "也可能是安全软件阻止了访问。"
         ) from exc
+    except (UnicodeError, tomllib.TOMLDecodeError, ValidationError) as exc:
+        raise SettingsFormatError(f"配置文件格式有误：{path}。请检查 TOML 内容。") from exc
+
+
+def read_startup_server() -> ServerSettings:
+    """Read the listener configuration without probing any learning database."""
+    fields: dict[str, object] = {}
+    for path in (LEGACY_USER_DIRECTORY.expanduser() / "app.toml", REPO_ROOT / "config/app.toml"):
+        try:
+            fields.update(
+                _read_settings(path, server_only=True).server.model_dump(exclude_unset=True)
+            )
+        except (SettingsAccessError, SettingsFormatError):
+            # The full location check will report this once the recovery page is available.
+            continue
+    return ServerSettings.model_validate(fields)
 
 
 def _path_present(path: Path) -> bool:
@@ -73,7 +126,7 @@ def _path_present(path: Path) -> bool:
     except FileNotFoundError:
         return False
     except OSError as exc:
-        raise ValueError(
+        raise DatabasePathError(
             f"无法访问数据库文件或配套文件：{path}。请检查数据目录的访问权限。"
             "也可能是安全软件阻止了访问。"
         ) from exc
@@ -88,13 +141,15 @@ def database_exists(path: Path) -> bool:
     except FileNotFoundError:
         pass
     except OSError as exc:
-        raise ValueError(
+        raise DatabasePathError(
             f"无法访问数据库文件：{path}。请检查文件和数据目录的访问权限。也可能是安全软件阻止了访问。"
         ) from exc
     if _path_present(path) or any(
         _path_present(Path(f"{path}{suffix}")) for suffix in DATABASE_COMPANIONS
     ):
-        raise ValueError(f"数据库文件无法打开或仅剩配套文件：{path}。请核对路径或从备份恢复。")
+        raise DatabasePathError(
+            f"数据库文件无法打开或仅剩配套文件：{path}。请核对路径或从备份恢复。"
+        )
     return False
 
 
@@ -120,7 +175,7 @@ def resolve_settings(
     selected_path: Path | None = None,
 ) -> SettingsResolution:
     """Resolve settings without creating directories, databases, or selection records."""
-    user_file = USER_DIRECTORY.expanduser() / "app.toml"
+    user_file = LEGACY_USER_DIRECTORY.expanduser() / "app.toml"
     explicit_path = selected_path or remembered_path
     warning: str | None = None
     try:
@@ -151,16 +206,23 @@ def resolve_settings(
     elif "path" in user.database.model_fields_set:
         path, source = settings.database.path.expanduser(), "user"
         if not path.is_absolute():
-            raise ValueError(f"请在 {user_file} 的 [database].path 中填写数据库文件的完整路径。")
+            raise SettingsFormatError(
+                f"请在 {user_file} 的 [database].path 中填写数据库文件的完整路径。"
+            )
     else:
         legacy = REPO_ROOT / "data" / "app.db"
         if database_exists(legacy):
             path, source = legacy, "legacy"
+        elif _WINDOWS and database_exists(user_file.with_name("app.db")):
+            path, source = user_file.with_name("app.db"), "legacy"
         else:
             path, source = settings.database.path, "default"
     path = REPO_ROOT / path.expanduser()
     settings.database.path = path.resolve()
     resolution = SettingsResolution(settings, source, warning)
+    if source == "selection":
+        # The explicit new/open modes validate their own candidates before activation.
+        return resolution
     try:
         exists = database_exists(path)
         if source == "remembered" and not exists:

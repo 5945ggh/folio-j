@@ -56,8 +56,10 @@ async def run_migrations_online() -> None:
         database_path = load_settings().database.path
     if not isinstance(database_path, Path):
         raise ValueError("迁移数据库路径必须是已校验的 Path")
-    print(f"迁移使用的数据库文件：{database_path}", file=sys.stderr, flush=True)
-    engine = create_engine(database_path)
+    database_target = context.config.attributes.get("database_target", database_path)
+    print(f"迁移使用的数据库文件：{database_target}", file=sys.stderr, flush=True)
+    require_existing = context.config.attributes.get("require_existing") is True
+    engine = create_engine(database_path, require_existing=require_existing)
     try:
         async with engine.connect() as connection:
             await connection.run_sync(do_run_migrations)

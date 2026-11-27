@@ -12,7 +12,7 @@ Python 默认版本同时固定在根目录的 [.python-version](../.python-vers
 
 Windows 实验性支持以 Windows 11 x64、PowerShell 5.1／7 和 Chrome／Edge 为目标，推荐 `just 1.58` 或更新版本。`just setup/dev/start/lint/test/build/gen-api/migrate/backup/restore` 可使用原生命令入口；`snapshot` 的可选脚本仍要求 POSIX shell。本文其余行内环境变量赋值、`mktemp` 等示例使用 POSIX shell；PowerShell 的配置写法见[应用配置](USAGE.md#配置优先级与高级选项)，完整实机步骤见 [Windows 测试清单](handovers/WINDOWS_ACCEPTANCE.md)。
 
-生产 `just start` 在构建后进入统一启动流程，首次通过页面选择默认 `~/Folio-J-Data` 或自定义目录，确认前不创建数据。`uv run --project backend python -m app.launcher start --choose-data` 可重开选择页，数据故障时保持恢复页。旧库与旧配置继续兼容，位置记忆优先级见[应用配置](USAGE.md#配置优先级与高级选项)。开发模式和显式 `just migrate` 仍直接使用解析出的路径；已有数据先按[升级与备份](UPGRADING.md)备份，测试用 `FOLIO_J_DATABASE_PATH` 指向独立库。
+生产 `just start` 在构建后进入统一启动流程，首次通过页面选择平台默认目录或自定义目录，确认前不创建数据。`uv run --project backend python -m app.launcher start --choose-data` 可重开选择页，数据故障时保持恢复页。旧库与旧配置继续兼容，位置记忆优先级见[应用配置](USAGE.md#配置优先级与高级选项)。开发模式和显式 `just migrate` 仍直接使用解析出的路径；已有数据先按[升级与备份](UPGRADING.md)备份，测试用 `FOLIO_J_DATABASE_PATH` 指向独立库。
 
 在仓库根目录运行：
 

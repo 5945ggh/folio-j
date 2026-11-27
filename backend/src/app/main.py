@@ -2,7 +2,7 @@
 
 import asyncio
 from collections.abc import AsyncGenerator
-from contextlib import AsyncExitStack, asynccontextmanager
+from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -23,7 +23,7 @@ from app.config import load_settings
 from app.db import create_engine
 from app.jobs.runtime import recover_chat_jobs, start_chat_worker
 from app.jobs.supervision import BackgroundWorker, workers
-from app.platform_io import FileLockError, exclusive_file_lock
+from app.platform_io import FileLockError, exclusive_file_lock, make_private_directory
 from app.resources import RESOURCE_ROOT
 from app.services import translations
 from app.services.analyses import AnalysisWriteError
@@ -32,26 +32,65 @@ from app.services.chat import ChatError
 from app.services.dictionary_store import DictionaryStore
 from app.services.reader_views import ReaderViews
 from app.services.settings import interrupt_unfinished
+from app.services.startup import ApplicationStartupError
 from app.services.statistics_runtime import StatisticsRuntime
 
 
-def create_app(frontend_dir: Path | None = None, database_path: Path | None = None) -> FastAPI:
+def _open_worker_database(
+    database_path: Path | None, require_existing: bool, resources: ExitStack
+) -> Path:
+    path = (database_path if database_path is not None else load_settings().database.path).resolve()
+    if not require_existing:
+        make_private_directory(path.parent, parents=True, exist_ok=True)
+    lock_path = path.with_name(path.name + ".worker.lock")
+    try:
+        resources.enter_context(exclusive_file_lock(lock_path))
+    except FileLockError as exc:
+        if isinstance(exc.__cause__, BlockingIOError):
+            hint = "请关闭正在使用该文件的其他 Folio-J 实例后重试。"
+        elif isinstance(exc.__cause__, PermissionError):
+            hint = "访问被拒绝。请检查数据目录权限，或核对安全软件是否拦截。"
+        else:
+            hint = "请检查数据目录和锁文件是否可访问。"
+        raise ApplicationStartupError(f"无法锁定数据库文件：{path}。{hint}") from exc
+    return path
+
+
+@asynccontextmanager
+async def _worker_database(
+    database_path: Path | None, require_existing: bool
+) -> AsyncGenerator[Path, None]:
+    lock = ExitStack()
+    acquisition = asyncio.create_task(
+        asyncio.to_thread(_open_worker_database, database_path, require_existing, lock)
+    )
+    try:
+        try:
+            path = await asyncio.shield(acquisition)
+        except asyncio.CancelledError:
+            # The blocking file open can finish after cancellation. Let it register
+            # the handle before closing the stack.
+            with suppress(Exception):
+                await acquisition
+            raise
+        yield path
+    finally:
+        await asyncio.to_thread(lock.close)
+
+
+def create_app(
+    frontend_dir: Path | None = None,
+    database_path: Path | None = None,
+    *,
+    require_existing: bool = False,
+) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncGenerator[None]:
-        path = (
-            database_path if database_path is not None else load_settings().database.path
-        ).resolve()
-        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-        lock_path = path.with_name(path.name + ".worker.lock")
-        async with AsyncExitStack() as resources:
-            try:
-                resources.enter_context(exclusive_file_lock(lock_path))
-            except FileLockError as exc:
-                raise RuntimeError(
-                    f"无法锁定数据库文件：{path}。请关闭正在使用该文件的其他 Folio-J 实例，"
-                    "或检查数据目录权限后重试。"
-                ) from exc
-            engine = create_engine(path)
+        async with (
+            _worker_database(database_path, require_existing) as path,
+            AsyncExitStack() as resources,
+        ):
+            engine = create_engine(path, require_existing=require_existing)
             resources.push_async_callback(engine.dispose)
             application.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
             reader_views = ReaderViews(application.state.session_factory)
@@ -193,13 +232,15 @@ def create_app(frontend_dir: Path | None = None, database_path: Path | None = No
         requested = (root / full_path).resolve()
         if not requested.is_relative_to(root):
             raise HTTPException(status_code=404)
-        if requested.is_file():
-            return FileResponse(requested)
-        if full_path.startswith("assets/") or "." in Path(full_path).name:
-            raise HTTPException(status_code=404)
         index = root / "index.html"
+        if requested != index:
+            if requested.is_file():
+                return FileResponse(requested)
+            if full_path.startswith("assets/") or "." in Path(full_path).name:
+                raise HTTPException(status_code=404)
         if index.is_file():
-            return FileResponse(index)
+            # The same URL must show the recovery page if the next launch loses its library.
+            return FileResponse(index, headers={"Cache-Control": "no-store"})
         raise HTTPException(status_code=404)
 
     return application

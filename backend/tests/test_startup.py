@@ -1,15 +1,16 @@
 """Exercise selection and recovery through the same startup interface as the browser."""
 
 import asyncio
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator, Generator
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
+from threading import Event
 
 import httpx
 import pytest
 from fastapi import FastAPI
 
-from app.config import DatabaseSettings, Settings
+from app.config import DatabaseSettings, Settings, SettingsResolution
 from app.services import data_location
 from app.services.data_location import LocationStatus
 from app.services.startup import StartupService
@@ -30,6 +31,122 @@ def initial_status(tmp_path: Path, *, settings: Settings | None = None) -> Locat
 
 
 @pytest.mark.asyncio
+async def test_in_progress_stage_is_observable_and_reports_safe_nested_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    started, proceed = Event(), Event()
+    secret = "credential-that-must-not-be-reported"
+
+    def migrate(path: Path, require_existing: bool) -> None:
+        assert not require_existing
+        started.set()
+        assert proceed.wait(5)
+        denied = PermissionError(13, secret, None, 5)
+        if getattr(denied, "winerror", None) is None:
+            vars(denied)["winerror"] = 5
+        raise data_location.DataLocationError("无法访问学习库。请检查权限。") from denied
+
+    service = StartupService(initial_status(tmp_path), migrate, lambda path: FastAPI())
+    headers = {"Origin": "http://127.0.0.1:8010", "X-Folio-Startup-Token": service.token}
+    directory = tmp_path / "学习 数据"
+    payload = {"directory": str(directory), "mode": "new"}
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=StartupApplication(service)),
+        base_url="http://127.0.0.1:8010",
+    ) as client:
+        submission = asyncio.create_task(
+            client.post("/_startup/select", headers=headers, json=payload)
+        )
+        try:
+            assert await asyncio.to_thread(started.wait, 5)
+            snapshot = await client.get("/_startup/state")
+            assert snapshot.headers["cache-control"] == "no-store"
+            state = snapshot.json()
+            assert state["busy"] is True and state["ready"] is False
+            assert state["stage"]["name"] == "迁移学习数据库"
+            assert state["stage"]["target"] == str(directory / "app.db")
+            assert state["stage"]["elapsed_ms"] >= 0
+            for path in ("/_startup/select", "/_startup/retry", "/_startup/retry-current"):
+                duplicate = await asyncio.wait_for(
+                    client.post(path, headers=headers, json=payload), 1
+                )
+                assert duplicate.status_code == 409
+        finally:
+            proceed.set()
+            response = await submission
+        state = response.json()
+        assert not state["busy"] and state["recovery"] and state["stage"] is None
+        assert state == (await client.get("/_startup/state")).json()
+    output = capsys.readouterr().err
+    assert "启动阶段开始" in output
+    assert "启动阶段失败：迁移学习数据库" in output
+    assert "迁移学习数据库失败" in state["error"]
+    for diagnostic in (state["error"], output):
+        assert "PermissionError" in diagnostic
+        assert "winerror=5" in diagnostic
+        assert "请检查权限" in diagnostic
+        assert secret not in diagnostic
+    await service.close()
+
+
+@pytest.mark.asyncio
+async def test_state_remains_responsive_while_learning_application_opens_worker_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app import main
+    from app.launcher import migrate
+
+    started, proceed = Event(), Event()
+    acquire = main.exclusive_file_lock
+
+    @contextmanager
+    def delayed_lock(path: Path) -> Generator[None, None, None]:
+        started.set()
+        assert proceed.wait(5)
+        with acquire(path):
+            yield
+
+    monkeypatch.setattr(main, "exclusive_file_lock", delayed_lock)
+    directory = tmp_path / "library"
+    database = directory / "app.db"
+    service = StartupService(
+        initial_status(tmp_path),
+        migrate,
+        lambda path: main.create_app(database_path=path, require_existing=True),
+    )
+    try:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=StartupApplication(service)),
+            base_url="http://127.0.0.1:8010",
+        ) as client:
+            submission = asyncio.create_task(
+                client.post(
+                    "/_startup/select",
+                    headers={
+                        "Origin": "http://127.0.0.1:8010",
+                        "X-Folio-Startup-Token": service.token,
+                    },
+                    json={"directory": str(directory), "mode": "new"},
+                )
+            )
+            try:
+                assert await asyncio.to_thread(started.wait, 5)
+                response = await asyncio.wait_for(client.get("/_startup/state"), 2)
+                state = response.json()
+                assert state["busy"] and not state["ready"]
+                assert state["stage"]["name"] == "初始化学习应用"
+                assert state["stage"]["target"] == str(database)
+            finally:
+                proceed.set()
+                response = await submission
+            assert response.json()["ready"]
+    finally:
+        await service.close()
+    with acquire(database.with_name("app.db.worker.lock")):
+        pass
+
+
+@pytest.mark.asyncio
 async def test_first_visit_is_read_only_and_selection_starts_same_server(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -47,8 +164,9 @@ async def test_first_visit_is_read_only_and_selection_starts_same_server(
     async def home() -> dict[str, str]:
         return {"page": "main"}
 
-    def migrate(path: Path) -> None:
+    def migrate(path: Path, require_existing: bool) -> None:
         assert path == tmp_path / "chosen/app.db"
+        assert not require_existing
         events.append("migrate")
 
     def remember(path: Path) -> None:
@@ -109,7 +227,7 @@ async def test_failure_keeps_page_recoverable_and_closes_application(
         finally:
             events.append("close")
 
-    def migrate(path: Path) -> None:
+    def migrate(path: Path, require_existing: bool) -> None:
         if failing and failure == "migration":
             raise ValueError("migration failed")
 
@@ -125,7 +243,13 @@ async def test_failure_keeps_page_recoverable_and_closes_application(
     state = await service.select(StartupSelection(directory=str(tmp_path / "chosen"), mode="new"))
     assert not state.ready
     assert state.recovery
-    assert state.error == f"{failure} failed"
+    assert state.error
+    assert {
+        "migration": "迁移学习数据库",
+        "lifespan": "初始化学习应用",
+        "remember": "保存数据位置记录",
+    }[failure] in state.error
+    assert f"{failure} failed" not in state.error
     assert events == (
         []
         if failure == "migration"
@@ -136,10 +260,12 @@ async def test_failure_keeps_page_recoverable_and_closes_application(
     assert service.application is None
 
     # The first attempt may have created files; explicitly reopen that location.
-    def prepare(directory: Path, use_existing: bool) -> Settings:
-        return Settings(database=DatabaseSettings(path=tmp_path / "chosen/app.db"))
+    def prepare(directory: Path, use_existing: bool) -> SettingsResolution:
+        return SettingsResolution(
+            Settings(database=DatabaseSettings(path=tmp_path / "chosen/app.db")), "selection"
+        )
 
-    monkeypatch.setattr(data_location, "prepare_selection", prepare)
+    monkeypatch.setattr(data_location, "prepare_selection_resolution", prepare)
     failing = False
     assert (
         await service.select(StartupSelection(directory=str(tmp_path / "chosen"), mode="existing"))
@@ -204,7 +330,7 @@ async def test_remember_failure_keeps_real_application_running_and_next_start_us
             assert state["error"] is None
             assert state["selected_path"] == str(path)
             assert state["retry_current_path"] is None
-            assert "位置记录写入被拒绝" in state["warning"]
+            assert "保存数据位置记录失败" in state["warning"]
             assert "下次" in state["warning"]
             assert state["warning"] in capsys.readouterr().err
             assert data_location.read_selection() == previous
@@ -247,7 +373,7 @@ async def test_automatic_startup_failure_never_remembers_or_silently_creates_oth
     selected = tmp_path / "existing/app.db"
     settings = Settings(database=DatabaseSettings(path=selected))
 
-    def migrate(path: Path) -> None:
+    def migrate(path: Path, require_existing: bool) -> None:
         assert path == selected
         raise OSError("数据目录不可写")
 
@@ -279,7 +405,9 @@ async def test_automatic_startup_failure_never_remembers_or_silently_creates_oth
 async def test_selection_rejects_cross_origin_missing_token_and_rebinding(
     origin: str | None, token: str, host: str, tmp_path: Path
 ) -> None:
-    service = StartupService(initial_status(tmp_path), lambda path: None, lambda path: FastAPI())
+    service = StartupService(
+        initial_status(tmp_path), lambda path, exists: None, lambda path: FastAPI()
+    )
     bootstrap = StartupApplication(service)
     headers = {"Host": host, "X-Folio-Startup-Token": service.token if token == "valid" else token}
     if origin is not None:
@@ -305,7 +433,7 @@ async def test_retry_reloads_original_location_without_reselection_or_rememberin
     status = initial_status(tmp_path, settings=settings)
     attempts: list[Path] = []
 
-    def migrate(database: Path) -> None:
+    def migrate(database: Path, require_existing: bool) -> None:
         attempts.append(database)
         if len(attempts) == 1:
             raise PermissionError("磁盘暂不可写")
@@ -365,7 +493,7 @@ async def test_real_application_lifespan_failure_releases_database_lock_and_can_
     directory = tmp_path / "chosen"
     state = await service.select(StartupSelection(directory=str(directory), mode="new"))
     assert state.recovery
-    assert state.error == "初始化中断，可重新打开原库"
+    assert state.error and "初始化学习应用失败" in state.error
     assert data_location.read_selection() is None
     lock = directory / "app.db.worker.lock"
     with exclusive_file_lock(lock):
@@ -388,13 +516,13 @@ async def test_retry_current_recovers_new_candidate_with_only_worker_lock_and_ke
 
     first = True
 
-    def fail_first(database: Path) -> None:
+    def fail_first(database: Path, require_existing: bool) -> None:
         nonlocal first
         if first:
             first = False
             with exclusive_file_lock(Path(f"{database}.worker.lock")):
                 raise PermissionError("数据库写入被拒绝")
-        migrate(database)
+        migrate(database, require_existing)
 
     service = StartupService(initial_status(tmp_path), fail_first, lambda path: FastAPI())
     directory = tmp_path / "chosen"
@@ -432,14 +560,14 @@ async def test_retry_current_recovers_explicit_environment_candidate_without_rem
     monkeypatch.setenv("FOLIO_J_DATABASE_PATH", str(database))
     first = True
 
-    def fail_first(path: Path) -> None:
+    def fail_first(path: Path, require_existing: bool) -> None:
         nonlocal first
         if first:
             first = False
             path.parent.mkdir()
             with exclusive_file_lock(Path(f"{path}.worker.lock")):
                 raise PermissionError("初次环境配置目录写入被拒绝")
-        migrate(path)
+        migrate(path, require_existing)
 
     service = StartupService(data_location.location_status(), fail_first, lambda path: FastAPI())
     await service.initialize()
@@ -462,7 +590,8 @@ async def test_retry_current_does_not_recreate_previously_existing_database(
     database = tmp_path / "existing/app.db"
     await asyncio.to_thread(migrate, database)
 
-    def denied(path: Path) -> None:
+    def denied(path: Path, require_existing: bool) -> None:
+        assert require_existing
         raise PermissionError("不可写")
 
     settings = Settings(database=DatabaseSettings(path=database))
@@ -495,7 +624,7 @@ async def test_unconfirmed_first_choice_and_missing_remembered_location_have_no_
             error="已记住的学习库不存在",
         ),
     ):
-        service = StartupService(status, lambda path: None, lambda path: FastAPI())
+        service = StartupService(status, lambda path, exists: None, lambda path: FastAPI())
         await service.initialize()
         assert service.state().retry_current_path is None
         with pytest.raises(ValueError, match="请先选择数据目录"):

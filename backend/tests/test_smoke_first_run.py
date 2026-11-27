@@ -85,10 +85,17 @@ def test_first_run_checks_selection_and_reads_the_same_data_after_restart(
     source = {"id": "saved-source", "title": "首次选库 smoke"}
     first = Mock(origin="http://127.0.0.1:1234")
     first.get.return_value = b'<script nonce="test-token">'
+    local = tmp_path / "AppData" / "Local"
+    default = local / "Folio-J" / "Data" if os.name == "nt" else tmp_path / "Folio-J-Data"
 
     def select(path: str, *args: object, **kwargs: object) -> object:
         if path == "/_startup/state":
-            return {"ready": False, "recovery": False, "selected_path": None}
+            return {
+                "ready": False,
+                "recovery": False,
+                "selected_path": None,
+                "default_directory": str(default),
+            }
         if path == "/_startup/select":
             assert args == ({"directory": str(directory), "mode": "new"},)
             assert kwargs == {
@@ -116,7 +123,7 @@ def test_first_run_checks_selection_and_reads_the_same_data_after_restart(
         "wrong path": "did not remember",
         "missing data": "did not retain",
     }
-    environment = {"HOME": str(tmp_path)}
+    environment = {"HOME": str(tmp_path), "LOCALAPPDATA": str(local)}
     with pytest.raises(RuntimeError, match=errors[failure]) if failure else nullcontext():
         shared.check_first_run(["launcher"], tmp_path, environment, 1234, directory)
     if failure is None:
