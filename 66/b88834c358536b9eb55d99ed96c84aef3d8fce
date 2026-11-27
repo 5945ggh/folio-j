@@ -1,0 +1,162 @@
+backend/src/app/config.py
+  s_ad5f1659edcf81::t_d6e9a099c49721 17
+  s_ad5f1659edcf81::t_bf250331f81239 89,92-95
+  s_ad5f1659edcf81::t_cc7a6aebe717f4 114-116
+  s_ad5f1659edcf81::t_95dd2d4c34773b 9,81-88,105-113,117-120,129,144,150-152,209-211
+  s_ad5f1659edcf81::t_0dc95084c1e0be 98
+  s_ad5f1659edcf81::t_7146ef3b643915 223-225
+  s_ad5f1659edcf81::t_2ccff6b62591ff 14-15,33-56,58,178,216-217
+backend/alembic/env.py
+  s_ad5f1659edcf81::t_2430433abf1db8 59-60
+  s_ad5f1659edcf81::t_f277396ed4a2f3 61-62
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_ad5f1659edcf81::t_bdb90fced0c581 15
+docs/PRD.md
+  s_ad5f1659edcf81::t_178b23ddf5da2e 396,400
+docs/UPGRADING.md
+  s_ad5f1659edcf81::t_178b23ddf5da2e 15
+README.md
+  s_ad5f1659edcf81::t_178b23ddf5da2e 43
+backend/src/app/services/startup.py
+  s_ad5f1659edcf81::t_f0258e11b5dc39 91-94,118
+  s_ad5f1659edcf81::t_5e230ef1904f36 9,77,193,201-202,205,211-216,249-250,282-283,287-288,345
+  s_ad5f1659edcf81::t_d283cbcf3a13f2 81-83,108-110,115-117,119-125,208-210,222-223,232,234-236,263-266,284-285,346-348
+  s_ad5f1659edcf81::t_e2fc773aea453c 6,10-11,13,19-27,46-50,55-56,72-76,78-80,84-90,95-107,111-114,126-131,138,140-142,149-152,166-167,183,185-186,189-192,194-200,203-204,206-207,217-221,224-231,233,237-248,251-256,258,271-272,275,280-281,286,289-290,296,300,304-305,309,316-317,319-327,329,333,336-338,341-344,349,351-355,358-359,361-364
+  s_ad5f1659edcf81::t_07edf795ae2d44 187-188,257,259-262,267-270
+  s_ad5f1659edcf81::t_2ccff6b62591ff 17,35-43
+  s_ad5f1659edcf81::t_e032f81931be94 44-45
+scripts/release/README.md
+  s_ad5f1659edcf81::t_178b23ddf5da2e 47
+frontend/browser-tests/main.tsx
+  s_ad5f1659edcf81::t_932cd2d83a17ad 56,456
+backend/tests/test_config.py
+  s_ad5f1659edcf81::t_167ae519a33ff1 34
+  s_ad5f1659edcf81::t_96985acbc6ac4d 191,198
+docs/DEVELOPMENT.md
+  s_ad5f1659edcf81::t_178b23ddf5da2e 15
+backend/tests/test_smoke_first_run.py
+  s_ad5f1659edcf81::t_167ae519a33ff1 88-89,93-98,126
+docs/ARCHITECTURE.md
+  s_ad5f1659edcf81::t_61445e95cb15db 76,766
+  s_ad5f1659edcf81::t_f2811c88117592 762,768
+  s_ad5f1659edcf81::t_3d8528d5d7b607 764
+  s_ad5f1659edcf81::t_789029a00fccd4 767
+frontend/src/api/schema.d.ts
+  s_ad5f1659edcf81::t_60f589037348e1 4370-4378,4381-4382,4397
+backend/static/startup/index.html
+  s_ad5f1659edcf81::t_22b73c4795ca2b 18-21,26,41,46-48,51-54,56-77,81-85,94,97,112-119,121-138,140-146,148-165,167,174
+config/app.example.toml
+  s_ad5f1659edcf81::t_178b23ddf5da2e 11
+backend/tests/conftest.py
+  s_ad5f1659edcf81::t_167ae519a33ff1 17
+backend/src/app/db.py
+  s_ad5f1659edcf81::t_c01b9fa6ecedad 13
+  s_ad5f1659edcf81::t_dcf8783ef8758e 38-45,47-49,51-55
+  s_ad5f1659edcf81::t_81872ba6d1c806 36-37,50
+  s_ad5f1659edcf81::t_92435137ecb415 14
+frontend/browser-tests/startup-page.ts
+  s_ad5f1659edcf81::t_ccda2a5b8e2dd6 1-6,10-64,66-76,85,90-93,102-103,108,117-124,137-142
+  s_ad5f1659edcf81::t_bc7a4a1d2de539 65,77-84,86-89,94-101,104-107,109-116,125-136
+  s_ad5f1659edcf81::t_fcdcb2bdd692b9 7-9
+backend/src/app/startup.py
+  s_ad5f1659edcf81::t_832390c53b2e8d 3,10-12,35-36,78,82-85,92-99
+  s_ad5f1659edcf81::t_2e09460217dba3 100
+backend/tests/test_startup.py
+  s_ad5f1659edcf81::t_d283cbcf3a13f2 57-59,70-72,247-251,408-410
+  s_ad5f1659edcf81::t_cc7a6aebe717f4 125-128
+  s_ad5f1659edcf81::t_995b2b8c684c68 13,167,169,230,246,252,263-266,268,333,376,436,496,519,525,563,570,593-594,627
+  s_ad5f1659edcf81::t_e5d0bcb206c51e 4-5,33,90-124,129-146
+  s_ad5f1659edcf81::t_b15471d8b15075 82-83
+  s_ad5f1659edcf81::t_d257b14cf5aab2 44-46
+  s_ad5f1659edcf81::t_45af1cfac0a566 7,34-43,47-56,60-69,73-81,84-89
+  s_ad5f1659edcf81::t_ced673df6c6209 147-148
+backend/tests/test_startup_database.py
+  s_ad5f1659edcf81::t_db4fed31513cc0 5,12,16,134-158,163
+  s_ad5f1659edcf81::t_9cf3953be7b9f7 57-59,196-197
+  s_ad5f1659edcf81::t_1687960c5004a7 1-4,6,8-11,14-15,17-56,60-82,93-130,132-133,164-195,198-201
+  s_ad5f1659edcf81::t_0517d3877134c4 83-92
+  s_ad5f1659edcf81::t_f1bc3b13984837 131
+  s_ad5f1659edcf81::t_46f183d707ac65 7,159-162
+  s_ad5f1659edcf81::t_8c6fb858f39d94 13
+backend/src/app/services/data_location.py
+  s_ad5f1659edcf81::t_0b157325db975f 125,213-217,219-225,378
+  s_ad5f1659edcf81::t_dcef4c9d7a1fea 37,138,144,149-150,158-159,170,379,381,384-385
+  s_ad5f1659edcf81::t_dbb13e2ff00032 5,174,176-211,226,231-238,241-247,249,251-271,273,275,291,359
+  s_ad5f1659edcf81::t_ffba653c0d86a3 175
+  s_ad5f1659edcf81::t_0517d3877134c4 325-326,338
+  s_ad5f1659edcf81::t_67e83fa6b38ebe 16
+  s_ad5f1659edcf81::t_c01b9fa6ecedad 17,293
+  s_ad5f1659edcf81::t_d283cbcf3a13f2 151-157
+  s_ad5f1659edcf81::t_2ccff6b62591ff 44,47-57,59-61,65,70,108
+  s_ad5f1659edcf81::t_c0866ec936ffda 218
+  s_ad5f1659edcf81::t_754a7adabd2dbe 38,136
+  s_ad5f1659edcf81::t_1221fde6511809 309-314,334
+backend/tests/test_static.py
+  s_ad5f1659edcf81::t_4b9b203e99b4ea 19-22
+docs/USAGE.md
+  s_ad5f1659edcf81::t_178b23ddf5da2e 122,159,163-164,168
+  s_ad5f1659edcf81::t_434cf5c4dcc749 124
+frontend/scripts/test-browser.mjs
+  s_ad5f1659edcf81::t_bc7a4a1d2de539 262-264
+  s_ad5f1659edcf81::t_d3fa86868ce659 37-38,259-261,265-266
+docs/INFORMATION_ARCHITECTURE.md
+  s_ad5f1659edcf81::t_178b23ddf5da2e 106
+backend/tests/test_data_location.py
+  s_ad5f1659edcf81::t_f6aaa635f6697d 410
+  s_ad5f1659edcf81::t_96985acbc6ac4d 255
+  s_ad5f1659edcf81::t_167ae519a33ff1 41,57,326-330,332-333,336
+  s_ad5f1659edcf81::t_6d76ee51dcb30b 545-605
+backend/src/app/launcher.py
+  s_ad5f1659edcf81::t_1e0577ddc9728b 26,143,150,152-158,163-164
+  s_ad5f1659edcf81::t_7ef52143bc7505 27-33
+  s_ad5f1659edcf81::t_3b7b6f8e7636ed 59-63,65-78,82
+  s_ad5f1659edcf81::t_1e3cf278c6277f 47-53,55-56,64,79-81
+  s_ad5f1659edcf81::t_e9c48f7e2dd734 14,35,38-41,43-46,57-58,83-84,92-94,101-104,107,110
+  s_ad5f1659edcf81::t_de403db9a653b2 42,160-162
+  s_ad5f1659edcf81::t_5304f70a86cc51 85
+  s_ad5f1659edcf81::t_67efc85f89247c 10,95-100
+  s_ad5f1659edcf81::t_c01b9fa6ecedad 88
+  s_ad5f1659edcf81::t_53856c77af9542 54
+backend/tests/test_launcher.py
+  s_ad5f1659edcf81::t_dab47ae3162434 229-238,251,253
+  s_ad5f1659edcf81::t_bc15b08b172104 200-201,220,254,258-259,541-549,554-564,568,611-617
+  s_ad5f1659edcf81::t_356b10dee6213c 217-219
+  s_ad5f1659edcf81::t_4b9b203e99b4ea 550-553
+backend/openapi.json
+  s_ad5f1659edcf81::t_d4ca95c24df82c 7850-7872,7875-7878,7935-7944,7960-7961
+backend/src/app/main.py
+  s_ad5f1659edcf81::t_bddbf1ab4f71d2 5,39-54,56-59,63-80
+  s_ad5f1659edcf81::t_f0258e11b5dc39 35,55
+  s_ad5f1659edcf81::t_c01b9fa6ecedad 26
+  s_ad5f1659edcf81::t_cc7a6aebe717f4 60-62,89-92
+  s_ad5f1659edcf81::t_6350157d70975c 81-86,93
+  s_ad5f1659edcf81::t_4b9b203e99b4ea 236-240,242-243
+backend/tests/test_windows_launcher.py
+  s_ad5f1659edcf81::t_bc15b08b172104 71,75
+scripts/smoke_application.py
+  s_ad5f1659edcf81::t_a9828e2bc4fd06 111,113-116
+  s_ad5f1659edcf81::t_df37410b3dd18c 105-110
+  s_ad5f1659edcf81::t_167ae519a33ff1 160-164,169-171
+docs/handovers/WINDOWS_ACCEPTANCE.md
+  s_ad5f1659edcf81::t_434cf5c4dcc749 7-8,10
+  s_ad5f1659edcf81::t_bdb90fced0c581 9
+  s_ad5f1659edcf81::t_3d8528d5d7b607 61-70,72-77
+scripts/frozen/README.md
+  s_ad5f1659edcf81::t_178b23ddf5da2e 21,35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "66b88834c358536b9eb55d99ed96c84aef3d8fce",
+  "prompts": {},
+  "sessions": {
+    "s_ad5f1659edcf81": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21ab5-54dc-7dc1-a2a8-bdc67361d721",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
