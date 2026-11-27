@@ -1,0 +1,48 @@
+backend/src/app/backup.py
+  s_ad5f1659edcf81::t_32b41a3e78b123 318
+  s_ad5f1659edcf81::t_51587640584bfc 37-42,114,126-129,297-303,309-317,319-336,341-343,348-349,358-359
+  s_ad5f1659edcf81::t_4007e44b125fcd 28,32,34,285,287,294,308,344,346,427,489,552
+docs/TECH_STACK.md
+  s_ad5f1659edcf81::t_178b23ddf5da2e 94
+backend/src/app/services/settings.py
+  s_ad5f1659edcf81::t_4007e44b125fcd 23,287-288
+backend/tests/test_platform_io.py
+  s_ad5f1659edcf81::t_ba19f17be2aef7 171-194
+  s_ad5f1659edcf81::t_3f44e2ea3a3fba 90-129
+  s_ad5f1659edcf81::t_4b94626cc2447a 142-167
+  s_ad5f1659edcf81::t_ea55a0ada601ab 168-170
+backend/src/app/platform_io.py
+  s_ad5f1659edcf81::t_818611cd705f0d 157-158
+  s_ad5f1659edcf81::t_6aee7bc5996c6c 181
+  s_ad5f1659edcf81::t_c01b9fa6ecedad 9,12,17,20-21,32,37-78,144-147,149,195
+  s_ad5f1659edcf81::t_ea55a0ada601ab 167-171,173-175
+  s_ad5f1659edcf81::t_ba19f17be2aef7 5,11,22-24,148,150-156,159-166,172,176-180,182-185
+  s_ad5f1659edcf81::t_f64fdfe7706972 186-187
+backend/tests/test_dictionary_library.py
+  s_ad5f1659edcf81::t_3f44e2ea3a3fba 16,77-99
+  s_ad5f1659edcf81::t_097ae2b406e248 100-101
+backend/src/app/services/dictionary_store.py
+  s_ad5f1659edcf81::t_c01b9fa6ecedad 36,807
+  s_ad5f1659edcf81::t_51587640584bfc 62,761
+backend/tests/test_backup.py
+  s_ad5f1659edcf81::t_af2cfb4b124e7f 24,743-760,762-773
+  s_ad5f1659edcf81::t_a84d0ac69986ac 93-128
+  s_ad5f1659edcf81::t_08afe03aae6701 761
+  s_ad5f1659edcf81::t_d69bf50b85db38 774-775
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8f93ebc2f105b12d4ab3bf0e6fa0f277279f9c16",
+  "prompts": {},
+  "sessions": {
+    "s_ad5f1659edcf81": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21ab5-54dc-7dc1-a2a8-bdc67361d721",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
