@@ -33,7 +33,7 @@ from app.dictionary_schemas import (
     DictionaryNode,
     DictionaryStatus,
 )
-from app.platform_io import fsync_directory
+from app.platform_io import fsync_directory, publish_file
 from app.services.dictionary_styles import StyleContext, sanitize_style
 from app.services.dictionary_stylesheet import (
     MAX_STYLESHEET_BYTES,
@@ -59,6 +59,7 @@ BANK_NAME = re.compile(r"term_bank_(\d+)\.json\Z")
 _INDEX_FILENAME = r"[0-9a-f]{64}(?:\.styles-\d+)?\.sqlite3"
 LIBRARY_INDEX = re.compile(_INDEX_FILENAME)
 STAGED_LIBRARY_INDEX = re.compile(rf"({_INDEX_FILENAME})\.deleting-[0-9a-f]{{32}}")
+INDEX_TEMPORARY_PREFIX = ".dictionary-index-"
 NodeTag = Literal["div", "p", "span", "ul", "ol", "li", "br", "ruby", "rt"]
 NodeRole = Literal["head", "def1", "def2", "dfcn", "exam", "exjp", "excn"]
 NODE_TAGS = {"div", "p", "span", "ul", "ol", "li", "br", "ruby", "rt"}
@@ -757,7 +758,7 @@ class DictionaryStore:
     def _build_index(self, source: Path) -> tuple[DictionaryStatus, Path]:
         self.library_path.mkdir(parents=True, exist_ok=True)
         fd, raw_path = tempfile.mkstemp(
-            prefix=".dictionary-index-", suffix=".sqlite3", dir=self.library_path
+            prefix=INDEX_TEMPORARY_PREFIX, suffix=".sqlite3", dir=self.library_path
         )
         os.close(fd)
         target = Path(raw_path)
@@ -803,7 +804,7 @@ class DictionaryStore:
         if base_is_older:
             published = published.with_suffix(f".styles-{STYLESHEET_INDEX_VERSION}.sqlite3")
         try:
-            os.link(target, published)
+            publish_file(target, published)
         except FileExistsError:
             if not _index_presentation_status(published, result.dictionary_id)[1]:
                 os.replace(target, published)

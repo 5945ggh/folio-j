@@ -20,6 +20,7 @@ from app.ids import new_ulid
 from app.jobs.supervision import worker
 from app.llm.errors import describe_call_failure
 from app.models import Segment, Source
+from app.platform_io import chmod_posix, make_private_directory
 from app.resources import PROMPTS
 from app.settings_models import Defaults, Profile, Provider, ProviderModel, Run, Style
 from app.settings_schemas import (
@@ -283,8 +284,8 @@ def credential_dir(database_path: Path) -> Path:
 
 def save_credential(database_path: Path, value: str) -> str:
     directory = credential_dir(database_path)
-    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-    os.chmod(directory, 0o700)
+    make_private_directory(directory, parents=True, exist_ok=True)
+    chmod_posix(directory, 0o700)
     reference = new_ulid()
     path = directory / reference
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)

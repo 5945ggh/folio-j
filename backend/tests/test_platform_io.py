@@ -87,6 +87,46 @@ def test_reparse_point_is_detected_and_cannot_be_used_as_lock(
             pytest.fail("reparse lock accepted")
 
 
+@pytest.mark.parametrize(
+    ("tag", "redirects"),
+    [
+        (0xA000000C, True),  # IO_REPARSE_TAG_SYMLINK
+        (0xA0000003, True),  # IO_REPARSE_TAG_MOUNT_POINT
+        (0x8000101A, False),  # IO_REPARSE_TAG_CLOUD_1
+        (0x80000017, False),  # IO_REPARSE_TAG_WOF
+        (0, True),  # Attribute present but the tag was unavailable.
+    ],
+)
+def test_windows_reparse_tags_only_reject_redirecting_or_unknown_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tag: int, redirects: bool
+) -> None:
+    path = tmp_path / "worker.lock"
+    path.touch()
+    lstat = Path.lstat
+
+    def tagged_lstat(candidate: Path) -> os.stat_result | SimpleNamespace:
+        info = lstat(candidate)
+        if candidate != path:
+            return info
+        return SimpleNamespace(
+            st_mode=info.st_mode,
+            st_dev=info.st_dev,
+            st_ino=info.st_ino,
+            st_file_attributes=stat.FILE_ATTRIBUTE_REPARSE_POINT,
+            st_reparse_tag=tag,
+        )
+
+    monkeypatch.setattr(Path, "lstat", tagged_lstat)
+    assert is_link_or_reparse(path) == redirects
+    if redirects:
+        with pytest.raises(FileLockError, match="符号链接或系统重解析点"):
+            with exclusive_file_lock(path):
+                pytest.fail("redirected lock was accepted")
+    else:
+        with exclusive_file_lock(path):
+            assert path.is_file()
+
+
 def test_windows_directory_flush_does_not_open_directory(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -97,6 +137,59 @@ def test_windows_directory_flush_does_not_open_directory(
 
     monkeypatch.setattr(os, "open", forbidden_open)
     fsync_directory(tmp_path)
+
+
+@pytest.mark.parametrize("windows", [False, True])
+def test_private_mode_applies_only_on_posix(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, windows: bool
+) -> None:
+    directory = tmp_path / "private"
+    credential = directory / "key"
+    mkdir_calls: list[tuple[Path, int | None]] = []
+    chmod_calls: list[tuple[Path, int]] = []
+
+    def mkdir(path: Path, *, mode: int | None = None, parents: bool, exist_ok: bool) -> None:
+        assert parents and exist_ok
+        mkdir_calls.append((path, mode))
+
+    def chmod(path: Path, mode: int) -> None:
+        chmod_calls.append((path, mode))
+
+    monkeypatch.setattr(platform_io, "_WINDOWS", windows)
+    monkeypatch.setattr(Path, "mkdir", mkdir)
+    monkeypatch.setattr(os, "chmod", chmod)
+    platform_io.make_private_directory(directory, parents=True, exist_ok=True)
+    platform_io.chmod_posix(directory, 0o700)
+    platform_io.chmod_posix(credential, 0o600)
+    assert mkdir_calls == [(directory, None if windows else 0o700)]
+    assert chmod_calls == ([] if windows else [(directory, 0o700), (credential, 0o600)])
+
+
+@pytest.mark.skipif(
+    sys.platform not in ("darwin", "linux", "win32"), reason="native exclusive rename"
+)
+def test_publish_file_renames_without_hard_links_or_overwriting(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    staging = tmp_path / "ステージ"
+    destination = tmp_path / "完成"
+    staging.write_bytes(b"new")
+    destination.write_bytes(b"existing")
+
+    def no_hard_links(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("native publication attempted a hard link")
+
+    monkeypatch.setattr(os, "link", no_hard_links)
+    with pytest.raises(FileExistsError):
+        platform_io.publish_file(staging, destination)
+    assert destination.read_bytes() == b"existing"
+    assert staging.read_bytes() == b"new"
+    destination.unlink()
+
+    platform_io.publish_file(staging, destination)
+    assert destination.read_bytes() == b"new"
+    assert destination.stat().st_nlink == 1
+    assert not staging.exists()
 
 
 @pytest.mark.parametrize("contended", [False, True])

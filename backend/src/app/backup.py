@@ -11,7 +11,6 @@ import sqlite3
 import stat
 import subprocess
 import sys
-import tempfile
 import tomllib
 from collections.abc import Generator
 from contextlib import ExitStack, closing, contextmanager
@@ -26,13 +25,21 @@ from app.config import load_settings
 from app.epub_storage import decode
 from app.platform_io import (
     FileLockError,
+    chmod_posix,
     exclusive_file_lock,
     fsync_directory,
     is_link_or_reparse,
+    make_private_directory,
     publish_directory,
+    staging_directory,
 )
 from app.resources import RESOURCE_ROOT
-from app.services.dictionary_store import STAGED_LIBRARY_INDEX, DictionaryStore
+from app.services.dictionary_store import (
+    INDEX_TEMPORARY_PREFIX,
+    LIBRARY_INDEX,
+    STAGED_LIBRARY_INDEX,
+    DictionaryStore,
+)
 
 FIRST_SUPPORTED_REVISION = "0004_translation_reader_removal"
 COMPONENTS = {
@@ -104,7 +111,7 @@ def _walk_error(error: OSError) -> NoReturn:
     raise error
 
 
-def _tree(root: Path) -> tuple[set[str], set[str]]:
+def _tree(root: Path, *, publication_links: set[str] | None = None) -> tuple[set[str], set[str]]:
     files: set[str] = set()
     directories: set[str] = set()
     for current, dirs, names in os.walk(root, followlinks=False, onerror=_walk_error):
@@ -116,7 +123,10 @@ def _tree(root: Path) -> tuple[set[str], set[str]]:
             relative = item.relative_to(root).as_posix()
             if stat.S_ISDIR(mode):
                 directories.add(relative)
-            elif stat.S_ISREG(mode) and item.stat().st_nlink == 1:
+            elif stat.S_ISREG(mode) and (
+                item.stat().st_nlink == 1
+                or (publication_links is not None and relative in publication_links)
+            ):
                 files.add(relative)
             else:
                 raise BackupError(f"备份不能包含硬链接或特殊文件：{relative}")
@@ -272,34 +282,71 @@ def _copy(source: Path, target: Path) -> None:
         raise BackupError("文件不能是符号链接或系统重解析点")
     if source.is_dir():
         files, directories = _tree(source)
-        target.mkdir(mode=0o700)
+        make_private_directory(target)
         for name in sorted(directories, key=lambda name: len(Path(name).parts)):
-            (target / name).mkdir(mode=0o700)
+            make_private_directory(target / name)
         for name in sorted(files):
             _copy(source / name, target / name)
     else:
         if not source.is_file() or source.stat().st_nlink != 1:
             raise BackupError("不接受特殊文件或硬链接")
         shutil.copyfile(source, target)
-        os.chmod(target, 0o600)
+        chmod_posix(target, 0o600)
 
 
-def _snapshot(source: Path, target: Path) -> None:
-    if is_link_or_reparse(source) or not source.is_file() or source.stat().st_nlink != 1:
+def _snapshot(source: Path, target: Path, *, publication_alias: Path | None = None) -> None:
+    if is_link_or_reparse(source) or not source.is_file():
+        raise BackupError("无法读取用于备份的数据库文件，请确认它是普通文件")
+    info = source.stat()
+    if info.st_nlink != 1 and (
+        publication_alias is None or not _same_publication_file(info, publication_alias)
+    ):
         raise BackupError("无法读取用于备份的数据库文件，请确认它是普通文件")
     with closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as original:
         with closing(sqlite3.connect(target)) as snapshot:
             original.backup(snapshot)
-    os.chmod(target, 0o600)
+    chmod_posix(target, 0o600)
+
+
+def _same_publication_file(index: os.stat_result, alias: Path) -> bool:
+    if index.st_nlink != 2 or not index.st_ino or is_link_or_reparse(alias):
+        return False
+    try:
+        staged = alias.lstat()
+    except FileNotFoundError:
+        return False
+    return stat.S_ISREG(staged.st_mode) and staged.st_nlink == 2 and os.path.samestat(index, staged)
+
+
+def _dictionary_publication_aliases(directory: Path) -> dict[str, str]:
+    """Recognize the two names left by interrupted hard-link publication."""
+    aliases: dict[tuple[int, int], Path] = {}
+    for stage in directory.glob(f"{INDEX_TEMPORARY_PREFIX}*.sqlite3"):
+        info = stage.lstat()
+        if stat.S_ISREG(info.st_mode) and info.st_nlink == 2 and not is_link_or_reparse(stage):
+            aliases[info.st_dev, info.st_ino] = stage
+    pairs: dict[str, str] = {}
+    if aliases:
+        for index in directory.glob("*.sqlite3"):
+            if LIBRARY_INDEX.fullmatch(index.name) and not is_link_or_reparse(index):
+                info = index.lstat()
+                stage = aliases.get((info.st_dev, info.st_ino))
+                if stage is not None and _same_publication_file(info, stage):
+                    pairs[index.name] = stage.name
+    return pairs
 
 
 def _copy_dictionary_library(source: Path, target: Path) -> None:
     """Defer managed staging files to the catalog-based recovery pass."""
-    files, directories = _tree(source)
-    target.mkdir(mode=0o700)
+    publication_aliases = _dictionary_publication_aliases(source)
+    temporary_names = set(publication_aliases.values())
+    files, directories = _tree(source, publication_links=set(publication_aliases) | temporary_names)
+    make_private_directory(target)
     for directory in sorted(directories, key=lambda name: len(Path(name).parts)):
-        (target / directory).mkdir(mode=0o700)
+        make_private_directory(target / directory)
     for name in sorted(files):
+        if name in temporary_names:
+            continue
         if "catalog.sqlite3" in files and STAGED_LIBRARY_INDEX.fullmatch(name):
             continue
         item = source / name
@@ -308,7 +355,8 @@ def _copy_dictionary_library(source: Path, target: Path) -> None:
                 raise BackupError("离线词典的数据库文件缺失，仅剩配套文件")
             continue
         if item.name.endswith(".sqlite3") or ".sqlite3.deleting-" in item.name:
-            _snapshot(item, target / name)
+            alias = source / publication_aliases[name] if name in publication_aliases else None
+            _snapshot(item, target / name, publication_alias=alias)
         else:
             _copy(item, target / name)
 
@@ -376,10 +424,7 @@ def _sync_tree(directory: Path) -> None:
 @contextmanager
 def _publish(destination: Path) -> Generator[Path, None, None]:
     """Publish a complete staged tree; failed publication retains no partial target."""
-    with tempfile.TemporaryDirectory(
-        prefix=".folio-j-backup-", dir=destination.parent
-    ) as temporary:
-        staging = Path(temporary)
+    with staging_directory(destination.parent, prefix=".folio-j-backup-") as staging:
         yield staging
         _sync_tree(staging)
         identity = staging.stat()
@@ -441,7 +486,7 @@ def create_backup(destination: Path, database_path: Path | None = None) -> Path:
         )
         manifest_file = staging / "manifest.json"
         manifest_file.write_text(manifest.model_dump_json(indent=2) + "\n", encoding="utf-8")
-        os.chmod(manifest_file, 0o600)
+        chmod_posix(manifest_file, 0o600)
 
     return destination
 
@@ -504,7 +549,7 @@ def restore_backup(backup: Path, destination: Path) -> Path:
     manifest = _validate_package(backup)
     with _publish(destination) as staging:
         for name in sorted(manifest.directories, key=lambda name: len(Path(name).parts)):
-            _restored_path(staging, name).mkdir(mode=0o700)
+            make_private_directory(_restored_path(staging, name))
         for name, expected in manifest.files.items():
             restored = _restored_path(staging, name)
             _copy(backup / _relative(name), restored)

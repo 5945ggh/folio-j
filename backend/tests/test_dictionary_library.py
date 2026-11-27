@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from support_api import chat_client
 from support_dictionary_store import archive, chunks, record, seed_legacy
 
+from app import platform_io
 from app.dictionary_schemas import DictionaryLookupRequest
 from app.services import dictionary_store
 from app.services.dictionary_lookup import lookup
@@ -71,6 +72,31 @@ async def test_library_api_installs_once_and_persists_explicit_selection(tmp_pat
         assert retained["active_dictionary_id"] == first_id
     async with chat_client(tmp_path / "separate.db") as (client, _):
         assert (await client.get("/api/dictionary/library")).json()["dictionaries"] == []
+
+
+@pytest.mark.asyncio
+async def test_windows_import_publishes_without_hard_links_while_old_reader_is_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = DictionaryStore(tmp_path / "app.sqlite3")
+    first = await store.import_library_stream(chunks(archive([record("雨")])))
+
+    def no_hard_links(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("Windows import attempted to use a hard link")
+
+    monkeypatch.setattr(platform_io, "_WINDOWS", True)
+    monkeypatch.setattr(os, "link", no_hard_links)
+    async with store.snapshot() as old:
+        second = await store.import_library_stream(chunks(archive([record("猫")])))
+        await store.select(second.dictionary_id)
+        assert [item.term for item in await old.find_terms(["雨"])] == ["雨"]
+        assert [item.term for item in await store.find_terms(["猫"])] == ["猫"]
+    assert {path.name for path in store.library_path.iterdir()} == {
+        "catalog.sqlite3",
+        f"{first.dictionary_id}.sqlite3",
+        f"{second.dictionary_id}.sqlite3",
+    }
+    assert all(path.stat().st_nlink == 1 for path in store.library_path.iterdir())
 
 
 @pytest.mark.asyncio

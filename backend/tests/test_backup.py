@@ -21,6 +21,7 @@ from support_paths import symlink_or_skip
 
 from alembic import command
 from app import backup as backup_module
+from app import platform_io
 from app.backup import (
     BackupError,
     _publish,  # pyright: ignore[reportPrivateUsage]
@@ -87,6 +88,42 @@ def database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     config.set_main_option("script_location", str(ROOT / "backend/alembic"))
     command.upgrade(config, "head")
     return path
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("link_shape", ["publication_pair", "outside_library", "third_link"])
+async def test_backup_only_normalizes_old_dictionary_publication_links(
+    tmp_path: Path, database: Path, link_shape: str
+) -> None:
+    store = DictionaryStore(database.with_name(database.name + ".dictionary.sqlite3"))
+    installed = await store.import_library_stream(chunks(archive([record("雨")])))
+    index_name = f"{installed.dictionary_id}.sqlite3"
+    index = store.library_path / index_name
+    alias_name = ".dictionary-index-abandoned.sqlite3"
+    alias = (tmp_path if link_shape == "outside_library" else store.library_path) / alias_name
+    alias.hardlink_to(index)
+    if link_shape == "third_link":
+        (tmp_path / "extra.sqlite3").hardlink_to(index)
+    package = tmp_path / "backup"
+    if link_shape != "publication_pair":
+        with pytest.raises(BackupError, match="硬链接"):
+            create_backup(package, database)
+        assert not package.exists()
+        return
+
+    create_backup(package, database)
+    assert alias.exists() and index.stat().st_nlink == 2
+    package_library = package / "dictionary.sqlite3.library"
+    assert not (package_library / alias_name).exists()
+    assert (package_library / index_name).stat().st_nlink == 1
+    restored = restore_backup(package, tmp_path / "restored")
+    restored_store = DictionaryStore(restored.with_name(restored.name + ".dictionary.sqlite3"))
+    assert [entry.term for entry in await restored_store.find_terms(["雨"])] == ["雨"]
+
+    # The normalization applies only while reading the installed library.
+    (package_library / alias_name).hardlink_to(package_library / index_name)
+    with pytest.raises(BackupError, match="硬链接"):
+        restore_backup(package, tmp_path / "untrusted-restore")
 
 
 def _rows(path: Path) -> dict[str, list[tuple[Any, ...]]]:
@@ -691,8 +728,6 @@ def test_publication_preserves_destination_created_after_initial_check(tmp_path:
 def test_backup_restore_publication_does_not_precreate_windows_destination(
     tmp_path: Path, database: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from app import platform_io
-
     def windows_publish(staging: Path, destination: Path) -> None:
         assert not destination.exists()
         with monkeypatch.context() as platform_patch:
@@ -703,6 +738,39 @@ def test_backup_restore_publication_does_not_precreate_windows_destination(
     package = create_backup(tmp_path / "package", database)
     restored = restore_backup(package, tmp_path / "restored")
     assert _rows(restored) == _rows(database)
+
+
+@pytest.mark.parametrize("publish", [False, True])
+def test_windows_backup_staging_uses_parent_permissions_and_cleans_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, publish: bool
+) -> None:
+    destination = tmp_path / "backup"
+    mkdir = Path.mkdir
+    created: list[Path] = []
+
+    def inherited_mkdir(path: Path, *args: Any, **kwargs: Any) -> None:
+        assert not args and "mode" not in kwargs
+        created.append(path)
+        mkdir(path, **kwargs)
+
+    def restricted_temporary_directory(*_args: Any, **_kwargs: Any) -> None:
+        pytest.fail("backup staging requested tempfile's restrictive Windows ACL")
+
+    monkeypatch.setattr(platform_io, "_WINDOWS", True)
+    monkeypatch.setattr(Path, "mkdir", inherited_mkdir)
+    monkeypatch.setattr(platform_io.tempfile, "TemporaryDirectory", restricted_temporary_directory)
+    if publish:
+        with _publish(destination) as staging:
+            (staging / "app.db").write_bytes(b"staged data")
+        assert (destination / "app.db").read_bytes() == b"staged data"
+        assert list(tmp_path.iterdir()) == [destination]
+    else:
+        with pytest.raises(RuntimeError, match="interrupted"):
+            with _publish(destination) as staging:
+                (staging / "app.db").write_bytes(b"staged data")
+                raise RuntimeError("interrupted")
+        assert not list(tmp_path.iterdir())
+    assert len(created) == 1 and created[0].parent == tmp_path
 
 
 def test_restore_rejects_windows_reparse_directory(
