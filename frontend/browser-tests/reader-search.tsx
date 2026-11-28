@@ -2,6 +2,7 @@ import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet } from "react-router";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
+import { readerAnkiProbeResponse } from "./reader-base-fixture";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
 import {
 	readerSessionFixture as fixture,
@@ -103,6 +104,8 @@ export async function readerSearch(h: BrowserHarness, preview = false) {
 	h.mock(async (request) => {
 		const url = new URL(request.url);
 		const path = url.pathname;
+		const probe = readerAnkiProbeResponse(request.method, path);
+		if (probe) return probe;
 		if (
 			request.method === "DELETE" &&
 			path === `/api/materials/${book.id}/translations/${translationIdentity}`

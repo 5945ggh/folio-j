@@ -1,6 +1,9 @@
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
-import { readerBaseResponse } from "./reader-base-fixture";
+import {
+	readerAnkiProbeResponse,
+	readerBaseResponse,
+} from "./reader-base-fixture";
 import { defaultContextCopySettings } from "./reader-context-copy-fixture";
 
 type Schema = components["schemas"];
@@ -107,6 +110,8 @@ export async function readerContextCopy(h: BrowserHarness, preview = false) {
 	});
 	h.mock(async (request) => {
 		const path = new URL(request.url).pathname;
+		const probe = readerAnkiProbeResponse(request.method, path);
+		if (probe) return probe;
 		if (path === "/api/settings/context-copy" && request.method === "GET") {
 			readCount++;
 			if (readCount === 1) await firstRead;

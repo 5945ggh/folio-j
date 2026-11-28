@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import type { components } from "../src/api/schema";
 import type { BrowserHarness } from "./harness";
+import { readerAnkiProbeResponse } from "./reader-base-fixture";
 import {
 	readerSessionFixture as fixture,
 	readerSessionFixtureData,
@@ -67,6 +68,8 @@ export async function segmentNavigation(h: BrowserHarness) {
 	h.mock(async (request) => {
 		const url = new URL(request.url);
 		const path = url.pathname;
+		const probe = readerAnkiProbeResponse(request.method, path);
+		if (probe) return probe;
 		if (path === "/api/segments/saved") segmentReads++;
 		let data = readerSessionFixtureData(request.method, path, {
 			originChapter,

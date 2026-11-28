@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { runBrowserSuite } from "../browser-tests/harness.ts";
-import { readerBaseResponse } from "../browser-tests/reader-base-fixture.ts";
+import {
+	readerAnkiProbeResponse,
+	readerBaseResponse,
+} from "../browser-tests/reader-base-fixture.ts";
 import {
 	assertBrowserResult,
 	browserScenarioUrl,
@@ -18,6 +21,20 @@ const scenes = [
 
 test("reader fixture rejects wrong methods, books and chapters instead of returning empty success", async () => {
 	const book = { id: "book", version_id: "v1", source_id: "source" };
+	const probe = readerAnkiProbeResponse("POST", "/api/anki/probe");
+	assert.equal(probe.status, 502);
+	assert.deepEqual(await probe.json(), { detail: "未连接 Anki" });
+	for (const [method, path] of [
+		["GET", "/api/anki/probe"],
+		["POST", "/api/anki/export"],
+		["POST", "/api/anki/probe/other"],
+	]) {
+		assert.equal(readerAnkiProbeResponse(method, path), undefined);
+		assert.throws(
+			() => readerBaseResponse(method, path, book, []),
+			/Unmocked reader request/,
+		);
+	}
 	const respond = (method, path) =>
 		readerBaseResponse(method, `/api/materials/${path}`, book, [
 			{ id: "chapter" },
