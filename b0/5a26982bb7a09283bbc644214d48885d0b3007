@@ -1,0 +1,30 @@
+frontend/browser-tests/settings-return.tsx
+  s_17a150814b8b30::t_bdb7ec02b88626 5,89-90
+frontend/scripts/browser-test-plan.test.mjs
+  s_17a150814b8b30::t_0037cc7adf6dfb 5-7,24-37
+  s_17a150814b8b30::t_07752330080e9f 4
+frontend/browser-tests/reader-base-fixture.ts
+  s_17a150814b8b30::t_bdb7ec02b88626 73-81,85-86
+frontend/browser-tests/reader-context-copy.tsx
+  s_17a150814b8b30::t_bdb7ec02b88626 3-6,113-114
+frontend/browser-tests/segment-navigation.tsx
+  s_17a150814b8b30::t_bdb7ec02b88626 6,71-72
+frontend/browser-tests/reader-search.tsx
+  s_17a150814b8b30::t_bdb7ec02b88626 5,107-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b05a26982bb7a09283bbc644214d48885d0b3007",
+  "prompts": {},
+  "sessions": {
+    "s_17a150814b8b30": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a22099-382d-7f32-b3f5-f9a4f283735f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
