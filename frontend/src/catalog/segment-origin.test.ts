@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { CatalogSegment } from "./api.ts";
-import { segmentOriginLabel, segmentOriginParts } from "./segment-origin.ts";
+import { segmentOriginParts } from "./segment-origin.ts";
 
 const manual: Pick<
 	CatalogSegment,
@@ -102,22 +102,29 @@ test("未知显示格式整体保留，失效状态不提取旧章名或位置",
 });
 
 test("手动片段展示已填出处，空白时明确手动录入", () => {
-	assert.equal(segmentOriginLabel(manual), "手动录入");
-	assert.equal(
-		segmentOriginLabel({ ...manual, source_ref: "  第三集 05:30  " }),
-		"第三集 05:30",
+	assert.deepEqual(segmentOriginParts(manual), [
+		{ kind: "reference", text: "手动录入" },
+	]);
+	assert.deepEqual(
+		segmentOriginParts({ ...manual, source_ref: "  第三集 05:30  " }),
+		[{ kind: "reference", text: "第三集 05:30" }],
 	);
 });
 
 test("具体书籍位置优先，手填出处作为补充且不重复书名", () => {
-	assert.equal(segmentOriginLabel(material), "雪国 · 第一章 · 本章约 35%");
-	assert.equal(
-		segmentOriginLabel({ ...material, source_ref: "文库版" }),
-		"雪国 · 第一章 · 本章约 35% · 补充：文库版",
-	);
-	assert.equal(
-		segmentOriginLabel({ ...material, source_ref: "雪国" }),
-		"雪国 · 第一章 · 本章约 35%",
+	const origin = [
+		{ kind: "title", text: "雪国" },
+		{ kind: "chapter", text: "第一章" },
+		{ kind: "position", text: "本章约 35%" },
+	];
+	assert.deepEqual(segmentOriginParts(material), origin);
+	assert.deepEqual(segmentOriginParts({ ...material, source_ref: "文库版" }), [
+		...origin,
+		{ kind: "supplement", text: "补充：文库版" },
+	]);
+	assert.deepEqual(
+		segmentOriginParts({ ...material, source_ref: "雪国" }),
+		origin,
 	);
 });
 
@@ -128,19 +135,22 @@ test("失效出处保留可靠书名和状态，不沿用失效的章名与位�
 		["snapshot_mismatch", "原文已变动，无法定位"],
 		["invalid_reference", "无法定位到原文"],
 	] as const) {
-		assert.equal(
-			segmentOriginLabel({
+		assert.deepEqual(
+			segmentOriginParts({
 				...material,
 				provenance_summary: { ...material.provenance_summary, status },
 			}),
-			`雪国 · ${label}`,
+			[
+				{ kind: "title", text: "雪国" },
+				{ kind: "state", text: label },
+			],
 		);
 	}
 });
 
 test("损坏出处即使缺少原始定位仍显示失效，不冒充手动片段", () => {
-	assert.equal(
-		segmentOriginLabel({
+	assert.deepEqual(
+		segmentOriginParts({
 			...manual,
 			provenance_summary: {
 				status: "invalid_reference",
@@ -150,6 +160,10 @@ test("损坏出处即使缺少原始定位仍显示失效，不冒充手动片�
 			},
 			source_ref: "文库版",
 		}),
-		"书籍出处 · 无法定位到原文 · 补充：文库版",
+		[
+			{ kind: "title", text: "书籍出处" },
+			{ kind: "state", text: "无法定位到原文" },
+			{ kind: "supplement", text: "补充：文库版" },
+		],
 	);
 });

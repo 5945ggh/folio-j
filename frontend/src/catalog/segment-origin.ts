@@ -67,9 +67,3 @@ export function segmentOriginParts(segment: OriginSegment): OriginPart[] {
 		parts.push({ kind: "supplement", text: `补充：${reference}` });
 	return parts;
 }
-
-export function segmentOriginLabel(segment: OriginSegment): string {
-	return segmentOriginParts(segment)
-		.map((part) => part.text)
-		.join(" · ");
-}

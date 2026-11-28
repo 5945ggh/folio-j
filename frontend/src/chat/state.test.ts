@@ -5,7 +5,7 @@ import {
 	submissionMayHaveSucceeded,
 	threadChanged,
 	usableThread,
-} from "./state.ts";
+} from "./discussion.ts";
 
 test("普通对话只使用成功加载且属于当前片段的线程", () => {
 	const current = { id: "t", segment_id: "s" };

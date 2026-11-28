@@ -377,9 +377,8 @@ export function AnkiConfigurationEditor({
 			}
 			return createAnkiConfiguration(input);
 		},
-		onSuccess: (saved) => {
+		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ankiKeys.configurations });
-			queryClient.setQueryData(ankiKeys.configuration(saved.id), saved);
 		},
 	});
 

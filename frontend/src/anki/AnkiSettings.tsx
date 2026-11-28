@@ -104,9 +104,8 @@ export function AnkiSettings() {
 
 	const deleteMutation = useMutation({
 		mutationFn: (id: string) => deleteAnkiConfiguration(id),
-		onSuccess: (_data, id) => {
+		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ankiKeys.configurations });
-			queryClient.removeQueries({ queryKey: ankiKeys.configuration(id) });
 			setDeleting(null);
 			setListNotice("已删除导出配置");
 		},

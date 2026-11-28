@@ -29,10 +29,6 @@ export type AnkiCollectionInfo = components["schemas"]["AnkiCollectionInfo"];
 export type AnkiCatalog = components["schemas"]["AnkiCatalog"];
 export type AnkiCatalogItem = components["schemas"]["AnkiCatalogItem"];
 export type AnkiTypeFields = components["schemas"]["AnkiTypeFields"];
-export type AnkiBuiltinCheckInput =
-	components["schemas"]["AnkiBuiltinCheckInput"];
-export type AnkiBuiltinCheckResponse =
-	components["schemas"]["AnkiBuiltinCheckResponse"];
 export type AnkiExportInput = components["schemas"]["AnkiExportInput"];
 export type AnkiExportField = components["schemas"]["AnkiExportField"];
 export type AnkiExportAttachment =
@@ -45,7 +41,6 @@ export const ankiKeys = {
 	builtins: ["anki", "builtins"] as const,
 	connection: ["anki", "connection"] as const,
 	configurations: ["anki", "configurations"] as const,
-	configuration: (id: string) => ["anki", "configuration", id] as const,
 	catalog: ["anki", "catalog"] as const,
 	noteTypeFields: (endpoint: string, profile: string, noteTypeId: string) =>
 		["anki", "note-type-fields", endpoint, profile, noteTypeId] as const,
@@ -125,14 +120,6 @@ export async function listAnkiConfigurations(signal?: AbortSignal) {
 	const { data, error, response } = await api.GET(
 		"/api/settings/anki/configurations",
 		{ signal },
-	);
-	return requireData(data, error, response.status);
-}
-
-export async function getAnkiConfiguration(id: string, signal?: AbortSignal) {
-	const { data, error, response } = await api.GET(
-		"/api/settings/anki/configurations/{configuration_id}",
-		{ params: { path: { configuration_id: id } }, signal },
 	);
 	return requireData(data, error, response.status);
 }
@@ -219,17 +206,6 @@ export async function getAnkiNoteTypeFields(
 			signal,
 		},
 	);
-	return requireAnkiData(data, error, response.status);
-}
-
-export async function checkAnkiBuiltinNoteType(
-	body: AnkiBuiltinCheckInput,
-	signal?: AbortSignal,
-) {
-	const { data, error, response } = await api.POST("/api/anki/builtin-check", {
-		body,
-		signal,
-	});
 	return requireAnkiData(data, error, response.status);
 }
 
