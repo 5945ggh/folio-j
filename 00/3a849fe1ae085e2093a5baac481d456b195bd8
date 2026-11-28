@@ -1,0 +1,45 @@
+scripts/release/README.md
+  s_17a150814b8b30::t_8030a96243c4e3 49,51
+docs/handovers/WINDOWS_ACCEPTANCE.md
+  s_17a150814b8b30::t_78f2b818ab8192 69,73,87,128-129
+  s_17a150814b8b30::t_8030a96243c4e3 61
+docs/handovers/MVP_IMPLEMENTATION_BASELINE.md
+  s_17a150814b8b30::t_1122b1bfba83bd 15
+  s_17a150814b8b30::t_262e6cf10f3e28 3
+  s_17a150814b8b30::t_822acd73682205 13
+docs/handovers/REPOSITORY_MAINTENANCE_ACCEPTANCE_20261128.md
+  s_17a150814b8b30::t_ae63a1db14f2eb 1-2,4-22,26
+  s_17a150814b8b30::t_cbc59b433c71f9 24-25,27-29
+  s_17a150814b8b30::t_24a5c45e45e173 23
+  s_17a150814b8b30::t_262e6cf10f3e28 3
+docs/handovers/README.md
+  s_17a150814b8b30::t_78f2b818ab8192 10
+scripts/frozen/README.md
+  s_17a150814b8b30::t_78f2b818ab8192 57
+  s_17a150814b8b30::t_8030a96243c4e3 23
+docs/DEVELOPMENT.md
+  s_17a150814b8b30::t_78f2b818ab8192 132-133
+docs/handovers/anki/READER_EXPORT.md
+  s_17a150814b8b30::t_6d429fc833f9db 5,7
+  s_17a150814b8b30::t_8030a96243c4e3 138-139
+  s_17a150814b8b30::t_78f2b818ab8192 3,6,135,137
+  s_17a150814b8b30::t_2b513d0bfbce87 4
+docs/README.md
+  s_17a150814b8b30::t_78f2b818ab8192 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "003a849fe1ae085e2093a5baac481d456b195bd8",
+  "prompts": {},
+  "sessions": {
+    "s_17a150814b8b30": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a22099-382d-7f32-b3f5-f9a4f283735f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
