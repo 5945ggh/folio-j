@@ -20,7 +20,7 @@
 
 启动后会自动打开系统浏览器（默认地址为 `http://127.0.0.1:8010`）。首次启动时，按页面提示选择数据存放位置（Windows 默认为 `%LOCALAPPDATA%\Folio-J\Data`，macOS 和 Linux 默认为 `~/Folio-J-Data`），或选择打开已有学习库即可进入应用。可直接粘贴 Windows 资源管理器复制的带双引号路径。等待时页面显示当前阶段；首次建库迁移失败后可重试当前选择，重启后也可在同一目录再次创建。在终端按 `Ctrl-C` 可停止服务。
 
-- 从 [GitHub 发行页](https://github.com/5945ggh/folio-j/releases)下载 EPUB 样书，或导入自己的书籍。
+- 在「素材库」点「导入书籍」，选择可重排 EPUB 及所属来源后点「导入」。初次试用可从发行页下载样书。[发行页](https://github.com/5945ggh/folio-j/releases)
 - 阅读、查词和配置模型见[使用指南](docs/USAGE.md)。
 - 更新版本、备份和迁移数据见[升级与备份](docs/UPGRADING.md)。
 
@@ -54,7 +54,7 @@
 ```
 
 - **凭据安全**：如果配置过模型服务，备份中可能包含未加密的 API 密钥，请妥善保存在个人私有目录。
-- **启用恢复库**：执行 `restore` 后，运行 `./Folio-J start --choose-data`（Windows 为 `.\Folio-J.exe start --choose-data`），在页面选择「打开已有数据」并填入新恢复的目录，进入「设置 → 数据位置」确认即可。
+- 执行 `restore` 后，运行 `./Folio-J start --choose-data`（Windows 为 `.\Folio-J.exe start --choose-data`），在页面选择「打开已有数据」并填入新恢复的目录。进入「设置 → 数据目录」核对恢复后使用的路径。
 
 ## 排障与版本信息
 

@@ -58,7 +58,7 @@ dev_port = 5188
 
 #### 首次选择、记住位置与恢复
 
-用普通用户另开 PowerShell，解压最终 ZIP 到一份未配置的程序目录。为这次运行准备独立的临时用户目录和本地应用目录，避免读取日常库。下面的变量仅在该窗口生效。
+用普通用户另开 PowerShell，将最终 ZIP 解压到新目录。把下方 `Set-Location` 的路径替换为解压后的 `Folio-J` 目录。下面的临时用户目录和本地应用目录仅在该窗口生效，用于隔离日常库。
 
 ```powershell
 $firstRun = Join-Path $env:TEMP ('Folio-J 首次启动 ' + [guid]::NewGuid().ToString('N'))
@@ -66,10 +66,11 @@ $env:USERPROFILE = Join-Path $firstRun '用户'
 $env:LOCALAPPDATA = Join-Path $firstRun '本地应用数据'
 New-Item -ItemType Directory -Path $env:USERPROFILE, $env:LOCALAPPDATA | Out-Null
 Remove-Item Env:FOLIO_J_DATABASE_PATH, Env:XDG_CONFIG_HOME -ErrorAction SilentlyContinue
+Set-Location -LiteralPath 'C:\解压目录\Folio-J' -ErrorAction Stop
 .\Folio-J.exe start
 ```
 
-- [ ] 首次打开浏览器时，默认路径为 `%LOCALAPPDATA%\Folio-J\Data`，点击确认前目录尚未创建。确认后进入素材库，设置显示相同路径；停止后核对 `%LOCALAPPDATA%\Folio-J\data-location.json`，重启打开原库。
+- [ ] 首次打开浏览器时，默认路径为 `%LOCALAPPDATA%\Folio-J\Data`，点击确认前目录尚未创建。确认后进入素材库，在「设置 → 数据目录」核对路径。停止后核对 `%LOCALAPPDATA%\Folio-J\data-location.json`，重启打开原库。
 - [ ] 使用 `start --choose-data`，粘贴资源管理器复制的含空格和外层双引号的其他目录，创建成功。再次重选时直接粘贴已有库文件路径，资料仍在。
 - [ ] 用另一份临时用户环境分别验证旧 JSON 指向的自定义库、程序目录旧库和 `~/Folio-J-Data/app.db`，并核对旧 `app.toml` 生效。显式指定绝对 `XDG_CONFIG_HOME` 后，只读写该目录下的记录。优先级见[使用指南](../USAGE.md#配置优先级与高级选项)。
 - [ ] 在独立测试卷使首次迁移中途失败（例如临时容量受限的卷）。记录失败阶段、耗时、底层异常和可用的 WinError；恢复空间后点击「重试当前选择」。另做一轮同样故障，先停服重启，再在原目录创建。核对其他已有库和无关 SQLite 文件仍保留。
@@ -83,7 +84,7 @@ Remove-Item Env:FOLIO_J_DATABASE_PATH, Env:XDG_CONFIG_HOME -ErrorAction Silently
 - [ ] `start --choose-data` 明确区分创建新数据与打开已有数据；新建不能覆盖已有库，已有模式不能在缺库处创建。普通 SQLite 或备份配套文件残留不能被当成可直接使用的学习库。
 - [ ] 非零退出且 stdin、stdout 均为交互控制台时保留错误并等待回车，参数错误也可读；管道输入／输出的同类失败不等待，退出码保持非零。正常 Ctrl-C 停服不等待回车。
 
-完成以上选择测试后，再按下方环境变量固定的独立测试库运行已有核心验收。浏览器中的数据位置支持复制、读取失败重试与长路径断行，不提供扫描或搬迁。
+完成以上选择测试后，回到准备独立环境时打开的 PowerShell，使用已设置的测试库运行以下核心验收。浏览器的「设置 → 数据目录」支持复制、读取失败重试与长路径断行。
 
 - [ ] Windows 本机完成构建，产物包含完整 `Folio-J/`、Windows ZIP、`BUILD.json` 与 `SIZE.json`；下载处同时有对应源码与构建脚本。
 - [ ] 用构建环境的 Python 对原始 `Folio-J/` 运行 `scripts/smoke_frozen.py`；另将 ZIP 解压到新目录，再对解压出的 `Folio-J/` 运行同一脚本，两次分别记录结果。该脚本使用独立测试库，验证中文空格程序目录、含 emoji／罕字的数据／备份／恢复路径、UTF-8 管道输出、CTRL_BREAK 退出、服务、学习资料和备份恢复；自动结果不代替下面的实际浏览器操作。
@@ -124,8 +125,8 @@ uv run --project backend --no-dev python scripts/run.py start
 
 以下核心流程在 Chrome、Edge 各执行一次。首次启动应看到空素材库；第二个浏览器应能看到已保存的资料。不要把其他浏览器的本地偏好当作应自动迁移的数据。
 
-- [ ] 新建来源并导入测试 EPUB，书名、封面、插图及日文正常；横排／竖排、分页／滚动、浅色／深色、宽窗口与窄窗口切换后无内容丢失和挡住操作的溢出。
-- [ ] 从目录、书内搜索和书签分别跳转；在一段中间停留，刷新、离开再进入、关闭浏览器后重开，位置仍指向同一正文附近。重复文字不会跳到另一章。
+- [ ] 在素材库点「导入书籍」，新建来源并导入测试 EPUB，核对书名、封面、插图及日文。分别在横排和竖排下检查连续滚动，用 `PageUp`／`PageDown` 或空格按视口移动。切换浅色／深色与宽／窄窗口后，检查正文完整、操作可达。
+- [ ] 从「目录与书签」的两个页签及「本书搜索」分别跳转。在一段中间停留，刷新、离开再进入、关闭浏览器后重开，位置仍指向同一正文附近。重复文字不会跳到另一章。
 - [ ] 鼠标划选含振假名和标点的原文，工具条定位可用；复制原文、带上下文复制和复制讲解提示词，粘贴到本地记事本，核对日文、换行、目标范围与上下文。无模型时仍能完成这些操作。
 - [ ] 导入两份词典、重复导入同一份，核对安装项不重复；切换当前词典，正文与词卡内继续查词均显示当前词典的释义；检查含全角「ー」和半角「ｰ」长音符的词，词典有对应词条时能查到预期结果，记录所用原文和词条。
 - [ ] 打开词卡后删除当前词典并明确选择替代词典，旧词卡关闭或更新；删除非当前词典，再删除最后一本，显示空状态。重启后不复活；同一 ZIP 可重新导入。若删除时旧查询仍在进行，完成后不得覆盖新词典结果；关闭页面或停止进程后检查文件占用已释放。
