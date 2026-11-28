@@ -1,0 +1,26 @@
+frontend/src/anki/AnkiSettings.tsx
+  s_17a150814b8b30::t_bdb7ec02b88626 107
+frontend/src/anki/AnkiConfigurationEditor.tsx
+  s_17a150814b8b30::t_bdb7ec02b88626 380
+frontend/src/chat/state.test.ts
+  s_17a150814b8b30::t_bdb7ec02b88626 8
+frontend/src/catalog/segment-origin.test.ts
+  s_17a150814b8b30::t_f9b62687d66d27 121-124
+  s_17a150814b8b30::t_0037cc7adf6dfb 4,105-110,115-120,125-127,138-139,143-146,152-153,163-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ff29b090c78b10bc09fb1ec480e4b55cd7a1bfca",
+  "prompts": {},
+  "sessions": {
+    "s_17a150814b8b30": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a22099-382d-7f32-b3f5-f9a4f283735f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "5945ggh <1282835294@qq.com>"
+    }
+  }
+}
